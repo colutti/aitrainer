@@ -1,0 +1,21 @@
+
+<div class="h-screen w-screen bg-dark-bg text-text-primary flex">
+  @if (isAuthenticated()) {
+    <app-sidebar class="flex-shrink-0"></app-sidebar>
+    <main class="flex-1 flex flex-col overflow-hidden">
+      @switch (currentView()) {
+        @case ('chat') {
+          <app-chat class="h-full"></app-chat>
+        }
+        @case ('user-profile') {
+          <app-user-profile class="h-full"></app-user-profile>
+        }
+        @case ('trainer-settings') {
+          <app-trainer-settings class="h-full"></app-trainer-settings>
+        }
+      }
+    </main>
+  } @else {
+    <app-login class="w-full h-full"></app-login>
+  }
+</div>

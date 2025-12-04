@@ -1,0 +1,50 @@
+# Login
+# @name tokenAPI
+POST http://localhost:8000/login
+Content-Type: application/json
+
+{
+  "email": "admin",
+  "password": "123"
+}
+
+###
+
+@authToken = {{tokenAPI.response.body.token}}
+
+###
+
+# Get Profile
+GET http://localhost:8000/profile
+Authorization: Bearer {{authToken}}
+
+###
+
+# Atualizar perfil (update_profile)
+POST http://localhost:8000/update_profile
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "gender": "Masculino",
+  "personality": "Motivador",
+  "age": 45,
+  "weight": 78,
+  "height": 175,
+  "goal": "Ganhar massa muscular e perder gordura"
+}
+
+###
+
+POST http://localhost:8000/message
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "user_message": "Quero um treino para ganhar massa muscular."
+}
+
+###
+# Logout
+GET http://localhost:8000/logout
+Authorization: Bearer {{authToken}}

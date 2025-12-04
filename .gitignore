@@ -1,0 +1,43 @@
+# Python-generated files
+__pycache__/
+
+# === Python Backend ===
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.log
+.env
+.env.*
+venv/
+.env.local
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.DS_Store
+
+# === Node/Angular Frontend ===
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/cache/
+frontend/.env.local
+frontend/.DS_Store
+frontend/package-lock.json
+
+# === General ===
+*.swp
+*.swo
+*.bak
+*.tmp
+*.orig
+*.idea/
+*.vscode/
+*.code-workspace
+
+# === OS Files ===
+Thumbs.db
+.DS_Store
