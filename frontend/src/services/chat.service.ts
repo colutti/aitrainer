@@ -84,6 +84,4 @@ export class ChatService {
       this.isTyping.set(false);
     }
   }
-
-  // Removed mock response logic; now uses backend API
 }
