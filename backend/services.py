@@ -15,7 +15,7 @@ class AITrainerBrain:
     """
     Service class responsible for interacting with the LLM (Gemini).
     """
-    MAX_MESSAGES = 10
+    MAX_MESSAGES = 50
 
     def get_chat_history(self, session_id: str) -> list[dict]:
         """

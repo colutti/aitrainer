@@ -13,7 +13,8 @@ from .database import get_user_profile as db_get_user_profile
 from .database import save_trainer_profile as db_save_trainer_profile
 from .database import save_user_profile as db_save_user_profile
 from .logs import logger
-from .models import LoginRequest, MessageRequest, TrainerProfile, UserProfile
+from .models import (LoginRequest, MessageRequest, TrainerProfile,
+                     TrainerProfileInput, UserProfile)
 from .services import AITrainerBrain
 
 app = FastAPI()
@@ -134,22 +135,21 @@ def update_profile(profile: UserProfile, user_email: CurrentUser) -> JSONRespons
 
 @app.post("/update_trainer_profile")
 def update_trainer_profile(
-    profile: TrainerProfile, user_email: CurrentUser
+    profile_data: TrainerProfileInput, user_email: CurrentUser
 ) -> JSONResponse:
     """
     Updates the trainer profile with the provided information,
     ensuring the update is associated with the authenticated user.
 
     Args:
-       profile (TrainerProfile): The trainer profile data to update.
-       user_email (CurrentUser): The authenticated user information,
-       injected by dependency (verify_token).
+       profile_data (TrainerProfileInput): Os dados editáveis do perfil do treinador.
+       user_email (CurrentUser): O e-mail autenticado do usuário.
 
     Returns:
      JSONResponse: A response indicating the profile was updated successfully.
     """
-    # Ensure the profile update is associated with the authenticated user
-    profile.user_email = user_email
+    # Cria o objeto TrainerProfile completo, incluindo user_email
+    profile = TrainerProfile(**profile_data.model_dump(), user_email=user_email)
     db_save_trainer_profile(profile)
     return JSONResponse(content={"message": "Profile updated successfully"})
 

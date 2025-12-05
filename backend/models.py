@@ -18,18 +18,11 @@ class UserProfile(BaseModel):
     email: str = Field(..., description="E-mail do usuário")
 
 
-class TrainerProfile(BaseModel):
+# Input do usuário para atualização do perfil do treinador
+class TrainerProfileInput(BaseModel):
     """
-    TrainerProfile model representing a trainer's profile information.
-
-    Attributes:
-        user_email (str): E-mail do usuário.
-        humour (str): Personalidade do treinador. Must be one of: "Motivacional", "Rígido", "Amigavel", "Sarcástico".
-        name (str): Nome do treinador.
-        gender (str): Gênero do treinador. Must be one of: "Masculino", "Feminino".
-        style (str): Estilo do treinador. Must be one of: "Científico", "Holístico", "Bootcamp Militar".
+    Campos editáveis do perfil do treinador (input do usuário).
     """
-    user_email: str = Field(..., description="E-mail do usuário")
     humour: str = Field(
         ...,
         description="Personalidade do treinador",
@@ -44,6 +37,15 @@ class TrainerProfile(BaseModel):
         description="Estilo do treinador",
         pattern="^(Científico|Holístico|Bootcamp Militar)$",
     )
+
+# Perfil completo do treinador (inclui user_email)
+
+
+class TrainerProfile(TrainerProfileInput):
+    """
+    TrainerProfile model representando o perfil completo (inclui user_email).
+    """
+    user_email: str = Field(..., description="E-mail do usuário")
 
 
 class LoginRequest(BaseModel):
