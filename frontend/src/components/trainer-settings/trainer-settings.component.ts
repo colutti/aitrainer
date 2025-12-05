@@ -24,14 +24,13 @@ export class TrainerSettingsComponent implements OnInit {
     // this.profile.set({ ...this.trainerProfileService.getProfile() });
   }
 
-  saveProfile(): void {
+  async saveProfile(): Promise<void> {
     this.isSaving.set(true);
-    // Mock save
-    setTimeout(() => {
-      this.trainerProfileService.updateProfile(this.profile());
-      this.isSaving.set(false);
+    const success = await this.trainerProfileService.updateProfile(this.profile());
+    this.isSaving.set(false);
+    if (success) {
       this.showSuccess.set(true);
       setTimeout(() => this.showSuccess.set(false), 2000);
-    }, 1000);
+    }
   }
 }

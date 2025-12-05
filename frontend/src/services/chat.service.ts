@@ -1,9 +1,8 @@
 
-import { Injectable, signal, inject } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { Message } from '../models/message.model';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { environment } from '../environment';
-import { AuthService } from './auth.service';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable({
@@ -15,7 +14,11 @@ export class ChatService {
   messages = signal<Message[]>([]);
   isTyping = signal<boolean>(false);
 
-  constructor(private http: HttpClient, private auth: AuthService) {
+  constructor(private http: HttpClient) {
+    this.resetToWelcome();
+  }
+
+  private resetToWelcome() {
     this.messages.set([
       {
         id: 0,
@@ -24,6 +27,11 @@ export class ChatService {
         timestamp: new Date(),
       },
     ]);
+    this.isTyping.set(false);
+  }
+
+  clearHistory(): void {
+    this.resetToWelcome();
   }
 
   async loadHistory(): Promise<void> {

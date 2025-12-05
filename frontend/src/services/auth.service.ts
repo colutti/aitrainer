@@ -1,8 +1,9 @@
 
 import { Injectable, signal } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { environment } from '../environment';
 import { firstValueFrom } from 'rxjs';
+import { ChatService } from './chat.service';
 
 @Injectable({
   providedIn: 'root',
@@ -13,7 +14,7 @@ export class AuthService {
   private tokenKey = 'jwt_token';
 
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private chatService: ChatService) {
     // Check for a stored JWT token to maintain login state
     const token = localStorage.getItem(this.tokenKey);
     if (token) {
@@ -41,6 +42,7 @@ export class AuthService {
   }
 
   logout(): void {
+    this.chatService.clearHistory();
     this.isAuthenticated.set(false);
     localStorage.removeItem(this.tokenKey);
     // Optionally, call backend logout endpoint if needed

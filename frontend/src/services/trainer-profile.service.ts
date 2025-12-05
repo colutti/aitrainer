@@ -39,12 +39,14 @@ export class TrainerProfileService {
   /**
    * Salva o perfil do treinador no backend
    */
-  async updateProfile(profile: TrainerProfile): Promise<void> {
+  async updateProfile(profile: TrainerProfile): Promise<boolean> {
     try {
       await firstValueFrom(this.http.post(`${environment.apiUrl}/update_trainer_profile`, profile));
       this.trainerProfile.set(profile);
+      return true;
     } catch (err) {
       console.error('Erro ao salvar perfil do treinador:', err);
+      return false;
     }
   }
 
