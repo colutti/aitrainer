@@ -1,5 +1,5 @@
 
-import { Component, ChangeDetectionStrategy, inject, signal, ElementRef, viewChild, afterNextRender } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, ElementRef, viewChild, afterNextRender, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ChatService } from '../../services/chat.service';
@@ -10,7 +10,10 @@ import { ChatService } from '../../services/chat.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, FormsModule]
 })
-export class ChatComponent {
+export class ChatComponent implements OnInit {
+  async ngOnInit(): Promise<void> {
+    await this.chatService.loadHistory();
+  }
   chatService = inject(ChatService);
 
   newMessage = signal('');

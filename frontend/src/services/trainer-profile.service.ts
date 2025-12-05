@@ -3,6 +3,7 @@ import { Injectable, signal, effect } from '@angular/core';
 import { TrainerProfile } from '../models/trainer-profile.model';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../environment';
+import { firstValueFrom } from 'rxjs';
 
 const DEFAULT_TRAINER_PROFILE: TrainerProfile = {
   name: 'Atlas',
@@ -38,33 +39,27 @@ export class TrainerProfileService {
   /**
    * Salva o perfil do treinador no backend
    */
-  updateProfile(profile: TrainerProfile): void {
-    this.http.post(`${environment.apiUrl}/update_trainer_profile`, profile)
-      .subscribe({
-        next: () => {
-          this.trainerProfile.set(profile);
-        },
-        error: (err) => {
-          // Trate erro conforme necessário
-          console.error('Erro ao salvar perfil do treinador:', err);
-        }
-      });
+  async updateProfile(profile: TrainerProfile): Promise<void> {
+    try {
+      await firstValueFrom(this.http.post(`${environment.apiUrl}/update_trainer_profile`, profile));
+      this.trainerProfile.set(profile);
+    } catch (err) {
+      console.error('Erro ao salvar perfil do treinador:', err);
+    }
   }
 
   /**
    * Obtém o perfil do treinador do backend
    */
-  fetchProfile(): void {
-    this.http.get<TrainerProfile>(`${environment.apiUrl}/trainer_profile`)
-      .subscribe({
-        next: (profile) => {
-          this.trainerProfile.set(profile);
-        },
-        error: (err) => {
-          // Trate erro conforme necessário
-          console.error('Erro ao obter perfil do treinador:', err);
-        }
-      });
+  async fetchProfile(): Promise<void> {
+    try {
+      const profile = await firstValueFrom(
+        this.http.get<TrainerProfile>(`${environment.apiUrl}/trainer_profile`)
+      );
+      this.trainerProfile.set(profile);
+    } catch (err) {
+      console.error('Erro ao obter perfil do treinador:', err);
+    }
   }
 
   getProfile(): TrainerProfile {

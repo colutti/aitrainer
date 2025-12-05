@@ -16,9 +16,20 @@ from .logs import logger
 from .models import LoginRequest, MessageRequest, TrainerProfile, UserProfile
 from .services import AITrainerBrain
 
+app = FastAPI()
+
 CurrentUser = Annotated[str, Depends(verify_token)]
 
-app = FastAPI()
+
+@app.get("/history")
+def get_history(user_email: CurrentUser):
+    """
+    Retorna o histórico de mensagens do chat do usuário autenticado.
+    """
+    brain = AITrainerBrain()
+    messages = brain.get_chat_history(user_email)
+    return messages
+
 
 # CORS middleware for frontend-backend integration
 app.add_middleware(

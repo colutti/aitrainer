@@ -1,3 +1,4 @@
+from langchain_core.messages import HumanMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -5,9 +6,9 @@ from langchain_mongodb import MongoDBChatMessageHistory
 
 from .config import (DB_NAME, GEMINI_API_KEY, MODEL_NAME, MONGO_URI,
                      PROMPT_TEMPLATE)
+from .database import get_trainer_profile
 from .logs import logger
 from .models import UserProfile
-from .database import get_trainer_profile
 
 
 class AITrainerBrain:
@@ -15,6 +16,20 @@ class AITrainerBrain:
     Service class responsible for interacting with the LLM (Gemini).
     """
     MAX_MESSAGES = 10
+
+    def get_chat_history(self, session_id: str) -> list[dict]:
+        """
+        Retorna o histórico de chat formatado para o frontend.
+        """
+        history = self._get_chat_history(session_id)
+        formatted = [
+            {
+                "text": msg.content,
+                "sender": "user" if isinstance(msg, HumanMessage) else "ai"
+            }
+            for msg in history.messages
+        ]
+        return formatted
 
     def _get_llm(self):
         logger.info("Instantiating Gemini LLM with model: %s", MODEL_NAME)
