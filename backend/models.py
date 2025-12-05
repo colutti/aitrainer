@@ -19,6 +19,16 @@ class UserProfile(BaseModel):
 
 
 class TrainerProfile(BaseModel):
+    """
+    TrainerProfile model representing a trainer's profile information.
+
+    Attributes:
+        user_email (str): E-mail do usuário.
+        humour (str): Personalidade do treinador. Must be one of: "Motivacional", "Rígido", "Amigavel", "Sarcástico".
+        name (str): Nome do treinador.
+        gender (str): Gênero do treinador. Must be one of: "Masculino", "Feminino".
+        style (str): Estilo do treinador. Must be one of: "Científico", "Holístico", "Bootcamp Militar".
+    """
     user_email: str = Field(..., description="E-mail do usuário")
     humour: str = Field(
         ...,
@@ -37,9 +47,22 @@ class TrainerProfile(BaseModel):
 
 
 class LoginRequest(BaseModel):
+    """
+    Represents a login request containing user credentials.
+
+    Attributes:
+        email (str): The user's email address.
+        password (str): The user's password.
+    """
     email: str
     password: str
 
 
 class MessageRequest(BaseModel):
+    """
+    Represents a request containing a user's message.
+
+    Attributes:
+        user_message (str): The message provided by the user.
+    """
     user_message: str

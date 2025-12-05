@@ -4,6 +4,7 @@ import { Message } from '../models/message.model';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../environment';
 import { AuthService } from './auth.service';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -36,7 +37,9 @@ export class ChatService {
     this.isTyping.set(true);
 
     try {
-      const response = await this.http.post<{ response: string }>(`${environment.apiUrl}/message`, { user_message: text }).toPromise();
+      const response = await firstValueFrom(
+        this.http.post<{ response: string }>(`${environment.apiUrl}/message`, { user_message: text })
+      );
       const aiMessage: Message = {
         id: this.messages().length,
         text: response?.response || 'Erro ao obter resposta do servidor.',

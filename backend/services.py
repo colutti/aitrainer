@@ -7,13 +7,14 @@ from .config import (DB_NAME, GEMINI_API_KEY, MODEL_NAME, MONGO_URI,
                      PROMPT_TEMPLATE)
 from .logs import logger
 from .models import UserProfile
+from .database import get_trainer_profile
 
 
 class AITrainerBrain:
     """
     Service class responsible for interacting with the LLM (Gemini).
     """
-    MAX_MESSAGES = 2
+    MAX_MESSAGES = 10
 
     def _get_llm(self):
         logger.info("Instantiating Gemini LLM with model: %s", MODEL_NAME)
@@ -79,8 +80,14 @@ class AITrainerBrain:
         """
         logger.info("Generating workout stream for user: %s", profile.email)
         chat_history = self._get_chat_history(session_id)
+        # Busca perfil do treinador
+        trainer_profile = get_trainer_profile(profile.email)
+        personality = getattr(trainer_profile, "humour", "Motivacional") if trainer_profile else "Motivacional"
+        gender = getattr(trainer_profile, "gender", "Masculino") if trainer_profile else "Masculino"
         input_data = {
             **profile.model_dump(),
+            "personality": personality,
+            "gender": gender,
             "chat_history": chat_history.messages,
             "input": user_input
         }

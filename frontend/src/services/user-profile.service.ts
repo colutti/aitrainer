@@ -4,6 +4,7 @@ import { UserProfile } from '../models/user-profile.model';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../environment';
 import { AuthService } from './auth.service';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -13,23 +14,27 @@ export class UserProfileService {
 
   constructor(private http: HttpClient, private auth: AuthService) { }
 
-  getProfile(): Promise<UserProfile | null> {
-    return this.http.get<UserProfile>(`${environment.apiUrl}/profile`)
-      .toPromise()
-      .then(profile => {
-        this.userProfile.set(profile);
-        return profile;
-      })
-      .catch(() => null);
+  async getProfile(): Promise<UserProfile | null> {
+    try {
+      const profile = await firstValueFrom(
+        this.http.get<UserProfile>(`${environment.apiUrl}/profile`)
+      );
+      this.userProfile.set(profile);
+      return profile;
+    } catch {
+      return null;
+    }
   }
 
-  updateProfile(profile: UserProfile): Promise<boolean> {
-    return this.http.post<UserProfile>(`${environment.apiUrl}/update_profile`, profile)
-      .toPromise()
-      .then(updated => {
-        this.userProfile.set(updated);
-        return true;
-      })
-      .catch(() => false);
+  async updateProfile(profile: UserProfile): Promise<boolean> {
+    try {
+      const updated = await firstValueFrom(
+        this.http.post<UserProfile>(`${environment.apiUrl}/update_profile`, profile)
+      );
+      this.userProfile.set(updated);
+      return true;
+    } catch {
+      return false;
+    }
   }
 }

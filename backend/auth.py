@@ -34,6 +34,18 @@ def user_login(email: str, password: str) -> str:
 
 
 def verify_token(token: str = Depends(oauth2_scheme)) -> str:
+    """
+    Verifies a JWT token and extracts the user's email.
+
+    Args:
+        token (str): The JWT token to verify, provided via dependency injection.
+
+    Returns:
+        str: The email address extracted from the token's payload.
+
+    Raises:
+        HTTPException: If the token is invalid or the email is not found in the payload.
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",

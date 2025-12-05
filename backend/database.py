@@ -4,6 +4,9 @@ import pymongo
 from .config import DB_NAME, MONGO_URI
 from .models import TrainerProfile, UserProfile
 
+client = pymongo.MongoClient(MONGO_URI)
+database = client[DB_NAME]
+
 
 def save_user_profile(profile: UserProfile):
     """
@@ -26,8 +29,7 @@ def save_user_profile(profile: UserProfile):
 
 def _get_db():
     """Returns the configured MongoDB connection."""
-    client = pymongo.MongoClient(MONGO_URI)
-    return client[DB_NAME]  # type: ignore[arg-type]
+    return database
 
 
 def get_user_profile(email: str) -> UserProfile | None:
@@ -76,7 +78,11 @@ def save_trainer_profile(trainer_profile: TrainerProfile) -> None:
         trainer_profile (TrainerProfile): The trainer profile to be saved.
     """
     db = _get_db()
-    db.trainer_profiles.update_one(trainer_profile.dict(), upsert=True)
+    db.trainer_profiles.update_one(
+        {"user_email": trainer_profile.user_email},
+        {"$set": trainer_profile.model_dump()},
+        upsert=True
+    )
 
 
 def get_trainer_profile(email: str) -> TrainerProfile | None:
@@ -90,7 +96,7 @@ def get_trainer_profile(email: str) -> TrainerProfile | None:
         TrainerProfile or None: The trainer profile if found, otherwise None.
     """
     db = _get_db()
-    trainer_profile = db.trainer_profiles.find_one({"email": email})
+    trainer_profile = db.trainer_profiles.find_one({"user_email": email})
     if not trainer_profile:
         return None
     return TrainerProfile(**trainer_profile)
