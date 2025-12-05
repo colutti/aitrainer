@@ -7,7 +7,7 @@ from jwt.exceptions import InvalidTokenError
 
 from backend.database import validate_user
 
-from .config import SECRET_KEY
+from .config import settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -29,7 +29,7 @@ def user_login(email: str, password: str) -> str:
     if not validate_user(email, password):
         raise ValueError("Invalid credentials")
     payload = {"sub": email, "exp": datetime.now(timezone.utc) + timedelta(hours=2)}
-    token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
     return token
 
 
@@ -53,7 +53,7 @@ def verify_token(token: str = Depends(oauth2_scheme)) -> str:
     )
 
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         email: str = payload.get("sub")
         if email is None:
             raise credentials_exception

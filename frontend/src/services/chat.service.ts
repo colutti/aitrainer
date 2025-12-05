@@ -37,14 +37,22 @@ export class ChatService {
   async loadHistory(): Promise<void> {
     try {
       const history = await firstValueFrom(
-        this.http.get<{ text: string; sender: 'user' | 'ai' }[]>(`${environment.apiUrl}/history`)
+        this.http.get<{ text: string; sender: 'user' | 'ai'; timestamp?: string }[]>(`${environment.apiUrl}/history`)
       );
-      const mapped: Message[] = history.map((msg, idx) => ({
-        id: idx,
-        text: msg.text,
-        sender: msg.sender,
-        timestamp: new Date(), // Sem timestamp real, usa data atual
-      }));
+      // Ordena por timestamp crescente se existir
+      const mapped: Message[] = history
+        .slice()
+        .sort((a, b) => {
+          const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+          const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+          return ta - tb;
+        })
+        .map((msg, idx) => ({
+          id: idx,
+          text: msg.text,
+          sender: msg.sender,
+          timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+        }));
       this.messages.set(mapped.length > 0 ? mapped : this.messages());
     } catch (error) {
       // Em caso de erro, mantém mensagem padrão

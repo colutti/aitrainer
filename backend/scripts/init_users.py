@@ -6,7 +6,7 @@ import sys
 import bcrypt
 import pymongo
 
-from ..config import DB_NAME, MONGO_URI
+from ..config import settings
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,9 +28,9 @@ def main():
     parser.add_argument("--password", required=True, help="Senha do usuário")
     args = parser.parse_args()
 
-    logger.info("Connecting to MongoDB at URI: %s, DB: %s", MONGO_URI, DB_NAME)
-    client = pymongo.MongoClient(MONGO_URI)
-    db = client[DB_NAME]  # type: ignore[arg-type]
+    logger.info("Connecting to MongoDB at URI: %s, DB: %s", settings.MONGO_URI, settings.DB_NAME)
+    client = pymongo.MongoClient(settings.MONGO_URI)
+    db = client[settings.DB_NAME]  # type: ignore[arg-type]
     users = db.users
 
     logger.info("Checking if user already exists: %s", args.email)

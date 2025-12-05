@@ -1,82 +1,83 @@
-import os
+import sys
 from pathlib import Path
 
-from dotenv import load_dotenv
+from pydantic import ValidationError, computed_field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Carrega variáveis do .env se existir
-dotenv_path = Path(__file__).parent / ".env"
-if dotenv_path.exists():
-    load_dotenv(dotenv_path)
 
-PROMPT_TEMPLATE = """
-Você é um Treinador Pessoal de elite e um Nutricionista Desportivo certificado, com mais de 15 anos de experiência.
-Seu nome é "Coach".
-Sua filosofia é "100%" focada em personalização e saúde baseada em evidência cientifica.
-Você entende que não existe "o melhor treino" ou "a melhor dieta", existe apenas o que é melhor para o indivíduo, com base nos seus dados e objetivos.
+class Settings(BaseSettings):
+    """
+    Settings
 
-SEU PERFIL:
-- Personalidade: {personality} (Siga este tom RIGOROSAMENTE)
-- Gênero: {gender}
-- Idioma da Resposta: Português do Brasil (PT-BR)
+    Configuration class for application settings, loaded from environment variables and .env files.
 
-COMO TREINADOR PESSOAL (FITNESS):
-- Criação de Rotinas: Ao criar um plano de treino, estruture-o de forma clara (Ex: Dia 1: Peito e Tríceis; Dia 2: Costas e Bíceis).
-- Foco na Forma: Ao sugerir exercícios, dê sempre 1-2 dicas cruciais sobre a forma correta para maximizar a eficácia e prevenir lesões.
-- Progressão: Lembre o utilizador da importância da sobrecarga progressiva (aumentar pesos, repetições ou séries ao longo do tempo).
-- Ajustes: Seja proativo. Pergunte: "Como se sentiu no último treino? Alguma dor fora do normal? Está conseguindo progredir nas cargas?"
+    Attributes:
+        GEMINI_API_KEY (str): API key for Gemini service.
+        SECRET_KEY (str): Secret key for application security.
+        DB_NAME (str): Name of the database.
+        MONGO_INITDB_ROOT_USERNAME (str): MongoDB root username.
+        MONGO_INITDB_ROOT_PASSWORD (str): MongoDB root password.
+        MONGO_HOST (str): MongoDB host address.
+        MONGO_PORT (int): MongoDB port number.
+        API_SERVER_PORT (int): Port number for the API server.
+        MODEL_NAME (str): Name of the AI model to use (default: "gemini-pro-latest").
+        PROMPT_TEMPLATE (str): Template string for generating prompts, including trainer and student profiles, personality modulators, and response guidelines.
 
-COMO NUTRICIONISTA (NUTRIÇÃO):
-- Cálculo de Necessidades: Baseado nos dados vitais (idade, peso, altura, objetivo), calcule uma estimativa das necessidades calóricas (TDEE - Gasto Energético Diário Total) e de macronutrientes (Proteínas, Gorduras, Hidratos de Carbono).
-- Seja claro: Sempre informe que são estimativas. (Ex: "Com base nos seus dados, para seu objetivo de perda de gordura, um bom ponto de partida seria cerca de 2200 kcal e 160g de proteína. Vamos começar aqui e ajustar.")
-- Foco em Alimentos, Não Apenas Números: Em vez de dar apenas números, dê exemplos de refeições. (Ex: "Para atingir suas 40g de proteína ao cafe da manha, pode ser: 4 ovos + 1 fatia de pão integral + 1 peça de fruta.")
-- Sustentabilidade: Promova a regra 80/20. "80%" de alimentos nutritivos e "20%" de flexibilidade. Você não é um coach "extremista".
+    Properties:
+        MONGO_URI (str): Computed MongoDB connection URI in the format:
+            where values are taken from the corresponding attributes.
 
-PERFIL DO ALUNO (Alguns dados podem estar faltando):
-- Idade: {age} anos
-- Peso: {weight}kg
-- Altura: {height} cm
-- Objetivo Principal: {goal}
+    Notes:
+        - Loads configuration from a .env file with UTF-8 encoding.
+        - Ignores extra environment variables not defined in the class.
+    """
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
-DIRETRIZES:
-- NUNCA dê um plano de treino ou nutricional genérico. Voce sempre sugere coisas baseadas em ciencia e que tenha estudos que comprovem o beneficio.
-- Use o histórico da conversa para manter o contexto.
-- Responda de forma concisa (estilo chat).
-- Use gírias de academia em PT-BR se o estilo for "Sarcástico" ou "Militar".
-- Se o estilo for "Motivador", aja como um parceiro. Use frases como "Estamos juntos nisto", "Excelente progresso esta semana", "Não se preocupe com o deslize, o que importa é voltar ao plano hoje".
-"""
-MODEL_NAME = "gemini-pro-latest"
+    GEMINI_API_KEY: str
+    SECRET_KEY: str
+    DB_NAME: str
+    MONGO_INITDB_ROOT_USERNAME: str
+    MONGO_INITDB_ROOT_PASSWORD: str
+    MONGO_HOST: str
+    MONGO_PORT: int
+    API_SERVER_PORT: int
 
-# Gemini API key
-GEMINI_API_KEY = (
-    os.environ.get("GEMINI_API_KEY")
-)
+    MODEL_NAME: str = "gemini-pro-latest"
 
-# Centralização das variáveis do MongoDB
-MONGO_INITDB_ROOT_USERNAME = os.environ.get("MONGO_INITDB_ROOT_USERNAME")
-MONGO_INITDB_ROOT_PASSWORD = os.environ.get("MONGO_INITDB_ROOT_PASSWORD")
-MONGO_INITDB_DATABASE = os.environ.get("MONGO_INITDB_DATABASE")
+    @staticmethod
+    def _load_prompt_template() -> str:
+        template_path = Path(__file__).parent / "prompt_template.jinja"
+        return template_path.read_text(encoding="utf-8")
 
-# Monta a URI do MongoDB usando as variáveis centralizadas
-MONGO_URI = os.environ.get(
-    "MONGO_URI",
-    f"mongodb://{MONGO_INITDB_ROOT_USERNAME}:{MONGO_INITDB_ROOT_PASSWORD}@{os.environ.get('MONGO_HOST', 'localhost')}:{os.environ.get('MONGO_PORT', '27017')}/",
-)
+    PROMPT_TEMPLATE: str = _load_prompt_template.__func__()
 
-DB_NAME = os.environ.get("MONGO_DB") or MONGO_INITDB_DATABASE or "ai_trainer_db"
+    @computed_field
+    @property
+    def MONGO_URI(self) -> str:  # pylint: disable=invalid-name
+        """
+        Constructs and returns the MongoDB connection URI string.
 
-SECRET_KEY = os.environ.get("SECRET_KEY") or "5306B254-50DD-44EF-A2F9-B215EDA35390"
+        Returns:
+            str: The MongoDB URI in the format:
+                'mongodb://<username>:<password>@<host>:<port>/'
+            where <username>, <password>, <host>, and <port> are obtained from
+            the corresponding instance attributes:
+                - MONGO_INITDB_ROOT_USERNAME
+                - MONGO_INITDB_ROOT_PASSWORD
+                - MONGO_HOST
+                - MONGO_PORT
+        """
+        return f"mongodb://{self.MONGO_INITDB_ROOT_USERNAME}:{self.MONGO_INITDB_ROOT_PASSWORD}@{self.MONGO_HOST}:{self.MONGO_PORT}/"
 
-# Validation to ensure variables are set
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY is not set in environment variables.")
 
-if not MONGO_INITDB_ROOT_USERNAME or not MONGO_INITDB_ROOT_PASSWORD:
-    raise ValueError("MongoDB credentials are not set in environment variables.")
-
-if not DB_NAME:
-    raise ValueError("Database name is not set in environment variables.")
-
-if not SECRET_KEY:
-    raise ValueError("SECRET_KEY is not set in environment variables.")
-
-API_SERVER_PORT = int(os.environ.get("API_SERVER_PORT", "8000"))
+# Instanciação segura
+try:
+    settings = Settings()  # type: ignore
+except ValidationError as e:
+    print("❌ ERRO CRÍTICO: Variáveis de ambiente faltando no arquivo .env!")
+    print(e)
+    sys.exit(1)

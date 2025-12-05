@@ -1,11 +1,11 @@
 import bcrypt
 import pymongo
 
-from .config import DB_NAME, MONGO_URI
+from .config import settings
 from .models import TrainerProfile, UserProfile
 
-client = pymongo.MongoClient(MONGO_URI)
-database = client[DB_NAME]
+client = pymongo.MongoClient(settings.MONGO_URI)
+database = client[settings.DB_NAME]
 
 
 def save_user_profile(profile: UserProfile):

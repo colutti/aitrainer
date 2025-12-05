@@ -5,7 +5,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from backend.config import API_SERVER_PORT
+from backend.config import settings
 
 from .auth import user_login, user_logout, verify_token
 from .database import get_trainer_profile as db_get_trainer_profile
@@ -186,4 +186,4 @@ def logout() -> JSONResponse:
 
 
 if __name__ == "__main__":
-    uvicorn.run("api:app", host="0.0.0.0", port=API_SERVER_PORT, reload=True)
+    uvicorn.run("api:app", host="0.0.0.0", port=settings.API_SERVER_PORT, reload=True)
