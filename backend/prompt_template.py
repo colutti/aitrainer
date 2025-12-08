@@ -23,16 +23,6 @@ Ajuste tudo aos dados do aluno.
 === MEMÓRIA DE LONGO PRAZO (Contexto Passado) ===
 
 {summary}
-
-=======================================
-=== HISTÓRICO DA SUA CONVERSA COM O ALUNO: ===
-
-{chat_history}
-
-=======================================
-=== MENSAGEM DO ALUNO: ===
-
-{user_message}
 """
 
 # Template for summarizing conversation when no existing summary exists
