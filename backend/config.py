@@ -1,8 +1,9 @@
 import sys
-from pathlib import Path
 
 from pydantic import ValidationError, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from .prompt_template import PROMPT_TEMPLATE
 
 
 class Settings(BaseSettings):
@@ -21,6 +22,7 @@ class Settings(BaseSettings):
         MONGO_PORT (int): MongoDB port number.
         API_SERVER_PORT (int): Port number for the API server.
         MODEL_NAME (str): Name of the AI model to use (default: "gemini-pro-latest").
+        SUMMARY_MODEL_NAME (str): Name of the AI model to use for generating conversation summaries (default: "gemini-1.5-flash").
         PROMPT_TEMPLATE (str): Template string for generating prompts, including trainer and student profiles, personality modulators, and response guidelines.
 
     Properties:
@@ -47,13 +49,9 @@ class Settings(BaseSettings):
     API_SERVER_PORT: int
 
     MODEL_NAME: str = "gemini-pro-latest"
+    SUMMARY_MODEL_NAME: str = "gemini-1.5-flash"
 
-    @staticmethod
-    def _load_prompt_template() -> str:
-        template_path = Path(__file__).parent / "prompt_template.jinja"
-        return template_path.read_text(encoding="utf-8")
-
-    PROMPT_TEMPLATE: str = _load_prompt_template.__func__()
+    PROMPT_TEMPLATE: str = PROMPT_TEMPLATE
 
     @computed_field
     @property

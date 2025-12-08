@@ -2,7 +2,7 @@ import bcrypt
 import pymongo
 
 from .config import settings
-from .models import TrainerProfile, UserProfile
+from .models import ConversationSummary, TrainerProfile, UserProfile
 
 client = pymongo.MongoClient(settings.MONGO_URI)
 database = client[settings.DB_NAME]
@@ -100,3 +100,41 @@ def get_trainer_profile(email: str) -> TrainerProfile | None:
     if not trainer_profile:
         return None
     return TrainerProfile(**trainer_profile)
+
+
+def save_conversation_summary(summary: ConversationSummary) -> None:
+    """
+    Saves or updates a conversation summary in the database.
+
+    If a summary with the given user_email already exists, it is updated with the new data.
+    If no summary with the given user_email exists, a new summary is inserted.
+
+    Args:
+        summary (ConversationSummary): The conversation summary data to save or update.
+
+    Returns:
+        None
+    """
+    db = _get_db()
+    db.conversation_summaries.update_one(
+        {"user_email": summary.user_email},
+        {"$set": summary.model_dump()},
+        upsert=True
+    )
+
+
+def get_conversation_summary(email: str) -> ConversationSummary | None:
+    """
+    Retrieves the conversation summary associated with the given email address from the database.
+
+    Args:
+        email (str): The user's email address.
+
+    Returns:
+        ConversationSummary or None: The conversation summary if found, otherwise None.
+    """
+    db = _get_db()
+    summary_data = db.conversation_summaries.find_one({"user_email": email})
+    if not summary_data:
+        return None
+    return ConversationSummary(**summary_data)
