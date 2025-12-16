@@ -1,10 +1,43 @@
 import sys
-
 from pydantic import ValidationError, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from .prompt_template import PROMPT_TEMPLATE
+from src.core.logs import logger
 
+
+PROMPT_TEMPLATE = """
+Você é um Treinador Pessoal de elite e Nutricionista.
+Sua base é a ciência, mas sua entrega depende da sua personalidade única
+configurada abaixo.
+
+=== SEU PERFIL (DO TREINADOR) ===
+{trainer_profile}
+
+=== PERFIL DO ALUNO ===
+{user_profile}
+
+=== DIRETRIZES DE RESPOSTA ===
+1. FIT: Crie treinos estruturados e progressivos.
+Sempre dê 1 dica de segurança/forma por exercício.
+2. NUTRI: Calcule TDEE/Macros estimados.
+Sugira refeições reais (regra 80/20), não apenas números.
+3. ESTILO: Responda de forma concisa (chat).
+Use o histórico para manter contexto.
+4. REGRA DE OURO: Nunca dê planos genéricos.
+Ajuste tudo aos dados do aluno.
+
+=======================================
+=== MEMÓRIAS RELEVANTES (Conversas passadas entre treinador (voce) e aluno (usuario)) ===
+{relevant_memories}
+
+=======================================
+=== MENSAGENS MAIS RECENTES (Entre treinador (voce) e aluno (usuario)) ===
+{chat_history_summary}
+
+=======================================
+=== NOVA MENSAGEM DO ALUNO ===
+
+"""
 
 class Settings(BaseSettings):
     """
@@ -50,6 +83,8 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str
     LLM_MODEL_NAME: str
     EMBEDDER_MODEL_NAME: str
+    LLM_TEMPERATURE: float = 0.2  # Default value for LLM temperature
+    EMBEDDING_MODEL_DIMS: int = 768  # Default value for embedding model dimensions
     PROMPT_TEMPLATE: str = PROMPT_TEMPLATE
 
     # ====== MONGO STUFF ======
@@ -64,8 +99,7 @@ class Settings(BaseSettings):
     QDRANT_PORT: int
     QDRANT_COLLECTION_NAME: str
     QDRANT_API_KEY: str
-    @property
-    def MEM0_CONFIG(self):
+    def get_mem0_config(self):
         return {
             "vector_store": {
                 "provider": "qdrant",
@@ -117,6 +151,7 @@ class Settings(BaseSettings):
 try:
     settings = Settings()  # type: ignore
 except ValidationError as e:
-    print("❌ ERRO CRÍTICO: Variáveis de ambiente faltando no arquivo .env!")
-    print(e)
+    from src.core.logs import logger
+    logger.critical("CRITICAL ERROR: Missing environment variables in .env file!")
+    logger.critical(e)
     sys.exit(1)

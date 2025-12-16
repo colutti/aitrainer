@@ -1,3 +1,6 @@
+"""
+This module contains the authentication and authorization logic for the application.
+"""
 from datetime import datetime, timedelta, timezone
 
 import jwt
@@ -5,11 +8,13 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 
-from backend.database import validate_user
+from src.services.database import validate_user
+from src.core.config import settings
 
-from .config import settings
+from src.core.logs import logger
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+blocklist = set()
 
 
 def user_login(email: str, password: str) -> str:
@@ -52,18 +57,24 @@ def verify_token(token: str = Depends(oauth2_scheme)) -> str:
         headers={"WWW-Authenticate": "Bearer"},
     )
 
+    if token in blocklist:
+        logger.warning("Attempted to use a blocked token: %s", token)
+        raise credentials_exception
+
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         email: str = payload.get("sub")
         if email is None:
+            logger.warning("Token payload missing 'sub' claim (email).")
             raise credentials_exception
         return email
 
     except InvalidTokenError as exception:
+        logger.warning("Invalid JWT token provided: %s", exception)
         raise credentials_exception from exception
 
 
-def user_logout():
+def user_logout(token: str):
     """
     Handles user logout. This is a placeholder for logout functionality.
 
@@ -72,4 +83,5 @@ def user_logout():
     Returns:
         None
     """
-    # No server-side action needed for JWT logout
+    logger.info("Token added to blocklist for logout.")
+    blocklist.add(token)
