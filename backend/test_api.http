@@ -10,6 +10,21 @@ Content-Type: application/json
 
 ###
 
+POST http://localhost:8000/message
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "user_message": "Quero um treino para ganhar massa muscular."
+}
+
+###
+# Logout
+GET http://localhost:8000/logout
+Authorization: Bearer {{authToken}}
+
+###
+
 @authToken = {{tokenAPI.response.body.token}}
 
 ###
@@ -36,15 +51,3 @@ Content-Type: application/json
 
 ###
 
-POST http://localhost:8000/message
-Authorization: Bearer {{authToken}}
-Content-Type: application/json
-
-{
-  "user_message": "Quero um treino para ganhar massa muscular."
-}
-
-###
-# Logout
-GET http://localhost:8000/logout
-Authorization: Bearer {{authToken}}

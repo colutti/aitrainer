@@ -10,6 +10,8 @@ services:
       - "27017:27017"
     volumes:
       - mongodata:/data/db
+    networks:
+      - aitrainer-network
 
   mongo-express:
     image: docker.io/library/mongo-express:latest
@@ -23,6 +25,24 @@ services:
       ME_CONFIG_BASICAUTH_PASSWORD: mongoexpresspass
     depends_on:
       - mongo
+    networks:
+      - aitrainer-network
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    restart: always
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - aitrainer-network
 
 volumes:
   mongodata:
+  qdrant_data:
+
+networks:
+  aitrainer-network:
+    driver: bridge

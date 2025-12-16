@@ -22,6 +22,7 @@ app = FastAPI()
 CurrentUser = Annotated[str, Depends(verify_token)]
 
 
+
 @app.get("/history")
 def get_history(user_email: CurrentUser):
     """

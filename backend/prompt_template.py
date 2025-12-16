@@ -20,29 +20,14 @@ Use o histórico para manter contexto.
 Ajuste tudo aos dados do aluno.
 
 =======================================
-=== MEMÓRIA DE LONGO PRAZO (Contexto Passado) ===
+=== MEMÓRIAS RELEVANTES (Conversas passadas entre treinador (voce) e aluno (usuario)) ===
+{relevant_memories}
 
-{summary}
+=======================================
+=== MENSAGENS MAIS RECENTES (Entre treinador (voce) e aluno (usuario)) ===
+{chat_history_summary}
+
+=======================================
+=== NOVA MENSAGEM DO ALUNO ===
+
 """
-
-# Template for summarizing conversation when no existing summary exists
-SUMMARY_INITIAL_TEMPLATE = """Summarize the following conversation between a personal trainer and a student.
-Focus on key information: fitness goals, training preferences, nutrition details, progress, and important context.
-
-Conversation:
-{conversation_text}
-
-Provide a concise summary (2-3 paragraphs) that captures the essential information from this conversation."""
-
-# Template for merging existing summary with new messages
-SUMMARY_MERGE_TEMPLATE = """Merge the existing conversation summary with the new messages below.
-Create an updated, concise summary that combines both the existing context and the new information.
-Focus on key information: fitness goals, training preferences, nutrition details, progress, and important context.
-
-Existing Summary:
-{current_summary}
-
-New Messages:
-{conversation_text}
-
-Provide a concise updated summary (2-3 paragraphs) that merges the existing summary with the new messages."""
