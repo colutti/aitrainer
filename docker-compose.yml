@@ -1,4 +1,33 @@
 services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+    env_file:
+      - ./backend/.env
+    environment:
+      - MONGO_HOST=mongo
+      - QDRANT_HOST=qdrant
+    depends_on:
+      - mongo
+      - qdrant
+    networks:
+      - aitrainer-network
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - aitrainer-network
+
   mongo:
     image: docker.io/library/mongo:latest
     restart: always
@@ -29,7 +58,7 @@ services:
       - aitrainer-network
 
   qdrant:
-    image: qdrant/qdrant:latest
+    image: docker.io/qdrant/qdrant:latest
     restart: always
     ports:
       - "6333:6333"
@@ -42,6 +71,7 @@ services:
 volumes:
   mongodata:
   qdrant_data:
+
 
 networks:
   aitrainer-network:

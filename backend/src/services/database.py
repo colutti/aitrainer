@@ -1,4 +1,3 @@
-
 """
 This module contains the database logic for the application.
 """
@@ -134,23 +133,24 @@ class MongoDatabase:
         logger.debug("Trainer profile retrieved for email: %s", email)
         return TrainerProfile(**trainer_profile)
 
-    def get_chat_history(self, user_id: str) -> list[ChatHistory]:
+    def get_chat_history(self, user_id: str, limit: int = 50) -> list[ChatHistory]:
         """Retrieves the chat history for a given user.
 
         Args:
             user_id (str): The unique identifier of the user whose
                 chat history is being retrieved.
+            limit (int): Maximum number of messages to retrieve (default: 50).
 
         Returns:
             list[ChatHistory]: A list of ChatHistory objects representing
-                the chat history ordered by timestamp.
+                the chat history ordered by timestamp, limited to the most recent messages.
         """
-        logger.debug("Retrieving chat history for session: %s", user_id)
+        logger.debug("Retrieving chat history for session: %s (limit: %d)", user_id, limit)
         history = MongoDBChatMessageHistory(
             connection_string=settings.MONGO_URI,
             session_id=user_id,
             database_name=settings.DB_NAME,
-            history_size=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
+            history_size=limit,  # Use the limit parameter
         )
         return ChatHistory.from_mongodb_chat_message_history(history)
 
@@ -180,3 +180,42 @@ class MongoDatabase:
                     content=chat_history.text, additional_kwargs={"timestamp": now}
                 )
             )
+
+    def add_token_to_blocklist(self, token: str, expires_at: datetime) -> None:
+        """
+        Adds a JWT token to the blocklist collection.
+
+        Args:
+            token (str): The JWT token to blocklist.
+            expires_at (datetime): When the token expires (for TTL cleanup).
+        """
+        self.database.token_blocklist.update_one(
+            {"token": token},
+            {"$set": {"token": token, "expires_at": expires_at}},
+            upsert=True,
+        )
+        logger.debug("Token added to blocklist.")
+
+    def is_token_blocklisted(self, token: str) -> bool:
+        """
+        Checks if a token is in the blocklist.
+
+        Args:
+            token (str): The JWT token to check.
+
+        Returns:
+            bool: True if the token is blocklisted, False otherwise.
+        """
+        result = self.database.token_blocklist.find_one({"token": token})
+        return result is not None
+
+    def ensure_blocklist_indexes(self) -> None:
+        """
+        Ensures the blocklist collection has proper indexes.
+        Creates a TTL index on expires_at to automatically remove expired tokens.
+        """
+        self.database.token_blocklist.create_index(
+            "expires_at", expireAfterSeconds=0
+        )
+        logger.info("Blocklist TTL index ensured.")
+

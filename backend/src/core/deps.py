@@ -21,7 +21,7 @@ def get_mem0_client() -> Memory:
 
 
 @functools.lru_cache()
-def get_llm():
+def get_llm() -> ChatGoogleGenerativeAI:
     """
     Returns a Google Generative AI chat model.
     """
@@ -33,17 +33,15 @@ def get_llm():
     )
 
 
-...
-
 @functools.lru_cache()
-def get_mongo_database():
+def get_mongo_database() -> MongoDatabase:
     """
     Returns a MongoDB database client.
     """
     return MongoDatabase()
 
 
-def get_ai_trainer_brain():
+def get_ai_trainer_brain() -> AITrainerBrain:
     """
     Returns an AI trainer brain.
     """
@@ -51,3 +49,4 @@ def get_ai_trainer_brain():
     memory_client = get_mem0_client()
     database = get_mongo_database()
     return AITrainerBrain(llm=llm, memory=memory_client, database=database)
+

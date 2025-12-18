@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import {
   HttpEvent,
   HttpInterceptor,
@@ -10,30 +10,37 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 
+/**
+ * HTTP interceptor that handles authentication errors globally.
+ * Automatically logs out the user and reloads the page on 401 responses,
+ * except for the login endpoint which handles its own errors.
+ */
 @Injectable()
 export class ErrorInterceptor implements HttpInterceptor {
-  constructor(private authService: AuthService) { }
+  private authService = inject(AuthService);
 
+  /**
+   * Intercepts HTTP responses to handle authentication errors.
+   * @param req - The outgoing HTTP request
+   * @param next - The next handler in the chain
+   * @returns Observable of the HTTP event
+   */
   intercept(
-    req: HttpRequest<any>,
+    req: HttpRequest<unknown>,
     next: HttpHandler
-  ): Observable<HttpEvent<any>> {
+  ): Observable<HttpEvent<unknown>> {
     return next.handle(req).pipe(
       catchError((error: HttpErrorResponse) => {
-        // Don't auto-logout on the login endpoint itself - let the component handle it
         const isLoginEndpoint = req.url.includes('/user/login');
 
         if (error.status === 401 && !isLoginEndpoint) {
-          // Auto logout if 401 response returned from api
           this.authService.logout();
-          // The page will automatically reload and show the login screen
-          // because the isAuthenticated signal will become false.
           location.reload();
         }
 
-        // Return the original error to preserve validation details
         return throwError(() => error);
       })
     );
   }
 }
+

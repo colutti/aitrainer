@@ -1,20 +1,27 @@
-
 import { Injectable, signal } from '@angular/core';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { environment } from '../environment';
 import { UserProfile } from '../models/user-profile.model';
 import { UserProfileInput } from '../models/user-profile-input.model';
-import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
-import { environment } from '../environment';
-import { AuthService } from './auth.service';
-import { firstValueFrom } from 'rxjs';
 
+/**
+ * Service responsible for managing user profile data.
+ * Handles fetching and updating user profile information.
+ */
 @Injectable({
   providedIn: 'root',
 })
 export class UserProfileService {
+  /** Signal containing the current user profile, or null if not loaded */
   userProfile = signal<UserProfile | null>(null);
 
-  constructor(private http: HttpClient, private auth: AuthService) { }
+  constructor(private http: HttpClient) { }
 
+  /**
+   * Fetches the user profile from the backend.
+   * @returns Promise resolving to the UserProfile or null on error
+   */
   async getProfile(): Promise<UserProfile | null> {
     try {
       const profile = await firstValueFrom(
@@ -27,6 +34,12 @@ export class UserProfileService {
     }
   }
 
+  /**
+   * Updates the user profile on the backend.
+   * On validation errors (422), throws the error details for component handling.
+   * @param profile - The profile data to update
+   * @throws Validation error details on 422, or generic error on other failures
+   */
   async updateProfile(profile: UserProfileInput): Promise<void> {
     try {
       await firstValueFrom(
@@ -34,14 +47,11 @@ export class UserProfileService {
       );
       this.userProfile.update(currentProfile => {
         if (!currentProfile) {
-            // This case should ideally not be hit if a profile is loaded before update is possible.
-            // We create a new object asserting email exists, though it would be null.
-            return { ...profile, email: '' }; 
+          return { ...profile, email: '' };
         }
         return { ...currentProfile, ...profile };
       });
-    } catch (error: any) {
-      // Re-throw the error to be caught by the component
+    } catch (error: unknown) {
       if (error instanceof HttpErrorResponse && error.status === 422) {
         throw error.error.detail;
       }
@@ -49,3 +59,4 @@ export class UserProfileService {
     }
   }
 }
+

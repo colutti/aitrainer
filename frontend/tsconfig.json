@@ -29,6 +29,7 @@
     "disableTypeScriptVersionCheck": true
   },
   "exclude": [
-    "cypress"
+    "cypress",
+    "eslint.config.js"
   ]
 }

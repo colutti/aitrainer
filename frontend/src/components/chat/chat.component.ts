@@ -1,4 +1,3 @@
-
 import { Component, ChangeDetectionStrategy, inject, signal, ElementRef, viewChild, afterNextRender, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -11,23 +10,26 @@ import { ChatService } from '../../services/chat.service';
   imports: [CommonModule, FormsModule]
 })
 export class ChatComponent implements OnInit {
-  async ngOnInit(): Promise<void> {
-    await this.chatService.loadHistory();
-  }
-  chatService = inject(ChatService);
+  // Dependencies
+  private chatService = inject(ChatService);
 
+  // Signals and Properties
   newMessage = signal('');
   messages = this.chatService.messages;
   isTyping = this.chatService.isTyping;
-
   chatContainer = viewChild<ElementRef<HTMLDivElement>>('chatContainer');
 
+  // Constructor
   constructor() {
-    afterNextRender(() => {
-      this.scrollToBottom();
-    });
+    afterNextRender(() => this.scrollToBottom());
   }
 
+  // Lifecycle Hooks
+  async ngOnInit(): Promise<void> {
+    await this.chatService.loadHistory();
+  }
+
+  // Public Methods
   sendMessage(): void {
     const text = this.newMessage().trim();
     if (text) {
@@ -37,6 +39,7 @@ export class ChatComponent implements OnInit {
     }
   }
 
+  // Private Methods
   private scrollToBottomAfterSend(): void {
     setTimeout(() => this.scrollToBottom(), 0);
   }

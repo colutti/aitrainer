@@ -3,22 +3,31 @@ import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest } from '@angular/c
 import { Observable } from 'rxjs';
 import { AuthService } from './auth.service';
 
+/**
+ * HTTP interceptor that attaches JWT token to outgoing requests.
+ * Automatically adds Authorization header with Bearer token when user is authenticated.
+ */
 @Injectable()
 export class JwtInterceptor implements HttpInterceptor {
     private authService = inject(AuthService);
 
-    intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    /**
+     * Intercepts HTTP requests and adds JWT token if available.
+     * @param req - The outgoing HTTP request
+     * @param next - The next handler in the chain
+     * @returns Observable of the HTTP event
+     */
+    intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
         const token = this.authService.getToken();
-        // ...existing code...
         if (token) {
             const cloned = req.clone({
                 setHeaders: {
                     Authorization: `Bearer ${token}`,
                 },
             });
-            // ...existing code...
             return next.handle(cloned);
         }
         return next.handle(req);
     }
 }
+

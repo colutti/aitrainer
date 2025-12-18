@@ -59,21 +59,29 @@ class AITrainerBrain:
             messages_text.append(f"{sender}: {msg.content}")
         return "\n".join(messages_text)
 
-    def _call_llm_chain(self, prompt_template, input_data: dict) -> str:
-        logger.info("Invoking LLM chain for user input: %s", input_data.get("input"))
+    def _call_llm_chain(self, prompt_template, input_data: dict):
+        """
+        Invokes the LLM chain and yields response chunks as they arrive.
+        
+        Args:
+            prompt_template: The prompt template to use.
+            input_data (dict): The input data for the chain.
+            
+        Yields:
+            str: Individual chunks of the LLM response.
+        """
+        logger.info("Invoking LLM chain for user input: %s", input_data.get("user_message"))
         chain = prompt_template | self._llm | StrOutputParser()
         try:
             stream = chain.stream(input_data)
-            chunks = []
             for chunk in stream:
-                chunks.append(chunk)
-            return "".join(chunks)
+                yield chunk
         except google.api_core.exceptions.ResourceExhausted as e:
             logger.error("Gemini API Quota Exceeded: %s", e)
-            return "There was a problem accessing the Gemini API. Please try again later or check your quota."
+            yield "There was a problem accessing the Gemini API. Please try again later or check your quota."
         except Exception as e:
             logger.error("An unexpected error occurred during LLM chain invocation: %s", e)
-            return "An unexpected error occurred while processing your request. Please try again later."
+            yield "An unexpected error occurred while processing your request. Please try again later."
 
     def get_chat_history(self, session_id: str) -> list[ChatHistory]:
         """
@@ -154,7 +162,7 @@ class AITrainerBrain:
         self._database.add_to_history(user_message, user_email)
         self._database.add_to_history(ai_message, user_email)
 
-    def send_message_ai(self, user_email: str, user_input: str) -> str:
+    def send_message_ai(self, user_email: str, user_input: str):
         """
         Generates LLM response, summarizing history if needed.
         This function assumes one chat session per user (user_email is used as session_id).
@@ -169,8 +177,8 @@ class AITrainerBrain:
             user_email (str): The user's email, also used as session ID.
             user_input (str): The user's input message.
 
-        Returns:
-            str: The AI trainer's response.
+        Yields:
+            str: Individual chunks of the AI trainer's response.
         """
         logger.info("Generating workout stream for user: %s", user_email)
 
@@ -207,12 +215,18 @@ class AITrainerBrain:
         }
 
         prompt_template = self._get_prompt_template(input_data)
-        response_text = self._call_llm_chain(
+        
+        full_response = []
+        for chunk in self._call_llm_chain(
             prompt_template=prompt_template, input_data=input_data
-        )
-        log_response = (response_text[:500] + "...") if len(response_text) > 500 else response_text
+        ):
+            full_response.append(chunk)
+            yield chunk
+
+        final_response = "".join(full_response)
+        log_response = (final_response[:500] + "...") if len(final_response) > 500 else final_response
         logger.debug("LLM responded with: %s", log_response)
 
-        self._add_to_history(user_email, user_input, response_text)
-        return response_text
+        self._add_to_history(user_email, user_input, final_response)
+
 

@@ -1,0 +1,10 @@
+node_modules
+.angular
+dist
+.env.local
+Dockerfile
+# nginx.conf removido daqui para permitir o COPY no Dockerfile
+cypress
+cypress.config.ts
+eslint.config.js
+README.md

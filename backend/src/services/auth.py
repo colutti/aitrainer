@@ -6,15 +6,14 @@ from datetime import datetime, timedelta, timezone
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jwt.exceptions import InvalidTokenError
-
 from src.core.deps import get_mongo_database
 from src.core.config import settings
-
 from src.core.logs import logger
 
+# Debug JWT import
+logger.info("JWT module path: %s", getattr(jwt, "__file__", "unknown"))
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
-blocklist = set()
 
 
 def user_login(email: str, password: str) -> str:
@@ -57,8 +56,9 @@ def verify_token(token: str = Depends(oauth2_scheme)) -> str:
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    if token in blocklist:
-        logger.warning("Attempted to use a blocked token: %s", token)
+    # Check if token is blocklisted in MongoDB
+    if get_mongo_database().is_token_blocklisted(token):
+        logger.warning("Attempted to use a blocked token.")
         raise credentials_exception
 
     try:
@@ -69,19 +69,34 @@ def verify_token(token: str = Depends(oauth2_scheme)) -> str:
             raise credentials_exception
         return email
 
-    except InvalidTokenError as exception:
+    except jwt.InvalidTokenError as exception:
         logger.warning("Invalid JWT token provided: %s", exception)
         raise credentials_exception from exception
 
 
-def user_logout(token: str):
+def user_logout(token: str) -> None:
     """
-    Handles user logout. This is a placeholder for logout functionality.
+    Logs out a user by adding their token to the MongoDB blocklist.
 
-    Since JWT tokens are stateless, logout can be handled on the client side by deleting the token.
+    The token will be automatically removed from the blocklist when it expires,
+    thanks to MongoDB's TTL index on the blocklist collection.
 
-    Returns:
-        None
+    Args:
+        token (str): The JWT token to invalidate.
     """
-    logger.info("Token added to blocklist for logout.")
-    blocklist.add(token)
+    try:
+        # Decode token to get expiration time
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        exp_timestamp = payload.get("exp")
+        if exp_timestamp:
+            expires_at = datetime.fromtimestamp(exp_timestamp, tz=timezone.utc)
+        else:
+            # Default to 2 hours from now if no exp claim
+            expires_at = datetime.now(timezone.utc) + timedelta(hours=2)
+    except jwt.InvalidTokenError:
+        # If token is invalid, use default expiration
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=2)
+
+    get_mongo_database().add_token_to_blocklist(token, expires_at)
+    logger.info("Token added to MongoDB blocklist for logout.")
+

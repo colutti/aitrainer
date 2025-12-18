@@ -8,6 +8,12 @@ describe('Login Flow', () => {
     cy.get('app-login').should('be.visible');
   });
 
+  it('should have empty credentials by default', () => {
+    // The login form should start empty
+    cy.get('input#email').should('have.value', '');
+    cy.get('input#password').should('have.value', '');
+  });
+
   it('should show an error for invalid credentials', () => {
     cy.get('input#email').clear().type('invalid@email.com');
     cy.get('input#password').clear().type('wrongpassword');
@@ -39,3 +45,4 @@ describe('Login Flow', () => {
     cy.get('app-sidebar').should('not.exist');
   });
 });
+

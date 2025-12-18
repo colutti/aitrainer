@@ -1,4 +1,4 @@
-.PHONY: up down logs init-db hash-user
+.PHONY: up down build restart logs init-db api front clean-pod
 
 up:
 	podman-compose up -d
@@ -6,14 +6,24 @@ up:
 down:
 	podman-compose down
 
+build:
+	podman-compose build
+
+restart:
+	podman-compose restart
+
 logs:
 	podman-compose logs -f
+
+clean-pod:
+	podman-compose down
+	podman pod rm -f pod_personal || true
 
 init-db:
 	python -m backend.scripts.init_users --email "$(USUARIO)" --password "$(SENHA)"
 
 api:
-	cd backend && uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
+	cd backend && export PYTHONPATH=$$PYTHONPATH:. && .venv/bin/python src/api/main.py
 
 front:
-	cd frontend && npx ng serve --host 0.0.0.0 --port 4200
+	cd frontend && npm run dev

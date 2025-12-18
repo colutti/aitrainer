@@ -1,4 +1,3 @@
-
 export interface UserProfile {
   gender: string;
   age: number;

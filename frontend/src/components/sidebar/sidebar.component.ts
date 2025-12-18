@@ -1,4 +1,3 @@
-
 import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
@@ -13,7 +12,7 @@ import { NavigationService, View } from '../../services/navigation.service';
 export class SidebarComponent {
   authService = inject(AuthService);
   navigationService = inject(NavigationService);
-  
+
   currentView = this.navigationService.currentView;
 
   navigateTo(view: View): void {

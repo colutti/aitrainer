@@ -16,22 +16,45 @@ describe('User Profile Flow', () => {
     cy.get('input[name="age"]').invoke('val').should('not.be.empty');
   });
 
-  it('should allow updating the user profile', () => {
-    const newAge = '35';
-    const newWeight = '80';
+  it('should display all form fields', () => {
+    // Verify all fields are present
+    cy.get('input[name="age"]').should('be.visible');
+    cy.get('select[name="gender"]').should('be.visible');
+    cy.get('input[name="weight"]').should('be.visible');
+    cy.get('input[name="height"]').should('be.visible');
+    cy.get('input[name="goal"]').should('be.visible');
+  });
 
-    cy.get('input[name="age"]').clear().type(newAge);
-    cy.get('input[name="weight"]').clear().type(newWeight);
+  it('should allow updating all user profile fields', () => {
+    const testData = {
+      age: '30',
+      weight: '75',
+      height: '175',
+      goal: 'Ganhar massa muscular',
+    };
+
+    // Fill all fields
+    cy.get('input[name="age"]').clear().type(testData.age);
+    cy.get('input[name="weight"]').clear().type(testData.weight);
+    cy.get('input[name="height"]').clear().type(testData.height);
+    cy.get('input[name="goal"]').clear().type(testData.goal);
+    cy.get('select[name="gender"]').select('Masculino');
+
+    // Save
     cy.get('button').contains('Salvar').click();
 
     // Check for success message
     cy.contains('Perfil salvo com sucesso!').should('be.visible');
 
-    // Re-verify the fields have the new values after a "refresh"
+    // Re-verify the fields have the new values after navigation
     cy.get('app-sidebar button').contains('Chat').click();
     cy.get('app-sidebar button').contains('Meu Perfil').click();
 
-    cy.get('input[name="age"]').should('have.value', newAge);
-    cy.get('input[name="weight"]').should('have.value', newWeight);
+    cy.get('input[name="age"]').should('have.value', testData.age);
+    cy.get('input[name="weight"]').should('have.value', testData.weight);
+    cy.get('input[name="height"]').should('have.value', testData.height);
+    cy.get('input[name="goal"]').should('have.value', testData.goal);
+    cy.get('select[name="gender"]').should('have.value', 'Masculino');
   });
 });
+

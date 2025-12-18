@@ -5,6 +5,26 @@ import { UserProfileService } from '../../services/user-profile.service';
 import { UserProfile } from '../../models/user-profile.model';
 import { UserProfileInput } from '../../models/user-profile-input.model';
 
+/** Validation error structure returned by the backend */
+interface ValidationError {
+  loc: string[];
+  msg: string;
+  type: string;
+}
+
+/**
+ * Checks if an object is a ValidationError.
+ */
+function isValidationError(obj: unknown): obj is ValidationError {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'loc' in obj &&
+    'msg' in obj &&
+    Array.isArray((obj as ValidationError).loc)
+  );
+}
+
 @Component({
   selector: 'app-user-profile',
   templateUrl: './user-profile.component.html',
@@ -25,7 +45,7 @@ export class UserProfileComponent implements OnInit {
 
   isSaving = signal(false);
   showSuccess = signal(false);
-  validationErrors = signal<{[key: string]: string}>({});
+  validationErrors = signal<{ [key: string]: string }>({});
 
   async ngOnInit(): Promise<void> {
     const loaded = await this.userProfileService.getProfile();
@@ -46,24 +66,24 @@ export class UserProfileComponent implements OnInit {
       height: this.profile().height,
       goal: this.profile().goal,
     };
-    
+
     try {
-        await this.userProfileService.updateProfile(profileToUpdate);
-        this.showSuccess.set(true);
-        setTimeout(() => this.showSuccess.set(false), 2000);
-    } catch (errors: any) {
-        const errorMap: {[key: string]: string} = {};
-        if (Array.isArray(errors)) {
-            errors.forEach(err => {
-                if (err.loc && err.loc.length > 1) {
-                    const field = err.loc[1];
-                    errorMap[field] = err.msg;
-                }
-            });
-        }
-        this.validationErrors.set(errorMap);
+      await this.userProfileService.updateProfile(profileToUpdate);
+      this.showSuccess.set(true);
+      setTimeout(() => this.showSuccess.set(false), 2000);
+    } catch (errors: unknown) {
+      const errorMap: { [key: string]: string } = {};
+      if (Array.isArray(errors)) {
+        errors.forEach((err: unknown) => {
+          if (isValidationError(err) && err.loc.length > 1) {
+            const field = err.loc[1];
+            errorMap[field] = err.msg;
+          }
+        });
+      }
+      this.validationErrors.set(errorMap);
     } finally {
-        this.isSaving.set(false);
+      this.isSaving.set(false);
     }
   }
 }

@@ -1,4 +1,3 @@
-
 export interface TrainerProfile {
   name: string;
   gender: 'Masculino' | 'Feminino' | '';
