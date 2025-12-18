@@ -1,0 +1,41 @@
+describe('Login Flow', () => {
+  beforeEach(() => {
+    // Start from the root, which should redirect to login if not authenticated
+    cy.visit('/');
+  });
+
+  it('should display the login page', () => {
+    cy.get('app-login').should('be.visible');
+  });
+
+  it('should show an error for invalid credentials', () => {
+    cy.get('input#email').clear().type('invalid@email.com');
+    cy.get('input#password').clear().type('wrongpassword');
+    cy.get('button[type="submit"]').contains('Entrar').click();
+
+    cy.contains('Credenciais inválidas. Tente novamente.').should('be.visible');
+  });
+
+  it('should log in a user successfully and redirect to chat', () => {
+    cy.get('input#email').clear().type('admin');
+    cy.get('input#password').clear().type('123');
+    cy.get('button[type="submit"]').contains('Entrar').click();
+
+    // After login, the login component should disappear and the main app view (with sidebar) should be visible
+    cy.get('app-login', { timeout: 10000 }).should('not.exist');
+    cy.get('app-sidebar').should('be.visible');
+    cy.get('app-chat').should('be.visible'); // The default view is chat
+    cy.url().should('not.include', 'login');
+  });
+
+  it('should log out the user', () => {
+    cy.login('admin', '123');
+
+    // Find and click the logout button in the sidebar
+    cy.get('app-sidebar button').contains('Sair').click();
+
+    // After logout, it should redirect back to the login page
+    cy.get('app-login').should('be.visible');
+    cy.get('app-sidebar').should('not.exist');
+  });
+});

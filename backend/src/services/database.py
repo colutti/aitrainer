@@ -15,12 +15,7 @@ from src.api.models.chat_history import ChatHistory
 from src.core.logs import logger
 
 
-def validate_user(email: str, password: str) -> bool:
-    """
-    Validates a user's credentials.
-    """
-    db = MongoDatabase()
-    return db.validate_user(email, password)
+
 
 
 class MongoDatabase:

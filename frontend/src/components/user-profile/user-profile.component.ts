@@ -1,9 +1,9 @@
-
 import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { UserProfileService } from '../../services/user-profile.service';
 import { UserProfile } from '../../models/user-profile.model';
+import { UserProfileInput } from '../../models/user-profile-input.model';
 
 @Component({
   selector: 'app-user-profile',
@@ -25,6 +25,7 @@ export class UserProfileComponent implements OnInit {
 
   isSaving = signal(false);
   showSuccess = signal(false);
+  validationErrors = signal<{[key: string]: string}>({});
 
   async ngOnInit(): Promise<void> {
     const loaded = await this.userProfileService.getProfile();
@@ -35,11 +36,34 @@ export class UserProfileComponent implements OnInit {
 
   async saveProfile(): Promise<void> {
     this.isSaving.set(true);
-    const success = await this.userProfileService.updateProfile(this.profile());
-    this.isSaving.set(false);
-    if (success) {
-      this.showSuccess.set(true);
-      setTimeout(() => this.showSuccess.set(false), 2000);
+    this.validationErrors.set({});
+    this.showSuccess.set(false);
+
+    const profileToUpdate: UserProfileInput = {
+      gender: this.profile().gender,
+      age: this.profile().age,
+      weight: this.profile().weight,
+      height: this.profile().height,
+      goal: this.profile().goal,
+    };
+    
+    try {
+        await this.userProfileService.updateProfile(profileToUpdate);
+        this.showSuccess.set(true);
+        setTimeout(() => this.showSuccess.set(false), 2000);
+    } catch (errors: any) {
+        const errorMap: {[key: string]: string} = {};
+        if (Array.isArray(errors)) {
+            errors.forEach(err => {
+                if (err.loc && err.loc.length > 1) {
+                    const field = err.loc[1];
+                    errorMap[field] = err.msg;
+                }
+            });
+        }
+        this.validationErrors.set(errorMap);
+    } finally {
+        this.isSaving.set(false);
     }
   }
 }

@@ -19,9 +19,9 @@ export class TrainerSettingsComponent implements OnInit {
   isSaving = signal(false);
   showSuccess = signal(false);
 
-  ngOnInit(): void {
-    // Se quiser garantir atualização futura, pode manter o set aqui, mas não é mais necessário
-    // this.profile.set({ ...this.trainerProfileService.getProfile() });
+  async ngOnInit(): Promise<void> {
+    await this.trainerProfileService.fetchProfile();
+    // No need to set the profile here, as the signal is already observing the service's signal.
   }
 
   async saveProfile(): Promise<void> {

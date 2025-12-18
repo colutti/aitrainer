@@ -3,41 +3,7 @@ from pydantic import ValidationError, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.core.logs import logger
-
-
-PROMPT_TEMPLATE = """
-Você é um Treinador Pessoal de elite e Nutricionista.
-Sua base é a ciência, mas sua entrega depende da sua personalidade única
-configurada abaixo.
-
-=== SEU PERFIL (DO TREINADOR) ===
-{trainer_profile}
-
-=== PERFIL DO ALUNO ===
-{user_profile}
-
-=== DIRETRIZES DE RESPOSTA ===
-1. FIT: Crie treinos estruturados e progressivos.
-Sempre dê 1 dica de segurança/forma por exercício.
-2. NUTRI: Calcule TDEE/Macros estimados.
-Sugira refeições reais (regra 80/20), não apenas números.
-3. ESTILO: Responda de forma concisa (chat).
-Use o histórico para manter contexto.
-4. REGRA DE OURO: Nunca dê planos genéricos.
-Ajuste tudo aos dados do aluno.
-
-=======================================
-=== MEMÓRIAS RELEVANTES (Conversas passadas entre treinador (voce) e aluno (usuario)) ===
-{relevant_memories}
-
-=======================================
-=== MENSAGENS MAIS RECENTES (Entre treinador (voce) e aluno (usuario)) ===
-{chat_history_summary}
-
-=======================================
-=== NOVA MENSAGEM DO ALUNO ===
-
-"""
+from src.prompts.prompt_template import PROMPT_TEMPLATE
 
 class Settings(BaseSettings):
     """
@@ -107,7 +73,7 @@ class Settings(BaseSettings):
                     "host": self.QDRANT_HOST,
                     "port": self.QDRANT_PORT,
                     "collection_name": self.QDRANT_COLLECTION_NAME,
-                    "embedding_model_dims": 768,
+                    "embedding_model_dims": self.EMBEDDING_MODEL_DIMS,
                     # "api_key": self.QDRANT_API_KEY if self.QDRANT_API_KEY else None,
                 },
             },
@@ -115,7 +81,8 @@ class Settings(BaseSettings):
                 "provider": "gemini",
                 "config": {
                     "model": self.LLM_MODEL_NAME,
-                    "temperature": 0.2,
+                    "temperature": self.LLM_TEMPERATURE,
+                    "api_key": self.GEMINI_API_KEY,
                     "max_tokens": 2000,
                     "top_p": 1.0
                 }
@@ -124,6 +91,7 @@ class Settings(BaseSettings):
                 "provider": "gemini",
                 "config": {
                     "model": self.EMBEDDER_MODEL_NAME,
+                    "api_key": self.GEMINI_API_KEY,
                 }
             }
         }

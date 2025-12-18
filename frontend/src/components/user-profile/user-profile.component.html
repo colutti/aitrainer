@@ -11,6 +11,9 @@
           <label for="age" class="block text-sm font-medium text-text-secondary">Idade</label>
           <input type="number" name="age" id="age" [(ngModel)]="profile().age"
             class="mt-1 block w-full px-3 py-2 bg-dark-bg border border-secondary rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+          @if(validationErrors()['age']) {
+            <p class="mt-1 text-sm text-red-400">{{ validationErrors()['age'] }}</p>
+          }
         </div>
 
         <div>
@@ -27,6 +30,9 @@
           <label for="weight" class="block text-sm font-medium text-text-secondary">Peso (kg)</label>
           <input type="number" name="weight" id="weight" step="0.1" [(ngModel)]="profile().weight"
             class="mt-1 block w-full px-3 py-2 bg-dark-bg border border-secondary rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+          @if(validationErrors()['weight']) {
+            <p class="mt-1 text-sm text-red-400">{{ validationErrors()['weight'] }}</p>
+          }
         </div>
 
         <div>

@@ -8,7 +8,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 
-from src.services.database import validate_user
+from src.core.deps import get_mongo_database
 from src.core.config import settings
 
 from src.core.logs import logger
@@ -31,7 +31,7 @@ def user_login(email: str, password: str) -> str:
     Raises:
         ValueError: If the provided credentials are invalid.
     """
-    if not validate_user(email, password):
+    if not get_mongo_database().validate_user(email, password):
         raise ValueError("Invalid credentials")
     payload = {"sub": email, "exp": datetime.now(timezone.utc) + timedelta(hours=2)}
     token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")

@@ -13,7 +13,7 @@ init-db:
 	python -m backend.scripts.init_users --email "$(USUARIO)" --password "$(SENHA)"
 
 api:
-	python -m uvicorn backend.api:app --host 0.0.0.0 --port 8000 --reload
+	cd backend && uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
 
 front:
 	cd frontend && npx ng serve --host 0.0.0.0 --port 4200

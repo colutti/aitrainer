@@ -41,7 +41,7 @@ export class TrainerProfileService {
    */
   async updateProfile(profile: TrainerProfile): Promise<boolean> {
     try {
-      await firstValueFrom(this.http.post(`${environment.apiUrl}/update_trainer_profile`, profile));
+      await firstValueFrom(this.http.post(`${environment.apiUrl}/trainer/update_trainer_profile`, profile));
       this.trainerProfile.set(profile);
       return true;
     } catch (err) {
@@ -56,7 +56,7 @@ export class TrainerProfileService {
   async fetchProfile(): Promise<void> {
     try {
       const profile = await firstValueFrom(
-        this.http.get<TrainerProfile>(`${environment.apiUrl}/trainer_profile`)
+        this.http.get<TrainerProfile>(`${environment.apiUrl}/trainer/trainer_profile`)
       );
       this.trainerProfile.set(profile);
     } catch (err) {

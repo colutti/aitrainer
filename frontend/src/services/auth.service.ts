@@ -26,7 +26,7 @@ export class AuthService {
   async login(email: string, password: string): Promise<boolean> {
     try {
       const response = await firstValueFrom(
-        this.http.post<{ token: string }>(`${environment.apiUrl}/login`, { email, password })
+        this.http.post<{ token: string }>(`${environment.apiUrl}/user/login`, { email, password })
       );
       if (response && response.token) {
         localStorage.setItem(this.tokenKey, response.token);

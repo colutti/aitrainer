@@ -13,15 +13,15 @@ app = FastAPI()
 # CORS middleware for frontend-backend integration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Adjust for your production domain
+    allow_origins=["http://localhost:3000", "http://localhost:4200"],  # Adjust for your production domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(user.router, tags=["user"])
-app.include_router(message.router, tags=["message"])
-app.include_router(trainer.router, tags=["trainer"])
+app.include_router(user.router, prefix="/user", tags=["user"])
+app.include_router(message.router, prefix="/message", tags=["message"])
+app.include_router(trainer.router, prefix="/trainer", tags=["trainer"])
 
 if __name__ == "__main__":
     uvicorn.run("src.api.main:app", host="0.0.0.0", port=settings.API_SERVER_PORT, reload=True)

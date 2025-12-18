@@ -11,6 +11,7 @@ from src.services.database import MongoDatabase
 from src.services.trainer import AITrainerBrain
 
 
+@functools.lru_cache()
 def get_mem0_client() -> Memory:
     """
     Returns a MEM0 client.
@@ -19,6 +20,7 @@ def get_mem0_client() -> Memory:
     return memory
 
 
+@functools.lru_cache()
 def get_llm():
     """
     Returns a Google Generative AI chat model.

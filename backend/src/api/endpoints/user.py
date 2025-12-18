@@ -27,9 +27,9 @@ def login(data: LoginRequest) -> dict:
         data (LoginRequest): The login request body containing email and password.
 
     Returns:
-        tuple[dict, int]: A tuple containing a response dictionary and an HTTP status code.
-            - If authentication fails, returns ({"message": "Invalid credentials"}, 401).
-            - If authentication succeeds, returns ({"token": <JWT token>}, 200).
+        dict: A dictionary containing the authentication token upon successful login.
+            - If authentication fails, raises HTTPException (401 Unauthorized).
+            - If authentication succeeds, returns {"token": <JWT token>}.
 
     Logs:
         - Logs failed login attempts and successful logins.

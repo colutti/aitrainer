@@ -27,5 +27,8 @@
   // "files": [],
   "angularCompilerOptions": {
     "disableTypeScriptVersionCheck": true
-  }
+  },
+  "exclude": [
+    "cypress"
+  ]
 }

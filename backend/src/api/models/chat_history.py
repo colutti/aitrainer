@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from src.api.models.sender import Sender
+from datetime import datetime, MINYEAR
 
 class ChatHistory(BaseModel):
     """
@@ -48,7 +49,7 @@ class ChatHistory(BaseModel):
                 ChatHistory(
                     text=msg.content,
                     sender=Sender.STUDENT if msg.type == "human" else Sender.TRAINER,
-                    timestamp=msg.additional_kwargs.get("timestamp", ""),
+                    timestamp=msg.additional_kwargs.get("timestamp", datetime(MINYEAR, 1, 1).isoformat()),
                 )
             )
         # order the results by timestamp

@@ -37,7 +37,7 @@ export class ChatService {
   async loadHistory(): Promise<void> {
     try {
       const history = await firstValueFrom(
-        this.http.get<{ text: string; sender: 'user' | 'ai'; timestamp?: string }[]>(`${environment.apiUrl}/history`)
+        this.http.get<{ text: string; sender: 'user' | 'ai'; timestamp?: string }[]>(`${environment.apiUrl}/message/history`)
       );
       // Ordena por timestamp crescente se existir
       const mapped: Message[] = history
@@ -71,7 +71,7 @@ export class ChatService {
 
     try {
       const response = await firstValueFrom(
-        this.http.post<{ response: string }>(`${environment.apiUrl}/message`, { user_message: text })
+        this.http.post<{ response: string }>(`${environment.apiUrl}/message/message`, { user_message: text })
       );
       const aiMessage: Message = {
         id: this.messages().length,

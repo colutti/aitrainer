@@ -71,6 +71,9 @@ class AITrainerBrain:
         except google.api_core.exceptions.ResourceExhausted as e:
             logger.error("Gemini API Quota Exceeded: %s", e)
             return "There was a problem accessing the Gemini API. Please try again later or check your quota."
+        except Exception as e:
+            logger.error("An unexpected error occurred during LLM chain invocation: %s", e)
+            return "An unexpected error occurred while processing your request. Please try again later."
 
     def get_chat_history(self, session_id: str) -> list[ChatHistory]:
         """
