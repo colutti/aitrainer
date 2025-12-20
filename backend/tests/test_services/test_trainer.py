@@ -52,7 +52,6 @@ class TestAITrainerBrain(unittest.TestCase):
         # Arrange
         user_email = "test@test.com"
         user_input = "Hello"
-        # session_id is removed from here
 
         user_profile = UserProfile(email=user_email, gender="Masculino",
                                    age=25, weight=70, height=175,
@@ -67,14 +66,15 @@ class TestAITrainerBrain(unittest.TestCase):
         self.mock_db.get_chat_history.return_value = []
         self.mock_memory.search.return_value = {}
 
-        # Act
-        response = self.brain.send_message_ai(user_email, user_input)
+        # Act - send_message_ai returns a generator, so we need to consume it
+        response_generator = self.brain.send_message_ai(user_email, user_input, background_tasks=None)
+        response = "".join(list(response_generator))
 
         # Assert
         self.assertEqual(response, "Test response")
         self.mock_db.get_user_profile.assert_called_once_with(user_email)
         self.mock_db.get_trainer_profile.assert_called_once_with(user_email)
-        self.mock_db.get_chat_history.assert_called_once_with(user_email) # Changed from session_id
+        self.mock_db.get_chat_history.assert_called_once_with(user_email)
         self.mock_memory.search.assert_called_once_with(user_id=user_email,
                                                        query=user_input)
     def test_send_message_ai_no_user_profile(self):
@@ -84,13 +84,13 @@ class TestAITrainerBrain(unittest.TestCase):
         # Arrange
         user_email = "test@test.com"
         user_input = "Hello"
-        # session_id is removed from here
 
         self.mock_db.get_user_profile.return_value = None
 
-        # Act & Assert
+        # Act & Assert - ValueError is raised when generator is consumed
         with self.assertRaises(ValueError):
-            self.brain.send_message_ai(user_email, user_input)
+            response_generator = self.brain.send_message_ai(user_email, user_input, background_tasks=None)
+            list(response_generator)  # Consume generator to trigger error
 
     def test_send_message_ai_no_trainer_profile(self):
         """
@@ -99,7 +99,6 @@ class TestAITrainerBrain(unittest.TestCase):
         # Arrange
         user_email = "test@test.com"
         user_input = "Hello"
-        # session_id is removed from here
 
         user_profile = UserProfile(email=user_email, gender="Masculino",
                                    age=25, weight=70, height=175,
@@ -108,6 +107,7 @@ class TestAITrainerBrain(unittest.TestCase):
         self.mock_db.get_user_profile.return_value = user_profile
         self.mock_db.get_trainer_profile.return_value = None
 
-        # Act & Assert
+        # Act & Assert - ValueError is raised when generator is consumed
         with self.assertRaises(ValueError):
-            self.brain.send_message_ai(user_email, user_input)
+            response_generator = self.brain.send_message_ai(user_email, user_input, background_tasks=None)
+            list(response_generator)  # Consume generator to trigger error

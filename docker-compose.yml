@@ -12,11 +12,14 @@ services:
     environment:
       - MONGO_HOST=mongo
       - QDRANT_HOST=qdrant
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - mongo
       - qdrant
     networks:
       - aitrainer-network
+
 
   frontend:
     build:

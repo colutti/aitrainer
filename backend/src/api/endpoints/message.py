@@ -3,7 +3,7 @@ This module contains the API endpoints for messaging.
 """
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from src.services.auth import verify_token
@@ -31,7 +31,10 @@ def get_history(user_email: CurrentUser, brain: AITrainerBrainDep) -> list:
 
 @router.post("/message")
 def message_ai(
-    message: MessageRequest, user_email: CurrentUser, brain: AITrainerBrainDep
+    message: MessageRequest, 
+    user_email: CurrentUser, 
+    brain: AITrainerBrainDep,
+    background_tasks: BackgroundTasks
 ) -> StreamingResponse:
     """
     Handles an AI messaging request for an authenticated user.
@@ -40,6 +43,7 @@ def message_ai(
         message (MessageRequest): The user's message input.
         user_email (str): The authenticated user's email.
         brain (AITrainerBrain): The AI trainer brain dependency.
+        background_tasks (BackgroundTasks): FastAPI background tasks for async operations.
 
     Returns:
         StreamingResponse: A streaming response containing the AI-generated reply chunks.
@@ -52,6 +56,7 @@ def message_ai(
         response_generator = brain.send_message_ai(
             user_email=user_email,
             user_input=message.user_message,
+            background_tasks=background_tasks
         )
         return StreamingResponse(response_generator, media_type="text/plain")
     except ValueError as e:

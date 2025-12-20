@@ -38,12 +38,13 @@ jiter==0.12.0
 jsonpatch==1.33
 jsonpointer==3.0.0
 # Langchain dependencies
-langchain==1.1.0
-langchain-classic==1.0.0
-langchain-core==1.1.0
-langchain-google-genai==3.2.0
-langchain-mongodb==0.8.0
-langchain-text-splitters==1.0.0
+langchain
+langchain-classic
+langchain-core
+langchain-google-genai
+langchain-ollama
+langchain-mongodb
+langchain-text-splitters
 langgraph==1.0.4
 langgraph-checkpoint==3.0.1
 langgraph-prebuilt==1.0.5

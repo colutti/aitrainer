@@ -45,13 +45,21 @@ class Settings(BaseSettings):
     MAX_SHORT_TERM_MEMORY_MESSAGES: int
     MAX_LONG_TERM_MEMORY_MESSAGES: int
 
+    # ====== AI PROVIDER SELECTION ======
+    AI_PROVIDER: str = "gemini"  # Options: "gemini", "ollama"
+
     # ====== GEMINI STUFF ======
-    GEMINI_API_KEY: str
-    LLM_MODEL_NAME: str
-    EMBEDDER_MODEL_NAME: str
-    LLM_TEMPERATURE: float = 0.2  # Default value for LLM temperature
-    EMBEDDING_MODEL_DIMS: int = 768  # Default value for embedding model dimensions
+    GEMINI_API_KEY: str = ""
+    LLM_MODEL_NAME: str = "gemini-1.5-flash"
+    EMBEDDER_MODEL_NAME: str = "text-embedding-004"
+    LLM_TEMPERATURE: float = 0.2
+    EMBEDDING_MODEL_DIMS: int = 768
     PROMPT_TEMPLATE: str = PROMPT_TEMPLATE
+
+    # ====== OLLAMA STUFF ======
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_LLM_MODEL: str = "llama3.1:8b"
+    OLLAMA_EMBEDDER_MODEL: str = "nomic-embed-text:latest"
 
     # ====== MONGO STUFF ======
     DB_NAME: str
@@ -65,7 +73,42 @@ class Settings(BaseSettings):
     QDRANT_PORT: int
     QDRANT_COLLECTION_NAME: str
     QDRANT_API_KEY: str
+
     def get_mem0_config(self):
+        llm_config = {
+            "provider": self.AI_PROVIDER,
+            "config": {
+                "temperature": self.LLM_TEMPERATURE,
+                "max_tokens": 2000,
+            }
+        }
+
+        embedder_config = {
+            "provider": self.AI_PROVIDER,
+            "config": {}
+        }
+
+        if self.AI_PROVIDER == "gemini":
+            llm_config["config"].update({
+                "model": self.LLM_MODEL_NAME,
+                "api_key": self.GEMINI_API_KEY,
+            })
+            embedder_config["config"].update({
+                "model": self.EMBEDDER_MODEL_NAME,
+                "api_key": self.GEMINI_API_KEY,
+            })
+        elif self.AI_PROVIDER == "ollama":
+            # Use native Ollama provider for Mem0
+            llm_config["config"].update({
+                "model": self.OLLAMA_LLM_MODEL,
+                "ollama_base_url": self.OLLAMA_BASE_URL,
+            })
+            embedder_config["config"].update({
+                "model": self.OLLAMA_EMBEDDER_MODEL,
+                "embedding_dims": self.EMBEDDING_MODEL_DIMS,
+                "ollama_base_url": self.OLLAMA_BASE_URL,
+            })
+
         return {
             "vector_store": {
                 "provider": "qdrant",
@@ -74,26 +117,10 @@ class Settings(BaseSettings):
                     "port": self.QDRANT_PORT,
                     "collection_name": self.QDRANT_COLLECTION_NAME,
                     "embedding_model_dims": self.EMBEDDING_MODEL_DIMS,
-                    # "api_key": self.QDRANT_API_KEY if self.QDRANT_API_KEY else None,
                 },
             },
-            "llm": {
-                "provider": "gemini",
-                "config": {
-                    "model": self.LLM_MODEL_NAME,
-                    "temperature": self.LLM_TEMPERATURE,
-                    "api_key": self.GEMINI_API_KEY,
-                    "max_tokens": 2000,
-                    "top_p": 1.0
-                }
-            },
-            "embedder": {
-                "provider": "gemini",
-                "config": {
-                    "model": self.EMBEDDER_MODEL_NAME,
-                    "api_key": self.GEMINI_API_KEY,
-                }
-            }
+            "llm": llm_config,
+            "embedder": embedder_config
         }
 
     @computed_field

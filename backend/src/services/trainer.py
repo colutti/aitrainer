@@ -3,6 +3,7 @@ This module contains the AI trainer brain, which is responsible for interacting 
 """
 
 from datetime import datetime
+from fastapi import BackgroundTasks
 from langchain_core.messages import HumanMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -17,6 +18,30 @@ from src.api.models.chat_history import ChatHistory
 from src.api.models.user_profile import UserProfile
 from src.api.models.sender import Sender
 from src.api.models.trainer_profile import TrainerProfile
+
+
+def _add_to_mem0_background(memory: Memory, user_email: str, user_input: str, response_text: str):
+    """
+    Background task function to add conversation to Mem0 (long-term memory).
+    This runs asynchronously to avoid blocking the response stream.
+    
+    Args:
+        memory (Memory): The Mem0 Memory client instance.
+        user_email (str): The user's email.
+        user_input (str): The user's input message.
+        response_text (str): The AI's response message.
+    """
+    try:
+        # Format as conversation messages so Mem0 extracts facts cleaner
+        messages = [
+            {"role": "user", "content": user_input},
+            {"role": "assistant", "content": response_text},
+        ]
+        memory.add(messages, user_id=user_email)
+        logger.info("Successfully added conversation turn to Mem0 for user: %s", user_email)
+    except Exception as e:
+        # Log error but don't crash - Mem0 storage is not critical for user experience
+        logger.error("Failed to add memory to Mem0 for user %s: %s", user_email, e)
 
 
 class AITrainerBrain:
@@ -98,7 +123,7 @@ class AITrainerBrain:
     
     def _retrieve_relevant_memories(
         self, user_input: str, user_id: str
-    ) -> list[ChatHistory]:
+    ) -> list[str]:
         """
         Retrieves relevant memories for a given user input.
 
@@ -107,21 +132,27 @@ class AITrainerBrain:
             user_id (str): The user's ID.
 
         Returns:
-            list[ChatHistory]: A list of relevant memories.
+            list[str]: A list of relevant facts (strings).
         """
         logger.debug("Retrieving relevant memories for user: %s", user_id)
-        memories = self._memory.search(user_id=user_id, query=user_input)
+        # In Mem0 1.0.1+, search returns a dict: {"results": [...]}
+        search_result = self._memory.search(user_id=user_id, query=user_input)
+        
+        # Normalize result to list of dictionaries
+        memories_data = []
+        if isinstance(search_result, dict):
+            memories_data = search_result.get("results", [])
+        elif isinstance(search_result, list):
+            memories_data = search_result
 
-        chat_histories = []
-        for mem_data in memories:  # mem_data is a string, original timestamp is not available
-            chat_histories.append(
-                ChatHistory(
-                    text=mem_data,  # Use the string directly as the text content
-                    sender=Sender.TRAINER, # Keep the default sender
-                    timestamp=datetime.now().isoformat(), # Generate a current timestamp
-                )
-            )
-        return chat_histories
+        facts = []
+        for mem in memories_data:
+            text = mem.get("memory", "")
+            if text:
+                logger.info("Retrieved fact from Mem0: %s", text)
+                facts.append(text)
+        
+        return facts
 
     def get_user_profile(self, email: str) -> UserProfile | None:
         """
@@ -147,9 +178,14 @@ class AITrainerBrain:
         """
         self._database.save_trainer_profile(profile)
 
-    def _add_to_history(self, user_email: str, user_input: str, response_text: str):
+    def _add_to_mongo_history(self, user_email: str, user_input: str, response_text: str):
         """
-        Adds the user input and AI response to the chat history.
+        Adds the user input and AI response to MongoDB chat history (synchronous).
+        
+        Args:
+            user_email (str): The user's email.
+            user_input (str): The user's input message.
+            response_text (str): The AI's response message.
         """
         now = datetime.now().isoformat()
         user_message = ChatHistory(
@@ -159,10 +195,12 @@ class AITrainerBrain:
             sender=Sender.TRAINER, text=response_text, timestamp=now
         )
 
+        # Save to MongoDB (Session History) - synchronous
         self._database.add_to_history(user_message, user_email)
         self._database.add_to_history(ai_message, user_email)
+        logger.info("Successfully saved conversation to MongoDB for user: %s", user_email)
 
-    def send_message_ai(self, user_email: str, user_input: str):
+    def send_message_ai(self, user_email: str, user_input: str, background_tasks: BackgroundTasks = None):
         """
         Generates LLM response, summarizing history if needed.
         This function assumes one chat session per user (user_email is used as session_id).
@@ -192,23 +230,26 @@ class AITrainerBrain:
             logger.warning("Trainer profile not found for user: %s", user_email)
             raise ValueError(f"Trainer profile not found for user: {user_email}")
 
-        chat_history = self._database.get_chat_history(user_email)
         relevant_memories = self._retrieve_relevant_memories(user_input, user_email)
+        
+        # Format facts as a bulleted list for the prompt
+        if relevant_memories:
+            relevant_memories_str = "\n".join([f"- {fact}" for fact in relevant_memories])
+        else:
+            relevant_memories_str = "Nenhum conhecimento prévio relevante encontrado."
 
-        trainer_profile_summary = trainer_profile_obj.get_trainer_profile_summary()
-        user_profile = profile.get_profile_summary()
-
-        # Format lists as strings for the prompt template
-        relevant_memories_str = ChatHistory.format_as_string(
-            relevant_memories, empty_message="No relevant memories found."
-        )
+        chat_history = self._database.get_chat_history(user_email)
         chat_history_summary = ChatHistory.format_as_string(
             chat_history, empty_message="No previous messages."
         )
+
+        trainer_profile_summary = trainer_profile_obj.get_trainer_profile_summary()
+        user_profile_summary = profile.get_profile_summary()
+
         # Build input data and generate response
         input_data = {
             "trainer_profile": trainer_profile_summary,
-            "user_profile": user_profile,
+            "user_profile": user_profile_summary,
             "relevant_memories": relevant_memories_str,
             "chat_history_summary": chat_history_summary,
             "user_message": user_input,
@@ -227,6 +268,18 @@ class AITrainerBrain:
         log_response = (final_response[:500] + "...") if len(final_response) > 500 else final_response
         logger.debug("LLM responded with: %s", log_response)
 
-        self._add_to_history(user_email, user_input, final_response)
+        # Save to MongoDB synchronously
+        self._add_to_mongo_history(user_email, user_input, final_response)
+        
+        # Schedule Mem0 storage as background task (asynchronous)
+        if background_tasks:
+            background_tasks.add_task(
+                _add_to_mem0_background,
+                memory=self._memory,
+                user_email=user_email,
+                user_input=user_input,
+                response_text=final_response
+            )
+            logger.info("Scheduled Mem0 background task for user: %s", user_email)
 
 
