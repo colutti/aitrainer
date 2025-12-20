@@ -27,3 +27,8 @@ api:
 
 front:
 	cd frontend && npm run dev
+
+debug:
+	podman-compose down
+	podman-compose build
+	podman-compose up

@@ -1,4 +1,14 @@
-import { Component, ChangeDetectionStrategy, inject, signal, ElementRef, viewChild, afterNextRender, OnInit } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  inject,
+  signal,
+  computed,
+  viewChild,
+  ElementRef,
+  OnInit,
+  ChangeDetectorRef
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ChatService } from '../../services/chat.service';
@@ -7,47 +17,32 @@ import { ChatService } from '../../services/chat.service';
   selector: 'app-chat',
   templateUrl: './chat.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule]
+  imports: [CommonModule, FormsModule],
 })
 export class ChatComponent implements OnInit {
-  // Dependencies
   private chatService = inject(ChatService);
+  private cdr = inject(ChangeDetectorRef);
 
-  // Signals and Properties
   newMessage = signal('');
   messages = this.chatService.messages;
   isTyping = this.chatService.isTyping;
-  chatContainer = viewChild<ElementRef<HTMLDivElement>>('chatContainer');
 
-  // Constructor
-  constructor() {
-    afterNextRender(() => this.scrollToBottom());
-  }
+  // Computed signal to reverse messages for the flex-col-reverse layout
+  // This is the most robust way to keep a chat at the bottom without complex JS.
+  reversedMessages = computed(() => {
+    return [...this.messages()].reverse();
+  });
 
-  // Lifecycle Hooks
   async ngOnInit(): Promise<void> {
     await this.chatService.loadHistory();
+    this.cdr.markForCheck();
   }
 
-  // Public Methods
   sendMessage(): void {
     const text = this.newMessage().trim();
     if (text) {
       this.chatService.sendMessage(text);
       this.newMessage.set('');
-      this.scrollToBottomAfterSend();
-    }
-  }
-
-  // Private Methods
-  private scrollToBottomAfterSend(): void {
-    setTimeout(() => this.scrollToBottom(), 0);
-  }
-
-  private scrollToBottom(): void {
-    const container = this.chatContainer()?.nativeElement;
-    if (container) {
-      container.scrollTop = container.scrollHeight;
     }
   }
 }
