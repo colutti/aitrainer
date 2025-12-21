@@ -12,12 +12,13 @@ import {
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ChatService } from '../../services/chat.service';
+import { MarkdownPipe } from '../../pipes/markdown.pipe';
 
 @Component({
   selector: 'app-chat',
   templateUrl: './chat.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MarkdownPipe],
 })
 export class ChatComponent implements OnInit {
   private chatService = inject(ChatService);

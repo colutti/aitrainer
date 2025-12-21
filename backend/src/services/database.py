@@ -11,6 +11,7 @@ from src.core.config import settings
 from src.api.models.trainer_profile import TrainerProfile
 from src.api.models.user_profile import UserProfile
 from src.api.models.chat_history import ChatHistory
+from src.api.models.sender import Sender
 from src.core.logs import logger
 
 
@@ -168,7 +169,7 @@ class MongoDatabase:
             database_name=settings.DB_NAME,
             history_size=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
         )
-        if chat_history.sender == "Trainer":
+        if chat_history.sender == Sender.TRAINER:
             chat_history_mongo.add_message(
                 AIMessage(
                     content=chat_history.text, additional_kwargs={"timestamp": now}

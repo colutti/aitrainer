@@ -10,5 +10,6 @@ This workflow commmits all pending changes with a nice message and push them to 
 
 // turbo
 
-1. Commit all changes. Generate a nice github commit message.
-2. Push to Github
+1. Add all changes to be commited
+2. Commit all changes. Generate a nice github commit message.
+3. Push to Github

@@ -53,7 +53,9 @@ export class ChatService {
   async loadHistory(): Promise<void> {
     try {
       const history = await firstValueFrom(
-        this.http.get<{ text: string; sender: 'user' | 'ai'; timestamp?: string }[]>(`${environment.apiUrl}/message/history`)
+        this.http.get<{ text: string; sender: string; timestamp?: string }[]>(
+          `${environment.apiUrl}/message/history`
+        )
       );
       const mapped: Message[] = [...history]
         .sort((a, b) => {
@@ -61,12 +63,16 @@ export class ChatService {
           const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
           return ta - tb;
         })
-        .map((msg, idx) => ({
-          id: idx,
-          text: msg.text,
-          sender: msg.sender,
-          timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-        }));
+        .map((msg, idx) => {
+          const senderStr = String(msg.sender).toLowerCase();
+          const isUser = senderStr === 'student' || senderStr === 'user';
+          return {
+            id: idx,
+            text: msg.text,
+            sender: isUser ? 'user' : 'ai' as 'user' | 'ai',
+            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+          };
+        });
       this.messages.set(mapped.length > 0 ? mapped : this.messages());
     } catch {
       // On error, keep the default welcome message

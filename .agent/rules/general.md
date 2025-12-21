@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # General Development Rules
 
 ## Git Workflow
@@ -36,28 +40,6 @@
 - Keep comments updated
 - Maintain README
 
-## Workflows
-
-Available in `/.agent/workflows/`:
-
-- `/test` - Run all tests
-- `/rebuild` - Rebuild containers
-- `/format` - Format all code
-- `/lint` - Run linters
-- `/logs` - View service logs
-- `/init-db` - Initialize database
-- `/dev-local` - Local dev (hot reload)
-- `/clean-env` - Clean environment
-
-## Development Flow
-
-1. Pull latest changes
-2. Run `/clean-pod` if needed
-3. Start: `make up`
-4. Make changes
-5. Run `/format` `/lint` `/test`
-6. Commit and push
-
 ## Monitoring URLs
 
 - Backend: `http://localhost:8000/health`
@@ -87,3 +69,9 @@ Available in `/.agent/workflows/`:
 - Verify retrieval after changes
 - Log save/retrieve operations
 - Test across sessions
+
+**Running**
+
+- To run and debug the solution you should run the Docker Compose file and look at the logs to find issues. Make sure both frontend and backend are running.
+- I DO NOT use Docker. I use Podman
+- My default shell is fish. You should run your commands with BASH.

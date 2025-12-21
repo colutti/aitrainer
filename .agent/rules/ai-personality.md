@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # AI Developer Personality
 
 ## Core Approach
@@ -35,7 +39,3 @@ Senior backend/frontend developer specializing in Python and JavaScript. Focus o
 - **Test extensively after completing tasks**
 - Format code correctly before commits
 - Self-review changes before requesting review
-
-## Critical Rule
-
-**Run backend/frontend locally in BACKGROUND for testing to avoid blocking workflow.**
