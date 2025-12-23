@@ -5,14 +5,13 @@ This module contains the AI trainer brain, which is responsible for interacting 
 from datetime import datetime
 from fastapi import BackgroundTasks
 from langchain_core.messages import HumanMessage
-from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_google_genai import ChatGoogleGenerativeAI
 from mem0 import Memory
-import google.api_core.exceptions
 
 from src.core.config import settings
 from src.services.database import MongoDatabase
+from src.services.llm_client import LLMClient
+from src.services.workout_tools import create_save_workout_tool, create_get_workouts_tool
 from src.core.logs import logger
 from src.api.models.chat_history import ChatHistory
 from src.api.models.user_profile import UserProfile
@@ -46,14 +45,15 @@ def _add_to_mem0_background(memory: Memory, user_email: str, user_input: str, re
 
 class AITrainerBrain:
     """
-    Service class responsible for interacting with the LLM (Gemini).
+    Service class responsible for orchestrating AI trainer interactions.
+    Uses LLMClient for LLM operations (abstracted from specific providers).
     """
 
     def __init__(
-        self, database: MongoDatabase, llm: ChatGoogleGenerativeAI, memory: Memory
+        self, database: MongoDatabase, llm_client: LLMClient, memory: Memory
     ):
         self._database = database
-        self._llm = llm
+        self._llm_client = llm_client
         self._memory = memory
 
     def _get_prompt_template(self, input_data: dict) -> ChatPromptTemplate:
@@ -83,30 +83,6 @@ class AITrainerBrain:
             sender = "Student" if isinstance(msg, HumanMessage) else "Trainer"
             messages_text.append(f"{sender}: {msg.content}")
         return "\n".join(messages_text)
-
-    def _call_llm_chain(self, prompt_template, input_data: dict):
-        """
-        Invokes the LLM chain and yields response chunks as they arrive.
-        
-        Args:
-            prompt_template: The prompt template to use.
-            input_data (dict): The input data for the chain.
-            
-        Yields:
-            str: Individual chunks of the LLM response.
-        """
-        logger.info("Invoking LLM chain for user input: %s", input_data.get("user_message"))
-        chain = prompt_template | self._llm | StrOutputParser()
-        try:
-            stream = chain.stream(input_data)
-            for chunk in stream:
-                yield chunk
-        except google.api_core.exceptions.ResourceExhausted as e:
-            logger.error("Gemini API Quota Exceeded: %s", e)
-            yield "There was a problem accessing the Gemini API. Please try again later or check your quota."
-        except Exception as e:
-            logger.error("An unexpected error occurred during LLM chain invocation: %s", e)
-            yield "An unexpected error occurred while processing your request. Please try again later."
 
     def get_chat_history(self, session_id: str) -> list[ChatHistory]:
         """
@@ -257,9 +233,14 @@ class AITrainerBrain:
 
         prompt_template = self._get_prompt_template(input_data)
         
+        # Create workout tracking tools with injected dependencies
+        save_workout_tool = create_save_workout_tool(self._database, user_email)
+        get_workouts_tool = create_get_workouts_tool(self._database, user_email)
+        tools = [save_workout_tool, get_workouts_tool]
+        
         full_response = []
-        for chunk in self._call_llm_chain(
-            prompt_template=prompt_template, input_data=input_data
+        for chunk in self._llm_client.stream_with_tools(
+            prompt_template=prompt_template, input_data=input_data, tools=tools
         ):
             full_response.append(chunk)
             yield chunk

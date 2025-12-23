@@ -12,6 +12,7 @@ from src.api.models.trainer_profile import TrainerProfile
 from src.api.models.user_profile import UserProfile
 from src.api.models.chat_history import ChatHistory
 from src.api.models.sender import Sender
+from src.api.models.workout_log import WorkoutLog
 from src.core.logs import logger
 
 
@@ -220,3 +221,44 @@ class MongoDatabase:
         )
         logger.info("Blocklist TTL index ensured.")
 
+    def save_workout_log(self, workout: WorkoutLog) -> str:
+        """
+        Saves a workout log to the database.
+
+        Args:
+            workout (WorkoutLog): The workout log to save.
+
+        Returns:
+            str: The inserted document ID as a string.
+        """
+        result = self.database.workout_logs.insert_one(workout.model_dump())
+        logger.info(
+            "Workout log saved for user %s with %d exercises",
+            workout.user_email,
+            len(workout.exercises),
+        )
+        return str(result.inserted_id)
+
+    def get_workout_logs(
+        self, user_email: str, limit: int = 50
+    ) -> list[WorkoutLog]:
+        """
+        Retrieves workout logs for a given user.
+
+        Args:
+            user_email (str): The user's email address.
+            limit (int): Maximum number of workout logs to retrieve (default: 50).
+
+        Returns:
+            list[WorkoutLog]: A list of workout logs ordered by date descending.
+        """
+        cursor = (
+            self.database.workout_logs.find({"user_email": user_email})
+            .sort("date", pymongo.DESCENDING)
+            .limit(limit)
+        )
+        workouts = [WorkoutLog(**doc) for doc in cursor]
+        logger.debug(
+            "Retrieved %d workout logs for user: %s", len(workouts), user_email
+        )
+        return workouts

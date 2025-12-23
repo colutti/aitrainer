@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     MAX_LONG_TERM_MEMORY_MESSAGES: int
 
     # ====== AI PROVIDER SELECTION ======
-    AI_PROVIDER: str = "gemini"  # Options: "gemini", "ollama"
+    AI_PROVIDER: str = "gemini"  # Options: "ollama", "openai", "gemini"
 
     # ====== GEMINI STUFF ======
     GEMINI_API_KEY: str = ""
@@ -58,8 +58,12 @@ class Settings(BaseSettings):
 
     # ====== OLLAMA STUFF ======
     OLLAMA_BASE_URL: str = "http://localhost:11434"
-    OLLAMA_LLM_MODEL: str = "llama3.1:8b"
+    OLLAMA_LLM_MODEL: str = "llama3-groq-tool-use:8b"
     OLLAMA_EMBEDDER_MODEL: str = "nomic-embed-text:latest"
+
+    # ====== OPENAI STUFF ======
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL_NAME: str = "gpt-4o-mini"
 
     # ====== MONGO STUFF ======
     DB_NAME: str
@@ -88,6 +92,9 @@ class Settings(BaseSettings):
             "config": {}
         }
 
+        # Set embedding dimensions based on provider
+        embedding_dims = self.EMBEDDING_MODEL_DIMS  # Default: 768
+
         if self.AI_PROVIDER == "gemini":
             llm_config["config"].update({
                 "model": self.LLM_MODEL_NAME,
@@ -98,15 +105,25 @@ class Settings(BaseSettings):
                 "api_key": self.GEMINI_API_KEY,
             })
         elif self.AI_PROVIDER == "ollama":
-            # Use native Ollama provider for Mem0
             llm_config["config"].update({
                 "model": self.OLLAMA_LLM_MODEL,
                 "ollama_base_url": self.OLLAMA_BASE_URL,
             })
             embedder_config["config"].update({
                 "model": self.OLLAMA_EMBEDDER_MODEL,
-                "embedding_dims": self.EMBEDDING_MODEL_DIMS,
+                "embedding_dims": embedding_dims,
                 "ollama_base_url": self.OLLAMA_BASE_URL,
+            })
+        elif self.AI_PROVIDER == "openai":
+            # Use 768 dims for compatibility with existing Qdrant collection
+            llm_config["config"].update({
+                "model": self.OPENAI_MODEL_NAME,
+                "api_key": self.OPENAI_API_KEY,
+            })
+            embedder_config["config"].update({
+                "model": "text-embedding-3-small",
+                "api_key": self.OPENAI_API_KEY,
+                "embedding_dims": embedding_dims,  # 768 to match Qdrant
             })
 
         return {
@@ -116,7 +133,7 @@ class Settings(BaseSettings):
                     "host": self.QDRANT_HOST,
                     "port": self.QDRANT_PORT,
                     "collection_name": self.QDRANT_COLLECTION_NAME,
-                    "embedding_model_dims": self.EMBEDDING_MODEL_DIMS,
+                    "embedding_model_dims": embedding_dims,
                 },
             },
             "llm": llm_config,
