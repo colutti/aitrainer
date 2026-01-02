@@ -23,12 +23,31 @@ class ChatHistory(BaseModel):
         """
         return " ".join(self.text.split())
 
+    def _get_formatted_timestamp(self) -> str:
+        """
+        Returns the timestamp formatted as DD/MM/YYYY HH:MM.
+        Falls back to the raw timestamp if parsing fails.
+        """
+        try:
+            dt = datetime.fromisoformat(self.timestamp)
+            return dt.strftime("%d/%m/%Y %H:%M")
+        except (ValueError, TypeError):
+            return self.timestamp
+
+    def _get_sender_label(self) -> str:
+        """
+        Returns a readable sender label with emoji.
+        """
+        return "🧑 Aluno" if self.sender == Sender.STUDENT else "🏋️ Treinador"
+
     def __str__(self) -> str:
         """
         Returns a readable representation of the chat message.
-        Equivalent to C#'s toString().
         """
-        return f"Sender: {self.sender}\nTimestamp: {self.timestamp}\nText: {self._get_clean_text()}"
+        return (
+            f"**{self._get_sender_label()}** ({self._get_formatted_timestamp()}):\n"
+            f"> {self._get_clean_text()}"
+        )
 
     @staticmethod
     def from_mongodb_chat_message_history(history) -> list["ChatHistory"]:
@@ -77,7 +96,7 @@ class ChatHistory(BaseModel):
         empty_message: str = "Nenhuma mensagem anterior.",
     ) -> str:
         """
-        Formats a list of ChatHistory into a single string, separated by newlines.
+        Formats a list of ChatHistory into a single string with visual separators.
 
         Args:
             chat_history: List of ChatHistory objects.
@@ -88,4 +107,4 @@ class ChatHistory(BaseModel):
         """
         if not chat_history:
             return empty_message
-        return "\n".join(ChatHistory.to_string_list(chat_history))
+        return "\n\n---\n\n".join(ChatHistory.to_string_list(chat_history))

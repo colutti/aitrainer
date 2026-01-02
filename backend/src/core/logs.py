@@ -2,20 +2,17 @@
 This module contains the logging configuration for the application.
 """
 import logging
-from logging.handlers import RotatingFileHandler
+import os
 import sys
+from logging.handlers import RotatingFileHandler
 
-def setup_logging(log_file='api.log', max_bytes=10*1024*1024, backup_count=5, level=logging.INFO):
+def setup_logging(log_file='api.log', max_bytes=10*1024*1024, backup_count=5):
     """
-    Sets up a robust logging configuration for the application,
-    outputting to both console and a rotating file.
-
-    Args:
-        log_file (str): The name of the log file.
-        max_bytes (int): The maximum size of the log file before rotation (in bytes).
-        backup_count (int): The number of backup log files to keep.
-        level (int): The minimum logging level to capture (e.g., logging.INFO, logging.DEBUG).
+    Sets up a robust logging configuration for the application.
+    The log level is initially INFO and will be updated by config.py.
     """
+    level = logging.INFO
+    
     # Create a custom logger
     logger = logging.getLogger("AITrainerBrain")
     logger.setLevel(level)
@@ -30,7 +27,8 @@ def setup_logging(log_file='api.log', max_bytes=10*1024*1024, backup_count=5, le
     )
 
     # Console Handler
-    console_handler = logging.StreamHandler(sys.stdout)
+    # Use stderr for logs to keep stdout clean for potential piping
+    console_handler = logging.StreamHandler(sys.stderr)
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 

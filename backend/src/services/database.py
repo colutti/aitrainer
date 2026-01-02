@@ -135,13 +135,13 @@ class MongoDatabase:
         logger.debug("Trainer profile retrieved for email: %s", email)
         return TrainerProfile(**trainer_profile)
 
-    def get_chat_history(self, user_id: str, limit: int = 50) -> list[ChatHistory]:
+    def get_chat_history(self, user_id: str, limit: int = 20) -> list[ChatHistory]:
         """Retrieves the chat history for a given user.
 
         Args:
             user_id (str): The unique identifier of the user whose
                 chat history is being retrieved.
-            limit (int): Maximum number of messages to retrieve (default: 50).
+            limit (int): Maximum number of messages to retrieve (default: 20).
 
         Returns:
             list[ChatHistory]: A list of ChatHistory objects representing

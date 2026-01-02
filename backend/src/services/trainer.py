@@ -52,9 +52,9 @@ class AITrainerBrain:
     def __init__(
         self, database: MongoDatabase, llm_client: LLMClient, memory: Memory
     ):
-        self._database = database
-        self._llm_client = llm_client
-        self._memory = memory
+        self._database: MongoDatabase = database
+        self._llm_client: LLMClient = llm_client
+        self._memory: Memory = memory
 
     def _get_prompt_template(self, input_data: dict) -> ChatPromptTemplate:
         """Constructs and returns the chat prompt template."""
@@ -63,8 +63,13 @@ class AITrainerBrain:
             [("system", settings.PROMPT_TEMPLATE), ("human", "{user_message}")]
         )
         rendered_prompt = prompt_template.format(**input_data)
-        log_prompt = (rendered_prompt[:500] + "...") if len(rendered_prompt) > 500 else rendered_prompt
-        logger.debug("Final prompt sent to the LLM:\n%s", log_prompt)
+        
+        # Multi-line formatted logging for better readability
+        separator = "=" * 60
+        logger.debug(
+            "\n%s\n📤 PROMPT ENVIADO AO LLM\n%s\n%s\n%s",
+            separator, separator, rendered_prompt, separator
+        )
         return prompt_template
 
     def _extract_conversation_text(self, messages: list) -> str:
@@ -99,7 +104,7 @@ class AITrainerBrain:
     
     def _retrieve_relevant_memories(
         self, user_input: str, user_id: str
-    ) -> list[str]:
+    ) -> list[dict]:
         """
         Retrieves relevant memories for a given user input.
 
@@ -108,7 +113,7 @@ class AITrainerBrain:
             user_id (str): The user's ID.
 
         Returns:
-            list[str]: A list of relevant facts (strings).
+            list[dict]: A list of memory dicts with 'text' and 'created_at' keys.
         """
         logger.debug("Retrieving relevant memories for user: %s", user_id)
         # In Mem0 1.0.1+, search returns a dict: {"results": [...]}
@@ -124,9 +129,10 @@ class AITrainerBrain:
         facts = []
         for mem in memories_data:
             text = mem.get("memory", "")
+            created_at = mem.get("created_at", "")
             if text:
-                logger.info("Retrieved fact from Mem0: %s", text)
-                facts.append(text)
+                logger.info("Retrieved fact from Mem0: %s (created: %s)", text, created_at)
+                facts.append({"text": text, "created_at": created_at})
         
         return facts
 
@@ -208,9 +214,17 @@ class AITrainerBrain:
 
         relevant_memories = self._retrieve_relevant_memories(user_input, user_email)
         
-        # Format facts as a bulleted list for the prompt
+        # Format facts as a bulleted list with dates for the prompt
         if relevant_memories:
-            relevant_memories_str = "\n".join([f"- {fact}" for fact in relevant_memories])
+            formatted_memories = []
+            for mem in relevant_memories:
+                try:
+                    dt = datetime.fromisoformat(mem["created_at"].replace("Z", "+00:00"))
+                    date_str = dt.strftime("%d/%m/%Y %H:%M")
+                except (ValueError, KeyError, AttributeError):
+                    date_str = "Data desconhecida"
+                formatted_memories.append(f"- ({date_str}) {mem['text']}")
+            relevant_memories_str = "\n".join(formatted_memories)
         else:
             relevant_memories_str = "Nenhum conhecimento prévio relevante encontrado."
 

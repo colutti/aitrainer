@@ -1,42 +1,13 @@
 import sys
-from pydantic import ValidationError, computed_field
+from pydantic import ValidationError, computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.core.logs import logger
 from src.prompts.prompt_template import PROMPT_TEMPLATE
 
 class Settings(BaseSettings):
-    """
-    Settings configuration class for application environment variables and service connections.
-
-    Attributes:
-        SECRET_KEY (str): Secret key for API authentication.
-        API_SERVER_PORT (int): Port number for the API server.
-        MAX_SHORT_TERM_MEMORY_MESSAGES (int): Maximum number of short-term memory messages.
-        MAX_LONG_TERM_MEMORY_MESSAGES (int): Maximum number of long-term memory messages.
-
-        GEMINI_API_KEY (str): API key for Gemini service.
-        LLM_MODEL_NAME (str): Name of the large language model to use.
-        EMBEDDER_MODEL_NAME (str): Name of the embedder model to use.
-        PROMPT_TEMPLATE (str): Template string for prompts.
-
-        DB_NAME (str): Name of the MongoDB database.
-        MONGO_INITDB_ROOT_USERNAME (str): MongoDB root username.
-        MONGO_INITDB_ROOT_PASSWORD (str): MongoDB root password.
-        MONGO_HOST (str): MongoDB host address.
-        MONGO_PORT (int): MongoDB port number.
-
-        QDRANT_HOST (str): Qdrant vector store host address.
-        QDRANT_PORT (int): Qdrant vector store port number.
-        QDRANT_COLLECTION_NAME (str): Name of the Qdrant collection.
-        QDRANT_API_KEY (str): API key for Qdrant.
-
-    Properties:
-        MEM0_CONFIG (dict): Configuration dictionary for MEM0, including vector store, LLM, and embedder settings.
-        MONGO_URI (str): Computed MongoDB connection URI string.
-    """
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+        env_file=".env", env_file_encoding="utf-8", extra="ignore", frozen=True
     )
 
     # ====== API CONFIGURATION ======
@@ -44,11 +15,23 @@ class Settings(BaseSettings):
     API_SERVER_PORT: int
     MAX_SHORT_TERM_MEMORY_MESSAGES: int
     MAX_LONG_TERM_MEMORY_MESSAGES: int
+    ALLOWED_ORIGINS: str | list[str]
+    LOG_LEVEL: str = "INFO"
+
+    @field_validator("ALLOWED_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: str | list[str]) -> list[str]:
+        """
+        Validates and parses ALLOWED_ORIGINS. Supports both JSON lists and comma-separated strings.
+        """
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",")]
+        return v  # type: ignore
 
     # ====== AI PROVIDER SELECTION ======
     AI_PROVIDER: str = "gemini"  # Options: "ollama", "openai", "gemini"
 
-    # ====== GEMINI STUFF ======
+    # ====== GEMINI STUFF ========
     GEMINI_API_KEY: str = ""
     LLM_MODEL_NAME: str = "gemini-1.5-flash"
     EMBEDDER_MODEL_NAME: str = "text-embedding-004"
@@ -162,6 +145,9 @@ class Settings(BaseSettings):
 # Instanciação segura
 try:
     settings = Settings()  # type: ignore
+    # Sincroniza o nível de log definitivo a partir do que foi carregado no Settings
+    import logging
+    logger.setLevel(getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO))
 except ValidationError as e:
     from src.core.logs import logger
     logger.critical("CRITICAL ERROR: Missing environment variables in .env file!")

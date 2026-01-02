@@ -27,12 +27,14 @@ class UserProfile(UserProfileInput):
         Generates a summary of the user's profile for use in prompts.
 
         Returns:
-            str: Formatted summary of the user's profile.
+            str: Formatted summary of the user's profile as a markdown table.
         """
         return (
-            f"- Gênero: {self.gender}\n"
-            f"- Idade: {self.age} anos\n"
-            f"- Peso: {self.weight}kg\n"
-            f"- Altura: {self.height}cm\n"
-            f"- Objetivo: {self.goal}\n"
+            f"| Campo | Valor |\n"
+            f"|-------|-------|\n"
+            f"| Gênero | {self.gender} |\n"
+            f"| Idade | {self.age} anos |\n"
+            f"| Peso | {self.weight}kg |\n"
+            f"| Altura | {self.height}cm |\n"
+            f"| Objetivo | {self.goal} |"
         )

@@ -25,7 +25,7 @@ class TrainerProfileInput(BaseModel):
         Generates a summary of the trainer's profile for use in prompts.
 
         Returns:
-            str: Formatted summary of the trainer's profile.
+            str: Formatted summary of the trainer's profile as a markdown table.
         """
         if self.humour == "Motivacional":
             humour_description = (
@@ -60,10 +60,14 @@ class TrainerProfileInput(BaseModel):
             style_description = "Adote um estilo equilibrado e adaptável."
 
         return (
-            f"- Nome: {self.name}\n"
-            f"- Gênero: {self.gender}\n"
-            f"- Estilo: {self.style} ({style_description})\n"
-            f"- Humor: {self.humour} ({humour_description})\n"
+            f"| Campo | Valor |\n"
+            f"|-------|-------|\n"
+            f"| Nome | {self.name} |\n"
+            f"| Gênero | {self.gender} |\n"
+            f"| Estilo | {self.style} |\n"
+            f"| Descrição Estilo | {style_description} |\n"
+            f"| Humor | {self.humour} |\n"
+            f"| Descrição Humor | {humour_description} |"
         )
 
 
