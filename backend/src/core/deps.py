@@ -3,6 +3,7 @@ This module contains the dependency injection for the application.
 """
 import functools
 from mem0 import Memory
+from qdrant_client import QdrantClient
 
 from src.core.config import settings
 from src.services.database import MongoDatabase
@@ -17,6 +18,17 @@ def get_mem0_client() -> Memory:
     """
     memory = Memory.from_config(settings.get_mem0_config())
     return memory
+
+
+@functools.lru_cache()
+def get_qdrant_client() -> QdrantClient:
+    """
+    Returns a Qdrant client for direct memory access with pagination.
+    """
+    return QdrantClient(
+        host=settings.QDRANT_HOST,
+        port=settings.QDRANT_PORT,
+    )
 
 
 @functools.lru_cache()
@@ -44,3 +56,4 @@ def get_ai_trainer_brain() -> AITrainerBrain:
     memory_client = get_mem0_client()
     database = get_mongo_database()
     return AITrainerBrain(llm_client=llm_client, memory=memory_client, database=database)
+

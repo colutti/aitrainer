@@ -4,8 +4,8 @@ import { MemoryService } from '../../services/memory.service';
 import { Memory } from '../../models/memory.model';
 
 /**
- * Component for displaying and managing user memories.
- * Shows the last 50 memories with delete functionality.
+ * Component for displaying and managing user memories with pagination.
+ * Shows paginated memories with navigation and delete functionality.
  */
 @Component({
   selector: 'app-memories',
@@ -18,15 +18,33 @@ export class MemoriesComponent implements OnInit {
 
   memories = this.memoryService.memories;
   isLoading = this.memoryService.isLoading;
+  currentPage = this.memoryService.currentPage;
+  totalPages = this.memoryService.totalPages;
+  totalMemories = this.memoryService.totalMemories;
   deletingId = signal<string | null>(null);
   showDeleteSuccess = signal(false);
 
   async ngOnInit(): Promise<void> {
-    await this.memoryService.getMemories();
+    await this.memoryService.getMemories(1);
   }
 
   /**
-   * Deletes a memory after user confirmation and reloads the list.
+   * Navigates to the previous page.
+   */
+  async previousPage(): Promise<void> {
+    await this.memoryService.previousPage();
+  }
+
+  /**
+   * Navigates to the next page.
+   */
+  async nextPage(): Promise<void> {
+    await this.memoryService.nextPage();
+  }
+
+  /**
+   * Deletes a memory after user confirmation.
+   * The service automatically reloads the current page.
    * @param memory - The memory to delete
    */
   async deleteMemory(memory: Memory): Promise<void> {
@@ -39,14 +57,11 @@ export class MemoriesComponent implements OnInit {
     try {
       await this.memoryService.deleteMemory(memory.id);
       this.showDeleteSuccess.set(true);
-      // Reload memories to get the updated list
-      await this.memoryService.getMemories();
       setTimeout(() => this.showDeleteSuccess.set(false), 2000);
     } finally {
       this.deletingId.set(null);
     }
   }
-
 
   /**
    * Formats a date string to Brazilian locale format.
@@ -69,3 +84,4 @@ export class MemoriesComponent implements OnInit {
     }
   }
 }
+

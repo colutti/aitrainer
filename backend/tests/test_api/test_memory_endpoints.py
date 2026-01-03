@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 from src.api.main import app
 from src.services.auth import verify_token
-from src.core.deps import get_ai_trainer_brain
+from src.core.deps import get_ai_trainer_brain, get_qdrant_client
 
 
 def mock_unauthenticated_user():
@@ -35,14 +35,25 @@ class TestMemoryEndpoints(unittest.TestCase):
         """
         app.dependency_overrides = {}
 
-    def test_list_memories_success(self):
+    def _setup_pagination_mock(self, memories: list, total: int):
+        """Helper to set up pagination mock with brain returning the expected data."""
+        mock_brain = MagicMock()
+        mock_brain.get_memories_paginated.return_value = (memories, total)
+        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+        # Mock Qdrant client (not directly used since brain is mocked)
+        mock_qdrant = MagicMock()
+        app.dependency_overrides[get_qdrant_client] = lambda: mock_qdrant
+
+        return mock_brain
+
+    def test_list_memories_first_page(self):
         """
-        Test successful retrieval of memories for authenticated user.
+        Test successful retrieval of first page of memories.
         """
         # Arrange
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
-        mock_brain = MagicMock()
-        mock_brain.get_all_memories.return_value = [
+        memories = [
             {
                 "id": "mem_123",
                 "memory": "User prefers morning workouts",
@@ -56,11 +67,11 @@ class TestMemoryEndpoints(unittest.TestCase):
                 "updated_at": None
             }
         ]
-        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+        mock_brain = self._setup_pagination_mock(memories, total=25)
 
         # Act
         response = self.client.get(
-            "/memory/list",
+            "/memory/list?page=1&page_size=10",
             headers={"Authorization": "Bearer test_token"}
         )
 
@@ -68,9 +79,41 @@ class TestMemoryEndpoints(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(len(data["memories"]), 2)
-        self.assertEqual(data["total"], 2)
+        self.assertEqual(data["total"], 25)
+        self.assertEqual(data["page"], 1)
+        self.assertEqual(data["page_size"], 10)
+        self.assertEqual(data["total_pages"], 3)
         self.assertEqual(data["memories"][0]["memory"], "User prefers morning workouts")
-        mock_brain.get_all_memories.assert_called_once_with("test@test.com")
+        mock_brain.get_memories_paginated.assert_called_once()
+
+    def test_list_memories_middle_page(self):
+        """
+        Test retrieval of middle page of memories.
+        """
+        # Arrange
+        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+        memories = [
+            {
+                "id": "mem_789",
+                "memory": "User completed 10 workouts this month",
+                "created_at": "2026-01-01T08:00:00Z",
+                "updated_at": None
+            }
+        ]
+        self._setup_pagination_mock(memories, total=25)
+
+        # Act
+        response = self.client.get(
+            "/memory/list?page=2&page_size=10",
+            headers={"Authorization": "Bearer test_token"}
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["page"], 2)
+        self.assertEqual(data["total"], 25)
+        self.assertEqual(data["total_pages"], 3)
 
     def test_list_memories_empty(self):
         """
@@ -78,9 +121,7 @@ class TestMemoryEndpoints(unittest.TestCase):
         """
         # Arrange
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
-        mock_brain = MagicMock()
-        mock_brain.get_all_memories.return_value = []
-        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+        self._setup_pagination_mock([], total=0)
 
         # Act
         response = self.client.get(
@@ -93,6 +134,27 @@ class TestMemoryEndpoints(unittest.TestCase):
         data = response.json()
         self.assertEqual(len(data["memories"]), 0)
         self.assertEqual(data["total"], 0)
+        self.assertEqual(data["total_pages"], 0)
+
+    def test_list_memories_custom_page_size(self):
+        """
+        Test retrieval with custom page size.
+        """
+        # Arrange
+        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+        self._setup_pagination_mock([], total=50)
+
+        # Act
+        response = self.client.get(
+            "/memory/list?page=1&page_size=25",
+            headers={"Authorization": "Bearer test_token"}
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["page_size"], 25)
+        self.assertEqual(data["total_pages"], 2)
 
     def test_list_memories_unauthenticated(self):
         """
@@ -166,3 +228,4 @@ class TestMemoryEndpoints(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

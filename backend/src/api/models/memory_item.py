@@ -14,6 +14,10 @@ class MemoryItem(BaseModel):
 
 
 class MemoryListResponse(BaseModel):
-    """Response model for the memory list endpoint."""
+    """Response model for the paginated memory list endpoint."""
     memories: list[MemoryItem]
     total: int
+    page: int
+    page_size: int
+    total_pages: int
+

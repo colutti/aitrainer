@@ -9,9 +9,13 @@ export interface Memory {
 }
 
 /**
- * Response from the memory list endpoint.
+ * Response from the paginated memory list endpoint.
  */
 export interface MemoryListResponse {
   memories: Memory[];
   total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
 }
+

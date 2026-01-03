@@ -331,3 +331,103 @@ class AITrainerBrain:
             logger.error("Failed to delete memory %s: %s", memory_id, e)
             raise
 
+    def get_memories_paginated(
+        self,
+        user_id: str,
+        page: int,
+        page_size: int,
+        qdrant_client,
+        collection_name: str
+    ) -> tuple[list[dict], int]:
+        """
+        Retrieves memories for a user with pagination via Qdrant scroll.
+
+        Args:
+            user_id: The user's email/ID
+            page: Page number (1-indexed)
+            page_size: Number of memories per page
+            qdrant_client: Qdrant client for direct access
+            collection_name: Qdrant collection name
+
+        Returns:
+            tuple: (list of memories, total count)
+        """
+        from qdrant_client import models as qdrant_models
+
+        logger.info(
+            "Retrieving paginated memories for user: %s (page: %d, size: %d)",
+            user_id, page, page_size
+        )
+
+        try:
+            # Filter by user_id
+            user_filter = qdrant_models.Filter(
+                must=[
+                    qdrant_models.FieldCondition(
+                        key="user_id",
+                        match=qdrant_models.MatchValue(value=user_id)
+                    )
+                ]
+            )
+
+            # Get total count for this user
+            count_result = qdrant_client.count(
+                collection_name=collection_name,
+                count_filter=user_filter
+            )
+            total = count_result.count
+            logger.debug("Total memories for user %s: %d", user_id, total)
+
+            if total == 0:
+                logger.info("No memories found for user: %s", user_id)
+                return [], 0
+
+            # Calculate offset for pagination
+            offset = (page - 1) * page_size
+
+            # Get all points for this user and manually paginate
+            # Note: Qdrant scroll doesn't support direct offset, so we scroll and skip
+            all_points = []
+            next_offset = None
+
+            while True:
+                points, next_offset = qdrant_client.scroll(
+                    collection_name=collection_name,
+                    scroll_filter=user_filter,
+                    limit=100,  # Fetch in batches
+                    offset=next_offset,
+                    with_payload=True
+                )
+                all_points.extend(points)
+                if next_offset is None:
+                    break
+
+            # Sort by created_at descending (newest first)
+            all_points.sort(
+                key=lambda p: p.payload.get("created_at", "") if p.payload else "",
+                reverse=True
+            )
+
+            # Apply pagination
+            paginated_points = all_points[offset:offset + page_size]
+
+            # Convert to memory dictionaries
+            memories = []
+            for point in paginated_points:
+                payload = point.payload or {}
+                memories.append({
+                    "id": payload.get("id", str(point.id)),
+                    "memory": payload.get("memory", payload.get("data", "")),
+                    "created_at": payload.get("created_at"),
+                    "updated_at": payload.get("updated_at"),
+                })
+
+            logger.info(
+                "Returning %d memories for user %s (page %d of %d)",
+                len(memories), user_id, page, (total + page_size - 1) // page_size
+            )
+            return memories, total
+
+        except Exception as e:
+            logger.error("Failed to retrieve paginated memories for user %s: %s", user_id, e)
+            raise
