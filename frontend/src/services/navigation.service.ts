@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 
 /** Available views in the application */
-export type View = 'chat' | 'user-profile' | 'trainer-settings';
+export type View = 'chat' | 'user-profile' | 'trainer-settings' | 'memories';
 
 /**
  * Service responsible for managing navigation state.

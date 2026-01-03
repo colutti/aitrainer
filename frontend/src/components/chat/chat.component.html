@@ -1,78 +1,4 @@
-<style>
-  .markdown-content {
-    line-height: 1.6;
-  }
 
-  .markdown-content strong {
-    font-weight: 600;
-  }
-
-  .markdown-content ol {
-    list-style-type: decimal;
-    margin-left: 1.5rem;
-    margin-top: 0.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .markdown-content ul {
-    list-style-type: disc;
-    margin-left: 1.5rem;
-    margin-top: 0.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .markdown-content li {
-    margin-bottom: 0.25rem;
-  }
-
-  .markdown-content p {
-    margin-bottom: 0.5rem;
-  }
-
-  .markdown-content p:last-child {
-    margin-bottom: 0;
-  }
-
-  .markdown-content code {
-    background-color: rgba(0, 0, 0, 0.1);
-    padding: 0.125rem 0.25rem;
-    border-radius: 0.25rem;
-    font-family: monospace;
-    font-size: 0.875em;
-  }
-
-  .markdown-content pre {
-    background-color: rgba(0, 0, 0, 0.1);
-    padding: 0.75rem;
-    border-radius: 0.5rem;
-    overflow-x: auto;
-    margin-top: 0.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .markdown-content pre code {
-    background-color: transparent;
-    padding: 0;
-  }
-
-  /* Dark theme compatibility for trainer messages */
-  .bg-light-bg .markdown-content code {
-    background-color: rgba(0, 0, 0, 0.05);
-  }
-
-  .bg-light-bg .markdown-content pre {
-    background-color: rgba(0, 0, 0, 0.05);
-  }
-
-  /* Light theme for user messages */
-  .bg-accent .markdown-content code {
-    background-color: rgba(255, 255, 255, 0.2);
-  }
-
-  .bg-accent .markdown-content pre {
-    background-color: rgba(255, 255, 255, 0.2);
-  }
-</style>
 
 <div class="flex flex-col h-full bg-dark-bg">
   <header class="p-4 border-b border-secondary flex-shrink-0">
@@ -90,38 +16,51 @@
   -->
   <div class="flex-1 overflow-y-auto flex flex-col-reverse">
     <div class="max-w-3xl mx-auto w-full px-4 py-6 flex flex-col-reverse gap-6">
-      
       <!-- Typing indicator -->
       @if (isTyping()) {
-        <div class="flex justify-start animate-slide-in-fade">
-          <div class="max-w-[85%] md:max-w-2xl px-4 py-3 rounded-2xl shadow bg-light-bg text-text-primary rounded-bl-none">
-            <div class="flex items-center space-x-1">
-              <span class="text-sm">Digitando</span>
-              <div class="animate-bounce [animation-delay:-0.3s] h-2 w-2 bg-text-secondary rounded-full"></div>
-              <div class="animate-bounce [animation-delay:-0.15s] h-2 w-2 bg-text-secondary rounded-full"></div>
-              <div class="animate-bounce h-2 w-2 bg-text-secondary rounded-full"></div>
-            </div>
+      <div class="flex justify-start animate-slide-in-fade">
+        <div
+          class="max-w-[85%] md:max-w-2xl px-4 py-3 rounded-2xl shadow bg-light-bg text-text-primary rounded-bl-none"
+        >
+          <div class="flex items-center space-x-1">
+            <span class="text-sm">Digitando</span>
+            <div
+              class="animate-bounce [animation-delay:-0.3s] h-2 w-2 bg-text-secondary rounded-full"
+            ></div>
+            <div
+              class="animate-bounce [animation-delay:-0.15s] h-2 w-2 bg-text-secondary rounded-full"
+            ></div>
+            <div
+              class="animate-bounce h-2 w-2 bg-text-secondary rounded-full"
+            ></div>
           </div>
         </div>
+      </div>
       }
 
       <!-- Messages in reverse order -->
       @for (message of reversedMessages(); track message.id) {
-        <div class="flex animate-slide-in-fade"
-             [class]="message.sender === 'user' ? 'justify-end' : 'justify-start'">
-          <div
-            class="max-w-[85%] md:max-w-2xl px-4 py-3 rounded-2xl shadow"
-            [class]="
-              message.sender === 'user'
-                ? 'bg-accent text-white rounded-br-none'
-                : 'bg-light-bg text-text-primary rounded-bl-none'
-            ">
-            <div class="text-sm markdown-content" [innerHTML]="message.text | markdown"></div>
-            <p class="text-xs mt-1 opacity-60 text-right">
-              {{ message.timestamp | date:'shortTime' }}
-            </p>
-          </div>
+      <div
+        class="flex animate-slide-in-fade"
+        [class]="message.sender === 'user' ? 'justify-end' : 'justify-start'"
+      >
+        <div
+          class="max-w-[85%] md:max-w-2xl px-4 py-3 rounded-2xl shadow"
+          [class]="
+            message.sender === 'user'
+              ? 'bg-accent text-white rounded-br-none'
+              : 'bg-light-bg text-text-primary rounded-bl-none'
+          "
+        >
+          <markdown
+            class="text-sm markdown-content"
+            [data]="message.text"
+          ></markdown>
+          <p class="text-xs mt-1 opacity-60 text-right">
+            {{ message.timestamp | date : "shortTime" }}
+          </p>
         </div>
+      </div>
       }
     </div>
   </div>
@@ -130,19 +69,22 @@
   <div class="p-4 border-t border-secondary flex-shrink-0 bg-dark-bg">
     <div class="max-w-3xl mx-auto w-full">
       <form (ngSubmit)="sendMessage()" class="flex items-center space-x-3">
-        <input
-          type="text"
+        <textarea
           [(ngModel)]="newMessage"
           name="newMessage"
+          (keydown)="handleKeyDown($event)"
+          (input)="onInput($event)"
           [placeholder]="
             isTyping()
               ? 'Aguarde a resposta do treinador...'
               : 'Digite sua mensagem aqui...'
           "
           [disabled]="isTyping()"
-          class="flex-1 block w-full px-4 py-3 bg-light-bg border border-secondary rounded-full shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:opacity-50"
+          rows="2"
+          class="flex-1 block w-full px-5 py-4 bg-light-bg border border-secondary rounded-2xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary text-base disabled:opacity-50 resize-none"
+          style="min-height: 64px; max-height: 200px; overflow-y: auto; line-height: 1.5;"
           autocomplete="off"
-        />
+        ></textarea>
         <button
           type="submit"
           [disabled]="!newMessage().trim() || isTyping()"

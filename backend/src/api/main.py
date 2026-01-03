@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
 
-from src.api.endpoints import user, message, trainer
+from src.api.endpoints import user, message, trainer, memory
 from src.core.config import settings
 from src.core.deps import get_mongo_database, get_mem0_client
 from src.core.logs import logger
@@ -25,6 +25,7 @@ app.add_middleware(
 app.include_router(user.router, prefix="/user", tags=["user"])
 app.include_router(message.router, prefix="/message", tags=["message"])
 app.include_router(trainer.router, prefix="/trainer", tags=["trainer"])
+app.include_router(memory.router, prefix="/memory", tags=["memory"])
 
 
 @app.get("/health")

@@ -6,33 +6,33 @@ describe('Chat Flow', () => {
   it('should display the chat interface', () => {
     cy.get('app-chat').should('be.visible');
     cy.contains('h2', 'Chat com seu Personal Trainer').should('be.visible');
-    cy.get('input[placeholder="Digite sua mensagem aqui..."]').should('be.visible');
+    cy.get('textarea[placeholder="Digite sua mensagem aqui..."]').should('be.visible');
     cy.get('button[type="submit"]').should('be.visible');
   });
 
   it('should have submit button disabled when message is empty', () => {
-    // Clear the input field
-    cy.get('input[name="newMessage"]').clear();
+    // Clear the textarea field
+    cy.get('textarea[name="newMessage"]').clear();
 
     // Button should be disabled
     cy.get('button[type="submit"]').should('be.disabled');
   });
 
-  it('should disable input while AI is typing', () => {
+  it('should disable textarea while AI is typing', () => {
     const userMessage = 'Teste rápido';
 
     // Send a message
-    cy.get('input[name="newMessage"]').type(userMessage);
+    cy.get('textarea[name="newMessage"]').type(userMessage);
     cy.get('button[type="submit"]').click();
 
-    // While typing, input should be disabled
+    // While typing, textarea should be disabled
     cy.contains('Digitando').should('be.visible');
-    cy.get('input[name="newMessage"]').should('be.disabled');
+    cy.get('textarea[name="newMessage"]').should('be.disabled');
     cy.get('button[type="submit"]').should('be.disabled');
 
-    // Wait for response and check input is enabled again
+    // Wait for response and check textarea is enabled again
     cy.contains('Digitando', { timeout: 120000 }).should('not.exist');
-    cy.get('input[name="newMessage"]').should('not.be.disabled');
+    cy.get('textarea[name="newMessage"]').should('not.be.disabled');
   });
 
   it('should send a message and receive a response from the AI', () => {
@@ -42,7 +42,7 @@ describe('Chat Flow', () => {
     cy.get('div.flex.animate-slide-in-fade.justify-start', { timeout: 10000 }).should('be.visible');
 
     // Send a new message
-    cy.get('input[placeholder="Digite sua mensagem aqui..."]').type(userMessage);
+    cy.get('textarea[placeholder="Digite sua mensagem aqui..."]').type(userMessage);
     cy.get('button[type="submit"]').click();
 
     // The user's own message should appear on the screen

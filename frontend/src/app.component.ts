@@ -4,6 +4,7 @@ import { LoginComponent } from './components/login/login.component';
 import { ChatComponent } from './components/chat/chat.component';
 import { UserProfileComponent } from './components/user-profile/user-profile.component';
 import { TrainerSettingsComponent } from './components/trainer-settings/trainer-settings.component';
+import { MemoriesComponent } from './components/memories/memories.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { AuthService } from './services/auth.service';
 import { NavigationService } from './services/navigation.service';
@@ -18,9 +19,11 @@ import { NavigationService } from './services/navigation.service';
     ChatComponent,
     UserProfileComponent,
     TrainerSettingsComponent,
+    MemoriesComponent,
     SidebarComponent,
   ],
 })
+
 export class AppComponent {
   authService = inject(AuthService);
   navigationService = inject(NavigationService);

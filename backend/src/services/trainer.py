@@ -277,4 +277,57 @@ class AITrainerBrain:
             )
             logger.info("Scheduled Mem0 background task for user: %s", user_email)
 
+    def get_all_memories(self, user_id: str, limit: int = 50) -> list[dict]:
+        """
+        Retrieves all memories for a given user from Mem0.
+
+        Args:
+            user_id (str): The user's email/ID.
+            limit (int): Maximum number of memories to return.
+
+        Returns:
+            list[dict]: List of memory dictionaries with id, memory, created_at, updated_at.
+        """
+        logger.info("Retrieving memories for user: %s (limit: %d)", user_id, limit)
+        try:
+            result = self._memory.get_all(user_id=user_id)
+            logger.debug("Raw Mem0 get_all response type: %s", type(result))
+            
+            # Debug: log actual response structure
+            if isinstance(result, dict):
+                logger.debug("Mem0 response keys: %s", result.keys())
+                logger.debug("Mem0 full response: %s", result)
+
+            memories = result if isinstance(result, list) else result.get("memories", result.get("results", []))
+            logger.info("Retrieved %d memories from Mem0 for user: %s", len(memories), user_id)
+
+
+            # Sort by created_at descending (newest first) and limit
+            memories.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+            limited_memories = memories[:limit]
+
+            logger.debug("Returning %d memories after sorting and limiting", len(limited_memories))
+            return limited_memories
+        except Exception as e:
+            logger.error("Failed to retrieve memories for user %s: %s", user_id, e)
+            raise
+
+    def delete_memory(self, memory_id: str) -> bool:
+        """
+        Deletes a specific memory from Mem0.
+
+        Args:
+            memory_id (str): The unique ID of the memory to delete.
+
+        Returns:
+            bool: True if deletion was successful.
+        """
+        logger.info("Attempting to delete memory: %s", memory_id)
+        try:
+            self._memory.delete(memory_id=memory_id)
+            logger.info("Successfully deleted memory: %s", memory_id)
+            return True
+        except Exception as e:
+            logger.error("Failed to delete memory %s: %s", memory_id, e)
+            raise
 
