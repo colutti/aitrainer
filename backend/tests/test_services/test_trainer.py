@@ -41,10 +41,9 @@ class TestAITrainerBrain(unittest.TestCase):
         self.mock_llm = MagicMock()
         self.mock_memory = MagicMock()
         self.brain = AITrainerBrain(database=self.mock_db,
-                                    llm=self.mock_llm,
+                                    llm_client=self.mock_llm,
                                     memory=self.mock_memory)
 
-    @patch("src.services.trainer.StrOutputParser", new=MockRunnable)
     def test_send_message_ai_success(self):
         """
         Test send_message_ai with a successful response.
@@ -58,13 +57,13 @@ class TestAITrainerBrain(unittest.TestCase):
                                    goal="Muscle gain")
         trainer_profile = TrainerProfile(user_email=user_email,
                                          name="Test Trainer",
-                                         humour="Amigavel",
                                          gender="Masculino",
                                          style="Científico")
         self.mock_db.get_user_profile.return_value = user_profile
         self.mock_db.get_trainer_profile.return_value = trainer_profile
         self.mock_db.get_chat_history.return_value = []
         self.mock_memory.search.return_value = {}
+        self.mock_llm.stream_with_tools.return_value = iter(["Test response"])
 
         # Act - send_message_ai returns a generator, so we need to consume it
         response_generator = self.brain.send_message_ai(user_email, user_input, background_tasks=None)

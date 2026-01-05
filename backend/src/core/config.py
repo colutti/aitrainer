@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     LLM_MODEL_NAME: str = "gemini-1.5-flash"
     EMBEDDER_MODEL_NAME: str = "text-embedding-004"
-    LLM_TEMPERATURE: float = 0.2
+    LLM_TEMPERATURE: float = 0.7
     EMBEDDING_MODEL_DIMS: int = 768
     PROMPT_TEMPLATE: str = PROMPT_TEMPLATE
 
@@ -109,15 +109,27 @@ class Settings(BaseSettings):
                 "embedding_dims": embedding_dims,  # 768 to match Qdrant
             })
 
+        qdrant_config = {
+            "collection_name": self.QDRANT_COLLECTION_NAME,
+            "embedding_model_dims": embedding_dims,
+            "api_key": self.QDRANT_API_KEY,
+        }
+
+        if self.QDRANT_HOST.startswith("http"):
+            # If the host contains protocol, treat it as a URL
+            # If port is not already in the URL, append it
+            if str(self.QDRANT_PORT) not in self.QDRANT_HOST:
+                 qdrant_config["url"] = f"{self.QDRANT_HOST}:{self.QDRANT_PORT}"
+            else:
+                 qdrant_config["url"] = self.QDRANT_HOST
+        else:
+            qdrant_config["host"] = self.QDRANT_HOST
+            qdrant_config["port"] = self.QDRANT_PORT
+
         return {
             "vector_store": {
                 "provider": "qdrant",
-                "config": {
-                    "host": self.QDRANT_HOST,
-                    "port": self.QDRANT_PORT,
-                    "collection_name": self.QDRANT_COLLECTION_NAME,
-                    "embedding_model_dims": embedding_dims,
-                },
+                "config": qdrant_config,
             },
             "llm": llm_config,
             "embedder": embedder_config

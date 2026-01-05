@@ -11,7 +11,7 @@ describe('Error Handling', () => {
         }).as('messageError');
 
         // Send a message
-        cy.get('input[name="newMessage"]').type('Teste de erro');
+        cy.get('textarea[name="newMessage"]').type('Teste de erro');
         cy.get('button[type="submit"]').click();
 
         // Wait for the intercepted call
@@ -28,7 +28,7 @@ describe('Error Handling', () => {
         }).as('networkError');
 
         // Send a message
-        cy.get('input[name="newMessage"]').type('Teste timeout');
+        cy.get('textarea[name="newMessage"]').type('Teste timeout');
         cy.get('button[type="submit"]').click();
 
         // Should display the error message

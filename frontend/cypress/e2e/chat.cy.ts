@@ -45,8 +45,8 @@ describe('Chat Flow', () => {
     cy.get('textarea[placeholder="Digite sua mensagem aqui..."]').type(userMessage);
     cy.get('button[type="submit"]').click();
 
-    // The user's own message should appear on the screen
-    cy.get('div.flex.animate-slide-in-fade.justify-end').last().should('contain', userMessage);
+    // The user's own message should appear on the screen (newest message is first in DOM due to reverse order)
+    cy.get('div.flex.animate-slide-in-fade.justify-end').first().should('contain.text', userMessage);
 
     // Wait for the "typing" indicator to appear, confirming the request is in flight
     cy.contains('Digitando').should('be.visible');
@@ -55,11 +55,10 @@ describe('Chat Flow', () => {
     // Use a very long timeout to account for slow API responses.
     cy.contains('Digitando', { timeout: 120000 }).should('not.exist');
 
-    // The last AI message should now be the new response and should not be empty.
+    // The first AI message should now be the new response and should not be empty.
     cy.get('div.flex.animate-slide-in-fade.justify-start')
-      .last()
-      .find('p.text-sm')
-      .invoke('text')
+      .first()
+      .find('markdown')
       .should('not.be.empty');
   });
 });

@@ -17,19 +17,27 @@ export class TrainerSettingsComponent implements OnInit {
 
   isSaving = signal(false);
   showSuccess = signal(false);
+  errorMessage = signal('');
 
   async ngOnInit(): Promise<void> {
     await this.trainerProfileService.fetchProfile();
-    // No need to set the profile here, as the signal is already observing the service's signal.
+    this.profile.set(this.trainerProfileService.getProfile());
   }
 
   async saveProfile(): Promise<void> {
     this.isSaving.set(true);
-    const success = await this.trainerProfileService.updateProfile(this.profile());
-    this.isSaving.set(false);
-    if (success) {
+    this.errorMessage.set('');
+    this.showSuccess.set(false);
+
+    try {
+      await this.trainerProfileService.updateProfile(this.profile());
       this.showSuccess.set(true);
-      setTimeout(() => this.showSuccess.set(false), 2000);
+      setTimeout(() => this.showSuccess.set(false), 3000);
+    } catch (err) {
+      console.error('Failed to save profile', err);
+      this.errorMessage.set('Erro ao salvar o perfil. Tente novamente.');
+    } finally {
+      this.isSaving.set(false);
     }
   }
 }

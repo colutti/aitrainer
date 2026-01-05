@@ -1,44 +1,64 @@
 <div class="h-full overflow-y-auto bg-dark-bg p-8">
   <div class="max-w-2xl mx-auto">
     <header class="mb-8">
-      <h2 class="text-3xl font-bold tracking-tight text-text-primary">Ajustes do Trainer</h2>
-      <p class="mt-2 text-text-secondary">Personalize a personalidade do seu treinador para uma experiência única.</p>
+      <h2 class="text-3xl font-bold tracking-tight text-text-primary">
+        Ajustes do Trainer
+      </h2>
+      <p class="mt-2 text-text-secondary">
+        Personalize a personalidade do seu treinador para uma experiência única.
+      </p>
     </header>
 
-    <form (ngSubmit)="saveProfile()" class="space-y-6 bg-light-bg p-8 rounded-lg shadow-lg">
+    <form
+      (ngSubmit)="saveProfile()"
+      class="space-y-6 bg-light-bg p-8 rounded-lg shadow-lg"
+    >
       <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
         <div class="sm:col-span-2">
-          <label for="name" class="block text-sm font-medium text-text-secondary">Nome do Trainer</label>
-          <input type="text" name="name" id="name" [(ngModel)]="profile().name"
-            class="mt-1 block w-full px-3 py-2 bg-dark-bg border border-secondary rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+          <label
+            for="name"
+            class="block text-sm font-medium text-text-secondary"
+            >Nome do Trainer</label
+          >
+          <input
+            type="text"
+            name="name"
+            id="name"
+            [(ngModel)]="profile().name"
+            class="mt-1 block w-full px-3 py-2 bg-dark-bg border border-secondary rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+          />
         </div>
 
         <div>
-          <label for="gender" class="block text-sm font-medium text-text-secondary">Gênero</label>
-          <select id="gender" name="gender" [(ngModel)]="profile().gender"
-            class="mt-1 block w-full pl-3 pr-10 py-2 bg-dark-bg border border-secondary focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+          <label
+            for="gender"
+            class="block text-sm font-medium text-text-secondary"
+            >Gênero</label
+          >
+          <select
+            id="gender"
+            name="gender"
+            [(ngModel)]="profile().gender"
+            class="mt-1 block w-full pl-3 pr-10 py-2 bg-dark-bg border border-secondary focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md"
+          >
             <option value="">Selecione...</option>
             <option value="Masculino">Masculino</option>
             <option value="Feminino">Feminino</option>
           </select>
         </div>
 
-        <div>
-          <label for="humour" class="block text-sm font-medium text-text-secondary">Humor</label>
-          <select id="humour" name="humour" [(ngModel)]="profile().humour"
-            class="mt-1 block w-full pl-3 pr-10 py-2 bg-dark-bg border border-secondary focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
-            <option value="">Selecione...</option>
-            <option value="Motivacional">Motivacional</option>
-            <option value="Rígido">Rígido</option>
-            <option value="Amigavel">Amigável</option>
-            <option value="Sarcástico">Sarcástico</option>
-          </select>
-        </div>
-
         <div class="sm:col-span-2">
-          <label for="style" class="block text-sm font-medium text-text-secondary">Estilo de Treino</label>
-          <select id="style" name="style" [(ngModel)]="profile().style"
-            class="mt-1 block w-full pl-3 pr-10 py-2 bg-dark-bg border border-secondary focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+          <label
+            for="style"
+            class="block text-sm font-medium text-text-secondary"
+            >Estilo de Treino</label
+          >
+          <select
+            id="style"
+            name="style"
+            [(ngModel)]="profile().style"
+            class="mt-1 block w-full pl-3 pr-10 py-2 bg-dark-bg border border-secondary focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md"
+          >
             <option value="">Selecione...</option>
             <option value="Científico">Científico</option>
             <option value="Holístico">Holístico</option>
@@ -49,12 +69,24 @@
 
       <div class="flex items-center justify-end pt-4">
         @if(showSuccess()) {
-        <span class="text-green-400 mr-4 transition-opacity duration-300">Ajustes salvos com sucesso!</span>
+        <span class="text-green-400 mr-4 transition-opacity duration-300"
+          >Ajustes salvos com sucesso!</span
+        >
         }
-        <button type="submit" [disabled]="isSaving()"
-          class="w-32 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-light-bg focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+        @if(errorMessage()) {
+        <span class="text-red-400 mr-4 transition-opacity duration-300"
+          >{{ errorMessage() }}</span
+        >
+        }
+        <button
+          type="submit"
+          [disabled]="isSaving()"
+          class="w-32 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-light-bg focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
           @if (isSaving()) {
-          <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+          <div
+            class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"
+          ></div>
           } @else {
           <span>Salvar</span>
           }

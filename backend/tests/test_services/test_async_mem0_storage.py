@@ -42,7 +42,7 @@ class TestAsyncMem0Storage(unittest.TestCase):
         self.mock_llm = MagicMock()
         self.mock_memory = MagicMock()
         self.brain = AITrainerBrain(database=self.mock_db,
-                                    llm=self.mock_llm,
+                                    llm_client=self.mock_llm,
                                     memory=self.mock_memory)
 
     def test_add_to_mongo_history_only_saves_to_mongodb(self):
@@ -110,7 +110,6 @@ class TestAsyncMem0Storage(unittest.TestCase):
         mock_logger.error.assert_called_once()
         self.assertIn("Failed to add memory to Mem0", str(mock_logger.error.call_args))
 
-    @patch("src.services.trainer.StrOutputParser", new=MockRunnable)
     def test_send_message_ai_schedules_background_task(self):
         """
         Test that send_message_ai schedules Mem0 storage as a background task.
@@ -124,7 +123,6 @@ class TestAsyncMem0Storage(unittest.TestCase):
                                    goal="Muscle gain")
         trainer_profile = TrainerProfile(user_email=user_email,
                                          name="Test Trainer",
-                                         humour="Amigavel",
                                          gender="Masculino",
                                          style="Científico")
         self.mock_db.get_user_profile.return_value = user_profile
@@ -132,6 +130,9 @@ class TestAsyncMem0Storage(unittest.TestCase):
         self.mock_db.get_chat_history.return_value = []
         self.mock_memory.search.return_value = {}
         
+        # Mock LLM stream response
+        self.mock_llm.stream_with_tools.return_value = ["Response"]
+
         # Mock BackgroundTasks
         mock_background_tasks = MagicMock(spec=BackgroundTasks)
 
@@ -152,7 +153,6 @@ class TestAsyncMem0Storage(unittest.TestCase):
         self.assertEqual(call_args[1]["user_email"], user_email)
         self.assertEqual(call_args[1]["user_input"], user_input)
 
-    @patch("src.services.trainer.StrOutputParser", new=MockRunnable)
     def test_send_message_ai_without_background_tasks(self):
         """
         Test that send_message_ai works without BackgroundTasks (backward compatibility).
@@ -166,13 +166,15 @@ class TestAsyncMem0Storage(unittest.TestCase):
                                    goal="Muscle gain")
         trainer_profile = TrainerProfile(user_email=user_email,
                                          name="Test Trainer",
-                                         humour="Amigavel",
                                          gender="Masculino",
                                          style="Científico")
         self.mock_db.get_user_profile.return_value = user_profile
         self.mock_db.get_trainer_profile.return_value = trainer_profile
         self.mock_db.get_chat_history.return_value = []
         self.mock_memory.search.return_value = {}
+
+        # Mock LLM stream response
+        self.mock_llm.stream_with_tools.return_value = ["Response"]
 
         # Act - call without background_tasks parameter
         list(self.brain.send_message_ai(user_email, user_input, background_tasks=None))

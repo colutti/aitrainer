@@ -333,7 +333,6 @@ class TestEndpoints(unittest.TestCase):
         mock_brain.save_trainer_profile.return_value = None # Assuming save_trainer_profile returns None
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
         profile_data = TrainerProfileInput(
-            humour="Motivacional",
             name="Coach",
             gender="Masculino",
             style="Científico"
@@ -358,7 +357,6 @@ class TestEndpoints(unittest.TestCase):
         app.dependency_overrides[verify_token] = mock_unauthenticated_user
 
         profile_data = TrainerProfileInput(
-            humour="Motivacional",
             name="Coach",
             gender="Masculino",
             style="Científico"
@@ -381,7 +379,6 @@ class TestEndpoints(unittest.TestCase):
         mock_brain = MagicMock()
         mock_brain.get_trainer_profile.return_value = TrainerProfile(
             user_email="test@test.com",
-            humour="Motivacional",
             name="Coach",
             gender="Masculino",
             style="Científico"

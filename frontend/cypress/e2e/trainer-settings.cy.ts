@@ -14,7 +14,7 @@ describe('Trainer Settings Flow', () => {
     // Verify all fields are present
     cy.get('input[name="name"]').should('be.visible');
     cy.get('select[name="gender"]').should('be.visible');
-    cy.get('select[name="humour"]').should('be.visible');
+
     cy.get('select[name="style"]').should('be.visible');
   });
 
@@ -24,7 +24,7 @@ describe('Trainer Settings Flow', () => {
     // Update all fields
     cy.get('input[name="name"]').clear().type(newName);
     cy.get('select[name="gender"]').select('Feminino');
-    cy.get('select[name="humour"]').select('Amigavel');
+
     cy.get('select[name="style"]').select('Holístico');
 
     cy.get('button').contains('Salvar').click();
@@ -38,7 +38,7 @@ describe('Trainer Settings Flow', () => {
 
     cy.get('input[name="name"]').should('have.value', newName);
     cy.get('select[name="gender"]').should('have.value', 'Feminino');
-    cy.get('select[name="humour"]').should('have.value', 'Amigavel');
+
     cy.get('select[name="style"]').should('have.value', 'Holístico');
   });
 });

@@ -1,3 +1,4 @@
+from typing import ClassVar
 from pydantic import BaseModel, Field
 
 class TrainerProfileInput(BaseModel):
@@ -5,11 +6,6 @@ class TrainerProfileInput(BaseModel):
     Editable fields of the trainer profile (user input).
     """
 
-    humour: str = Field(
-        ...,
-        description="Trainer's personality",
-        pattern="^(Motivacional|Rígido|Amigavel|Sarcástico)$",
-    )
     name: str = Field(..., description="Trainer's name")
     gender: str = Field(
         ..., description="Trainer's gender", pattern="^(Masculino|Feminino)$"
@@ -20,6 +16,19 @@ class TrainerProfileInput(BaseModel):
         pattern="^(Científico|Holístico|Bootcamp Militar)$",
     )
 
+    DESCRIPTION_STYLE: ClassVar[dict[str, str]] = {
+        "Científico": """Especialista em biomecânica. Explique o 'porquê' fisiológico de cada movimento. 
+            Use terminologia técnica precisa, cite evidências e foque na eficiência neuromuscular. 
+            Nada de 'bro-science', apenas dados e otimização.""",
+        "Holístico": """Guia de bem-estar integral. Conecte mente, corpo e espírito em cada série. 
+            Enfatize a respiração, a consciência corporal e o autocuidado. Se comporte como um guia de bem-estar.
+            O objetivo é o equilíbrio e a harmonia, não apenas a estética.""",
+        "Bootcamp Militar": """Sargento instrutor linha-dura no estilo de filmes de guerra antigos. 
+            Comandos curtos, gritos motivacionais e tolerância zero para desculpas. 
+            Exija disciplina de ferro e superação da dor. O treino é uma missão de combate e você não aceita falhas. 
+            Seja curto e objetivo.""",
+    }
+
     def get_trainer_profile_summary(self) -> str:
         """
         Generates a summary of the trainer's profile for use in prompts.
@@ -27,47 +36,15 @@ class TrainerProfileInput(BaseModel):
         Returns:
             str: Formatted summary of the trainer's profile as a markdown table.
         """
-        if self.humour == "Motivacional":
-            humour_description = (
-                "Use um tom energético, com exclamações e emojis para motivar o aluno."
-            )
-        elif self.humour == "Rígido":
-            humour_description = (
-                "Adote um tom firme e direto, sem espaço para desculpas."
-            )
-        elif self.humour == "Amigavel":
-            humour_description = (
-                "Mantenha um tom casual e acolhedor, como um parceiro de treino."
-            )
-        elif self.humour == "Sarcástico":
-            humour_description = (
-                "Incorpore ironia inteligente e deboche leve em suas respostas."
-            )
-        else:
-            humour_description = "Mantenha um tom profissional e neutro."
-
-        if self.style == "Científico":
-            style_description = (
-                "Use termos técnicos e explique o 'porquê' dos exercícios."
-            )
-        elif self.style == "Holístico":
-            style_description = "Foque no bem-estar geral, mente-músculo e autocuidado."
-        elif self.style == "Bootcamp Militar":
-            style_description = (
-                "Use comandos curtos e diretos, com ênfase na disciplina."
-            )
-        else:
-            style_description = "Adote um estilo equilibrado e adaptável."
+        style_description = self.DESCRIPTION_STYLE.get(self.style, "")
 
         return (
-            f"| Campo | Valor |\n"
-            f"|-------|-------|\n"
-            f"| Nome | {self.name} |\n"
-            f"| Gênero | {self.gender} |\n"
-            f"| Estilo | {self.style} |\n"
-            f"| Descrição Estilo | {style_description} |\n"
-            f"| Humor | {self.humour} |\n"
-            f"| Descrição Humor | {humour_description} |"
+            "## 👤 PERFIL DO TREINADOR (O seu perfil e como voce deve agir nas suas interações com o aluno)\n"
+            "Interprete o perfil escolhido pelo aluno. Voce deve agir com ele como se fosse um ator interpretando um personagem.\n"
+            f"Seu nome: {self.name} \n"
+            f"Seu gênero: {self.gender} \n"
+            f"Seu estilo de treinamento (voce deve seguir este estilo em todas as interações): {self.style} \n"
+            f"Descrição da sua personalidade/estilo: {style_description} \n"
         )
 
 

@@ -25,6 +25,15 @@ def get_qdrant_client() -> QdrantClient:
     """
     Returns a Qdrant client for direct memory access with pagination.
     """
+    if settings.QDRANT_HOST.startswith("http"):
+        # If host contains protocol, it's a URL (like Qdrant Cloud)
+        url = settings.QDRANT_HOST
+        if str(settings.QDRANT_PORT) not in url:
+             url = f"{url}:{settings.QDRANT_PORT}"
+        
+        return QdrantClient(url=url, api_key=settings.QDRANT_API_KEY)
+    
+    # Local/Self-hosted without protocol in host
     return QdrantClient(
         host=settings.QDRANT_HOST,
         port=settings.QDRANT_PORT,

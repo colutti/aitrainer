@@ -8,7 +8,7 @@ import { firstValueFrom } from 'rxjs';
 const DEFAULT_TRAINER_PROFILE: TrainerProfile = {
   name: 'Atlas',
   gender: 'Masculino',
-  humour: 'Motivacional',
+
   style: 'Científico',
 };
 
@@ -32,7 +32,7 @@ export class TrainerProfileService {
       this.trainerProfile.set({
         name: parsed.name || DEFAULT_TRAINER_PROFILE.name,
         gender: parsed.gender || DEFAULT_TRAINER_PROFILE.gender,
-        humour: parsed.humour || DEFAULT_TRAINER_PROFILE.humour,
+
         style: parsed.style || DEFAULT_TRAINER_PROFILE.style,
       });
     }
@@ -48,15 +48,9 @@ export class TrainerProfileService {
    * @param profile - The trainer profile to save
    * @returns Promise resolving to true if successful, false otherwise
    */
-  async updateProfile(profile: TrainerProfile): Promise<boolean> {
-    try {
-      await firstValueFrom(this.http.post(`${environment.apiUrl}/trainer/update_trainer_profile`, profile));
-      this.trainerProfile.set(profile);
-      return true;
-    } catch (err) {
-      console.error('Error saving trainer profile:', err);
-      return false;
-    }
+  async updateProfile(profile: TrainerProfile): Promise<void> {
+    await firstValueFrom(this.http.post(`${environment.apiUrl}/trainer/update_trainer_profile`, profile));
+    this.trainerProfile.set(profile);
   }
 
   /**
