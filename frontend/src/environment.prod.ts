@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'http://localhost:8000' // Update this to your FastAPI backend URL for production
+  apiUrl: 'https://aitrainer-backend.onrender.com' // Render Backend URL
 };

@@ -18,8 +18,9 @@ COPY . .
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 
-# Expose port
+# Expose port (8000 is default local, Render uses 10000)
 EXPOSE 8000
 
-# Run the application
-CMD ["python", "src/api/main.py"]
+# Run the application using gunicorn
+# Uses $PORT if available (Render), otherwise defaults to 8000
+CMD ["sh", "-c", "gunicorn src.api.main:app --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000}"]

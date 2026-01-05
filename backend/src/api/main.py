@@ -5,6 +5,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
+import os
+
 
 from src.api.endpoints import user, message, trainer, memory
 from src.core.config import settings
@@ -74,5 +76,16 @@ def health_check() -> JSONResponse:
 
 
 if __name__ == "__main__":
-    uvicorn.run("src.api.main:app", host="0.0.0.0", port=settings.API_SERVER_PORT, reload=True)
+    # PORT is injected by Render in production (default 10000)
+    port = int(os.environ.get("PORT", settings.API_SERVER_PORT))
+    # RENDER env var is automatically defined on Render
+    is_production = os.environ.get("RENDER", "false").lower() == "true"
+    
+    uvicorn.run(
+        "src.api.main:app", 
+        host="0.0.0.0", 
+        port=port, 
+        reload=not is_production  # reload only locally
+    )
+
 

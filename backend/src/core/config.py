@@ -12,7 +12,8 @@ class Settings(BaseSettings):
 
     # ====== API CONFIGURATION ======
     SECRET_KEY: str
-    API_SERVER_PORT: int
+    API_SERVER_PORT: int = 8000
+
     MAX_SHORT_TERM_MEMORY_MESSAGES: int
     MAX_LONG_TERM_MEMORY_MESSAGES: int
     ALLOWED_ORIGINS: str | list[str]
@@ -50,10 +51,8 @@ class Settings(BaseSettings):
 
     # ====== MONGO STUFF ======
     DB_NAME: str
-    MONGO_INITDB_ROOT_USERNAME: str
-    MONGO_INITDB_ROOT_PASSWORD: str
-    MONGO_HOST: str
-    MONGO_PORT: int
+    MONGO_URI: str
+
 
     # ====== QDRANT AND MEM0 STUFF ======
     QDRANT_HOST: str
@@ -135,23 +134,8 @@ class Settings(BaseSettings):
             "embedder": embedder_config
         }
 
-    @computed_field
-    @property
-    def MONGO_URI(self) -> str:  # pylint: disable=invalid-name
-        """
-        Constructs and returns the MongoDB connection URI string.
+    # MONGO_URI previously computed field removed, now a direct variable
 
-        Returns:
-            str: The MongoDB URI in the format:
-                'mongodb://<username>:<password>@<host>:<port>/'
-            where <username>, <password>, <host>, and <port> are obtained from
-            the corresponding instance attributes:
-                - MONGO_INITDB_ROOT_USERNAME
-                - MONGO_INITDB_ROOT_PASSWORD
-                - MONGO_HOST
-                - MONGO_PORT
-        """
-        return f"mongodb://{self.MONGO_INITDB_ROOT_USERNAME}:{self.MONGO_INITDB_ROOT_PASSWORD}@{self.MONGO_HOST}:{self.MONGO_PORT}/"
 
 
 # Instanciação segura

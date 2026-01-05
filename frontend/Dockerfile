@@ -7,7 +7,8 @@ COPY package*.json ./
 RUN npm install --legacy-peer-deps
 
 COPY . .
-RUN npm run build
+RUN npx ng build --configuration development
+
 
 # Serve stage
 FROM docker.io/library/nginx:alpine
