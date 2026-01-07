@@ -48,7 +48,7 @@ export class ChatService {
   /**
    * Loads message history from the backend API.
    * Messages are sorted by timestamp in ascending order.
-   * On error, preserves the current messages.
+   * If history is empty or on error, resets to the welcome message.
    */
   async loadHistory(): Promise<void> {
     try {
@@ -57,6 +57,13 @@ export class ChatService {
           `${environment.apiUrl}/message/history`
         )
       );
+      
+      // If user has no history, reset to welcome message (don't keep old user's messages!)
+      if (!history || history.length === 0) {
+        this.resetToWelcome();
+        return;
+      }
+      
       const mapped: Message[] = [...history]
         .sort((a, b) => {
           const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
@@ -73,9 +80,10 @@ export class ChatService {
             timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
           };
         });
-      this.messages.set(mapped.length > 0 ? mapped : this.messages());
+      this.messages.set(mapped);
     } catch {
-      // On error, keep the default welcome message
+      // On error, reset to welcome message to ensure clean state
+      this.resetToWelcome();
     }
   }
 

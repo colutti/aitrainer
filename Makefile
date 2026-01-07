@@ -41,3 +41,22 @@ debug-rebuild:
 	podman-compose down
 	podman-compose build
 	podman-compose up
+
+# User Management Commands
+user-create:
+	@cd backend && .venv/bin/python scripts/manage_users.py create --email "$(EMAIL)" --password "$(PASSWORD)"
+
+user-list:
+	@cd backend && .venv/bin/python scripts/manage_users.py list
+
+user-get:
+	@cd backend && .venv/bin/python scripts/manage_users.py get "$(EMAIL)"
+
+user-update:
+	@cd backend && .venv/bin/python scripts/manage_users.py update "$(EMAIL)" $(ARGS)
+
+user-password:
+	@cd backend && .venv/bin/python scripts/manage_users.py password "$(EMAIL)" --new-password "$(PASSWORD)"
+
+user-delete:
+	@cd backend && .venv/bin/python scripts/manage_users.py delete "$(EMAIL)"
