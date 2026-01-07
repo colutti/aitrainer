@@ -204,13 +204,29 @@ class AITrainerBrain:
 
         profile = self.get_user_profile(user_email)
         if not profile:
-            logger.warning("User profile not found for email: %s", user_email)
-            raise ValueError(f"User profile not found for email: {user_email}")
+            logger.info("User profile not found, creating default for user: %s", user_email)
+            # Create default user profile for testing/first login
+            profile = UserProfile(
+                email=user_email,
+                gender="Masculino",
+                age=30,
+                weight=70.0,
+                height=175,
+                goal="Melhorar condicionamento"
+            )
+            self.save_user_profile(profile)
 
         trainer_profile_obj = self._database.get_trainer_profile(user_email)
         if not trainer_profile_obj:
-            logger.warning("Trainer profile not found for user: %s", user_email)
-            raise ValueError(f"Trainer profile not found for user: {user_email}")
+            logger.info("Trainer profile not found, creating default for user: %s", user_email)
+            # Create default trainer profile for testing/first login
+            trainer_profile_obj = TrainerProfile(
+                user_email=user_email,
+                name="AI Coach",
+                gender="Masculino",
+                style="Científico"
+            )
+            self.save_trainer_profile(trainer_profile_obj)
 
         relevant_memories = self._retrieve_relevant_memories(user_input, user_email)
         
