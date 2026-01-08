@@ -1,8 +1,9 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, effect, inject } from '@angular/core';
 import { Message } from '../models/message.model';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../environment';
 import { firstValueFrom } from 'rxjs';
+import { AuthService } from './auth.service';
 
 /**
  * Service responsible for managing chat messages between user and AI trainer.
@@ -18,8 +19,17 @@ export class ChatService {
   /** Signal indicating whether the AI is currently typing a response */
   isTyping = signal<boolean>(false);
 
+  private authService = inject(AuthService);
+
   constructor(private http: HttpClient) {
     this.resetToWelcome();
+    
+    // Automatically reset chat when user logs out
+    effect(() => {
+      if (!this.authService.isAuthenticated()) {
+        this.clearHistory();
+      }
+    });
   }
 
   /**
@@ -58,32 +68,54 @@ export class ChatService {
         )
       );
       
-      // If user has no history, reset to welcome message (don't keep old user's messages!)
-      if (!history || history.length === 0) {
+      const mapped: Message[] = [];
+
+      if (history && history.length > 0) {
+        // Map history to Message objects
+        const historyMessages = [...history]
+          .sort((a, b) => {
+            const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+            const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+            return ta - tb;
+          })
+          .map((msg, idx) => {
+            const senderStr = String(msg.sender).toLowerCase();
+            const isUser = senderStr === 'student' || senderStr === 'user';
+            return {
+              id: idx, // IDs for history are simpler, but we can make them unique if needed
+              text: msg.text,
+              sender: isUser ? 'user' : 'ai' as 'user' | 'ai',
+              timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+            };
+          });
+        mapped.push(...historyMessages);
+      } else {
+        // No history, add welcome message if no local messages exist?
+        // Actually, if we merge, we handle this below.
+      }
+
+      // Merge with current local messages that are NOT the initial welcome message (id: 0)
+      // and are likely optimistic updates (id > 1000 usually)
+      const currentMessages = this.messages();
+      const localNewMessages = currentMessages.filter(m => m.id > 1000); // Assuming manual messages have Date.now() IDs
+
+      // If we have no history and no local new messages, show welcome
+      if (mapped.length === 0 && localNewMessages.length === 0) {
         this.resetToWelcome();
         return;
       }
+
+      // Combine history + local new messages
+      this.messages.set([...mapped, ...localNewMessages]);
       
-      const mapped: Message[] = [...history]
-        .sort((a, b) => {
-          const ta = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-          const tb = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-          return ta - tb;
-        })
-        .map((msg, idx) => {
-          const senderStr = String(msg.sender).toLowerCase();
-          const isUser = senderStr === 'student' || senderStr === 'user';
-          return {
-            id: idx,
-            text: msg.text,
-            sender: isUser ? 'user' : 'ai' as 'user' | 'ai',
-            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-          };
-        });
-      this.messages.set(mapped);
     } catch {
-      // On error, reset to welcome message to ensure clean state
-      this.resetToWelcome();
+      // On error, if we have local messages, keep them?
+      // Or reset? Best to reset to safe state or keep welcome.
+      // But if user is typing, we shouldn't wipe their chat.
+      // For now, if error, we check if we have messages.
+      if (this.messages().length <= 1) { // Only welcome or empty
+         this.resetToWelcome();
+      }
     }
   }
 
@@ -114,7 +146,7 @@ export class ChatService {
     this.isTyping.set(true);
 
     try {
-      const token = localStorage.getItem('jwt_token');
+      const token = this.authService.getToken();
       const response = await fetch(`${environment.apiUrl}/message/message`, {
         method: 'POST',
         headers: {

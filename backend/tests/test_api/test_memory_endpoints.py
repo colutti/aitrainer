@@ -175,8 +175,11 @@ class TestMemoryEndpoints(unittest.TestCase):
         Test successful deletion of a memory.
         """
         # Arrange
-        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+        user_email = "test@test.com"
+        app.dependency_overrides[verify_token] = lambda: user_email
         mock_brain = MagicMock()
+        # Mock memory ownership check
+        mock_brain.get_memory_by_id.return_value = {"id": "mem_123", "user_id": user_email}
         mock_brain.delete_memory.return_value = True
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
@@ -189,7 +192,51 @@ class TestMemoryEndpoints(unittest.TestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"message": "Memory deleted successfully"})
+        mock_brain.get_memory_by_id.assert_called_once_with("mem_123")
         mock_brain.delete_memory.assert_called_once_with("mem_123")
+
+    def test_delete_memory_not_owner(self):
+        """
+        Test deletion of memory belonging to another user returns 403.
+        """
+        # Arrange
+        user_email = "test@test.com"
+        app.dependency_overrides[verify_token] = lambda: user_email
+        mock_brain = MagicMock()
+        # Memory belongs to SOMEONE ELSE
+        mock_brain.get_memory_by_id.return_value = {"id": "mem_123", "user_id": "other@test.com"}
+        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+        # Act
+        response = self.client.delete(
+            "/memory/mem_123",
+            headers={"Authorization": "Bearer test_token"}
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json(), {"detail": "Not authorized to delete this memory"})
+        mock_brain.delete_memory.assert_not_called()
+
+    def test_delete_memory_not_found(self):
+        """
+        Test deletion of non-existent memory returns 404.
+        """
+        # Arrange
+        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+        mock_brain = MagicMock()
+        mock_brain.get_memory_by_id.return_value = None
+        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+        # Act
+        response = self.client.delete(
+            "/memory/mem_xxx",
+            headers={"Authorization": "Bearer test_token"}
+        )
+
+        # Assert
+        self.assertEqual(response.status_code, 404)
+        mock_brain.delete_memory.assert_not_called()
 
     def test_delete_memory_unauthenticated(self):
         """
@@ -210,8 +257,10 @@ class TestMemoryEndpoints(unittest.TestCase):
         Test deletion of memory when delete operation fails.
         """
         # Arrange
-        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+        user_email = "test@test.com"
+        app.dependency_overrides[verify_token] = lambda: user_email
         mock_brain = MagicMock()
+        mock_brain.get_memory_by_id.return_value = {"id": "mem_123", "user_id": user_email}
         mock_brain.delete_memory.side_effect = Exception("Mem0 error")
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 

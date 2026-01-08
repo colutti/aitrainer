@@ -111,7 +111,7 @@ class Settings(BaseSettings):
         qdrant_config = {
             "collection_name": self.QDRANT_COLLECTION_NAME,
             "embedding_model_dims": embedding_dims,
-            "api_key": self.QDRANT_API_KEY,
+            "api_key": self.QDRANT_API_KEY if self.QDRANT_API_KEY != "local_dummy_key" else None,
         }
 
         if self.QDRANT_HOST.startswith("http"):

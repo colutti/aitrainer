@@ -1,6 +1,6 @@
 describe('Error Handling', () => {
     beforeEach(() => {
-        cy.login('admin', '123');
+        cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
     });
 
     it('should display error message when chat API fails', () => {

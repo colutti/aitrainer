@@ -19,7 +19,7 @@ export class SidebarComponent {
     this.navigationService.navigateTo(view);
   }
 
-  logout(): void {
-    this.authService.logout();
+  async logout(): Promise<void> {
+    await this.authService.logout();
   }
 }

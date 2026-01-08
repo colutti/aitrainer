@@ -166,21 +166,35 @@ class TestEndpoints(unittest.TestCase):
         app.dependency_overrides = {}
 
     @patch("src.api.endpoints.user.user_logout")
-    def test_logout_success(self, mock_user_logout):
+    def test_logout_success_post(self, mock_user_logout):
         """
-        Test successful user logout.
+        Test successful user logout via POST.
         """
         # Arrange
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
         token_to_logout = "test_token"
 
         # Act
-        response = self.client.get("/user/logout", headers={"Authorization": f"Bearer {token_to_logout}"})
+        response = self.client.post("/user/logout", headers={"Authorization": f"Bearer {token_to_logout}"})
 
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"message": "Logged out successfully"})
         mock_user_logout.assert_called_once_with(token_to_logout)
+        app.dependency_overrides = {}
+
+    def test_logout_get_not_allowed(self):
+        """
+        Test that GET logout returns 405 Method Not Allowed.
+        """
+        # Arrange
+        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+
+        # Act
+        response = self.client.get("/user/logout", headers={"Authorization": "Bearer test_token"})
+
+        # Assert
+        self.assertEqual(response.status_code, 405)
         app.dependency_overrides = {}
 
     def test_logout_unauthenticated(self):
@@ -191,7 +205,7 @@ class TestEndpoints(unittest.TestCase):
         app.dependency_overrides[verify_token] = mock_unauthenticated_user
 
         # Act
-        response = self.client.get("/user/logout")
+        response = self.client.post("/user/logout")
 
         # Assert
         self.assertEqual(response.status_code, 401)

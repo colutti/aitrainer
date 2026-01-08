@@ -5,7 +5,10 @@ import {
   signal,
   computed,
   OnInit,
-  ChangeDetectorRef
+  AfterViewChecked,
+  ChangeDetectorRef,
+  ViewChild,
+  ElementRef
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -82,18 +85,24 @@ import { ViewEncapsulation } from '@angular/core';
       border-radius: 0.25rem;
       font-size: 0.875em;
     }
+
+    /* Chat textarea styling - height managed by JS */
+    .chat-textarea {
+      line-height: 1.5;
+    }
   `]
 })
-export class ChatComponent implements OnInit {
+export class ChatComponent implements OnInit, AfterViewChecked {
   private chatService = inject(ChatService);
   private cdr = inject(ChangeDetectorRef);
+
+  @ViewChild('messageInput') messageInput!: ElementRef<HTMLTextAreaElement>;
 
   newMessage = signal('');
   messages = this.chatService.messages;
   isTyping = this.chatService.isTyping;
 
   // Computed signal to reverse messages for the flex-col-reverse layout
-  // This is the most robust way to keep a chat at the bottom without complex JS.
   reversedMessages = computed(() => {
     return [...this.messages()].reverse();
   });
@@ -103,11 +112,24 @@ export class ChatComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
+  private shouldResetHeight = false;
+
   sendMessage(): void {
     const text = this.newMessage().trim();
     if (text) {
       this.chatService.sendMessage(text);
       this.newMessage.set('');
+      this.shouldResetHeight = true;
+      this.cdr.detectChanges();
+    }
+  }
+
+  ngAfterViewChecked(): void {
+    if (this.shouldResetHeight && this.messageInput) {
+      const textarea = this.messageInput.nativeElement;
+      textarea.style.height = '56px';
+      textarea.style.overflowY = 'hidden';
+      this.shouldResetHeight = false;
     }
   }
 
@@ -118,27 +140,29 @@ export class ChatComponent implements OnInit {
    */
   handleKeyDown(event: KeyboardEvent): void {
     if (event.key === 'Enter' && !event.shiftKey) {
-      // Enter without Shift: send message
       event.preventDefault();
       this.sendMessage();
     }
-    // Shift+Enter: let the browser's default textarea behavior insert a new line
   }
 
   /**
-   * Auto-resizes the textarea based on content.
+   * Auto-adjusts textarea height based on content.
    * Called on input events.
    */
-  autoResize(textarea: HTMLTextAreaElement): void {
-    textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
-  }
-
-  /**
-   * Handles input events for auto-resize.
-   */
-  onInput(event: Event): void {
-    const textarea = event.target as HTMLTextAreaElement;
-    this.autoResize(textarea);
+  adjustTextareaHeight(): void {
+    if (this.messageInput) {
+      const textarea = this.messageInput.nativeElement;
+      const maxHeight = 200;
+      
+      // Reset to auto to get the natural scrollHeight
+      textarea.style.height = 'auto';
+      
+      // Set height based on content, capped at max
+      const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+      textarea.style.height = newHeight + 'px';
+      
+      // Show scrollbar only when content exceeds max height
+      textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
+    }
   }
 }

@@ -86,7 +86,7 @@ def update_profile(
     return JSONResponse(content={"message": "Profile updated successfully"})
 
 
-@router.get("/logout")
+@router.post("/logout")
 def logout(user_email: CurrentUser, token: str = Depends(oauth2_scheme)) -> JSONResponse:
     """
     Logs out the current user by calling the user_logout function

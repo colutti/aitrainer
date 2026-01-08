@@ -1,6 +1,6 @@
 describe('Chat Flow', () => {
   beforeEach(() => {
-    cy.login('admin', '123');
+    cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
   });
 
   it('should display the chat interface', () => {
@@ -60,5 +60,41 @@ describe('Chat Flow', () => {
       .first()
       .find('markdown')
       .should('not.be.empty');
+  });
+
+  it('should reset textarea height after sending a multi-line message', () => {
+    // Mock the chat API to avoid consuming AI credits
+    cy.intercept('POST', '**/chat', {
+      statusCode: 200,
+      headers: { 'content-type': 'text/event-stream' },
+      body: 'data: {"content": "Resposta mock"}\n\ndata: [DONE]\n\n'
+    }).as('chatMock');
+
+    const textarea = 'textarea[name="newMessage"]';
+
+    // Get initial height
+    cy.get(textarea).then(($el) => {
+      const initialHeight = $el[0].offsetHeight;
+      
+      // Type multi-line message using Shift+Enter for new lines
+      cy.get(textarea).type('Linha 1{shift+enter}Linha 2{shift+enter}Linha 3{shift+enter}Linha 4');
+      
+      // Verify textarea expanded (should be taller than initial)
+      cy.get(textarea).should(($expanded) => {
+        expect($expanded[0].offsetHeight).to.be.greaterThan(initialHeight);
+      });
+
+      // Send message by pressing Enter
+      cy.get(textarea).type('{enter}');
+
+      // Wait a bit for the requestAnimationFrame to execute
+      cy.wait(100);
+
+      // Verify textarea height reset to initial (or close to it)
+      cy.get(textarea).should(($reset) => {
+        // Allow some tolerance (within 20px of initial)
+        expect($reset[0].offsetHeight).to.be.lessThan(initialHeight + 20);
+      });
+    });
   });
 });

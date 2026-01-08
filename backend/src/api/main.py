@@ -16,6 +16,8 @@ from src.core.logs import logger
 app = FastAPI()
 
 # CORS middleware for frontend-backend integration
+logger.info(f"Allowed Origins: {settings.ALLOWED_ORIGINS}")
+logger.info(f"Mongo URI: {settings.MONGO_URI.split('@')[-1]}") # Mask password
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,

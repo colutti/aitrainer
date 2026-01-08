@@ -78,22 +78,33 @@ class TestAITrainerBrain(unittest.TestCase):
                                                        query=user_input)
     def test_send_message_ai_no_user_profile(self):
         """
-        Test send_message_ai when user profile is not found.
+        Test send_message_ai creates default user profile when not found.
         """
         # Arrange
         user_email = "test@test.com"
         user_input = "Hello"
 
         self.mock_db.get_user_profile.return_value = None
+        # Should return a default trainer profile to proceed
+        self.mock_db.get_trainer_profile.return_value = TrainerProfile(
+            user_email=user_email, name="Test", gender="Masculino", style="Científico"
+        )
+        self.mock_db.get_chat_history.return_value = []
+        self.mock_memory.search.return_value = {}
+        self.mock_llm.stream_with_tools.return_value = iter(["Response"])
 
-        # Act & Assert - ValueError is raised when generator is consumed
-        with self.assertRaises(ValueError):
-            response_generator = self.brain.send_message_ai(user_email, user_input, background_tasks=None)
-            list(response_generator)  # Consume generator to trigger error
+        # Act
+        response_generator = self.brain.send_message_ai(user_email, user_input, background_tasks=None)
+        response = "".join(list(response_generator))
+
+        # Assert
+        self.assertEqual(response, "Response")
+        # Verify save_user_profile was called to create the default profile
+        self.mock_db.save_user_profile.assert_called_once()
 
     def test_send_message_ai_no_trainer_profile(self):
         """
-        Test send_message_ai when trainer profile is not found.
+        Test send_message_ai creates default trainer profile when not found.
         """
         # Arrange
         user_email = "test@test.com"
@@ -105,8 +116,15 @@ class TestAITrainerBrain(unittest.TestCase):
 
         self.mock_db.get_user_profile.return_value = user_profile
         self.mock_db.get_trainer_profile.return_value = None
+        self.mock_db.get_chat_history.return_value = []
+        self.mock_memory.search.return_value = {}
+        self.mock_llm.stream_with_tools.return_value = iter(["Response"])
 
-        # Act & Assert - ValueError is raised when generator is consumed
-        with self.assertRaises(ValueError):
-            response_generator = self.brain.send_message_ai(user_email, user_input, background_tasks=None)
-            list(response_generator)  # Consume generator to trigger error
+        # Act
+        response_generator = self.brain.send_message_ai(user_email, user_input, background_tasks=None)
+        response = "".join(list(response_generator))
+
+        # Assert
+        self.assertEqual(response, "Response")
+        # Verify save_trainer_profile was called to create the default profile
+        self.mock_db.save_trainer_profile.assert_called_once()

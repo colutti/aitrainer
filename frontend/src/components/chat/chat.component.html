@@ -1,5 +1,3 @@
-
-
 <div class="flex flex-col h-full bg-dark-bg">
   <header class="p-4 border-b border-secondary flex-shrink-0">
     <h2 class="text-xl font-semibold">Chat com seu Personal Trainer</h2>
@@ -71,18 +69,17 @@
       <form (ngSubmit)="sendMessage()" class="flex items-center space-x-3">
         <textarea
           [(ngModel)]="newMessage"
+          #messageInput
           name="newMessage"
           (keydown)="handleKeyDown($event)"
-          (input)="onInput($event)"
+          (input)="adjustTextareaHeight()"
           [placeholder]="
             isTyping()
               ? 'Aguarde a resposta do treinador...'
               : 'Digite sua mensagem aqui...'
           "
           [disabled]="isTyping()"
-          rows="2"
-          class="flex-1 block w-full px-5 py-4 bg-light-bg border border-secondary rounded-2xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary text-base disabled:opacity-50 resize-none"
-          style="min-height: 64px; max-height: 200px; overflow-y: auto; line-height: 1.5;"
+          class="chat-textarea flex-1 block w-full px-5 py-4 bg-light-bg border border-secondary rounded-2xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary text-base disabled:opacity-50 resize-none"
           autocomplete="off"
         ></textarea>
         <button

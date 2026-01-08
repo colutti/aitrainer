@@ -347,6 +347,22 @@ class AITrainerBrain:
             logger.error("Failed to delete memory %s: %s", memory_id, e)
             raise
 
+    def get_memory_by_id(self, memory_id: str) -> dict | None:
+        """
+        Retrieves a specific memory by ID.
+        
+        Args:
+            memory_id (str): The unique ID of the memory.
+            
+        Returns:
+            dict | None: The memory object if found, otherwise None.
+        """
+        try:
+            return self._memory.get(memory_id)
+        except Exception as e:
+            logger.error("Failed to get memory %s: %s", memory_id, e)
+            return None
+
     def get_memories_paginated(
         self,
         user_id: str,

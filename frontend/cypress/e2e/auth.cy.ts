@@ -10,7 +10,7 @@ describe('Authorization Flow', () => {
   // More tests will be added here
   it('should log the user out and redirect to login on API 401 error', () => {
     // 1. Login normally
-    cy.login('admin', '123');
+    cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
 
     // 2. Intercept the next GET request to user profile and force a 401 response
     cy.intercept('GET', '**/user/profile', {

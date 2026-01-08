@@ -1,6 +1,6 @@
 describe('Memories Page', () => {
   beforeEach(() => {
-    cy.login('admin', '123');
+    cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
     cy.get('app-sidebar').should('be.visible');
   });
 
