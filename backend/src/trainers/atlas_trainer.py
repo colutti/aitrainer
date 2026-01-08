@@ -24,7 +24,6 @@ class AtlasTrainer(BaseTrainer):
             f"Seu nome: {self.name}\n"
             f"Seu gênero: {self.gender}\n"
             "Seu estilo: Científico e Futurista\n"
-            f"Sua frase de efeito: '{self.catchphrase}'\n"
             f"História: {self.background_story}\n"
             "Personalidade: Especialista em biomecânica. Explique o 'porquê' fisiológico de cada movimento. "
             "Use terminologia técnica precisa, cite evidências e foque na eficiência neuromuscular. "
