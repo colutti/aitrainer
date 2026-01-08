@@ -30,6 +30,8 @@
   },
   "exclude": [
     "cypress",
-    "eslint.config.js"
+    "eslint.config.js",
+    "dist",
+    ".angular"
   ]
 }

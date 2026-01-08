@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LoginComponent } from './components/login/login.component';
 import { ChatComponent } from './components/chat/chat.component';
@@ -32,4 +32,22 @@ export class AppComponent {
 
   isAuthenticated = this.authService.isAuthenticated;
   currentView = this.navigationService.currentView;
+  
+  isMobileMenuOpen = signal(false);
+
+  constructor() {
+    // Automatically close mobile menu when the view changes
+    effect(() => {
+      this.currentView(); // Register dependency
+      this.isMobileMenuOpen.set(false);
+    });
+  }
+
+  toggleMobileMenu() {
+    this.isMobileMenuOpen.update(v => !v);
+  }
+
+  closeMobileMenu() {
+    this.isMobileMenuOpen.set(false);
+  }
 }
