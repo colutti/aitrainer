@@ -1,78 +1,68 @@
-import { Injectable, signal, effect } from '@angular/core';
-import { TrainerProfile } from '../models/trainer-profile.model';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../environment';
-import { firstValueFrom } from 'rxjs';
+import { TrainerProfile, TrainerCard } from '../models/trainer-profile.model';
+import { tap, catchError, of } from 'rxjs';
 
-/** Default trainer profile configuration */
-const DEFAULT_TRAINER_PROFILE: TrainerProfile = {
-  name: 'Atlas',
-  gender: 'Masculino',
-
-  style: 'Científico',
-};
-
-/**
- * Service responsible for managing the AI trainer's profile and personality.
- * Handles profile persistence to localStorage and synchronization with backend.
- */
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root'
 })
 export class TrainerProfileService {
-  /** Signal containing the current trainer profile */
-  trainerProfile = signal<TrainerProfile>(DEFAULT_TRAINER_PROFILE);
+  private http = inject(HttpClient);
+  private apiUrl = `${environment.apiUrl}/trainer`;
 
-  constructor(private http: HttpClient) {
-    // Load profile from localStorage if available
-    const storedProfile = localStorage.getItem('trainer_profile');
-    if (storedProfile) {
-      const parsed: TrainerProfile = JSON.parse(storedProfile);
-      // Fill empty fields with default values
-      this.trainerProfile.set({
-        name: parsed.name || DEFAULT_TRAINER_PROFILE.name,
-        gender: parsed.gender || DEFAULT_TRAINER_PROFILE.gender,
+  // Default fallback if nothing is loaded
+  private readonly DEFAULT_PROFILE: TrainerProfile = {
+    trainer_type: 'atlas'
+  };
 
-        style: parsed.style || DEFAULT_TRAINER_PROFILE.style,
-      });
-    }
+  constructor() {}
 
-    // Automatically persist profile changes to localStorage
-    effect(() => {
-      localStorage.setItem('trainer_profile', JSON.stringify(this.trainerProfile()));
+  getAvailableTrainers(): Promise<TrainerCard[]> {
+    return new Promise((resolve, reject) => {
+      this.http.get<TrainerCard[]>(`${this.apiUrl}/available_trainers`)
+        .subscribe({
+          next: (data) => resolve(data),
+          error: (err) => reject(err)
+        });
     });
   }
 
-  /**
-   * Saves the trainer profile to the backend.
-   * @param profile - The trainer profile to save
-   * @returns Promise resolving to true if successful, false otherwise
-   */
-  async updateProfile(profile: TrainerProfile): Promise<void> {
-    await firstValueFrom(this.http.post(`${environment.apiUrl}/trainer/update_trainer_profile`, profile));
-    this.trainerProfile.set(profile);
+  fetchProfile(): Promise<TrainerProfile> {
+    return new Promise((resolve, reject) => {
+      this.http.get<TrainerProfile>(`${this.apiUrl}/trainer_profile`)
+        .pipe(
+          catchError(err => {
+            console.warn('Failed to fetch trainer profile, using default', err);
+            // Check legacy local storage as fallback
+            const legacyName = localStorage.getItem('trainer_name'); 
+            if (legacyName) {
+               // Silently migrate via default logic on backend next save
+               // or just return default 'atlas' for new UI
+            }
+            return of(this.DEFAULT_PROFILE);
+          })
+        )
+        .subscribe({
+          next: (profile) => {
+            // Ensure we have a valid structure
+            if (!profile || !profile.trainer_type) {
+                profile = this.DEFAULT_PROFILE;
+            }
+            resolve(profile);
+          },
+          error: (err) => resolve(this.DEFAULT_PROFILE)
+        });
+    });
   }
 
-  /**
-   * Fetches the trainer profile from the backend.
-   * Updates the local signal on success.
-   */
-  async fetchProfile(): Promise<void> {
-    try {
-      const profile = await firstValueFrom(
-        this.http.get<TrainerProfile>(`${environment.apiUrl}/trainer/trainer_profile`)
-      );
-      this.trainerProfile.set(profile);
-    } catch (err) {
-      console.error('Error fetching trainer profile:', err);
-    }
-  }
-
-  /**
-   * Returns the current trainer profile.
-   * @returns The current TrainerProfile object
-   */
-  getProfile(): TrainerProfile {
-    return this.trainerProfile();
+  updateProfile(profile: TrainerProfile): Promise<TrainerProfile> {
+    return new Promise((resolve, reject) => {
+      this.http.put<TrainerProfile>(`${this.apiUrl}/update_trainer_profile`, profile)
+        .subscribe({
+          next: (updated) => resolve(updated),
+          error: (err) => reject(err)
+        });
+    });
   }
 }

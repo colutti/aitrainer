@@ -18,6 +18,13 @@
             },
             "browser": "main.ts",
             "tsConfig": "tsconfig.json",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "src/assets",
+                "output": "/assets"
+              }
+            ],
             "styles": ["index.css"]
           },
           "configurations": {
