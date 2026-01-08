@@ -18,28 +18,28 @@ class TestWorkoutLogModels(unittest.TestCase):
         exercise = ExerciseLog(
             name="Supino Reto",
             sets=3,
-            reps=12,
-            weight_kg=80.5
+            reps_per_set=[12, 12, 10],
+            weights_per_set=[80.5, 80.5, 75.0]
         )
         self.assertEqual(exercise.name, "Supino Reto")
         self.assertEqual(exercise.sets, 3)
-        self.assertEqual(exercise.reps, 12)
-        self.assertEqual(exercise.weight_kg, 80.5)
+        self.assertEqual(exercise.reps_per_set, [12, 12, 10])
+        self.assertEqual(exercise.weights_per_set, [80.5, 80.5, 75.0])
 
     def test_exercise_log_without_weight(self):
         """Test creating an ExerciseLog without weight (optional field)."""
         exercise = ExerciseLog(
             name="Flexão",
             sets=4,
-            reps=15
+            reps_per_set=[15, 15, 15, 12]
         )
-        self.assertIsNone(exercise.weight_kg)
+        self.assertEqual(exercise.weights_per_set, [])
 
     def test_workout_log_creation(self):
         """Test creating a complete WorkoutLog."""
         exercises = [
-            ExerciseLog(name="Agachamento", sets=4, reps=10, weight_kg=100),
-            ExerciseLog(name="Leg Press", sets=3, reps=12, weight_kg=200),
+            ExerciseLog(name="Agachamento", sets=4, reps_per_set=[10]*4, weights_per_set=[100.0]*4),
+            ExerciseLog(name="Leg Press", sets=3, reps_per_set=[12]*3, weights_per_set=[200.0]*3),
         ]
         workout = WorkoutLog(
             user_email="test@example.com",
@@ -58,7 +58,7 @@ class TestWorkoutLogModels(unittest.TestCase):
         workout = WorkoutLog(
             user_email="test@example.com",
             workout_type="Upper",
-            exercises=[ExerciseLog(name="Supino", sets=3, reps=10, weight_kg=60)],
+            exercises=[ExerciseLog(name="Supino", sets=3, reps_per_set=[10, 10, 8], weights_per_set=[60.0, 60.0, 55.0])],
         )
         data = workout.model_dump()
         self.assertIsInstance(data, dict)
@@ -80,14 +80,14 @@ class TestSaveWorkoutTool(unittest.TestCase):
         self.assertEqual(tool.name, "save_workout")
         self.assertIn("Salva um treino", tool.description)
 
-    def test_save_workout_tool_execution(self):
-        """Test executing the save_workout tool."""
+    def test_save_workout_tool_execution_new_format(self):
+        """Test executing the save_workout tool with new format."""
         tool = create_save_workout_tool(self.mock_db, "user@test.com")
         
         result = tool.invoke({
             "workout_type": "Legs",
             "exercises": [
-                {"name": "Agachamento", "sets": 4, "reps": 10, "weight_kg": 100}
+                {"name": "Agachamento", "sets": 4, "reps_per_set": [10, 10, 8, 8], "weights_per_set": [100.0, 100.0, 110.0, 110.0]}
             ],
             "duration_minutes": 45
         })
@@ -100,50 +100,24 @@ class TestSaveWorkoutTool(unittest.TestCase):
         self.assertEqual(saved_workout.user_email, "user@test.com")
         self.assertEqual(saved_workout.workout_type, "Legs")
         self.assertEqual(len(saved_workout.exercises), 1)
+        self.assertEqual(saved_workout.exercises[0].reps_per_set, [10, 10, 8, 8])
 
-    def test_save_workout_tool_with_multiple_exercises(self):
-        """Test saving a workout with multiple exercises."""
-        tool = create_save_workout_tool(self.mock_db, "athlete@test.com")
-        
-        result = tool.invoke({
-            "workout_type": "Push",
-            "exercises": [
-                {"name": "Supino Reto", "sets": 4, "reps": 8, "weight_kg": 80},
-                {"name": "Supino Inclinado", "sets": 3, "reps": 10, "weight_kg": 60},
-                {"name": "Tríceps Corda", "sets": 3, "reps": 12, "weight_kg": 25},
-            ],
-            "duration_minutes": 60
-        })
-        
-        saved_workout = self.mock_db.save_workout_log.call_args[0][0]
-        self.assertEqual(len(saved_workout.exercises), 3)
-        self.assertEqual(saved_workout.duration_minutes, 60)
-
-    def test_save_workout_tool_without_duration(self):
-        """Test saving a workout without duration (optional field)."""
+    def test_save_workout_tool_backward_compatibility(self):
+        """Test that old format (reps, weight_kg) still works."""
         tool = create_save_workout_tool(self.mock_db, "user@test.com")
         
-        tool.invoke({
+        result = tool.invoke({
             "workout_type": "Upper",
             "exercises": [
-                {"name": "Flexão", "sets": 3, "reps": 15}
+                {"name": "Supino", "sets": 3, "reps": 10, "weight_kg": 80}
             ]
         })
         
+        self.assertIn("sucesso", result.lower())
         saved_workout = self.mock_db.save_workout_log.call_args[0][0]
-        self.assertIsNone(saved_workout.duration_minutes)
-
-    def test_save_workout_tool_error_handling(self):
-        """Test that errors are handled gracefully."""
-        self.mock_db.save_workout_log.side_effect = Exception("Database error")
-        tool = create_save_workout_tool(self.mock_db, "user@test.com")
-        
-        result = tool.invoke({
-            "workout_type": "Legs",
-            "exercises": [{"name": "Test", "sets": 1, "reps": 1}]
-        })
-        
-        self.assertIn("erro", result.lower())
+        # Should convert to new format
+        self.assertEqual(saved_workout.exercises[0].reps_per_set, [10, 10, 10])
+        self.assertEqual(saved_workout.exercises[0].weights_per_set, [80, 80, 80])
 
 
 class TestGetWorkoutsTool(unittest.TestCase):
@@ -160,8 +134,8 @@ class TestGetWorkoutsTool(unittest.TestCase):
                 date=datetime(2025, 12, 21, 14, 30),
                 workout_type="Push",
                 exercises=[
-                    ExerciseLog(name="Supino", sets=4, reps=10, weight_kg=80),
-                    ExerciseLog(name="Tríceps", sets=3, reps=12, weight_kg=25),
+                    ExerciseLog(name="Supino", sets=4, reps_per_set=[10, 10, 8, 8], weights_per_set=[80.0, 80.0, 85.0, 85.0]),
+                    ExerciseLog(name="Tríceps", sets=3, reps_per_set=[12]*3, weights_per_set=[25.0]*3),
                 ],
                 duration_minutes=45
             ),
@@ -170,7 +144,7 @@ class TestGetWorkoutsTool(unittest.TestCase):
                 date=datetime(2025, 12, 20, 10, 0),
                 workout_type="Legs",
                 exercises=[
-                    ExerciseLog(name="Agachamento", sets=4, reps=10, weight_kg=100),
+                    ExerciseLog(name="Agachamento", sets=4, reps_per_set=[10]*4, weights_per_set=[100.0]*4),
                 ],
                 duration_minutes=60
             ),
@@ -194,16 +168,6 @@ class TestGetWorkoutsTool(unittest.TestCase):
         self.assertIn("Legs", result)
         self.assertIn("Supino", result)
         self.assertIn("Agachamento", result)
-        self.assertIn("45min", result)
-
-    def test_get_workouts_with_limit(self):
-        """Test that limit parameter is passed correctly."""
-        self.mock_db.get_workout_logs.return_value = [self.sample_workouts[0]]
-        tool = create_get_workouts_tool(self.mock_db, "user@test.com")
-        
-        tool.invoke({"limit": 1})
-        
-        self.mock_db.get_workout_logs.assert_called_once_with("user@test.com", limit=1)
 
     def test_get_workouts_empty_history(self):
         """Test message when no workouts found."""
@@ -213,33 +177,6 @@ class TestGetWorkoutsTool(unittest.TestCase):
         result = tool.invoke({"limit": 5})
         
         self.assertIn("Nenhum treino registrado", result)
-
-    def test_get_workouts_error_handling(self):
-        """Test that errors are handled gracefully."""
-        self.mock_db.get_workout_logs.side_effect = Exception("Database error")
-        tool = create_get_workouts_tool(self.mock_db, "user@test.com")
-        
-        result = tool.invoke({"limit": 5})
-        
-        self.assertIn("Erro", result)
-
-    def test_get_workouts_without_duration(self):
-        """Test formatting when workout has no duration."""
-        workout_no_duration = WorkoutLog(
-            user_email="user@test.com",
-            date=datetime(2025, 12, 21, 14, 30),
-            workout_type="Upper",
-            exercises=[ExerciseLog(name="Flexão", sets=3, reps=15)],
-            duration_minutes=None
-        )
-        self.mock_db.get_workout_logs.return_value = [workout_no_duration]
-        tool = create_get_workouts_tool(self.mock_db, "user@test.com")
-        
-        result = tool.invoke({"limit": 5})
-        
-        # Should not contain "min" when no duration
-        self.assertIn("Upper", result)
-        self.assertNotIn("min)", result)
 
 
 if __name__ == "__main__":

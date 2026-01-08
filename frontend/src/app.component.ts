@@ -5,6 +5,7 @@ import { ChatComponent } from './components/chat/chat.component';
 import { UserProfileComponent } from './components/user-profile/user-profile.component';
 import { TrainerSettingsComponent } from './components/trainer-settings/trainer-settings.component';
 import { MemoriesComponent } from './components/memories/memories.component';
+import { WorkoutsComponent } from './components/workouts/workouts.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { AuthService } from './services/auth.service';
 import { NavigationService } from './services/navigation.service';
@@ -20,6 +21,7 @@ import { NavigationService } from './services/navigation.service';
     UserProfileComponent,
     TrainerSettingsComponent,
     MemoriesComponent,
+    WorkoutsComponent,
     SidebarComponent,
   ],
 })

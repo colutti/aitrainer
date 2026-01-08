@@ -262,3 +262,39 @@ class MongoDatabase:
             "Retrieved %d workout logs for user: %s", len(workouts), user_email
         )
         return workouts
+
+    def get_workouts_paginated(
+        self, user_email: str, page: int = 1, page_size: int = 10
+    ) -> tuple[list[dict], int]:
+        """
+        Retrieves workout logs for a given user with pagination.
+
+        Args:
+            user_email (str): The user's email address.
+            page (int): Page number (1-indexed).
+            page_size (int): Number of items per page.
+
+        Returns:
+            tuple[list[dict], int]: List of workout dicts (with 'id') and total count.
+        """
+        query = {"user_email": user_email}
+        total = self.database.workout_logs.count_documents(query)
+        
+        skip = (page - 1) * page_size
+        cursor = (
+            self.database.workout_logs.find(query)
+            .sort("date", pymongo.DESCENDING)
+            .skip(skip)
+            .limit(page_size)
+        )
+        
+        workouts = []
+        for doc in cursor:
+            doc["id"] = str(doc.pop("_id"))
+            workouts.append(doc)
+        
+        logger.debug(
+            "Retrieved %d/%d workout logs for user: %s (page %d)",
+            len(workouts), total, user_email, page
+        )
+        return workouts, total

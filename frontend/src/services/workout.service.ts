@@ -1,0 +1,62 @@
+import { Injectable, signal } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { environment } from '../environment';
+import { Workout, WorkoutListResponse } from '../models/workout.model';
+
+/**
+ * Service for managing workout logs with pagination.
+ */
+@Injectable({
+  providedIn: 'root',
+})
+export class WorkoutService {
+  workouts = signal<Workout[]>([]);
+  isLoading = signal(false);
+  currentPage = signal(1);
+  pageSize = signal(10);
+  totalPages = signal(0);
+  totalWorkouts = signal(0);
+
+  constructor(private http: HttpClient) {}
+
+  /**
+   * Fetches paginated workouts for the current user.
+   */
+  async getWorkouts(page: number = this.currentPage()): Promise<Workout[]> {
+    this.isLoading.set(true);
+    try {
+      const params = new HttpParams()
+        .set('page', page.toString())
+        .set('page_size', this.pageSize().toString());
+
+      const response = await firstValueFrom(
+        this.http.get<WorkoutListResponse>(`${environment.apiUrl}/workout/list`, { params })
+      );
+
+      this.workouts.set(response.workouts);
+      this.currentPage.set(response.page);
+      this.totalPages.set(response.total_pages);
+      this.totalWorkouts.set(response.total);
+
+      return response.workouts;
+    } catch (error) {
+      console.error('Error fetching workouts:', error);
+      return [];
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  async nextPage(): Promise<void> {
+    if (this.currentPage() < this.totalPages()) {
+      await this.getWorkouts(this.currentPage() + 1);
+    }
+  }
+
+  async previousPage(): Promise<void> {
+    if (this.currentPage() > 1) {
+      await this.getWorkouts(this.currentPage() - 1);
+    }
+  }
+}

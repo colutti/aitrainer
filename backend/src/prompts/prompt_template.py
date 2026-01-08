@@ -46,7 +46,7 @@ Fora do escopo (tech, política, etc): recuse gentilmente e redirecione.
 ### `save_workout`
 **Quando usar:** Quando voce detectar que o aluno reportou exercícios realizados.
 **Gatilhos:** "Fiz...", "Treinei...", "Completei...", exercícios com séries/reps/peso
-**Parâmetros:** `workout_type`, `exercises` (lista), `duration_minutes`
+**Parâmetros:** `workout_type`, `exercises` (lista com name, sets, reps_per_set, weights_per_set), `duration_minutes`
 
 ### `get_workouts`
 **Quando usar:** Quando voce detectar que o aluno pergunta sobre treinos anteriores voce pode recuperar os treinos reportados usando a ferramenta.
