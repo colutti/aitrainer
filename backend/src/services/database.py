@@ -160,6 +160,7 @@ class MongoDatabase:
         self,
         chat_history: ChatHistory,
         session_id: str,
+        trainer_type: str | None = None,
     ):
         """Adds user and AI messages to the chat history, with timestamp."""
         logger.debug("Adding messages to chat history with timestamp.")
@@ -170,16 +171,21 @@ class MongoDatabase:
             database_name=settings.DB_NAME,
             history_size=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
         )
+        
+        additional_kwargs = {"timestamp": now}
+        if trainer_type:
+            additional_kwargs["trainer_type"] = trainer_type
+
         if chat_history.sender == Sender.TRAINER:
             chat_history_mongo.add_message(
                 AIMessage(
-                    content=chat_history.text, additional_kwargs={"timestamp": now}
+                    content=chat_history.text, additional_kwargs=additional_kwargs
                 )
             )
         else:
             chat_history_mongo.add_message(
                 HumanMessage(
-                    content=chat_history.text, additional_kwargs={"timestamp": now}
+                    content=chat_history.text, additional_kwargs=additional_kwargs
                 )
             )
 

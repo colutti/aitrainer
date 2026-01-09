@@ -15,6 +15,7 @@ class ChatHistory(BaseModel):
     text: str
     sender: Sender
     timestamp: str  # ISO formatted timestamp
+    trainer_type: str | None = None  # Track which trainer was active
 
     def _get_clean_text(self) -> str:
         """
@@ -69,6 +70,7 @@ class ChatHistory(BaseModel):
                     text=msg.content,
                     sender=Sender.STUDENT if msg.type == "human" else Sender.TRAINER,
                     timestamp=msg.additional_kwargs.get("timestamp", datetime(MINYEAR, 1, 1).isoformat()),
+                    trainer_type=msg.additional_kwargs.get("trainer_type")
                 )
             )
         # order the results by timestamp
@@ -108,3 +110,34 @@ class ChatHistory(BaseModel):
         if not chat_history:
             return empty_message
         return "\n\n---\n\n".join(ChatHistory.to_string_list(chat_history))
+
+    @staticmethod
+    def format_with_trainer_context(
+        chat_history: list["ChatHistory"],
+        current_trainer_type: str,
+        empty_message: str = "Nenhuma mensagem anterior.",
+    ) -> str:
+        """
+        Formats history with specific handling for previous trainers.
+        """
+        if not chat_history:
+            return empty_message
+        
+        formatted = []
+        for msg in chat_history:
+            if msg.sender == Sender.STUDENT:
+                # User messages: always as-is
+                formatted.append(str(msg))
+            elif msg.trainer_type == current_trainer_type:
+                # Current trainer: as-is
+                formatted.append(str(msg))
+            else:
+                # Previous trainer: neutralize
+                trainer_name = msg.trainer_type or "Desconhecido"
+                clean_text = msg._get_clean_text()
+                formatted.append(
+                    f"**🏋️ Treinador [PERFIL ANTERIOR: {trainer_name}]** ({msg._get_formatted_timestamp()}):\n"
+                    f"> [Contexto] {clean_text}"
+                )
+        
+        return "\n\n---\n\n".join(formatted)

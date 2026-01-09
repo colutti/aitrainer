@@ -160,7 +160,7 @@ class AITrainerBrain:
         """
         self._database.save_trainer_profile(profile)
 
-    def _add_to_mongo_history(self, user_email: str, user_input: str, response_text: str):
+    def _add_to_mongo_history(self, user_email: str, user_input: str, response_text: str, trainer_type: str):
         """
         Adds the user input and AI response to MongoDB chat history (synchronous).
         
@@ -168,19 +168,20 @@ class AITrainerBrain:
             user_email (str): The user's email.
             user_input (str): The user's input message.
             response_text (str): The AI's response message.
+            trainer_type (str): The active trainer profile type.
         """
         now = datetime.now().isoformat()
         user_message = ChatHistory(
-            sender=Sender.STUDENT, text=user_input, timestamp=now
+            sender=Sender.STUDENT, text=user_input, timestamp=now, trainer_type=trainer_type
         )
         ai_message = ChatHistory(
-            sender=Sender.TRAINER, text=response_text, timestamp=now
+            sender=Sender.TRAINER, text=response_text, timestamp=now, trainer_type=trainer_type
         )
 
         # Save to MongoDB (Session History) - synchronous
-        self._database.add_to_history(user_message, user_email)
-        self._database.add_to_history(ai_message, user_email)
-        logger.info("Successfully saved conversation to MongoDB for user: %s", user_email)
+        self._database.add_to_history(user_message, user_email, trainer_type)
+        self._database.add_to_history(ai_message, user_email, trainer_type)
+        logger.info("Successfully saved conversation to MongoDB for user: %s (trainer: %s)", user_email, trainer_type)
 
     def send_message_ai(self, user_email: str, user_input: str, background_tasks: BackgroundTasks = None):
         """
@@ -222,9 +223,7 @@ class AITrainerBrain:
             # Create default trainer profile for testing/first login
             trainer_profile_obj = TrainerProfile(
                 user_email=user_email,
-                name="AI Coach",
-                gender="Masculino",
-                style="Científico"
+                trainer_type="atlas"
             )
             self.save_trainer_profile(trainer_profile_obj)
 
@@ -244,9 +243,13 @@ class AITrainerBrain:
         else:
             relevant_memories_str = "Nenhum conhecimento prévio relevante encontrado."
 
+        current_trainer_type = trainer_profile_obj.trainer_type or "atlas"
+        
         chat_history = self._database.get_chat_history(user_email)
-        chat_history_summary = ChatHistory.format_as_string(
-            chat_history, empty_message="No previous messages."
+        chat_history_summary = ChatHistory.format_with_trainer_context(
+            chat_history,
+            current_trainer_type=current_trainer_type,
+            empty_message="No previous messages."
         )
 
         trainer_profile_summary = trainer_profile_obj.get_trainer_profile_summary()
@@ -280,7 +283,7 @@ class AITrainerBrain:
         logger.debug("LLM responded with: %s", log_response)
 
         # Save to MongoDB synchronously
-        self._add_to_mongo_history(user_email, user_input, final_response)
+        self._add_to_mongo_history(user_email, user_input, final_response, current_trainer_type)
         
         # Schedule Mem0 storage as background task (asynchronous)
         if background_tasks:

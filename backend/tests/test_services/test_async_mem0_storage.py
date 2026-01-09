@@ -55,7 +55,7 @@ class TestAsyncMem0Storage(unittest.TestCase):
         response_text = "Hi there!"
 
         # Act
-        self.brain._add_to_mongo_history(user_email, user_input, response_text)
+        self.brain._add_to_mongo_history(user_email, user_input, response_text, "atlas")
 
         # Assert
         # MongoDB should be called twice (user message + AI message)
@@ -122,9 +122,7 @@ class TestAsyncMem0Storage(unittest.TestCase):
                                    age=25, weight=70, height=175,
                                    goal="Muscle gain")
         trainer_profile = TrainerProfile(user_email=user_email,
-                                         name="Test Trainer",
-                                         gender="Masculino",
-                                         style="Científico")
+                                         trainer_type="atlas")
         self.mock_db.get_user_profile.return_value = user_profile
         self.mock_db.get_trainer_profile.return_value = trainer_profile
         self.mock_db.get_chat_history.return_value = []
@@ -165,9 +163,7 @@ class TestAsyncMem0Storage(unittest.TestCase):
                                    age=25, weight=70, height=175,
                                    goal="Muscle gain")
         trainer_profile = TrainerProfile(user_email=user_email,
-                                         name="Test Trainer",
-                                         gender="Masculino",
-                                         style="Científico")
+                                         trainer_type="atlas")
         self.mock_db.get_user_profile.return_value = user_profile
         self.mock_db.get_trainer_profile.return_value = trainer_profile
         self.mock_db.get_chat_history.return_value = []

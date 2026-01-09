@@ -56,9 +56,7 @@ class TestAITrainerBrain(unittest.TestCase):
                                    age=25, weight=70, height=175,
                                    goal="Muscle gain")
         trainer_profile = TrainerProfile(user_email=user_email,
-                                         name="Test Trainer",
-                                         gender="Masculino",
-                                         style="Científico")
+                                         trainer_type="atlas")
         self.mock_db.get_user_profile.return_value = user_profile
         self.mock_db.get_trainer_profile.return_value = trainer_profile
         self.mock_db.get_chat_history.return_value = []
@@ -87,7 +85,7 @@ class TestAITrainerBrain(unittest.TestCase):
         self.mock_db.get_user_profile.return_value = None
         # Should return a default trainer profile to proceed
         self.mock_db.get_trainer_profile.return_value = TrainerProfile(
-            user_email=user_email, name="Test", gender="Masculino", style="Científico"
+            user_email=user_email, trainer_type="atlas"
         )
         self.mock_db.get_chat_history.return_value = []
         self.mock_memory.search.return_value = {}

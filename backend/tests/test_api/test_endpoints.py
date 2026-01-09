@@ -347,13 +347,11 @@ class TestEndpoints(unittest.TestCase):
         mock_brain.save_trainer_profile.return_value = None # Assuming save_trainer_profile returns None
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
         profile_data = TrainerProfileInput(
-            name="Coach",
-            gender="Masculino",
-            style="Científico"
+            trainer_type="atlas"
         ).model_dump()
 
         # Act
-        response = self.client.post("/trainer/update_trainer_profile",
+        response = self.client.put("/trainer/update_trainer_profile",
                                     headers={"Authorization": "Bearer test_token"},
                                     json=profile_data)
 
@@ -371,13 +369,11 @@ class TestEndpoints(unittest.TestCase):
         app.dependency_overrides[verify_token] = mock_unauthenticated_user
 
         profile_data = TrainerProfileInput(
-            name="Coach",
-            gender="Masculino",
-            style="Científico"
+            trainer_type="atlas"
         ).model_dump()
 
         # Act
-        response = self.client.post("/trainer/update_trainer_profile", json=profile_data)
+        response = self.client.put("/trainer/update_trainer_profile", json=profile_data)
 
         # Assert
         self.assertEqual(response.status_code, 401)
@@ -393,9 +389,7 @@ class TestEndpoints(unittest.TestCase):
         mock_brain = MagicMock()
         mock_brain.get_trainer_profile.return_value = TrainerProfile(
             user_email="test@test.com",
-            name="Coach",
-            gender="Masculino",
-            style="Científico"
+            trainer_type="atlas"
         )
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
@@ -405,12 +399,12 @@ class TestEndpoints(unittest.TestCase):
 
         # Assert
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["name"], "Coach")
+        self.assertEqual(response.json()["trainer_type"], "atlas")
         app.dependency_overrides = {}
 
-    def test_get_trainer_profile_not_found(self):
+    def test_get_trainer_profile_returns_default(self):
         """
-        Test retrieval of non-existent trainer profile.
+        Test that retrieval of non-existent trainer profile returns default.
         """
         # Arrange
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
@@ -423,8 +417,8 @@ class TestEndpoints(unittest.TestCase):
                                    headers={"Authorization": "Bearer test_token"})
 
         # Assert
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json(), {"detail": "Trainer profile not found"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["trainer_type"], "atlas")
         app.dependency_overrides = {}
 
     def test_get_trainer_profile_unauthenticated(self):
