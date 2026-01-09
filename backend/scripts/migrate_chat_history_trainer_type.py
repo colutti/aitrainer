@@ -3,72 +3,110 @@ Migration script to add 'trainer_type' metadata to existing chat history message
 Sets default value 'atlas' for all historical messages that lack this field.
 """
 import asyncio
+import json
+import ast
 from src.services.database import MongoDatabase
 from src.core.logs import logger
 from src.core.config import settings
 
+def _update_message_dict(msg):
+    """Helper to update a message dictionary with trainer_type."""
+    target_dict = msg
+    if 'data' in msg:
+        target_dict = msg['data']
+        
+    if 'additional_kwargs' not in target_dict:
+        target_dict['additional_kwargs'] = {}
+    
+    if 'trainer_type' not in target_dict['additional_kwargs']:
+        target_dict['additional_kwargs']['trainer_type'] = 'atlas'
+        return True
+    return False
+
 async def migrate_history():
     print("🚀 Starting chat history migration...")
+    print(f"DEBUG: Using DB_NAME={settings.DB_NAME}")
+    print(f"DEBUG: Using MONGO_URI={settings.MONGO_URI[:15]}...{settings.MONGO_URI.split('@')[-1] if '@' in settings.MONGO_URI else '???'}")
     
     try:
         db = MongoDatabase()
-        collection = db.database[settings.DB_NAME]["message_store"]
+        collection = db.database["message_store"]
         
-        # 1. Update all documents that don't have 'additional_kwargs.trainer_type'
-        # We set default to 'atlas' as a safe fallback
-        result = collection.update_many(
-            {"History.additional_kwargs.trainer_type": {"$exists": False}},
-            {"$set": {"History.$[].additional_kwargs.trainer_type": "atlas"}}
-        )
+        initial_doc_count = collection.count_documents({})
+        print(f"DEBUG: Found {initial_doc_count} documents in 'message_store'")
         
-        # Note: The structure of MongoDBChatMessageHistory stores messages in a 'History' array field.
-        # However, the langchain_mongodb structure might vary. Let's verify structure first.
-        # Actually, standard MongoDBChatMessageHistory stores documents with 'SessionId' and 'History' (list of msgs)
-        
-        # Let's try a different approach: Iterate and update to be safe about the structure
-        # The above update_many might be tricky with nested arrays.
-        
-        # Let's inspect one doc first
-        print("inspecting one document...")
-        sample = collection.find_one({})
-        if sample:
-            print(f"Sample keys: {sample.keys()}")
-            if 'History' in sample:
-                print("Found 'History' field (standard langchain structure)")
-            
-        print("Executing migration via bulk update...")
-        
-        # Helper to update nested array elements
-        # We need to update every message in the History array for every session
-        
-        # We will iterate through all sessions
+        # Iterating manually to handle potential structure variations (String vs List)
         cursor = collection.find({})
-        count = 0
+        count = 0 # This 'count' will track updated sessions
         total_msgs = 0
         
         for doc in cursor:
             session_id = doc.get("SessionId")
             history = doc.get("History", [])
-            
             modified = False
-            for msg in history:
-                # Check if 'data' field exists (structure: type, data: {content, additional_kwargs, ...})
-                # OR direct structure: content, additional_kwargs, ...
+            
+            # Handle case where History is a STRING
+            if isinstance(history, str):
+                history_data = None
+                parsing_method = None
                 
-                # Langchain serialization format often puts actual fields inside 'data'
-                target_dict = msg
-                if 'data' in msg:
-                    target_dict = msg['data']
+                print(f"DEBUG: Processing session {session_id}, history length: {len(history)}")
+
+                # Try JSON loads first
+                try:
+                    history_data = json.loads(history)
+                    parsing_method = 'json'
+                    print("DEBUG: JSON parsing successful")
+                except Exception as e1:
+                    # Try AST literal_eval (python dict string)
+                    try:
+                        history_data = ast.literal_eval(history)
+                        parsing_method = 'ast'
+                        print("DEBUG: AST parsing successful")
+                    except Exception as e2:
+                        print(f"⚠️ Failed to parse history string for session {session_id}")
+                        print(f"JSON Error: {e1}")
+                        print(f"AST Error: {e2}")
+                        continue
+
+                # Prepare list of messages to process
+                if isinstance(history_data, dict):
+                    msgs_to_process = [history_data]
+                    print("DEBUG: History parsed as single Dict")
+                elif isinstance(history_data, list):
+                    msgs_to_process = history_data
+                    print(f"DEBUG: History parsed as List of {len(history_data)} items")
+                else:
+                    print(f"⚠️ Unknown parsed history type for session {session_id}: {type(history_data)}")
+                    continue
                     
-                if 'additional_kwargs' not in target_dict:
-                    target_dict['additional_kwargs'] = {}
+                # Process messages
+                internal_modified = False
+                for i, msg in enumerate(msgs_to_process):
+                    print(f"DEBUG: Processing message {i}")
+                    if _update_message_dict(msg):
+                        internal_modified = True
+                        total_msgs += 1
+                        print("DEBUG: Message updated!")
+                    else:
+                        print("DEBUG: Message NOT updated (maybe already has field?)")
                 
-                if 'trainer_type' not in target_dict['additional_kwargs']:
-                    # Try to fetch current trainer profile for this user if possible, else default
-                    # For migration simplicity, we use 'atlas' (default)
-                    target_dict['additional_kwargs']['trainer_type'] = 'atlas'
+                if internal_modified:
+                    # Serialize back to string
+                    # If it was parsed with AST (python dict), we might want to dump as JSON now for standardization,
+                    # OR dump as repr/str to maintain format. Let's dump as JSON to fix it moving forward.
+                    if isinstance(history_data, dict):
+                        doc["History"] = json.dumps(history_data)
+                    else:
+                        doc["History"] = json.dumps(history_data)
                     modified = True
-                    total_msgs += 1
+            
+            # Handle standard List case
+            elif isinstance(history, list):
+                for msg in history:
+                    if _update_message_dict(msg):
+                        modified = True
+                        total_msgs += 1
             
             if modified:
                 collection.replace_one({"_id": doc["_id"]}, doc)

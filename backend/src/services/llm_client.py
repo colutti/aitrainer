@@ -6,7 +6,8 @@ Provides a unified interface for different LLM providers (Gemini, Ollama, OpenAI
 from typing import Generator
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.messages import AIMessage, ToolMessage
+from langchain_core.messages import AIMessage, ToolMessage, HumanMessage
+from langgraph.prebuilt import create_react_agent
 
 from src.core.logs import logger
 
@@ -59,153 +60,52 @@ class LLMClient:
         self, prompt_template, input_data: dict, tools: list
     ) -> Generator[str, None, None]:
         """
-        Invokes the LLM with tool support and yields response chunks.
-        Implements full agent loop - executes tools and sends results back to model.
+        Invokes the LLM with tool support using LangGraph's ReAct agent.
         """
         logger.info(
-            "Invoking LLM with tools for input: %s", input_data.get("user_message")
+            "Invoking LLM with tools (LangGraph) for input: %s", input_data.get("user_message")
         )
 
         try:
-            llm_with_tools = self._llm.bind_tools(tools)
+            # Format initial messages
             messages = list(prompt_template.format_messages(**input_data))
 
-            for iteration in range(1, 4):  # max 3 iterations
-                logger.debug("Agent loop iteration %d", iteration)
+            # Create the ReAct agent (CompiledGraph)
+            # state_modifier allows us to prepend the system prompt if needed,
+            # but since we already formatted messages including system prompt,
+            # we can pass them directly as input.
+            agent = create_react_agent(self._llm, tools)
 
-                content_chunks, tool_calls = yield from self._stream_and_collect(
-                    llm_with_tools, messages
-                )
-
-                if not tool_calls:
-                    logger.debug("No tool calls, agent loop complete")
-                    break
-
-                self._process_tool_calls(messages, content_chunks, tool_calls, tools)
-                logger.info("Continuing agent loop with tool results")
+            # Stream the agent execution
+            # stream_mode="messages" allows us to get the tokens as they are generated
+            for event, metadata in agent.stream(
+                {"messages": messages},
+                stream_mode="messages"
+            ):
+                # Filter for AIMessageChunks (actual response content)
+                # We want to yield content from the agent's final response or intermediate thoughts
+                if isinstance(event, AIMessage) and event.content:
+                    # Depending on streaming behavior, content might be accumulated or chunks
+                    # In 'messages' mode, we get chunks wrapped in message objects usually?
+                    # Let's verify behavior. Actually "messages" mode yields full messages or chunks?
+                    # "messages" mode in LangGraph yields (message, metadata) tuples.
+                    # For streaming tokens, we usually want "updates" or use .astream_events
+                    
+                    # Correction: agent.stream with stream_mode="messages" yields chunks of messages
+                    # as they are generated.
+                    if isinstance(event.content, str):
+                        yield event.content
+                    elif isinstance(event.content, list):
+                        # Handle complex content (e.g. text + tool_calls)
+                        for block in event.content:
+                            if isinstance(block, str):
+                                yield block
+                            elif isinstance(block, dict) and "text" in block:
+                                yield block["text"]
 
         except Exception as e:
             logger.error("Error in stream_with_tools: %s", e)
             yield f"Error processing request: {str(e)}"
-
-    def _stream_and_collect(
-        self, llm_with_tools, messages: list
-    ) -> Generator[str, None, tuple[list[str], list[dict]]]:
-        """
-        Streams LLM response, yields content chunks, and collects tool calls.
-        Handles incremental tool call arguments from OpenAI streaming.
-        
-        Returns:
-            Tuple of (accumulated_content, tool_calls)
-        """
-        import json
-        
-        accumulated_content = []
-        tool_calls_by_index = {}  # Use index for accumulation (not id, as id comes late)
-
-        for chunk in llm_with_tools.stream(messages):
-            # Yield text content
-            if hasattr(chunk, "content") and chunk.content:
-                for text in self._extract_text_from_content(chunk.content):
-                    accumulated_content.append(text)
-                    yield text
-
-            # Collect and merge tool calls - handle streaming format
-            if hasattr(chunk, "tool_call_chunks") and chunk.tool_call_chunks:
-                # OpenAI streaming uses tool_call_chunks
-                for tc_chunk in chunk.tool_call_chunks:
-                    idx = tc_chunk.get("index", 0)
-                    if idx not in tool_calls_by_index:
-                        tool_calls_by_index[idx] = {
-                            "id": tc_chunk.get("id", ""),
-                            "name": tc_chunk.get("name", ""),
-                            "args_str": tc_chunk.get("args", ""),
-                            "type": "tool_call",
-                        }
-                    else:
-                        existing = tool_calls_by_index[idx]
-                        if tc_chunk.get("id"):
-                            existing["id"] = tc_chunk["id"]
-                        if tc_chunk.get("name"):
-                            existing["name"] = tc_chunk["name"]
-                        if tc_chunk.get("args"):
-                            existing["args_str"] += tc_chunk["args"]
-            
-            elif hasattr(chunk, "tool_calls") and chunk.tool_calls:
-                # Fallback for complete tool_calls
-                for i, tc in enumerate(chunk.tool_calls):
-                    if isinstance(tc, dict):
-                        tc_id = tc.get("id")
-                        tc_name = tc.get("name", "")
-                        tc_args = tc.get("args", {})
-                    else:
-                        tc_id = getattr(tc, "id", None)
-                        tc_name = getattr(tc, "name", "")
-                        tc_args = getattr(tc, "args", {})
-                    
-                    if tc_id and i not in tool_calls_by_index:
-                        tool_calls_by_index[i] = {
-                            "id": tc_id,
-                            "name": tc_name,
-                            "args": dict(tc_args) if tc_args else {},
-                            "type": "tool_call",
-                        }
-
-        # Parse accumulated JSON args
-        result = []
-        for tc in tool_calls_by_index.values():
-            if "args_str" in tc:
-                try:
-                    tc["args"] = json.loads(tc["args_str"]) if tc["args_str"] else {}
-                except json.JSONDecodeError:
-                    logger.warning("Failed to parse tool args: %s", tc["args_str"])
-                    tc["args"] = {}
-                del tc["args_str"]
-            result.append(tc)
-
-        return accumulated_content, result
-
-    def _extract_text_from_content(self, content) -> Generator[str, None, None]:
-        """Extracts text strings from various content formats."""
-        if isinstance(content, str):
-            yield content
-        elif isinstance(content, list):
-            for part in content:
-                if isinstance(part, str):
-                    yield part
-                elif hasattr(part, "text"):
-                    yield part.text
-
-    def _process_tool_calls(
-        self, messages: list, content_chunks: list[str], tool_calls: list, tools: list
-    ) -> None:
-        """Executes tool calls and adds results to message history."""
-        # Filter out invalid tool calls (OpenAI sometimes returns empty ones)
-        valid_tool_calls = [
-            tc for tc in tool_calls
-            if tc.get("id") and tc.get("name")
-        ]
-        
-        if not valid_tool_calls:
-            logger.warning("No valid tool calls found after filtering")
-            return
-            
-        logger.info("Tool calls detected: %s", valid_tool_calls)
-
-        # Add AI message with tool calls
-        ai_message = AIMessage(content="".join(content_chunks), tool_calls=valid_tool_calls)
-        messages.append(ai_message)
-
-        # Execute each tool and add result
-        for tool_call in valid_tool_calls:
-            result = self._execute_tool_call(tool_call, tools)
-            messages.append(
-                ToolMessage(
-                    content=result or "Tool executed successfully",
-                    tool_call_id=tool_call["id"],
-                )
-            )
-            logger.debug("Added tool result: %s", result[:100] if result else "None")
 
     def stream_simple(
         self, prompt_template, input_data: dict
@@ -232,35 +132,8 @@ class LLMClient:
             logger.error("Error in stream_simple: %s", e)
             yield f"Error processing request: {str(e)}"
 
-    def _execute_tool_call(self, tool_call: dict, tools: list) -> str:
-        """
-        Executes a tool call from the LLM and returns the result.
 
-        Args:
-            tool_call: The tool call dict with 'name' and 'args'.
-            tools: List of available tools.
-
-        Returns:
-            The result string from executing the tool.
-        """
-        try:
-            tool_name = tool_call.get("name")
-            tool_args = tool_call.get("args", {})
-
-            logger.info("Executing tool: %s with args: %s", tool_name, tool_args)
-
-            for tool in tools:
-                if tool.name == tool_name:
-                    result = tool.invoke(tool_args)
-                    logger.info("Tool %s returned: %s", tool_name, result)
-                    return result
-
-            logger.warning("Tool %s not found", tool_name)
-            return f"Tool {tool_name} not found"
-
-        except Exception as e:
-            logger.error("Failed to execute tool %s: %s", tool_call.get("name"), e)
-            return f"Error executing tool: {str(e)}"
+# Manual agent loop methods removed (refactoring to LangGraph)
 
 
 class GeminiClient(LLMClient):

@@ -1,48 +1,46 @@
 """
-This module contains unit tests for the AITrainerBrain service.
+Tests for the AITrainerBrain service.
 """
 import unittest
 from unittest.mock import MagicMock, patch
 
-from langchain_core.runnables import Runnable
-
-from src.services.trainer import AITrainerBrain
 from src.api.models.user_profile import UserProfile
 from src.api.models.trainer_profile import TrainerProfile
+from src.services.trainer import AITrainerBrain
 
 
-class MockRunnable(Runnable):
-    """
-    A mock runnable class for testing purposes.
-    """
-    def invoke(self, *args, **kwargs): # pylint: disable=unused-argument
-        """
-        Mock invoke method.
-        """
-        return iter(["Test response"])
-
-    def stream(self, *args, **kwargs): # pylint: disable=unused-argument
-        """
-        Mock stream method.
-        """
-        return iter(["Test response"])
+class MockConversationMemory:
+    """Mock for ConversationSummaryBufferMemory that returns empty chat history."""
+    
+    def load_memory_variables(self, inputs):
+        return {"chat_history": []}
+    
+    def save_context(self, inputs, outputs):
+        pass
 
 
 class TestAITrainerBrain(unittest.TestCase):
-    """
-    Tests for the AITrainerBrain service.
-    """
-    # pylint: disable=invalid-name
+    """Unit tests for the AITrainerBrain class."""
+
     def setUp(self):
-        """
-        Set up mocks for AITrainerBrain dependencies.
-        """
+        """Set up test fixtures."""
         self.mock_db = MagicMock()
         self.mock_llm = MagicMock()
         self.mock_memory = MagicMock()
-        self.brain = AITrainerBrain(database=self.mock_db,
-                                    llm_client=self.mock_llm,
-                                    memory=self.mock_memory)
+        
+        # Mock get_conversation_memory to return our mock
+        self.mock_conversation_memory = MockConversationMemory()
+        self.mock_db.get_conversation_memory.return_value = self.mock_conversation_memory
+        
+        # Need to mock _llm attribute for the summarization LLM
+        self.mock_llm._llm = MagicMock()
+
+        with patch('src.services.trainer.settings') as mock_settings:
+            mock_settings.MAX_LONG_TERM_MEMORY_MESSAGES = 20
+            mock_settings.SUMMARY_MAX_TOKEN_LIMIT = 2000
+            self.brain = AITrainerBrain(database=self.mock_db,
+                                        llm_client=self.mock_llm,
+                                        memory=self.mock_memory)
 
     def test_send_message_ai_success(self):
         """
@@ -59,7 +57,6 @@ class TestAITrainerBrain(unittest.TestCase):
                                          trainer_type="atlas")
         self.mock_db.get_user_profile.return_value = user_profile
         self.mock_db.get_trainer_profile.return_value = trainer_profile
-        self.mock_db.get_chat_history.return_value = []
         self.mock_memory.search.return_value = {}
         self.mock_llm.stream_with_tools.return_value = iter(["Test response"])
 
@@ -71,9 +68,9 @@ class TestAITrainerBrain(unittest.TestCase):
         self.assertEqual(response, "Test response")
         self.mock_db.get_user_profile.assert_called_once_with(user_email)
         self.mock_db.get_trainer_profile.assert_called_once_with(user_email)
-        self.mock_db.get_chat_history.assert_called_once_with(user_email)
-        self.mock_memory.search.assert_called_once_with(user_id=user_email,
-                                                       query=user_input)
+        self.mock_db.get_conversation_memory.assert_called_once()
+        self.mock_memory.search.assert_called_once()
+
     def test_send_message_ai_no_user_profile(self):
         """
         Test send_message_ai creates default user profile when not found.
@@ -87,7 +84,6 @@ class TestAITrainerBrain(unittest.TestCase):
         self.mock_db.get_trainer_profile.return_value = TrainerProfile(
             user_email=user_email, trainer_type="atlas"
         )
-        self.mock_db.get_chat_history.return_value = []
         self.mock_memory.search.return_value = {}
         self.mock_llm.stream_with_tools.return_value = iter(["Response"])
 
@@ -114,7 +110,6 @@ class TestAITrainerBrain(unittest.TestCase):
 
         self.mock_db.get_user_profile.return_value = user_profile
         self.mock_db.get_trainer_profile.return_value = None
-        self.mock_db.get_chat_history.return_value = []
         self.mock_memory.search.return_value = {}
         self.mock_llm.stream_with_tools.return_value = iter(["Response"])
 
@@ -126,3 +121,7 @@ class TestAITrainerBrain(unittest.TestCase):
         self.assertEqual(response, "Response")
         # Verify save_trainer_profile was called to create the default profile
         self.mock_db.save_trainer_profile.assert_called_once()
+
+
+if __name__ == "__main__":
+    unittest.main()

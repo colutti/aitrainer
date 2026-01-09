@@ -357,7 +357,9 @@ class TestEndpoints(unittest.TestCase):
 
         # Assert
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"message": "Profile updated successfully"})
+        response_data = response.json()
+        self.assertEqual(response_data["trainer_type"], "atlas")
+        self.assertEqual(response_data["user_email"], "test@test.com")
         mock_brain.save_trainer_profile.assert_called_once()
         app.dependency_overrides = {}
 

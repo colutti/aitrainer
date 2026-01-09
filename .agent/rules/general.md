@@ -14,6 +14,7 @@ The solution consists of two main projects:
 
 - `/backend`: A Python API.
 - `/frontend`: An Angular application.
+- `/backend/scripts`: Alguns scripts uteis para gerenciamento de usuarios.
 
 ## 3. Core Workflow & Testing Protocols
 
@@ -22,6 +23,11 @@ The solution consists of two main projects:
 - **No Manual Testing:** Avoid manual verification. If something needs testing, write a Cypress or Unit test for it. Aim for near 100% code coverage.
 - **Containerization:** Use **Podman** instead of Docker. Ensure services are running via Podman before testing. If code changes require it, stop and restart services.
 - **Background Execution:** Always run commands in the background. Read service logs to identify issues.
+- Quando voce for gerar um plano, sempre considere executar os testes automatizados. Tente criar uma ordem de execucao das tarefas que englobe testes sempre que possivel.
+- Sempre considere o impacto do seu codigo gerado nos dados que estam em base de dados e o ambiente de producao.
+- Sempre que possivel faca um teste final usando um navegador. Voce pode usar os mesmos usuarios que os testes do cypress usam.
+- Sempre leia as documentacao dos componentes que voce pretende usar de acordo com a versao que pretende usar. Faca um deep-dive na documentacao sempre.
+- Se julgar necessario voce pode crear POCs pra validar a funcionalidade na fase de planejamento. 
 
 ## 4. Coding Standards & Style
 

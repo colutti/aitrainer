@@ -1,9 +1,7 @@
 from src.trainers.base_trainer import BaseTrainer
 
 class AtlasTrainer(BaseTrainer):
-    """
-    Atlas: Scientific and biomechanics expert.
-    """
+    """Atlas: Scientific and biomechanics expert."""
     trainer_id = "atlas"
     name = "Atlas Prime"
     gender = "Masculino"
@@ -19,13 +17,13 @@ class AtlasTrainer(BaseTrainer):
 
     def get_prompt_section(self) -> str:
         return (
-            "## 👤 PERFIL DO TREINADOR (Atlas Prime)\n"
-            "Interprete o perfil: Atlas Prime.\n"
-            f"Seu nome: {self.name}\n"
-            f"Seu gênero: {self.gender}\n"
-            "Seu estilo: Científico e Futurista\n"
-            f"História: {self.background_story}\n"
-            "Personalidade: Especialista em biomecânica. Explique o 'porquê' fisiológico de cada movimento. "
-            "Use terminologia técnica precisa, cite evidências e foque na eficiência neuromuscular. "
-            "Você analisa o treino como um engenheiro analisa uma estrutura.\n"
+            "## 👤 Treinador: Atlas Prime\n"
+            "| Aspecto | Valor |\n"
+            "|---------|-------|\n"
+            f"| Nome | {self.name} |\n"
+            f"| Gênero | {self.gender} |\n"
+            "| Estilo | Científico e Futurista |\n"
+            "| Foco | Biomecânica, eficiência neuromuscular |\n\n"
+            "**Personalidade:** Especialista técnico. Explique o 'porquê' fisiológico. "
+            "Use terminologia precisa, cite evidências. Analise treino como engenheiro analisa estruturas.\n"
         )

@@ -4,8 +4,10 @@ This module contains the database logic for the application.
 from datetime import datetime
 import bcrypt
 import pymongo
-from langchain_mongodb import MongoDBChatMessageHistory
+from langchain_mongodb.chat_message_histories import MongoDBChatMessageHistory
 from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.language_models import BaseChatModel
+from langchain_classic.memory import ConversationSummaryBufferMemory
 
 from src.core.config import settings
 from src.api.models.trainer_profile import TrainerProfile
@@ -188,6 +190,58 @@ class MongoDatabase:
                     content=chat_history.text, additional_kwargs=additional_kwargs
                 )
             )
+
+    def _get_chat_message_history(self, session_id: str) -> MongoDBChatMessageHistory:
+        """
+        Returns the raw MongoDBChatMessageHistory for a session.
+        
+        Args:
+            session_id: User email (session identifier)
+            
+        Returns:
+            MongoDBChatMessageHistory instance
+        """
+        return MongoDBChatMessageHistory(
+            connection_string=settings.MONGO_URI,
+            session_id=session_id,
+            database_name=settings.DB_NAME,
+            history_size=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
+        )
+
+    def get_conversation_memory(
+        self,
+        session_id: str,
+        llm: BaseChatModel,
+        max_token_limit: int | None = None,
+    ) -> ConversationSummaryBufferMemory:
+        """
+        Returns a ConversationSummaryBufferMemory backed by MongoDB.
+        
+        This memory automatically summarizes older messages when the buffer
+        exceeds max_token_limit, providing "infinite memory" with bounded tokens.
+        
+        Args:
+            session_id: User email (session identifier)
+            llm: LLM instance for generating summaries
+            max_token_limit: When to trigger summarization (default: from settings)
+        
+        Returns:
+            Memory object that auto-summarizes when buffer exceeds limit
+        """
+        if max_token_limit is None:
+            max_token_limit = settings.SUMMARY_MAX_TOKEN_LIMIT
+            
+        chat_history = self._get_chat_message_history(session_id)
+        
+        return ConversationSummaryBufferMemory(
+            llm=llm,
+            chat_memory=chat_history,
+            max_token_limit=max_token_limit,
+            return_messages=True,
+            memory_key="chat_history",
+            human_prefix="Aluno",
+            ai_prefix="Treinador",
+        )
 
     def add_token_to_blocklist(self, token: str, expires_at: datetime) -> None:
         """

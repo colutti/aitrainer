@@ -4,7 +4,7 @@ This module contains the AI trainer brain, which is responsible for interacting 
 
 from datetime import datetime
 from fastapi import BackgroundTasks
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
 from mem0 import Memory
 
@@ -72,22 +72,7 @@ class AITrainerBrain:
         )
         return prompt_template
 
-    def _extract_conversation_text(self, messages: list) -> str:
-        """
-        Extracts raw text from messages with sender identification.
-
-        Args:
-            messages (list): List of message objects (HumanMessage/AIMessage).
-
-        Returns:
-            str: Formatted conversation text with sender labels.
-        """
-        logger.debug("Extracting conversation text from %d messages.", len(messages))
-        messages_text = []
-        for msg in messages:
-            sender = "Student" if isinstance(msg, HumanMessage) else "Trainer"
-            messages_text.append(f"{sender}: {msg.content}")
-        return "\n".join(messages_text)
+    # _extract_conversation_text removed (obsolete)
 
     def get_chat_history(self, session_id: str) -> list[ChatHistory]:
         """
@@ -117,7 +102,11 @@ class AITrainerBrain:
         """
         logger.debug("Retrieving relevant memories for user: %s", user_id)
         # In Mem0 1.0.1+, search returns a dict: {"results": [...]}
-        search_result = self._memory.search(user_id=user_id, query=user_input)
+        search_result = self._memory.search(
+            user_id=user_id, 
+            query=user_input,
+            limit=settings.MAX_LONG_TERM_MEMORY_MESSAGES
+        )
         
         # Normalize result to list of dictionaries
         memories_data = []
@@ -160,6 +149,34 @@ class AITrainerBrain:
         """
         self._database.save_trainer_profile(profile)
 
+    def _get_or_create_user_profile(self, user_email: str) -> UserProfile:
+        """Retrieves user profile or creates a default one if not found."""
+        profile = self.get_user_profile(user_email)
+        if not profile:
+            logger.info("User profile not found, creating default for user: %s", user_email)
+            profile = UserProfile(
+                email=user_email,
+                gender="Masculino",
+                age=30,
+                weight=70.0,
+                height=175,
+                goal="Melhorar condicionamento"
+            )
+            self.save_user_profile(profile)
+        return profile
+
+    def _get_or_create_trainer_profile(self, user_email: str) -> TrainerProfile:
+        """Retrieves trainer profile or creates a default one if not found."""
+        trainer_profile_obj = self._database.get_trainer_profile(user_email)
+        if not trainer_profile_obj:
+            logger.info("Trainer profile not found, creating default for user: %s", user_email)
+            trainer_profile_obj = TrainerProfile(
+                user_email=user_email,
+                trainer_type="atlas"
+            )
+            self.save_trainer_profile(trainer_profile_obj)
+        return trainer_profile_obj
+
     def _add_to_mongo_history(self, user_email: str, user_input: str, response_text: str, trainer_type: str):
         """
         Adds the user input and AI response to MongoDB chat history (synchronous).
@@ -183,6 +200,47 @@ class AITrainerBrain:
         self._database.add_to_history(ai_message, user_email, trainer_type)
         logger.info("Successfully saved conversation to MongoDB for user: %s (trainer: %s)", user_email, trainer_type)
 
+    def _format_memory_messages(
+        self,
+        messages: list,
+        current_trainer_type: str,
+    ) -> str:
+        """
+        Formats LangChain messages with trainer context for the prompt.
+        Handles both raw messages and summarized content from ConversationSummaryBufferMemory.
+        
+        Args:
+            messages: List of LangChain messages (HumanMessage, AIMessage, or SystemMessage with summary)
+            current_trainer_type: The active trainer type for context formatting
+            
+        Returns:
+            Formatted string for the prompt
+        """
+        if not messages:
+            return "No previous messages."
+        
+        formatted = []
+        for msg in messages:
+            # Check if it's a summary (SystemMessage with moving_summary_buffer content)
+            if hasattr(msg, 'type') and msg.type == "system":
+                formatted.append(f"📜 **[RESUMO DO HISTÓRICO]**\n> {msg.content}")
+            elif isinstance(msg, HumanMessage):
+                formatted.append(f"🧑 **Aluno**: {msg.content}")
+            elif isinstance(msg, AIMessage):
+                # Check trainer_type from additional_kwargs
+                trainer_type = msg.additional_kwargs.get("trainer_type", current_trainer_type)
+                if trainer_type == current_trainer_type:
+                    formatted.append(f"🏋️ **Treinador**: {msg.content}")
+                else:
+                    formatted.append(
+                        f"🏋️ **Treinador [PERFIL ANTERIOR: {trainer_type}]**:\n> [Contexto] {msg.content}"
+                    )
+            else:
+                # Fallback for unknown message types
+                formatted.append(f"> {msg.content}")
+        
+        return "\n\n---\n\n".join(formatted)
+
     def send_message_ai(self, user_email: str, user_input: str, background_tasks: BackgroundTasks = None):
         """
         Generates LLM response, summarizing history if needed.
@@ -203,29 +261,8 @@ class AITrainerBrain:
         """
         logger.info("Generating workout stream for user: %s", user_email)
 
-        profile = self.get_user_profile(user_email)
-        if not profile:
-            logger.info("User profile not found, creating default for user: %s", user_email)
-            # Create default user profile for testing/first login
-            profile = UserProfile(
-                email=user_email,
-                gender="Masculino",
-                age=30,
-                weight=70.0,
-                height=175,
-                goal="Melhorar condicionamento"
-            )
-            self.save_user_profile(profile)
-
-        trainer_profile_obj = self._database.get_trainer_profile(user_email)
-        if not trainer_profile_obj:
-            logger.info("Trainer profile not found, creating default for user: %s", user_email)
-            # Create default trainer profile for testing/first login
-            trainer_profile_obj = TrainerProfile(
-                user_email=user_email,
-                trainer_type="atlas"
-            )
-            self.save_trainer_profile(trainer_profile_obj)
+        profile = self._get_or_create_user_profile(user_email)
+        trainer_profile_obj = self._get_or_create_trainer_profile(user_email)
 
         relevant_memories = self._retrieve_relevant_memories(user_input, user_email)
         
@@ -245,11 +282,21 @@ class AITrainerBrain:
 
         current_trainer_type = trainer_profile_obj.trainer_type or "atlas"
         
-        chat_history = self._database.get_chat_history(user_email)
-        chat_history_summary = ChatHistory.format_with_trainer_context(
-            chat_history,
+        # Get conversation memory with summarization support
+        conversation_memory = self._database.get_conversation_memory(
+            session_id=user_email,
+            llm=self._llm_client._llm,  # Use same LLM for summarization
+            max_token_limit=settings.SUMMARY_MAX_TOKEN_LIMIT,
+        )
+        
+        # Load memory variables (includes summary + recent messages if buffer exceeded)
+        memory_vars = conversation_memory.load_memory_variables({})
+        chat_history_messages = memory_vars.get("chat_history", [])
+        
+        # Format messages with trainer context
+        chat_history_summary = self._format_memory_messages(
+            chat_history_messages,
             current_trainer_type=current_trainer_type,
-            empty_message="No previous messages."
         )
 
         trainer_profile_summary = trainer_profile_obj.get_trainer_profile_summary()
