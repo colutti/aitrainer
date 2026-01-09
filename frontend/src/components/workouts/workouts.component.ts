@@ -54,13 +54,13 @@ export class WorkoutsComponent implements OnInit {
     return 'from-gray-600 to-slate-700';
   }
 
-  getWorkoutIcon(type: string | null): string {
+  getWorkoutIconUrl(type: string | null): string {
     const t = (type || '').toLowerCase();
-    if (t.includes('perna') || t.includes('leg')) return '🦵';
-    if (t.includes('peito') || t.includes('push')) return '💪';
-    if (t.includes('costas') || t.includes('pull')) return '🔙';
-    if (t.includes('braço') || t.includes('arm')) return '💪';
-    return '🏋️';
+    if (t.includes('perna') || t.includes('leg')) return 'assets/icon_legs.png';
+    if (t.includes('peito') || t.includes('push')) return 'assets/icon_push.png';
+    if (t.includes('costas') || t.includes('pull')) return 'assets/icon_pull.png';
+    if (t.includes('braço') || t.includes('arm')) return 'assets/icon_arms.png';
+    return 'assets/icon_default.png';
   }
 
   isUniformExercise(reps: number[], weights: number[]): boolean {
