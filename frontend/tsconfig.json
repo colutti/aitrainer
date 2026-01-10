@@ -32,6 +32,7 @@
     "cypress",
     "eslint.config.js",
     "dist",
-    ".angular"
+    ".angular",
+    "**/*.spec.ts"
   ]
 }
