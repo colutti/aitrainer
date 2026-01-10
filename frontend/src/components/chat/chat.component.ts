@@ -17,6 +17,10 @@ import { MarkdownComponent } from 'ngx-markdown';
 
 import { ViewEncapsulation } from '@angular/core';
 
+import { TrainerProfileService } from '../../services/trainer-profile.service';
+import { UserProfileService } from '../../services/user-profile.service';
+import { TrainerCard } from '../../models/trainer-profile.model';
+
 @Component({
   selector: 'app-chat',
   templateUrl: './chat.component.html',
@@ -94,6 +98,8 @@ import { ViewEncapsulation } from '@angular/core';
 })
 export class ChatComponent implements OnInit, AfterViewChecked {
   private chatService = inject(ChatService);
+  private trainerProfileService = inject(TrainerProfileService);
+  private userProfileService = inject(UserProfileService);
   private cdr = inject(ChangeDetectorRef);
 
   @ViewChild('messageInput') messageInput!: ElementRef<HTMLTextAreaElement>;
@@ -101,6 +107,26 @@ export class ChatComponent implements OnInit, AfterViewChecked {
   newMessage = signal('');
   messages = this.chatService.messages;
   isTyping = this.chatService.isTyping;
+  
+  availableTrainers = signal<TrainerCard[]>([]);
+  trainerProfile = signal<any>(null); // Using any temporarily or better TrainerProfile
+  
+  showScrollButton = signal(false);
+  
+  // Suggestion chips
+  suggestions = [
+    "Me sugira um treino de pernas",
+    "Como melhorar meu supino?",
+    "Quero dicas de nutrição para hipertrofia",
+    "Explique o princípio da sobrecarga progressiva"
+  ];
+
+  // Computed trainer based on fetched profile
+  currentTrainer = computed(() => {
+    const profile = this.trainerProfile();
+    const type = profile?.trainer_type;
+    return this.availableTrainers().find(t => t.trainer_id === type);
+  });
 
   // Computed signal to reverse messages for the flex-col-reverse layout
   reversedMessages = computed(() => {
@@ -108,7 +134,15 @@ export class ChatComponent implements OnInit, AfterViewChecked {
   });
 
   async ngOnInit(): Promise<void> {
-    await this.chatService.loadHistory();
+    const [_, trainers, profile] = await Promise.all([
+      this.chatService.loadHistory(),
+      this.trainerProfileService.getAvailableTrainers(),
+      this.trainerProfileService.fetchProfile()
+    ]);
+    
+    this.availableTrainers.set(trainers);
+    this.trainerProfile.set(profile);
+    
     this.cdr.markForCheck();
   }
 
@@ -138,6 +172,100 @@ export class ChatComponent implements OnInit, AfterViewChecked {
    * - Enter alone: sends the message
    * - Shift+Enter: allows default behavior (new line)
    */
+  sendSuggestion(text: string) {
+    this.newMessage.set(text);
+    this.sendMessage();
+  }
+
+  onScroll(event: Event) {
+    const el = event.target as HTMLElement;
+    // In flex-col-reverse, scrollTop is negative or 0 depending on browser
+    // or checks scrollHeight vs scrollTop.
+    // Actually, usually 0 is bottom in flex-col-reverse? No, 0 is top.
+    // Wait, flex-col-reverse makes the content start from bottom, but the scrollbar is still standard?
+    // Chrome: scrollTop is 0 at top, max at bottom.
+    // If flex-col-reverse, content is reversed.
+    // Let's assume standard behavior: we want to show button if user scrolls UP from bottom.
+    // Bottom means (scrollHeight - scrollTop - clientHeight) < threshold.
+    
+    // Simplification: if scrollTop < (scrollHeight - clientHeight - 100), show button.
+    const isAtBottom = Math.abs(el.scrollHeight - el.scrollTop - el.clientHeight) < 50;
+    this.showScrollButton.set(!isAtBottom);
+  }
+
+  scrollToBottom() {
+    // In flex-col-reverse, new messages are at the "bottom" visually which is the beginning of the container?
+    // Wait, <div class="flex-col-reverse"> puts the *last* DOM element at the *top* visually?
+    // No. flex-direction: column-reverse;
+    // Item 1 (DOM) -> Bottom (Visual)
+    // Item N (DOM) -> Top (Visual)
+    // My template iterates reversedMessages().
+    // reversedMessages() = [...messages].reverse(). 
+    // So Message[Last] (Newest) is at index 0 of array.
+    // So it renders first in DOM?
+    
+    // If I use flex-col-reverse:
+    // DOM: [Newest, ..., Oldest]
+    // Visual: 
+    //   Oldest
+    //   ...
+    //   Newest
+    
+    // Wait, standard chat is:
+    // Oldest (Top)
+    // Newest (Bottom)
+    
+    // If I use flex-col-reverse on the container:
+    // Visual Top: Last DOM Element
+    // Visual Bottom: First DOM Element
+    
+    // If my array is `reversedMessages` (Newest first):
+    // DOM:
+    //  <div>Newest</div>
+    //  ...
+    //  <div>Oldest</div>
+    
+    // Visual (column-reverse):
+    //  Top: Oldest
+    //  Bottom: Newest
+    
+    // So "Bottom" visual is "Top" of Scroll logic?
+    // Because DOM First Element is at Visual Bottom.
+    // So scrollTop 0 should be... the content top (Oldest)? 
+    
+    // Actually, with flex-col-reverse, `scrollTop: 0` is usually the top of the container (Oldest).
+    // The "Bottom" (Newest) is at scrollTop = scrollHeight.
+    
+    // Wait, usually flex-col-reverse is used so that when content grows, it stays anchored to bottom?
+    // If I verify the template:
+    // <div class="flex-1 overflow-y-auto flex flex-col-reverse">
+    //   <div class="max-w-3xl ... flex flex-col-reverse gap-6">
+    //      @for message of reversedMessages
+    
+    // So we have an outer scroll container, and inner wrapper.
+    // Inner wrapper has flex-col-reverse.
+    
+    // To scroll to bottom (Visual Newest), we need to scroll to... ?
+    // If visual bottom is where "Newest" is.
+    // Newest is DOM First Child?
+    // flex-col-reverse:
+    // | Container |
+    // | Item 3    |
+    // | Item 2    |
+    // | Item 1    |
+    
+    // If I want to see Item 1 (Newest), I look at the bottom.
+    // That corresponds to `scrollTop` being max (if standard scrollbar).
+    
+    // I will simply try: `el.scrollTop = el.scrollHeight;` and see.
+    // The button should appear if `scrollTop < max`.
+    
+    const container = document.querySelector('.chat-scroll-container'); 
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }
+
   handleKeyDown(event: KeyboardEvent): void {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();

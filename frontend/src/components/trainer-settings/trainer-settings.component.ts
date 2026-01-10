@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TrainerProfileService } from '../../services/trainer-profile.service';
+import { NotificationService } from '../../services/notification.service';
 import { TrainerProfile, TrainerCard } from '../../models/trainer-profile.model';
 
 @Component({
@@ -12,13 +13,12 @@ import { TrainerProfile, TrainerCard } from '../../models/trainer-profile.model'
 })
 export class TrainerSettingsComponent implements OnInit {
   private trainerProfileService = inject(TrainerProfileService);
+  private notificationService = inject(NotificationService);
 
   profile = signal<TrainerProfile>({ trainer_type: 'atlas' });
   availableTrainers = signal<TrainerCard[]>([]);
   
   isSaving = signal(false);
-  errorMessage = signal('');
-  showSuccess = signal(false);
 
   async ngOnInit() {
     await this.loadTrainers();
@@ -33,7 +33,7 @@ export class TrainerSettingsComponent implements OnInit {
         this.availableTrainers.set(trainers);
     } catch (err) {
         console.error('DEBUG: Failed to load trainers', err);
-        this.errorMessage.set('Erro ao carregar treinadores disponíveis.');
+        this.notificationService.error('Erro ao carregar treinadores disponíveis.');
     }
   }
 
@@ -52,17 +52,14 @@ export class TrainerSettingsComponent implements OnInit {
 
   async saveProfile() {
     this.isSaving.set(true);
-    this.errorMessage.set('');
-    this.showSuccess.set(false);
 
     try {
       const updated = await this.trainerProfileService.updateProfile(this.profile());
       this.profile.set(updated);
-      this.showSuccess.set(true);
-      setTimeout(() => this.showSuccess.set(false), 3000);
+      this.notificationService.success('Treinador atualizado com sucesso!');
     } catch (err) {
       console.error('Failed to save profile', err);
-      this.errorMessage.set('Erro ao salvar alterações. Tente novamente.');
+      this.notificationService.error('Erro ao salvar alterações. Tente novamente.');
     } finally {
       this.isSaving.set(false);
     }

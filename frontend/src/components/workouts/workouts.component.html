@@ -1,4 +1,21 @@
-<div class="h-full relative overflow-hidden bg-dark-bg text-text-primary p-6 flex flex-col">
+<div class="h-full flex flex-col relative overflow-hidden bg-dark-bg text-text-primary p-6"
+     (touchstart)="onTouchStart($event)"
+     (touchmove)="onTouchMove($event)"
+     (touchend)="onTouchEnd()">
+
+  <!-- Refresh Indicator -->
+  <div class="absolute top-0 left-0 w-full flex justify-center pointer-events-none transition-all duration-200 z-50"
+       [style.opacity]="pullProgress() > 0 ? 1 : 0"
+       [style.transform]="'translateY(' + (pullProgress() * 0.5) + 'px)'">
+     <div class="bg-dark-bg p-2 rounded-full shadow-lg border border-secondary">
+       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" 
+            class="w-6 h-6 text-primary transition-transform"
+            [style.transform]="'rotate(' + (pullProgress() * 3.6) + 'deg)'">
+         <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+       </svg>
+     </div>
+  </div>
+
   <!-- Header -->
   <div class="flex justify-between items-end mb-6 flex-shrink-0">
     <div>

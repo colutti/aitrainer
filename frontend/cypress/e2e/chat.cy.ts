@@ -22,12 +22,28 @@ describe('Chat Flow', () => {
 
     // Intercept stats (dashboard loads on login)
     cy.intercept('GET', '**/workout/stats', { body: {} }).as('getStats');
+    
+    // Intercept Trainer Profile (new req in Chat)
+    cy.intercept('GET', '**/trainer/trainer_profile', {
+        statusCode: 200,
+        body: { trainer_type: 'atlas' }
+    }).as('trainerProfile');
+
+    // Intercept Available Trainers (new req in Chat)
+    cy.intercept('GET', '**/trainer/available_trainers', {
+        statusCode: 200,
+        body: [{ 
+            trainer_id: 'atlas', 
+            name: 'Atlas', 
+            avatar_url: '/assets/atlas.png' 
+        }]
+    }).as('availableTrainers');
 
     cy.login('cypress_user@test.com', 'password123');
     
     // Navigate to chat
     cy.get('button').contains('Chat').click();
-    cy.wait('@chatHistory');
+    cy.wait(['@chatHistory', '@trainerProfile', '@availableTrainers']);
   });
 
   it('should display the chat interface', () => {

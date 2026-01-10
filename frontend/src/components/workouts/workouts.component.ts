@@ -24,11 +24,54 @@ export class WorkoutsComponent implements OnInit {
   workoutTypes = signal<string[]>([]);
   selectedType = this.workoutService.selectedType;
 
-  async ngOnInit(): Promise<void> {
+  // Pull to refresh state
+  private startY = 0;
+  private currentY = 0;
+  isPulling = signal(false);
+  pullProgress = signal(0); // 0 to 100
+
+  onTouchStart(event: TouchEvent) {
+    if (window.scrollY === 0 || (event.target as HTMLElement).scrollTop === 0) {
+      this.startY = event.touches[0].clientY;
+      this.isPulling.set(true);
+    }
+  }
+
+  onTouchMove(event: TouchEvent) {
+    if (!this.isPulling()) return;
+    
+    this.currentY = event.touches[0].clientY;
+    const diff = this.currentY - this.startY;
+    
+    if (diff > 0 && diff < 200) {
+      // Prevent default pull-to-refresh if possible, though strict passive listeners might prevent this
+      // event.preventDefault(); 
+      this.pullProgress.set(Math.min((diff / 150) * 100, 100));
+    }
+  }
+
+  async onTouchEnd() {
+    if (!this.isPulling()) return;
+
+    if (this.pullProgress() >= 100) {
+      // Trigger refresh
+      await this.loadWorkouts();
+    }
+    
+    // Reset
+    this.isPulling.set(false);
+    this.pullProgress.set(0);
+  }
+
+  async loadWorkouts(): Promise<void> {
     await Promise.all([
         this.workoutService.getWorkouts(1),
         this.loadTypes()
     ]);
+  }
+
+  async ngOnInit(): Promise<void> {
+    await this.loadWorkouts();
   }
 
   async loadTypes() {

@@ -102,3 +102,11 @@
   color: #4ade80;
   transition: opacity 300ms ease-in-out;
 }
+
+/* Phase 4: Mobile Touch Targets */
+@media (pointer: coarse) {
+  button, a, [role="button"], input[type="submit"], input[type="reset"], input[type="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
