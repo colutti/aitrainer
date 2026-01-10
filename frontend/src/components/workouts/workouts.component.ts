@@ -1,13 +1,15 @@
-import { Component, ChangeDetectionStrategy, inject, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { WorkoutService } from '../../services/workout.service';
+import { WorkoutDrawerComponent } from './workout-drawer/workout-drawer.component';
+import { Workout } from '../../models/workout.model';
 
 @Component({
   selector: 'app-workouts',
   templateUrl: './workouts.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
-  imports: [CommonModule]
+  imports: [CommonModule, WorkoutDrawerComponent]
 })
 export class WorkoutsComponent implements OnInit {
   private workoutService = inject(WorkoutService);
@@ -17,9 +19,36 @@ export class WorkoutsComponent implements OnInit {
   currentPage = this.workoutService.currentPage;
   totalPages = this.workoutService.totalPages;
   totalWorkouts = this.workoutService.totalWorkouts;
+  
+  selectedWorkout = signal<Workout | null>(null);
+  workoutTypes = signal<string[]>([]);
+  selectedType = this.workoutService.selectedType;
 
   async ngOnInit(): Promise<void> {
-    await this.workoutService.getWorkouts(1);
+    await Promise.all([
+        this.workoutService.getWorkouts(1),
+        this.loadTypes()
+    ]);
+  }
+
+  async loadTypes() {
+     const types = await this.workoutService.getTypes();
+     this.workoutTypes.set(types);
+  }
+
+  selectWorkout(workout: Workout) {
+    this.selectedWorkout.set(workout);
+  }
+
+  closeDrawer() {
+    this.selectedWorkout.set(null);
+  }
+
+  async onTypeChange(event: Event) {
+      const target = event.target as HTMLSelectElement;
+      const val = target.value;
+      const type = val === 'all' ? null : val;
+      await this.workoutService.getWorkouts(1, type);
   }
 
   async previousPage(): Promise<void> {
@@ -30,43 +59,13 @@ export class WorkoutsComponent implements OnInit {
     await this.workoutService.nextPage();
   }
 
-  formatDate(dateStr: string): string {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch {
-      return 'Data inválida';
-    }
+  // Helper date format for list
+  formatDateMain(dateStr: string): string {
+      return new Date(dateStr).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
   }
-
-  getWorkoutTypeGradient(type: string | null): string {
-    const t = (type || '').toLowerCase();
-    if (t.includes('perna') || t.includes('leg')) return 'from-blue-600 to-indigo-700';
-    if (t.includes('peito') || t.includes('push')) return 'from-red-600 to-orange-700';
-    if (t.includes('costas') || t.includes('pull')) return 'from-green-600 to-emerald-700';
-    if (t.includes('braço') || t.includes('arm')) return 'from-purple-600 to-violet-700';
-    return 'from-gray-600 to-slate-700';
-  }
-
-  getWorkoutIconUrl(type: string | null): string {
-    const t = (type || '').toLowerCase();
-    if (t.includes('perna') || t.includes('leg')) return 'assets/icon_legs.png';
-    if (t.includes('peito') || t.includes('push')) return 'assets/icon_push.png';
-    if (t.includes('costas') || t.includes('pull')) return 'assets/icon_pull.png';
-    if (t.includes('braço') || t.includes('arm')) return 'assets/icon_arms.png';
-    return 'assets/icon_default.png';
-  }
-
-  isUniformExercise(reps: number[], weights: number[]): boolean {
-    if (reps.length === 0) return true;
-    const uniformReps = reps.every(r => r === reps[0]);
-    const uniformWeights = weights.length === 0 || weights.every(w => w === weights[0]);
-    return uniformReps && uniformWeights;
-  }
+  
+  // Helper for grouping? We render flat list in mockup, with Date headers.
+  // Implementing date headers in HTML usually requires processing list.
+  // Simplified: show date in card. Mockup: "Janeiro 2024" header.
+  // We can do simple list for now (Compact List) as per Phase 3.
 }

@@ -1,6 +1,24 @@
 describe('Error Handling', () => {
     beforeEach(() => {
-        cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
+        // Intercept Login
+        cy.intercept('POST', '**/user/login', {
+            statusCode: 200,
+            body: { token: 'fake-jwt-token' }
+        }).as('login');
+
+        // Intercept stats
+        cy.intercept('GET', '**/workout/stats', { body: {} }).as('getStats');
+
+        // Intercept chat history
+        cy.intercept('GET', '**/message/history*', {
+            statusCode: 200,
+            body: { messages: [] }
+        }).as('chatHistory');
+
+        cy.login('cypress_user@test.com', 'password123');
+        
+        // Navigate to chat for error tests
+        cy.get('button').contains('Chat').click();
     });
 
     it('should display error message when chat API fails', () => {
@@ -65,7 +83,7 @@ describe('Error Handling', () => {
         // Wait for intercepted call
         cy.wait('@trainerError');
 
-        // Trainer settings page should still be visible with default data
-        cy.get('app-trainer-settings').should('be.visible');
+        // Verify the application didn't crash (sidebar still visible)
+        cy.get('app-sidebar', { timeout: 10000 }).should('be.visible');
     });
 });

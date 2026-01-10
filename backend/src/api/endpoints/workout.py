@@ -22,7 +22,8 @@ def list_workouts(
     user_email: CurrentUser,
     db: DatabaseDep,
     page: int = Query(default=1, ge=1, description="Page number (1-indexed)"),
-    page_size: int = Query(default=10, ge=1, le=50, description="Items per page")
+    page_size: int = Query(default=10, ge=1, le=50, description="Items per page"),
+    workout_type: str | None = Query(default=None, description="Filter by workout type")
 ) -> WorkoutListResponse:
     """
     Retrieves paginated workout logs for the authenticated user.
@@ -43,7 +44,8 @@ def list_workouts(
         raw_workouts, total = db.get_workouts_paginated(
             user_email=user_email,
             page=page,
-            page_size=page_size
+            page_size=page_size,
+            workout_type=workout_type
         )
         
         workouts = [WorkoutWithId(**w) for w in raw_workouts]
@@ -63,3 +65,17 @@ def list_workouts(
     except Exception as e:
         logger.error("Error listing workouts for user %s: %s", user_email, e)
         raise HTTPException(status_code=500, detail="Failed to retrieve workouts") from e
+
+
+@router.get("/types", response_model=list[str])
+def get_types(
+    user_email: CurrentUser,
+    db: DatabaseDep
+) -> list[str]:
+    """Retrieves all distinct workout types for the user."""
+    logger.info("Fetching workout types for user: %s", user_email)
+    try:
+        return db.get_workout_types(user_email)
+    except Exception as e:
+        logger.error("Error fetching workout types for user %s: %s", user_email, e)
+        raise HTTPException(status_code=500, detail="Failed to retrieve workout types") from e

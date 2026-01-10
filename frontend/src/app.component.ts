@@ -7,6 +7,7 @@ import { TrainerSettingsComponent } from './components/trainer-settings/trainer-
 import { MemoriesComponent } from './components/memories/memories.component';
 import { WorkoutsComponent } from './components/workouts/workouts.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
+import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { AuthService } from './services/auth.service';
 import { NavigationService } from './services/navigation.service';
 
@@ -23,6 +24,7 @@ import { NavigationService } from './services/navigation.service';
     MemoriesComponent,
     WorkoutsComponent,
     SidebarComponent,
+    DashboardComponent
   ],
 })
 

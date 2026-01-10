@@ -26,7 +26,7 @@ The solution consists of two main projects:
 - Quando voce for gerar um plano, sempre considere executar os testes automatizados. Tente criar uma ordem de execucao das tarefas que englobe testes sempre que possivel.
 - Sempre considere o impacto do seu codigo gerado nos dados que estam em base de dados e o ambiente de producao.
 - Sempre que possivel faca um teste final usando um navegador. Voce pode usar os mesmos usuarios que os testes do cypress usam.
-- Sempre leia as documentacao dos componentes que voce pretende usar de acordo com a versao que pretende usar. Faca um deep-dive na documentacao sempre.
+- Sempre leia as documentacao dos componentes e codigos que voce pretende usar de acordo com a versao que pretende usar. Faca um deep-dive na documentacao sempre.
 - Se julgar necessario voce pode crear POCs pra validar a funcionalidade na fase de planejamento. 
 
 ## 4. Coding Standards & Style

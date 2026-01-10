@@ -1,7 +1,34 @@
 describe('Mobile Navigation', () => {
     beforeEach(() => {
-        // Login before each test
-        cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
+        // Intercept Login
+        cy.intercept('POST', '**/user/login', {
+            statusCode: 200,
+            body: { token: 'fake-jwt-token' }
+        }).as('login');
+
+        // Intercept stats
+        cy.intercept('GET', '**/workout/stats', { body: {} }).as('getStats');
+
+        // Intercept chat history
+        cy.intercept('GET', '**/message/history*', {
+            statusCode: 200,
+            body: { messages: [] }
+        }).as('chatHistory');
+
+        // Intercept user profile
+        cy.intercept('GET', '**/user/profile', {
+            statusCode: 200,
+            body: {
+                email: 'cypress@test.com',
+                gender: 'Masculino',
+                age: 30,
+                weight: 80,
+                height: 180,
+                goal: 'Ganhar massa'
+            }
+        }).as('userProfile');
+
+        cy.login('cypress_user@test.com', 'password123');
     });
 
     it('should show sidebar and hide hamburger on desktop', () => {
@@ -62,16 +89,17 @@ describe('Mobile Navigation', () => {
         // Open menu
         cy.get('[data-cy="mobile-menu-btn"]').click();
         
-        // Verify we are on chat initially
-        cy.get('app-chat').should('be.visible');
+        // Verify we are on dashboard initially (default view)
+        cy.get('app-dashboard', { timeout: 10000 }).should('be.visible');
         
         // Click "Meu Perfil" in sidebar
         cy.get('app-sidebar button').contains('Meu Perfil').click();
+        cy.wait('@userProfile');
         
         // Sidebar should auto close
         cy.get('app-sidebar').should('not.be.visible');
         
         // Should have navigated
-        cy.get('app-user-profile').should('be.visible');
+        cy.get('app-user-profile', { timeout: 10000 }).should('be.visible');
     });
 });

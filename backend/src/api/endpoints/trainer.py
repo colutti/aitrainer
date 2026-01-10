@@ -18,7 +18,7 @@ async def update_trainer_profile(
     """
     Updates the user's trainer profile preference.
     """
-    profile = TrainerProfile(user_email=user_email, **profile_input.dict())
+    profile = TrainerProfile(user_email=user_email, **profile_input.model_dump())
     brain.save_trainer_profile(profile)
     return profile
 

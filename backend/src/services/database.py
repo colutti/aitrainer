@@ -14,8 +14,11 @@ from src.api.models.trainer_profile import TrainerProfile
 from src.api.models.user_profile import UserProfile
 from src.api.models.chat_history import ChatHistory
 from src.api.models.sender import Sender
-from src.api.models.workout_log import WorkoutLog
+from src.api.models.workout_log import WorkoutLog, WorkoutWithId
 from src.core.logs import logger
+from src.api.models.workout_stats import WorkoutStats, PersonalRecord, VolumeStat
+from datetime import timedelta
+import calendar
 
 
 
@@ -324,20 +327,24 @@ class MongoDatabase:
         return workouts
 
     def get_workouts_paginated(
-        self, user_email: str, page: int = 1, page_size: int = 10
+        self, user_email: str, page: int = 1, page_size: int = 10, workout_type: str | None = None
     ) -> tuple[list[dict], int]:
         """
-        Retrieves workout logs for a given user with pagination.
+        Retrieves workout logs for a given user with pagination and optional filtering.
 
         Args:
             user_email (str): The user's email address.
             page (int): Page number (1-indexed).
             page_size (int): Number of items per page.
+            workout_type (str | None): Filter by workout type.
 
         Returns:
             tuple[list[dict], int]: List of workout dicts (with 'id') and total count.
         """
         query = {"user_email": user_email}
+        if workout_type:
+            query["workout_type"] = workout_type
+
         total = self.database.workout_logs.count_documents(query)
         
         skip = (page - 1) * page_size
@@ -358,3 +365,211 @@ class MongoDatabase:
             len(workouts), total, user_email, page
         )
         return workouts, total
+
+    def get_workout_stats(self, user_email: str) -> WorkoutStats:
+        """
+        Calculates and returns workout statistics for the dashboard.
+        """
+        # 1. Get all workouts (projection for speed)
+        cursor = self.database.workout_logs.find(
+            {"user_email": user_email},
+            {"date": 1, "workout_type": 1, "exercises": 1, "user_email": 1, "duration_minutes": 1}
+        ).sort("date", pymongo.DESCENDING)
+        
+        all_workouts = list(cursor)
+        if not all_workouts:
+            return WorkoutStats(
+                current_streak_weeks=0,
+                weekly_frequency=[False]*7,
+                weekly_volume=[],
+                recent_prs=[],
+                total_workouts=0,
+                last_workout=None
+            )
+
+        # 2. Total Workouts
+        total_workouts = len(all_workouts)
+
+        # 3. Last Workout
+        last_workout_doc = all_workouts[0]
+        last_workout_doc["id"] = str(last_workout_doc.pop("_id"))
+        last_workout = WorkoutWithId(**last_workout_doc)
+
+        # 4. Streak (Weeks with >= 3 workouts)
+        current_streak = self._calculate_weekly_streak(all_workouts)
+
+        # 5. Weekly Metrics (Frequency & Volume)
+        freq, volume = self._calculate_weekly_metrics(all_workouts)
+
+        # 6. Recent PRs
+        prs = self._calculate_recent_prs(all_workouts)
+
+        return WorkoutStats(
+            current_streak_weeks=current_streak,
+            weekly_frequency=freq,
+            weekly_volume=volume,
+            recent_prs=prs,
+            total_workouts=total_workouts,
+            last_workout=last_workout
+        )
+
+    def _calculate_weekly_streak(self, workouts: list[dict]) -> int:
+        """
+        Calculates consecutive weeks with >= 3 workouts.
+        """
+        if not workouts:
+            return 0
+            
+        # Group workouts by (iso_year, iso_week)
+        weeks_data = {}
+        for w in workouts:
+            dt = w["date"]
+            iso_year, iso_week, _ = dt.isocalendar()
+            key = (iso_year, iso_week)
+            weeks_data[key] = weeks_data.get(key, 0) + 1
+
+        # Check existing streak counting backwards from current week
+        now = datetime.now()
+        current_year, current_week, _ = now.isocalendar()
+        
+        streak = 0
+        # If current week has met criteria, start counting from it
+        # If not, check if previous week met criteria (streak active but not yet updated this week)
+        
+        # Helper to check criterion
+        def met_criteria(y, w):
+            return weeks_data.get((y, w), 0) >= 3
+
+        # Start checking from current week
+        check_year, check_week = current_year, current_week
+        
+        # If current week didn't meet criteria yet, allow it to "continue" if previous week did?
+        # Standard streak: count completed blocks.
+        # If I have 3 workouts this week -> streak + 1.
+        # If I have 1 workout this week -> streak continues? "Weekly Streak" usually implies completed weeks.
+        # But for "Current Streak", valid weeks immediately preceding now.
+        
+        while met_criteria(check_year, check_week):
+            streak += 1
+            # Move to previous week
+            check_date = datetime.fromisocalendar(check_year, check_week, 1) - timedelta(days=7)
+            check_year, check_week, _ = check_date.isocalendar()
+            
+        return streak
+
+    def _calculate_weekly_metrics(self, workouts: list[dict]) -> tuple[list[bool], list[VolumeStat]]:
+        """
+        Calculates weekly frequency (Bool list) and volume per category.
+        """
+        now = datetime.now()
+        start_of_week = now - timedelta(days=now.weekday()) # Mon
+        start_of_week = start_of_week.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        current_week_workouts = [w for w in workouts if w["date"] >= start_of_week]
+        
+        # Frequency (Mon-Sun)
+        freq = [False] * 7
+        for w in current_week_workouts:
+            day_idx = w["date"].weekday() # 0=Mon, 6=Sun
+            freq[day_idx] = True
+            
+        # Volume
+        volume_map = {}
+        for w in current_week_workouts:
+            cat = w.get("workout_type", "Outros") or "Outros"
+            exercises = w.get("exercises", [])
+            for ex in exercises:
+                # Calculate volume for this exercise
+                # ex is dict here because we fetched raw dicts
+                reps_list = ex.get("reps_per_set", [])
+                weights_list = ex.get("weights_per_set", [])
+                
+                vol = 0.0
+                for i, reps in enumerate(reps_list):
+                    weight = weights_list[i] if i < len(weights_list) else 0.0
+                    vol += reps * weight
+                
+                volume_map[cat] = volume_map.get(cat, 0.0) + vol
+                
+        # Convert to list
+        volume_stats = [
+            VolumeStat(category=k, volume=round(v, 1)) 
+            for k, v in volume_map.items()
+        ]
+        
+        # Sort by volume desc
+        volume_stats.sort(key=lambda x: x.volume, reverse=True)
+        return freq, volume_stats
+
+    def _calculate_recent_prs(self, workouts: list[dict], limit: int = 3) -> list[PersonalRecord]:
+        """
+        Identifies the top 3 most recent Personal Records (max weight).
+        """
+        # Map: Exercise Name -> (Max Weight, Date, Reps, WorkoutID)
+        max_weights = {} 
+        
+        # Traverse from oldest to newest to build history?
+        # No, we want "Recent PRs". This implies the PR *date* is recent.
+        # A PR is the ALL-TIME max.
+        # So we iterate ALL workouts to find the ALL-TIME max for each exercise.
+        # Then we look at WHEN that max was achieved.
+        
+        # Iterate all workouts (reversed: Oldest -> Newest) to find first/last occurrence?
+        # We need the DATE of the PR. If I tie my PR, does the date update? 
+        # Usually "New PR" implies exceeding previous.
+        
+        for w in reversed(workouts): # Oldest to Newest
+            w_id = str(w.get("_id"))
+            date = w["date"]
+            exercises = w.get("exercises", [])
+            
+            for ex in exercises:
+                name = ex.get("name")
+                if not name: continue
+                
+                weights = ex.get("weights_per_set", [])
+                reps = ex.get("reps_per_set", [])
+                
+                if not weights: continue
+                
+                # Find max in this session
+                session_max = -1.0
+                session_max_reps = 0
+                
+                for i, weight in enumerate(weights):
+                    if weight > session_max:
+                        session_max = weight
+                        session_max_reps = reps[i] if i < len(reps) else 0
+                
+                if session_max > 0:
+                    current_record = max_weights.get(name)
+                    # If beats record, update
+                    if not current_record or session_max > current_record["weight"]:
+                        max_weights[name] = {
+                            "weight": session_max,
+                            "reps": session_max_reps,
+                            "date": date,
+                            "workout_id": w_id
+                        }
+        
+        # Convert map to list and sort by date desc
+        prs_list = [
+            PersonalRecord(
+                exercise_name=name,
+                weight=data["weight"],
+                reps=data["reps"],
+                date=data["date"],
+                workout_id=data["workout_id"]
+            )
+            for name, data in max_weights.items()
+        ]
+        
+        prs_list.sort(key=lambda x: x.date, reverse=True)
+        return prs_list[:limit]
+
+    def get_workout_types(self, user_email: str) -> list[str]:
+        """
+        Retrieves all distinct workout types for a user.
+        """
+        types = self.database.workout_logs.distinct("workout_type", {"user_email": user_email})
+        return sorted([t for t in types if t])

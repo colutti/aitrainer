@@ -1,153 +1,84 @@
-<div class="h-full overflow-y-auto bg-dark-bg p-6 md:p-8">
-  <div class="max-w-4xl mx-auto">
-    <!-- Header -->
-    <header class="mb-8">
-      <h2 class="text-3xl md:text-4xl font-black text-white flex items-center gap-3 mb-3">
-        <img src="assets/icon_default.png" class="w-10 h-10 md:w-12 md:h-12 object-contain" alt="Icon">
-         Meus Treinos
-      </h2>
-      <p class="text-text-secondary text-base md:text-lg">
-        Seu histórico de treinos registrado série a série
-      </p>
-      
-      @if (totalWorkouts() > 0) {
-        <div class="mt-4 inline-flex items-center gap-2 bg-primary/10 border border-primary/30 px-4 py-2 rounded-xl">
-          <span class="text-2xl font-bold text-primary">{{ totalWorkouts() }}</span>
-          <span class="text-sm text-text-secondary">treino{{ totalWorkouts() > 1 ? 's' : '' }} registrado{{ totalWorkouts() > 1 ? 's' : '' }}</span>
-        </div>
-      }
-    </header>
-
-    <!-- Loading State -->
-    @if (isLoading()) {
-      <div class="flex flex-col items-center justify-center py-20 gap-4">
-        <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-primary"></div>
-        <p class="text-text-secondary animate-pulse">Carregando...</p>
-      </div>
-    }
+<div class="h-full relative overflow-hidden bg-dark-bg text-text-primary p-6 flex flex-col">
+  <!-- Header -->
+  <div class="flex justify-between items-end mb-6 flex-shrink-0">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight">Histórico</h1>
+      <p class="text-text-secondary text-sm mt-1">{{ totalWorkouts() }} treinos registrados</p>
+    </div>
     
-    <!-- Empty State -->
-    @else if (workouts().length === 0) {
-      <div class="text-center py-16 bg-light-bg/50 rounded-3xl border-2 border-dashed border-secondary">
-        <div class="text-6xl mb-4">📝</div>
-        <h3 class="text-xl font-bold text-white mb-2">Nenhum treino registrado</h3>
-        <p class="text-text-secondary max-w-sm mx-auto">
-          Comece a treinar e conte para o AI Trainer o que você fez!
-        </p>
+    <!-- Filter -->
+    <div class="relative">
+      <select (change)="onTypeChange($event)" class="appearance-none bg-light-bg border border-secondary text-text-primary py-2 pl-4 pr-10 rounded-lg focus:outline-none focus:border-primary cursor-pointer hover:border-primary/50 transition-colors text-sm">
+        <option value="all">Todos</option>
+        <option *ngFor="let type of workoutTypes()" [value]="type">{{ type }}</option>
+      </select>
+      <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-text-secondary">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
       </div>
-    }
-    
-    <!-- Workout List -->
-    @else {
-      <div class="space-y-6">
-        @for (workout of workouts(); track workout.id) {
-          <div class="bg-light-bg rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
-            <!-- Card Header -->
-            <div 
-              class="bg-gradient-to-r p-5 text-white"
-              [ngClass]="getWorkoutTypeGradient(workout.workout_type)"
-            >
-              <div class="flex justify-between items-start">
-                <div class="flex items-center gap-3">
-                  <!-- Workout Icon using newly generated assets -->
-                  <div class="w-12 h-12 flex-shrink-0 bg-white/10 rounded-xl p-2 backdrop-blur-sm">
-                      <img [src]="getWorkoutIconUrl(workout.workout_type)" alt="Icon" class="w-full h-full object-contain filter drop-shadow-md">
-                  </div>                  
-                  <div>
-                    <h3 class="text-xl font-bold">{{ workout.workout_type || 'Treino' }}</h3>
-                    <p class="text-sm opacity-90">{{ formatDate(workout.date) }}</p>
-                  </div>
-                </div>
-                @if (workout.duration_minutes) {
-                  <div class="flex items-center gap-2 bg-black/20 px-3 py-1 rounded-lg">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <span class="text-sm font-semibold">{{ workout.duration_minutes }} min</span>
-                  </div>
-                }
-              </div>
-            </div>
-
-            <!-- Exercises -->
-            <div class="p-5 space-y-6">
-              @for (ex of workout.exercises; track ex.name) {
-                <div>
-                  <h4 class="text-white font-bold text-lg mb-3 flex items-center gap-2">
-                    <span class="w-2 h-2 bg-primary rounded-full"></span>
-                    {{ ex.name }}
-                  </h4>
-                  
-                  <!-- Uniform sets (all same reps/weight) -->
-                  @if (isUniformExercise(ex.reps_per_set, ex.weights_per_set)) {
-                    <div class="flex items-center gap-4 flex-wrap">
-                      <div class="bg-dark-bg/50 border border-secondary px-5 py-3 rounded-xl">
-                        <span class="text-2xl font-black text-primary">{{ ex.sets }}</span>
-                        <span class="text-xs text-text-secondary ml-1">séries</span>
-                      </div>
-                      <div class="text-xl font-medium text-white">
-                        {{ ex.reps_per_set[0] }} <span class="text-text-secondary text-sm">reps</span>
-                        @if (ex.weights_per_set.length > 0) {
-                          <span class="text-primary mx-2">@</span>
-                          <span class="text-primary">{{ ex.weights_per_set[0] }}kg</span>
-                        }
-                      </div>
-                    </div>
-                  }
-                  
-                  <!-- Variable sets (different reps/weights) -->
-                  @else {
-                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                      @for (reps of ex.reps_per_set; track $index; let i = $index) {
-                        <div class="bg-dark-bg/30 border border-secondary/50 p-3 rounded-xl hover:bg-secondary/20 transition-colors">
-                          <div class="text-[10px] uppercase font-bold text-text-secondary mb-1">Série {{ i + 1 }}</div>
-                          <div class="text-lg font-black text-white">
-                            {{ reps }} <span class="text-xs font-normal text-text-secondary">reps</span>
-                          </div>
-                          @if (ex.weights_per_set[i]) {
-                            <div class="text-sm font-bold text-primary mt-1">{{ ex.weights_per_set[i] }}kg</div>
-                          }
-                        </div>
-                      }
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-          </div>
-        }
-      </div>
-
-      <!-- Pagination -->
-      @if (totalPages() > 1) {
-        <div class="flex justify-between items-center mt-8 p-5 bg-light-bg/80 rounded-2xl border border-secondary">
-          <button
-            (click)="previousPage()"
-            [disabled]="currentPage() === 1 || isLoading()"
-            class="flex items-center gap-2 px-5 py-2 rounded-xl font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-primary hover:text-white"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-            </svg>
-            Anterior
-          </button>
-
-          <div class="text-text-secondary text-sm">
-            Página {{ currentPage() }} de {{ totalPages() }}
-          </div>
-
-          <button
-            (click)="nextPage()"
-            [disabled]="currentPage() === totalPages() || isLoading()"
-            class="flex items-center gap-2 px-5 py-2 rounded-xl font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-primary hover:text-white"
-          >
-            Próxima
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-            </svg>
-          </button>
-        </div>
-      }
-    }
+    </div>
   </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading()" class="flex-1 flex justify-center items-center">
+    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+  </div>
+
+  <!-- List -->
+  <div *ngIf="!isLoading()" class="flex-1 overflow-y-auto pr-2 custom-scrollbar relative">
+    <div class="absolute left-[19px] top-0 bottom-0 w-0.5 bg-secondary/30 h-full"></div>
+    
+    <div class="space-y-4 pb-10 pt-2">
+      
+      <div *ngFor="let w of workouts()" class="relative pl-12 group cursor-pointer" (click)="selectWorkout(w)">
+        <!-- Timeline Dot -->
+        <div class="absolute left-[13px] top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-dark-bg border-2 border-secondary group-hover:border-primary group-hover:bg-primary group-hover:scale-125 transition-all duration-300 z-10 box-border"></div>
+        
+        <!-- Card -->
+        <div class="bg-light-bg p-4 rounded-xl border border-secondary group-hover:border-primary/50 group-hover:shadow-[0_0_15px_rgba(16,185,129,0.05)] transition-all duration-300 flex justify-between items-center transform group-hover:-translate-y-0.5 group-active:translate-y-0">
+           <div class="flex items-center gap-4">
+              <div class="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center text-xl">
+                 {{ w.workout_type?.toLowerCase()?.includes('perna') ? '🦵' : w.workout_type?.toLowerCase()?.includes('peito') ? '💪' : w.workout_type?.toLowerCase()?.includes('costas') ? '🦍' : '🏋️' }}
+              </div>
+              <div>
+                 <h3 class="font-bold text-base text-white group-hover:text-primary transition-colors">{{ w.workout_type || 'Treino sem nome' }}</h3>
+                 <p class="text-text-secondary text-xs font-medium mt-0.5 tracking-wide flex items-center gap-1">
+                    <span>{{ w.date | date:'dd MMM yyyy' }}</span>
+                    <span class="w-1 h-1 rounded-full bg-text-secondary opacity-50"></span>
+                    <span>{{ w.duration_minutes || '--' }} min</span>
+                 </p>
+              </div>
+           </div>
+           
+           <div class="text-secondary/50 group-hover:text-primary transition-colors transform group-hover:translate-x-1">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+           </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="workouts().length === 0" class="pl-12 pt-10 text-center text-text-secondary italic">
+         <p>Nenhum treino encontrado.</p>
+      </div>
+
+    </div>
+    
+    <!-- Pagination -->
+    <div *ngIf="workouts().length > 0" class="flex justify-between items-center py-4 border-t border-secondary mt-auto bg-dark-bg sticky bottom-0 z-20">
+       <button (click)="previousPage()" [disabled]="currentPage() === 1" class="px-4 py-2 bg-light-bg rounded-lg border border-secondary text-text-secondary text-sm font-medium hover:text-white hover:bg-secondary/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          Anterior
+       </button>
+       <span class="text-text-secondary text-xs font-mono opacity-70">Pg {{ currentPage() }} / {{ totalPages() }}</span>
+       <button (click)="nextPage()" [disabled]="currentPage() === totalPages()" class="px-4 py-2 bg-light-bg rounded-lg border border-secondary text-text-secondary text-sm font-medium hover:text-white hover:bg-secondary/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          Próxima
+       </button>
+    </div>
+  </div>
+
+  <!-- Drawer -->
+  <app-workout-drawer 
+      *ngIf="selectedWorkout()" 
+      [workout]="selectedWorkout()!" 
+      (close)="closeDrawer()">
+  </app-workout-drawer>
+
 </div>

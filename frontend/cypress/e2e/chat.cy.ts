@@ -1,6 +1,33 @@
 describe('Chat Flow', () => {
   beforeEach(() => {
-    cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
+    // Intercept Login
+    cy.intercept('POST', '**/user/login', {
+      statusCode: 200,
+      body: { token: 'fake-jwt-token' }
+    }).as('login');
+
+    // Intercept chat history (initial load)
+    cy.intercept('GET', '**/message/history*', {
+      statusCode: 200,
+      body: {
+        messages: [
+          {
+            sender: 'ai',
+            content: 'Olá! Sou seu personal trainer virtual. Como posso ajudar hoje?',
+            timestamp: new Date().toISOString()
+          }
+        ]
+      }
+    }).as('chatHistory');
+
+    // Intercept stats (dashboard loads on login)
+    cy.intercept('GET', '**/workout/stats', { body: {} }).as('getStats');
+
+    cy.login('cypress_user@test.com', 'password123');
+    
+    // Navigate to chat
+    cy.get('button').contains('Chat').click();
+    cy.wait('@chatHistory');
   });
 
   it('should display the chat interface', () => {
@@ -19,6 +46,14 @@ describe('Chat Flow', () => {
   });
 
   it('should disable textarea while AI is typing', () => {
+    // Mock chat response with SSE format
+    cy.intercept('POST', '**/message/message', {
+      statusCode: 200,
+      headers: { 'content-type': 'text/event-stream' },
+      body: 'data: {"content": "Teste"}\n\ndata: {"content": " de"}\n\ndata: {"content": " resposta"}\n\ndata: [DONE]\n\n',
+      delay: 1000 // Simulate typing delay
+    }).as('chatResponse');
+
     const userMessage = 'Teste rápido';
 
     // Send a message
@@ -31,11 +66,20 @@ describe('Chat Flow', () => {
     cy.get('button[type="submit"]').should('be.disabled');
 
     // Wait for response and check textarea is enabled again
-    cy.contains('Digitando', { timeout: 120000 }).should('not.exist');
+    cy.wait('@chatResponse');
+    cy.contains('Digitando', { timeout: 5000 }).should('not.exist');
     cy.get('textarea[name="newMessage"]').should('not.be.disabled');
   });
 
   it('should send a message and receive a response from the AI', () => {
+    // Mock chat response with delay to allow "Digitando" to appear
+    cy.intercept('POST', '**/message/message', {
+      statusCode: 200,
+      headers: { 'content-type': 'text/plain' },
+      body: 'Para peito, recomendo supino reto, supino inclinado e crucifixo.',
+      delay: 500 // Allow typing indicator to show
+    }).as('chatAI');
+
     const userMessage = 'Olá, qual o melhor exercício para peito?';
 
     // Ensure the initial AI message is visible before starting
@@ -51,9 +95,9 @@ describe('Chat Flow', () => {
     // Wait for the "typing" indicator to appear, confirming the request is in flight
     cy.contains('Digitando').should('be.visible');
 
-    // Wait for the "typing" indicator to disappear, confirming the response has been received.
-    // Use a very long timeout to account for slow API responses.
-    cy.contains('Digitando', { timeout: 120000 }).should('not.exist');
+    // Wait for response
+    cy.wait('@chatAI');
+    cy.contains('Digitando', { timeout: 5000 }).should('not.exist');
 
     // The first AI message should now be the new response and should not be empty.
     cy.get('div.flex.animate-slide-in-fade.justify-start')
@@ -64,10 +108,10 @@ describe('Chat Flow', () => {
 
   it('should reset textarea height after sending a multi-line message', () => {
     // Mock the chat API to avoid consuming AI credits
-    cy.intercept('POST', '**/chat', {
+    cy.intercept('POST', '**/message/message', {
       statusCode: 200,
-      headers: { 'content-type': 'text/event-stream' },
-      body: 'data: {"content": "Resposta mock"}\n\ndata: [DONE]\n\n'
+      headers: { 'content-type': 'text/plain' },
+      body: 'Resposta mock'
     }).as('chatMock');
 
     const textarea = 'textarea[name="newMessage"]';

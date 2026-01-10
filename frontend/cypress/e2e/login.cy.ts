@@ -30,7 +30,7 @@ describe('Login Flow', () => {
     // After login, the login component should disappear and the main app view (with sidebar) should be visible
     cy.get('app-login', { timeout: 10000 }).should('not.exist');
     cy.get('app-sidebar').should('be.visible');
-    cy.get('app-chat').should('be.visible'); // The default view is chat
+    cy.get('app-dashboard').should('be.visible'); // The default view is dashboard
     cy.url().should('not.include', 'login');
   });
 

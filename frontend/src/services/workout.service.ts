@@ -17,18 +17,28 @@ export class WorkoutService {
   pageSize = signal(10);
   totalPages = signal(0);
   totalWorkouts = signal(0);
+  selectedType = signal<string | null>(null);
 
   constructor(private http: HttpClient) {}
 
   /**
    * Fetches paginated workouts for the current user.
    */
-  async getWorkouts(page: number = this.currentPage()): Promise<Workout[]> {
+  async getWorkouts(page: number = 1, type: string | null = this.selectedType()): Promise<Workout[]> {
     this.isLoading.set(true);
+    // If type changed or explicitly passed, update signal
+    if (type !== this.selectedType()) {
+         this.selectedType.set(type);
+    }
+
     try {
-      const params = new HttpParams()
+      let params = new HttpParams()
         .set('page', page.toString())
         .set('page_size', this.pageSize().toString());
+      
+      if (type) {
+        params = params.set('workout_type', type);
+      }
 
       const response = await firstValueFrom(
         this.http.get<WorkoutListResponse>(`${environment.apiUrl}/workout/list`, { params })
@@ -47,6 +57,17 @@ export class WorkoutService {
       this.isLoading.set(false);
     }
   }
+
+  async getTypes(): Promise<string[]> {
+    try {
+        return await firstValueFrom(this.http.get<string[]>(`${environment.apiUrl}/workout/types`));
+    } catch (error) {
+        console.error('Error fetching types:', error);
+        return [];
+    }
+  }
+
+
 
   async nextPage(): Promise<void> {
     if (this.currentPage() < this.totalPages()) {
