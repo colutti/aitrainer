@@ -2,9 +2,10 @@
 This module contains the main FastAPI application.
 """
 import warnings
-# Suppress LangChain deprecation warning for ConversationSummaryBufferMemory
-# TODO: Migrate to LangGraph checkpointing when langchain_classic is removed
+# Suppress LangChain and websockets deprecation warnings
 warnings.filterwarnings("ignore", message=".*migrating_memory.*")
+warnings.filterwarnings("ignore", category=DeprecationWarning, message=".*websockets.legacy is deprecated.*")
+warnings.filterwarnings("ignore", category=DeprecationWarning, message=".*websockets.server.WebSocketServerProtocol is deprecated.*")
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
