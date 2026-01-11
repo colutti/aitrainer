@@ -63,27 +63,29 @@
 
       <!-- Messages in reverse order -->
       @for (message of reversedMessages(); track message.id) {
-      <div
-        class="flex animate-slide-in-fade"
-        [class]="message.sender === 'user' ? 'justify-end' : 'justify-start'"
-      >
-        <div
-          class="max-w-[85%] md:max-w-2xl px-4 py-3 rounded-2xl shadow"
-          [class]="
-            message.sender === 'user'
-              ? 'bg-accent text-white rounded-br-none'
-              : 'bg-light-bg text-text-primary rounded-bl-none'
-          "
-        >
-          <markdown
-            class="text-sm markdown-content"
-            [data]="message.text"
-          ></markdown>
-          <p class="text-xs mt-1 opacity-60 text-right">
-            {{ message.timestamp | date : "shortTime" }}
-          </p>
-        </div>
-      </div>
+        @if (message.text && message.text.trim().length > 0 || message.sender === 'user') {
+          <div
+            class="flex animate-slide-in-fade"
+            [class]="message.sender === 'user' ? 'justify-end' : 'justify-start'"
+          >
+            <div
+              class="max-w-[85%] md:max-w-2xl px-4 py-3 rounded-2xl shadow"
+              [class]="
+                message.sender === 'user'
+                  ? 'bg-accent text-white rounded-br-none'
+                  : 'bg-light-bg text-text-primary rounded-bl-none'
+              "
+            >
+              <markdown
+                class="text-sm markdown-content"
+                [data]="message.text"
+              ></markdown>
+              <p class="text-xs mt-1 opacity-60 text-right">
+                {{ message.timestamp | date : "shortTime" }}
+              </p>
+            </div>
+          </div>
+        }
       }
     </div>
   </div>
