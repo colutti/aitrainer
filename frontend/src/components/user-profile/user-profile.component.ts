@@ -56,6 +56,13 @@ export class UserProfileComponent implements OnInit {
     }
   }
 
+  onGoalTypeChange(): void {
+    if (this.profile().goal_type === 'maintain') {
+      const current = this.profile();
+      this.profile.set({ ...current, weekly_rate: 0 });
+    }
+  }
+
   async saveProfile(): Promise<void> {
     this.isSaving.set(true);
     this.validationErrors.set({});
@@ -68,7 +75,7 @@ export class UserProfileComponent implements OnInit {
       height: this.profile().height,
       goal: this.profile().goal,
       goal_type: this.profile().goal_type,
-      weekly_rate: this.profile().weekly_rate,
+      weekly_rate: this.profile().goal_type === 'maintain' ? 0 : this.profile().weekly_rate,
       target_weight: this.profile().target_weight
     };
 
