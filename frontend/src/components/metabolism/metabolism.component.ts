@@ -57,15 +57,22 @@ export class MetabolismComponent implements OnInit {
     const action = diff > 0 ? "aumentar" : "reduzir";
     const absDiff = Math.abs(diff);
 
+    const formatDate = (dateStr: string) => {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    };
+
+    const period = `No período de ${formatDate(s.startDate)} a ${formatDate(s.endDate)}`;
+
     if (s.is_stable) {
-        return `Seu TDEE é de ${s.tdee} kcal. Você está consumindo ${s.avg_calories} kcal em média, o que está mantendo seu peso estável.`;
+        return `Seu TDEE é de ${s.tdee} kcal. ${period}, você consumiu ${s.avg_calories} kcal em média, o que manteve seu peso estável.`;
     }
 
     const messagePrefix = s.energy_balance < 0 
-        ? `Seu TDEE é de ${s.tdee} kcal. Com uma média de ${s.avg_calories} kcal, você está em um déficit real de ${Math.abs(s.energy_balance)} kcal.`
-        : `Seu TDEE é de ${s.tdee} kcal. Com uma média de ${s.avg_calories} kcal, você está em um superávit real de ${s.energy_balance} kcal.`;
+        ? `Seu TDEE é de ${s.tdee} kcal. ${period}, você manteve uma média de ${s.avg_calories} kcal, gerando um déficit real de ${Math.abs(s.energy_balance).toFixed(1)} kcal.`
+        : `Seu TDEE é de ${s.tdee} kcal. ${period}, você manteve uma média de ${s.avg_calories} kcal, gerando um superávit real de ${s.energy_balance.toFixed(1)} kcal.`;
 
-    return `${messagePrefix} Isso resultou em uma variação de ${s.weight_change_per_week} kg/semana. Para atingir sua meta, sugerimos as recomendações acima.`;
+    return `${messagePrefix} Isso resultou em uma variação de ${s.weight_change_per_week} kg/semana.`;
   }
   
   getConfidenceColor(level: string): string {
