@@ -42,23 +42,20 @@ Antes de enviar qualquer código, valide se o build de produção passa localmen
    ```
 
 ## 3. Execução do Deploy (Render CLI)
+
+Sempre use o modo nao interativo: consulte https://render.com/docs/cli#non-interactive-mode
+
+A publicacao no render pode demorar. Espere terminar.
+
 **IDs dos Serviços:**
 - Backend: `srv-d5f2utqli9vc73dak390` (Manual)
 - Frontend: `srv-d5f3e8u3jp1c73bkjbf0` (Automático no Push)
 
 ### Backend (Manual)
-1. Disparar deploy manual atrelando ao commit específico:
-   ```bash
-   render deploys create srv-d5f2utqli9vc73dak390 --commit $COMMIT_HASH --confirm
-   ```
-   *Nota: Se possível use `--wait`. Caso contrário, monitore com `render deploys list`.*
+1. Disparar deploy manual atrelando ao commit específico
 
 ### Frontend (Automático - Monitoramento)
-1. Monitorar o status do deploy automático disparado pelo push:
-   ```bash
-   render deploys list srv-d5f3e8u3jp1c73bkjbf0 --output json
-   ```
-   *Verifique se o último deploy corresponde ao `$COMMIT_HASH` e se o status virou `live`.*
+1. Monitorar o status do deploy automático disparado pelo push
 
 ## 4. Verificação Pós-Deploy (Smoke Test)
 Só considere sucesso se ambos retornarem sucesso.

@@ -22,6 +22,11 @@ export class WeightWidgetComponent {
   // Quick add buttons relative to last known weight
   suggestion = signal<number | null>(null);
 
+  // New signals for composition fields and toggle
+  isExpanded = signal<boolean>(false);
+  bodyFatInput = signal<number | null>(null);
+  muscleMassInput = signal<number | null>(null);
+
   constructor() {
     // Determine suggestion based on profile weight or history
     const profile = this.userProfileService.userProfile();
@@ -30,12 +35,19 @@ export class WeightWidgetComponent {
     }
   }
 
+  toggleExpanded() {
+    this.isExpanded.update(value => !value);
+  }
+
   async saveWeight() {
     if (!this.weightInput()) return;
     
     this.isSaving.set(true);
     try {
-      await this.weightService.logWeight(this.weightInput()!);
+      await this.weightService.logWeight(this.weightInput()!, {
+        body_fat_pct: this.bodyFatInput() || undefined,
+        muscle_mass_pct: this.muscleMassInput() || undefined
+      });
       // Update local profile weight as well to keep in sync visually
       // Ideally backend updates profile on weight log, or we fetch again.
       // For now, let's just log it. 

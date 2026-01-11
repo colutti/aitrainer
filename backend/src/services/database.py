@@ -823,9 +823,14 @@ class MongoDatabase:
         # Explicitly convert to datetime(year, month, day) to match consistency
         log_datetime = datetime(log.date.year, log.date.month, log.date.day)
 
+        # Prepare data for upsert
+        data = log.model_dump()
+        # Ensure date is stored as datetime in MongoDB (standardization)
+        data["date"] = log_datetime
+        
         result = self.database.weight_logs.update_one(
             {"user_email": log.user_email, "date": log_datetime},
-            {"$set": {"user_email": log.user_email, "date": log_datetime, "weight_kg": log.weight_kg, "notes": log.notes}},
+            {"$set": data},
             upsert=True
         )
         
@@ -855,12 +860,12 @@ class MongoDatabase:
         
         logs = []
         for doc in cursor:
-            logs.append(WeightLog(
-                user_email=doc["user_email"],
-                date=doc["date"].date(),
-                weight_kg=doc["weight_kg"],
-                notes=doc.get("notes")
-            ))
+            # Convert datetime to date object for Pydantic model
+            if isinstance(doc["date"], datetime):
+                doc["date"] = doc["date"].date()
+            if "_id" in doc:
+                del doc["_id"]
+            logs.append(WeightLog(**doc))
             
         return logs
 
@@ -881,11 +886,11 @@ class MongoDatabase:
         
         logs = []
         for doc in cursor:
-            logs.append(WeightLog(
-                user_email=doc["user_email"],
-                date=doc["date"].date(),
-                weight_kg=doc["weight_kg"],
-                notes=doc.get("notes")
-            ))
+            # Convert datetime to date object for Pydantic model
+            if isinstance(doc["date"], datetime):
+                doc["date"] = doc["date"].date()
+            if "_id" in doc:
+                del doc["_id"]
+            logs.append(WeightLog(**doc))
             
         return logs

@@ -7,6 +7,7 @@ import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import { VolumeStat } from '../../models/stats.model';
 
 import { WeightWidgetComponent } from './weight-widget/weight-widget.component';
+import { WeightService } from '../../services/weight.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -17,9 +18,11 @@ import { WeightWidgetComponent } from './weight-widget/weight-widget.component';
 export class DashboardComponent implements OnInit {
   statsService = inject(StatsService);
   nutritionService = inject(NutritionService);
+  weightService = inject(WeightService);
   
   stats = this.statsService.stats;
   nutritionStats = this.nutritionService.stats;
+  latestComposition = signal<any>(null);
   
   isLoading = this.statsService.isLoading;
 
@@ -117,9 +120,13 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  ngOnInit() {
+  async ngOnInit() {
     this.statsService.fetchStats();
     this.nutritionService.getStats().subscribe();
+    const compStats = await this.weightService.getBodyCompositionStats();
+    if (compStats?.latest) {
+        this.latestComposition.set(compStats.latest);
+    }
   }
 
   updateVolumeChart(volumeStats: VolumeStat[]) {

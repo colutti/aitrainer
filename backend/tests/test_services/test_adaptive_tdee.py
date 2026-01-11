@@ -95,7 +95,7 @@ def test_get_current_targets(service, mock_db):
     
     # Mock Profile
     profile_mock = MagicMock()
-    profile_mock.goal_type = "lose_weight"
+    profile_mock.goal_type = "lose"
     profile_mock.weekly_rate = 0.5
     mock_db.get_user_profile.return_value = profile_mock
     
@@ -104,7 +104,7 @@ def test_get_current_targets(service, mock_db):
     # Target = 2500 - (0.5 * 1100) = 2500 - 550 = 1950
     assert targets["tdee"] == 2500
     assert targets["daily_target"] == 1950
-    assert "lose_weight" in targets["reason"]
+    assert "lose" in targets["reason"]
 
 def test_get_current_targets_gain(service, mock_db):
     # Mock TDEE calculation
@@ -112,7 +112,7 @@ def test_get_current_targets_gain(service, mock_db):
     
     # Mock Profile
     profile_mock = MagicMock()
-    profile_mock.goal_type = "gain_muscle"
+    profile_mock.goal_type = "gain"
     profile_mock.weekly_rate = 0.2
     
     mock_db.get_user_profile.return_value = profile_mock
@@ -122,3 +122,54 @@ def test_get_current_targets_gain(service, mock_db):
     # Target = 2500 + (0.2 * 1100) = 2500 + 220 = 2720
     assert targets["tdee"] == 2500
     assert targets["daily_target"] == 2720
+
+def test_tdee_includes_body_composition_changes(service, mock_db):
+    """TDEE includes fat/lean change when composition data available."""
+    today = date.today()
+    start_date = today - timedelta(days=20)
+    
+    # Weight drops 80 -> 78 (2kg loss)
+    # Fat drops 25% -> 23%
+    # Start Fat Mass = 80 * 0.25 = 20kg
+    # End Fat Mass = 78 * 0.23 = 17.94kg
+    # Fat Change = -2.06kg
+    # Total Change = -2.0kg
+    # Lean Change = -2.0 - (-2.06) = +0.06kg (Muscle gain!)
+    
+    weights = []
+    # Create start log
+    weights.append(WeightLog(
+        user_email="comp@test.com", 
+        date=start_date, 
+        weight_kg=80.0, 
+        body_fat_pct=25.0
+    ))
+    # Create filler logs (composition not strictly needed for fillers in current logic unless we checked every log)
+    # The new logic only checks first and last valid logs.
+    for i in range(1, 20):
+        weights.append(WeightLog(
+            user_email="comp@test.com", 
+            date=start_date + timedelta(days=i), 
+            weight_kg=80.0 - (2.0 * i / 20)
+        ))
+    # Create end log
+    weights.append(WeightLog(
+        user_email="comp@test.com", 
+        date=today, 
+        weight_kg=78.0, 
+        body_fat_pct=23.0
+    ))
+    
+    # Nutrition logs (needed to pass MIN_DATA_DAYS check)
+    nutrition = [NutritionLog(user_email="comp@test.com", date=start_date + timedelta(days=i), calories=2000, protein_grams=150, carbs_grams=250, fat_grams=80) for i in range(21)]
+    
+    mock_db.get_weight_logs_by_date_range.return_value = weights
+    mock_db.get_nutrition_logs_by_date_range.return_value = nutrition
+    
+    result = service.calculate_tdee("comp@test.com", lookback_weeks=3)
+    
+    assert "fat_change_kg" in result
+    assert result["fat_change_kg"] == -2.06
+    assert result["lean_change_kg"] == 0.06
+    assert result["start_fat_pct"] == 25.0
+    assert result["end_fat_pct"] == 23.0

@@ -315,11 +315,19 @@ class AITrainerBrain:
                  tdee = targets["tdee"]
                  target = targets["daily_target"]
                  reason = targets["reason"]
+                 status = targets.get("status", "maintenance")
+                 balance = targets.get("energy_balance", 0)
+                 
                  metabolism_context = (
                      f"- **TDEE Estimado**: {tdee} kcal\n"
                      f"- **Meta Diária Recomendada**: {target} kcal\n"
+                     f"- **Status Metabólico Atual**: {status} ({balance:+} kcal/dia)\n"
                      f"- **Justificativa**: {reason}\n"
-                     f"> USE estes números para recomendações calóricas. Se o aluno perguntar 'quanto devo comer', sugira {target} kcal."
+                     f"> REGRAS CRÍTICAS:\n"
+                     f"> 1. Se o status for 'deficit', o aluno ESTÁ PERDENDO peso. Se perguntado, confirme a perda.\n"
+                     f"> 2. Se o status for 'surplus', o aluno ESTÁ GANHANDO peso.\n"
+                     f"> 3. Se o status for 'maintenance', o peso está ESTÁVEL.\n"
+                     f"> 4. Nunca contradiga o status acima."
                  )
         except Exception as e:
              logger.warning("Failed to inject metabolism context: %s", e)

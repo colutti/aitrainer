@@ -11,14 +11,11 @@ from datetime import datetime, timezone
 
 # Add backend directory to sys.path to allow imports from src
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 try:
     from src.core.config import settings
-    # We can't easily reuse MongoDatabase class because it might have app-specific deps
-    # or logging setup that we don't want in a CLI script.
-    # However, for consistency, let's try to reuse models.
     from src.api.models.user_profile import UserProfile
     from src.api.models.trainer_profile import TrainerProfile
+    from scripts.utils import confirm_execution
 except ImportError as e:
     print(f"Error importing app modules: {e}")
     print("Make sure you are running this script from the 'backend' directory.")
@@ -300,6 +297,7 @@ def main():
         parser.print_help()
         sys.exit(1)
 
+    confirm_execution(f"User Management - {args.command}", {"args": str(sys.argv[1:])})
     db = get_database()
 
     if args.command == "create":

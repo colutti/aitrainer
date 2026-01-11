@@ -1,0 +1,176 @@
+<div class="h-full overflow-y-auto p-6 bg-dark-bg text-text-primary">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-3xl font-bold tracking-tight">Composição Corporal</h1>
+    <span class="text-xs text-text-secondary bg-secondary/20 px-3 py-1 rounded-full border border-secondary">
+       {{ history().length }} registros
+    </span>
+  </div>
+
+  @if (isLoading()) {
+    <div class="flex justify-center items-center h-64">
+      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+    </div>
+  } @else {
+    @if (stats()?.latest; as latest) {
+      <!-- Hero Card -->
+      <div class="bg-gradient-to-br from-light-bg to-secondary/10 rounded-3xl p-8 border border-secondary shadow-lg mb-8 relative overflow-hidden">
+         <div class="absolute top-0 right-0 p-6 opacity-10">
+            <span class="text-9xl">⚖️</span>
+         </div>
+         
+         <div class="relative z-10">
+             <p class="text-sm font-bold text-text-secondary uppercase mb-2">Última Leitura • {{ latest.date | date:'dd/MM/yyyy' }}</p>
+             
+             <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mt-4">
+                 <div>
+                     <p class="text-4xl font-extrabold text-white" data-cy="latest-weight">{{ latest.weight_kg }}<span class="text-lg font-normal text-text-secondary ml-1">kg</span></p>
+                     <p class="text-sm text-text-secondary">Peso Total</p>
+                 </div>
+                 
+                 <div>
+                     <p class="text-4xl font-extrabold text-[#f97316]" data-cy="latest-body-fat">{{ (latest.body_fat_pct | number:'1.2-2') || '--' }}<span class="text-lg font-normal text-text-secondary ml-1">%</span></p>
+                     <p class="text-sm text-text-secondary">Gordura Corporal</p>
+                 </div>
+                 
+                 <div>
+                     <p class="text-4xl font-extrabold text-[#3b82f6]">{{ (latest.muscle_mass_pct | number:'1.2-2') || '--' }}<span class="text-lg font-normal text-text-secondary ml-1">%</span></p>
+                     <p class="text-sm text-text-secondary">Massa Muscular</p>
+                 </div>
+
+                 <div class="space-y-1">
+                     <p class="text-sm text-text-secondary flex justify-between"><span>Água:</span> <span class="text-white">{{ (latest.body_water_pct | number:'1.2-2') || '--' }}%</span></p>
+                     <p class="text-sm text-text-secondary flex justify-between"><span>Visceral:</span> <span class="text-white">{{ latest.visceral_fat || '--' }}</span></p>
+                     <p class="text-sm text-text-secondary flex justify-between"><span>BMR:</span> <span class="text-white">{{ latest.bmr || '--' }} kcal</span></p>
+                     <p class="text-sm text-text-secondary flex justify-between"><span>BMI:</span> <span class="text-white">{{ (latest.bmi | number:'1.2-2') || '--' }}</span></p>
+                 </div>
+             </div>
+         </div>
+      </div>
+      
+      <!-- Charts Row -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg">
+              <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-4">Tendência de Peso</p>
+              <div class="h-32">
+                 <canvas baseChart [data]="weightChartData" [options]="chartOptions" [type]="lineChartType"></canvas>
+              </div>
+          </div>
+          <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg">
+              <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-4">Gordura (%)</p>
+              <div class="h-32">
+                 <canvas baseChart [data]="fatChartData" [options]="chartOptions" [type]="lineChartType"></canvas>
+              </div>
+          </div>
+          <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg">
+              <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-4">Músculo (%)</p>
+              <div class="h-32">
+                 <canvas baseChart [data]="muscleChartData" [options]="chartOptions" [type]="lineChartType"></canvas>
+              </div>
+          </div>
+      </div>
+
+    } @else {
+        <div class="p-8 text-center bg-light-bg rounded-2xl border border-secondary mb-8">
+            <p class="text-text-secondary">Nenhum dado de composição corporal encontrado.</p>
+            <p class="text-xs text-text-secondary mt-2">Importe dados da sua balança para ver as estatísticas.</p>
+        </div>
+    }
+    
+    <!-- Manual Entry Form -->
+    <div class="bg-light-bg rounded-2xl border border-secondary p-6 mb-8">
+        <h3 class="font-bold text-white mb-4">Adicionar Registro Manual</h3>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-4">
+            <!-- Date -->
+            <div class="col-span-2 md:col-span-2 lg:col-span-1">
+                <label class="block text-xs text-text-secondary mb-1">Data</label>
+                <input type="date" [ngModel]="entryDate()" (ngModelChange)="entryDate.set($event)" class="w-full bg-dark-bg border border-secondary rounded px-3 py-2 text-white focus:outline-none focus:border-primary">
+            </div>
+            
+            <!-- Weight -->
+            <div class="col-span-1">
+                <label class="block text-xs text-text-secondary mb-1">Peso (kg)*</label>
+                <input type="number" [ngModel]="entryWeight()" (ngModelChange)="entryWeight.set($event)" step="0.1" placeholder="0.0" class="w-full bg-dark-bg border border-secondary rounded px-3 py-2 text-white focus:outline-none focus:border-primary">
+            </div>
+
+            <!-- Fat -->
+            <div class="col-span-1">
+                <label class="block text-xs text-text-secondary mb-1">Gordura (%)</label>
+                <input type="number" [ngModel]="entryFat()" (ngModelChange)="entryFat.set($event)" step="0.1" placeholder="0.0" class="w-full bg-dark-bg border border-secondary rounded px-3 py-2 text-white focus:outline-none focus:border-primary">
+            </div>
+
+            <!-- Muscle -->
+            <div class="col-span-1">
+                <label class="block text-xs text-text-secondary mb-1">Músculo (%)</label>
+                <input type="number" [ngModel]="entryMuscle()" (ngModelChange)="entryMuscle.set($event)" step="0.1" placeholder="0.0" class="w-full bg-dark-bg border border-secondary rounded px-3 py-2 text-white focus:outline-none focus:border-primary">
+            </div>
+
+            <!-- Water -->
+            <div class="col-span-1">
+                <label class="block text-xs text-text-secondary mb-1">Água (%)</label>
+                <input type="number" [ngModel]="entryWater()" (ngModelChange)="entryWater.set($event)" step="0.1" placeholder="0.0" class="w-full bg-dark-bg border border-secondary rounded px-3 py-2 text-white focus:outline-none focus:border-primary">
+            </div>
+
+            <!-- Visceral -->
+            <div class="col-span-1">
+                <label class="block text-xs text-text-secondary mb-1">Visceral</label>
+                <input type="number" [ngModel]="entryVisceral()" (ngModelChange)="entryVisceral.set($event)" step="1" placeholder="0" class="w-full bg-dark-bg border border-secondary rounded px-3 py-2 text-white focus:outline-none focus:border-primary">
+            </div>
+
+            <!-- BMR -->
+            <div class="col-span-1">
+                <label class="block text-xs text-text-secondary mb-1">BMR (kcal)</label>
+                <input type="number" [ngModel]="entryBmr()" (ngModelChange)="entryBmr.set($event)" step="1" placeholder="0" class="w-full bg-dark-bg border border-secondary rounded px-3 py-2 text-white focus:outline-none focus:border-primary">
+            </div>
+        </div>
+
+        <div class="flex justify-end items-center gap-4">
+             <span *ngIf="showSuccessMessage()" class="text-green-400 text-sm animate-pulse">Registro salvo com sucesso!</span>
+             
+             <button 
+                (click)="saveEntry()" 
+                [disabled]="isSavingEntry() || !entryWeight()"
+                class="bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-bold transition-all flex items-center gap-2"
+             >
+                <span *ngIf="!isSavingEntry()">Salvar Registro</span>
+                <span *ngIf="isSavingEntry()">Salvando...</span>
+             </button>
+        </div>
+    </div>
+
+    <!-- History List -->
+    <div class="bg-light-bg rounded-2xl border border-secondary overflow-hidden" data-cy="composition-history">
+        <div class="p-4 border-b border-secondary bg-secondary/10">
+            <h3 class="font-bold text-white">Histórico Detalhado</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-text-secondary">
+                <thead class="bg-secondary/20 text-xs uppercase">
+                    <tr>
+                        <th class="p-4 rounded-tl-lg">Data</th>
+                        <th class="p-4">Peso</th>
+                        <th class="p-4">Gordura</th>
+                        <th class="p-4">Músculo</th>
+                        <th class="p-4">Água</th>
+                        <th class="p-4">Visc.</th>
+                        <th class="p-4 rounded-tr-lg">BMR</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-secondary">
+                    @for (log of history(); track log.date) {
+                        <tr class="hover:bg-secondary/10 transition-colors" data-cy="history-entry">
+                            <td class="p-4 font-medium text-white">{{ log.date | date:'dd/MM/yy' }}</td>
+                            <td class="p-4">{{ log.weight_kg }}kg</td>
+                            <td class="p-4 text-[#f97316]">{{ log.body_fat_pct ? (log.body_fat_pct | number:'1.2-2') + '%' : '-' }}</td>
+                            <td class="p-4 text-[#3b82f6]">{{ log.muscle_mass_pct ? (log.muscle_mass_pct | number:'1.2-2') + '%' : '-' }}</td>
+                            <td class="p-4">{{ log.body_water_pct ? (log.body_water_pct | number:'1.2-2') + '%' : '-' }}</td>
+                            <td class="p-4">{{ log.visceral_fat || '-' }}</td>
+                            <td class="p-4">{{ log.bmr || '-' }}</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+  }
+</div>

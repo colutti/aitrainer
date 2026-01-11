@@ -1,6 +1,10 @@
 import sys
 from pydantic import ValidationError, computed_field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
 
 from src.core.logs import logger
 from src.prompts.prompt_template import PROMPT_TEMPLATE
@@ -9,6 +13,33 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore", frozen=True
     )
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        """
+        Customizes configuration source priority.
+        
+        If running in a container (RUNNING_IN_CONTAINER=true):
+            Prioritize Docker environment variables (env_settings) over .env file.
+            Order: Init > Env > DotEnv
+            
+        If running locally (scripts):
+            Prioritize .env file over shell environment variables to prevent accidents.
+            Order: Init > DotEnv > Env
+        """
+        import os
+        if os.getenv("RUNNING_IN_CONTAINER") == "true":
+            return init_settings, env_settings, dotenv_settings, file_secret_settings
+            
+        # Local scripts default safety
+        return init_settings, dotenv_settings, env_settings, file_secret_settings
 
     # ====== API CONFIGURATION ======
     SECRET_KEY: str

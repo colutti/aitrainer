@@ -8,6 +8,7 @@ Este workflow consolida a execução de todas as suítes de teste do projeto par
 
 ## 1. Preparação do Ambiente
 Os testes dependem dos serviços (MongoDB, Qdrant, Mem0, API Backend) estarem rodando via Podman.
+Sempre que for testar algo no navegador e nao encontrar o que esta buscando tente fazer um refresh do navegador.
 
 ### 1.1. Iniciar Serviços
 ```bash

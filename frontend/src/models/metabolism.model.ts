@@ -11,5 +11,8 @@ export interface MetabolismResponse {
   daily_target: number;
   goal_weekly_rate: number;
   goal_type: string;
+  status: string;
+  energy_balance: number;
+  is_stable: boolean;
   message?: string;
 }

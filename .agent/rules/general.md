@@ -29,6 +29,7 @@ The solution consists of two main projects:
 - Sempre leia as documentacao dos componentes e codigos que voce pretende usar de acordo com a versao que pretende usar. Faca um deep-dive na documentacao sempre.
 - Se julgar necessario voce pode crear POCs pra validar a funcionalidade na fase de planejamento. 
 - Sempe que for corrigir um problema reportado, crie um teste que prove o bug e use o test para testar as correcoes.
+- Procure sempre fazer um rebuild dos containers antes de executar testes. Alem disso, monitore os containers pra ver problemas durante os testes.
 
 ## 4. Coding Standards & Style
 

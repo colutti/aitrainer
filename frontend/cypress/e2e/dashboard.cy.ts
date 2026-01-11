@@ -37,6 +37,11 @@ describe('Dashboard View', () => {
     cy.intercept('GET', '**/trainer/available_trainers', { body: [{ trainer_id: 'atlas', name: 'Atlas' }] }).as('availableTrainers');
     cy.intercept('GET', '**/message/history*', { body: { messages: [] } }).as('chatHistory');
     
+    // Default intercept for weight stats (can be overridden in specific tests)
+    cy.intercept('GET', '**/weight/stats*', { 
+      body: { latest: null, weight_trend: [], fat_trend: [], muscle_trend: [] } 
+    }).as('getWeightStats');
+    
     cy.login('cypress_user@test.com', 'password123'); // Password doesn't matter with mock
   });
 
@@ -59,6 +64,12 @@ describe('Dashboard View', () => {
     cy.get('.bg-primary.shadow-\\[0_0_12px_rgba\\(16\\,185\\,129\\,0\\.6\\)\\]').should('have.length', 3);
   });
 
+  it('should display body composition widget', () => {
+      // Widget should be visible (will show empty state with default mock)
+      cy.get('[data-cy="body-composition-widget"]').scrollIntoView().should('be.visible');
+  });
+
+
   it('should display last workout info', () => {
     cy.wait('@getStats');
     cy.contains('Último Treino');
@@ -76,7 +87,7 @@ describe('Dashboard View', () => {
 
   it('should display volume chart', () => {
     cy.wait('@getStats');
-    cy.contains('Volume por Categoria');
+    cy.contains('Volume por Categoria').scrollIntoView();
     cy.get('canvas').should('be.visible');
   });
 
@@ -117,25 +128,42 @@ describe('Dashboard View', () => {
       cy.get('.animate-spin').should('not.exist');
   });
 
-  it('should display weight widget and allow logging', () => {
+  it('should display section headers', () => {
+    cy.wait('@getStats');
+    cy.contains('h2', 'Corpo').should('be.visible');
+    cy.contains('h2', 'Treinos').should('be.visible');
+    cy.contains('h2', 'Nutrição').should('be.visible');
+  });
+
+  it('should allow logging weight and composition via widget', () => {
     cy.intercept('POST', '**/weight', { statusCode: 200, body: { message: 'Weight logged' } }).as('logWeight');
     
     // Check widget presence
-    cy.contains('Log de Peso').should('be.visible');
+    cy.contains('Log de Composição').should('be.visible');
     
     // Type weight
-    cy.get('app-weight-widget input').clear().type('75.5');
+    // First input is weight
+    cy.get('app-weight-widget input').eq(0).clear().type('75.5');
     
+    // Toggle expand
+    cy.contains('button', 'Mais').click();
+    
+    // Type composition (Fat%)
+    // Second input is fat
+    cy.get('app-weight-widget input').eq(1).type('15.5');
+
     // Click save
-    cy.get('app-weight-widget button').click();
+    // Button with OK text or saving state
+    cy.get('app-weight-widget button').contains('OK').click();
     
     // Verify request
     cy.wait('@logWeight').its('request.body').should('deep.include', {
-        weight_kg: 75.5
+        weight_kg: 75.5,
+        body_fat_pct: 15.5
     });
     
     // Verify success feedback
-    cy.contains('Peso atualizado!').should('be.visible');
+    cy.contains('Composição atualizada!').should('be.visible');
   });
 
   it('should check mobile viewport layout', () => {

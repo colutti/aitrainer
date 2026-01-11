@@ -16,11 +16,12 @@ export class WeightService {
   /**
    * Logs a new weight entry.
    */
-  async logWeight(weight: number): Promise<void> {
+  async logWeight(weight: number, compositionData: Partial<WeightLog> = {}): Promise<void> {
     const today = new Date().toISOString().split('T')[0];
     const log: Partial<WeightLog> = {
       weight_kg: weight,
-      date: today
+      date: today,
+      ...compositionData
     };
 
     try {
@@ -45,6 +46,16 @@ export class WeightService {
       );
     } catch {
       return [];
+    }
+  }
+
+  async getBodyCompositionStats(): Promise<any> {
+    try {
+      return await firstValueFrom(
+        this.http.get<any>(`${environment.apiUrl}/weight/stats`)
+      );
+    } catch {
+      return null;
     }
   }
 }

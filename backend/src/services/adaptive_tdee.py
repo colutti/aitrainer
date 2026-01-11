@@ -20,7 +20,9 @@ class AdaptiveTDEEService:
     # Constants
     KCAL_PER_KG_FAT = 7700
     MIN_DATA_DAYS = 7  # Minimum days of data required
-    SMOOTHING_FACTOR = 0.1 # Alpha for EMA
+    
+    # Regression config
+    MIN_DATA_DAYS_FOR_REGRESSION = 10 
     
     # Sanity Limits
     MIN_TDEE = 1200
@@ -60,28 +62,32 @@ class AdaptiveTDEEService:
             logger.info("Insufficient data for TDEE calculation for user %s", user_email)
             return self._insufficient_data_response()
             
-        # 2. Process Weight Data (EMA Smoothing)
+        # 2. Process Weight Data (Trend Estimation)
         # Sort logs by date ascending
         weight_logs.sort(key=lambda x: x.date)
         
-        smoothed_weights = self._calculate_ema_weights(weight_logs)
-        if not smoothed_weights:
-            return self._insufficient_data_response()
-
-        start_weight = smoothed_weights[0]["weight"]
-        end_weight = smoothed_weights[-1]["weight"]
+        # Calculate trend using Linear Regression
+        # This is more accurate for detecting TDEE during active loss/gain than EMA
+        slope, intercept, r_value = self._calculate_regression_trend(weight_logs)
         
         # Effective days = days between first and last weight log
-        days_elapsed = (smoothed_weights[-1]["date"] - smoothed_weights[0]["date"]).days
+        days_elapsed = (weight_logs[-1].date - weight_logs[0].date).days
         
         if days_elapsed < self.MIN_DATA_DAYS:
              return self._insufficient_data_response()
              
+        # Theoretical weight change based on the trend
+        # We use the predicted values from the regression line for start/end points
+        # to avoid being fooled by a single noisy day at the endpoints.
+        start_weight = intercept
+        end_weight = intercept + (slope * days_elapsed)
+        total_weight_change = end_weight - start_weight
+             
         # 3. Process Nutrition Data
         # Calculate average daily calories over the exact period covered by weight logs
         # Filter nutrition logs to be within the weight log range
-        period_start = smoothed_weights[0]["date"]
-        period_end = smoothed_weights[-1]["date"]
+        period_start = weight_logs[0].date
+        period_end = weight_logs[-1].date
         
         # Convert nutrition log dates to date objects for comparison
         relevant_nutrition = [
@@ -105,16 +111,27 @@ class AdaptiveTDEEService:
         avg_calories_logged = total_calories / len(relevant_nutrition)
         
         # 4. Calculate TDEE
-        # Formula: TDEE = Avg_In - (Delta_Weight_kg * 7700 / Days)
-        total_weight_change = end_weight - start_weight
-        
-        # Daily caloric surplus/deficit implied by weight change
-        daily_surplus_deficit = (total_weight_change * self.KCAL_PER_KG_FAT) / days_elapsed
+        # Formula: TDEE = Avg_In - (Slope_kg_per_day * 7700)
+        # Note: Slope is kg/day. If losing, slope is negative. 
+        # TDEE = Avg_In - (Negative * 7700) = Avg_In + Positive
+        daily_surplus_deficit = slope * self.KCAL_PER_KG_FAT
         
         tdee = avg_calories_logged - daily_surplus_deficit
         
         # 5. Sanity Checks & Confidence
         tdee = max(self.MIN_TDEE, min(self.MAX_TDEE, tdee))
+        
+        # Energy balance (Negative = Deficit, Positive = Surplus)
+        energy_balance = avg_calories_logged - tdee
+        
+        # Semantic Status
+        status = "maintenance"
+        if energy_balance < -150:
+            status = "deficit"
+        elif energy_balance > 150:
+            status = "surplus"
+            
+        is_stable = abs(energy_balance) < 150
         
         confidence = self._calculate_confidence(
             days_elapsed, 
@@ -144,11 +161,17 @@ class AdaptiveTDEEService:
             daily_target = int(round(tdee + adjustment))
             daily_target = max(1000, daily_target)
 
-        return {
+        # 7. Body Composition Analysis
+        comp_changes = self._calculate_body_composition_changes(weight_logs)
+
+        result = {
             "tdee": int(round(tdee)),
             "confidence": confidence,
             "avg_calories": int(round(avg_calories_logged)),
             "weight_change_per_week": round(weekly_change, 2),
+            "energy_balance": int(round(energy_balance)),
+            "status": status,
+            "is_stable": is_stable,
             "logs_count": len(relevant_nutrition),
             "startDate": period_start.isoformat(),
             "endDate": period_end.isoformat(),
@@ -158,14 +181,98 @@ class AdaptiveTDEEService:
             "goal_weekly_rate": goal_rate,
             "goal_type": goal_type
         }
+        
+        if comp_changes:
+            result.update(comp_changes)
+
+        # Include BMR from scale if available in latest log
+        latest_log = weight_logs[-1]
+        if latest_log.bmr:
+            result["scale_bmr"] = latest_log.bmr
+            
+        return result
+
+    def _calculate_body_composition_changes(self, logs: List[WeightLog]) -> dict | None:
+        """Calculate fat and lean mass changes if composition data is available."""
+        # Using raw logs for composition, maybe we should smooth this too?
+        # For now, end-point analysis on raw logs is simple enough.
+        # Ensure we use logs that actually have the data.
+        
+        valid_logs = [l for l in logs if l.body_fat_pct is not None]
+        if len(valid_logs) < 2:
+            return None
+        
+        first = valid_logs[0]
+        last = valid_logs[-1]
+        
+        # Calculate masses
+        fat_mass_start = first.weight_kg * (first.body_fat_pct / 100.0)
+        fat_mass_end = last.weight_kg * (last.body_fat_pct / 100.0)
+        fat_change = fat_mass_end - fat_mass_start
+        
+        total_weight_change = last.weight_kg - first.weight_kg
+        lean_change = total_weight_change - fat_change
+        
+        return {
+            "fat_change_kg": round(fat_change, 2),
+            "lean_change_kg": round(lean_change, 2),
+            "start_fat_pct": round(first.body_fat_pct, 1),
+            "end_fat_pct": round(last.body_fat_pct, 1)
+        }
+
+    def _calculate_regression_trend(self, logs: List[WeightLog]) -> tuple[float, float, float]:
+        """
+        Calculates the linear regression trend of weight logs.
+        Returns (slope, intercept, r_value).
+        Slope is kg per day.
+        """
+        import numpy as np
+        
+        if not logs:
+            return 0.0, 0.0, 0.0
+            
+        start_date = logs[0].date
+        x = [] # Days since start
+        y = [] # Weights
+        
+        for log in logs:
+            days = (log.date - start_date).days
+            x.append(days)
+            y.append(log.weight_kg)
+            
+        if len(x) < 2:
+            return 0.0, y[0], 0.0
+            
+        # Linear regression: y = mx + c
+        # m = slope, c = intercept
+        # r_value = correlation coefficient
+        try:
+            x_arr = np.array(x)
+            y_arr = np.array(y)
+            m, c = np.polyfit(x_arr, y_arr, 1)
+            
+            # Simple R approximation (not strictly needed but useful for confidence later)
+            correlation_matrix = np.corrcoef(x_arr, y_arr)
+            r_value = correlation_matrix[0, 1] if correlation_matrix.shape == (2, 2) else 0.0
+            
+            return float(m), float(c), float(r_value)
+        except Exception as e:
+            logger.error("Regression calculation failed: %s", e)
+            # Fallback to endpoint delta if regression fails
+            days_total = x[-1] - x[0]
+            if days_total > 0:
+                slope = (y[-1] - y[0]) / days_total
+            else:
+                slope = 0.0
+            return slope, y[0], 0.0
 
     def _calculate_ema_weights(self, logs: List[WeightLog]) -> List[dict]:
         """
+        OBSOLETE: Replaced by Regression for TDEE, but kept for potential UI smoothing.
         Applies Exponential Moving Average to weight logs.
-        Fills gaps? No, we just smooth existing points or map to daily grid.
-        Better to map to daily grid filling gaps with previous known weight
-        to capture true time elapsed.
         """
+        # (Implementation remains same but we use 0.1 alpha)
+        alpha = 0.1
         if not logs: return []
         
         # 1. Fill gaps in date range
@@ -288,6 +395,8 @@ class AdaptiveTDEEService:
         return {
             "tdee": int(tdee),
             "daily_target": int(daily_target),
-            "reason": f"Based on TDEE {tdee} and goal {profile.goal_type}"
+            "status": tdee_stats.get("status", "maintenance"),
+            "energy_balance": tdee_stats.get("energy_balance", 0),
+            "reason": f"TDEE: {tdee}, Status: {tdee_stats.get('status')}, Objetivo: {profile.goal_type}"
         }
 

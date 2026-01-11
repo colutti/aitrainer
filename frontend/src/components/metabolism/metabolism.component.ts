@@ -57,11 +57,15 @@ export class MetabolismComponent implements OnInit {
     const action = diff > 0 ? "aumentar" : "reduzir";
     const absDiff = Math.abs(diff);
 
-    if (s.goal_type === 'maintain') {
+    if (s.is_stable) {
         return `Seu TDEE é de ${s.tdee} kcal. Você está consumindo ${s.avg_calories} kcal em média, o que está mantendo seu peso estável.`;
     }
 
-    return `Com uma média de ${s.avg_calories} kcal/dia e um TDEE de ${s.tdee} kcal, você gerou um déficit real de ${Math.abs(s.tdee - s.avg_calories)} kcal. Isso resultou em uma variação de ${s.weight_change_per_week} kg/semana. Para atingir sua meta de ${s.goal_weekly_rate} kg/semana, sugerimos ${action} cerca de ${absDiff} kcal da sua média atual.`;
+    const messagePrefix = s.energy_balance < 0 
+        ? `Seu TDEE é de ${s.tdee} kcal. Com uma média de ${s.avg_calories} kcal, você está em um déficit real de ${Math.abs(s.energy_balance)} kcal.`
+        : `Seu TDEE é de ${s.tdee} kcal. Com uma média de ${s.avg_calories} kcal, você está em um superávit real de ${s.energy_balance} kcal.`;
+
+    return `${messagePrefix} Isso resultou em uma variação de ${s.weight_change_per_week} kg/semana. Para atingir sua meta, sugerimos as recomendações acima.`;
   }
   
   getConfidenceColor(level: string): string {

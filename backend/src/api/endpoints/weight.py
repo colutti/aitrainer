@@ -42,7 +42,7 @@ def log_weight(
     # But `get_ai_trainer_brain` is the main dependency.
     
     # Let's update Brain to support weight logging.
-    doc_id, is_new = brain.db.save_weight_log(log)
+    doc_id, is_new = brain._database.save_weight_log(log)
     
     return {
         "message": "Weight logged successfully",
@@ -60,4 +60,37 @@ def get_weight_logs(
     """
     Retrieves recent weight logs for the user.
     """
-    return brain.db.get_weight_logs(user_email=user_email, limit=limit)
+    return brain._database.get_weight_logs(user_email=user_email, limit=limit)
+
+@router.get("/stats")
+def get_body_composition_stats(
+    user_email: CurrentUser,
+    brain: AITrainerBrainDep
+) -> dict:
+    """
+    Returns latest body composition and trends for dashboard.
+    """
+    # Get last 30 logs for trends
+    logs = brain._database.get_weight_logs(user_email, limit=30)
+    
+    if not logs:
+        return {
+            "latest": None,
+            "weight_trend": [],
+            "fat_trend": [],
+            "muscle_trend": []
+        }
+    
+    # Logs are returned in DESC order (latest first)
+    logs_asc = sorted(logs, key=lambda x: x.date)
+    
+    # Serialize latest log to dict
+    latest_dict = logs[0].model_dump()
+    latest_dict['date'] = logs[0].date.isoformat()  # Convert date to string
+    
+    return {
+        "latest": latest_dict,
+        "weight_trend": [{"date": l.date.isoformat(), "value": l.weight_kg} for l in logs_asc],
+        "fat_trend": [{"date": l.date.isoformat(), "value": l.body_fat_pct} for l in logs_asc if l.body_fat_pct],
+        "muscle_trend": [{"date": l.date.isoformat(), "value": l.muscle_mass_pct} for l in logs_asc if l.muscle_mass_pct]
+    }

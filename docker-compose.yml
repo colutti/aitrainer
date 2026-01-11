@@ -13,8 +13,7 @@ services:
     environment:
       - MONGO_URI=mongodb://aitrainer:aitrainerpass@mongo:27017/aitrainerdb?authSource=admin
       - QDRANT_HOST=qdrant
-
-
+      - RUNNING_IN_CONTAINER=true
 
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -77,7 +76,6 @@ services:
 volumes:
   mongodata:
   qdrant_data:
-
 
 networks:
   aitrainer-network:
