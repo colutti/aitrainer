@@ -1,0 +1,145 @@
+<div class="h-full flex flex-col overflow-hidden bg-dark-bg text-text-primary p-6 md:p-8 animate-fade-in relative">
+    
+    <!-- Pattern Background -->
+    <div class="absolute inset-0 opacity-5 pointer-events-none z-0" 
+         style="background-image: radial-gradient(#10b981 1px, transparent 1px); background-size: 24px 24px;">
+    </div>
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 relative z-10 shrink-0 gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold tracking-tight text-white mb-2 flex items-center gap-3">
+                <span class="bg-primary/10 p-2 rounded-lg text-primary">🍎</span>
+                Histórico Nutricional
+            </h1>
+            <p class="text-text-secondary text-sm md:text-base max-w-lg leading-relaxed">
+                Acompanhe sua ingestão diária de macronutrientes e calorias.
+            </p>
+        </div>
+        
+        <!-- Filter (Visual only for now) -->
+        <div class="bg-light-bg border border-secondary rounded-lg px-3 py-1.5 flex items-center space-x-2 text-sm text-text-secondary">
+             <span class="text-primary">📅</span>
+             <span>Todos os registros</span>
+        </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar relative z-10">
+        
+        @if (isLoading()) {
+            <div class="space-y-4">
+                @for (item of [1,2,3]; track item) {
+                    <app-skeleton width="100%" height="100px" [borderRadius]="'1rem'"></app-skeleton>
+                }
+            </div>
+        } @else if (logs().length === 0) {
+            <div class="h-64 flex flex-col items-center justify-center text-center p-8 bg-light-bg/50 rounded-2xl border border-secondary border-dashed">
+                <span class="text-6xl mb-4 grayscale opacity-50">🍽️</span>
+                <h3 class="text-xl font-bold text-white mb-2">Nenhum registro encontrado</h3>
+                <p class="text-text-secondary max-w-md">
+                    Você ainda não registrou nenhuma refeição. Conte para a IA o que você comeu hoje!
+                </p>
+            </div>
+        } @else {
+            <div class="relative pl-6 md:pl-8 py-4">
+                <!-- Timeline Line -->
+                <div class="absolute left-2.5 top-0 bottom-0 w-0.5 bg-secondary/30"></div>
+
+                <div class="space-y-6">
+                    @for (log of logs(); track log.id) {
+                        <div class="relative">
+                            <!-- Timeline Dot -->
+                            <div class="absolute -left-[1.8rem] md:-left-[2.3rem] top-6 w-5 h-5 rounded-full bg-dark-bg border-4 border-primary z-10 shadow-lg shadow-primary/20"></div>
+
+                            <!-- Card -->
+                            <div class="bg-light-bg rounded-2xl p-5 border border-secondary shadow-lg hover:border-primary/50 transition-all duration-300 group">
+                                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                                    <div>
+                                        <p class="text-text-secondary text-xs uppercase font-bold tracking-wider mb-1">
+                                            {{ getFormattedDate(log.date) }}
+                                        </p>
+                                        <div class="flex items-baseline gap-2">
+                                            <span class="text-2xl font-black text-white group-hover:text-primary transition-colors">
+                                                {{ log.calories }}
+                                            </span>
+                                            <span class="text-sm font-medium text-text-secondary">kcal</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Log Details (Micros if available) -->
+                                    @if(log.sodium_mg || log.fiber_grams) {
+                                        <div class="flex gap-3 text-[10px] text-text-secondary/70 bg-secondary/10 px-3 py-1.5 rounded-full self-start md:self-center">
+                                            @if(log.fiber_grams) { <span>Fibras: {{log.fiber_grams}}g</span> }
+                                            @if(log.sodium_mg) { <span>Sódio: {{log.sodium_mg}}mg</span> }
+                                        </div>
+                                    }
+                                </div>
+
+                                <!-- Visual Bars -->
+                                <div class="space-y-3">
+                                    <div class="h-3 w-full bg-secondary/20 rounded-full overflow-hidden flex">
+                                        <!-- Protein -->
+                                        <div class="bg-primary h-full first:rounded-l-full relative group/bar" 
+                                             [style.width]="getMacroPercentage(log.protein_grams, 'protein', log.calories)">
+                                        </div>
+                                        <!-- Carbs -->
+                                        <div class="bg-blue-500 h-full relative group/bar" 
+                                             [style.width]="getMacroPercentage(log.carbs_grams, 'carbs', log.calories)">
+                                        </div>
+                                        <!-- Fat -->
+                                        <div class="bg-orange-500 h-full last:rounded-r-full relative group/bar" 
+                                             [style.width]="getMacroPercentage(log.fat_grams, 'fat', log.calories)">
+                                        </div>
+                                    </div>
+
+                                    <!-- Legend -->
+                                    <div class="flex justify-between text-xs font-mono">
+                                        <div class="flex items-center gap-1.5">
+                                            <div class="w-2 h-2 rounded-full bg-primary"></div>
+                                            <span class="text-white">{{ log.protein_grams }}g</span>
+                                            <span class="text-text-secondary">Prot</span>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                            <span class="text-white">{{ log.carbs_grams }}g</span>
+                                            <span class="text-text-secondary">Carb</span>
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <div class="w-2 h-2 rounded-full bg-orange-500"></div>
+                                            <span class="text-white">{{ log.fat_grams }}g</span>
+                                            <span class="text-text-secondary">Gord</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Pagination -->
+    @if (!isLoading() && totalPages() > 1) {
+        <div class="flex justify-between items-center pt-4 border-t border-secondary mt-4 shrink-0 relative z-10">
+            <button 
+                (click)="prevPage()" 
+                [disabled]="currentPage() === 1"
+                class="px-4 py-2 rounded-lg bg-secondary/30 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-secondary transition-colors text-sm font-medium flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                Anterior
+            </button>
+            <span class="text-text-secondary text-sm font-mono bg-light-bg px-3 py-1 rounded border border-secondary">
+                Página <span class="text-white font-bold">{{ currentPage() }}</span> de {{ totalPages() }}
+            </span>
+            <button 
+                (click)="nextPage()" 
+                [disabled]="currentPage() === totalPages()"
+                class="px-4 py-2 rounded-lg bg-secondary/30 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-secondary transition-colors text-sm font-medium flex items-center gap-2">
+                Próximo
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+        </div>
+    }
+</div>

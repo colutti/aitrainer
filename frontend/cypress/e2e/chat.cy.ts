@@ -22,6 +22,7 @@ describe('Chat Flow', () => {
 
     // Intercept stats (dashboard loads on login)
     cy.intercept('GET', '**/workout/stats', { body: {} }).as('getStats');
+    cy.intercept('GET', '**/nutrition/stats', { body: {} }).as('getNutritionStats');
     
     // Intercept Trainer Profile (new req in Chat)
     cy.intercept('GET', '**/trainer/trainer_profile', {
@@ -48,8 +49,12 @@ describe('Chat Flow', () => {
 
   it('should display the chat interface', () => {
     cy.get('app-chat').should('be.visible');
-    cy.contains('h2', 'Chat com seu Personal Trainer').should('be.visible');
-    cy.get('textarea[placeholder="Digite sua mensagem aqui..."]').should('be.visible');
+    // Since we mock the trainer profile as 'Atlas', the header should display his name
+    cy.contains('h2', 'Atlas').should('be.visible');
+    // And the subtitle
+    cy.contains('p', 'Seu Personal Trainer').should('be.visible');
+    
+    cy.get('textarea[placeholder*="Digite sua mensagem"]').should('be.visible');
     cy.get('button[type="submit"]').should('be.visible');
   });
 

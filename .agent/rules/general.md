@@ -28,6 +28,7 @@ The solution consists of two main projects:
 - Sempre que possivel faca um teste final usando um navegador. Voce pode usar os mesmos usuarios que os testes do cypress usam.
 - Sempre leia as documentacao dos componentes e codigos que voce pretende usar de acordo com a versao que pretende usar. Faca um deep-dive na documentacao sempre.
 - Se julgar necessario voce pode crear POCs pra validar a funcionalidade na fase de planejamento. 
+- Sempe que for corrigir um problema reportado, crie um teste que prove o bug e use o test para testar as correcoes.
 
 ## 4. Coding Standards & Style
 

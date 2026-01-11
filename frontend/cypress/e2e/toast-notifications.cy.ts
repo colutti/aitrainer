@@ -8,6 +8,7 @@ describe('Toast Notifications', () => {
 
         // Intercept stats (dashboard)
         cy.intercept('GET', '**/workout/stats', { body: {} }).as('getStats');
+        cy.intercept('GET', '**/nutrition/stats', { body: {} }).as('getNutritionStats');
 
         // Intercept chat history
         cy.intercept('GET', '**/message/history*', {

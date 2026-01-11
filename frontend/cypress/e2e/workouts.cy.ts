@@ -38,6 +38,7 @@ describe('Workout History & Drawer', () => {
 
     cy.intercept('GET', '**/workout/types', ['Pernas', 'Peito', 'Costas']).as('getTypes');
     cy.intercept('GET', '**/workout/stats', { body: {} }).as('getStats'); // Mock stats as we land on dashboard first
+    cy.intercept('GET', '**/nutrition/stats', { body: {} }).as('getNutritionStats');
 
     cy.login('cypress_user@test.com', 'password123');
     
@@ -53,6 +54,13 @@ describe('Workout History & Drawer', () => {
     // Use specific container checking
     cy.get('.space-y-4').contains('Pernas').should('be.visible');
     cy.get('.space-y-4').contains('Peito').should('be.visible');
+    
+    // Verify Date Format (Portuguese)
+    // Mock date: 2024-01-01 -> "01 jan 2024"
+    // Intl format: dd MMM yyyy -> 01 jan. 2024 (depending on browser, pt-BR might have dot or not)
+    // We check for "jan" and "2024"
+    cy.contains('01 jan').should('be.visible');
+    cy.contains('2024').should('be.visible');
   });
 
   it('should filter workouts', () => {
@@ -84,6 +92,10 @@ describe('Workout History & Drawer', () => {
     // Check Drawer
     cy.get('app-workout-drawer').should('be.visible');
     cy.get('app-workout-drawer').contains('h2', 'Pernas');
+    
+    // Verify Date Header in Drawer
+    // "01 jan 2024 • 10:00" or "01 jan. 2024"
+    cy.get('app-workout-drawer').contains(/01 jan\.? 2024/i).should('be.visible');
   });
 
   it('should close drawer', () => {

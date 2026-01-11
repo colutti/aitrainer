@@ -20,6 +20,9 @@ from src.api.models.workout_stats import WorkoutStats, PersonalRecord, VolumeSta
 from datetime import timedelta
 import calendar
 
+from src.api.models.nutrition_log import NutritionLog, NutritionWithId
+from src.api.models.nutrition_stats import NutritionStats, DailyMacros
+
 
 
 
@@ -573,3 +576,184 @@ class MongoDatabase:
         """
         types = self.database.workout_logs.distinct("workout_type", {"user_email": user_email})
         return sorted([t for t in types if t])
+
+    def ensure_nutrition_indexes(self) -> None:
+        """
+        Ensures the nutrition_logs collection has proper indexes.
+        Creates a unique index on (user_email, date) to enforce one log per day.
+        """
+        self.database.nutrition_logs.create_index(
+            [("user_email", pymongo.ASCENDING), ("date", pymongo.ASCENDING)],
+            unique=True,
+            name="unique_daily_log"
+        )
+        logger.info("Nutrition logs unique daily index ensured.")
+
+    def save_nutrition_log(self, log: NutritionLog) -> tuple[str, bool]:
+        """
+        Saves or updates a nutrition log in the database.
+        Detects duplication by (user_email, date).
+
+        Args:
+            log (NutritionLog): The nutrition data.
+
+        Returns:
+            tuple[str, bool]: (Document ID, is_new boolean)
+        """
+        # Normalize date to start of day for uniqueness check
+        log_date = log.date.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        # Prepare data with normalized date for uniqueness, but keeping original datetime if desired?
+        # Actually for daily log, normalization is better.
+        log.date = log_date
+        
+        result = self.database.nutrition_logs.update_one(
+            {"user_email": log.user_email, "date": log_date},
+            {"$set": log.model_dump()},
+            upsert=True
+        )
+        
+        is_new = result.upserted_id is not None
+        
+        if is_new:
+            doc_id = str(result.upserted_id)
+            logger.info("Created new nutrition log for %s on %s", log.user_email, log_date)
+        else:
+            # Fetch existing to get ID
+            existing = self.database.nutrition_logs.find_one(
+                {"user_email": log.user_email, "date": log_date}
+            )
+            doc_id = str(existing["_id"]) if existing else ""
+            logger.info("Updated existing nutrition log for %s on %s", log.user_email, log_date)
+            
+        return doc_id, is_new
+
+    def get_nutrition_logs(
+        self, user_email: str, limit: int = 30
+    ) -> list[NutritionLog]:
+        """Retrieves nutrition logs for a user."""
+        cursor = (
+            self.database.nutrition_logs.find({"user_email": user_email})
+            .sort("date", pymongo.DESCENDING)
+            .limit(limit)
+        )
+        return [NutritionLog(**doc) for doc in cursor]
+    
+    def get_nutrition_paginated(
+        self, user_email: str, page: int = 1, page_size: int = 10, days: int | None = None
+    ) -> tuple[list[dict], int]:
+        """
+        Retrieves paginated nutrition logs.
+        
+        Args:
+           days: optional filtering for last N days
+        """
+        query = {"user_email": user_email}
+        if days:
+            start_date = datetime.now() - timedelta(days=days)
+            query["date"] = {"$gte": start_date}
+
+        total = self.database.nutrition_logs.count_documents(query)
+        skip = (page - 1) * page_size
+        
+        cursor = (
+            self.database.nutrition_logs.find(query)
+            .sort("date", pymongo.DESCENDING)
+            .skip(skip)
+            .limit(page_size)
+        )
+        
+        logs = []
+        for doc in cursor:
+            doc["id"] = str(doc.pop("_id"))
+            logs.append(doc)
+            
+        return logs, total
+
+    def get_nutrition_stats(self, user_email: str) -> NutritionStats:
+        """
+        Calculates nutrition stats for dashboard.
+        """
+        # Get logs for last 30 days to calculate averages and history
+        now = datetime.now()
+        start_date = now - timedelta(days=30)
+        
+        cursor = self.database.nutrition_logs.find(
+            {"user_email": user_email, "date": {"$gte": start_date}}
+        ).sort("date", pymongo.DESCENDING)
+        
+        logs = list(cursor)
+        
+        # 1. Today's log
+        start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_log_doc = next((l for l in logs if l["date"] >= start_of_today), None)
+        today_log = None
+        if today_log_doc:
+            today_log_doc["id"] = str(today_log_doc.get("_id"))
+            if "_id" in today_log_doc: del today_log_doc["_id"]
+            today_log = NutritionWithId(**today_log_doc)
+            
+        # 2. Last 7 days macros
+        last_7_days_stats = []
+        stats_map = {} # date_str -> log
+        
+        # Filter for strictly last 7 days? Or just 7 most recent logs?
+        # Usually last 7 calendar days including empty ones
+        for i in range(7): # 0 to 6
+            d = (now - timedelta(days=i)).replace(hour=0, minute=0, second=0, microsecond=0)
+            # Find log for this day
+            log = next((l for l in logs if l["date"] == d), None)
+            
+            if log:
+                last_7_days_stats.append(DailyMacros(
+                    date=d,
+                    calories=log["calories"],
+                    protein=log["protein_grams"],
+                    carbs=log["carbs_grams"],
+                    fat=log["fat_grams"]
+                ))
+            else:
+                 # Empty entry for graph continuity? Or skip?
+                 # Better to add zeroed entry for correct graph x-axis
+                 last_7_days_stats.append(DailyMacros(
+                    date=d,
+                    calories=0,
+                    protein=0,
+                    carbs=0,
+                    fat=0
+                ))
+        
+        last_7_days_stats.sort(key=lambda x: x.date) # Ascending for chart
+
+        # 3. Weekly Adherence (last 7 days from today)
+        weekly_adherence = []
+        # Mon-Sun or Relative 7 days?
+        # Let's do relative 7 days (Today back to -6 days)
+        # But dashboard often shows Mon-Sun. Let's do Mon-Sun adherence if possible, or last 7 days relative?
+        # The workout widget does Mon-Sun. Let's match.
+        current_week_start = now - timedelta(days=now.weekday())
+        current_week_start = current_week_start.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        # 0=Mon, 6=Sun
+        weekly_adherence = [False] * 7
+        for l in logs:
+            if l["date"] >= current_week_start:
+                day_idx = l["date"].weekday()
+                weekly_adherence[day_idx] = True
+        
+        # 4. Averages (based on actual logs in last 7 days)
+        recent_logs = [l for l in logs if l["date"] >= (now - timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)]
+        count = len(recent_logs)
+        avg_cal = sum(l["calories"] for l in recent_logs) / count if count > 0 else 0
+        avg_prot = sum(l["protein_grams"] for l in recent_logs) / count if count > 0 else 0
+        
+        total_logs = self.database.nutrition_logs.count_documents({"user_email": user_email})
+
+        return NutritionStats(
+            today=today_log,
+            weekly_adherence=weekly_adherence,
+            last_7_days=last_7_days_stats,
+            avg_daily_calories=round(avg_cal, 1),
+            avg_protein=round(avg_prot, 1),
+            total_logs=total_logs
+        )

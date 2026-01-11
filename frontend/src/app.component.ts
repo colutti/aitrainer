@@ -9,6 +9,7 @@ import { WorkoutsComponent } from './components/workouts/workouts.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { ToastComponent } from './components/toast/toast.component';
+import { NutritionComponent } from './components/nutrition/nutrition.component';
 import { SkeletonComponent } from './components/skeleton/skeleton.component';
 import { AuthService } from './services/auth.service';
 import { NavigationService } from './services/navigation.service';
@@ -25,6 +26,7 @@ import { NavigationService } from './services/navigation.service';
     TrainerSettingsComponent,
     MemoriesComponent,
     WorkoutsComponent,
+    NutritionComponent,
     SidebarComponent,
     DashboardComponent,
     ToastComponent,

@@ -32,10 +32,10 @@ export class ErrorInterceptor implements HttpInterceptor {
     return next.handle(req).pipe(
       catchError((error: HttpErrorResponse) => {
         const isLoginEndpoint = req.url.includes('/user/login');
+        const isLogoutEndpoint = req.url.includes('/user/logout');
 
-        if (error.status === 401 && !isLoginEndpoint) {
+        if (error.status === 401 && !isLoginEndpoint && !isLogoutEndpoint) {
           this.authService.logout();
-          location.reload();
         }
 
         return throwError(() => error);

@@ -5,101 +5,187 @@
     <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
   </div>
 
-  <div *ngIf="!isLoading() && stats() as s" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-1">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-1">
     
-    <!-- Streak Widget -->
-    <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg flex items-center justify-between hover:border-primary/50 transition-colors duration-300">
-      <div>
-        <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-2">Sequência Atual</p>
-        <div class="flex items-baseline">
-            <p class="text-4xl font-extrabold text-white mt-1">{{ s.current_streak_weeks }}</p>
-            <span class="ml-2 text-sm font-medium text-text-secondary">semanas</span>
+    <ng-container *ngIf="!isLoading() && stats() as s">
+        <!-- Streak Widget -->
+        <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg flex items-center justify-between hover:border-primary/50 transition-colors duration-300">
+        <div>
+            <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-2">Sequência Atual</p>
+            <div class="flex items-baseline">
+                <p class="text-4xl font-extrabold text-white mt-1">{{ s.current_streak_weeks }}</p>
+                <span class="ml-2 text-sm font-medium text-text-secondary">semanas</span>
+            </div>
         </div>
-      </div>
-      <div class="h-14 w-14 bg-[#fb923c]/20 rounded-full flex items-center justify-center text-3xl animate-pulse">
-        🔥
-      </div>
-    </div>
-
-    <!-- Frequency Widget -->
-    <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300">
-      <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-4">Frequência Semanal</p>
-      <div class="flex justify-between items-center px-1">
-        <!-- Mon to Sun -->
-        <div *ngFor="let dayActive of s.weekly_frequency; let i = index" class="flex flex-col items-center gap-2">
-            <div [class]="dayActive ? 'bg-primary shadow-[0_0_12px_rgba(16,185,129,0.6)] scale-110' : 'bg-secondary/30'" 
-                 class="w-6 h-6 rounded-full transition-all duration-300"></div>
-            <span class="text-[10px] font-bold text-text-secondary">{{ ['S','T','Q','Q','S','S','D'][i] }}</span>
+        <div class="h-14 w-14 bg-[#fb923c]/20 rounded-full flex items-center justify-center text-3xl animate-pulse">
+            🔥
         </div>
-      </div>
-    </div>
+        </div>
 
-    <!-- Last Workout Widget -->
-    <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 relative overflow-hidden">
-       <div class="absolute top-0 right-0 p-4 opacity-5">
-         <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path></svg>
-       </div>
-       <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-3">Último Treino</p>
-       <div *ngIf="s.last_workout; else noWorkout" class="relative z-10">
-          <h3 class="text-2xl font-bold text-white mb-1">{{ s.last_workout.workout_type || 'Treino' }}</h3>
-          <p class="text-sm text-primary font-medium mb-4">{{ s.last_workout.date | date:'dd MMM, HH:mm' }}</p>
-          <div class="flex items-center space-x-3">
-             <span class="bg-secondary/30 border border-secondary px-2 py-1 rounded text-xs text-text-secondary font-mono flex items-center">
-               ⏱️ {{ s.last_workout.duration_minutes || '--' }} min
-             </span>
-          </div>
-       </div>
-       <ng-template #noWorkout>
-         <div class="h-full flex items-center justify-center">
-            <p class="text-text-secondary italic text-sm">Nenhum treino registrado.</p>
-         </div>
-       </ng-template>
-    </div>
+        <!-- Frequency Widget -->
+        <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300">
+        <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-4">Frequência Semanal</p>
+        <div class="flex justify-between items-center px-1">
+            <!-- Mon to Sun -->
+            <div *ngFor="let dayActive of s.weekly_frequency; let i = index" class="flex flex-col items-center gap-2">
+                <div [class]="dayActive ? 'bg-primary shadow-[0_0_12px_rgba(16,185,129,0.6)] scale-110' : 'bg-secondary/30'" 
+                    class="w-6 h-6 rounded-full transition-all duration-300"></div>
+                <span class="text-[10px] font-bold text-text-secondary">{{ ['S','T','Q','Q','S','S','D'][i] }}</span>
+            </div>
+        </div>
+        </div>
 
-    <!-- Volume Chart (Wide) -->
-    <div class="col-span-1 md:col-span-2 lg:col-span-2 bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300">
-      <div class="flex justify-between items-center mb-4">
-          <p class="text-text-secondary text-xs font-bold uppercase tracking-wider">Volume por Categoria (Esta Semana)</p>
-          <span class="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full border border-primary/20">Kg Total</span>
-      </div>
-      <div class="h-64 w-full">
-         <canvas baseChart
-            [data]="barChartData"
-            [options]="barChartOptions"
-            [type]="barChartType">
-        </canvas>
-      </div>
-    </div>
+        <!-- Last Workout Widget -->
+        <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 relative overflow-hidden">
+        <div class="absolute top-0 right-0 p-4 opacity-5">
+            <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path></svg>
+        </div>
+        <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-3">Último Treino</p>
+        <div *ngIf="s.last_workout; else noWorkout" class="relative z-10">
+            <h3 class="text-2xl font-bold text-white mb-1">{{ s.last_workout.workout_type || 'Treino' }}</h3>
+            <p class="text-sm text-primary font-medium mb-4">{{ getFormattedDate(s.last_workout.date) }}</p>
+            <div class="flex items-center space-x-3">
+                <span class="bg-secondary/30 border border-secondary px-2 py-1 rounded text-xs text-text-secondary font-mono flex items-center">
+                ⏱️ {{ s.last_workout.duration_minutes || '--' }} min
+                </span>
+            </div>
+        </div>
+        <ng-template #noWorkout>
+            <div class="h-full flex items-center justify-center">
+                <p class="text-text-secondary italic text-sm">Nenhum treino registrado.</p>
+            </div>
+        </ng-template>
+        </div>
+    </ng-container>
 
-    <!-- Recent PRs -->
-    <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg overflow-hidden flex flex-col hover:border-primary/50 transition-colors duration-300">
-      <div class="flex justify-between items-center mb-4">
-        <p class="text-text-secondary text-xs font-bold uppercase tracking-wider">Recordes Recentes</p>
-        <span class="text-lg">🏆</span>
-      </div>
-      
-      <div *ngIf="s.recent_prs.length > 0; else noPrs" class="space-y-3 overflow-y-auto max-h-64 pr-2 custom-scrollbar">
-        <div *ngFor="let pr of s.recent_prs" class="flex items-center justify-between p-3 rounded-xl bg-secondary/10 hover:bg-secondary/30 transition-colors border border-transparent hover:border-secondary/50 group">
-           <div>
-             <p class="font-bold text-white text-sm group-hover:text-primary transition-colors">{{ pr.exercise_name }}</p>
-             <p class="text-[10px] text-text-secondary uppercase mt-0.5 tracking-wide">{{ pr.date | date:'dd MMM yyyy' }}</p>
-           </div>
-           <div class="text-right">
-             <p class="text-base font-bold text-primary">{{ pr.weight }}<span class="text-xs ml-0.5 font-normal text-primary/70">kg</span></p>
-             <div class="flex items-center justify-end text-[10px] text-text-secondary space-x-1">
-                <span>{{ pr.reps }} reps</span>
+    <!-- === NUTRITION WIDGETS === -->
+    <ng-container *ngIf="nutritionStats() as n">
+        
+        <!-- Macros Doughnut Widget -->
+        <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 relative">
+             <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-4">Macros de Hoje</p>
+             
+             @if (n.today) {
+                <div class="relative h-48 w-full flex items-center justify-center">
+                    <canvas baseChart [data]="doughnutChartData" [options]="doughnutChartOptions" [type]="doughnutChartType"></canvas>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <span class="text-2xl font-bold text-white">{{ n.today.calories }}</span>
+                        <span class="text-[10px] text-text-secondary uppercase">kcal</span>
+                    </div>
+                </div>
+                <div class="flex justify-center gap-4 mt-2">
+                     <div class="flex items-center gap-1">
+                         <div class="w-2 h-2 rounded-full bg-[#10b981]"></div>
+                         <span class="text-[10px] text-text-secondary">{{ n.today.protein_grams }}g P</span>
+                     </div>
+                     <div class="flex items-center gap-1">
+                         <div class="w-2 h-2 rounded-full bg-[#3b82f6]"></div>
+                         <span class="text-[10px] text-text-secondary">{{ n.today.carbs_grams }}g C</span>
+                     </div>
+                     <div class="flex items-center gap-1">
+                         <div class="w-2 h-2 rounded-full bg-[#f97316]"></div>
+                         <span class="text-[10px] text-text-secondary">{{ n.today.fat_grams }}g G</span>
+                     </div>
+                </div>
+             } @else {
+                 <div class="h-48 flex flex-col items-center justify-center text-center opacity-60">
+                     <span class="text-3xl mb-2 grayscale">🍩</span>
+                     <p class="text-text-secondary text-xs">Sem registro hoje.</p>
+                 </div>
+             }
+        </div>
+
+        <!-- Nutrition Adherence & Last Meal -->
+        <div class="flex flex-col gap-6">
+            
+            <!-- Nutrition Adherence -->
+            <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 flex-1">
+                <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-4">Aderência (Dieta)</p>
+                <div class="flex justify-between items-center px-1">
+                    <div *ngFor="let dayActive of n.weekly_adherence; let i = index" class="flex flex-col items-center gap-2">
+                        <div [class]="dayActive ? 'bg-primary shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-secondary/20 border border-secondary/50'" 
+                             class="w-5 h-5 rounded-full transition-all duration-300"></div>
+                        <span class="text-[9px] font-bold text-text-secondary">{{ ['S','T','Q','Q','S','S','D'][i] }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Last Log Card -->
+            <div class="bg-light-bg p-5 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 flex-1 flex flex-col justify-center">
+                 <div class="flex justify-between items-start mb-2">
+                     <p class="text-text-secondary text-xs font-bold uppercase tracking-wider">Última Refeição</p>
+                     <span class="text-lg">🍽️</span>
+                 </div>
+                 @if (n.today) {
+                     <p class="text-lg font-bold text-white mb-0.5">Hoje</p>
+                     <p class="text-sm text-primary font-medium">{{ n.today.calories }} kcal</p>
+                     <div class="text-[10px] text-text-secondary mt-1">
+                         {{ n.today.protein_grams }}g P • {{ n.today.carbs_grams }}g C • {{ n.today.fat_grams }}g G
+                     </div>
+                 } @else {
+                     <p class="text-sm text-text-secondary italic">Nenhum log recente.</p>
+                 }
+            </div>
+        </div>
+
+        <!-- Calories Line Chart -->
+        <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300">
+             <div class="flex justify-between items-center mb-4">
+                 <p class="text-text-secondary text-xs font-bold uppercase tracking-wider">Calorias (7 dias)</p>
+                 <span class="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full border border-primary/20">Média: {{ n.avg_daily_calories }}</span>
              </div>
-           </div>
+             <div class="h-40 w-full">
+                 <canvas baseChart [data]="lineChartData" [options]="lineChartOptions" [type]="lineChartType"></canvas>
+             </div>
         </div>
-      </div>
-      <ng-template #noPrs>
-         <div class="flex-1 flex flex-col items-center justify-center text-center opacity-60">
-             <span class="text-3xl mb-2 grayscale">🏅</span>
-             <p class="text-text-secondary text-xs">Sem novos recordes ainda.</p>
-             <p class="text-text-secondary text-[10px] mt-1">Continue firme!</p>
-         </div>
-      </ng-template>
-    </div>
 
+    </ng-container>
+
+    <ng-container *ngIf="!isLoading() && stats() as s">
+        <!-- Volume Chart (Wide) -->
+        <div class="col-span-1 md:col-span-2 lg:col-span-2 bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300">
+        <div class="flex justify-between items-center mb-4">
+            <p class="text-text-secondary text-xs font-bold uppercase tracking-wider">Volume por Categoria (Esta Semana)</p>
+            <span class="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full border border-primary/20">Kg Total</span>
+        </div>
+        <div class="h-64 w-full">
+            <canvas baseChart
+                [data]="barChartData"
+                [options]="barChartOptions"
+                [type]="barChartType">
+            </canvas>
+        </div>
+        </div>
+
+        <!-- Recent PRs -->
+        <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg overflow-hidden flex flex-col hover:border-primary/50 transition-colors duration-300">
+        <div class="flex justify-between items-center mb-4">
+            <p class="text-text-secondary text-xs font-bold uppercase tracking-wider">Recordes Recentes</p>
+            <span class="text-lg">🏆</span>
+        </div>
+        
+        <div *ngIf="s.recent_prs.length > 0; else noPrs" class="space-y-3 overflow-y-auto max-h-64 pr-2 custom-scrollbar">
+            <div *ngFor="let pr of s.recent_prs" class="flex items-center justify-between p-3 rounded-xl bg-secondary/10 hover:bg-secondary/30 transition-colors border border-transparent hover:border-secondary/50 group">
+            <div>
+                <p class="font-bold text-white text-sm group-hover:text-primary transition-colors">{{ pr.exercise_name }}</p>
+                <p class="text-[10px] text-text-secondary uppercase mt-0.5 tracking-wide">{{ getFormattedDate(pr.date) }}</p>
+            </div>
+            <div class="text-right">
+                <p class="text-base font-bold text-primary">{{ pr.weight }}<span class="text-xs ml-0.5 font-normal text-primary/70">kg</span></p>
+                <div class="flex items-center justify-end text-[10px] text-text-secondary space-x-1">
+                    <span>{{ pr.reps }} reps</span>
+                </div>
+            </div>
+            </div>
+        </div>
+        <ng-template #noPrs>
+            <div class="flex-1 flex flex-col items-center justify-center text-center opacity-60">
+                <span class="text-3xl mb-2 grayscale">🏅</span>
+                <p class="text-text-secondary text-xs">Sem novos recordes ainda.</p>
+                <p class="text-text-secondary text-[10px] mt-1">Continue firme!</p>
+            </div>
+        </ng-template>
+        </div>
+    </ng-container>
   </div>
 </div>

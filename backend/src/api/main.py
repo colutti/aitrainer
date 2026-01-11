@@ -1,6 +1,11 @@
 """
 This module contains the main FastAPI application.
 """
+import warnings
+# Suppress LangChain deprecation warning for ConversationSummaryBufferMemory
+# TODO: Migrate to LangGraph checkpointing when langchain_classic is removed
+warnings.filterwarnings("ignore", message=".*migrating_memory.*")
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -8,7 +13,7 @@ import uvicorn
 import os
 
 
-from src.api.endpoints import user, message, trainer, memory, workout, stats
+from src.api.endpoints import user, message, trainer, memory, workout, stats, nutrition
 from src.core.config import settings
 from src.core.deps import get_mongo_database, get_mem0_client
 from src.core.logs import logger
@@ -32,6 +37,7 @@ app.include_router(trainer.router, prefix="/trainer", tags=["trainer"])
 app.include_router(memory.router, prefix="/memory", tags=["memory"])
 app.include_router(workout.router, prefix="/workout", tags=["workout"])
 app.include_router(stats.router, prefix="/workout", tags=["workout"])
+app.include_router(nutrition.router, prefix="/nutrition", tags=["nutrition"])
 
 
 @app.get("/health")

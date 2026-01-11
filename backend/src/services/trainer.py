@@ -12,6 +12,7 @@ from src.core.config import settings
 from src.services.database import MongoDatabase
 from src.services.llm_client import LLMClient
 from src.services.workout_tools import create_save_workout_tool, create_get_workouts_tool
+from src.services.nutrition_tools import create_save_nutrition_tool, create_get_nutrition_tool
 from src.core.logs import logger
 from src.api.models.chat_history import ChatHistory
 from src.api.models.user_profile import UserProfile
@@ -316,7 +317,12 @@ class AITrainerBrain:
         # Create workout tracking tools with injected dependencies
         save_workout_tool = create_save_workout_tool(self._database, user_email)
         get_workouts_tool = create_get_workouts_tool(self._database, user_email)
-        tools = [save_workout_tool, get_workouts_tool]
+        
+        # Create nutrition tracking tools
+        save_nutrition_tool = create_save_nutrition_tool(self._database, user_email)
+        get_nutrition_tool = create_get_nutrition_tool(self._database, user_email)
+        
+        tools = [save_workout_tool, get_workouts_tool, save_nutrition_tool, get_nutrition_tool]
         
         full_response = []
         for chunk in self._llm_client.stream_with_tools(

@@ -59,7 +59,7 @@
               <div>
                  <h3 class="font-bold text-base text-white group-hover:text-primary transition-colors">{{ w.workout_type || 'Treino sem nome' }}</h3>
                  <p class="text-text-secondary text-xs font-medium mt-0.5 tracking-wide flex items-center gap-1">
-                    <span>{{ w.date | date:'dd MMM yyyy' }}</span>
+                    <span>{{ w.date | date:'dd MMM yyyy':'':'pt' }}</span>
                     <span class="w-1 h-1 rounded-full bg-text-secondary opacity-50"></span>
                     <span>{{ w.duration_minutes || '--' }} min</span>
                  </p>

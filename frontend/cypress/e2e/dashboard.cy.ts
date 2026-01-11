@@ -32,6 +32,11 @@ describe('Dashboard View', () => {
       }
     }).as('getStats');
     
+    cy.intercept('GET', '**/nutrition/stats', { body: {} }).as('getNutritionStats');
+    cy.intercept('GET', '**/trainer/trainer_profile', { body: { trainer_type: 'atlas' } }).as('trainerProfile');
+    cy.intercept('GET', '**/trainer/available_trainers', { body: [{ trainer_id: 'atlas', name: 'Atlas' }] }).as('availableTrainers');
+    cy.intercept('GET', '**/message/history*', { body: { messages: [] } }).as('chatHistory');
+    
     cy.login('cypress_user@test.com', 'password123'); // Password doesn't matter with mock
   });
 
@@ -59,6 +64,14 @@ describe('Dashboard View', () => {
     cy.contains('Último Treino');
     cy.contains('Full Body');
     cy.contains('75 min');
+    
+    // Verify Date Format (Portuguese)
+    const today = new Date();
+    // Expected format: "dd MMM, HH:mm" (e.g., 09 jan., 12:17 or 09 jan, 12:17 depending on browser)
+    // We check for month abbreviation in Portuguese
+    const month = today.toLocaleString('pt-BR', { month: 'short' }).replace('.', ''); // "jan"
+    // Use regex to be flexible about dot and spacing
+    cy.contains('Último Treino').parent().contains(new RegExp(month, 'i')).should('be.visible');
   });
 
   it('should display volume chart', () => {

@@ -8,12 +8,17 @@ describe('Error Handling', () => {
 
         // Intercept stats
         cy.intercept('GET', '**/workout/stats', { body: {} }).as('getStats');
+        cy.intercept('GET', '**/nutrition/stats', { body: {} }).as('getNutritionStats');
 
         // Intercept chat history
         cy.intercept('GET', '**/message/history*', {
             statusCode: 200,
             body: { messages: [] }
         }).as('chatHistory');
+        
+        // Intercept trainer data for Chat initialization
+        cy.intercept('GET', '**/trainer/trainer_profile', { body: { trainer_type: 'atlas' } }).as('trainerProfile');
+        cy.intercept('GET', '**/trainer/available_trainers', { body: [{ trainer_id: 'atlas', name: 'Atlas' }] }).as('availableTrainers');
 
         cy.login('cypress_user@test.com', 'password123');
         

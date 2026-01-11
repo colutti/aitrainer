@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
 import { StatsService } from '../../services/stats.service';
+import { NutritionService } from '../../services/nutrition.service';
 import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import { VolumeStat } from '../../models/stats.model';
 
@@ -13,10 +14,14 @@ import { VolumeStat } from '../../models/stats.model';
 })
 export class DashboardComponent implements OnInit {
   statsService = inject(StatsService);
+  nutritionService = inject(NutritionService);
+  
   stats = this.statsService.stats;
+  nutritionStats = this.nutritionService.stats;
+  
   isLoading = this.statsService.isLoading;
 
-  // Chart Config
+  // --- Volume Chart Config ---
   public barChartOptions: ChartConfiguration['options'] = {
     responsive: true,
     maintainAspectRatio: false,
@@ -50,23 +55,73 @@ export class DashboardComponent implements OnInit {
     datasets: [{ data: [], backgroundColor: '#10b981', borderRadius: 4 }]
   };
 
+  // --- Macros Doughnut Chart ---
+  public doughnutChartOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '75%',
+    plugins: { legend: { display: false }, tooltip: { enabled: true } }
+  } as any; // Cast to any to allow 'cutout' which is valid for Doughnut but strict typing might miss it in generic Options
+  public doughnutChartType: ChartType = 'doughnut';
+  public doughnutChartData: ChartData<'doughnut'> = {
+    labels: ['Proteína', 'Carbs', 'Gordura'],
+    datasets: [{ 
+       data: [0, 0, 0], 
+       backgroundColor: ['#10b981', '#3b82f6', '#f97316'], 
+       borderWidth: 0,
+       hoverOffset: 4 
+    }]
+  };
+
+  // --- Calories Line Chart ---
+  public lineChartOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+        x: { display: false },
+        y: { display: false }
+    },
+    elements: {
+        point: { radius: 2, hoverRadius: 4 },
+        line: { tension: 0.4 }
+    }
+  };
+  public lineChartType: ChartType = 'line';
+  public lineChartData: ChartData<'line'> = {
+      labels: [],
+      datasets: [{
+          data: [],
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          fill: true,
+          borderWidth: 2
+      }]
+  };
+
   constructor() {
     effect(() => {
       const s = this.stats();
       if (s?.weekly_volume) {
-        this.updateChart(s.weekly_volume);
+        this.updateVolumeChart(s.weekly_volume);
       }
+    });
+
+    effect(() => {
+        const n = this.nutritionStats();
+        if (n) {
+            this.updateNutritionCharts(n);
+        }
     });
   }
 
   ngOnInit() {
     this.statsService.fetchStats();
+    this.nutritionService.getStats().subscribe();
   }
 
-  updateChart(volumeStats: VolumeStat[]) {
-    // Only take top 5 categories to avoid clutter
+  updateVolumeChart(volumeStats: VolumeStat[]) {
     const displayedStats = volumeStats.slice(0, 5);
-    
     this.barChartData = {
       labels: displayedStats.map(v => v.category),
       datasets: [
@@ -83,5 +138,52 @@ export class DashboardComponent implements OnInit {
     };
   }
 
-  protected readonly Array = Array; // For template usage if needed
+  updateNutritionCharts(n: any) {
+      // 1. Macros Doughnut
+      if (n.today) {
+          this.doughnutChartData = {
+              labels: ['Proteína', 'Carbs', 'Gordura'],
+              datasets: [{
+                  data: [n.today.protein_grams, n.today.carbs_grams, n.today.fat_grams],
+                  backgroundColor: ['#10b981', '#3b82f6', '#f97316'],
+                  borderWidth: 0
+              }]
+          };
+      }
+
+      // 2. Calories Line
+      if (n.last_7_days) {
+          this.lineChartData = {
+              labels: n.last_7_days.map((d: any) => new Date(d.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })),
+              datasets: [{
+                  data: n.last_7_days.map((d: any) => d.calories),
+                  borderColor: '#10b981',
+                  backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                  fill: true,
+                  borderWidth: 2,
+                  pointBackgroundColor: '#10b981'
+              }]
+          };
+      }
+  }
+
+  protected readonly Array = Array;
+  
+  getFormattedDate(dateStr: string): string {
+    if (!dateStr) return '';
+    try {
+        const date = new Date(dateStr);
+        // Using Intl for consistent Portuguese formatting: "09 jan., 12:17"
+        // month: 'short' in pt-BR usually gives 'jan.', 'fev.', etc. or 'jan' depending on browser/implementation.
+        // We will try to match the user request.
+        return new Intl.DateTimeFormat('pt-BR', { 
+            day: '2-digit', 
+            month: 'short', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        }).format(date);
+    } catch (e) {
+        return dateStr;
+    }
+  } 
 }
