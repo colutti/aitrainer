@@ -14,5 +14,6 @@ export interface MetabolismResponse {
   status: string;
   energy_balance: number;
   is_stable: boolean;
+  latest_weight: number;
   message?: string;
 }

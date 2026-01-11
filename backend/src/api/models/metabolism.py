@@ -19,8 +19,10 @@ class MetabolismResponse(BaseModel):
     goal_weekly_rate: float | None = Field(None, description="User's goal weekly weight change rate")
     goal_type: str | None = Field(None, description="User's goal type (lose, gain, maintain)")
     status: str | None = Field(None, description="Semantic status (deficit, surplus, maintenance)")
-    energy_balance: int | None = Field(None, description="Difference between avg calories and TDEE")
+    energy_balance: float | None = Field(None, description="Difference between avg calories and TDEE")
     is_stable: bool | None = Field(None, description="Whether the energy balance is within stability range")
+    
+    latest_weight: float | None = Field(None, description="Latest actual weight recorded")
     
     # Optional composition & details
     fat_change_kg: float | None = Field(None)

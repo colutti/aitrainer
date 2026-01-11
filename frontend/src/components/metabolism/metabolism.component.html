@@ -50,13 +50,13 @@
               <div class="space-y-6">
                   <div class="flex justify-between items-center text-sm">
                       <span class="text-text-secondary">Sua Meta:</span>
-                      <span class="font-bold text-white">{{ stats()?.goal_weekly_rate }} kg/semana</span>
+                      <span class="font-bold text-white">{{ stats()?.goal_weekly_rate | number:'1.2-2' }} kg/semana</span>
                   </div>
                   
                   <div class="flex justify-between items-center text-sm">
                       <span class="text-text-secondary">Sua Realidade:</span>
                       <span class="font-bold" [ngClass]="(stats()?.weight_change_per_week || 0) < 0 ? 'text-green-400' : 'text-red-400'">
-                          {{ stats()?.weight_change_per_week }} kg/semana
+                          {{ stats()?.weight_change_per_week | number:'1.2-2' }} kg/semana
                       </span>
                   </div>
 
@@ -105,11 +105,14 @@
            <div class="bg-light-bg/50 p-6 rounded-2xl border border-secondary shadow-sm">
               <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-2">Tendência de Peso</p>
               <div class="flex items-baseline">
-                <p class="text-2xl font-bold text-white">
-                    {{ stats()?.start_weight }} <span class="text-gray-500 mx-1">→</span> {{ stats()?.end_weight }}
-                </p>
-                <span class="ml-1 text-sm text-text-secondary">kg</span>
+                 <p class="text-2xl font-bold text-white">
+                     {{ stats()?.start_weight | number:'1.2-2' }} <span class="text-gray-500 mx-1">→</span> {{ stats()?.end_weight | number:'1.2-2' }}
+                 </p>
+                 <span class="ml-1 text-sm text-text-secondary">kg</span>
               </div>
+              <p class="text-[10px] text-gray-400 block mt-1" *ngIf="stats()?.latest_weight">
+                 Real: {{ stats()?.latest_weight | number:'1.2-2' }} kg
+              </p>
           </div>
           
            <!-- Analysis Period -->
