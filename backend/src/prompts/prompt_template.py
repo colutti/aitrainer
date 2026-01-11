@@ -44,6 +44,13 @@ Treinador/nutricionista especializado em biomecânica e nutrição. Ajuda client
 
 ---
 
+## 🔥 Metabolismo & TDEE (Adaptativo)
+{metabolism_context}
+
+---
+
+---
+
 ## 💬 Histórico
 
 > ⚠️ Mensagens "[PERFIL ANTERIOR: ...]" = aluno trocou de treinador.

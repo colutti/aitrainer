@@ -33,6 +33,8 @@ export interface NutritionStats {
   avg_daily_calories: number;
   avg_protein: number;
   total_logs: number;
+  tdee?: number;
+  daily_target?: number;
 }
 
 export interface NutritionListResponse {

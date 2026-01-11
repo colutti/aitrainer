@@ -6,10 +6,12 @@ import { NutritionService } from '../../services/nutrition.service';
 import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import { VolumeStat } from '../../models/stats.model';
 
+import { WeightWidgetComponent } from './weight-widget/weight-widget.component';
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
+  imports: [CommonModule, BaseChartDirective, WeightWidgetComponent],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent implements OnInit {

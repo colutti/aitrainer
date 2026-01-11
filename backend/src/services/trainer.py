@@ -161,7 +161,8 @@ class AITrainerBrain:
                 age=30,
                 weight=70.0,
                 height=175,
-                goal="Melhorar condicionamento"
+                goal="Melhorar condicionamento",
+                goal_type="maintain"
             )
             self.save_user_profile(profile)
         return profile
@@ -303,11 +304,32 @@ class AITrainerBrain:
         trainer_profile_summary = trainer_profile_obj.get_trainer_profile_summary()
         user_profile_summary = profile.get_profile_summary()
 
+        # Metabolism Context Injection
+        metabolism_context = "Dadox insuficientes para cálculo metabólico."
+        try:
+             from src.services.adaptive_tdee import AdaptiveTDEEService
+             tdee_service = AdaptiveTDEEService(self._database)
+             targets = tdee_service.get_current_targets(user_email)
+             
+             if targets.get("tdee"):
+                 tdee = targets["tdee"]
+                 target = targets["daily_target"]
+                 reason = targets["reason"]
+                 metabolism_context = (
+                     f"- **TDEE Estimado**: {tdee} kcal\n"
+                     f"- **Meta Diária Recomendada**: {target} kcal\n"
+                     f"- **Justificativa**: {reason}\n"
+                     f"> USE estes números para recomendações calóricas. Se o aluno perguntar 'quanto devo comer', sugira {target} kcal."
+                 )
+        except Exception as e:
+             logger.warning("Failed to inject metabolism context: %s", e)
+
         # Build input data and generate response
         input_data = {
             "trainer_profile": trainer_profile_summary,
             "user_profile": user_profile_summary,
             "relevant_memories": relevant_memories_str,
+            "metabolism_context": metabolism_context,
             "chat_history_summary": chat_history_summary,
             "user_message": user_input,
         }

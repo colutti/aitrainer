@@ -1,7 +1,7 @@
 """
 This module contains the database logic for the application.
 """
-from datetime import datetime
+from datetime import datetime, date
 import bcrypt
 import pymongo
 from langchain_mongodb.chat_message_histories import MongoDBChatMessageHistory
@@ -13,6 +13,7 @@ from src.core.config import settings
 from src.api.models.trainer_profile import TrainerProfile
 from src.api.models.user_profile import UserProfile
 from src.api.models.chat_history import ChatHistory
+from src.api.models.weight_log import WeightLog
 from src.api.models.sender import Sender
 from src.api.models.workout_log import WorkoutLog, WorkoutWithId
 from src.core.logs import logger
@@ -638,6 +639,23 @@ class MongoDatabase:
             .limit(limit)
         )
         return [NutritionLog(**doc) for doc in cursor]
+
+    def get_nutrition_logs_by_date_range(
+        self, user_email: str, start_date: datetime, end_date: datetime
+    ) -> list[NutritionLog]:
+        """
+        Retrieves nutrition logs between start_date and end_date (inclusive).
+        """
+        # Ensure proper time boundaries
+        start = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
+        cursor = self.database.nutrition_logs.find({
+            "user_email": user_email,
+            "date": {"$gte": start, "$lte": end}
+        }).sort("date", pymongo.ASCENDING)
+        
+        return [NutritionLog(**doc) for doc in cursor]
     
     def get_nutrition_paginated(
         self, user_email: str, page: int = 1, page_size: int = 10, days: int | None = None
@@ -749,11 +767,125 @@ class MongoDatabase:
         
         total_logs = self.database.nutrition_logs.count_documents({"user_email": user_email})
 
+        # 5. Adaptive TDEE Integration
+        # We need to instantiate the service here. Ideally dependency injection but for now manual instantiation.
+        # Circular import risk? AdaptiveTDEEService imports MongoDatabase.
+        # MongoDatabase uses AdaptiveTDEEService.
+        # Solution: Import inside method.
+        
+        tdee_val = None
+        target_val = None
+        
+        try:
+             from src.services.adaptive_tdee import AdaptiveTDEEService
+             tdee_service = AdaptiveTDEEService(self)
+             targets = tdee_service.get_current_targets(user_email)
+             tdee_val = targets.get("tdee")
+             target_val = targets.get("daily_target")
+        except Exception as e:
+             logger.warning("Failed to calculate Adaptive TDEE for stats: %s", e)
+
         return NutritionStats(
             today=today_log,
             weekly_adherence=weekly_adherence,
             last_7_days=last_7_days_stats,
             avg_daily_calories=round(avg_cal, 1),
             avg_protein=round(avg_prot, 1),
-            total_logs=total_logs
+            total_logs=total_logs,
+            tdee=tdee_val,
+            daily_target=target_val
         )
+
+    def ensure_weight_indexes(self) -> None:
+        """
+        Ensures the weight_logs collection has proper indexes.
+        Creates a unique index on (user_email, date) to enforce one log per day.
+        """
+        self.database.weight_logs.create_index(
+            [("user_email", pymongo.ASCENDING), ("date", pymongo.ASCENDING)],
+            unique=True,
+            name="unique_daily_weight"
+        )
+        logger.info("Weight logs unique daily index ensured.")
+
+    def save_weight_log(self, log: WeightLog) -> tuple[str, bool]:
+        """
+        Saves or updates a weight log in the database.
+        Detects duplication by (user_email, date).
+
+        Args:
+            log (WeightLog): The weight data.
+
+        Returns:
+            tuple[str, bool]: (Document ID, is_new boolean)
+        """
+        # Feature: Weight log date is stored as date object in model.
+        # Explicitly convert to datetime(year, month, day) to match consistency
+        log_datetime = datetime(log.date.year, log.date.month, log.date.day)
+
+        result = self.database.weight_logs.update_one(
+            {"user_email": log.user_email, "date": log_datetime},
+            {"$set": {"user_email": log.user_email, "date": log_datetime, "weight_kg": log.weight_kg, "notes": log.notes}},
+            upsert=True
+        )
+        
+        is_new = result.upserted_id is not None
+        
+        if is_new:
+            doc_id = str(result.upserted_id)
+            logger.info("Created new weight log for %s on %s", log.user_email, log.date)
+        else:
+            existing = self.database.weight_logs.find_one(
+                {"user_email": log.user_email, "date": log_datetime}
+            )
+            doc_id = str(existing["_id"]) if existing else ""
+            logger.info("Updated existing weight log for %s on %s", log.user_email, log.date)
+            
+        return doc_id, is_new
+
+    def get_weight_logs(self, user_email: str, limit: int = 30) -> list[WeightLog]:
+        """
+        Retrieves weight logs for a user, sorted by date descending.
+        """
+        cursor = (
+            self.database.weight_logs.find({"user_email": user_email})
+            .sort("date", pymongo.DESCENDING)
+            .limit(limit)
+        )
+        
+        logs = []
+        for doc in cursor:
+            logs.append(WeightLog(
+                user_email=doc["user_email"],
+                date=doc["date"].date(),
+                weight_kg=doc["weight_kg"],
+                notes=doc.get("notes")
+            ))
+            
+        return logs
+
+    def get_weight_logs_by_date_range(
+        self, user_email: str, start_date: date, end_date: date
+    ) -> list[WeightLog]:
+        """
+        Retrieves weight logs between start_date and end_date (inclusive).
+        """
+        # Convert date to datetime for query if needed (as stored in DB)
+        start = datetime(start_date.year, start_date.month, start_date.day, 0, 0, 0)
+        end = datetime(end_date.year, end_date.month, end_date.day, 23, 59, 59)
+        
+        cursor = self.database.weight_logs.find({
+            "user_email": user_email,
+            "date": {"$gte": start, "$lte": end}
+        }).sort("date", pymongo.ASCENDING)
+        
+        logs = []
+        for doc in cursor:
+            logs.append(WeightLog(
+                user_email=doc["user_email"],
+                date=doc["date"].date(),
+                weight_kg=doc["weight_kg"],
+                notes=doc.get("notes")
+            ))
+            
+        return logs

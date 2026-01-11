@@ -40,6 +40,11 @@ describe('User Profile Flow', () => {
     cy.get('input[name="weight"]').clear().type(testData.weight);
     cy.get('input[name="height"]').clear().type(testData.height);
     cy.get('input[name="goal"]').clear().type(testData.goal);
+    
+    // Select Goal Type
+    cy.get('select[name="goal_type"]').select('Perder Peso');
+    cy.get('input[name="weekly_rate"]').clear().type('0.5');
+    
     cy.get('select[name="gender"]').select('Masculino');
 
     // Save
@@ -56,6 +61,8 @@ describe('User Profile Flow', () => {
     cy.get('input[name="weight"]').should('have.value', testData.weight);
     cy.get('input[name="height"]').should('have.value', testData.height);
     cy.get('input[name="goal"]').should('have.value', testData.goal);
+    cy.get('select[name="goal_type"]').should('have.value', 'lose'); // assuming 'Perder Peso' maps to 'lose'
+    cy.get('input[name="weekly_rate"]').should('have.value', '0.5');
     cy.get('select[name="gender"]').should('have.value', 'Masculino');
   });
 });

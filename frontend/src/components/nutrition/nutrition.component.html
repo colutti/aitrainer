@@ -13,7 +13,11 @@
                 Histórico Nutricional
             </h1>
             <p class="text-text-secondary text-sm md:text-base max-w-lg leading-relaxed">
-                Acompanhe sua ingestão diária de macronutrientes e calorias.
+                @if (stats()?.daily_target) {
+                    Meta Diária (Adaptativa): <span class="text-primary font-bold">{{ stats()?.daily_target }} kcal</span>
+                } @else {
+                    Acompanhe sua ingestão diária de macronutrientes e calorias.
+                }
             </p>
         </div>
         

@@ -40,7 +40,9 @@ export class UserProfileComponent implements OnInit {
     weight: 0,
     height: 0,
     goal: '',
-    email: ''
+    email: '',
+    goal_type: 'maintain',
+    weekly_rate: 0.5
   });
 
   isSaving = signal(false);
@@ -65,6 +67,9 @@ export class UserProfileComponent implements OnInit {
       weight: this.profile().weight,
       height: this.profile().height,
       goal: this.profile().goal,
+      goal_type: this.profile().goal_type,
+      weekly_rate: this.profile().weekly_rate,
+      target_weight: this.profile().target_weight
     };
 
     try {

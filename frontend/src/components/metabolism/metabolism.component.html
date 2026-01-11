@@ -1,0 +1,139 @@
+<div class="h-full overflow-y-auto p-6 bg-dark-bg text-text-primary">
+  <h1 class="text-3xl font-bold mb-6 tracking-tight">Seu Metabolismo</h1>
+  
+  <!-- Loading State -->
+  <div *ngIf="isLoading()" class="flex justify-center items-center h-64">
+    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+  </div>
+
+    <ng-container *ngIf="!isLoading()">
+      <!-- Main Target Card (HERO) -->
+      <div class="bg-gradient-to-br from-primary/30 to-gray-800 p-8 rounded-3xl border border-primary/40 shadow-2xl mb-8 flex flex-col items-center text-center relative overflow-hidden">
+        <div class="absolute inset-0 bg-noise opacity-10 pointer-events-none"></div>
+        
+        <h2 class="text-xs text-primary font-bold uppercase tracking-widest mb-2">Sua Meta Diária (Comer)</h2>
+        
+        <div class="flex items-baseline justify-center gap-2 mb-4">
+             <span class="text-7xl font-black text-white tracking-tighter drop-shadow-lg">
+                {{ stats()?.daily_target || '--' }}
+             </span>
+             <span class="text-2xl text-primary font-medium">kcal</span>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <div class="px-4 py-2 bg-black/30 rounded-xl border border-white/5">
+                <p class="text-[10px] text-gray-400 uppercase font-bold">TDEE Estimado</p>
+                <p class="text-white font-bold">{{ stats()?.tdee || '--' }} kcal</p>
+            </div>
+            <div class="px-4 py-2 bg-black/30 rounded-xl border border-white/5">
+                <p class="text-[10px] text-gray-400 uppercase font-bold">Confiança</p>
+                <p class="font-bold uppercase text-xs" [ngClass]="getConfidenceColor(stats()?.confidence || 'none')">
+                    {{ stats()?.confidence === 'none' ? 'Sem Dados' : stats()?.confidence }}
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-8 p-4 bg-primary/10 rounded-2xl border border-primary/20 w-full max-w-lg backdrop-blur-sm">
+            <p class="text-white text-sm font-medium">
+                {{ getRecommendation() }}
+            </p>
+        </div>
+      </div>
+
+      <!-- Discovery & Insights -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          
+          <!-- Weekly Progress -->
+          <div class="bg-light-bg p-8 rounded-3xl border border-secondary shadow-lg">
+              <h3 class="text-lg font-bold text-white mb-6">Progresso Semanal</h3>
+              
+              <div class="space-y-6">
+                  <div class="flex justify-between items-center text-sm">
+                      <span class="text-text-secondary">Sua Meta:</span>
+                      <span class="font-bold text-white">{{ stats()?.goal_weekly_rate }} kg/semana</span>
+                  </div>
+                  
+                  <div class="flex justify-between items-center text-sm">
+                      <span class="text-text-secondary">Sua Realidade:</span>
+                      <span class="font-bold" [ngClass]="(stats()?.weight_change_per_week || 0) < 0 ? 'text-green-400' : 'text-red-400'">
+                          {{ stats()?.weight_change_per_week }} kg/semana
+                      </span>
+                  </div>
+
+                  <div class="pt-2">
+                      <div class="flex justify-between mb-2 items-end">
+                          <span class="text-xs font-bold text-text-secondary uppercase">{{ getProgressStatus().label }}</span>
+                          <span class="text-xl font-black text-white">{{ getProgressStatus().percentage }}%</span>
+                      </div>
+                      <div class="w-full bg-gray-700 rounded-full h-3">
+                        <div class="h-3 rounded-full transition-all duration-1000" 
+                             [ngClass]="getProgressStatus().color"
+                             [style.width.%]="getProgressStatus().percentage"></div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <!-- Science Insight -->
+          <div class="bg-primary/5 p-8 rounded-3xl border border-primary/20 relative overflow-hidden">
+              <div class="absolute -top-6 -right-6 text-9xl text-primary/5 select-none font-black italic">💡</div>
+              <h3 class="text-lg font-bold text-white mb-4">O que os números dizem</h3>
+              <p class="text-text-secondary text-sm leading-relaxed italic">
+                  "{{ getInsightText() }}"
+              </p>
+              <div class="mt-6 flex items-center gap-2 text-xs text-primary font-bold">
+                  <span>✨ Calibrado via Inteligência Adaptativa</span>
+              </div>
+          </div>
+
+      </div>
+      
+      <!-- Statistics Details -->
+      <h3 class="text-sm font-bold text-text-secondary uppercase tracking-widest mb-4 ml-2">Detalhes do Período</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          <!-- Avg Intake -->
+          <div class="bg-light-bg/50 p-6 rounded-2xl border border-secondary shadow-sm">
+              <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-2">Ingestão Média</p>
+              <div class="flex items-baseline">
+                <p class="text-3xl font-bold text-white">{{ stats()?.avg_calories || 0 }}</p>
+                <span class="ml-1 text-sm text-text-secondary">kcal</span>
+              </div>
+          </div>
+          
+           <!-- Weight Trend -->
+           <div class="bg-light-bg/50 p-6 rounded-2xl border border-secondary shadow-sm">
+              <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-2">Tendência de Peso</p>
+              <div class="flex items-baseline">
+                <p class="text-2xl font-bold text-white">
+                    {{ stats()?.start_weight }} <span class="text-gray-500 mx-1">→</span> {{ stats()?.end_weight }}
+                </p>
+                <span class="ml-1 text-sm text-text-secondary">kg</span>
+              </div>
+          </div>
+          
+           <!-- Analysis Period -->
+           <div class="bg-light-bg/50 p-6 rounded-2xl border border-secondary shadow-sm">
+              <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-2">Período Analisado</p>
+              <div class="flex items-baseline">
+                <p class="text-3xl font-bold text-white">{{ stats()?.logs_count || 0 }}</p>
+                <span class="ml-1 text-sm text-text-secondary">dias</span>
+              </div>
+              <p class="text-[10px] text-gray-500 mt-1" *ngIf="stats()?.startDate">
+                  {{ stats()?.startDate | date:'dd/MM' }} até {{ stats()?.endDate | date:'dd/MM' }}
+              </p>
+          </div>
+          
+      </div>
+
+      <div *ngIf="stats()?.confidence === 'none'" class="mt-8 p-6 bg-blue-900/20 border border-blue-500/30 rounded-xl flex items-start gap-4">
+          <span class="text-2xl">ℹ️</span>
+          <div>
+              <h3 class="text-blue-100 font-bold text-sm mb-1">Como funciona a calibração?</h3>
+              <p class="text-blue-200/70 text-sm">
+                  O algoritmo precisa de pelo menos 7 dias de dados de peso e nutrição consistentes para calibrar seu metabolismo. Continue registrando diariamente para ver sua meta dinâmica!
+              </p>
+          </div>
+      </div>
+    </ng-container>
+</div>

@@ -14,6 +14,9 @@ class UserProfileInput(BaseModel):
     )
     height: int = Field(..., ge=100, le=250, description="Height in cm between 100 and 250")
     goal: str = Field(..., min_length=5, description="User's goal")
+    goal_type: str = Field(..., pattern="^(lose|gain|maintain)$", description="Type of goal: lose, gain, or maintain")
+    target_weight: float | None = Field(None, ge=30.0, le=500.0, description="Target weight in kg (optional)")
+    weekly_rate: float = Field(0.5, ge=0.0, le=2.0, description="Desired weekly weight change rate in kg")
 
 
 class UserProfile(UserProfileInput):

@@ -13,7 +13,7 @@ import uvicorn
 import os
 
 
-from src.api.endpoints import user, message, trainer, memory, workout, stats, nutrition
+from src.api.endpoints import user, message, trainer, memory, workout, stats, nutrition, weight, metabolism
 from src.core.config import settings
 from src.core.deps import get_mongo_database, get_mem0_client
 from src.core.logs import logger
@@ -38,6 +38,8 @@ app.include_router(memory.router, prefix="/memory", tags=["memory"])
 app.include_router(workout.router, prefix="/workout", tags=["workout"])
 app.include_router(stats.router, prefix="/workout", tags=["workout"])
 app.include_router(nutrition.router, prefix="/nutrition", tags=["nutrition"])
+app.include_router(weight.router, prefix="/weight", tags=["weight"])
+app.include_router(metabolism.router, prefix="/metabolism", tags=["metabolism"])
 
 
 @app.get("/health")

@@ -4,5 +4,8 @@ export interface UserProfile {
   weight: number;
   height: number;
   goal: string;
+  goal_type: 'lose' | 'gain' | 'maintain';
+  target_weight?: number;
+  weekly_rate: number;
   email: string;
 }

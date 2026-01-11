@@ -44,3 +44,7 @@ class NutritionStats(BaseModel):
     )
     
     total_logs: int = Field(..., description="Total de dias registrados no histórico")
+    
+    tdee: Optional[int] = Field(None, description="TDEE calculado adaptativamente")
+    daily_target: Optional[int] = Field(None, description="Meta calórica diária baseada no TDEE e objetivo")
+

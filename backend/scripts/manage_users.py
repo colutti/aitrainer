@@ -87,7 +87,9 @@ def create_user(args, db):
         "age": args.age or 30,
         "weight": args.weight or 75.0,
         "height": args.height or 175,
-        "goal": args.goal or "Manter a forma"
+        "goal": args.goal or "Manter a forma",
+        "goal_type": args.goal_type or "maintain",
+        "weekly_rate": args.weekly_rate or 0.5
     }
 
     try:
@@ -99,9 +101,7 @@ def create_user(args, db):
     # Default Trainer Profile Data
     trainer_data = {
         "user_email": email,
-        "name": "Trainer",
-        "gender": "Masculino",
-        "style": "Científico" # Default style
+        "trainer_type": args.trainer_type or "atlas"
     }
     
     try:
@@ -176,6 +176,9 @@ def update_user(args, db):
     if args.height: updates["height"] = args.height
     if args.goal: updates["goal"] = args.goal
     if args.gender: updates["gender"] = args.gender
+    if args.goal_type: updates["goal_type"] = args.goal_type
+    if args.weekly_rate: updates["weekly_rate"] = args.weekly_rate
+    if args.target_weight: updates["target_weight"] = args.target_weight
 
     if not updates:
         print("No updates provided.")
@@ -188,6 +191,8 @@ def update_user(args, db):
         if 'age' in updates: updates['age'] = int(updates['age'])
         if 'height' in updates: updates['height'] = int(updates['height'])
         if 'weight' in updates: updates['weight'] = float(updates['weight'])
+        if 'weekly_rate' in updates: updates['weekly_rate'] = float(updates['weekly_rate'])
+        if 'target_weight' in updates: updates['target_weight'] = float(updates['target_weight'])
         
         current_data.update(updates)
         # Re-validate
@@ -256,6 +261,10 @@ def main():
     create_parser.add_argument("--height", type=int, help="User height (cm)")
     create_parser.add_argument("--gender", choices=["Masculino", "Feminino"], help="User gender")
     create_parser.add_argument("--goal", help="User goal")
+    create_parser.add_argument("--goal-type", choices=["lose", "gain", "maintain"], help="Goal type")
+    create_parser.add_argument("--weekly-rate", type=float, help="Weekly change rate")
+    create_parser.add_argument("--target-weight", type=float, help="Target weight")
+    create_parser.add_argument("--trainer-type", choices=["atlas", "luna", "sargento", "sofia"], help="Trainer type")
 
     # LIST
     subparsers.add_parser("list", help="List all users")
@@ -272,6 +281,9 @@ def main():
     update_parser.add_argument("--height", type=int, help="User height")
     update_parser.add_argument("--gender", choices=["Masculino", "Feminino"], help="User gender")
     update_parser.add_argument("--goal", help="User goal")
+    update_parser.add_argument("--goal-type", choices=["lose", "gain", "maintain"], help="Goal type")
+    update_parser.add_argument("--weekly-rate", type=float, help="Weekly change rate")
+    update_parser.add_argument("--target-weight", type=float, help="Target weight")
 
     # PASSWORD
     pwd_parser = subparsers.add_parser("password", help="Change user password")

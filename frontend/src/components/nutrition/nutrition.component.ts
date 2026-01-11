@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NutritionService } from '../../services/nutrition.service';
-import { NutritionLog } from '../../models/nutrition.model';
+import { NutritionLog, NutritionStats } from '../../models/nutrition.model';
 import { SkeletonComponent } from '../skeleton/skeleton.component';
 
 @Component({
@@ -19,15 +19,32 @@ export class NutritionComponent implements OnInit {
   totalPages = signal(1);
   totalLogs = signal(0);
   
+  stats = signal<NutritionStats | null>(null);
+  
   // Filtering (optional for now, but UI shows dropdown)
   daysFilter = signal<number | undefined>(undefined);
 
   ngOnInit() {
+    this.loadData();
+  }
+
+  loadData() {
+    this.isLoading.set(true);
+    // ForkJoin or just separate calls? Separate is fine for now.
     this.loadLogs();
+    this.loadStats();
+  }
+
+  loadStats() {
+    this.nutritionService.getStats().subscribe({
+      next: (s) => this.stats.set(s),
+      error: (e) => console.error("Failed to load nutrition stats", e)
+    });
   }
 
   loadLogs() {
-    this.isLoading.set(true);
+    // isLoading handled by loadData or kept for logs specifically? 
+    // Let's keep isLoading for the main list
     this.nutritionService.getLogs(this.currentPage(), 10, this.daysFilter())
       .subscribe({
         next: (response) => {

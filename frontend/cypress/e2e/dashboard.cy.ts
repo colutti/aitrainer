@@ -117,6 +117,27 @@ describe('Dashboard View', () => {
       cy.get('.animate-spin').should('not.exist');
   });
 
+  it('should display weight widget and allow logging', () => {
+    cy.intercept('POST', '**/weight', { statusCode: 200, body: { message: 'Weight logged' } }).as('logWeight');
+    
+    // Check widget presence
+    cy.contains('Log de Peso').should('be.visible');
+    
+    // Type weight
+    cy.get('app-weight-widget input').clear().type('75.5');
+    
+    // Click save
+    cy.get('app-weight-widget button').click();
+    
+    // Verify request
+    cy.wait('@logWeight').its('request.body').should('deep.include', {
+        weight_kg: 75.5
+    });
+    
+    // Verify success feedback
+    cy.contains('Peso atualizado!').should('be.visible');
+  });
+
   it('should check mobile viewport layout', () => {
       cy.viewport('iphone-x');
       cy.reload(); // Reload to ensure responsive classes apply if needed (usually media queries handle it, but good practice)

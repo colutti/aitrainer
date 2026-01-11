@@ -42,10 +42,27 @@
         </div>
 
         <div class="sm:col-span-2">
-          <label for="goal" class="block text-sm font-medium text-text-secondary">Objetivo Principal</label>
+          <label for="goal" class="block text-sm font-medium text-text-secondary">Objetivo Principal (Descrição)</label>
           <input type="text" name="goal" id="goal" [(ngModel)]="profile().goal"
             placeholder="Ex: Ganhar massa muscular e perder gordura"
             class="mt-1 block w-full px-3 py-2 bg-dark-bg border border-secondary rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+        </div>
+
+        <div>
+           <label for="goal_type" class="block text-sm font-medium text-text-secondary">Tipo de Objetivo</label>
+           <select id="goal_type" name="goal_type" [(ngModel)]="profile().goal_type"
+             class="mt-1 block w-full pl-3 pr-10 py-2 bg-dark-bg border border-secondary focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md">
+             <option value="lose">Perder Peso</option>
+             <option value="gain">Ganhar Massa</option>
+             <option value="maintain">Manter Peso</option>
+           </select>
+        </div>
+
+        <div>
+           <label for="weekly_rate" class="block text-sm font-medium text-text-secondary">Taxa Semanal (kg/semana)</label>
+           <input type="number" name="weekly_rate" id="weekly_rate" step="0.1" [(ngModel)]="profile().weekly_rate"
+             class="mt-1 block w-full px-3 py-2 bg-dark-bg border border-secondary rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+           <p class="mt-1 text-xs text-text-secondary">Recomendado: 0.2kg a 0.5kg/semana</p>
         </div>
       </div>
 
