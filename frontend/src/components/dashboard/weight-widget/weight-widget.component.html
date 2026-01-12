@@ -23,6 +23,7 @@
       <div class="relative flex-1">
         <input 
           type="number" 
+          appNumericInput
           [ngModel]="weightInput()"
           (ngModelChange)="weightInput.set($event)" 
           placeholder="0.0"
@@ -54,6 +55,7 @@
       <div class="relative">
         <input 
           type="number" 
+          appNumericInput
           [ngModel]="bodyFatInput()"
           (ngModelChange)="bodyFatInput.set($event)"
           placeholder="0.0"
@@ -68,6 +70,7 @@
       <div class="relative">
         <input 
           type="number" 
+          appNumericInput
           [ngModel]="muscleMassInput()"
           (ngModelChange)="muscleMassInput.set($event)" 
           placeholder="0.0"

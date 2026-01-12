@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { WeightService } from '../../../services/weight.service';
 import { UserProfileService } from '../../../services/user-profile.service';
+import { NumericInputDirective } from '../../../directives/numeric-input.directive';
 
 @Component({
   selector: 'app-weight-widget',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NumericInputDirective],
   templateUrl: './weight-widget.component.html',
   styleUrls: ['./weight-widget.component.css']
 })

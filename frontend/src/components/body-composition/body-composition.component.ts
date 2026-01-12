@@ -5,11 +5,12 @@ import { WeightService } from '../../services/weight.service';
 import { WeightLog, BodyCompositionStats } from '../../models/weight-log.model';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration } from 'chart.js';
+import { NumericInputDirective } from '../../directives/numeric-input.directive';
 
 @Component({
   selector: 'app-body-composition',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective, FormsModule],
+  imports: [CommonModule, BaseChartDirective, FormsModule, NumericInputDirective],
   templateUrl: './body-composition.component.html'
 })
 export class BodyCompositionComponent implements OnInit {

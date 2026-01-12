@@ -9,7 +9,7 @@
       <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
         <div>
           <label for="age" class="block text-sm font-medium text-text-secondary">Idade</label>
-          <input type="number" name="age" id="age" [(ngModel)]="profile().age"
+          <input type="number" appNumericInput name="age" id="age" [(ngModel)]="profile().age"
             class="mt-1 block w-full px-3 py-2 bg-dark-bg border border-secondary rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
           @if(validationErrors()['age']) {
             <p class="mt-1 text-sm text-red-400">{{ validationErrors()['age'] }}</p>
@@ -28,7 +28,7 @@
 
         <div>
           <label for="weight" class="block text-sm font-medium text-text-secondary">Peso (kg)</label>
-          <input type="number" name="weight" id="weight" step="0.1" [(ngModel)]="profile().weight"
+          <input type="number" appNumericInput name="weight" id="weight" step="0.1" [(ngModel)]="profile().weight"
             class="mt-1 block w-full px-3 py-2 bg-dark-bg border border-secondary rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
           @if(validationErrors()['weight']) {
             <p class="mt-1 text-sm text-red-400">{{ validationErrors()['weight'] }}</p>
@@ -37,7 +37,7 @@
 
         <div>
           <label for="height" class="block text-sm font-medium text-text-secondary">Altura (cm)</label>
-          <input type="number" name="height" id="height" [(ngModel)]="profile().height"
+          <input type="number" appNumericInput name="height" id="height" [(ngModel)]="profile().height"
             class="mt-1 block w-full px-3 py-2 bg-dark-bg border border-secondary rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
         </div>
 
@@ -60,7 +60,7 @@
 
         <div>
            <label for="weekly_rate" class="block text-sm font-medium text-text-secondary">Taxa Semanal (kg/semana)</label>
-           <input type="number" name="weekly_rate" id="weekly_rate" step="0.1" [(ngModel)]="profile().weekly_rate"
+           <input type="number" appNumericInput name="weekly_rate" id="weekly_rate" step="0.1" [(ngModel)]="profile().weekly_rate"
              [disabled]="profile().goal_type === 'maintain'"
              class="mt-1 block w-full px-3 py-2 bg-dark-bg border border-secondary rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed">
            <p class="mt-1 text-xs text-text-secondary">Recomendado: 0.2kg a 0.5kg/semana</p>

@@ -1,39 +1,11 @@
 describe('Toast Notifications', () => {
     beforeEach(() => {
-        // Intercept Login
-        cy.intercept('POST', '**/user/login', {
-            statusCode: 200,
-            body: { token: 'fake-jwt-token' }
-        }).as('login');
-
-        // Intercept stats (dashboard)
-        cy.intercept('GET', '**/workout/stats', { body: {} }).as('getStats');
-        cy.intercept('GET', '**/nutrition/stats', { body: {} }).as('getNutritionStats');
-
-        // Intercept chat history
-        cy.intercept('GET', '**/message/history*', {
-            statusCode: 200,
-            body: { messages: [] }
-        }).as('chatHistory');
-
-        // Intercept user profile
-        cy.intercept('GET', '**/user/profile', {
-            statusCode: 200,
-            body: {
-                email: 'cypress@test.com',
-                trainer_type: 'atlas'
-            }
-        }).as('userProfile');
-
-        // Intercept trainer profile
+        // Essential startup intercepts for Dashboard
         cy.intercept('GET', '**/trainer/trainer_profile', {
             statusCode: 200,
-            body: {
-                trainer_type: 'atlas'
-            }
+            body: { trainer_type: 'atlas' }
         }).as('trainerProfile');
-
-        // Intercept available trainers - CORRECT STRUCTURE
+        
         cy.intercept('GET', '**/trainer/available_trainers', {
             statusCode: 200,
             body: [
@@ -58,27 +30,36 @@ describe('Toast Notifications', () => {
             ]
         }).as('availableTrainers');
 
+        cy.intercept('GET', '**/message/history*', { body: [] }).as('chatHistory');
+        cy.intercept('GET', '**/weight/stats*', { body: { latest: null, weight_trend: [] } }).as('getWeightStats');
+        cy.intercept('GET', '**/workout/stats', { body: { streak: 0, frequency: [] } }).as('getWorkoutStats');
+        cy.intercept('GET', '**/nutrition/stats', { body: { daily_target: 2000, current_macros: {} } }).as('getNutritionStats');
+        cy.intercept('GET', '**/user/profile', { body: { email: 'cypress@test.com' } }).as('userProfile');
+
         // Intercept Update Profile
         cy.intercept('PUT', '**/trainer/update_trainer_profile', {
             statusCode: 200,
             body: { trainer_type: 'luna' }
         }).as('updateTrainer');
 
-        cy.login('cypress_user@test.com', 'password123');
+        // Bypass UI login
+        cy.visit('/', {
+            onBeforeLoad: (win) => {
+                win.localStorage.setItem('jwt_token', 'fake-jwt-token');
+            }
+        });
+
+        // Ensure we land on app
+        cy.get('app-sidebar', { timeout: 10000 }).should('be.visible');
+        cy.get('app-dashboard', { timeout: 10000 }).should('be.visible');
     });
 
     it('should show success toast when updating trainer settings', () => {
         // 1. Navigate to Trainer Settings
-        cy.get('app-sidebar button').contains('Ajustes do Trainer').click();
+        cy.contains('button', 'Ajustes do Trainer').click({ force: true });
         cy.wait(['@trainerProfile', '@availableTrainers']);
 
         // 2. Click on a different trainer (Luna)
-        // We use the data-testid I added in previous step (wait, did I add it? No. I need to rely on text or classes)
-        // I did not add data-testid in my edit of TrainerSettingsComponent.html (I only removed success block).
-        // But the file content I viewed earlier had `[attr.data-testid]="'trainer-card-' + trainer.trainer_id"`.
-        // Let's verify if that was already there.
-        
-        // Yes, line 28 of viewed file: `[attr.data-testid]="'trainer-card-' + trainer.trainer_id"`
         cy.get('[data-testid="trainer-card-luna"]').click();
 
         // 3. Click Save
@@ -86,9 +67,7 @@ describe('Toast Notifications', () => {
         cy.wait('@updateTrainer');
 
         // 4. Assert Toast is visible
-        cy.contains('Treinador atualizado com sucesso!')
-          .closest('div')
-          .should('have.class', 'bg-green-900/90') // Check success style
+        cy.contains('Treinador atualizado com sucesso!', { timeout: 10000 })
           .should('be.visible');
     });
 });

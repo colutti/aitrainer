@@ -7,10 +7,10 @@ import { JwtInterceptor } from './src/services/jwt.interceptor';
 import { ErrorInterceptor } from './src/services/error.interceptor';
 
 import { registerLocaleData } from '@angular/common';
-import localePt from '@angular/common/locales/pt';
+import localePtBr from '@angular/common/locales/pt';
 import { LOCALE_ID } from '@angular/core';
 
-registerLocaleData(localePt);
+registerLocaleData(localePtBr, 'pt-BR');
 
 bootstrapApplication(AppComponent, {
     providers: [
@@ -18,7 +18,7 @@ bootstrapApplication(AppComponent, {
         provideHttpClient(withInterceptorsFromDi()),
         provideMarkdown(),
         provideCharts(withDefaultRegisterables()),
-        { provide: LOCALE_ID, useValue: 'pt' },
+        { provide: LOCALE_ID, useValue: 'pt-BR' },
 
         { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
         { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true },

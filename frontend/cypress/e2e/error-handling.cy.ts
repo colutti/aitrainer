@@ -1,32 +1,31 @@
 describe('Error Handling', () => {
     beforeEach(() => {
-        // Intercept Login
-        cy.intercept('POST', '**/user/login', {
-            statusCode: 200,
-            body: { token: 'fake-jwt-token' }
-        }).as('login');
-
-        // Intercept stats
-        cy.intercept('GET', '**/workout/stats', { body: {} }).as('getStats');
-        cy.intercept('GET', '**/nutrition/stats', { body: {} }).as('getNutritionStats');
-
-        // Intercept chat history
-        cy.intercept('GET', '**/message/history*', {
-            statusCode: 200,
-            body: { messages: [] }
-        }).as('chatHistory');
-        
-        // Intercept trainer data for Chat initialization
+        // Essential startup intercepts for Dashboard
         cy.intercept('GET', '**/trainer/trainer_profile', { body: { trainer_type: 'atlas' } }).as('trainerProfile');
         cy.intercept('GET', '**/trainer/available_trainers', { body: [{ trainer_id: 'atlas', name: 'Atlas' }] }).as('availableTrainers');
+        cy.intercept('GET', '**/message/history*', { body: [] }).as('chatHistory');
+        cy.intercept('GET', '**/weight/stats*', { body: { latest: null, weight_trend: [] } }).as('getWeightStats');
+        cy.intercept('GET', '**/workout/stats', { body: { streak: 0, frequency: [] } }).as('getWorkoutStats');
+        cy.intercept('GET', '**/nutrition/stats', { body: { daily_target: 2000, current_macros: {} } }).as('getNutritionStats');
+        cy.intercept('GET', '**/user/profile', { body: { email: 'test@example.com' } }).as('userProfile');
 
-        cy.login('cypress_user@test.com', 'password123');
-        
-        // Navigate to chat for error tests
-        cy.get('button').contains('Chat').click();
+        // Bypass UI login
+        cy.visit('/', {
+            onBeforeLoad: (win) => {
+                win.localStorage.setItem('jwt_token', 'fake-jwt-token');
+            }
+        });
+
+        // Ensure we land on app
+        cy.get('app-sidebar', { timeout: 10000 }).should('be.visible');
+        cy.get('app-dashboard', { timeout: 10000 }).should('be.visible');
     });
 
     it('should display error message when chat API fails', () => {
+        // Navigate to chat
+        cy.contains('button', 'Chat').click({ force: true });
+        cy.get('app-chat', { timeout: 10000 }).should('be.visible');
+
         // Intercept the message API and return an error
         cy.intercept('POST', '**/message/message', {
             statusCode: 500,
@@ -45,7 +44,11 @@ describe('Error Handling', () => {
     });
 
     it('should handle network timeout gracefully on chat', () => {
-        // Intercept with a delayed failure
+        // Navigate to chat
+        cy.contains('button', 'Chat').click({ force: true });
+        cy.get('app-chat', { timeout: 10000 }).should('be.visible');
+
+        // Intercept with a failure
         cy.intercept('POST', '**/message/message', {
             forceNetworkError: true,
         }).as('networkError');
@@ -55,7 +58,7 @@ describe('Error Handling', () => {
         cy.get('button[type="submit"]').click();
 
         // Should display the error message
-        cy.contains('Erro ao se comunicar com o servidor.', { timeout: 15000 }).should('be.visible');
+        cy.contains('Erro ao se comunicar com o servidor.').should('be.visible');
     });
 
     it('should handle API error when loading user profile', () => {
@@ -66,12 +69,12 @@ describe('Error Handling', () => {
         }).as('profileError');
 
         // Navigate to user profile
-        cy.get('app-sidebar button').contains('Meu Perfil').click();
+        cy.contains('button', 'Meu Perfil').click({ force: true });
 
         // Wait for intercepted call
         cy.wait('@profileError');
 
-        // Profile page should still be visible (just with empty/default data)
+        // Profile page should still be visible (just with empty/default data or showing error)
         cy.get('app-user-profile').should('be.visible');
     });
 
@@ -83,12 +86,12 @@ describe('Error Handling', () => {
         }).as('trainerError');
 
         // Navigate to trainer settings
-        cy.get('app-sidebar button').contains('Ajustes do Trainer').click();
+        cy.contains('button', 'Ajustes do Trainer').click({ force: true });
 
         // Wait for intercepted call
         cy.wait('@trainerError');
 
-        // Verify the application didn't crash (sidebar still visible)
+        // Sidebar still visible
         cy.get('app-sidebar', { timeout: 10000 }).should('be.visible');
     });
 });

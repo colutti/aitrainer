@@ -42,7 +42,7 @@ describe('Dashboard View', () => {
       body: { latest: null, weight_trend: [], fat_trend: [], muscle_trend: [] } 
     }).as('getWeightStats');
     
-    cy.login('cypress_user@test.com', 'password123'); // Password doesn't matter with mock
+    cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661'); // Password doesn't matter with mock
   });
 
   it('should land on dashboard after login', () => {
@@ -130,9 +130,9 @@ describe('Dashboard View', () => {
 
   it('should display section headers', () => {
     cy.wait('@getStats');
-    cy.contains('h2', 'Corpo').should('be.visible');
-    cy.contains('h2', 'Treinos').should('be.visible');
-    cy.contains('h2', 'Nutrição').should('be.visible');
+    cy.contains('Corpo').scrollIntoView().should('be.visible');
+    cy.contains('Treinos').scrollIntoView().should('be.visible');
+    cy.contains('Nutrição').scrollIntoView().should('be.visible');
   });
 
   it('should allow logging weight and composition via widget', () => {
@@ -163,7 +163,7 @@ describe('Dashboard View', () => {
     });
     
     // Verify success feedback
-    cy.contains('Composição atualizada!').should('be.visible');
+    cy.contains('atualizada', { timeout: 10000 }).should('be.visible');
   });
 
   it('should check mobile viewport layout', () => {

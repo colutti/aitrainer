@@ -59,7 +59,11 @@ describe('Nutrition Tracking', () => {
           });
       }).as('getNutritionStats');
       
-      // Mock Workout Stats (Required for Dashboard to load)
+      // Essential startup intercepts for Dashboard
+      cy.intercept('GET', '**/trainer/trainer_profile', { body: { trainer_type: 'atlas' } }).as('trainerProfile');
+      cy.intercept('GET', '**/trainer/available_trainers', { body: [{ trainer_id: 'atlas', name: 'Atlas' }] }).as('availableTrainers');
+      cy.intercept('GET', '**/message/history*', { body: { messages: [] } }).as('chatHistory');
+      cy.intercept('GET', '**/weight/stats*', { body: { latest: null, weight_trend: [] } }).as('getWeightStats');
       cy.intercept('GET', '**/workout/stats', {
           statusCode: 200,
           body: {
@@ -71,21 +75,27 @@ describe('Nutrition Tracking', () => {
              last_workout: null
           }
       }).as('getWorkoutStats');
+
+      // Bypass UI login using onBeforeLoad
+      cy.visit('/', {
+          onBeforeLoad: (win) => {
+              win.localStorage.setItem('jwt_token', 'fake-jwt-token');
+          }
+      });
       
-      // Perform login
-      
-      // Perform login
-      cy.login('test@example.com', 'password123'); // This uses the mocked endpoint now if cy.login uses cy.request or UI
+      // Wait for app to be ready
+      cy.get('app-sidebar', { timeout: 10000 }).should('be.visible');
+      cy.get('app-dashboard', { timeout: 10000 }).should('be.visible');
     });
   
     it('should navigate to nutrition page from sidebar', () => {
-      cy.get('[data-cy="nav-nutrition"]').click();
+      cy.get('[data-cy="nav-nutrition"]').click({ force: true });
       // cy.url().should('include', '/nutrition'); // Skipping URL check as we use signal-based nav
       cy.get('h1').contains('Histórico Nutricional');
     });
   
     it('should display nutrition logs in timeline', () => {
-      cy.get('[data-cy="nav-nutrition"]').click();
+      cy.get('[data-cy="nav-nutrition"]').click({ force: true });
       cy.wait('@getNutritionLogs');
   
       // Check for log cards
@@ -108,7 +118,7 @@ describe('Nutrition Tracking', () => {
     });
 
     it('should show micros if available', () => {
-        cy.get('[data-cy="nav-nutrition"]').click();
+        cy.get('[data-cy="nav-nutrition"]').click({ force: true });
         cy.wait('@getNutritionLogs');
         cy.contains('Fibras: 30g').should('be.visible');
         cy.contains('Sódio: 2000mg').should('be.visible');
@@ -119,7 +129,7 @@ describe('Nutrition Tracking', () => {
             logs: [], total: 0, page: 1, page_size: 10, total_pages: 0
         }).as('getEmptyLogs');
 
-        cy.get('[data-cy="nav-nutrition"]').click();
+        cy.get('[data-cy="nav-nutrition"]').click({ force: true });
         cy.wait('@getEmptyLogs');
 
         cy.contains('Nenhum registro encontrado').should('be.visible');

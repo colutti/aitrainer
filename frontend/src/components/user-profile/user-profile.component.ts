@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { UserProfileService } from '../../services/user-profile.service';
 import { UserProfile } from '../../models/user-profile.model';
 import { UserProfileInput } from '../../models/user-profile-input.model';
+import { NumericInputDirective } from '../../directives/numeric-input.directive';
 
 /** Validation error structure returned by the backend */
 interface ValidationError {
@@ -29,7 +30,7 @@ function isValidationError(obj: unknown): obj is ValidationError {
   selector: 'app-user-profile',
   templateUrl: './user-profile.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule]
+  imports: [CommonModule, FormsModule, NumericInputDirective]
 })
 export class UserProfileComponent implements OnInit {
   private userProfileService = inject(UserProfileService);

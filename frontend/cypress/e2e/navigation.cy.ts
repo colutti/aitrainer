@@ -1,21 +1,5 @@
 describe('Navigation Flow', () => {
     beforeEach(() => {
-        // Intercept Login
-        cy.intercept('POST', '**/user/login', {
-            statusCode: 200,
-            body: { token: 'fake-jwt-token' }
-        }).as('login');
-
-        // Intercept stats (dashboard)
-        cy.intercept('GET', '**/workout/stats', { body: {} }).as('getStats');
-        cy.intercept('GET', '**/nutrition/stats', { body: {} }).as('getNutritionStats');
-
-        // Intercept chat history
-        cy.intercept('GET', '**/message/history*', {
-            statusCode: 200,
-            body: { messages: [] }
-        }).as('chatHistory');
-
         // Intercept user profile
         cy.intercept('GET', '**/user/profile', {
             statusCode: 200,
@@ -29,28 +13,24 @@ describe('Navigation Flow', () => {
             }
         }).as('userProfile');
 
-        // Intercept trainer profile
-        cy.intercept('GET', '**/trainer/trainer_profile', {
-            statusCode: 200,
-            body: {
-                user_email: 'cypress@test.com',
-                trainer_type: 'sofia',
-                personality_traits: ['motivador', 'técnico']
+        // Essential startup intercepts for Dashboard
+        cy.intercept('GET', '**/trainer/trainer_profile', { body: { trainer_type: 'sofia' } }).as('trainerProfile');
+        cy.intercept('GET', '**/trainer/available_trainers', { body: [{ id: 'sofia', name: 'Sofia' }] }).as('availableTrainers');
+        cy.intercept('GET', '**/message/history*', { body: { messages: [] } }).as('chatHistory');
+        cy.intercept('GET', '**/weight/stats*', { body: { latest: null, weight_trend: [] } }).as('getWeightStats');
+        cy.intercept('GET', '**/workout/stats', { body: { streak: 0, frequency: [] } }).as('getWorkoutStats');
+        cy.intercept('GET', '**/nutrition/stats', { body: { daily_target: 2000, current_macros: {} } }).as('getNutritionStats');
+
+        // Bypass UI login
+        cy.visit('/', {
+            onBeforeLoad: (win) => {
+                win.localStorage.setItem('jwt_token', 'fake-jwt-token');
             }
-        }).as('trainerProfile');
+        });
 
-        // Intercept available trainers list
-        cy.intercept('GET', '**/trainer/available_trainers', {
-            statusCode: 200,
-            body: [
-                { id: 'sofia', name: 'Sofia', description: 'Motivadora e empática' },
-                { id: 'atlas', name: 'Atlas', description: 'Técnico e focado' },
-                { id: 'luna', name: 'Luna', description: 'Calma e mindful' },
-                { id: 'sargento', name: 'Sargento', description: 'Disciplinado e direto' }
-            ]
-        }).as('availableTrainers');
-
-        cy.login('cypress_user@test.com', 'password123');
+        // Ensure we land on app and it's stable
+        cy.get('app-sidebar', { timeout: 10000 }).should('be.visible');
+        cy.get('app-dashboard', { timeout: 10000 }).should('be.visible');
     });
 
     it('should navigate from Dashboard to User Profile', () => {
@@ -58,7 +38,7 @@ describe('Navigation Flow', () => {
         cy.get('app-dashboard', { timeout: 10000 }).should('be.visible');
 
         // Navigate to user profile
-        cy.get('app-sidebar button').contains('Meu Perfil').click();
+        cy.contains('button', 'Meu Perfil').click({ force: true });
         cy.wait('@userProfile');
 
         // Verify correct view is displayed
@@ -68,12 +48,12 @@ describe('Navigation Flow', () => {
 
     it('should navigate from User Profile to Trainer Settings', () => {
         // Go to user profile first
-        cy.get('app-sidebar button').contains('Meu Perfil').click();
+        cy.contains('button', 'Meu Perfil').click({ force: true });
         cy.wait('@userProfile');
         cy.get('app-user-profile', { timeout: 10000 }).should('be.visible');
 
         // Navigate to trainer settings
-        cy.get('app-sidebar button').contains('Ajustes do Trainer').click();
+        cy.contains('button', 'Ajustes do Trainer').click({ force: true });
         cy.wait('@trainerProfile');
 
         // Verify correct view is displayed
@@ -83,12 +63,12 @@ describe('Navigation Flow', () => {
 
     it('should navigate from Trainer Settings back to Dashboard', () => {
         // Go to trainer settings first
-        cy.get('app-sidebar button').contains('Ajustes do Trainer').click();
+        cy.contains('button', 'Ajustes do Trainer').click({ force: true });
         cy.wait('@trainerProfile');
         cy.get('app-trainer-settings', { timeout: 10000 }).should('be.visible');
 
         // Navigate back to dashboard
-        cy.get('app-sidebar button').contains('Home').click();
+        cy.contains('button', 'Home').click({ force: true });
 
         // Verify correct view is displayed
         cy.get('app-dashboard', { timeout: 10000 }).should('be.visible');
@@ -100,23 +80,20 @@ describe('Navigation Flow', () => {
         cy.get('app-dashboard', { timeout: 10000 }).should('be.visible');
         
         // Home button should be active initially
-        cy.get('app-sidebar button').contains('Home')
-            .closest('button')
+        cy.contains('button', 'Home')
             .should('have.class', 'bg-primary');
 
         // Navigate to user profile
-        cy.get('app-sidebar button').contains('Meu Perfil').click();
+        cy.contains('button', 'Meu Perfil').click({ force: true });
         cy.wait('@userProfile');
         cy.get('app-user-profile', { timeout: 10000 }).should('be.visible');
 
         // User profile button should now be active
-        cy.get('app-sidebar button').contains('Meu Perfil')
-            .closest('button')
+        cy.contains('button', 'Meu Perfil')
             .should('have.class', 'bg-primary');
 
         // Home button should no longer be active
-        cy.get('app-sidebar button').contains('Home')
-            .closest('button')
+        cy.contains('button', 'Home')
             .should('not.have.class', 'bg-primary');
     });
 });

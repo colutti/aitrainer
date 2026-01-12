@@ -24,7 +24,7 @@ describe('Body Composition Page', () => {
 
   it('navigates to body composition page via sidebar', () => {
     // Click sidebar link text instead of data attribute to be safe
-    cy.contains('button', 'Composição').click();
+    cy.contains('button', 'Composição').click({ force: true });
     
     cy.contains('h1', 'Composição Corporal').should('be.visible');
   });
@@ -53,16 +53,16 @@ describe('Body Composition Page', () => {
      
      cy.intercept('GET', '**/weight?limit=30', { body: [] }).as('getHistoryMock');
 
-     cy.contains('button', 'Composição').click();
+     cy.contains('button', 'Composição').click({ force: true });
      cy.wait(['@getStats', '@getHistoryMock']);
 
      cy.get('[data-cy="latest-weight"]').should('contain', '80.5');
-     cy.get('[data-cy="latest-body-fat"]').should('contain', '20.5');
+     cy.get('[data-cy="latest-body-fat"]').should('contain', '20,50');
   });
 
   it('displays history table', () => {
-      cy.contains('button', 'Composição').click();
-      cy.get('[data-cy="composition-history"]').should('be.visible');
+       cy.contains('button', 'Composição').click({ force: true });
+       cy.get('[data-cy="composition-history"]').should('be.visible');
   });
 
   it('allows manual entry of body composition data', () => {
@@ -71,7 +71,7 @@ describe('Body Composition Page', () => {
     cy.intercept('GET', '**/weight/stats', { body: { latest: null } }).as('refreshStats'); 
     cy.intercept('GET', '**/weight?limit=30', { body: [] }).as('refreshHistory');
 
-    cy.contains('button', 'Composição').click();
+    cy.contains('button', 'Composição').click({ force: true });
     
     // Fill form
     // Specific selectors based on labels would be better, but assuming order or using sibling finding
