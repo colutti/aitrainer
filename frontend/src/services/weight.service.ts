@@ -21,6 +21,7 @@ export class WeightService {
     const log: Partial<WeightLog> = {
       weight_kg: weight,
       date: today,
+      source: 'manual',
       ...compositionData
     };
 

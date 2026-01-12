@@ -1,11 +1,10 @@
 from pydantic import BaseModel, Field
 from datetime import date as DateType
 
-class WeightLog(BaseModel):
+class WeightLogInput(BaseModel):
     """
-    Represents a daily weight log entry.
+    Represents a daily weight log entry for input (without user identification).
     """
-    user_email: str = Field(..., description="The email of the user who logged the weight")
     date: DateType = Field(..., description="The date of the weight log")
     weight_kg: float = Field(..., gt=0, lt=500, description="The weight in kilograms")
     
@@ -19,5 +18,11 @@ class WeightLog(BaseModel):
     bmi: float | None = Field(None, ge=10, le=60, description="Body Mass Index")
 
     # Metadata
-    source: str | None = Field(None, description="Data source: manual, scale_import, chat")
+    source: str | None = Field("manual", description="Data source: manual, scale_import, chat")
     notes: str | None = Field(None, description="Optional notes for the weight log")
+
+class WeightLog(WeightLogInput):
+    """
+    Represents a daily weight log entry stored in the database.
+    """
+    user_email: str = Field(..., description="The email of the user who logged the weight")

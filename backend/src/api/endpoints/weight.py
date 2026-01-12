@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from src.services.auth import verify_token
 from src.core.deps import get_ai_trainer_brain
 from src.services.trainer import AITrainerBrain
-from src.api.models.weight_log import WeightLog
+from src.api.models.weight_log import WeightLog, WeightLogInput
 
 router = APIRouter()
 
@@ -13,7 +13,7 @@ AITrainerBrainDep = Annotated[AITrainerBrain, Depends(get_ai_trainer_brain)]
 
 @router.post("")
 def log_weight(
-    log: WeightLog,
+    log_input: WeightLogInput,
     user_email: CurrentUser,
     brain: AITrainerBrainDep
 ) -> dict:
@@ -21,8 +21,11 @@ def log_weight(
     Logs a weight entry for the user.
     If an entry exists for the same date, it updates it.
     """
-    # Ensure usage of authenticated user email
-    log.user_email = user_email
+    # Convert input to full WeightLog with user identification
+    log = WeightLog(
+        user_email=user_email,
+        **log_input.model_dump()
+    )
     
     # We need to access the database directly or add a method to brain.
     # Brain keeps business logic abstract.
