@@ -4,7 +4,7 @@ This module contains the API endpoints for messaging.
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 
 from src.services.auth import verify_token
 from src.core.deps import get_ai_trainer_brain

@@ -41,4 +41,4 @@ frontend/package-lock.json
 # === OS Files ===
 Thumbs.db
 .DS_Store
-render_frontend_env.json
+node_modules/

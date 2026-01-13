@@ -121,8 +121,10 @@ def create_get_nutrition_tool(database, user_email: str):
             for log in logs:
                 date_str = log.date.strftime("%d/%m/%Y")
                 micros = []
-                if log.fiber_grams: micros.append(f"Fibras: {log.fiber_grams}g")
-                if log.sodium_mg: micros.append(f"Sódio: {log.sodium_mg}mg")
+                if log.fiber_grams:
+                    micros.append(f"Fibras: {log.fiber_grams}g")
+                if log.sodium_mg:
+                    micros.append(f"Sódio: {log.sodium_mg}mg")
                 
                 micros_str = f" | {', '.join(micros)}" if micros else ""
                 

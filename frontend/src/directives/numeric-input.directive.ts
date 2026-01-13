@@ -22,6 +22,37 @@ export class NumericInputDirective {
 
   constructor(private el: ElementRef<HTMLInputElement>) {}
 
+  @HostListener('keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent): void {
+    const input = event.target as HTMLInputElement;
+    const key = event.key;
+    const ignoredKeys = [
+      'Backspace', 'Delete', 'Tab', 'Enter', 'Escape', 
+      'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'
+    ];
+
+    // Allow control keys and shortcuts (Ctrl+A, Ctrl+C, etc)
+    if (ignoredKeys.includes(key) || event.ctrlKey || event.metaKey) {
+      return;
+    }
+
+    // Allow numbers
+    if (/[0-9]/.test(key)) {
+      return;
+    }
+
+    // Allow decimal separator (dot or comma) if not present
+    if (key === '.' || key === ',') {
+      const currentVal = input.value;
+      if (!currentVal.includes('.') && !currentVal.includes(',')) {
+        return;
+      }
+    }
+
+    // Prevent everything else
+    event.preventDefault();
+  }
+
   @HostListener('input', ['$event'])
   onInput(event: Event): void {
     const input = event.target as HTMLInputElement;

@@ -1,5 +1,5 @@
 import sys
-from pydantic import ValidationError, computed_field, field_validator
+from pydantic import ValidationError, field_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     SUMMARY_MAX_TOKEN_LIMIT: int = 2000  # Trigger summarization when buffer exceeds this
     ALLOWED_ORIGINS: str | list[str]
     LOG_LEVEL: str = "INFO"
+    RATE_LIMIT_LOGIN: str = "5/minute"  # Rate limit for login endpoint
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod

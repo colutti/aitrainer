@@ -8,6 +8,7 @@ import { Workout } from '../../models/workout.model';
   selector: 'app-workouts',
   templateUrl: './workouts.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'block h-full w-full' },
   standalone: true,
   imports: [CommonModule, WorkoutDrawerComponent]
 })

@@ -7,19 +7,39 @@ warnings.filterwarnings("ignore", message=".*migrating_memory.*")
 warnings.filterwarnings("ignore", message=".*websockets.legacy.*")
 warnings.filterwarnings("ignore", message=".*WebSocketServerProtocol.*")
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-import uvicorn
-import os
+from fastapi import FastAPI, Request  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from fastapi.responses import JSONResponse  # noqa: E402
+import uvicorn  # noqa: E402
+import os  # noqa: E402
 
 
-from src.api.endpoints import user, message, trainer, memory, workout, stats, nutrition, weight, metabolism
-from src.core.config import settings
-from src.core.deps import get_mongo_database, get_mem0_client
-from src.core.logs import logger
+from src.api.endpoints import user, message, trainer, memory, workout, stats, nutrition, weight, metabolism  # noqa: E402
+from src.core.config import settings  # noqa: E402
+from src.core.deps import get_mongo_database, get_mem0_client  # noqa: E402
+from src.core.logs import logger  # noqa: E402
+from src.core.limiter import limiter, RATE_LIMITING_ENABLED  # noqa: E402
 
-app = FastAPI()
+app = FastAPI(
+    title="AI Personal Trainer API",
+    description="Backend API for the AI Personal Trainer application, featuring AI chat, workout tracking, nutrition logging, and more.",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
+)
+
+# Rate limiting setup (only if slowapi is installed)
+if RATE_LIMITING_ENABLED and limiter:
+    from slowapi.errors import RateLimitExceeded
+    app.state.limiter = limiter
+    
+    @app.exception_handler(RateLimitExceeded)
+    async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Rate limit exceeded. Please try again later."}
+        )
 
 # CORS middleware for frontend-backend integration
 logger.info(f"Allowed Origins: {settings.ALLOWED_ORIGINS}")

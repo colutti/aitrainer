@@ -1,9 +1,7 @@
 from datetime import date, timedelta, datetime
 from typing import List
-import statistics
 
 from src.api.models.weight_log import WeightLog
-from src.api.models.nutrition_log import NutritionLog
 from src.core.logs import logger
 from src.services.database import MongoDatabase
 
@@ -91,14 +89,14 @@ class AdaptiveTDEEService:
         
         # Convert nutrition log dates to date objects for comparison
         relevant_nutrition = [
-            l for l in nutrition_logs 
-            if period_start <= l.date.date() <= period_end
+            log_item for log_item in nutrition_logs 
+            if period_start <= log_item.date.date() <= period_end
         ]
         
         if not relevant_nutrition:
              return self._insufficient_data_response()
 
-        total_calories = sum(l.calories for l in relevant_nutrition)
+        total_calories = sum(log_item.calories for log_item in relevant_nutrition)
         # Average calories should be over the DAYS ELAPSED, assuming missing logs = typical eating?
         # NO. If they missed logs, we don't know what they ate.
         # Strict approach: Average of LOGGED days. 
@@ -199,7 +197,7 @@ class AdaptiveTDEEService:
         # For now, end-point analysis on raw logs is simple enough.
         # Ensure we use logs that actually have the data.
         
-        valid_logs = [l for l in logs if l.body_fat_pct is not None]
+        valid_logs = [log_item for log_item in logs if log_item.body_fat_pct is not None]
         if len(valid_logs) < 2:
             return None
         
@@ -253,8 +251,12 @@ class AdaptiveTDEEService:
             m, c = np.polyfit(x_arr, y_arr, 1)
             
             # Simple R approximation (not strictly needed but useful for confidence later)
-            correlation_matrix = np.corrcoef(x_arr, y_arr)
-            r_value = correlation_matrix[0, 1] if correlation_matrix.shape == (2, 2) else 0.0
+            # Guard against zero variance which causes RuntimeWarning
+            if np.std(y_arr) == 0 or np.std(x_arr) == 0:
+                r_value = 0.0  # No correlation when data is constant
+            else:
+                correlation_matrix = np.corrcoef(x_arr, y_arr)
+                r_value = correlation_matrix[0, 1] if correlation_matrix.shape == (2, 2) else 0.0
             
             return float(m), float(c), float(r_value)
         except Exception as e:
@@ -267,61 +269,8 @@ class AdaptiveTDEEService:
                 slope = 0.0
             return slope, y[0], 0.0
 
-    def _calculate_ema_weights(self, logs: List[WeightLog]) -> List[dict]:
-        """
-        OBSOLETE: Replaced by Regression for TDEE, but kept for potential UI smoothing.
-        Applies Exponential Moving Average to weight logs.
-        """
-        # (Implementation remains same but we use 0.1 alpha)
-        alpha = 0.1
-        if not logs: return []
-        
-        # 1. Fill gaps in date range
-        start_date = logs[0].date
-        end_date = logs[-1].date
-        days = (end_date - start_date).days + 1
-        
-        daily_weights = []
-        current_log_idx = 0
-        last_known_weight = logs[0].weight_kg
-        
-        # Map logs to dictionary for easy lookup
-        log_map = {l.date: l.weight_kg for l in logs}
-        
-        current_ema = logs[0].weight_kg
-        smoothed_data = []
 
-        for i in range(days):
-            d = start_date + timedelta(days=i)
-            
-            # Get weight for this day
-            weight = log_map.get(d)
-            
-            if weight is None:
-                # If missing, use previous EMA? Or skip?
-                # Using previous EMA is safer than raw carry-forward for calculation
-                # But physically, weight uses carry-forward of raw value usually.
-                # Let's use the Raw Carry Forward for the "Measurement" then update EMA.
-                weight = last_known_weight
-            else:
-                # Anomaly check: if raw weight jumps too much (> 1kg from last known), cap it?
-                # Simple check:
-                if abs(weight - last_known_weight) > self.MAX_DAILY_WEIGHT_CHANGE:
-                    # Could be water weight or error. 
-                    # Let's trust EMA to smooth it out, but record it.
-                    pass
-                last_known_weight = weight
-            
-            # Update EMA
-            # EMA_today = (Val_today * alpha) + (EMA_yesterday * (1-alpha))
-            current_ema = (weight * self.SMOOTHING_FACTOR) + (current_ema * (1 - self.SMOOTHING_FACTOR))
-            
-            smoothed_data.append({
-                "date": d,
-                "weight": current_ema
-            })
-            
-        return smoothed_data
+
 
     def _calculate_confidence(self, days_elapsed: int, weight_count: int, nutrition_count: int, expected_logs: int) -> str:
         """

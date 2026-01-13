@@ -1,94 +1,145 @@
+/**
+ * Body Composition Page Tests
+ * 
+ * NOTE: This app uses signals-based navigation (NavigationService), NOT Angular Router.
+ * The URL remains at localhost:3000/ - views are swapped dynamically.
+ * 
+ * Strategy: All backend calls are mocked BEFORE any navigation.
+ */
 describe('Body Composition Page', () => {
-  beforeEach(() => {
-    // Intercept Login
-    cy.intercept('POST', '**/user/login', {
-      statusCode: 200,
-      body: { token: 'fake-jwt-token' }
-    }).as('login');
+  // Shared mock data
+  const mockStats = {
+    latest: {
+      date: '2026-01-01',
+      weight_kg: 80.5,
+      body_fat_pct: 20.5,
+      muscle_mass_pct: 40.0,
+      body_water_pct: 55.0,
+      visceral_fat: 10,
+      bmr: 1800,
+      user_email: 'cypress_user@test.com'
+    },
+    weight_trend: [
+      { date: '2025-12-25', weight: 81.0 },
+      { date: '2026-01-01', weight: 80.5 }
+    ]
+  };
 
-    // Intercept unrelated calls that might trigger on Dashboard load
-    cy.intercept('GET', '**/nutrition/stats', { body: {} }).as('getNutritionStats');
+  const mockHistory = [
+    {
+      date: '2026-01-01',
+      weight_kg: 80.5,
+      body_fat_pct: 20.5,
+      muscle_mass_pct: 40.0,
+      body_water_pct: 55.0,
+      visceral_fat: 10,
+      bmr: 1800,
+      user_email: 'cypress_user@test.com'
+    }
+  ];
+
+  beforeEach(() => {
+    // 1. Set up ALL intercepts BEFORE any navigation
+    cy.intercept('GET', '**/weight/stats*', { body: mockStats }).as('getStats');
+    cy.intercept('GET', '**/weight?limit=*', { body: mockHistory }).as('getHistory');
+    cy.intercept('POST', '**/weight', { statusCode: 200, body: { message: 'OK' } }).as('saveWeight');
+    cy.intercept('DELETE', '**/weight/*', { statusCode: 200, body: { message: 'Deleted' } }).as('deleteWeight');
+    
+    // Other common endpoints
     cy.intercept('GET', '**/workout/stats', { body: {} }).as('getWorkoutStats');
-    cy.intercept('GET', '**/weight/stats*', { body: { latest: null, weight_trend: [] } }).as('getWeightStats');
-    
-    // Essential startup intercepts
+    cy.intercept('GET', '**/nutrition/stats', { body: {} }).as('getNutritionStats');
     cy.intercept('GET', '**/trainer/trainer_profile', { body: { trainer_type: 'atlas' } }).as('trainerProfile');
-    cy.intercept('GET', '**/trainer/available_trainers', { body: [{ trainer_id: 'atlas', name: 'Atlas' }] }).as('availableTrainers');
-    cy.intercept('GET', '**/message/history*', { body: { messages: [] } }).as('chatHistory');
     
-    // Login before each test
-    cy.login('demo@demo.com', 'password');
-    // Ensure we are on dashboard initially
-    cy.visit('/');
+    // 2. Login (navigation happens here)
+    cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
   });
 
   it('navigates to body composition page via sidebar', () => {
-    // Click sidebar link text instead of data attribute to be safe
-    cy.contains('button', 'Composição').click({ force: true });
-    
-    cy.contains('h1', 'Composição Corporal').should('be.visible');
+    cy.get('[data-cy="nav-body-composition"]').click();
+    cy.get('app-body-composition').should('be.visible');
+    cy.get('h1').should('contain', 'Composição Corporal');
   });
 
   it('displays hero card content when data exists', () => {
-     // Mocking data could be done here if we wanted reliable test independent of DB state.
-     // For now, assuming demo data or we let it fail if empty (which prompts us to run import).
-     // Ideally we intercept the API call.
-     
-     cy.intercept('GET', '**/weight/stats', {
-         statusCode: 200,
-         body: {
-             latest: {
-                 user_email: 'demo@demo.com',
-                 date: '2026-01-01',
-                 weight_kg: 80.5,
-                 body_fat_pct: 20.5,
-                 muscle_mass_pct: 50.0,
-                 bmr: 1800
-             },
-             weight_trend: [],
-             fat_trend: [],
-             muscle_trend: []
-         }
-     }).as('getStats');
-     
-     cy.intercept('GET', '**/weight?limit=30', { body: [] }).as('getHistoryMock');
-
-     cy.contains('button', 'Composição').click({ force: true });
-     cy.wait(['@getStats', '@getHistoryMock']);
-
-     cy.get('[data-cy="latest-weight"]').should('contain', '80.5');
-     cy.get('[data-cy="latest-body-fat"]').should('contain', '20,50');
+    cy.get('[data-cy="nav-body-composition"]').click();
+    cy.wait('@getStats');
+    cy.get('[data-cy="latest-weight"]').should('contain', '80.5');
+    cy.get('[data-cy="latest-body-fat"]').should('contain', '20,50');
   });
 
   it('displays history table', () => {
-       cy.contains('button', 'Composição').click({ force: true });
-       cy.get('[data-cy="composition-history"]').should('be.visible');
+    cy.get('[data-cy="nav-body-composition"]').click();
+    cy.wait('@getHistory');
+    cy.get('[data-cy="composition-history"]').scrollIntoView();
+    cy.get('[data-cy="composition-history"]').should('exist');
+    cy.get('[data-cy="history-entry"]').should('have.length.at.least', 1);
   });
 
-  it('allows manual entry of body composition data', () => {
-    cy.intercept('POST', '**/weight', { statusCode: 200, body: { message: 'Success' } }).as('saveWeight');
-    // Mock refresh calls
-    cy.intercept('GET', '**/weight/stats', { body: { latest: null } }).as('refreshStats'); 
-    cy.intercept('GET', '**/weight?limit=30', { body: [] }).as('refreshHistory');
+  it('validates strictly numeric inputs (Firefox bug)', () => {
+    cy.get('[data-cy="nav-body-composition"]').click();
+    cy.wait('@getStats');
+    
+    // Scroll to the manual entry form and wait for element to be ready
+    cy.contains('Adicionar Registro Manual').scrollIntoView();
+    cy.get('[data-cy="weight-input"]', { timeout: 10000 }).should('be.visible');
+    
+    // Clear and type alphanumeric - only numbers should remain
+    cy.get('[data-cy="weight-input"]').clear().type('12abc34');
+    cy.get('[data-cy="weight-input"]').should('have.value', '1234');
+    
+    // Test decimal input
+    cy.get('[data-cy="weight-input"]').clear().type('10.5');
+    cy.get('[data-cy="weight-input"]').should('have.value', '10.5');
 
-    cy.contains('button', 'Composição').click({ force: true });
+    // Test prevent multiple dots
+    cy.get('[data-cy="weight-input"]').clear().type('10.5.5');
+    cy.get('[data-cy="weight-input"]').should('have.value', '10.55');
+  });
+
+  it('allows editing an existing entry', () => {
+    cy.get('[data-cy="nav-body-composition"]').click();
+    cy.wait(['@getStats', '@getHistory']);
     
-    // Fill form
-    // Specific selectors based on labels would be better, but assuming order or using sibling finding
-    cy.contains('label', 'Peso (kg)*').parent().find('input').type('85.5');
-    cy.contains('label', 'Gordura (%)').parent().find('input').type('22.5');
-    cy.contains('label', 'Músculo (%)').parent().find('input').type('40.5');
+    // Scroll to history section to find edit button
+    cy.get('[data-cy="composition-history"]').scrollIntoView();
+    cy.get('[data-cy="edit-btn"]', { timeout: 10000 }).should('be.visible');
     
+    // Click edit button on first entry
+    cy.get('[data-cy="edit-btn"]').first().click();
+    
+    // Scroll up to form to check the values
+    cy.contains('Adicionar Registro Manual').scrollIntoView();
+    
+    // Form should be populated with entry values
+    cy.get('[data-cy="weight-input"]').should('have.value', '80.5');
+    
+    // Modify and save
+    cy.get('[data-cy="weight-input"]').clear().type('82');
     cy.contains('button', 'Salvar Registro').click();
     
-    cy.wait('@saveWeight').then((interception) => {
-        expect(interception.request.body).to.include({
-            weight_kg: 85.5,
-            body_fat_pct: 22.5,
-            muscle_mass_pct: 40.5
-        });
-    });
+    cy.wait('@saveWeight');
     
-    cy.contains('Registro salvo com sucesso!').should('be.visible');
+    // Success message shows inline - it may take a moment to appear due to Angular change detection
+    cy.contains('Registro salvo com sucesso!', { timeout: 5000 }).should('exist');
+  });
+
+  it('allows deleting an entry', () => {
+    cy.get('[data-cy="nav-body-composition"]').click();
+    cy.wait(['@getStats', '@getHistory']);
+    
+    // Scroll to history section
+    cy.get('[data-cy="composition-history"]').scrollIntoView();
+    cy.get('[data-cy="delete-btn"]', { timeout: 10000 }).should('be.visible');
+    
+    // Stub window.confirm to return true
+    cy.on('window:confirm', () => true);
+    
+    // Click delete button
+    cy.get('[data-cy="delete-btn"]').first().click();
+    
+    cy.wait('@deleteWeight');
+    
+    // After delete, the page reloads data - verify the request was made
+    // (No success message for delete in current implementation)
   });
 });

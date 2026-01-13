@@ -6,6 +6,7 @@ astroid==4.0.2
 backoff==2.2.1
 bcrypt==5.0.0
 black==25.11.0
+slowapi==0.1.9
 cachetools==6.2.2
 certifi==2025.11.12
 cffi==2.0.0

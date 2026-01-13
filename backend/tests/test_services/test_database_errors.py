@@ -3,7 +3,7 @@ Tests for database error handling and edge cases in src/services/database.py
 """
 import pytest
 from unittest.mock import patch, MagicMock
-from pymongo.errors import ConnectionFailure, PyMongoError
+from pymongo.errors import ConnectionFailure
 from src.services.database import MongoDatabase
 from src.api.models.user_profile import UserProfile
 from src.api.models.trainer_profile import TrainerProfile
@@ -28,15 +28,16 @@ def test_save_user_profile_upsert_new(mock_settings):
     """Test saving a new user profile (upserted)."""
     with patch('pymongo.MongoClient') as mock_client:
         db_mock = MagicMock()
-        mock_client.return_value = {mock_settings.DB_NAME: db_mock}
+        mock_client.return_value.__getitem__.return_value = db_mock
         
-        # Mock result for new insert
+        mongo = MongoDatabase()
+        
+        # Mock result for new insert on the repository collection
         mock_result = MagicMock()
         mock_result.upserted_id = "new_id"
         mock_result.modified_count = 0
-        db_mock.users.update_one.return_value = mock_result
+        mongo.users.collection.update_one.return_value = mock_result
         
-        mongo = MongoDatabase()
         profile = UserProfile(
             email="test@test.com",
             password_hash="hash",
@@ -44,25 +45,27 @@ def test_save_user_profile_upsert_new(mock_settings):
             weight=70.0,
             height=175.0,
             goal="Test goal with more than 5 chars",
+            goal_type="maintain",
             gender="Masculino"
         )
         
         mongo.save_user_profile(profile)
-        db_mock.users.update_one.assert_called_once()
+        mongo.users.collection.update_one.assert_called_once()
 
 def test_save_user_profile_update_existing(mock_settings):
     """Test updating an existing user profile."""
     with patch('pymongo.MongoClient') as mock_client:
         db_mock = MagicMock()
-        mock_client.return_value = {mock_settings.DB_NAME: db_mock}
+        mock_client.return_value.__getitem__.return_value = db_mock
         
+        mongo = MongoDatabase()
+
         # Mock result for update
         mock_result = MagicMock()
         mock_result.upserted_id = None
         mock_result.modified_count = 1
-        db_mock.users.update_one.return_value = mock_result
+        mongo.users.collection.update_one.return_value = mock_result
         
-        mongo = MongoDatabase()
         profile = UserProfile(
             email="test@test.com",
             password_hash="hash",
@@ -70,25 +73,27 @@ def test_save_user_profile_update_existing(mock_settings):
             weight=70.0,
             height=175.0,
             goal="Test goal with more than 5 chars",
+            goal_type="maintain",
             gender="Masculino"
         )
         
         mongo.save_user_profile(profile)
-        db_mock.users.update_one.assert_called_once()
+        mongo.users.collection.update_one.assert_called_once()
 
 def test_save_user_profile_no_changes(mock_settings):
     """Test saving user profile with no changes."""
     with patch('pymongo.MongoClient') as mock_client:
         db_mock = MagicMock()
-        mock_client.return_value = {mock_settings.DB_NAME: db_mock}
+        mock_client.return_value.__getitem__.return_value = db_mock
+        
+        mongo = MongoDatabase()
         
         # Mock result for no change
         mock_result = MagicMock()
         mock_result.upserted_id = None
         mock_result.modified_count = 0
-        db_mock.users.update_one.return_value = mock_result
+        mongo.users.collection.update_one.return_value = mock_result
         
-        mongo = MongoDatabase()
         profile = UserProfile(
             email="test@test.com",
             password_hash="hash",
@@ -96,71 +101,76 @@ def test_save_user_profile_no_changes(mock_settings):
             weight=70.0,
             height=175.0,
             goal="Test goal with more than 5 chars",
+            goal_type="maintain",
             gender="Masculino"
         )
         
         mongo.save_user_profile(profile)
-        db_mock.users.update_one.assert_called_once()
+        mongo.users.collection.update_one.assert_called_once()
 
 def test_save_trainer_profile_upsert_new(mock_settings):
     """Test saving a new trainer profile."""
     with patch('pymongo.MongoClient') as mock_client:
         db_mock = MagicMock()
-        mock_client.return_value = {mock_settings.DB_NAME: db_mock}
+        mock_client.return_value.__getitem__.return_value = db_mock
         
+        mongo = MongoDatabase()
+
         mock_result = MagicMock()
         mock_result.upserted_id = "new_id"
         mock_result.modified_count = 0
-        db_mock.trainer_profiles.update_one.return_value = mock_result
+        mongo.trainers.collection.update_one.return_value = mock_result
         
-        mongo = MongoDatabase()
         profile = TrainerProfile(user_email="test@test.com", trainer_type="atlas")
         
         mongo.save_trainer_profile(profile)
-        db_mock.trainer_profiles.update_one.assert_called_once()
+        mongo.trainers.collection.update_one.assert_called_once()
 
 def test_save_trainer_profile_update(mock_settings):
     """Test updating existing trainer profile."""
     with patch('pymongo.MongoClient') as mock_client:
         db_mock = MagicMock()
-        mock_client.return_value = {mock_settings.DB_NAME: db_mock}
+        mock_client.return_value.__getitem__.return_value = db_mock
         
+        mongo = MongoDatabase()
+
         mock_result = MagicMock()
         mock_result.upserted_id = None
         mock_result.modified_count = 1
-        db_mock.trainer_profiles.update_one.return_value = mock_result
+        mongo.trainers.collection.update_one.return_value = mock_result
         
-        mongo = MongoDatabase()
         profile = TrainerProfile(user_email="test@test.com", trainer_type="atlas")
         
         mongo.save_trainer_profile(profile)
-        db_mock.trainer_profiles.update_one.assert_called_once()
+        mongo.trainers.collection.update_one.assert_called_once()
 
 def test_save_trainer_profile_no_changes(mock_settings):
     """Test saving trainer profile with no changes."""
     with patch('pymongo.MongoClient') as mock_client:
         db_mock = MagicMock()
-        mock_client.return_value = {mock_settings.DB_NAME: db_mock}
+        mock_client.return_value.__getitem__.return_value = db_mock
         
+        mongo = MongoDatabase()
+
         mock_result = MagicMock()
         mock_result.upserted_id = None
         mock_result.modified_count = 0
-        db_mock.trainer_profiles.update_one.return_value = mock_result
+        mongo.trainers.collection.update_one.return_value = mock_result
         
-        mongo = MongoDatabase()
         profile = TrainerProfile(user_email="test@test.com", trainer_type="atlas")
         
         mongo.save_trainer_profile(profile)
-        db_mock.trainer_profiles.update_one.assert_called_once()
+        mongo.trainers.collection.update_one.assert_called_once()
 
 def test_get_user_profile_not_found(mock_settings):
     """Test getting non-existent user profile."""
     with patch('pymongo.MongoClient') as mock_client:
         db_mock = MagicMock()
-        mock_client.return_value = {mock_settings.DB_NAME: db_mock}
-        db_mock.users.find_one.return_value = None
+        mock_client.return_value.__getitem__.return_value = db_mock
         
         mongo = MongoDatabase()
+        mongo.users.collection.find_one.return_value = None
+        
         result = mongo.get_user_profile("exists@not.com")
         assert result is None
 
@@ -168,21 +178,23 @@ def test_validate_user_not_found(mock_settings):
     """Test validating non-existent user."""
     with patch('pymongo.MongoClient') as mock_client:
         db_mock = MagicMock()
-        mock_client.return_value = {mock_settings.DB_NAME: db_mock}
-        db_mock.users.find_one.return_value = None
+        mock_client.return_value.__getitem__.return_value = db_mock
         
         mongo = MongoDatabase()
+        mongo.users.collection.find_one.return_value = None
+        
         assert mongo.validate_user("email", "pass") is False
 
 def test_validate_user_wrong_password(mock_settings):
     """Test validating user with wrong password."""
     with patch('pymongo.MongoClient') as mock_client:
         db_mock = MagicMock()
-        mock_client.return_value = {mock_settings.DB_NAME: db_mock}
-        # Fake bcrypt hash
-        db_mock.users.find_one.return_value = {"password_hash": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxwKc.6q.1"} 
+        mock_client.return_value.__getitem__.return_value = db_mock
         
         mongo = MongoDatabase()
+        # Fake bcrypt hash
+        mongo.users.collection.find_one.return_value = {"password_hash": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxwKc.6q.1"} 
+        
         with patch('bcrypt.checkpw', return_value=False):
             assert mongo.validate_user("email", "wrongpass") is False
 
@@ -190,19 +202,21 @@ def test_get_trainer_profile_not_found(mock_settings):
     """Test getting non-existent trainer profile."""
     with patch('pymongo.MongoClient') as mock_client:
         db_mock = MagicMock()
-        mock_client.return_value = {mock_settings.DB_NAME: db_mock}
-        db_mock.trainer_profiles.find_one.return_value = None
+        mock_client.return_value.__getitem__.return_value = db_mock
         
         mongo = MongoDatabase()
+        mongo.trainers.collection.find_one.return_value = None
+        
         assert mongo.get_trainer_profile("email") is None
 
 def test_add_to_history(mock_settings):
     """Test adding messages to chat history."""
+    # Patch where it is USED: src.repositories.chat_repository
     with patch('pymongo.MongoClient') as mock_client, \
-         patch('src.services.database.MongoDBChatMessageHistory') as mock_history_cls:
+         patch('src.repositories.chat_repository.MongoDBChatMessageHistory') as mock_history_cls:
         
         db_mock = MagicMock()
-        mock_client.return_value = {mock_settings.DB_NAME: db_mock}
+        mock_client.return_value.__getitem__.return_value = db_mock
         mock_history_instance = MagicMock()
         mock_history_cls.return_value = mock_history_instance
         
@@ -223,12 +237,16 @@ def test_add_to_history(mock_settings):
 
 def test_get_conversation_memory(mock_settings):
     """Test creating conversation summary buffer memory."""
+    # Patch where it is USED: src.repositories.chat_repository
     with patch('pymongo.MongoClient') as mock_client, \
-         patch('src.services.database.MongoDBChatMessageHistory') as mock_history_cls, \
-         patch('src.services.database.ConversationSummaryBufferMemory') as mock_memory_cls:
+         patch('src.repositories.chat_repository.MongoDBChatMessageHistory') as mock_history_cls, \
+         patch('src.repositories.chat_repository.ConversationSummaryBufferMemory') as mock_memory_cls,\
+         patch('src.repositories.chat_repository.settings') as repo_settings: # Patch usage of settings in repo
+        
+        repo_settings.SUMMARY_MAX_TOKEN_LIMIT = 2000
         
         db_mock = MagicMock()
-        mock_client.return_value = {mock_settings.DB_NAME: db_mock}
+        mock_client.return_value.__getitem__.return_value = db_mock
         
         mongo = MongoDatabase()
         llm = MagicMock()
@@ -244,11 +262,13 @@ def test_get_workout_logs(mock_settings):
     """Test retrieving workout logs."""
     with patch('pymongo.MongoClient') as mock_client:
         db_mock = MagicMock()
-        mock_client.return_value = {mock_settings.DB_NAME: db_mock}
+        mock_client.return_value.__getitem__.return_value = db_mock
         
-        # Mock cursor
+        mongo = MongoDatabase()
+        
+        # Mock cursor on the repo collection
         mock_cursor = MagicMock()
-        db_mock.workout_logs.find.return_value = mock_cursor
+        mongo.workouts_repo.collection.find.return_value = mock_cursor
         mock_cursor.sort.return_value = mock_cursor
         mock_cursor.limit.return_value = mock_cursor
         
@@ -265,7 +285,6 @@ def test_get_workout_logs(mock_settings):
             }
         ]
         
-        mongo = MongoDatabase()
         workouts = mongo.get_workout_logs("test@test.com")
         
         assert len(workouts) == 1

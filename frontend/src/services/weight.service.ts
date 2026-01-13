@@ -59,4 +59,13 @@ export class WeightService {
       return null;
     }
   }
+
+  /**
+   * Deletes a weight entry by date (YYYY-MM-DD).
+   */
+  async deleteWeight(date: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete(`${environment.apiUrl}/weight/${date}`)
+    );
+  }
 }

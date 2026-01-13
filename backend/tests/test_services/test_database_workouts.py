@@ -10,8 +10,8 @@ class TestDatabaseWorkouts(unittest.TestCase):
         self.mock_mongo_client = MagicMock()
         mock_client.return_value = self.mock_mongo_client
         self.db = MongoDatabase()
-        # Access the collection mock directly
-        self.mock_collection = self.db.database.workout_logs
+        # Access the collection mock directly from the repository
+        self.mock_collection = self.db.workouts_repo.collection
 
     def test_get_workouts_paginated_query_construction(self):
         """Verify query filters and pagination logic."""

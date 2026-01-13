@@ -16,10 +16,6 @@ class TestDatabaseWeight:
             # Create service instance
             service = MongoDatabase()
             
-            # Setup specific collection mocks
-            service.database = mock_db_instance
-            service.database.weight_logs = MagicMock()
-            
             yield service
 
     def test_save_weight_log_with_composition(self, db):
@@ -35,15 +31,15 @@ class TestDatabaseWeight:
         )
         
         # Setup mock return for update_one (upsert)
-        db.database.weight_logs.update_one.return_value.upserted_id = "new_id_123"
+        db.weight.collection.update_one.return_value.upserted_id = "new_id_123"
         
         doc_id, is_new = db.save_weight_log(log)
         assert is_new is True
         assert doc_id == "new_id_123"
         
         # Verify call args
-        db.database.weight_logs.update_one.assert_called_once()
-        call_args = db.database.weight_logs.update_one.call_args
+        db.weight.collection.update_one.assert_called_once()
+        call_args = db.weight.collection.update_one.call_args
         query = call_args[0][0]
         update = call_args[0][1]
         
@@ -56,6 +52,9 @@ class TestDatabaseWeight:
         set_data = update["$set"]
         assert set_data["body_fat_pct"] == 24.2
         assert set_data["muscle_mass_pct"] == 55.2
+        
+        # Verify source is stored
+        assert set_data["source"] == "scale_import"
 
     def test_upsert_updates_composition(self, db):
         """Re-saving same date updates all fields."""
@@ -67,9 +66,9 @@ class TestDatabaseWeight:
         )
         
         # Setup mock for existing record update (no upserted_id)
-        db.database.weight_logs.update_one.return_value.upserted_id = None
+        db.weight.collection.update_one.return_value.upserted_id = None
         # Setup find_one to return the "updated" doc ID
-        db.database.weight_logs.find_one.return_value = {"_id": "existing_id"}
+        db.weight.collection.find_one.return_value = {"_id": "existing_id"}
         
         doc_id, is_new = db.save_weight_log(log)
         
@@ -77,8 +76,8 @@ class TestDatabaseWeight:
         assert doc_id == "existing_id"
         
         # Verify update call
-        db.database.weight_logs.update_one.assert_called_once()
-        set_data = db.database.weight_logs.update_one.call_args[0][1]["$set"]
+        db.weight.collection.update_one.assert_called_once()
+        set_data = db.weight.collection.update_one.call_args[0][1]["$set"]
         assert set_data["weight_kg"] == 76.0
         assert set_data["body_fat_pct"] == 25.0
 
@@ -97,7 +96,7 @@ class TestDatabaseWeight:
         # find() returns cursor, sort() returns cursor
         mock_cursor = MagicMock()
         mock_cursor.__iter__.return_value = [mock_doc]
-        db.database.weight_logs.find.return_value.sort.return_value = mock_cursor
+        db.weight.collection.find.return_value.sort.return_value = mock_cursor
         
         logs = db.get_weight_logs_by_date_range(
             "range@test.com",

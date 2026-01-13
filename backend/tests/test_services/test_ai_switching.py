@@ -28,6 +28,7 @@ class TestAIProviderSwitching(unittest.TestCase):
             "DB_NAME": "test",
             "MONGO_URI": "mongodb://user:pass@localhost:27017/",
 
+            "RUNNING_IN_CONTAINER": "true",
             "QDRANT_HOST": "localhost",
             "QDRANT_PORT": "6333",
             "QDRANT_COLLECTION_NAME": "test",
@@ -60,6 +61,7 @@ class TestAIProviderSwitching(unittest.TestCase):
             "DB_NAME": "test",
             "MONGO_URI": "mongodb://user:pass@localhost:27017/",
 
+            "RUNNING_IN_CONTAINER": "true",
             "QDRANT_HOST": "localhost",
             "QDRANT_PORT": "6333",
             "QDRANT_COLLECTION_NAME": "test",

@@ -120,7 +120,7 @@ class TestAsyncMem0Storage(unittest.TestCase):
         
         user_profile = UserProfile(email=user_email, gender="Masculino",
                                    age=25, weight=70, height=175,
-                                   goal="Muscle gain")
+                                   goal="Muscle gain", goal_type="maintain")
         trainer_profile = TrainerProfile(user_email=user_email,
                                          trainer_type="atlas")
         self.mock_db.get_user_profile.return_value = user_profile
@@ -161,7 +161,7 @@ class TestAsyncMem0Storage(unittest.TestCase):
         
         user_profile = UserProfile(email=user_email, gender="Masculino",
                                    age=25, weight=70, height=175,
-                                   goal="Muscle gain")
+                                   goal="Muscle gain", goal_type="maintain")
         trainer_profile = TrainerProfile(user_email=user_email,
                                          trainer_type="atlas")
         self.mock_db.get_user_profile.return_value = user_profile

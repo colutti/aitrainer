@@ -77,9 +77,10 @@ class TestEndpoints(unittest.TestCase):
             email="test@test.com",
             gender="Masculino",
             age=25,
-            weight=70,
+            weight=70.0,
             height=175,
-            goal="Gain muscle"
+            goal="Gain muscle",
+            goal_type="maintain"
         )
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
@@ -129,7 +130,8 @@ class TestEndpoints(unittest.TestCase):
             age=30,
             weight=75,
             height=180,
-            goal="Lose weight"
+            goal="Lose weight",
+            goal_type="lose"
         ).model_dump()
 
         # Act
@@ -154,7 +156,8 @@ class TestEndpoints(unittest.TestCase):
             age=30,
             weight=75,
             height=180,
-            goal="Lose weight"
+            goal="Lose weight",
+            goal_type="lose"
         ).model_dump()
 
         # Act

@@ -42,7 +42,7 @@ class TestSummarization(unittest.TestCase):
         mock_settings.SUMMARY_MAX_TOKEN_LIMIT = 2000
         mock_settings.MAX_SHORT_TERM_MEMORY_MESSAGES = 30
 
-        with patch('src.services.database.settings', mock_settings):
+        with patch('src.repositories.chat_repository.settings', mock_settings):
             with patch('pymongo.MongoClient'):
                 db = MongoDatabase()
                 
@@ -50,7 +50,7 @@ class TestSummarization(unittest.TestCase):
                 fake_llm = FakeListLLM(responses=["Test summary"])
                 mock_chat_history = MockChatMessageHistory()
                 
-                with patch.object(db, '_get_chat_message_history', return_value=mock_chat_history):
+                with patch('src.repositories.chat_repository.MongoDBChatMessageHistory', return_value=mock_chat_history):
                     memory = db.get_conversation_memory(
                         session_id="test@test.com",
                         llm=fake_llm,
@@ -104,14 +104,16 @@ class TestSummarization(unittest.TestCase):
         mock_settings.SUMMARY_MAX_TOKEN_LIMIT = 3000
         mock_settings.MAX_SHORT_TERM_MEMORY_MESSAGES = 30
 
-        with patch('src.services.database.settings', mock_settings):
+        # Patch settings WHERE IT IS USED (ChatRepository)
+        with patch('src.repositories.chat_repository.settings', mock_settings):
             with patch('pymongo.MongoClient'):
                 db = MongoDatabase()
                 
                 fake_llm = FakeListLLM(responses=["Test summary"])
                 mock_chat_history = MockChatMessageHistory()
                 
-                with patch.object(db, '_get_chat_message_history', return_value=mock_chat_history):
+                # Patch MongoDBChatMessageHistory in ChatRepository to avoid real connection and return valid mock
+                with patch('src.repositories.chat_repository.MongoDBChatMessageHistory', return_value=mock_chat_history):
                     memory = db.get_conversation_memory(
                         session_id="test@test.com",
                         llm=fake_llm,

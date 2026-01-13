@@ -1,0 +1,173 @@
+from datetime import datetime, timedelta
+import pymongo
+from pymongo.database import Database
+
+from src.api.models.nutrition_log import NutritionLog, NutritionWithId
+from src.api.models.nutrition_stats import NutritionStats, DailyMacros
+from src.repositories.base import BaseRepository
+
+class NutritionRepository(BaseRepository):
+    def __init__(self, database: Database):
+        super().__init__(database, "nutrition_logs")
+
+    def ensure_indexes(self) -> None:
+        self.collection.create_index(
+            [("user_email", pymongo.ASCENDING), ("date", pymongo.ASCENDING)],
+            unique=True,
+            name="unique_daily_log"
+        )
+        self.logger.info("Nutrition logs unique daily index ensured.")
+
+    def save_log(self, log: NutritionLog) -> tuple[str, bool]:
+        log_date = log.date.replace(hour=0, minute=0, second=0, microsecond=0)
+        log.date = log_date
+        
+        result = self.collection.update_one(
+            {"user_email": log.user_email, "date": log_date},
+            {"$set": log.model_dump()},
+            upsert=True
+        )
+        
+        is_new = result.upserted_id is not None
+        
+        if is_new:
+            doc_id = str(result.upserted_id)
+            self.logger.info("Created new nutrition log for %s on %s", log.user_email, log_date)
+        else:
+            existing = self.collection.find_one(
+                {"user_email": log.user_email, "date": log_date}
+            )
+            doc_id = str(existing["_id"]) if existing else ""
+            self.logger.info("Updated existing nutrition log for %s on %s", log.user_email, log_date)
+            
+        return doc_id, is_new
+
+    def get_logs(self, user_email: str, limit: int = 30) -> list[NutritionLog]:
+        cursor = (
+            self.collection.find({"user_email": user_email})
+            .sort("date", pymongo.DESCENDING)
+            .limit(limit)
+        )
+        return [NutritionLog(**doc) for doc in cursor]
+
+    def get_logs_by_date_range(
+        self, user_email: str, start_date: datetime, end_date: datetime
+    ) -> list[NutritionLog]:
+        start = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
+        cursor = self.collection.find({
+            "user_email": user_email,
+            "date": {"$gte": start, "$lte": end}
+        }).sort("date", pymongo.ASCENDING)
+        
+        return [NutritionLog(**doc) for doc in cursor]
+    
+    def get_paginated(
+        self, user_email: str, page: int = 1, page_size: int = 10, days: int | None = None
+    ) -> tuple[list[dict], int]:
+        query = {"user_email": user_email}
+        if days:
+            start_date = datetime.now() - timedelta(days=days)
+            query["date"] = {"$gte": start_date}
+
+        total = self.collection.count_documents(query)
+        skip = (page - 1) * page_size
+        
+        cursor = (
+            self.collection.find(query)
+            .sort("date", pymongo.DESCENDING)
+            .skip(skip)
+            .limit(page_size)
+        )
+        
+        logs = []
+        for doc in cursor:
+            doc["id"] = str(doc.pop("_id"))
+            logs.append(doc)
+            
+        return logs, total
+
+    def get_stats(self, user_email: str, tdee_service=None) -> NutritionStats:
+        now = datetime.now()
+        start_date = now - timedelta(days=30)
+        
+        cursor = self.collection.find(
+            {"user_email": user_email, "date": {"$gte": start_date}}
+        ).sort("date", pymongo.DESCENDING)
+        
+        logs = list(cursor)
+        
+        start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_log_doc = next((log_item for log_item in logs if log_item["date"] >= start_of_today), None)
+        today_log = None
+        if today_log_doc:
+            today_log_doc["id"] = str(today_log_doc.get("_id"))
+            if "_id" in today_log_doc:
+                del today_log_doc["_id"]
+            today_log = NutritionWithId(**today_log_doc)
+            
+        last_7_days_stats = []
+        
+        for i in range(7): 
+            d = (now - timedelta(days=i)).replace(hour=0, minute=0, second=0, microsecond=0)
+            log = next((log_item for log_item in logs if log_item["date"] == d), None)
+            
+            if log:
+                last_7_days_stats.append(DailyMacros(
+                    date=d,
+                    calories=log["calories"],
+                    protein=log["protein_grams"],
+                    carbs=log["carbs_grams"],
+                    fat=log["fat_grams"]
+                ))
+            else:
+                 last_7_days_stats.append(DailyMacros(
+                    date=d,
+                    calories=0,
+                    protein=0,
+                    carbs=0,
+                    fat=0
+                ))
+        
+        last_7_days_stats.sort(key=lambda x: x.date) 
+
+        current_week_start = now - timedelta(days=now.weekday())
+        current_week_start = current_week_start.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        weekly_adherence = [False] * 7
+        for log_entry in logs:
+            if log_entry["date"] >= current_week_start:
+                day_idx = log_entry["date"].weekday()
+                weekly_adherence[day_idx] = True
+        
+        recent_logs = [log_item for log_item in logs if log_item["date"] >= (now - timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)]
+        count = len(recent_logs)
+        avg_cal = sum(log_item["calories"] for log_item in recent_logs) / count if count > 0 else 0
+        avg_prot = sum(log_item["protein_grams"] for log_item in recent_logs) / count if count > 0 else 0
+        
+        total_logs = self.collection.count_documents({"user_email": user_email})
+
+        tdee_val = None
+        target_val = None
+        
+        if tdee_service:
+            try:
+                 targets = tdee_service.get_current_targets(user_email)
+                 tdee_val = targets.get("tdee")
+                 target_val = targets.get("daily_target")
+            except Exception as e:
+                 self.logger.warning("Failed to calculate Adaptive TDEE for stats: %s", e)
+        else:
+            self.logger.debug("TDEE service not provided for stats calculation")
+
+        return NutritionStats(
+            today=today_log,
+            weekly_adherence=weekly_adherence,
+            last_7_days=last_7_days_stats,
+            avg_daily_calories=round(avg_cal, 1),
+            avg_protein=round(avg_prot, 1),
+            total_logs=total_logs,
+            tdee=tdee_val,
+            daily_target=target_val
+        )

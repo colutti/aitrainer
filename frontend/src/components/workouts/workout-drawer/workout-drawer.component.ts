@@ -7,7 +7,8 @@ import { Workout } from '../../../models/workout.model';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './workout-drawer.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'block' }
 })
 export class WorkoutDrawerComponent {
   @Input({ required: true }) workout!: Workout;

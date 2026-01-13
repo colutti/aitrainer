@@ -74,6 +74,35 @@ export class BodyCompositionComponent implements OnInit {
     }
   }
 
+  editEntry(log: WeightLog) {
+    this.entryDate.set(log.date);
+    this.entryWeight.set(log.weight_kg);
+    this.entryFat.set(log.body_fat_pct || null);
+    this.entryMuscle.set(log.muscle_mass_pct || null);
+    this.entryWater.set(log.body_water_pct || null);
+    this.entryVisceral.set(log.visceral_fat || null);
+    this.entryBmr.set(log.bmr || null);
+    
+    // Scroll to top to see form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async deleteEntry(log: WeightLog) {
+    if (!confirm(`Tem certeza que deseja excluir o registro de ${log.date}?`)) {
+      return;
+    }
+
+    this.isLoading.set(true);
+    try {
+      await this.weightService.deleteWeight(log.date);
+      await this.loadData();
+    } catch (e) {
+      console.error('Failed to delete entry', e);
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
   async saveEntry() {
     if (!this.entryWeight()) return;
 

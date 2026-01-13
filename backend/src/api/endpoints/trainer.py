@@ -1,10 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from src.api.models.trainer_profile import TrainerProfileInput, TrainerProfile
-from src.services.trainer import AITrainerBrain
 from src.services.trainer import AITrainerBrain
 from src.core.deps import get_ai_trainer_brain
 from src.services.auth import verify_token
-from src.trainers.registry import TrainerRegistry
 from src.trainers.registry import TrainerRegistry
 
 router = APIRouter()

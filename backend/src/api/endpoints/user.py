@@ -3,12 +3,14 @@ This module contains the API endpoints for user management.
 """
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from src.services.auth import user_login, user_logout, oauth2_scheme, verify_token
 from src.core.deps import get_ai_trainer_brain
 from src.core.logs import logger
+from src.core.config import settings
+from src.core.limiter import limiter, RATE_LIMITING_ENABLED
 from src.api.models.auth import LoginRequest
 from src.api.models.user_profile import UserProfile, UserProfileInput
 from src.services.trainer import AITrainerBrain
@@ -18,12 +20,20 @@ router = APIRouter()
 CurrentUser = Annotated[str, Depends(verify_token)]
 AITrainerBrainDep = Annotated[AITrainerBrain, Depends(get_ai_trainer_brain)]
 
+# Conditional rate limit decorator
+def rate_limit_login(func):
+    if RATE_LIMITING_ENABLED and limiter:
+        return limiter.limit(settings.RATE_LIMIT_LOGIN)(func)
+    return func
+
 @router.post("/login")
-def login(data: LoginRequest) -> dict:
+@rate_limit_login
+def login(request: Request, data: LoginRequest) -> dict:
     """
     Authenticates a user with the provided email and password.
 
     Args:
+        request (Request): FastAPI request object (required for rate limiting).
         data (LoginRequest): The login request body containing email and password.
 
     Returns:

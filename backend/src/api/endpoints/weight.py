@@ -1,6 +1,6 @@
 from typing import Annotated
 from datetime import date
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from src.services.auth import verify_token
 from src.core.deps import get_ai_trainer_brain
 from src.services.trainer import AITrainerBrain
@@ -54,8 +54,31 @@ def log_weight(
         "date": log.date
     }
 
+@router.delete("/{date_str}")
+def delete_weight_log(
+    date_str: str,
+    user_email: CurrentUser,
+    brain: AITrainerBrainDep
+):
+    """
+    Deletes a weight log for a specific date (YYYY-MM-DD).
+    """
+    try:
+        log_date = date.fromisoformat(date_str)
+    except ValueError:
+        return {"error": "Invalid date format. Use YYYY-MM-DD"}
+
+    success = brain._database.delete_weight_log(user_email=user_email, log_date=log_date)
+    
+    if not success:
+        return {"message": "Log not found or could not be deleted", "deleted": False}
+        
+    return {"message": "Weight log deleted successfully", "deleted": True}
+
+
 @router.get("")
 def get_weight_logs(
+
     user_email: CurrentUser,
     brain: AITrainerBrainDep,
     limit: int = 30
@@ -93,7 +116,7 @@ def get_body_composition_stats(
     
     return {
         "latest": latest_dict,
-        "weight_trend": [{"date": l.date.isoformat(), "value": l.weight_kg} for l in logs_asc],
-        "fat_trend": [{"date": l.date.isoformat(), "value": l.body_fat_pct} for l in logs_asc if l.body_fat_pct],
-        "muscle_trend": [{"date": l.date.isoformat(), "value": l.muscle_mass_pct} for l in logs_asc if l.muscle_mass_pct]
+        "weight_trend": [{"date": log_item.date.isoformat(), "value": log_item.weight_kg} for log_item in logs_asc],
+        "fat_trend": [{"date": log_item.date.isoformat(), "value": log_item.body_fat_pct} for log_item in logs_asc if log_item.body_fat_pct],
+        "muscle_trend": [{"date": log_item.date.isoformat(), "value": log_item.muscle_mass_pct} for log_item in logs_asc if log_item.muscle_mass_pct]
     }

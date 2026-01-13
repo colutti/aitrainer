@@ -14,6 +14,7 @@ services:
       - MONGO_URI=mongodb://aitrainer:aitrainerpass@mongo:27017/aitrainerdb?authSource=admin
       - QDRANT_HOST=qdrant
       - RUNNING_IN_CONTAINER=true
+      - RATE_LIMIT_LOGIN=100/minute
 
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -70,6 +71,18 @@ services:
       - "6334:6334"
     volumes:
       - qdrant_data:/qdrant/storage
+    networks:
+      - aitrainer-network
+
+  cypress:
+    image: docker.io/cypress/included:13.6.0
+    depends_on:
+      - frontend
+    environment:
+      - CYPRESS_baseUrl=http://frontend:80
+    volumes:
+      - ./frontend:/app
+    working_dir: /app
     networks:
       - aitrainer-network
 

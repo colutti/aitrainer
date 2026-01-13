@@ -19,6 +19,7 @@ import { NavigationService } from './services/navigation.service';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
+  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,

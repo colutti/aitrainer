@@ -2,7 +2,6 @@
 This module contains the logging configuration for the application.
 """
 import logging
-import os
 import sys
 from logging.handlers import RotatingFileHandler
 

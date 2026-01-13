@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List
 from src.trainers.base_trainer import BaseTrainer
 from src.trainers.atlas_trainer import AtlasTrainer
 from src.trainers.luna_trainer import LunaTrainer

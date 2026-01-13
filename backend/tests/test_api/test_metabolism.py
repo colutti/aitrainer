@@ -26,6 +26,7 @@ def test_get_metabolism_summary():
     
     mock_db.get_weight_logs_by_date_range.return_value = weights
     mock_db.get_nutrition_logs_by_date_range.return_value = nutrition
+    mock_db.get_user_profile.return_value = MagicMock(weekly_rate=0.5, goal_type="lose")
     
     app.dependency_overrides[get_mongo_database] = lambda: mock_db
     

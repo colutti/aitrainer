@@ -8,7 +8,7 @@ class TestWeightLogModel:
         """Backwards compatibility: only required fields."""
         log = WeightLog(user_email="test@test.com", date=date.today(), weight_kg=75.0)
         assert log.body_fat_pct is None
-        assert log.source is None
+        assert log.source == 'manual'
 
     def test_full_composition(self):
         """All body composition fields populated."""

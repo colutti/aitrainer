@@ -6,8 +6,12 @@ Provides a unified interface for different LLM providers (Gemini, Ollama, OpenAI
 from typing import Generator
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.messages import AIMessage, ToolMessage, HumanMessage
+from langchain_core.messages import AIMessage
 from langgraph.prebuilt import create_react_agent
+
+import warnings
+# Suppress Pydantic V1/LangSmith warning as we cannot easily upgrade right now
+warnings.filterwarnings("ignore", message=".*Core Pydantic V1 functionality.*")
 
 from src.core.logs import logger
 

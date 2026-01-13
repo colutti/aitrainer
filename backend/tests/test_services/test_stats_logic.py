@@ -1,19 +1,22 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from datetime import datetime, timedelta
-from src.services.database import MongoDatabase
+from src.repositories.workout_repository import WorkoutRepository
 from src.api.models.workout_stats import PersonalRecord, VolumeStat
 
 class TestStatsLogic(unittest.TestCase):
-    @patch("src.services.database.pymongo.MongoClient")
-    def setUp(self, mock_client):
-        # Mock the client result so __init__ passes successfully
-        mock_client.return_value = MagicMock()
-        self.db = MongoDatabase()
+    def setUp(self):
+        # Mock the database and collection
+        self.mock_db = MagicMock()
+        self.mock_collection = MagicMock()
+        self.mock_db.__getitem__.return_value = self.mock_collection
+        
+        # Initialize Repository with mocked DB
+        self.repo = WorkoutRepository(self.mock_db)
 
     def test_calculate_weekly_streak_empty(self):
         """Verifies streak is 0 for empty history."""
-        self.assertEqual(self.db._calculate_weekly_streak([]), 0)
+        self.assertEqual(self.repo._calculate_weekly_streak([]), 0)
 
     def test_calculate_weekly_streak_current_week(self):
         """Verifies streak logic for current week activity (>=3 workouts)."""
@@ -24,7 +27,7 @@ class TestStatsLogic(unittest.TestCase):
             {"date": today},
         ]
         # 1 week active (current)
-        self.assertEqual(self.db._calculate_weekly_streak(workouts), 1)
+        self.assertEqual(self.repo._calculate_weekly_streak(workouts), 1)
 
     def test_calculate_weekly_streak_not_enough_workouts(self):
         """Verifies streak does not incement if < 3 workouts in a week."""
@@ -34,7 +37,7 @@ class TestStatsLogic(unittest.TestCase):
             {"date": today}, 
             # Only 2 workouts
         ]
-        self.assertEqual(self.db._calculate_weekly_streak(workouts), 0)
+        self.assertEqual(self.repo._calculate_weekly_streak(workouts), 0)
 
     def test_calculate_recent_prs_absolute_max(self):
         """
@@ -68,7 +71,7 @@ class TestStatsLogic(unittest.TestCase):
             }
         ]
         
-        prs = self.db._calculate_recent_prs(workouts, limit=5)
+        prs = self.repo._calculate_recent_prs(workouts, limit=5)
         
         self.assertEqual(len(prs), 1)
         record = prs[0]
@@ -99,7 +102,7 @@ class TestStatsLogic(unittest.TestCase):
             }
         ]
         
-        prs = self.db._calculate_recent_prs(workouts, limit=5)
+        prs = self.repo._calculate_recent_prs(workouts, limit=5)
         
         # Should have 2 records
         self.assertEqual(len(prs), 2)
@@ -140,7 +143,7 @@ class TestStatsLogic(unittest.TestCase):
             }
         ]
         
-        freq, volumes = self.db._calculate_weekly_metrics(workouts)
+        freq, volumes = self.repo._calculate_weekly_metrics(workouts)
         
         # Frequency: Mon(0) and Wed(2) should be True
         self.assertTrue(freq[0]) # Monday

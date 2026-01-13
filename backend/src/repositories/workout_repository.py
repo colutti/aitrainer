@@ -1,0 +1,220 @@
+from datetime import datetime, timedelta
+import pymongo
+from pymongo.database import Database
+
+from src.api.models.workout_log import WorkoutLog, WorkoutWithId
+from src.api.models.workout_stats import WorkoutStats, PersonalRecord, VolumeStat
+from src.repositories.base import BaseRepository
+
+class WorkoutRepository(BaseRepository):
+    def __init__(self, database: Database):
+        super().__init__(database, "workout_logs")
+
+    def save_log(self, workout: WorkoutLog) -> str:
+        result = self.collection.insert_one(workout.model_dump())
+        self.logger.info(
+            "Workout log saved for user %s with %d exercises",
+            workout.user_email,
+            len(workout.exercises),
+        )
+        return str(result.inserted_id)
+
+    def get_logs(self, user_email: str, limit: int = 50) -> list[WorkoutLog]:
+        cursor = (
+            self.collection.find({"user_email": user_email})
+            .sort("date", pymongo.DESCENDING)
+            .limit(limit)
+        )
+        workouts = [WorkoutLog(**doc) for doc in cursor]
+        self.logger.debug(
+            "Retrieved %d workout logs for user: %s", len(workouts), user_email
+        )
+        return workouts
+
+    def get_paginated(
+        self, user_email: str, page: int = 1, page_size: int = 10, workout_type: str | None = None
+    ) -> tuple[list[dict], int]:
+        query = {"user_email": user_email}
+        if workout_type:
+            query["workout_type"] = workout_type
+
+        total = self.collection.count_documents(query)
+        
+        skip = (page - 1) * page_size
+        cursor = (
+            self.collection.find(query)
+            .sort("date", pymongo.DESCENDING)
+            .skip(skip)
+            .limit(page_size)
+        )
+        
+        workouts = []
+        for doc in cursor:
+            doc["id"] = str(doc.pop("_id"))
+            workouts.append(doc)
+        
+        self.logger.debug(
+            "Retrieved %d/%d workout logs for user: %s (page %d)",
+            len(workouts), total, user_email, page
+        )
+        return workouts, total
+
+    def get_types(self, user_email: str) -> list[str]:
+        types = self.collection.distinct("workout_type", {"user_email": user_email})
+        return sorted([t for t in types if t])
+
+    def get_stats(self, user_email: str) -> WorkoutStats:
+        # 1. Get all workouts (projection for speed)
+        cursor = self.collection.find(
+            {"user_email": user_email},
+            {"date": 1, "workout_type": 1, "exercises": 1, "user_email": 1, "duration_minutes": 1}
+        ).sort("date", pymongo.DESCENDING)
+        
+        all_workouts = list(cursor)
+        if not all_workouts:
+            return WorkoutStats(
+                current_streak_weeks=0,
+                weekly_frequency=[False]*7,
+                weekly_volume=[],
+                recent_prs=[],
+                total_workouts=0,
+                last_workout=None
+            )
+
+        # 2. Total Workouts
+        total_workouts = len(all_workouts)
+
+        # 3. Last Workout
+        last_workout_doc = all_workouts[0]
+        last_workout_doc["id"] = str(last_workout_doc.pop("_id"))
+        last_workout = WorkoutWithId(**last_workout_doc)
+
+        # 4. Streak
+        current_streak = self._calculate_weekly_streak(all_workouts)
+
+        # 5. Weekly Metrics
+        freq, volume = self._calculate_weekly_metrics(all_workouts)
+
+        # 6. Recent PRs
+        prs = self._calculate_recent_prs(all_workouts)
+
+        return WorkoutStats(
+            current_streak_weeks=current_streak,
+            weekly_frequency=freq,
+            weekly_volume=volume,
+            recent_prs=prs,
+            total_workouts=total_workouts,
+            last_workout=last_workout
+        )
+
+    def _calculate_weekly_streak(self, workouts: list[dict]) -> int:
+        if not workouts:
+            return 0
+            
+        weeks_data = {}
+        for w in workouts:
+            dt = w["date"]
+            iso_year, iso_week, _ = dt.isocalendar()
+            key = (iso_year, iso_week)
+            weeks_data[key] = weeks_data.get(key, 0) + 1
+
+        now = datetime.now()
+        current_year, current_week, _ = now.isocalendar()
+        
+        streak = 0
+        def met_criteria(y, w):
+            return weeks_data.get((y, w), 0) >= 3
+
+        check_year, check_week = current_year, current_week
+        
+        while met_criteria(check_year, check_week):
+            streak += 1
+            check_date = datetime.fromisocalendar(check_year, check_week, 1) - timedelta(days=7)
+            check_year, check_week, _ = check_date.isocalendar()
+            
+        return streak
+
+    def _calculate_weekly_metrics(self, workouts: list[dict]) -> tuple[list[bool], list[VolumeStat]]:
+        now = datetime.now()
+        start_of_week = now - timedelta(days=now.weekday())
+        start_of_week = start_of_week.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        current_week_workouts = [w for w in workouts if w["date"] >= start_of_week]
+        
+        freq = [False] * 7
+        for w in current_week_workouts:
+            day_idx = w["date"].weekday()
+            freq[day_idx] = True
+            
+        volume_map = {}
+        for w in current_week_workouts:
+            cat = w.get("workout_type", "Outros") or "Outros"
+            exercises = w.get("exercises", [])
+            for ex in exercises:
+                reps_list = ex.get("reps_per_set", [])
+                weights_list = ex.get("weights_per_set", [])
+                
+                vol = 0.0
+                for i, reps in enumerate(reps_list):
+                    weight = weights_list[i] if i < len(weights_list) else 0.0
+                    vol += reps * weight
+                
+                volume_map[cat] = volume_map.get(cat, 0.0) + vol
+                
+        volume_stats = [
+            VolumeStat(category=k, volume=round(v, 1)) 
+            for k, v in volume_map.items()
+        ]
+        volume_stats.sort(key=lambda x: x.volume, reverse=True)
+        return freq, volume_stats
+
+    def _calculate_recent_prs(self, workouts: list[dict], limit: int = 3) -> list[PersonalRecord]:
+        max_weights = {} 
+        
+        for w in reversed(workouts):
+            w_id = str(w.get("_id"))
+            date = w["date"]
+            exercises = w.get("exercises", [])
+            
+            for ex in exercises:
+                name = ex.get("name")
+                if not name:
+                    continue
+                
+                weights = ex.get("weights_per_set", [])
+                reps = ex.get("reps_per_set", [])
+                
+                if not weights:
+                    continue
+                
+                session_max = -1.0
+                session_max_reps = 0
+                
+                for i, weight in enumerate(weights):
+                    if weight > session_max:
+                        session_max = weight
+                        session_max_reps = reps[i] if i < len(reps) else 0
+                
+                if session_max > 0:
+                    current_record = max_weights.get(name)
+                    if not current_record or session_max > current_record["weight"]:
+                        max_weights[name] = {
+                            "weight": session_max,
+                            "reps": session_max_reps,
+                            "date": date,
+                            "workout_id": w_id
+                        }
+        
+        prs_list = [
+            PersonalRecord(
+                exercise_name=name,
+                weight=data["weight"],
+                reps=data["reps"],
+                date=data["date"],
+                workout_id=data["workout_id"]
+            )
+            for name, data in max_weights.items()
+        ]
+        
+        prs_list.sort(key=lambda x: x.date, reverse=True)
+        return prs_list[:limit]
