@@ -324,10 +324,11 @@ class AITrainerBrain:
                      f"- **Status Metabólico Atual**: {status} ({balance:+} kcal/dia)\n"
                      f"- **Justificativa**: {reason}\n"
                      f"> REGRAS CRÍTICAS:\n"
-                     f"> 1. Se o status for 'deficit', o aluno ESTÁ PERDENDO peso. Se perguntado, confirme a perda.\n"
-                     f"> 2. Se o status for 'surplus', o aluno ESTÁ GANHANDO peso.\n"
-                     f"> 3. Se o status for 'maintenance', o peso está ESTÁVEL.\n"
-                     f"> 4. Nunca contradiga o status acima."
+                     f"> 1. Se o status for 'deficit', o aluno ESTÁ PERDENDO peso.\n"
+                     f"> 2. O TDEE é baseado na média histórica. PERGUNTE ao aluno se ele pretende manter a frequência de treinos nesta semana.\n"
+                     f"> 3. Se ele for treinar MENOS que a média, sugira reduzir a meta (ex: -200kcal).\n"
+                     f"> 4. Se ele for treinar MAIS, sugira aumentar levemente.\n"
+                     f"> 5. Explique que o TDEE já inclui os treinos na média semanal."
                  )
         except Exception as e:
              logger.warning("Failed to inject metabolism context: %s", e)

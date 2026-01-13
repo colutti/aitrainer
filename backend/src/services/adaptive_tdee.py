@@ -27,6 +27,75 @@ class AdaptiveTDEEService:
     MAX_TDEE = 5000
     MAX_DAILY_WEIGHT_CHANGE = 1.0 # kg (flag as anomaly if higher)
 
+    def _filter_outliers(self, logs: List[WeightLog]) -> List[WeightLog]:
+        """
+        Filters out transient weight anomalies and handles 'step changes'.
+        Logic:
+        1. Calculate daily delta from last valid log.
+        2. If delta > 1.0 kg (Abs), flag as potential outlier.
+        3. Look ahead: does it stay there?
+           - If YES (e.g. 78 -> 76.5 -> 76.5): It's a Step Change. 
+             Discard history BEFORE the step (reset baseline).
+           - If NO (e.g. 76.5 -> 78 -> 76.5): It's a Transient Spike.
+             Discard the anomaly.
+        """
+        if len(logs) < 3:
+            return logs
+
+        # Sort just in case
+        sorted_logs = sorted(logs, key=lambda x: x.date)
+        
+        # Start with the first log
+        clean_logs = [sorted_logs[0]]
+        last_valid_log = sorted_logs[0]
+        
+        i = 1
+        while i < len(sorted_logs):
+            curr = sorted_logs[i]
+            
+            delta = abs(curr.weight_kg - last_valid_log.weight_kg)
+            days_diff = (curr.date - last_valid_log.date).days
+            
+            # If days_diff is large, a big jump is natural, not outlier.
+            # Only flag if jump happened in short time (e.g. < 3 days)
+            if delta > self.MAX_DAILY_WEIGHT_CHANGE and days_diff <= 3:
+                # Potential Anomaly. Check next log (future) if exists
+                if i + 1 < len(sorted_logs):
+                    next_log = sorted_logs[i+1]
+                    
+                    # Compare next log against the last valid log (baseline)
+                    dist_to_baseline = abs(next_log.weight_kg - last_valid_log.weight_kg)
+                    
+                    # Case A: Spike (76 -> 78 -> 76). Next log is closer to baseline than current outlier.
+                    if dist_to_baseline < delta:
+                        # It returned close to baseline. Skip 'curr'
+                        logger.warning("Ignoring transient weight spike: %s kg on %s", curr.weight_kg, curr.date)
+                        i += 1
+                        continue
+                        
+                    # Case B: Step Change (78 -> 76.5 -> 76.5). Next log confirms new level.
+                    # Or Case C: Just weird chaos.
+                    # If it didn't return to baseline, we assume Step Change.
+                    # RESET baseline to 'curr'.
+                    logger.warning("Detected Step Change in weight: %s -> %s. Resetting baseline.", last_valid_log.weight_kg, curr.weight_kg)
+                    clean_logs = [curr] # Restart list with current as new start
+                    last_valid_log = curr
+                    i += 1
+                    continue
+                else:
+                    # Last log is big jump. Cannot verify.
+                    # Let's keep it but log.
+                    logger.warning("Last weight log shows large jump: %s -> %s", last_valid_log.weight_kg, curr.weight_kg)
+                    clean_logs.append(curr)
+                    last_valid_log = curr
+                    i += 1
+            else:
+                clean_logs.append(curr)
+                last_valid_log = curr
+                i += 1
+                
+        return clean_logs
+
     def __init__(self, db: MongoDatabase):
         self.db = db
 
@@ -61,7 +130,10 @@ class AdaptiveTDEEService:
             return self._insufficient_data_response()
             
         # 2. Process Weight Data (Trend Estimation)
-        # Sort logs by date ascending
+        # Filter outliers / step changes first
+        weight_logs = self._filter_outliers(weight_logs)
+        
+        # Sort logs by date ascending (should be already sorted by filter, but safely ensure)
         weight_logs.sort(key=lambda x: x.date)
         
         # Calculate trend using Linear Regression
@@ -347,6 +419,6 @@ class AdaptiveTDEEService:
             "daily_target": int(daily_target),
             "status": tdee_stats.get("status", "maintenance"),
             "energy_balance": tdee_stats.get("energy_balance", 0),
-            "reason": f"TDEE: {tdee}, Status: {tdee_stats.get('status')}, Objetivo: {profile.goal_type}"
+            "reason": f"TDEE: {tdee} (Based on Weekly Average including workouts), Status: {tdee_stats.get('status')}, Goal: {profile.goal_type}"
         }
 
