@@ -418,7 +418,7 @@ class AITrainerBrain:
         
         input_data = {"stats_context": stats_context}
         
-        for chunk in self._llm_client.stream_text(prompt_template, input_data):
+        for chunk in self._llm_client.stream_simple(prompt_template, input_data):
             yield chunk
 
     def get_all_memories(self, user_id: str, limit: int = 50) -> list[dict]:
