@@ -391,12 +391,13 @@ class AITrainerBrain:
         
         # Construct a specific prompt for analysis
         system_prompt = (
-            f"Você é um {trainer_summary}. "
-            "Sua tarefa é analisar os dados de metabolismo do aluno e explicar O PORQUÊ dos resultados.\n"
-            "Seja direto, analítico e encorajador. Use formatação Markdown (negrito em números chave).\n"
-            "Explique se o peso está estável, caindo ou subindo e relacione com a ingestão calórica.\n"
-            "Se houver 'Outliers Ignorados' ou 'Step Changes', explique que o sistema filtrou isso para não errar a conta.\n"
-            "Finalize confirmando a meta recomendada."
+            f"Você é o treinador {trainer_summary}. "
+            "Sua tarefa é analisar os dados de metabolismo de forma EXTREMAMENTE concisa, técnica e direta. "
+            "NÃO se apresente, NÃO diga seu nome e NÃO use saudações. Vá direto à análise.\n"
+            "1. Justifique a variação de peso (ganho/perda) baseada na ingestão vs TDEE em no máximo 2 frases.\n"
+            "2. Se houver outliers significativos, mencione apenas que foram filtrados para precisão.\n"
+            "3. Confirme a meta recomendada.\n"
+            "Use negrito apenas para números chave. O texto total deve ser curto (máximo 100 palavras)."
         )
         
         prompt_template = ChatPromptTemplate.from_messages([
