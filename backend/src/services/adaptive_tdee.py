@@ -27,7 +27,7 @@ class AdaptiveTDEEService:
     MAX_TDEE = 5000
     MAX_DAILY_WEIGHT_CHANGE = 1.0 # kg (flag as anomaly if higher)
 
-    def _filter_outliers(self, logs: List[WeightLog]) -> List[WeightLog]:
+    def _filter_outliers(self, logs: List[WeightLog]) -> tuple[List[WeightLog], int]:
         """
         Filters out transient weight anomalies and handles 'step changes'.
         Logic:
@@ -38,9 +38,12 @@ class AdaptiveTDEEService:
              Discard history BEFORE the step (reset baseline).
            - If NO (e.g. 76.5 -> 78 -> 76.5): It's a Transient Spike.
              Discard the anomaly.
+        
+        Returns:
+            tuple: (List[WeightLog], int: number of ignored/discarded logs)
         """
         if len(logs) < 3:
-            return logs
+            return logs, 0
 
         # Sort just in case
         sorted_logs = sorted(logs, key=lambda x: x.date)
@@ -48,6 +51,7 @@ class AdaptiveTDEEService:
         # Start with the first log
         clean_logs = [sorted_logs[0]]
         last_valid_log = sorted_logs[0]
+        ignored_count = 0
         
         i = 1
         while i < len(sorted_logs):
@@ -70,6 +74,7 @@ class AdaptiveTDEEService:
                     if dist_to_baseline < delta:
                         # It returned close to baseline. Skip 'curr'
                         logger.warning("Ignoring transient weight spike: %s kg on %s", curr.weight_kg, curr.date)
+                        ignored_count += 1
                         i += 1
                         continue
                         
@@ -78,6 +83,8 @@ class AdaptiveTDEEService:
                     # If it didn't return to baseline, we assume Step Change.
                     # RESET baseline to 'curr'.
                     logger.warning("Detected Step Change in weight: %s -> %s. Resetting baseline.", last_valid_log.weight_kg, curr.weight_kg)
+                    # Count everything we had so far as "ignored" for the current trend
+                    ignored_count += len(clean_logs)
                     clean_logs = [curr] # Restart list with current as new start
                     last_valid_log = curr
                     i += 1
@@ -94,7 +101,7 @@ class AdaptiveTDEEService:
                 last_valid_log = curr
                 i += 1
                 
-        return clean_logs
+        return clean_logs, ignored_count
 
     def __init__(self, db: MongoDatabase):
         self.db = db
@@ -111,7 +118,9 @@ class AdaptiveTDEEService:
                 "weight_change_per_week": float,
                 "logs_count": int,
                 "start_weight": float,
-                "end_weight": float
+                "end_weight": float,
+                "outliers_count": int,
+                "weight_logs_count": int
             }
         """
         end_date = date.today()
@@ -131,7 +140,7 @@ class AdaptiveTDEEService:
             
         # 2. Process Weight Data (Trend Estimation)
         # Filter outliers / step changes first
-        weight_logs = self._filter_outliers(weight_logs)
+        weight_logs, outliers_count = self._filter_outliers(weight_logs)
         
         # Sort logs by date ascending (should be already sorted by filter, but safely ensure)
         weight_logs.sort(key=lambda x: x.date)
@@ -167,23 +176,11 @@ class AdaptiveTDEEService:
         
         if not relevant_nutrition:
              return self._insufficient_data_response()
-
+ 
         total_calories = sum(log_item.calories for log_item in relevant_nutrition)
-        # Average calories should be over the DAYS ELAPSED, assuming missing logs = typical eating?
-        # NO. If they missed logs, we don't know what they ate.
-        # Strict approach: Average of LOGGED days. 
-        # But TDEE formula tries to balance total energy.
-        # If user logs 3000 kcal for 1 day and nothing for 6 days, and maintains weight, 
-        # Average intake = 3000? No, probably 3000/7.
-        # Assumption: User must log strictly for accurate TDEE.
-        # We will use Total Calories / Number of Logs. 
-        # AND we check adherence. If adherence is low, confidence is low.
         avg_calories_logged = total_calories / len(relevant_nutrition)
         
         # 4. Calculate TDEE
-        # Formula: TDEE = Avg_In - (Slope_kg_per_day * 7700)
-        # Note: Slope is kg/day. If losing, slope is negative. 
-        # TDEE = Avg_In - (Negative * 7700) = Avg_In + Positive
         daily_surplus_deficit = slope * self.KCAL_PER_KG_FAT
         
         tdee = avg_calories_logged - daily_surplus_deficit
@@ -230,10 +227,10 @@ class AdaptiveTDEEService:
             
             daily_target = int(round(tdee + adjustment))
             daily_target = max(1000, daily_target)
-
+ 
         # 7. Body Composition Analysis
         comp_changes = self._calculate_body_composition_changes(weight_logs)
-
+ 
         result = {
             "tdee": int(round(tdee)),
             "confidence": confidence,
@@ -250,7 +247,9 @@ class AdaptiveTDEEService:
             "latest_weight": weight_logs[-1].weight_kg,
             "daily_target": daily_target,
             "goal_weekly_rate": goal_rate,
-            "goal_type": goal_type
+            "goal_type": goal_type,
+            "outliers_count": outliers_count,
+            "weight_logs_count": len(weight_logs)
         }
         
         if comp_changes:

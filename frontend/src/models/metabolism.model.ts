@@ -15,5 +15,7 @@ export interface MetabolismResponse {
   energy_balance: number;
   is_stable: boolean;
   latest_weight: number;
+  outliers_count: number;
+  weight_logs_count: number;
   message?: string;
 }

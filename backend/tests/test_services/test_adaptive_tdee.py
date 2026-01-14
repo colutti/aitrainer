@@ -173,3 +173,27 @@ def test_tdee_includes_body_composition_changes(service, mock_db):
     assert result["lean_change_kg"] == 0.06
     assert result["start_fat_pct"] == 25.0
     assert result["end_fat_pct"] == 23.0
+
+def test_tdee_outlier_filtering(service, mock_db):
+    """Verify that outliers are filtered and counted."""
+    today = date.today()
+    start_date = today - timedelta(days=20)
+    
+    # 21 days of data with one spike
+    weights = []
+    for i in range(21):
+        weight = 70.0
+        if i == 10: # Spike!
+            weight = 75.0
+        weights.append(WeightLog(user_email="test@test.com", date=start_date + timedelta(days=i), weight_kg=weight))
+    
+    nutrition = [NutritionLog(user_email="test@test.com", date=start_date + timedelta(days=i), calories=2500, protein_grams=150, carbs_grams=250, fat_grams=80) for i in range(21)]
+    
+    mock_db.get_weight_logs_by_date_range.return_value = weights
+    mock_db.get_nutrition_logs_by_date_range.return_value = nutrition
+    
+    result = service.calculate_tdee("test@test.com", lookback_weeks=3)
+    
+    assert result["outliers_count"] == 1
+    assert result["weight_logs_count"] == 20 # 21 total - 1 outlier
+    assert result["tdee"] == 2500 # Should ignore the spike
