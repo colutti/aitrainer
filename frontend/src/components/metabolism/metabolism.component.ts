@@ -1,12 +1,13 @@
-import { Component, inject, OnInit, effect } from '@angular/core';
+import { Component, inject, OnInit, effect, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MetabolismService } from '../../services/metabolism.service';
 import { UserProfileService } from '../../services/user-profile.service';
+import { MarkdownModule } from 'ngx-markdown';
 
 @Component({
   selector: 'app-metabolism',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MarkdownModule],
   templateUrl: './metabolism.component.html',
 })
 export class MetabolismComponent implements OnInit {
@@ -17,10 +18,50 @@ export class MetabolismComponent implements OnInit {
   isLoading = this.metabolismService.isLoading;
   profile = this.userProfileService.userProfile;
 
+  insightText = signal<string>('');
+  isInsightLoading = signal<boolean>(false);
+
+  constructor() {
+      effect(() => {
+          const s = this.stats();
+          if (s && s.confidence !== 'none') {
+             // Use untracked to avoid loops if needed, but here we just react to stats
+             untracked(() => {
+                 this.streamInsight();
+             });
+          }
+      });
+  }
+
   ngOnInit() {
     this.metabolismService.fetchSummary(3);
   }
   
+  async streamInsight() {
+      if (this.isInsightLoading() || this.insightText()) return; // Already loading or loaded
+      
+      this.isInsightLoading.set(true);
+      this.insightText.set('');
+      
+      try {
+          const reader = await this.metabolismService.getInsightStream();
+           const decoder = new TextDecoder();
+
+           while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                const chunk = decoder.decode(value, { stream: true });
+                this.insightText.update(prev => prev + chunk);
+           }
+      } catch (err) {
+          console.error("Stream error", err);
+          this.insightText.set("Não foi possível gerar a análise do treinador no momento.");
+      } finally {
+          this.isInsightLoading.set(false);
+      }
+  }
+
   getRecommendation(): string {
     const s = this.stats();
     if (!s || s.confidence === 'none') return 'Dados insuficientes. Continue logando peso e dieta.';
@@ -47,32 +88,6 @@ export class MetabolismComponent implements OnInit {
     }
 
     return { percentage, label, color };
-  }
-
-  getInsightText(): string {
-    const s = this.stats();
-    if (!s || s.confidence === 'none') return '';
-
-    const diff = s.daily_target - s.avg_calories;
-    const action = diff > 0 ? "aumentar" : "reduzir";
-    const absDiff = Math.abs(diff);
-
-    const formatDate = (dateStr: string) => {
-      const d = new Date(dateStr);
-      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    };
-
-    const period = `No período de ${formatDate(s.startDate)} a ${formatDate(s.endDate)}`;
-
-    if (s.is_stable) {
-        return `Seu TDEE é de ${s.tdee} kcal. ${period}, você consumiu ${s.avg_calories} kcal em média, o que manteve seu peso estável.`;
-    }
-
-    const messagePrefix = s.energy_balance < 0 
-        ? `Seu TDEE é de ${s.tdee} kcal. ${period}, você manteve uma média de ${s.avg_calories} kcal, gerando um déficit real de ${Math.abs(s.energy_balance).toFixed(1)} kcal.`
-        : `Seu TDEE é de ${s.tdee} kcal. ${period}, você manteve uma média de ${s.avg_calories} kcal, gerando um superávit real de ${s.energy_balance.toFixed(1)} kcal.`;
-
-    return `${messagePrefix} Isso resultou em uma variação de ${s.weight_change_per_week} kg/semana.`;
   }
   
   getConfidenceColor(level: string): string {

@@ -1,156 +1,154 @@
-<div class="h-full overflow-y-auto p-6 bg-dark-bg text-text-primary">
-  <h1 class="text-3xl font-bold mb-6 tracking-tight">Seu Metabolismo</h1>
-  
-  <!-- Loading State -->
-  <div *ngIf="isLoading()" class="flex justify-center items-center h-64">
-    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-  </div>
+<div class="h-full overflow-y-auto p-8 bg-dark-bg text-text-primary">
+    <h1 class="text-3xl font-bold mb-8 tracking-tight">Seu Metabolismo</h1>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading()" class="flex justify-center items-center h-64">
+      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+    </div>
 
     <ng-container *ngIf="!isLoading()">
-      <!-- Main Target Card (HERO) -->
-      <div class="bg-gradient-to-br from-primary/30 to-gray-800 p-8 rounded-3xl border border-primary/40 shadow-2xl mb-8 flex flex-col items-center text-center relative overflow-hidden">
-        <div class="absolute inset-0 bg-noise opacity-10 pointer-events-none"></div>
-        
-        <h2 class="text-xs text-primary font-bold uppercase tracking-widest mb-2">Sua Meta Diária (Comer)</h2>
-        
-        <div class="flex items-baseline justify-center gap-2 mb-4">
-             <span class="text-7xl font-black text-white tracking-tighter drop-shadow-lg">
-                {{ stats()?.daily_target || '--' }}
-             </span>
-             <span class="text-2xl text-primary font-medium">kcal</span>
+        <!-- Date Range Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3 bg-light-bg px-4 py-2 rounded-full border border-white/10">
+                <span class="text-xs font-bold text-text-secondary uppercase tracking-widest hidden md:inline">Período Analisado</span>
+                <span class="text-white font-bold text-sm">
+                   {{ stats()?.startDate | date:'dd MMM' }} - {{ stats()?.endDate | date:'dd MMM' }}
+                </span>
+                <span class="text-xs text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full border border-green-400/20" data-cy="logs-count">
+                    {{ stats()?.logs_count }} dias
+                </span>
+            </div>
+            
+            <div class="flex items-center gap-2 text-xs text-secondary cursor-pointer hover:text-white transition-colors">
+                 <span>⚙️ Configurar Preferências</span>
+            </div>
         </div>
-        
-        <div class="flex items-center gap-4">
-            <div class="px-4 py-2 bg-black/30 rounded-xl border border-white/5 relative group">
-                <p class="text-[10px] text-gray-400 uppercase font-bold flex items-center gap-1">
-                    TDEE Estimado
-                    <span class="text-[8px] opacity-50">ⓘ</span>
-                </p>
-                <p class="text-white font-bold">{{ stats()?.tdee || '--' }} kcal</p>
-                <!-- Tooltip -->
-                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-900 text-[10px] text-gray-300 rounded shadow-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                    O gasto calórico é calculado com base na variação de peso entre o primeiro e o último registro do período.
+
+        <!-- HERO CARD -->
+        <div class="bg-gradient-to-br from-primary/20 to-gray-900 p-1 mb-8 rounded-3xl shadow-2xl relative overflow-hidden group">
+            <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none"></div>
+            
+            <div class="bg-gray-900/40 backdrop-blur-xl border border-white/10 rounded-[22px] p-8 flex flex-col md:flex-row items-center justify-between gap-8">
+                
+                <!-- Left: Big Number -->
+                <div class="text-center md:text-left">
+                    <h2 class="text-xs text-primary font-bold uppercase tracking-widest mb-1">Sua Meta Diária</h2>
+                    <div class="flex items-baseline gap-2 justify-center md:justify-start">
+                        <span class="text-6xl font-black text-white tracking-tighter drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]" data-cy="daily-target">
+                            {{ stats()?.daily_target || '--' }}
+                        </span>
+                        <span class="text-xl text-primary font-medium">kcal</span>
+                    </div>
+                     <p class="text-xs text-text-secondary mt-2 max-w-xs">recomendada para manter a média semanal (inclui treinos)</p>
+                </div>
+
+                <!-- Right: Stats Grid -->
+                <div class="grid grid-cols-2 gap-4 w-full md:w-auto">
+                     <div class="bg-black/30 p-4 rounded-xl border border-white/5">
+                        <p class="text-[10px] text-gray-400 uppercase font-bold">TDEE Estimado</p>
+                        <p class="text-white font-bold text-lg" data-cy="tdee-value">{{ stats()?.tdee || '--' }} kcal</p>
+                     </div>
+                     <div class="bg-black/30 p-4 rounded-xl border border-white/5">
+                        <p class="text-[10px] text-gray-400 uppercase font-bold">Confiança</p>
+                        <p class="font-bold uppercase text-xs" [ngClass]="getConfidenceColor(stats()?.confidence || 'none')">
+                            {{ stats()?.confidence === 'none' ? ' -- ' : stats()?.confidence }}
+                        </p>
+                     </div>
+                     <div class="bg-black/30 p-4 rounded-xl border border-white/5 col-span-2">
+                        <p class="text-[10px] text-gray-400 uppercase font-bold">Status</p>
+                        <p class="font-bold uppercase text-sm flex items-center gap-2" 
+                           [ngClass]="stats()?.status === 'deficit' ? 'text-green-400' : (stats()?.status === 'surplus' ? 'text-red-400' : 'text-blue-300')">
+                            {{ stats()?.status }}
+                            <span class="text-xs opacity-70">({{ stats()?.energy_balance > 0 ? '+' : ''}}{{ stats()?.energy_balance | number:'1.0-0' }} kcal)</span>
+                        </p>
+                     </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- AI Trainer Insight & Transparency -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8" *ngIf="stats()?.confidence !== 'none'">
+            
+            <!-- AI Output Column -->
+            <div class="lg:col-span-2 bg-gradient-to-br from-gray-800 to-gray-900 rounded-3xl border border-primary/30 p-1 relative shadow-[0_0_30px_rgba(168,85,247,0.15)]">
+                <!-- Header -->
+                <div class="absolute -top-3 left-6 bg-gray-900 px-3 py-1 rounded-full border border-primary/40 flex items-center gap-2">
+                    <span class="text-lg">🤖</span>
+                    <span class="text-xs font-bold text-primary uppercase tracking-wider" data-cy="trainer-analysis-header">Análise do Treinador</span>
+                </div>
+
+                <div class="h-full bg-gray-900/90 rounded-[20px] p-8 pt-10 min-h-[200px]">
+                    <div *ngIf="isInsightLoading() && !insightText()" class="flex items-center gap-2 text-gray-500 animate-pulse">
+                        <span class="text-xl">✨</span> Analisando seus dados...
+                    </div>
+                    
+                    <markdown 
+                        [data]="insightText()" 
+                        class="text-gray-300 leading-relaxed font-light text-sm md:text-base prose prose-invert prose-p:my-2 prose-strong:text-white prose-strong:font-bold">
+                    </markdown>
+                    <span *ngIf="isInsightLoading() && insightText()" class="inline-block w-2 h-4 bg-primary ml-1 animate-pulse"></span>
                 </div>
             </div>
-            <div class="px-4 py-2 bg-black/30 rounded-xl border border-white/5">
-                <p class="text-[10px] text-gray-400 uppercase font-bold">Confiança</p>
-                <p class="font-bold uppercase text-xs" [ngClass]="getConfidenceColor(stats()?.confidence || 'none')">
-                    {{ stats()?.confidence === 'none' ? 'Sem Dados' : stats()?.confidence }}
-                </p>
+
+            <!-- Visual Transparency Column (Outliers) -->
+            <div class="bg-light-bg rounded-3xl border border-white/10 p-6 flex flex-col justify-center relative overflow-hidden">
+                <h3 class="text-sm font-bold text-white mb-6 z-10" data-cy="transparency-title">Transparência do Cálculo</h3>
+                
+                <div class="flex-1 flex flex-col gap-4 z-10">
+                     <!-- Valid Data -->
+                     <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center border border-green-500/30 text-green-400 text-xs font-bold">
+                            {{ stats()?.logs_count }}
+                        </div>
+                        <div>
+                            <p class="text-white text-xs font-bold">Dias Válidos</p>
+                            <p class="text-text-secondary text-[10px]">Usados na regressão</p>
+                        </div>
+                     </div>
+
+                     <!-- Outliers -->
+                     <div class="flex items-center gap-3 opacity-50 hover:opacity-100 transition-opacity">
+                        <div class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center border border-red-500/30 text-red-400 text-xs font-bold line-through">
+                            --
+                        </div>
+                        <div>
+                            <p class="text-red-300 text-xs font-bold">Outliers Ignorados</p>
+                            <p class="text-text-secondary text-[10px]">Anomalias filtradas</p>
+                        </div>
+                     </div>
+
+                     <div class="mt-4 pt-4 border-t border-white/5">
+                        <p class="text-[10px] text-gray-500 leading-tight">
+                            * O Sistema usa Regressão Linear Ponderada ignorando desvios acima de 1kg/dia para evitar falsos déficits (e.g. retenção hídrica).
+                        </p>
+                     </div>
+                </div>
+
+                <!-- Abstract Chart Background -->
+                <div class="absolute bottom-0 right-0 w-32 h-32 opacity-10 pointer-events-none">
+                    <svg viewBox="0 0 100 100" fill="none" stroke="white" stroke-width="2">
+                        <path d="M0 80 Q 25 80 50 50 T 100 20" />
+                        <circle cx="10" cy="80" r="3" fill="red" />
+                        <circle cx="30" cy="50" r="2" fill="white" />
+                        <circle cx="50" cy="50" r="2" fill="white" />
+                        <circle cx="70" cy="45" r="2" fill="white" />
+                    </svg>
+                </div>
             </div>
+
         </div>
+        
+        <!-- Empty State / Education-->
+        <div *ngIf="stats()?.confidence === 'none'" class="mt-8 p-6 bg-blue-900/20 border border-blue-500/30 rounded-xl flex items-start gap-4">
+           <span class="text-2xl">ℹ️</span>
+           <div>
+               <h3 class="text-blue-100 font-bold text-sm mb-1">Como funciona a calibração?</h3>
+               <p class="text-blue-200/70 text-sm">
+                   O algoritmo precisa de pelo menos 7 dias de dados de peso e nutrição consistentes para calibrar seu metabolismo. Continue registrando diariamente para ver sua meta dinâmica!
+               </p>
+           </div>
+       </div>
 
-        <div class="mt-8 p-4 bg-primary/10 rounded-2xl border border-primary/20 w-full max-w-lg backdrop-blur-sm">
-            <p class="text-white text-sm font-medium">
-                {{ getRecommendation() }}
-            </p>
-        </div>
-      </div>
-
-      <!-- Discovery & Insights -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          
-          <!-- Weekly Progress -->
-          <div class="bg-light-bg p-8 rounded-3xl border border-secondary shadow-lg">
-              <h3 class="text-lg font-bold text-white mb-6">Progresso Semanal</h3>
-              
-              <div class="space-y-6">
-                  <div class="flex justify-between items-center text-sm">
-                      <span class="text-text-secondary">Sua Meta:</span>
-                      <span class="font-bold text-white">{{ stats()?.goal_weekly_rate | number:'1.2-2' }} kg/semana</span>
-                  </div>
-                  
-                  <div class="flex justify-between items-center text-sm">
-                      <span class="text-text-secondary">Sua Realidade:</span>
-                      <span class="font-bold" [ngClass]="(stats()?.weight_change_per_week || 0) < 0 ? 'text-green-400' : 'text-red-400'">
-                          {{ stats()?.weight_change_per_week | number:'1.2-2' }} kg/semana
-                      </span>
-                  </div>
-
-                  <div class="pt-2">
-                      <div class="flex justify-between mb-2 items-end">
-                          <span class="text-xs font-bold text-text-secondary uppercase">{{ getProgressStatus().label }}</span>
-                          <span class="text-xl font-black text-white">{{ getProgressStatus().percentage }}%</span>
-                      </div>
-                      <div class="w-full bg-gray-700 rounded-full h-3">
-                        <div class="h-3 rounded-full transition-all duration-1000" 
-                             [ngClass]="getProgressStatus().color"
-                             [style.width.%]="getProgressStatus().percentage"></div>
-                      </div>
-                  </div>
-              </div>
-          </div>
-
-          <!-- Science Insight -->
-          <div class="bg-primary/5 p-8 rounded-3xl border border-primary/20 relative overflow-hidden">
-              <div class="absolute -top-6 -right-6 text-9xl text-primary/5 select-none font-black italic">💡</div>
-              <h3 class="text-lg font-bold text-white mb-4">O que os números dizem</h3>
-              <p class="text-text-secondary text-sm leading-relaxed italic">
-                  "{{ getInsightText() }}"
-              </p>
-              <div class="mt-6 flex items-center gap-2 text-xs text-primary font-bold">
-                  <span>✨ Calibrado via Inteligência Adaptativa</span>
-              </div>
-          </div>
-
-      </div>
-      
-      <!-- Statistics Details -->
-      <h3 class="text-sm font-bold text-text-secondary uppercase tracking-widest mb-4 ml-2">Detalhes do Período</h3>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
-          <!-- Avg Intake -->
-          <div class="bg-light-bg/50 p-6 rounded-2xl border border-secondary shadow-sm relative group">
-              <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
-                  Ingestão Média
-                  <span class="text-[8px] opacity-50">ⓘ</span>
-              </p>
-              <div class="flex items-baseline">
-                <p class="text-3xl font-bold text-white">{{ stats()?.avg_calories || 0 }}</p>
-                <span class="ml-1 text-sm text-text-secondary">kcal</span>
-              </div>
-              <!-- Tooltip -->
-              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2 bg-gray-900 text-[10px] text-gray-300 rounded shadow-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
-                  Calculada apenas para os dias dentro do intervalo de registros de peso (ancoragem).
-              </div>
-          </div>
-          
-           <!-- Weight Trend -->
-           <div class="bg-light-bg/50 p-6 rounded-2xl border border-secondary shadow-sm">
-              <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-2">Tendência de Peso</p>
-              <div class="flex items-baseline">
-                 <p class="text-2xl font-bold text-white">
-                     {{ stats()?.start_weight | number:'1.2-2' }} <span class="text-gray-500 mx-1">→</span> {{ stats()?.end_weight | number:'1.2-2' }}
-                 </p>
-                 <span class="ml-1 text-sm text-text-secondary">kg</span>
-              </div>
-              <p class="text-[10px] text-gray-400 block mt-1" *ngIf="stats()?.latest_weight">
-                 Real: {{ stats()?.latest_weight | number:'1.2-2' }} kg
-              </p>
-          </div>
-          
-           <!-- Analysis Period -->
-           <div class="bg-light-bg/50 p-6 rounded-2xl border border-secondary shadow-sm">
-              <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-2">Período Analisado</p>
-              <div class="flex items-baseline">
-                <p class="text-3xl font-bold text-white">{{ stats()?.logs_count || 0 }}</p>
-                <span class="ml-1 text-sm text-text-secondary">dias</span>
-              </div>
-              <p class="text-[10px] text-gray-500 mt-1" *ngIf="stats()?.startDate">
-                  {{ stats()?.startDate | date:'dd/MM' }} até {{ stats()?.endDate | date:'dd/MM' }}
-              </p>
-          </div>
-          
-      </div>
-
-      <div *ngIf="stats()?.confidence === 'none'" class="mt-8 p-6 bg-blue-900/20 border border-blue-500/30 rounded-xl flex items-start gap-4">
-          <span class="text-2xl">ℹ️</span>
-          <div>
-              <h3 class="text-blue-100 font-bold text-sm mb-1">Como funciona a calibração?</h3>
-              <p class="text-blue-200/70 text-sm">
-                  O algoritmo precisa de pelo menos 7 dias de dados de peso e nutrição consistentes para calibrar seu metabolismo. Continue registrando diariamente para ver sua meta dinâmica!
-              </p>
-          </div>
-      </div>
     </ng-container>
 </div>

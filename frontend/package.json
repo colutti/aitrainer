@@ -23,26 +23,36 @@
     "@angular/platform-browser": "^21.0.0",
     "@angular/platform-browser-dynamic": "^21.0.8",
     "chart.js": "^4.5.1",
+    "clipboard": "^2.0.11",
+    "emoji-toolkit": "^10.0.0",
+    "katex": "^0.16.27",
     "marked": "^17.0.1",
+    "mermaid": "^11.12.2",
     "ng2-charts": "^8.0.0",
-    "ngx-markdown": "^19.0.0",
+    "ngx-markdown": "^19.1.1",
+    "prismjs": "^1.30.0",
     "rxjs": "^7.8.2",
-    "tailwindcss": "latest",
-    "zone.js": "^0.16.0"
+    "tailwindcss": "latest"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^21.0.5",
     "@angular/compiler-cli": "^21.0.8",
+    "@babel/core": "^7.28.6",
+    "@babel/preset-env": "^7.28.6",
     "@eslint/js": "^9.39.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.14.0",
+    "babel-jest": "^30.2.0",
     "cypress": "^13.6.0",
     "eslint": "^9.39.2",
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
     "jest-preset-angular": "^16.0.0",
+    "ng-mocks": "^14.15.0",
     "puppeteer": "^24.34.0",
+    "ts-jest": "^29.4.6",
     "typescript": "~5.9.2",
-    "typescript-eslint": "^8.50.0"
+    "typescript-eslint": "^8.50.0",
+    "zone.js": "^0.16.0"
   }
 }

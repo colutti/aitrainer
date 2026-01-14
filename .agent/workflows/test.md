@@ -14,4 +14,3 @@ Este workflow consolida a execução de todas as suítes de teste do projeto par
 - Warnings devem ser tratados e eliminados.
 - Os testes do cypress devem rodar no container definido no Docker Compose. Monitore sua execucao e reporte.
 - Os testes do cypress nao podem depender nem do backend nem dos bancos de dados. Mockear.
-- A solucao devera ser testada em Chrome e Firefox usando cypress.

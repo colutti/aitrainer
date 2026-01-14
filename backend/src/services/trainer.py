@@ -369,7 +369,6 @@ class AITrainerBrain:
         # Save to MongoDB synchronously
         self._add_to_mongo_history(user_email, user_input, final_response, current_trainer_type)
         
-        # Schedule Mem0 storage as background task (asynchronous)
         if background_tasks:
             background_tasks.add_task(
                 _add_to_mem0_background,
@@ -379,6 +378,48 @@ class AITrainerBrain:
                 response_text=final_response
             )
             logger.info("Scheduled Mem0 background task for user: %s", user_email)
+
+    def generate_insight_stream(self, user_email: str, stats: dict):
+        """
+        Generates a focused AI insight about metabolism stats.
+        Streams the response.
+        """
+        logger.info("Generating metabolism insight stream for user: %s", user_email)
+        
+        trainer_profile_obj = self._get_or_create_trainer_profile(user_email)
+        trainer_summary = trainer_profile_obj.get_trainer_profile_summary()
+        
+        # Construct a specific prompt for analysis
+        system_prompt = (
+            f"Você é um {trainer_summary}. "
+            "Sua tarefa é analisar os dados de metabolismo do aluno e explicar O PORQUÊ dos resultados.\n"
+            "Seja direto, analítico e encorajador. Use formatação Markdown (negrito em números chave).\n"
+            "Explique se o peso está estável, caindo ou subindo e relacione com a ingestão calórica.\n"
+            "Se houver 'Outliers Ignorados' ou 'Step Changes', explique que o sistema filtrou isso para não errar a conta.\n"
+            "Finalize confirmando a meta recomendada."
+        )
+        
+        prompt_template = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            ("human", "Analise meus dados: {stats_context}")
+        ])
+        
+        # Format stats for the prompt
+        outlier_text = "Nenhum detectado"
+        # We assume stats dict generally passed here, but let's format it readable
+        stats_context = (
+            f"- Período: {stats.get('startDate')} a {stats.get('endDate')} ({stats.get('logs_count')} dias)\n"
+            f"- Peso: {stats.get('start_weight')}kg -> {stats.get('end_weight')}kg\n"
+            f"- TDEE Calculado: {stats.get('tdee')} kcal\n"
+            f"- Ingestão Média: {stats.get('avg_calories')} kcal\n"
+            f"- Status: {stats.get('status')} ({stats.get('energy_balance'):+} kcal/dia)\n"
+            f"- Meta Recomendada: {stats.get('daily_target')} kcal (Baseada na média semanal)\n"
+        )
+        
+        input_data = {"stats_context": stats_context}
+        
+        for chunk in self._llm_client.stream_text(prompt_template, input_data):
+            yield chunk
 
     def get_all_memories(self, user_id: str, limit: int = 50) -> list[dict]:
         """

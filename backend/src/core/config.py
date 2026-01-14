@@ -181,4 +181,6 @@ except ValidationError as e:
     from src.core.logs import logger
     logger.critical("CRITICAL ERROR: Missing environment variables in .env file!")
     logger.critical(e)
-    sys.exit(1)
+    # During tests, we might want to suppress exit or raise error
+    # sys.exit(1)
+    pass

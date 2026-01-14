@@ -1,15 +1,13 @@
 module.exports = {
   preset: 'jest-preset-angular',
-  setupFilesAfterEnv: ['<rootDir>/setup-jest.ts'],
-  testPathIgnorePatterns: [
-    '<rootDir>/node_modules/',
-    '<rootDir>/dist/'
-  ],
+  setupFilesAfterEnv: ['<rootDir>/src/setup-jest.ts'],
+  moduleNameMapper: {
+    'ngx-markdown': '<rootDir>/src/mocks/ngx-markdown.js'
+  },
   transform: {
     '^.+\\.(ts|js|html)$': ['jest-preset-angular', {
-        tsconfig: '<rootDir>/src/tsconfig.spec.json',
-        stringifyContentPathRegex: '\\.(html|svg)$',
-    }] 
+      tsconfig: '<rootDir>/tsconfig.spec.json',
+      stringifyContentPathRegex: '\\.html$',
+    }],
   },
-  transformIgnorePatterns: ['node_modules/(?!(@angular|.*\\.mjs$|lodash-es|ng2-charts|chart.js)/)']
 };

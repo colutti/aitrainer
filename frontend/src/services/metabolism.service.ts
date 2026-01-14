@@ -28,4 +28,19 @@ export class MetabolismService {
       this.isLoading.set(false);
     }
   }
+  async getInsightStream(weeks: number = 3): Promise<ReadableStreamDefaultReader<Uint8Array>> {
+      const token = localStorage.getItem('jwt_token');
+      const response = await fetch(`${environment.apiUrl}/metabolism/insight?weeks=${weeks}`, {
+          headers: {
+              'Authorization': `Bearer ${token}`
+          }
+      });
+      
+      if (!response.body) {
+          throw new Error('No ReadableStream');
+      }
+
+      const reader = response.body.getReader();
+      return reader;
+  }
 }
