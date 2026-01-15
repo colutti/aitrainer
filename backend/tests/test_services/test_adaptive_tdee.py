@@ -7,7 +7,10 @@ from src.api.models.nutrition_log import NutritionLog
 
 @pytest.fixture
 def mock_db():
-    return MagicMock()
+    db = MagicMock()
+    # Default to None to avoid tests returning MagicMocks for profile by default
+    db.get_user_profile.return_value = None
+    return db
 
 @pytest.fixture
 def service(mock_db):
@@ -255,3 +258,35 @@ def test_tdee_confidence_reason(service, mock_db):
     
     assert result_poor["confidence"] == "low"
     assert "Muitos dias sem registro" in result_poor["confidence_reason"]
+
+def test_tdee_eta_projection(service, mock_db):
+    """Verify ETA projection for weight goal."""
+    today = date.today()
+    start_date = today - timedelta(days=20)
+    
+    # User loses 1kg in 20 days (0.35kg/week trend)
+    # 81.0 -> 80.0
+    weights = [WeightLog(user_email="test@test.com", date=start_date + timedelta(days=i), weight_kg=81.0 - (1.0 * i / 20)) for i in range(21)]
+    nutrition = [NutritionLog(user_email="test@test.com", date=start_date + timedelta(days=i), calories=2000, protein_grams=100, carbs_grams=100, fat_grams=50) for i in range(21)]
+    
+    mock_db.get_weight_logs_by_date_range.return_value = weights
+    mock_db.get_nutrition_logs_by_date_range.return_value = nutrition
+    
+    # Profile: Target 75kg, Goal Lose 0.5kg/week
+    profile_mock = MagicMock()
+    profile_mock.goal_type = "lose"
+    profile_mock.target_weight = 75.0
+    profile_mock.weekly_rate = 0.5
+    mock_db.get_user_profile.return_value = profile_mock
+    
+    result = service.calculate_tdee("test@test.com", lookback_weeks=3)
+    
+    # Latest weight = 80.0. To go = 5kg.
+    # Real trend = -0.35kg/week
+    # ETA = 5 / 0.35 = ~14.3 weeks
+    assert result["target_weight"] == 75.0
+    assert result["weeks_to_goal"] is not None
+    assert 13 < result["weeks_to_goal"] < 16
+    
+    # Goal ETA = 5 / 0.5 = 10 weeks
+    assert result["goal_eta_weeks"] == 10.0

@@ -139,11 +139,44 @@ export class MetabolismComponent implements OnInit {
   getConfidenceReason(s: any): string {
       if (!s) return 'Dados carregando...';
       if (s.confidence === 'low') {
-          if ((s.logs_count || 0) < 14) return 'Histórico curto (<14 dias)';
-          return 'Poucos registros de dieta';
+          return s.confidence_reason || 'Dados inconsistentes.';
       }
-      if (s.confidence === 'medium') return 'Aderência parcial aos registros';
-      if (s.confidence === 'high') return 'Excelente consistência!';
-      return 'Dados insuficientes';
+      return s.confidence_reason || 'Dados confiáveis.';
+  }
+
+  getTotalProgressPercentage(): number {
+    const s = this.stats();
+    if (!s || !s.target_weight || !s.start_weight) return 0;
+    
+    const totalToChange = Math.abs(s.start_weight - s.target_weight);
+    if (totalToChange === 0) return 100;
+    
+    const currentChange = Math.abs(s.start_weight - s.latest_weight);
+    const percentage = (currentChange / totalToChange) * 100;
+    
+    return Math.min(100, Math.max(0, percentage));
+  }
+
+  getSparklinePath(): string {
+    const s = this.stats();
+    if (!s || !s.weight_trend || s.weight_trend.length < 2) return '';
+    
+    const weights = s.weight_trend.map(t => t.weight);
+    const min = Math.min(...weights) - 0.5;
+    const max = Math.max(...weights) + 0.5;
+    const range = max - min;
+    
+    if (range === 0) return 'M 0 20 L 100 20';
+    
+    const width = 100;
+    const height = 40;
+    
+    const points = weights.map((w, i) => {
+      const x = (i / (weights.length - 1)) * width;
+      const y = height - ((w - min) / range) * height;
+      return `${x},${y}`;
+    });
+    
+    return `M ${points.join(' L ')}`;
   }
 }

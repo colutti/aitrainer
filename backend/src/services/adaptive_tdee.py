@@ -231,11 +231,39 @@ class AdaptiveTDEEService:
         # 7. Body Composition Analysis
         comp_changes = self._calculate_body_composition_changes(weight_logs)
  
+        # 8. Projection & ETA
+        weeks_to_goal = None
+        goal_eta_weeks = None
+        if profile and profile.target_weight and goal_type != "maintain":
+            weight_diff = abs(weight_logs[-1].weight_kg - profile.target_weight)
+            
+            # Goal ETA (Theoretical)
+            if goal_rate > 0:
+                goal_eta_weeks = round(weight_diff / goal_rate, 1)
+            
+            # Real ETA (Trend based)
+            # Use weekly_change if it favors the goal
+            favors_goal = False
+            if goal_type == "lose" and weekly_change < -0.05: # At least some loss
+                favors_goal = True
+            elif goal_type == "gain" and weekly_change > 0.05: # At least some gain
+                favors_goal = True
+            
+            if favors_goal:
+                weeks_to_goal = round(weight_diff / abs(weekly_change), 1)
+
+        avg_protein = sum(l.protein_grams for l in relevant_nutrition if l.protein_grams) / len(relevant_nutrition)
+        avg_carbs = sum(l.carbs_grams for l in relevant_nutrition if l.carbs_grams) / len(relevant_nutrition)
+        avg_fat = sum(l.fat_grams for l in relevant_nutrition if l.fat_grams) / len(relevant_nutrition)
+
         result = {
             "tdee": int(round(tdee)),
             "confidence": conf_data["level"],
             "confidence_reason": conf_data["reason"],
             "avg_calories": int(round(avg_calories_logged)),
+            "avg_protein": int(round(avg_protein)),
+            "avg_carbs": int(round(avg_carbs)),
+            "avg_fat": int(round(avg_fat)),
             "weight_change_per_week": round(weekly_change, 2),
             "energy_balance": round(energy_balance, 1),
             "status": status,
@@ -250,8 +278,20 @@ class AdaptiveTDEEService:
             "daily_target": daily_target,
             "goal_weekly_rate": goal_rate,
             "goal_type": goal_type,
+            "target_weight": profile.target_weight if profile else None,
+            "weeks_to_goal": weeks_to_goal,
+            "goal_eta_weeks": goal_eta_weeks,
             "outliers_count": outliers_count,
-            "weight_logs_count": len(weight_logs)
+            "weight_logs_count": len(weight_logs),
+            "weight_trend": [{"date": l.date.isoformat() if isinstance(l.date, date) else l.date, "weight": l.weight_kg} for l in weight_logs],
+            "consistency": [
+                {
+                    "date": (date.today() - timedelta(days=i)).isoformat(),
+                    "weight": (date.today() - timedelta(days=i)) in {l.date for l in weight_logs},
+                    "nutrition": (date.today() - timedelta(days=i)) in {l.date for l in relevant_nutrition}
+                }
+                for i in range(27, -1, -1)
+            ]
         }
         
         if comp_changes:

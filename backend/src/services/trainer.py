@@ -429,17 +429,16 @@ class AITrainerBrain:
 - O aluno verá esta análise ao abrir a página de metabolismo
 
 ## 📋 Sua Tarefa
-Analise os dados metabólicos abaixo e dê sua **OPINIÃO como treinador**:
-1. O que os dados indicam sobre o progresso do aluno?
-2. O aluno está no caminho certo para o objetivo? Por quê?
-3. Uma recomendação prática para esta semana
+Analise os dados metabólicos e dê sua **OPINIÃO como treinador** focada em:
+1. **Diferencial:** Como está a taxa real vs a desejada?
+2. **Alertas:** Identifique se há falta de proteína, inconsistência nos logs ou mudanças bruscas.
+3. **Próximo Passo:** Uma regra de ouro para o aluno seguir esta semana.
 
 ## ⚠️ Regras de Formato
-- **Máximo 80 palavras**
-- Vá direto à análise (sem saudações, sem se apresentar)
-- Use **negrito** para números importantes
-- Mantenha sua personalidade de treinador
-- Se houver outliers filtrados, mencione brevemente
+- **Máximo 100 palavras**
+- Use **Emojis** moderadamente para destacar alertas (ex: ⚠️ para proteína baixa, 🎯 para meta atingida)
+- Vá direto à análise (sem saudações)
+- Use **negrito** para insights acionáveis
 """
         
         prompt_template = ChatPromptTemplate.from_messages([
@@ -458,11 +457,15 @@ Analise os dados metabólicos abaixo e dê sua **OPINIÃO como treinador**:
 | Dias com dieta registrada | {stats.get('nutrition_logs_count')} |
 | Peso inicial | {stats.get('start_weight')} kg |
 | Peso final | {stats.get('end_weight')} kg |
+| Mudança semanal real | {stats.get('weight_change_per_week')} kg/sem |
+| Mudança semanal meta | {stats.get('goal_weekly_rate')} kg/sem |
 | TDEE calculado | {stats.get('tdee')} kcal |
-| Confiança do TDEE | {stats.get('confidence', 'none')} |
 | Ingestão calórica média | {stats.get('avg_calories')} kcal |
-| Meta diária atual | {stats.get('daily_target')} kcal |
-| Outliers filtrados | {stats.get('outliers_count', 0)} |
+| Proteína média | {stats.get('avg_protein')} g |
+| Carboidratos médio | {stats.get('avg_carbs')} g |
+| Gordura média | {stats.get('avg_fat')} g |
+| Confiança do TDEE | {stats.get('confidence', 'none')} |
+| ETA Estimado | {stats.get('weeks_to_goal')} semanas |
 """
 
         if stats.get("fat_change_kg") is not None:

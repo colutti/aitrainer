@@ -27,4 +27,10 @@ export interface MetabolismResponse {
   start_fat_pct?: number;
   end_fat_pct?: number;
   end_muscle_pct?: number;
+  // Goal Tracking
+  target_weight?: number;
+  weeks_to_goal?: number;
+  goal_eta_weeks?: number;
+  weight_trend?: { date: string, weight: number }[];
+  consistency?: { date: string, weight: boolean, nutrition: boolean }[];
 }
