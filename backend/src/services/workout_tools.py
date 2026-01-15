@@ -2,6 +2,7 @@
 LangChain tools for workout tracking.
 """
 
+from datetime import datetime
 from langchain_core.tools import tool
 from src.core.logs import logger
 
@@ -25,6 +26,7 @@ def create_save_workout_tool(database, user_email: str):
         workout_type: str,
         exercises: list[dict],
         duration_minutes: int | None = None,
+        date: str | None = None,
     ) -> str:
         """
         Salva um treino executado pelo aluno no banco de dados.
@@ -39,6 +41,8 @@ def create_save_workout_tool(database, user_email: str):
                 - reps_per_set (list[int]): Repetições por série. Ex: [10, 10, 8, 8]
                 - weights_per_set (list[float], opcional): Pesos por série em kg. Ex: [80, 80, 85, 85]
             duration_minutes: Duração total em minutos (opcional)
+            date: Data do treino no formato ISO (YYYY-MM-DD). Se omitido, usa hoje.
+                  Exemplos: "2024-01-15" para 15 de janeiro. "ontem" deve ser convertido para data real.
 
         Exemplo de chamada:
             workout_type="Pernas"
@@ -46,11 +50,25 @@ def create_save_workout_tool(database, user_email: str):
                 {"name": "agachamento", "sets": 4, "reps_per_set": [10, 10, 8, 8], "weights_per_set": [80, 80, 85, 85]},
                 {"name": "leg press", "sets": 3, "reps_per_set": [12, 12, 12], "weights_per_set": [150, 150, 150]}
             ]
+            date="2024-01-14"
 
         Returns:
             Confirmação de que o treino foi salvo.
         """
         try:
+            # Parse date parameter
+            if date:
+                try:
+                    log_date = datetime.fromisoformat(date)
+                except ValueError:
+                    try:
+                        log_date = datetime.strptime(date, "%Y-%m-%d")
+                    except ValueError:
+                        logger.warning("Invalid date format '%s', using today", date)
+                        log_date = datetime.now()
+            else:
+                log_date = datetime.now()
+
             exercise_logs = []
             for ex in exercises:
                 name = ex.get("name", "Exercício")
@@ -83,6 +101,7 @@ def create_save_workout_tool(database, user_email: str):
 
             workout = WorkoutLog(
                 user_email=user_email,
+                date=log_date,
                 workout_type=workout_type,
                 exercises=exercise_logs,
                 duration_minutes=duration_minutes,
@@ -90,12 +109,13 @@ def create_save_workout_tool(database, user_email: str):
 
             workout_id = database.save_workout_log(workout)
             logger.info(
-                "Saved workout for user %s: %s exercises, type=%s",
+                "Saved workout for user %s: %s exercises, type=%s, date=%s",
                 user_email,
                 len(exercise_logs),
                 workout_type,
+                log_date.strftime("%Y-%m-%d")
             )
-            return f"Treino registrado com sucesso! (ID: {workout_id})"
+            return f"Treino de {log_date.strftime('%d/%m/%Y')} registrado com sucesso! (ID: {workout_id})"
 
         except Exception as e:
             logger.error("Failed to save workout for user %s: %s", user_email, e)

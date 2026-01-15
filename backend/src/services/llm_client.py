@@ -62,9 +62,13 @@ class LLMClient:
 
     def stream_with_tools(
         self, prompt_template, input_data: dict, tools: list
-    ) -> Generator[str, None, None]:
+    ) -> Generator[str | tuple[str, bool], None, None]:
         """
         Invokes the LLM with tool support using LangGraph's ReAct agent.
+        
+        Yields:
+            str: Content chunks during streaming
+            tuple[str, bool]: Final signal ("", tool_was_called) at the end
         """
         logger.info(
             "Invoking LLM with tools (LangGraph) for input: %s", input_data.get("user_message")
@@ -74,29 +78,23 @@ class LLMClient:
             # Format initial messages
             messages = list(prompt_template.format_messages(**input_data))
 
-            # Create the ReAct agent (CompiledGraph)
-            # state_modifier allows us to prepend the system prompt if needed,
-            # but since we already formatted messages including system prompt,
-            # we can pass them directly as input.
+            # Create the ReAct agent
             agent = create_react_agent(self._llm, tools)
+            
+            tool_was_called = False
 
             # Stream the agent execution
-            # stream_mode="messages" allows us to get the tokens as they are generated
             for event, metadata in agent.stream(
                 {"messages": messages},
                 stream_mode="messages"
             ):
+                # Detect tool calls in the stream
+                if hasattr(event, 'tool_calls') and event.tool_calls:
+                    tool_was_called = True
+                    logger.debug("Tool call detected: %s", event.tool_calls)
+
                 # Filter for AIMessageChunks (actual response content)
-                # We want to yield content from the agent's final response or intermediate thoughts
                 if isinstance(event, AIMessage) and event.content:
-                    # Depending on streaming behavior, content might be accumulated or chunks
-                    # In 'messages' mode, we get chunks wrapped in message objects usually?
-                    # Let's verify behavior. Actually "messages" mode yields full messages or chunks?
-                    # "messages" mode in LangGraph yields (message, metadata) tuples.
-                    # For streaming tokens, we usually want "updates" or use .astream_events
-                    
-                    # Correction: agent.stream with stream_mode="messages" yields chunks of messages
-                    # as they are generated.
                     if isinstance(event.content, str):
                         yield event.content
                     elif isinstance(event.content, list):
@@ -107,9 +105,13 @@ class LLMClient:
                             elif isinstance(block, dict) and "text" in block:
                                 yield block["text"]
 
+            # Signal end of stream with tool usage flag
+            yield ("", tool_was_called)
+
         except Exception as e:
             logger.error("Error in stream_with_tools: %s", e)
             yield f"Error processing request: {str(e)}"
+            yield ("", False)  # Signal end even on error
 
     def stream_simple(
         self, prompt_template, input_data: dict

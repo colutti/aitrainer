@@ -200,7 +200,7 @@ class AdaptiveTDEEService:
             
         is_stable = abs(energy_balance) < 150
         
-        confidence = self._calculate_confidence(
+        conf_data = self._calculate_confidence(
             days_elapsed, 
             len(weight_logs), 
             len(relevant_nutrition),
@@ -233,13 +233,15 @@ class AdaptiveTDEEService:
  
         result = {
             "tdee": int(round(tdee)),
-            "confidence": confidence,
+            "confidence": conf_data["level"],
+            "confidence_reason": conf_data["reason"],
             "avg_calories": int(round(avg_calories_logged)),
             "weight_change_per_week": round(weekly_change, 2),
             "energy_balance": round(energy_balance, 1),
             "status": status,
             "is_stable": is_stable,
-            "logs_count": len(relevant_nutrition),
+            "logs_count": len(relevant_nutrition), # Backwards compatibility
+            "nutrition_logs_count": len(relevant_nutrition),
             "startDate": period_start.isoformat(),
             "endDate": period_end.isoformat(),
             "start_weight": round(start_weight, 2),
@@ -287,7 +289,9 @@ class AdaptiveTDEEService:
             "fat_change_kg": round(fat_change, 2),
             "lean_change_kg": round(lean_change, 2),
             "start_fat_pct": round(first.body_fat_pct, 1),
-            "end_fat_pct": round(last.body_fat_pct, 1)
+            "end_fat_pct": round(last.body_fat_pct, 1),
+            "start_muscle_pct": round(first.muscle_mass_pct, 1) if first.muscle_mass_pct else None,
+            "end_muscle_pct": round(last.muscle_mass_pct, 1) if last.muscle_mass_pct else None
         }
 
     def _calculate_regression_trend(self, logs: List[WeightLog]) -> tuple[float, float, float]:
@@ -343,27 +347,27 @@ class AdaptiveTDEEService:
 
 
 
-    def _calculate_confidence(self, days_elapsed: int, weight_count: int, nutrition_count: int, expected_logs: int) -> str:
+    def _calculate_confidence(self, days_elapsed: int, weight_count: int, nutrition_count: int, expected_logs: int) -> dict:
         """
-        Determines confidence level based on data density.
+        Determines confidence level and reason.
         """
         nutrition_adherence = nutrition_count / expected_logs if expected_logs > 0 else 0
         
         if days_elapsed < 14:
-            return "low" # Too short period
+            return {"level": "low", "reason": f"Histórico muito curto ({days_elapsed} dias). Mínimo recomendado: 14 dias."}
             
         if nutrition_adherence > 0.85:
-            return "high"
+            return {"level": "high", "reason": "Excelente consistência de dados!"}
         elif nutrition_adherence > 0.6:
-            return "medium"
+            return {"level": "medium", "reason": "Aderência parcial aos registros (>60%). Tente registrar todos os dias."}
         else:
-            return "low"
+            return {"level": "low", "reason": "Muitos dias sem registro de refeições (<60%). A precisão do cálculo depende do rastreamento diário."}
 
     def _insufficient_data_response(self) -> dict:
         return {
             "tdee": 0,
             "confidence": "none",
-            "reason": "Insufficient data"
+            "reason": "Dados insuficientes para cálculo. Continue registrando peso e dieta por pelo menos 1 semana."
         }
 
     def get_current_targets(self, user_email: str) -> dict:

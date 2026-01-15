@@ -73,7 +73,8 @@ class TestMetabolismInsight:
         mock_tdee_service = MagicMock(spec=AdaptiveTDEEService)
         mock_tdee_service.calculate_tdee.return_value = {
             "logs_count": 1, # Too few
-            "tdee": 0
+            "tdee": 0,
+            "confidence": "none"
         }
         
         import src.api.endpoints.metabolism as metabolism_module

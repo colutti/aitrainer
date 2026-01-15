@@ -13,6 +13,12 @@ def test_generate_insight_stream_integration():
     # Mock only the LLMClient, but keep the Brain real
     llm = MagicMock(spec=LLMClient)
     memory = MagicMock()
+
+    # Mock DB cache lookup to return None (miss) to avoid comparison error
+    mock_collection = MagicMock()
+    mock_collection.find_one.return_value = None
+    # Fix: MetabolismInsightCache accesses db.database["collection_name"]
+    db.database.__getitem__.return_value = mock_collection
     
     # Mock the response from stream_simple
     def mock_stream(*args, **kwargs):

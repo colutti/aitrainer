@@ -197,3 +197,61 @@ def test_tdee_outlier_filtering(service, mock_db):
     assert result["outliers_count"] == 1
     assert result["weight_logs_count"] == 20 # 21 total - 1 outlier
     assert result["tdee"] == 2500 # Should ignore the spike
+
+def test_tdee_sparse_weight_logs(service, mock_db):
+    """Verify separate counts for weight and nutrition logs."""
+    today = date.today()
+    start_date = today - timedelta(days=20)
+    
+    # 21 days of nutrition logs (Dense)
+    nutrition = [
+        NutritionLog(user_email="test@test.com", date=start_date + timedelta(days=i), calories=2500, protein_grams=150, carbs_grams=250, fat_grams=80) 
+        for i in range(21)
+    ]
+    
+    # Only 3 weight logs (Sparse)
+    weights = [
+        WeightLog(user_email="test@test.com", date=start_date, weight_kg=70.0),
+        WeightLog(user_email="test@test.com", date=start_date + timedelta(days=10), weight_kg=70.0),
+        WeightLog(user_email="test@test.com", date=start_date + timedelta(days=20), weight_kg=70.0)
+    ]
+    
+    mock_db.get_weight_logs_by_date_range.return_value = weights
+    mock_db.get_nutrition_logs_by_date_range.return_value = nutrition
+    
+    result = service.calculate_tdee("test@test.com", lookback_weeks=3)
+    
+    # Check distinct counters
+    assert result["weight_logs_count"] == 3
+    assert result["nutrition_logs_count"] == 21
+    # Confidence might be low/medium due to sparse weight data, but that's a separate check
+
+def test_tdee_confidence_reason(service, mock_db):
+    """Verify confidence reason is returned."""
+    today = date.today()
+    start_date = today - timedelta(days=20)
+    
+    # Excellent data
+    weights = [WeightLog(user_email="test@test.com", date=start_date + timedelta(days=i), weight_kg=70.0) for i in range(21)]
+    nutrition = [NutritionLog(user_email="test@test.com", date=start_date + timedelta(days=i), calories=2500, protein_grams=150, carbs_grams=250, fat_grams=80) for i in range(21)]
+    
+    mock_db.get_weight_logs_by_date_range.return_value = weights
+    mock_db.get_nutrition_logs_by_date_range.return_value = nutrition
+    
+    result = service.calculate_tdee("test@test.com", lookback_weeks=3)
+    
+    assert result["confidence"] == "high"
+    assert "Excelente" in result["confidence_reason"]
+    
+    # Poor nutrition data (just enough to calculate, but bad adherence)
+    # 8 logs out of 21 days = ~38% adherence (< 60%)
+    nutrition_poor = [
+        NutritionLog(user_email="test@test.com", date=start_date + timedelta(days=i), calories=2500, protein_grams=150, carbs_grams=250, fat_grams=80) 
+        for i in range(8)
+    ]
+    mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_poor
+    
+    result_poor = service.calculate_tdee("test@test.com", lookback_weeks=3)
+    
+    assert result_poor["confidence"] == "low"
+    assert "Muitos dias sem registro" in result_poor["confidence_reason"]

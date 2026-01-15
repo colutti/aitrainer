@@ -76,6 +76,8 @@ services:
 
   cypress:
     image: docker.io/cypress/included:13.6.0
+    profiles:
+      - test
     depends_on:
       - frontend
     environment:

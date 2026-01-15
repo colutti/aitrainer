@@ -119,6 +119,23 @@ class TestSaveWorkoutTool(unittest.TestCase):
         self.assertEqual(saved_workout.exercises[0].reps_per_set, [10, 10, 10])
         self.assertEqual(saved_workout.exercises[0].weights_per_set, [80, 80, 80])
 
+    def test_save_workout_tool_with_custom_date(self):
+        """Test that workout is saved with custom date."""
+        tool = create_save_workout_tool(self.mock_db, "user@test.com")
+        
+        result = tool.invoke({
+            "workout_type": "Legs",
+            "exercises": [
+                {"name": "Agachamento", "sets": 3, "reps_per_set": [10, 10, 10]}
+            ],
+            "date": "2024-01-14"
+        })
+        
+        self.assertIn("sucesso", result.lower())
+        self.assertIn("14/01/2024", result)
+        saved_workout = self.mock_db.save_workout_log.call_args[0][0]
+        self.assertEqual(saved_workout.date.date(), datetime(2024, 1, 14).date())
+
 
 class TestGetWorkoutsTool(unittest.TestCase):
     """Tests for the get_workouts LangChain tool."""

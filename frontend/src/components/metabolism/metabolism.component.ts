@@ -1,8 +1,10 @@
-import { Component, inject, OnInit, effect, signal, untracked } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { MetabolismService } from '../../services/metabolism.service';
-import { UserProfileService } from '../../services/user-profile.service';
-import { MarkdownModule } from 'ngx-markdown';
+import { Component, inject, OnInit, effect, signal, untracked } from "@angular/core";
+import { CommonModule } from "@angular/common";
+import { MetabolismService } from "../../services/metabolism.service";
+import { UserProfileService } from "../../services/user-profile.service";
+import { MarkdownModule } from "ngx-markdown";
+import { TrainerProfileService } from '../../services/trainer-profile.service';
+import { TrainerCard } from '../../models/trainer-profile.model';
 
 @Component({
   selector: 'app-metabolism',
@@ -13,10 +15,14 @@ import { MarkdownModule } from 'ngx-markdown';
 export class MetabolismComponent implements OnInit {
   metabolismService = inject(MetabolismService);
   userProfileService = inject(UserProfileService);
+  trainerService = inject(TrainerProfileService);
   
   stats = this.metabolismService.stats;
   isLoading = this.metabolismService.isLoading;
   profile = this.userProfileService.userProfile;
+  
+  // New signal to store the resolved trainer card
+  currentTrainer = signal<TrainerCard | null>(null);
 
   insightText = signal<string>('');
   isInsightLoading = signal<boolean>(false);
@@ -31,10 +37,32 @@ export class MetabolismComponent implements OnInit {
              });
           }
       });
+      
+      // Update current trainer when profile changes
+      effect(async () => {
+          const p = this.profile();
+          if (p) {
+              const trainers = await this.trainerService.getAvailableTrainers();
+              // Backend 'get_profile' doesn't return trainer_type directly in UserProfile, 
+              // we need to fetch TrainerProfile or assume.
+              // Wait, previous messages show UserProfile stores personal data. 
+              // Trainer selection is in TrainerProfile endpoint.
+              
+              // Let's fetch the trainer profile separately to get the type
+              const trainerProfile = await this.trainerService.fetchProfile();
+              const matched = trainers.find(t => t.trainer_id === trainerProfile.trainer_type);
+              
+              if (matched) {
+                  this.currentTrainer.set(matched);
+              }
+          }
+      });
   }
 
   ngOnInit() {
     this.metabolismService.fetchSummary(3);
+    // Trigger profile load just in case
+    this.userProfileService.getProfile();
   }
   
   async streamInsight() {
@@ -97,5 +125,25 @@ export class MetabolismComponent implements OnInit {
         case 'low': return 'text-red-400';
         default: return 'text-gray-400';
     }
+  }
+
+  getConfidenceColorHex(level: string | undefined): string {
+      switch(level) {
+          case 'high': return '#4ade80';
+          case 'medium': return '#facc15';
+          case 'low': return '#f87171';
+          default: return '#9ca3af';
+      }
+  }
+
+  getConfidenceReason(s: any): string {
+      if (!s) return 'Dados carregando...';
+      if (s.confidence === 'low') {
+          if ((s.logs_count || 0) < 14) return 'Histórico curto (<14 dias)';
+          return 'Poucos registros de dieta';
+      }
+      if (s.confidence === 'medium') return 'Aderência parcial aos registros';
+      if (s.confidence === 'high') return 'Excelente consistência!';
+      return 'Dados insuficientes';
   }
 }

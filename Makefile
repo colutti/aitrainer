@@ -6,28 +6,6 @@ up:
 down:
 	podman-compose down
 
-db:
-	podman-compose --in-pod 0 up -d mongo qdrant mongo-express
-
-db-down:
-	podman-compose stop mongo qdrant mongo-express
-
-db-logs:
-	podman-compose logs -f mongo qdrant
-
-build:
-	podman-compose build
-
-restart:
-	podman-compose restart
-
-logs:
-	podman-compose logs -f
-
-clean-pod:
-	podman-compose down
-	podman pod rm -f pod_personal || true
-
 init-db:
 	cd backend && export PYTHONPATH=$$PYTHONPATH:. && .venv/bin/python src/api/main.py --init-db --email "$(USUARIO)" --password "$(SENHA)"
 
@@ -60,3 +38,6 @@ user-password:
 
 user-delete:
 	@cd backend && .venv/bin/python scripts/manage_users.py delete "$(EMAIL)"
+
+cypress:
+	podman-compose --profile test run --rm --no-deps cypress run

@@ -17,5 +17,14 @@ export interface MetabolismResponse {
   latest_weight: number;
   outliers_count: number;
   weight_logs_count: number;
+  nutrition_logs_count: number;
+  confidence_reason?: string;
   message?: string;
+  
+  // Body Comp
+  fat_change_kg?: number;
+  lean_change_kg?: number;
+  start_fat_pct?: number;
+  end_fat_pct?: number;
+  end_muscle_pct?: number;
 }

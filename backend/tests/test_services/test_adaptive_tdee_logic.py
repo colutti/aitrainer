@@ -46,7 +46,7 @@ class TestAdaptiveTDEELogic:
         """
         logs = self._create_logs([78.0, 76.5, 76.5, 76.5, 76.5])
         
-        filtered = service._filter_outliers(logs)
+        filtered, count = service._filter_outliers(logs)
         
         # Should exclude the first one (78.0) because the subsequent logs confirm the drop was a 'step' 
         # OR it treats it as a new baseline. 
@@ -56,6 +56,7 @@ class TestAdaptiveTDEELogic:
         assert len(filtered) == 4
         assert filtered[0].weight_kg == 76.5
         assert filtered[-1].weight_kg == 76.5
+        assert count == 1
 
     def test_filter_outliers_transient_spike(self, service):
         """
@@ -65,9 +66,10 @@ class TestAdaptiveTDEELogic:
         """
         logs = self._create_logs([76.5, 76.5, 78.0, 76.5, 76.5])
         
-        filtered = service._filter_outliers(logs)
+        filtered, count = service._filter_outliers(logs)
         
         assert len(filtered) == 4
+        assert count == 1
         for log in filtered:
             assert log.weight_kg == 76.5
 
@@ -80,9 +82,10 @@ class TestAdaptiveTDEELogic:
         # 0.5kg is < 1.0kg limit, so treated as normal
         logs = self._create_logs([80.0, 79.5, 79.0, 78.5, 78.0])
         
-        filtered = service._filter_outliers(logs)
+        filtered, count = service._filter_outliers(logs)
         
         assert len(filtered) == 5
+        assert count == 0
         assert filtered[0].weight_kg == 80.0
         assert filtered[-1].weight_kg == 78.0
 
@@ -94,7 +97,8 @@ class TestAdaptiveTDEELogic:
         """
         logs = self._create_logs([76.5, 78.0, 78.0, 78.0])
         
-        filtered = service._filter_outliers(logs)
+        filtered, count = service._filter_outliers(logs)
         
         assert len(filtered) == 3
+        assert count == 1
         assert filtered[0].weight_kg == 78.0

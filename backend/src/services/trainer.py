@@ -355,10 +355,16 @@ class AITrainerBrain:
         
         tools = [save_workout_tool, get_workouts_tool, save_nutrition_tool, get_nutrition_tool]
         
+        tool_was_called = False
         full_response = []
         for chunk in self._llm_client.stream_with_tools(
             prompt_template=prompt_template, input_data=input_data, tools=tools
         ):
+            # Check for end-of-stream signal
+            if isinstance(chunk, tuple):
+                _, tool_was_called = chunk
+                continue  # Don't yield the signal tuple
+
             full_response.append(chunk)
             yield chunk
 
@@ -370,14 +376,17 @@ class AITrainerBrain:
         self._add_to_mongo_history(user_email, user_input, final_response, current_trainer_type)
         
         if background_tasks:
-            background_tasks.add_task(
-                _add_to_mem0_background,
-                memory=self._memory,
-                user_email=user_email,
-                user_input=user_input,
-                response_text=final_response
-            )
-            logger.info("Scheduled Mem0 background task for user: %s", user_email)
+            if not tool_was_called:
+                background_tasks.add_task(
+                    _add_to_mem0_background,
+                    memory=self._memory,
+                    user_email=user_email,
+                    user_input=user_input,
+                    response_text=final_response
+                )
+                logger.info("Scheduled Mem0 background task for user: %s", user_email)
+            else:
+                logger.info("Skipped Mem0 storage - tool was called for user: %s", user_email)
 
     def generate_insight_stream(self, user_email: str, stats: dict):
         """
@@ -386,19 +395,52 @@ class AITrainerBrain:
         """
         logger.info("Generating metabolism insight stream for user: %s", user_email)
         
+        from src.services.metabolism_cache import MetabolismInsightCache
+        cache = MetabolismInsightCache(self._database)
+        
         trainer_profile_obj = self._get_or_create_trainer_profile(user_email)
         trainer_summary = trainer_profile_obj.get_trainer_profile_summary()
         
-        # Construct a specific prompt for analysis
-        system_prompt = (
-            f"Você é o treinador {trainer_summary}. "
-            "Sua tarefa é analisar os dados de metabolismo de forma EXTREMAMENTE concisa, técnica e direta. "
-            "NÃO se apresente, NÃO diga seu nome e NÃO use saudações. Vá direto à análise.\n"
-            "1. Justifique a variação de peso (ganho/perda) baseada na ingestão vs TDEE em no máximo 2 frases.\n"
-            "2. Se houver outliers significativos, mencione apenas que foram filtrados para precisão.\n"
-            "3. Confirme a meta recomendada.\n"
-            "Use negrito apenas para números chave. O texto total deve ser curto (máximo 100 palavras)."
-        )
+        # 1. Check Cache
+        cached_insight = cache.get(user_email, stats, trainer_summary)
+        if cached_insight:
+            yield cached_insight
+            return
+
+        # 2. Construct a specific prompt
+        # Determine strict goal context
+        goal_type = stats.get("goal_type", "maintain")
+        goal_verbs = {
+            "lose": "perda de peso",
+            "gain": "ganho de massa",
+            "maintain": "manutenção"
+        }
+        goal_display = goal_verbs.get(goal_type, "saúde")
+
+        system_prompt = f"""# 🏋️ Treinador Pessoal - Análise Metabólica
+
+{trainer_summary}
+
+---
+
+## 🎯 Contexto da Análise
+- Objetivo do aluno: **{goal_display}**
+- Este texto será exibido no **Hero Card** do dashboard de metabolismo
+- O aluno verá esta análise ao abrir a página de metabolismo
+
+## 📋 Sua Tarefa
+Analise os dados metabólicos abaixo e dê sua **OPINIÃO como treinador**:
+1. O que os dados indicam sobre o progresso do aluno?
+2. O aluno está no caminho certo para o objetivo? Por quê?
+3. Uma recomendação prática para esta semana
+
+## ⚠️ Regras de Formato
+- **Máximo 80 palavras**
+- Vá direto à análise (sem saudações, sem se apresentar)
+- Use **negrito** para números importantes
+- Mantenha sua personalidade de treinador
+- Se houver outliers filtrados, mencione brevemente
+"""
         
         prompt_template = ChatPromptTemplate.from_messages([
             ("system", system_prompt),
@@ -406,21 +448,38 @@ class AITrainerBrain:
         ])
         
         # Format stats for the prompt
-        outlier_text = "Nenhum detectado"
-        # We assume stats dict generally passed here, but let's format it readable
-        stats_context = (
-            f"- Período: {stats.get('startDate')} a {stats.get('endDate')} ({stats.get('logs_count')} dias)\n"
-            f"- Peso: {stats.get('start_weight')}kg -> {stats.get('end_weight')}kg\n"
-            f"- TDEE Calculado: {stats.get('tdee')} kcal\n"
-            f"- Ingestão Média: {stats.get('avg_calories')} kcal\n"
-            f"- Status: {stats.get('status')} ({stats.get('energy_balance'):+} kcal/dia)\n"
-            f"- Meta Recomendada: {stats.get('daily_target')} kcal (Baseada na média semanal)\n"
-        )
+        # Build stats context with RAW DATA (no conclusions)
+        stats_context = f"""## 📊 Dados do Período
+
+| Métrica | Valor |
+|---------|-------|
+| Período | {stats.get('startDate')} a {stats.get('endDate')} |
+| Pesagens realizadas | {stats.get('weight_logs_count')} |
+| Dias com dieta registrada | {stats.get('nutrition_logs_count')} |
+| Peso inicial | {stats.get('start_weight')} kg |
+| Peso final | {stats.get('end_weight')} kg |
+| TDEE calculado | {stats.get('tdee')} kcal |
+| Confiança do TDEE | {stats.get('confidence', 'none')} |
+| Ingestão calórica média | {stats.get('avg_calories')} kcal |
+| Meta diária atual | {stats.get('daily_target')} kcal |
+| Outliers filtrados | {stats.get('outliers_count', 0)} |
+"""
+
+        if stats.get("fat_change_kg") is not None:
+             stats_context += f"""| Variação de gordura | {stats.get('fat_change_kg'):+.1f} kg |
+| Variação de massa magra | {stats.get('lean_change_kg'):+.1f} kg |
+"""
         
         input_data = {"stats_context": stats_context}
         
+        # 3. Stream & Collect for Cache
+        full_content = []
         for chunk in self._llm_client.stream_simple(prompt_template, input_data):
+            full_content.append(chunk)
             yield chunk
+            
+        # 4. Save to Cache
+        cache.set(user_email, stats, trainer_summary, "".join(full_content))
 
     def get_all_memories(self, user_id: str, limit: int = 50) -> list[dict]:
         """
