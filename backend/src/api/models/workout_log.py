@@ -60,6 +60,12 @@ class WorkoutLog(BaseModel):
     duration_minutes: Optional[int] = Field(
         default=None, ge=1, description="Duração em minutos"
     )
+    source: Optional[str] = Field(
+        default=None, description="Fonte do dado (ex: hevy, manual)"
+    )
+    external_id: Optional[str] = Field(
+        default=None, description="ID externo do treino (ex: Hevy Workout ID)"
+    )
 
 
 class WorkoutWithId(WorkoutLog):

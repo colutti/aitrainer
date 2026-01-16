@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import logging
 from typing import Optional, Any
 import httpx
@@ -122,7 +122,9 @@ class HevyService:
                 date=start_time,
                 workout_type=hevy_workout.get("title") or "Hevy Import",
                 exercises=exercises,
-                duration_minutes=duration_minutes
+                duration_minutes=duration_minutes,
+                source="hevy",
+                external_id=hevy_workout.get("id")
             )
         except Exception as e:
             logger.error(f"Error transforming workout {hevy_workout.get('id')}: {e}")
@@ -177,22 +179,44 @@ class HevyService:
                         continue
 
                     # Check for existence
-                    # We query by date matches (within a small window or exact?)
-                    # Hevy's date is precise. Our date is stored as ISODate in Mongo. 
-                    # Let's check for exact match on date & user_email
+                    # 1. Try by external_id
                     exists = self.workout_repository.collection.find_one({
                         "user_email": user_email,
-                        "date": workout_date
+                        "external_id": hevy_workout.get("id")
                     })
 
-                    if exists:
+                    # 2. Fallback to time window (+/- 5 minutes) to catch existing duplicates without external_id
+                    if not exists:
+                        window_start = workout_date - timedelta(minutes=5)
+                        window_end = workout_date + timedelta(minutes=5)
+                        
+                        # Find potential duplicates in the window
+                        # If more than one exists, we handle them based on mode
+                        existing_cursor = self.workout_repository.collection.find({
+                            "user_email": user_email,
+                            "date": {"$gte": window_start, "$lte": window_end}
+                        })
+                        existing_list = list(existing_cursor)
+                        
+                        if existing_list:
+                            if mode == "skip_duplicates":
+                                logger.debug(f"Workout near {workout_date} already exists for {user_email}, skipping")
+                                skipped_count += 1
+                                continue
+                            elif mode == "overwrite":
+                                # Delete all workouts in this window for this user
+                                for doc in existing_list:
+                                    self.workout_repository.collection.delete_one({"_id": doc["_id"]})
+                                logger.info(f"Overwriting {len(existing_list)} existing workouts in window for {user_email}")
+                        
+                    elif exists:
                         if mode == "skip_duplicates":
-                            logger.debug(f"Workout at {workout_date} already exists for {user_email}, skipping")
+                            logger.debug(f"Workout with external_id {hevy_workout.get('id')} already exists, skipping")
                             skipped_count += 1
                             continue
                         elif mode == "overwrite":
-                            # Delete existing
                             self.workout_repository.collection.delete_one({"_id": exists["_id"]})
+                            logger.info(f"Overwriting workout with external_id {hevy_workout.get('id')}")
                     
                     # Save
                     self.workout_repository.save_log(workout_log)

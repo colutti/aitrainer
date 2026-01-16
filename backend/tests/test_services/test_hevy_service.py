@@ -81,6 +81,7 @@ async def test_import_workouts_flow(service, mock_repo):
     
     # Mock Repo Find (not exists)
     mock_repo.collection.find_one.return_value = None
+    mock_repo.collection.find.return_value = []
     
     result = await service.import_workouts("user@test.com", "key")
     
