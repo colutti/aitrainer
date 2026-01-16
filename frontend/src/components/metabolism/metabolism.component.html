@@ -75,71 +75,7 @@
         </div>
 
         <!-- Widgets Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            
-            <!-- W1: Goal Progress -->
-            <div class="bg-gray-900 rounded-2xl border border-white/5 p-6 flex flex-col justify-between relative overflow-hidden">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h3 class="text-sm font-bold text-white mb-1">Progresso da Meta</h3>
-                        <p class="text-xs text-gray-400 uppercase tracking-wider">{{ stats()?.goal_type === 'lose' ? 'Perder Peso' : (stats()?.goal_type === 'gain' ? 'Ganhar Massa' : 'Manutenção') }}</p>
-                    </div>
-                    <div class="text-gray-600">•••</div>
-                </div>
-
-                <div class="flex items-center gap-6 mb-6">
-                    <div class="relative w-24 h-24 rounded-full flex items-center justify-center shrink-0"
-                         [style.background]="'conic-gradient(var(--color-primary) ' + getProgressStatus().percentage + '%, #1f2937 0)'">
-                         <div class="absolute inset-2 bg-gray-900 rounded-full flex flex-col items-center justify-center">
-                             <span class="text-xl font-bold text-white">{{ getProgressStatus().percentage }}%</span>
-                             <span class="text-[8px] text-gray-500 uppercase tracking-tighter">da taxa</span>
-                         </div>
-                    </div>
-                    
-                    <div class="space-y-1">
-                        <div class="flex items-baseline gap-1">
-                            <span class="text-2xl font-bold text-white" [ngClass]="stats()?.weight_change_per_week * (stats()?.goal_type === 'lose' ? 1 : -1) < 0 ? 'text-green-400' : 'text-yellow-400'">
-                                {{ stats()?.weight_change_per_week | number:'1.2-2' }}
-                            </span>
-                            <span class="text-xs text-gray-400">kg/sem</span>
-                        </div>
-                        <p class="text-[10px] text-gray-500">Meta: {{ stats()?.goal_weekly_rate }} kg/sem</p>
-                        <div class="inline-flex items-center px-2 py-0.5 rounded bg-white/5 text-[10px] font-bold" [ngClass]="getProgressStatus().color">
-                             {{ getProgressStatus().label }}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ETA & Goal Projection -->
-                <div class="mt-auto space-y-4 pt-4 border-t border-white/5" *ngIf="stats()?.goal_type !== 'maintain' && stats()?.target_weight">
-                    <div class="space-y-2">
-                        <div class="flex justify-between text-xs">
-                            <span class="text-gray-400">Progresso para o Alvo</span>
-                            <span class="text-white font-bold">{{ stats()?.latest_weight }}kg → {{ stats()?.target_weight ?? '--' }}kg</span>
-                        </div>
-                        <div class="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
-                            <div class="h-full bg-primary transition-all duration-1000" 
-                                 [style.width.%]="getTotalProgressPercentage()"></div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-white/5 rounded-xl p-3">
-                            <p class="text-[10px] text-gray-500 uppercase mb-1">📅 Estimativa (Real)</p>
-                            <p class="text-sm font-bold text-white">
-                                {{ stats()?.weeks_to_goal ? stats()?.weeks_to_goal + ' semanas' : (stats()?.goal_type === 'maintain' ? '--' : 'Calculando...') }}
-                            </p>
-                        </div>
-                        <div class="bg-white/5 rounded-xl p-3">
-                            <p class="text-[10px] text-gray-500 uppercase mb-1">🎯 Estimativa (Meta)</p>
-                            <p class="text-sm font-bold text-gray-300">
-                                {{ stats()?.goal_eta_weeks ? stats()?.goal_eta_weeks + ' semanas' : '--' }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <!-- W2: Metrics Summary (Target) -->
              <div class="bg-gray-900 rounded-2xl border border-white/5 p-6 flex flex-col justify-between">
                 <h3 class="text-sm font-bold text-white mb-4">Meta Diária</h3>
