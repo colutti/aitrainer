@@ -16,17 +16,20 @@ export class MetabolismService {
   async fetchSummary(weeks: number = 3): Promise<void> {
     this.isLoading.set(true);
     try {
-      const data = await firstValueFrom(
-        this.http.get<MetabolismResponse>(`${environment.apiUrl}/metabolism/summary?weeks=${weeks}`)
-      );
+      const data = await this.getSummary(weeks);
       this.stats.set(data);
     } catch (error) {
       console.error('Failed to fetch metabolism summary', error);
-      // Retrieve empty/error state if needed, or handle error
       this.stats.set(null);
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  async getSummary(weeks: number = 3): Promise<MetabolismResponse> {
+    return firstValueFrom(
+      this.http.get<MetabolismResponse>(`${environment.apiUrl}/metabolism/summary?weeks=${weeks}`)
+    );
   }
   async getInsightStream(weeks: number = 3): Promise<ReadableStreamDefaultReader<Uint8Array>> {
       const token = localStorage.getItem('jwt_token');

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
 import { StatsService } from '../../services/stats.service';
 import { NutritionService } from '../../services/nutrition.service';
+import { MetabolismService } from '../../services/metabolism.service';
 import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import { VolumeStat } from '../../models/stats.model';
 
@@ -19,12 +20,15 @@ export class DashboardComponent implements OnInit {
   statsService = inject(StatsService);
   nutritionService = inject(NutritionService);
   weightService = inject(WeightService);
+  metabolismService = inject(MetabolismService);
   
   stats = this.statsService.stats;
   nutritionStats = this.nutritionService.stats;
+  metabolismStats = signal<any>(null);
   latestComposition = signal<any>(null);
   
   isLoading = this.statsService.isLoading;
+  isMetabolismLoading = signal<boolean>(false);
 
   // --- Volume Chart Config ---
   public barChartOptions: ChartConfiguration['options'] = {
@@ -123,10 +127,52 @@ export class DashboardComponent implements OnInit {
   async ngOnInit() {
     this.statsService.fetchStats();
     this.nutritionService.getStats().subscribe();
+    this.fetchMetabolismTrend();
     const compStats = await this.weightService.getBodyCompositionStats();
     if (compStats?.latest) {
         this.latestComposition.set(compStats.latest);
     }
+  }
+
+  async fetchMetabolismTrend() {
+    this.isMetabolismLoading.set(true);
+    try {
+      const data = await this.metabolismService.getSummary(100);
+      this.metabolismStats.set(data);
+    } catch (e) {
+      console.error('Failed to fetch dashboard metabolism trend', e);
+    } finally {
+      this.isMetabolismLoading.set(false);
+    }
+  }
+
+  getSparklinePath(): string {
+    const s = this.metabolismStats();
+    if (!s || !s.weight_trend || s.weight_trend.length < 2) return '';
+    
+    const weights = s.weight_trend.map((t: any) => t.weight);
+    const min = Math.min(...weights) - 0.5;
+    const max = Math.max(...weights) + 0.5;
+    const range = max - min;
+    
+    if (range === 0) return 'M 0 20 L 100 20';
+    
+    const width = 100;
+    const height = 40;
+    
+    const points = weights.map((w: any, i: number) => {
+      const x = (i / (weights.length - 1)) * width;
+      const y = height - ((w - min) / range) * height;
+      return `${x},${y}`;
+    });
+    
+    return `M ${points.join(' L ')}`;
+  }
+
+  getWeightVariation(): number {
+    const s = this.metabolismStats();
+    if (!s) return 0;
+    return s.end_weight - s.start_weight;
   }
 
   updateVolumeChart(volumeStats: VolumeStat[]) {
