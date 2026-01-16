@@ -111,11 +111,11 @@
                 </div>
 
                 <!-- ETA & Goal Projection -->
-                <div class="mt-auto space-y-4 pt-4 border-t border-white/5">
+                <div class="mt-auto space-y-4 pt-4 border-t border-white/5" *ngIf="stats()?.goal_type !== 'maintain' && stats()?.target_weight">
                     <div class="space-y-2">
                         <div class="flex justify-between text-xs">
                             <span class="text-gray-400">Progresso para o Alvo</span>
-                            <span class="text-white font-bold">{{ stats()?.latest_weight }}kg → {{ stats()?.target_weight }}kg</span>
+                            <span class="text-white font-bold">{{ stats()?.latest_weight }}kg → {{ stats()?.target_weight ?? '--' }}kg</span>
                         </div>
                         <div class="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
                             <div class="h-full bg-primary transition-all duration-1000" 
@@ -127,7 +127,7 @@
                         <div class="bg-white/5 rounded-xl p-3">
                             <p class="text-[10px] text-gray-500 uppercase mb-1">📅 Estimativa (Real)</p>
                             <p class="text-sm font-bold text-white">
-                                {{ stats()?.weeks_to_goal ? stats()?.weeks_to_goal + ' semanas' : 'Calculando...' }}
+                                {{ stats()?.weeks_to_goal ? stats()?.weeks_to_goal + ' semanas' : (stats()?.goal_type === 'maintain' ? '--' : 'Calculando...') }}
                             </p>
                         </div>
                         <div class="bg-white/5 rounded-xl p-3">
