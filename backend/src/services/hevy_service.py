@@ -185,13 +185,11 @@ class HevyService:
                         "external_id": hevy_workout.get("id")
                     })
 
-                    # 2. Fallback to time window (+/- 5 minutes) to catch existing duplicates without external_id
                     if not exists:
+                        # 2. Fallback to time window (+/- 5 minutes) to catch existing duplicates without external_id
                         window_start = workout_date - timedelta(minutes=5)
                         window_end = workout_date + timedelta(minutes=5)
                         
-                        # Find potential duplicates in the window
-                        # If more than one exists, we handle them based on mode
                         existing_cursor = self.workout_repository.collection.find({
                             "user_email": user_email,
                             "date": {"$gte": window_start, "$lte": window_end}
@@ -204,10 +202,27 @@ class HevyService:
                                 skipped_count += 1
                                 continue
                             elif mode == "overwrite":
-                                # Delete all workouts in this window for this user
                                 for doc in existing_list:
                                     self.workout_repository.collection.delete_one({"_id": doc["_id"]})
                                 logger.info(f"Overwriting {len(existing_list)} existing workouts in window for {user_email}")
+                        
+                        # 3. Aggressive day-level check for overwrite mode (one workout per day preference)
+                        if mode == "overwrite" and not exists:
+                            # Search for ANY workout on the same calendar day (BRT/Local approx)
+                            # To be safe, we use a larger window or just same date if possible
+                            day_start = workout_date.replace(hour=0, minute=0, second=0, microsecond=0)
+                            day_end = day_start + timedelta(days=1)
+                            
+                            day_duplicates = list(self.workout_repository.collection.find({
+                                "user_email": user_email,
+                                "date": {"$gte": day_start, "$lt": day_end},
+                                "external_id": {"$ne": hevy_workout.get("id")} # Don't delete itself if it somehow shifted
+                            }))
+                            
+                            if day_duplicates:
+                                for doc in day_duplicates:
+                                    self.workout_repository.collection.delete_one({"_id": doc["_id"]})
+                                logger.info(f"Deleted {len(day_duplicates)} daily duplicates for {user_email} on {day_start.date()}")
                         
                     elif exists:
                         if mode == "skip_duplicates":
