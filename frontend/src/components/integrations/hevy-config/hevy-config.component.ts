@@ -32,10 +32,20 @@ export class HevyConfigComponent implements OnInit {
   lastSync = signal<string | null>(null);
   
   // Import
-  importDate = '2025-01-01';
+  importDateDisplay = '01/01/2025';
   importMode = 'skip_duplicates';
   importing = signal<boolean>(false);
   importResult = signal<{ imported: number; skipped: number; failed: number } | null>(null);
+
+  /**
+   * Converts DD/MM/YYYY string to YYYY-MM-DD
+   */
+  private parseDisplayDate(dateStr: string): string {
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return new Date().toISOString().split('T')[0];
+    const [day, month, year] = parts;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
 
   ngOnInit() {
     this.loadStatus();
@@ -142,7 +152,8 @@ export class HevyConfigComponent implements OnInit {
     this.cdr.detectChanges();
     
     try {
-      const res = await this.hevyService.importWorkouts(this.importDate, this.importMode as any);
+      const fromDateIso = this.parseDisplayDate(this.importDateDisplay);
+      const res = await this.hevyService.importWorkouts(fromDateIso, this.importMode as any);
       this.importResult.set(res);
       this.statusChanged.emit();
       
