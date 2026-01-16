@@ -1,0 +1,70 @@
+<div 
+  (click)="onCardClick()"
+  class="group relative flex items-center justify-between p-6 rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/10 transition-all cursor-pointer overflow-hidden"
+>
+  <!-- Background Glow -->
+  <div class="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-emerald-500/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+  <div class="flex items-center gap-6 relative z-10">
+    <!-- Provider Icon -->
+    <div 
+      [ngClass]="{
+        'bg-orange-500/20 text-orange-400': provider.id === 'hevy',
+        'bg-purple-500/20 text-purple-400': provider.status === 'coming_soon'
+      }"
+      class="flex h-12 w-12 items-center justify-center rounded-xl text-2xl shadow-inner shadow-white/5"
+    >
+      <ng-container [ngSwitch]="provider.id">
+        <span *ngSwitchCase="'hevy'">🏋️</span>
+        <span *ngSwitchCase="'mfp'">🍎</span>
+      </ng-container>
+    </div>
+
+    <!-- Info -->
+    <div>
+      <h3 class="text-base font-bold text-white group-hover:text-emerald-400 transition-colors">{{ provider.name }}</h3>
+      <p class="text-sm text-gray-500">{{ provider.description }}</p>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div class="relative z-10">
+    <ng-container [ngSwitch]="provider.status">
+      
+      <!-- Connected (Ativo) -->
+      <div *ngSwitchCase="'connected'" class="status-badge bg-emerald-500/10 border-emerald-500/20">
+        <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="text-xs font-medium text-emerald-400">Ativo</span>
+      </div>
+
+      <!-- Paused (Inativo) -->
+      <div *ngSwitchCase="'paused'" class="status-badge bg-yellow-500/10 border-yellow-500/20">
+        <span class="h-2 w-2 rounded-full bg-yellow-500"></span>
+        <span class="text-xs font-medium text-yellow-400">Pausado</span>
+      </div>
+
+      <!-- Disconnected (Conectar) -->
+      <div *ngSwitchCase="'disconnected'" class="status-badge bg-gray-500/10 border-white/5">
+        <span class="h-2 w-2 rounded-full bg-gray-500"></span>
+        <span class="text-xs font-medium text-gray-400">Conectar</span>
+      </div>
+
+      <!-- Coming Soon -->
+      <div *ngSwitchCase="'coming_soon'" class="status-badge bg-purple-500/10 border-purple-500/20">
+        <span class="text-[10px] uppercase tracking-wider font-bold text-purple-400">Em breve</span>
+      </div>
+
+    </ng-container>
+  </div>
+</div>
+
+<style>
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  border-width: 1px;
+}
+</style>

@@ -51,6 +51,8 @@ The solution consists of two main projects:
 
 - **Dependency Management:** Update `requirements.txt` (Backend) and `package.json` (Frontend) immediately when adding libraries. Check for version conflicts.
 - **Refactoring:** Apply **DRY** (Don't Repeat Yourself) principles. If you identify duplicate or legacy code, refactor it immediately, ensuring tests remain green.
+- Nao pode ter erros, warnings ou mensagens de deprecated que possam ser solucionadas por voce. Trate esses avisos como erros.
+voce deve monitorar processos de build, containers, avisos de compilacao e pode usar ferramentas externas como black, etc.
 
 ## 5. Security & Deployment
 

@@ -9,6 +9,8 @@ from src.core.config import settings
 from src.services.database import MongoDatabase
 from src.services.llm_client import LLMClient
 from src.services.trainer import AITrainerBrain
+from src.services.hevy_service import HevyService
+from src.repositories.workout_repository import WorkoutRepository
 
 
 @functools.lru_cache()
@@ -65,4 +67,12 @@ def get_ai_trainer_brain() -> AITrainerBrain:
     memory_client = get_mem0_client()
     database = get_mongo_database()
     return AITrainerBrain(llm_client=llm_client, memory=memory_client, database=database)
+
+
+def get_hevy_service() -> HevyService:
+    """
+    Returns a Hevy service instance.
+    """
+    database = get_mongo_database()
+    return HevyService(workout_repository=database.workouts_repo)
 

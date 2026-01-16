@@ -14,7 +14,7 @@ import uvicorn  # noqa: E402
 import os  # noqa: E402
 
 
-from src.api.endpoints import user, message, trainer, memory, workout, stats, nutrition, weight, metabolism  # noqa: E402
+from src.api.endpoints import user, message, trainer, memory, workout, stats, nutrition, weight, metabolism, hevy  # noqa: E402
 from src.core.config import settings  # noqa: E402
 from src.core.deps import get_mongo_database, get_mem0_client  # noqa: E402
 from src.core.logs import logger  # noqa: E402
@@ -61,6 +61,7 @@ app.include_router(stats.router, prefix="/workout", tags=["workout"])
 app.include_router(nutrition.router, prefix="/nutrition", tags=["nutrition"])
 app.include_router(weight.router, prefix="/weight", tags=["weight"])
 app.include_router(metabolism.router, prefix="/metabolism", tags=["metabolism"])
+app.include_router(hevy.router, prefix="/integrations/hevy", tags=["integrations"])
 
 
 @app.get("/health")

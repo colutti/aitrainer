@@ -1,3 +1,5 @@
+from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel, Field
 
 class UserProfileInput(BaseModel):
@@ -24,6 +26,11 @@ class UserProfile(UserProfileInput):
     Data class to hold user configuration and profile data.
     """
     email: str = Field(..., description="User's email")
+    
+    # Hevy Integration
+    hevy_api_key: Optional[str] = Field(None, description="Hevy API key, encrypted")
+    hevy_enabled: bool = Field(False, description="Integration enabled/disabled toggle")
+    hevy_last_sync: Optional[datetime] = Field(None, description="Last successful sync timestamp")
 
     def get_profile_summary(self) -> str:
         """

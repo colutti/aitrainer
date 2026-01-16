@@ -1,10 +1,31 @@
 describe('Dashboard View', () => {
   beforeEach(() => {
-    // Intercept Login
+    // Create a valid JWT structure for mocking
+    const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+    const payload = btoa(JSON.stringify({ 
+      email: 'cypress_user@test.com', 
+      exp: Math.floor(Date.now() / 1000) + 3600 
+    }));
+    const signature = btoa('fake-signature');
+    const fakeJWT = `${header}.${payload}.${signature}`;
+    
+    // Intercept Login with properly structured JWT
     cy.intercept('POST', '**/user/login', {
       statusCode: 200,
-      body: { token: 'fake-jwt-token' }
+      body: { token: fakeJWT }
     }).as('login');
+    
+    // Intercept logout to prevent 401 errors
+    cy.intercept('POST', '**/user/logout', {
+      statusCode: 200,
+      body: { message: 'Logged out' }
+    }).as('logout');
+    
+    // Intercept metabolism summary to prevent 401 errors
+    cy.intercept('GET', '**/metabolism/summary*', {
+      statusCode: 200,
+      body: { tdee: null, trend: 'maintenance' }
+    }).as('getMetabolismSummary');
 
     // Intercept stats
     cy.intercept('GET', '**/workout/stats', {

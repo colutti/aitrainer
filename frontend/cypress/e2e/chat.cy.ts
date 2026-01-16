@@ -17,21 +17,31 @@ describe('Chat Flow', () => {
     cy.intercept('GET', '**/workout/stats', { body: { streak: 0, frequency: [] } }).as('getWorkoutStats');
     cy.intercept('GET', '**/nutrition/stats', { body: { daily_target: 2000, current_macros: {} } }).as('getNutritionStats');
 
-    // Bypass UI login using onBeforeLoad
+    // Bypass UI login using onBeforeLoad with properly structured JWT
     cy.visit('/', {
         onBeforeLoad: (win) => {
-            win.localStorage.setItem('jwt_token', 'fake-jwt-token');
+            // Create a valid JWT structure: header.payload.signature
+            const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+            const payload = btoa(JSON.stringify({ 
+              email: 'cypress_user@test.com', 
+              exp: Math.floor(Date.now() / 1000) + 3600 
+            }));
+            const signature = btoa('fake-signature');
+            const fakeJWT = `${header}.${payload}.${signature}`;
+            win.localStorage.setItem('jwt_token', fakeJWT);
         }
     });
 
     // Wait for app to be ready and navigate to chat
     cy.get('app-sidebar', { timeout: 10000 }).should('be.visible');
     cy.get('app-dashboard', { timeout: 10000 }).should('be.visible');
+    cy.wait(500); // Let Angular settle
     
     cy.contains('button', 'Chat').click({ force: true });
     
     // Ensure chat is loaded
     cy.get('app-chat', { timeout: 10000 }).should('be.visible');
+    cy.wait(500); // Let chat component settle
   });
 
   it('should display the chat interface', () => {
@@ -45,10 +55,12 @@ describe('Chat Flow', () => {
   });
 
   it('should have submit button disabled when message is empty', () => {
-    // Clear the textarea field
-    cy.get('textarea[name="newMessage"]').clear();
+    // Clear the textarea field - break up chain to avoid detachment
+    cy.get('textarea[name="newMessage"]').as('textarea');
+    cy.get('@textarea').clear();
+    cy.wait(100); // Let Angular update
 
-    // Button should be disabled
+    // Button should be disabled - re-query to avoid detachment
     cy.get('button[type="submit"]').should('be.disabled');
   });
 

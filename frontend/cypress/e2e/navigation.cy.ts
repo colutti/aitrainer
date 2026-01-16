@@ -1,4 +1,15 @@
 describe('Navigation Flow', () => {
+    let userToken: string;
+    
+    before(() => {
+        cy.request('POST', '/api/user/login', {
+          email: 'cypress_user@test.com',
+          password: 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661'
+        }).then((response) => {
+          userToken = response.body.token;
+        });
+    });
+
     beforeEach(() => {
         // Intercept user profile
         cy.intercept('GET', '**/user/profile', {
@@ -21,10 +32,10 @@ describe('Navigation Flow', () => {
         cy.intercept('GET', '**/workout/stats', { body: { streak: 0, frequency: [] } }).as('getWorkoutStats');
         cy.intercept('GET', '**/nutrition/stats', { body: { daily_target: 2000, current_macros: {} } }).as('getNutritionStats');
 
-        // Bypass UI login
+        // Visit with real token from API login
         cy.visit('/', {
             onBeforeLoad: (win) => {
-                win.localStorage.setItem('jwt_token', 'fake-jwt-token');
+                win.localStorage.setItem('jwt_token', userToken);
             }
         });
 

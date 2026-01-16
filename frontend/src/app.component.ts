@@ -13,6 +13,7 @@ import { NutritionComponent } from './components/nutrition/nutrition.component';
 import { MetabolismComponent } from './components/metabolism/metabolism.component';
 import { BodyCompositionComponent } from './components/body-composition/body-composition.component';
 import { SkeletonComponent } from './components/skeleton/skeleton.component';
+import { IntegrationsComponent } from './components/integrations/integrations.component';
 import { AuthService } from './services/auth.service';
 import { NavigationService } from './services/navigation.service';
 
@@ -35,7 +36,8 @@ import { NavigationService } from './services/navigation.service';
     SidebarComponent,
     DashboardComponent,
     ToastComponent,
-    SkeletonComponent
+    SkeletonComponent,
+    IntegrationsComponent
   ],
 })
 

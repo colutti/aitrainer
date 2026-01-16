@@ -156,6 +156,20 @@
              </div>
            }
         }
+        @case ('integrations') {
+          @defer {
+            <app-integrations class="h-full block"></app-integrations>
+          } @loading (minimum 300ms) {
+             <div class="h-full p-8 w-full flex flex-col gap-6">
+                <app-skeleton width="200px" height="2rem"></app-skeleton>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <app-skeleton height="200px"></app-skeleton>
+                  <app-skeleton height="200px"></app-skeleton>
+                  <app-skeleton height="200px"></app-skeleton>
+                </div>
+             </div>
+          }
+        }
       }
     </main>
   } @else {
