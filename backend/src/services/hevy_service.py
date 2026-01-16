@@ -261,3 +261,44 @@ class HevyService:
             "skipped": skipped_count,
             "failed": failed_count
         }
+    async def cleanup_user_duplicates(self, user_email: str, tz_offset: int = -3) -> dict:
+        """
+        Scans all user workouts and removes aggressive duplicates (same day).
+        Prioritizes workouts with external_id.
+        """
+        logger.info(f"Manual cleanup triggered for {user_email}")
+        
+        # Get all workouts
+        workouts = list(self.workout_repository.collection.find({"user_email": user_email}).sort("date", -1))
+        
+        days = {}
+        for w in workouts:
+            local_date = w['date'] + timedelta(hours=tz_offset)
+            d = local_date.date()
+            if d not in days:
+                days[d] = []
+            days[d].append(w)
+
+        to_delete = []
+        for day, day_workouts in days.items():
+            if len(day_workouts) <= 1:
+                continue
+            
+            # Sort: has external_id (from Hevy) > newest
+            day_workouts.sort(key=lambda x: (1 if x.get('external_id') else 0, x['date']), reverse=True)
+            
+            # Keep the first one, delete others
+            others = day_workouts[1:]
+            for w in others:
+                to_delete.append(w['_id'])
+
+        deleted_count = 0
+        if to_delete:
+            result = self.workout_repository.collection.delete_many({"_id": {"$in": to_delete}})
+            deleted_count = result.deleted_count
+            logger.info(f"Cleaned up {deleted_count} duplicates for {user_email}")
+
+        return {
+            "total_scanned": len(workouts),
+            "deleted_count": deleted_count
+        }

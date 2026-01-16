@@ -108,6 +108,9 @@ async def import_workouts(
     if not profile or not profile.hevy_api_key:
         raise HTTPException(status_code=400, detail="Hevy API key not configured")
         
+    # Run aggressive cleanup of duplicates before starting import
+    await hevy_service.cleanup_user_duplicates(user_email)
+    
     result = await hevy_service.import_workouts(
         user_email=user_email,
         api_key=profile.hevy_api_key,
@@ -119,3 +122,11 @@ async def import_workouts(
     brain.save_user_profile(profile)
         
     return result
+@router.post("/cleanup")
+async def cleanup_duplicates(
+    user_email: CurrentUser,
+    hevy_service: HevyServiceDep,
+    tz_offset: int = -3
+):
+    """Manually triggers cleanup of duplicate workouts (one per day)."""
+    return await hevy_service.cleanup_user_duplicates(user_email, tz_offset)
