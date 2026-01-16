@@ -3,6 +3,7 @@ import logging
 from typing import Optional, Any
 import httpx
 from src.api.models.workout_log import WorkoutLog, ExerciseLog
+from src.api.models.routine import HevyRoutine, RoutineListResponse
 from src.repositories.workout_repository import WorkoutRepository
 
 logger = logging.getLogger(__name__)
@@ -240,3 +241,84 @@ class HevyService:
             "skipped": skipped_count,
             "failed": failed_count
         }
+
+    async def get_routines(self, api_key: str, page: int = 1, page_size: int = 10) -> Optional[RoutineListResponse]:
+        """
+        Fetches a paginated list of routines from Hevy.
+        """
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(
+                    f"{self.BASE_URL}/routines",
+                    headers={"api-key": api_key},
+                    params={"page": page, "pageSize": page_size},
+                    timeout=20.0
+                )
+                if response.status_code == 200:
+                    return RoutineListResponse(**response.json())
+                logger.warning(f"Hevy API routines returned {response.status_code}")
+                return None
+            except Exception as e:
+                logger.error(f"Failed to fetch routines: {e}")
+                return None
+
+    async def get_routine_by_id(self, api_key: str, routine_id: str) -> Optional[HevyRoutine]:
+        """
+        Fetches a specific routine by ID.
+        """
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(
+                    f"{self.BASE_URL}/routines/{routine_id}",
+                    headers={"api-key": api_key},
+                    timeout=10.0
+                )
+                if response.status_code == 200:
+                    return HevyRoutine(**response.json().get("routine", {}))
+                return None
+            except Exception as e:
+                logger.error(f"Failed to fetch routine {routine_id}: {e}")
+                return None
+
+    async def create_routine(self, api_key: str, routine: HevyRoutine) -> Optional[HevyRoutine]:
+        """
+        Creates a new routine in Hevy.
+        """
+        async with httpx.AsyncClient() as client:
+            try:
+                # Hevy expects the routine object wrapped in a "routine" key
+                payload = {"routine": routine.model_dump(exclude_unset=True, exclude_none=True)}
+                response = await client.post(
+                    f"{self.BASE_URL}/routines",
+                    headers={"api-key": api_key},
+                    json=payload,
+                    timeout=20.0
+                )
+                if response.status_code == 200 or response.status_code == 201:
+                    return HevyRoutine(**response.json().get("routine", {}))
+                logger.error(f"Hevy routine creation failed: {response.status_code} - {response.text}")
+                return None
+            except Exception as e:
+                logger.error(f"Failed to create routine: {e}")
+                return None
+
+    async def update_routine(self, api_key: str, routine_id: str, routine: HevyRoutine) -> Optional[HevyRoutine]:
+        """
+        Updates an existing routine in Hevy.
+        """
+        async with httpx.AsyncClient() as client:
+            try:
+                payload = {"routine": routine.model_dump(exclude_unset=True, exclude_none=True)}
+                response = await client.put(
+                    f"{self.BASE_URL}/routines/{routine_id}",
+                    headers={"api-key": api_key},
+                    json=payload,
+                    timeout=20.0
+                )
+                if response.status_code == 200:
+                    return HevyRoutine(**response.json().get("routine", {}))
+                logger.error(f"Hevy routine update failed: {response.status_code} - {response.text}")
+                return None
+            except Exception as e:
+                logger.error(f"Failed to update routine {routine_id}: {e}")
+                return None

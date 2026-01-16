@@ -353,7 +353,28 @@ class AITrainerBrain:
         save_nutrition_tool = create_save_nutrition_tool(self._database, user_email)
         get_nutrition_tool = create_get_nutrition_tool(self._database, user_email)
         
-        tools = [save_workout_tool, get_workouts_tool, save_nutrition_tool, get_nutrition_tool]
+        # Create Hevy tools
+        from src.services.hevy_tools import (
+            create_list_hevy_routines_tool,
+            create_create_hevy_routine_tool,
+            create_update_hevy_routine_tool
+        )
+        from src.services.hevy_service import HevyService
+        hevy_service = HevyService(workout_repository=self._database.workouts_repo)
+        
+        list_hevy_routines_tool = create_list_hevy_routines_tool(hevy_service, self._database, user_email)
+        create_hevy_routine_tool = create_create_hevy_routine_tool(hevy_service, self._database, user_email)
+        update_hevy_routine_tool = create_update_hevy_routine_tool(hevy_service, self._database, user_email)
+        
+        tools = [
+            save_workout_tool, 
+            get_workouts_tool, 
+            save_nutrition_tool, 
+            get_nutrition_tool,
+            list_hevy_routines_tool,
+            create_hevy_routine_tool,
+            update_hevy_routine_tool
+        ]
         
         tool_was_called = False
         full_response = []
