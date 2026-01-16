@@ -3,6 +3,19 @@
  * These classes reduce duplication across component templates.
  */
 
+/* Remove Arrows from Number Inputs (Spinners) */
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 /* Form Input Styles */
 .form-input {
   margin-top: 0.25rem;
@@ -105,7 +118,12 @@
 
 /* Phase 4: Mobile Touch Targets */
 @media (pointer: coarse) {
-  button, a, [role="button"], input[type="submit"], input[type="reset"], input[type="button"] {
+  button,
+  a,
+  [role="button"],
+  input[type="submit"],
+  input[type="reset"],
+  input[type="button"] {
     min-height: 44px;
     min-width: 44px;
   }

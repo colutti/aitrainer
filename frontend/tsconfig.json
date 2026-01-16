@@ -25,6 +25,10 @@
       ]
     }
   },
+  "include": [
+    "main.ts",
+    "src/**/*"
+  ],
   // "files": [],
   "angularCompilerOptions": {
     "disableTypeScriptVersionCheck": true
@@ -32,6 +36,8 @@
   "exclude": [
     "cypress",
     "eslint.config.js",
+    "babel.config.cjs",
+    "jest.config.cjs",
     "dist",
     ".angular",
     "**/*.spec.ts"

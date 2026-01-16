@@ -35,3 +35,12 @@ Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
 });
 
 setupZoneTestEnv();
+
+// Mock TextDecoder/Encoder (needed for streaming)
+const { TextEncoder, TextDecoder } = require('util');
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
+
+// Mock Stream API (needed for streaming)
+const { ReadableStream, TransformStream } = require('stream/web');
+Object.assign(global, { ReadableStream, TransformStream });
