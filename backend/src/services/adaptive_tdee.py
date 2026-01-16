@@ -137,6 +137,13 @@ class AdaptiveTDEEService:
         if len(weight_logs) < 2 or len(nutrition_logs) < self.MIN_DATA_DAYS:
             logger.info("Insufficient data for TDEE calculation for user %s", user_email)
             return self._insufficient_data_response()
+        
+        # Capture actual latest weight BEFORE any filtering (Bug Fix #1)
+        weight_logs.sort(key=lambda x: x.date)
+        actual_latest_weight = weight_logs[-1].weight_kg
+        
+        # Preserve raw logs for body composition calculation (Bug Fix #3)
+        weight_logs_raw = list(weight_logs)
             
         # 2. Process Weight Data (Trend Estimation)
         # Filter outliers / step changes first
@@ -228,8 +235,8 @@ class AdaptiveTDEEService:
             daily_target = int(round(tdee + adjustment))
             daily_target = max(1000, daily_target)
  
-        # 7. Body Composition Analysis
-        comp_changes = self._calculate_body_composition_changes(weight_logs)
+        # 7. Body Composition Analysis (use RAW logs, not filtered - Bug Fix #3)
+        comp_changes = self._calculate_body_composition_changes(weight_logs_raw)
  
         # 8. Projection & ETA
         weeks_to_goal = None
@@ -274,7 +281,7 @@ class AdaptiveTDEEService:
             "endDate": period_end.isoformat(),
             "start_weight": round(start_weight, 2),
             "end_weight": round(end_weight, 2),
-            "latest_weight": weight_logs[-1].weight_kg,
+            "latest_weight": actual_latest_weight,  # Bug Fix #1: use pre-filter value
             "daily_target": daily_target,
             "goal_weekly_rate": goal_rate,
             "goal_type": goal_type,
@@ -305,11 +312,8 @@ class AdaptiveTDEEService:
         return result
 
     def _calculate_body_composition_changes(self, logs: List[WeightLog]) -> dict | None:
-        """Calculate fat and lean mass changes if composition data is available."""
-        # Using raw logs for composition, maybe we should smooth this too?
-        # For now, end-point analysis on raw logs is simple enough.
-        # Ensure we use logs that actually have the data.
-        
+        """Calculate fat and muscle mass changes using actual scale data."""
+        # Filter to logs with body composition data
         valid_logs = [log_item for log_item in logs if log_item.body_fat_pct is not None]
         if len(valid_logs) < 2:
             return None
@@ -317,17 +321,25 @@ class AdaptiveTDEEService:
         first = valid_logs[0]
         last = valid_logs[-1]
         
-        # Calculate masses
+        # Fat calculation using REAL weights from logs (not regression)
         fat_mass_start = first.weight_kg * (first.body_fat_pct / 100.0)
         fat_mass_end = last.weight_kg * (last.body_fat_pct / 100.0)
         fat_change = fat_mass_end - fat_mass_start
         
-        total_weight_change = last.weight_kg - first.weight_kg
-        lean_change = total_weight_change - fat_change
+        # Muscle calculation: use REAL muscle_mass_pct if available (Bug Fix #2)
+        muscle_change = None
+        if first.muscle_mass_pct and last.muscle_mass_pct:
+            muscle_mass_start = first.weight_kg * (first.muscle_mass_pct / 100.0)
+            muscle_mass_end = last.weight_kg * (last.muscle_mass_pct / 100.0)
+            muscle_change = muscle_mass_end - muscle_mass_start
+        else:
+            # Fallback to derived calculation only if muscle data unavailable
+            total_weight_change = last.weight_kg - first.weight_kg
+            muscle_change = total_weight_change - fat_change
         
         return {
             "fat_change_kg": round(fat_change, 2),
-            "lean_change_kg": round(lean_change, 2),
+            "muscle_change_kg": round(muscle_change, 2),  # Renamed from lean_change_kg
             "start_fat_pct": round(first.body_fat_pct, 1),
             "end_fat_pct": round(last.body_fat_pct, 1),
             "start_muscle_pct": round(first.muscle_mass_pct, 1) if first.muscle_mass_pct else None,

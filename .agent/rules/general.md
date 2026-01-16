@@ -30,6 +30,7 @@ The solution consists of two main projects:
 - Se julgar necessario voce pode crear POCs pra validar a funcionalidade na fase de planejamento. 
 - Sempe que for corrigir um problema reportado, crie um teste que prove o bug e use o test para testar as correcoes.
 - Procure sempre fazer um rebuild dos containers antes de executar testes. Alem disso, monitore os containers pra ver problemas durante os testes.
+- Delete todo e qualquer arquivo gerado por voce ou por um teste seu que ja nao seja mais necessario.
 
 ## 4. Coding Standards & Style
 

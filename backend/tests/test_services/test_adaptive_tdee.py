@@ -173,7 +173,7 @@ def test_tdee_includes_body_composition_changes(service, mock_db):
     
     assert "fat_change_kg" in result
     assert result["fat_change_kg"] == -2.06
-    assert result["lean_change_kg"] == 0.06
+    assert result["muscle_change_kg"] == 0.06  # Fallback calculation (no muscle_mass_pct)
     assert result["start_fat_pct"] == 25.0
     assert result["end_fat_pct"] == 23.0
 
@@ -290,3 +290,86 @@ def test_tdee_eta_projection(service, mock_db):
     
     # Goal ETA = 5 / 0.5 = 10 weeks
     assert result["goal_eta_weeks"] == 10.0
+
+
+# Bug Fix Tests - Body Composition Calculation Issues
+
+def test_latest_weight_is_actual_last_record(service, mock_db):
+    """Bug Fix #1: Verifies that latest_weight is always the actual last weight in the database,
+    not affected by outlier filtering."""
+    today = date.today()
+    start_date = today - timedelta(days=20)
+    
+    # Weights with an outlier that will trigger step change filtering
+    weights = [
+        WeightLog(user_email="test@test.com", date=start_date, weight_kg=77.7),
+        WeightLog(user_email="test@test.com", date=start_date + timedelta(days=7), weight_kg=78.3),  # outlier
+        WeightLog(user_email="test@test.com", date=start_date + timedelta(days=8), weight_kg=76.8),  # step change
+        WeightLog(user_email="test@test.com", date=start_date + timedelta(days=18), weight_kg=76.85),  # actual last
+    ]
+    nutrition = [NutritionLog(user_email="test@test.com", date=start_date + timedelta(days=i), 
+                              calories=2000, protein_grams=100, carbs_grams=100, fat_grams=50) 
+                 for i in range(21)]
+    
+    mock_db.get_weight_logs_by_date_range.return_value = weights
+    mock_db.get_nutrition_logs_by_date_range.return_value = nutrition
+    
+    result = service.calculate_tdee("test@test.com", lookback_weeks=3)
+    
+    # latest_weight should be 76.85 (actual last), not 77.7 (from filtered window)
+    assert result["latest_weight"] == 76.85
+
+
+def test_muscle_change_uses_real_muscle_mass_pct(service, mock_db):
+    """Bug Fix #2: Verifies that muscle_change uses the actual muscle_mass_pct from the scale,
+    not a derived value from (total_weight - fat)."""
+    today = date.today()
+    start_date = today - timedelta(days=13)
+    
+    weights = [
+        WeightLog(user_email="test@test.com", date=start_date, weight_kg=76.80, 
+                  body_fat_pct=24.73, muscle_mass_pct=54.87),
+        WeightLog(user_email="test@test.com", date=start_date + timedelta(days=13), weight_kg=76.85, 
+                  body_fat_pct=24.24, muscle_mass_pct=55.22),
+    ]
+    nutrition = [NutritionLog(user_email="test@test.com", date=start_date + timedelta(days=i), 
+                              calories=2000, protein_grams=100, carbs_grams=100, fat_grams=50) 
+                 for i in range(14)]
+    
+    mock_db.get_weight_logs_by_date_range.return_value = weights
+    mock_db.get_nutrition_logs_by_date_range.return_value = nutrition
+    
+    result = service.calculate_tdee("test@test.com", lookback_weeks=3)
+    
+    # Expected muscle change: (76.85 × 55.22%) - (76.80 × 54.87%) = 42.44 - 42.14 = +0.30 kg
+    expected_muscle_change = (76.85 * 0.5522) - (76.80 * 0.5487)
+    assert "muscle_change_kg" in result
+    assert abs(result["muscle_change_kg"] - expected_muscle_change) < 0.1
+
+
+def test_composition_uses_real_weights_not_regression(service, mock_db):
+    """Bug Fix #2: Verifies that body composition uses actual weights from logs,
+    not regression-predicted values."""
+    today = date.today()
+    start_date = today - timedelta(days=13)
+    
+    # Weights that are stable (no regression slope effect)
+    weights = [
+        WeightLog(user_email="test@test.com", date=start_date, weight_kg=76.8, body_fat_pct=24.73),
+        WeightLog(user_email="test@test.com", date=start_date + timedelta(days=6), weight_kg=76.8, body_fat_pct=24.50),
+        WeightLog(user_email="test@test.com", date=start_date + timedelta(days=13), weight_kg=76.85, body_fat_pct=24.24),
+    ]
+    nutrition = [NutritionLog(user_email="test@test.com", date=start_date + timedelta(days=i), 
+                              calories=2000, protein_grams=100, carbs_grams=100, fat_grams=50) 
+                 for i in range(14)]
+    
+    mock_db.get_weight_logs_by_date_range.return_value = weights
+    mock_db.get_nutrition_logs_by_date_range.return_value = nutrition
+    
+    result = service.calculate_tdee("test@test.com", lookback_weeks=3)
+    
+    # Fat change should use REAL weights: (76.85 × 24.24%) - (76.8 × 24.73%) 
+    # Not regression weights which could be different
+    expected_fat_change = (76.85 * 0.2424) - (76.8 * 0.2473)  # ≈ -0.36 kg
+    assert abs(result["fat_change_kg"] - expected_fat_change) < 0.1
+

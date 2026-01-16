@@ -470,7 +470,7 @@ Analise os dados metabólicos e dê sua **OPINIÃO como treinador** focada em:
 
         if stats.get("fat_change_kg") is not None:
              stats_context += f"""| Variação de gordura | {stats.get('fat_change_kg'):+.1f} kg |
-| Variação de massa magra | {stats.get('lean_change_kg'):+.1f} kg |
+| Variação de massa muscular | {stats.get('muscle_change_kg'):+.1f} kg |
 """
         
         input_data = {"stats_context": stats_context}

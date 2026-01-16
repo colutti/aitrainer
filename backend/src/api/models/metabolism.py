@@ -26,9 +26,12 @@ class MetabolismResponse(BaseModel):
     
     # Optional composition & details
     fat_change_kg: float | None = Field(None)
-    lean_change_kg: float | None = Field(None)
+    muscle_change_kg: float | None = Field(None, description="Change in muscle mass (uses scale data)")
+    lean_change_kg: float | None = Field(None, description="Deprecated: use muscle_change_kg")
     start_fat_pct: float | None = Field(None)
     end_fat_pct: float | None = Field(None)
+    start_muscle_pct: float | None = Field(None)
+    end_muscle_pct: float | None = Field(None)
     scale_bmr: int | None = Field(None)
     
     message: str | None = Field(None, description="Optional informational message")

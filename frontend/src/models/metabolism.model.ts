@@ -23,9 +23,11 @@ export interface MetabolismResponse {
   
   // Body Comp
   fat_change_kg?: number;
-  lean_change_kg?: number;
+  muscle_change_kg?: number; // New: uses actual scale muscle data
+  lean_change_kg?: number;   // Deprecated: use muscle_change_kg
   start_fat_pct?: number;
   end_fat_pct?: number;
+  start_muscle_pct?: number;
   end_muscle_pct?: number;
   // Goal Tracking
   target_weight?: number;
