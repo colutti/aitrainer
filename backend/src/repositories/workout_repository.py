@@ -195,7 +195,7 @@ class WorkoutRepository(BaseRepository):
                         session_max = weight
                         session_max_reps = reps[i] if i < len(reps) else 0
                 
-                if session_max > 0:
+                if session_max >= 0:
                     current_record = max_weights.get(name)
                     if not current_record or session_max > current_record["weight"]:
                         max_weights[name] = {

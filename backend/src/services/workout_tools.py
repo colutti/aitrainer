@@ -39,7 +39,7 @@ def create_save_workout_tool(database, user_email: str):
                 - name (str): Nome do exercício. Ex: "agachamento", "leg press", "supino"
                 - sets (int): Número de séries. Ex: 4
                 - reps_per_set (list[int]): Repetições por série. Ex: [10, 10, 8, 8]
-                - weights_per_set (list[float], opcional): Pesos por série em kg. Ex: [80, 80, 85, 85]
+                - weights_per_set (list[float], opcional): Pesos por série em kg. Use 0 para exercícios de peso corporal ou sem assistência. Ex: [80, 80, 85, 85] ou [0, 0, 0]
             duration_minutes: Duração total em minutos (opcional)
             date: Data do treino no formato ISO (YYYY-MM-DD). Se omitido, usa hoje.
                   Exemplos: "2024-01-15" para 15 de janeiro. "ontem" deve ser convertido para data real.

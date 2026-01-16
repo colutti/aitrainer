@@ -51,7 +51,7 @@
                       <td class="px-4 py-2 font-mono text-xs opacity-70">{{ i + 1 }}</td>
                       <td class="px-4 py-2 text-center text-white font-medium">{{ reps }}</td>
                       <td class="px-4 py-2 text-right font-bold text-primary">
-                        {{ ex.weights_per_set[i] || '-' }}
+                        {{ ex.weights_per_set[i] ?? '-' }}
                       </td>
                    </tr>
                 </tbody>

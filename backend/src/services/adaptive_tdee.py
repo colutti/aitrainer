@@ -235,8 +235,8 @@ class AdaptiveTDEEService:
             daily_target = int(round(tdee + adjustment))
             daily_target = max(1000, daily_target)
  
-        # 7. Body Composition Analysis (use RAW logs, not filtered - Bug Fix #3)
-        comp_changes = self._calculate_body_composition_changes(weight_logs_raw)
+        # 7. Body Composition Analysis (use FILTERED logs to avoid being distorted by outliers - Refined Bug Fix #3)
+        comp_changes = self._calculate_body_composition_changes(weight_logs)
  
         # 8. Projection & ETA
         weeks_to_goal = None
