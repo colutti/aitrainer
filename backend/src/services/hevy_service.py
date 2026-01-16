@@ -208,15 +208,18 @@ class HevyService:
                         
                         # 3. Aggressive day-level check for overwrite mode (one workout per day preference)
                         if mode == "overwrite" and not exists:
-                            # Search for ANY workout on the same calendar day (BRT/Local approx)
-                            # To be safe, we use a larger window or just same date if possible
-                            day_start = workout_date.replace(hour=0, minute=0, second=0, microsecond=0)
-                            day_end = day_start + timedelta(days=1)
+                            # Search for ANY workout on the same local calendar day 
+                            # We default to -3 hours (Brazil) as a safe heuristic
+                            tz_offset = -3
+                            local_time = workout_date + timedelta(hours=tz_offset)
+                            local_day_start = local_time.replace(hour=0, minute=0, second=0, microsecond=0)
+                            utc_day_start = local_day_start - timedelta(hours=tz_offset)
+                            utc_day_end = utc_day_start + timedelta(days=1)
                             
                             day_duplicates = list(self.workout_repository.collection.find({
                                 "user_email": user_email,
-                                "date": {"$gte": day_start, "$lt": day_end},
-                                "external_id": {"$ne": hevy_workout.get("id")} # Don't delete itself if it somehow shifted
+                                "date": {"$gte": utc_day_start, "$lt": utc_day_end},
+                                "external_id": {"$ne": hevy_workout.get("id")}
                             }))
                             
                             if day_duplicates:

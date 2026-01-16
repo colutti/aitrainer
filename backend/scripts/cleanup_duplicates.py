@@ -9,25 +9,28 @@ from bson import ObjectId
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-def cleanup_user_duplicates(user_email: str, mongo_uri: str, db_name: str):
+def cleanup_user_duplicates(user_email: str, mongo_uri: str, db_name: str, tz_offset: int = -3):
     """
     Finds and removes duplicate workout logs for a user using an aggressive day-level strategy.
-    Prioritizes workouts with an 'external_id' (meaning they came from a source like Hevy).
+    Prioritizes workouts with an 'external_id'.
+    `tz_offset` is used to group by local calendar day (default -3 for Brazil).
     """
     client = MongoClient(mongo_uri)
     db = client[db_name]
     collection = db['workout_logs']
 
-    logger.info(f"Scanning for aggressive duplicates for user: {user_email}")
+    logger.info(f"Scanning for aggressive duplicates for {user_email} (TZ offset: {tz_offset})")
     
-    # Get all workouts for user sorted by date desc (so we keep newest if no ext_id)
+    # Get all workouts for user sorted by date desc
     workouts = list(collection.find({"user_email": user_email}).sort("date", -1))
     logger.info(f"Found {len(workouts)} total workouts for user.")
 
-    # Group by day (using BRT/Local approx - date.date())
+    # Group by day adjusted for timezone
     days = {}
     for w in workouts:
-        d = w['date'].date()
+        # Adjust date for local timezone to group by calendar day accurately
+        local_date = w['date'] + timedelta(hours=tz_offset)
+        d = local_date.date()
         if d not in days:
             days[d] = []
         days[d].append(w)
@@ -64,13 +67,14 @@ def cleanup_user_duplicates(user_email: str, mongo_uri: str, db_name: str):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python cleanup_duplicates.py <user_email>")
+        print("Usage: python cleanup_duplicates.py <user_email> [tz_offset]")
         sys.exit(1)
 
     user_email = sys.argv[1]
+    tz_offset = int(sys.argv[2]) if len(sys.argv) > 2 else -3
     
     # Use environment variable or default local
     mongo_uri = os.getenv("MONGO_URI", "mongodb://aitrainer:aitrainerpass@localhost:27017/aitrainerdb?authSource=admin")
     db_name = "aitrainerdb"
 
-    cleanup_user_duplicates(user_email, mongo_uri, db_name)
+    cleanup_user_duplicates(user_email, mongo_uri, db_name, tz_offset)
