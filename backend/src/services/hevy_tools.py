@@ -14,25 +14,38 @@ def create_list_hevy_routines_tool(hevy_service, database, user_email: str):
             return "A integração com Hevy está desativada ou a chave API não está configurada. Por favor, ative-a nas configurações."
 
         import asyncio
-        response = asyncio.run(hevy_service.get_routines(profile.hevy_api_key, page, page_size))
-        
-        if not response or not response.routines:
-            return "Nenhuma rotina encontrada no Hevy."
+        try:
+            response = asyncio.run(hevy_service.get_routines(profile.hevy_api_key, page, page_size))
+            
+            if not response or not response.routines:
+                logger.info("[list_hevy_routines] No routines found")
+                return "Nenhuma rotina encontrada no Hevy."
 
-        result = f"Encontrei {len(response.routines)} rotinas (Página {response.page}/{response.page_count}):\n\n"
-        for i, r in enumerate(response.routines, 1):
-            result += f"{i}. **{r.title}** (ID: {r.id})\n"
-            if r.notes:
-                result += f"   Notas: {r.notes}\n"
-            exercises = [ex.exercise_template_id for ex in r.exercises]
-            result += f"   Exercícios: {', '.join(exercises[:5])}"
-            if len(exercises) > 5:
-                result += "..."
-            result += "\n\n"
-        
-        return result
+            logger.info(f"[list_hevy_routines] Found {len(response.routines)} routines")
+            result = f"Encontrei {len(response.routines)} rotinas (Página {response.page}/{response.page_count}):\n\n"
+            for i, r in enumerate(response.routines, 1):
+                result += f"{i}. **{r.title}**\n"
+                if r.notes:
+                    result += f"   Notas: {r.notes}\n"
+                # Show exercise titles if available, otherwise IDs
+                exercise_names = []
+                for ex in r.exercises:
+                    if ex.title:
+                        exercise_names.append(ex.title)
+                    else:
+                        exercise_names.append(f"ID:{ex.exercise_template_id}")
+                result += f"   Exercícios: {', '.join(exercise_names[:5])}"
+                if len(exercise_names) > 5:
+                    result += f"... (+{len(exercise_names) - 5} mais)"
+                result += "\n\n"
+            
+            return result
+        except Exception as e:
+            logger.error(f"[list_hevy_routines] Error: {e}")
+            return f"Erro ao buscar rotinas: {str(e)}"
 
     return list_hevy_routines
+
 
 def create_search_hevy_exercises_tool(hevy_service, database, user_email: str):
     @tool
