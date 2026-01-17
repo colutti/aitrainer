@@ -27,6 +27,8 @@ services:
   frontend:
     build:
       context: ./frontend
+      args:
+        BUILD_MODE: ${BUILD_MODE:-development}
     ports:
       - "3000:80"
     depends_on:

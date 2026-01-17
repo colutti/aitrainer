@@ -17,3 +17,5 @@ Este workflow consolida a execução de todas as suítes de teste do projeto par
 - Testes executar os testes do cypress sempre de pouco a pouco porque sao muitos testes e podem demorar demais resultando em timeout.
 - Voce deve monitorar os logs dos containers.
 - Se um teste falha, voce pode corrigir e reexecutar so ele ate estar corrigido, mas e necessario executar a suite de novo pq seu teste pode ter impactado em algo.
+- Nao pode ter erros, warnings ou mensagens de deprecated que possam ser solucionadas por voce. Trate esses avisos como erros.
+voce deve monitorar processos de build, containers, avisos de compilacao e pode usar ferramentas externas como black, etc.

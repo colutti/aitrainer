@@ -10,8 +10,15 @@ ENV/
 env.bak/
 venv.bak/
 .ruff_cache
+.pytest_cache
+.coverage
 api.log
 .env
+.env.prod
 tests/
 Dockerfile
 docker-compose.yml
+*.md
+.git
+.gitignore
+scripts/import_scale_data.py

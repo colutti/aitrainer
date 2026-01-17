@@ -1,14 +1,18 @@
 # Build stage
 FROM docker.io/library/node:20-slim AS build
 
+# ARG permite override: docker build --build-arg BUILD_MODE=production
+ARG BUILD_MODE=development
+
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install --legacy-peer-deps
+RUN npm ci --legacy-peer-deps
 
 COPY . .
-RUN npx ng build --configuration development
 
+# Usa a variável BUILD_MODE para decidir o tipo de build
+RUN npx ng build --configuration ${BUILD_MODE}
 
 # Serve stage
 FROM docker.io/library/nginx:alpine

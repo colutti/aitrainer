@@ -1,26 +1,44 @@
-FROM docker.io/library/python:3.11-slim
+# Build stage - instala dependências com build tools
+FROM docker.io/library/python:3.11-slim AS builder
 
 WORKDIR /app
 
-# Install system dependencies
+# Performance and stability environments
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Install system dependencies for building packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install dependencies
+# Copy only requirements first (Docker layer caching)
 COPY requirements.txt .
-RUN pip uninstall -y jwt PyJWT && pip install --no-cache-dir -r requirements.txt
+
+# Create virtual environment and install dependencies
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Runtime stage - imagem mínima
+FROM docker.io/library/python:3.11-slim
+
+WORKDIR /app
+
+# Runtime environments
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    PATH="/opt/venv/bin:$PATH"
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
 
 # Copy source code
-COPY . .
+COPY src/ ./src/
+COPY scripts/ ./scripts/
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app
-
-# Expose port (8000 is default local, Render uses 10000)
 EXPOSE 8000
 
-# Run the application using gunicorn
-# Uses $PORT if available (Render), otherwise defaults to 8000
 CMD ["sh", "-c", "gunicorn src.api.main:app --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000}"]

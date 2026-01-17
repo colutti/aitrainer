@@ -15,6 +15,20 @@ api:
 front:
 	podman-compose --in-pod 0 up -d --no-deps frontend
 
+# Build padrão (development)
+build:
+	podman-compose build
+
+# Build de produção (minificado, otimizado)
+build-prod:
+	BUILD_MODE=production podman-compose build
+
+# Restart com rebuild
+restart:
+	podman-compose down
+	podman-compose build
+	podman-compose up -d
+
 debug-rebuild:
 	podman-compose down
 	podman-compose build
