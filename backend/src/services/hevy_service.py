@@ -9,7 +9,15 @@ from src.repositories.workout_repository import WorkoutRepository
 logger = logging.getLogger(__name__)
 
 class HevyService:
+    """
+    Service to interact with Hevy API.
+    """
+
     BASE_URL = "https://api.hevyapp.com/v1"
+    
+    # Simple in-memory cache for exercise templates
+    _exercises_cache = {} # key: api_key, value: (timestamp, templates)
+    CACHE_DURATION = 3600 * 24 # 24 hours
 
     def __init__(self, workout_repository: WorkoutRepository):
         self.workout_repository = workout_repository
@@ -346,19 +354,43 @@ class HevyService:
     async def get_all_exercise_templates(self, api_key: str) -> list[Any]:
         """
         Fetches ALL exercise templates by iterating through all pages.
+        Includes in-memory caching to avoid hitting the API too hard/timeouts.
         """
+        import time
+        now = time.time()
+        
+        # Check cache
+        if api_key in self._exercises_cache:
+            ts, templates = self._exercises_cache[api_key]
+            if now - ts < self.CACHE_DURATION:
+                logger.debug(f"Returning {len(templates)} exercise templates from memory cache")
+                return templates
+
         all_templates = []
         page = 1
         page_size = 100
         
-        while True:
-            resp = await self.get_exercise_templates(api_key, page, page_size)
-            if not resp or not resp.exercise_templates:
-                break
+        logger.info("Fetching exercise templates from Hevy API (cache miss or expired)")
+        try:
+            while True:
+                resp = await self.get_exercise_templates(api_key, page, page_size)
+                if not resp or not resp.exercise_templates:
+                    break
+                
+                all_templates.extend(resp.exercise_templates)
+                if page >= resp.page_count:
+                    break
+                page += 1
             
-            all_templates.extend(resp.exercise_templates)
-            if page >= resp.page_count:
-                break
-            page += 1
-            
-        return all_templates
+            # Save to cache if successful
+            if all_templates:
+                self._exercises_cache[api_key] = (now, all_templates)
+                
+            return all_templates
+        except Exception as e:
+            logger.error(f"Error in get_all_exercise_templates: {e}")
+            # Try to return expired cache if we have it
+            if api_key in self._exercises_cache:
+                _, templates = self._exercises_cache[api_key]
+                return templates
+            return []
