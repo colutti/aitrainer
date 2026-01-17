@@ -73,9 +73,14 @@ def create_search_hevy_exercises_tool(hevy_service, database, user_email: str):
         if not matches:
             return f"Nenhum exercício encontrado para '{query}'. Tente usar o nome em inglês ou termos parciais (Ex: 'Leg Press' em vez de 'Prensa')."
 
-        result = f"Resultados para '{query}':\n\n"
-        for ex in matches[:15]:
-            result += f"- **{ex.title}** | ID: `{ex.id}` | Músculo: {ex.primary_muscle_group}\n"
+        # Limit to top 5 most relevant
+        top_matches = matches[:5]
+        result = f"Encontrei {len(matches)} exercício(s) para '{query}':\n\n"
+        for ex in top_matches:
+            result += f"• {ex.title} → ID: `{ex.id}`\n"
+        
+        if len(matches) > 5:
+            result += f"\n... e mais {len(matches) - 5} opções. Refine a busca se necessário."
         
         return result
 
