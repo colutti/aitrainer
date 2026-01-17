@@ -121,8 +121,9 @@ async def test_create_routine(service):
         mock_client.post.return_value = response
         
         routine_data = HevyRoutine(title="New Routine", exercises=[])
-        result = await service.create_routine("key", routine_data)
+        result, error = await service.create_routine("key", routine_data)
         
+        assert error is None
         assert result.id == "new_id"
         assert result.title == "New Routine"
 

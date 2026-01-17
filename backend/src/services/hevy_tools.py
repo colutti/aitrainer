@@ -110,6 +110,12 @@ def create_create_hevy_routine_tool(hevy_service, database, user_email: str):
         1. Use `search_hevy_exercises` primeiro para obter os IDs reais.
         2. `exercises` NÃO PODE estar vazio. 
         """
+        # Debug logging
+        logger.info(f"[create_hevy_routine] Called with: title='{title}', exercises count={len(exercises) if exercises else 0}")
+        if exercises:
+            for i, ex in enumerate(exercises[:3]):  # Log first 3
+                logger.info(f"[create_hevy_routine] Exercise {i}: {ex}")
+        
         if not title:
             return "O título da rotina é obrigatório."
         if not exercises:
