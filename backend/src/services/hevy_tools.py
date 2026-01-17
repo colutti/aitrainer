@@ -47,21 +47,31 @@ def create_search_hevy_exercises_tool(hevy_service, database, user_email: str):
             return "Integração desativada."
 
         import asyncio
-        # Fetching first 100 exercises to search locally (Hevy doesn't have a search param in docs)
-        response = asyncio.run(hevy_service.get_exercise_templates(profile.hevy_api_key, page_size=100))
+        # Fetch ALL exercise templates to avoid missing data from first page only
+        all_templates = asyncio.run(hevy_service.get_all_exercise_templates(profile.hevy_api_key))
         
-        if not response or not response.exercise_templates:
+        if not all_templates:
             return "Nenhum exercício encontrado no catálogo do Hevy."
 
-        # simple fuzzy search
-        query = query.lower()
-        matches = [
-            ex for ex in response.exercise_templates 
-            if query in ex.title.lower() or query in (ex.primary_muscle_group or "").lower()
+        # logic: exact match first, then all words match
+        query = query.lower().replace("-", " ") # Basic normalization
+        parts = query.split()
+        
+        exact_matches = [ex for ex in all_templates if query == ex.title.lower().replace("-", " ")]
+        all_words_matches = [
+            ex for ex in all_templates 
+            if all(p in ex.title.lower().replace("-", " ") for p in parts)
         ]
+        
+        # Merge and remove duplicates (preserving order)
+        matches = exact_matches + [m for m in all_words_matches if m not in exact_matches]
 
         if not matches:
-            return f"Nenhum exercício encontrado para '{query}'. Tente um termo mais genérico."
+            # Last resort: partial muscle match
+            matches = [ex for ex in all_templates if query in (ex.primary_muscle_group or "").lower()]
+
+        if not matches:
+            return f"Nenhum exercício encontrado para '{query}'. Tente usar o nome em inglês ou termos parciais (Ex: 'Leg Press' em vez de 'Prensa')."
 
         result = f"Resultados para '{query}':\n\n"
         for ex in matches[:15]:
@@ -82,15 +92,23 @@ def create_create_hevy_routine_tool(hevy_service, database, user_email: str):
         """
         Cria uma nova rotina no Hevy.
         
+        Argumento `exercises` deve ser uma lista de dicionários:
+        [
+          {
+            "exercise_template_id": "0EB695C9", 
+            "notes": "Foco em cadência",
+            "sets": [{"type": "normal", "weight_kg": 100, "reps": 10}]
+          }
+        ]
+
         IMPORTANTE: 
-        1. `exercises` NÃO PODE estar vazio. 
-        2. CADA exercício DEVE ter um `exercise_template_id` válido (use `search_hevy_exercises` primeiro).
-        3. CADA exercício DEVE ter pelo menos uma série no campo `sets`.
+        1. Use `search_hevy_exercises` primeiro para obter os IDs reais.
+        2. `exercises` NÃO PODE estar vazio. 
         """
         if not title:
             return "O título da rotina é obrigatório."
         if not exercises:
-            return "A rotina deve conter pelo menos um exercício. Use `search_hevy_exercises` para encontrar os IDs."
+            return "A rotina deve conter pelo menos um exercício. Use `search_hevy_exercises` primeiro."
 
         profile = database.get_user_profile(user_email)
         if not profile or not profile.hevy_enabled or not profile.hevy_api_key:

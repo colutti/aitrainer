@@ -342,3 +342,23 @@ class HevyService:
             except Exception as e:
                 logger.error(f"Failed to fetch exercise templates: {e}")
                 return None
+
+    async def get_all_exercise_templates(self, api_key: str) -> list[Any]:
+        """
+        Fetches ALL exercise templates by iterating through all pages.
+        """
+        all_templates = []
+        page = 1
+        page_size = 100
+        
+        while True:
+            resp = await self.get_exercise_templates(api_key, page, page_size)
+            if not resp or not resp.exercise_templates:
+                break
+            
+            all_templates.extend(resp.exercise_templates)
+            if page >= resp.page_count:
+                break
+            page += 1
+            
+        return all_templates
