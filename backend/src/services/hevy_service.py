@@ -3,7 +3,7 @@ import logging
 from typing import Optional, Any
 import httpx
 from src.api.models.workout_log import WorkoutLog, ExerciseLog
-from src.api.models.routine import HevyRoutine, RoutineListResponse
+from src.api.models.routine import HevyRoutine, RoutineListResponse, ExerciseTemplateListResponse
 from src.repositories.workout_repository import WorkoutRepository
 
 logger = logging.getLogger(__name__)
@@ -321,4 +321,24 @@ class HevyService:
                 return None
             except Exception as e:
                 logger.error(f"Failed to update routine {routine_id}: {e}")
+                return None
+
+    async def get_exercise_templates(self, api_key: str, page: int = 1, page_size: int = 20) -> Optional[ExerciseTemplateListResponse]:
+        """
+        Fetches a paginated list of exercise templates from Hevy.
+        """
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(
+                    f"{self.BASE_URL}/exercise_templates",
+                    headers={"api-key": api_key},
+                    params={"page": page, "pageSize": page_size},
+                    timeout=20.0
+                )
+                if response.status_code == 200:
+                    return ExerciseTemplateListResponse(**response.json())
+                logger.warning(f"Hevy API exercise templates returned {response.status_code}")
+                return None
+            except Exception as e:
+                logger.error(f"Failed to fetch exercise templates: {e}")
                 return None

@@ -33,3 +33,16 @@ class RoutineListResponse(BaseModel):
     page: int
     page_count: int
     routines: List[HevyRoutine]
+
+class HevyExerciseTemplate(BaseModel):
+    id: str
+    title: str
+    type: str
+    primary_muscle_group: Optional[str] = None
+    secondary_muscle_groups: List[str] = []
+    is_custom: bool = False
+
+class ExerciseTemplateListResponse(BaseModel):
+    page: int
+    page_count: int
+    exercise_templates: List[HevyExerciseTemplate]

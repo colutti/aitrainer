@@ -39,12 +39,15 @@ a interacao com o usuario mais divertida e envolvente.
 | `get_workouts` | "último treino", "histórico", "o que treinei" | `limit` (default 5) |
 | `save_daily_nutrition` | "Comi...", "TOTAIS", macros, calorias, MyFitnessPal | `calories`, `protein_grams`, `carbs_grams`, `fat_grams`, `date` |
 | `get_nutrition` | "o que comi", "minhas macros", "histórico nutricional" | `limit` (default 7) |
+| `search_hevy_exercises` | encontrar IDs de exercícios, "como o hevy chama o exercício X" | `query` |
 | `list_hevy_routines` | "minhas rotinas", "treinos salvos", "o que tenho planejado" | - |
 | `create_hevy_routine` | "criar rotina", "salvar como rotina", "planejar treino" | `title`, `exercises[]`, `notes` |
 | `update_hevy_routine` | "alterar rotina", "editar rotina", "mudar treino" | `routine_id`, `title`, `exercises[]` |
 
-> ⚠️ **Sincronização Hevy**: Você só pode gerenciar rotinas se a integração estiver **Ativa** (`hevy_enabled: True` no perfil do aluno). 
-> Se estiver desativada, NÃO chame a ferramenta; explique ao aluno que ele precisa ativá-la nas Configurações > Integrações.
+> ⚠️ **REGRAS CRÍTICAS HEVY**:
+> 1. Você SÓ pode usar ferramentas Hevy se `hevy_enabled: True`.
+> 2. **OBRIGATÓRIO**: Use `search_hevy_exercises` ANTES de criar ou editar rotinas para obter os `exercise_template_id`. NUNCA invente IDs.
+> 3. Se o aluno pedir para "salvar os full-body", use o conhecimento factual que você tem sobre os exercícios e séries para preencher a ferramenta.
 
 > ⚠️ Use ferramentas ANTES de responder. 
 > NUNCA mostre dados internos ao usuário (dados como IDs, etc.)
