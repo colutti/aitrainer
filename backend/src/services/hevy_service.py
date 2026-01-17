@@ -300,17 +300,43 @@ class HevyService:
                 routine_data["folder_id"] = routine.folder_id  # Send null explicitly if None
                 
                 payload = {"routine": routine_data}
+                
+                logger.info(f"[create_routine] Sending payload: {payload.get('routine', {}).get('title')}, "
+                           f"exercises: {len(payload.get('routine', {}).get('exercises', []))}")
+                
                 response = await client.post(
                     f"{self.BASE_URL}/routines",
                     headers={"api-key": api_key},
                     json=payload,
                     timeout=20.0
                 )
+                
+                logger.info(f"[create_routine] Response status: {response.status_code}")
+                
                 if response.status_code in [200, 201]:
-                    return HevyRoutine(**response.json().get("routine", {})), None
+                    response_json = response.json()
+                    logger.debug(f"[create_routine] Raw response: {response_json}")
+                    
+                    routine_resp = response_json.get("routine")
+                    
+                    # Handle case where response is a list (take first item)
+                    if isinstance(routine_resp, list):
+                        logger.warning("[create_routine] Response 'routine' is a list, taking first element")
+                        if routine_resp:
+                            routine_resp = routine_resp[0]
+                        else:
+                            return None, "API returned empty list"
+                    
+                    # Handle case where response is a dict (normal case)
+                    if isinstance(routine_resp, dict):
+                        return HevyRoutine(**routine_resp), None
+                    
+                    # Unexpected format
+                    return None, f"Unexpected response format: {type(routine_resp)}"
                 
                 # Parse error response
                 error_text = response.text
+                logger.error(f"[create_routine] Error response: {error_text}")
                 try:
                     error_json = response.json()
                     if "routine-limit-exceeded" in str(error_json):
@@ -319,11 +345,11 @@ class HevyService:
                 except Exception:
                     pass
                     
-                logger.error(f"Hevy routine creation failed: {response.status_code} - {error_text}")
                 return None, error_text
             except Exception as e:
                 logger.error(f"Failed to create routine: {e}")
                 return None, str(e)
+
 
     async def update_routine(self, api_key: str, routine_id: str, routine: HevyRoutine) -> Optional[HevyRoutine]:
         """
