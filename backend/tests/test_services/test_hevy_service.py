@@ -125,3 +125,94 @@ async def test_create_routine(service):
         
         assert result.id == "new_id"
         assert result.title == "New Routine"
+
+@pytest.mark.asyncio
+async def test_get_all_exercise_templates_caching(service):
+    """Test that get_all_exercise_templates caches results properly"""
+    from src.api.models.routine import ExerciseTemplateListResponse, HevyExerciseTemplate
+    
+    # Clear cache before test
+    service._exercises_cache.clear()
+    
+    with patch("httpx.AsyncClient") as mock_client_cls:
+        mock_client = AsyncMock()
+        mock_client_cls.return_value.__aenter__.return_value = mock_client
+        
+        # Mock response with 2 pages
+        page1_response = Mock()
+        page1_response.status_code = 200
+        page1_response.json.return_value = {
+            "page": 1,
+            "page_count": 2,
+            "exercise_templates": [
+                {"id": "ex1", "title": "Exercise 1", "type": "strength", "is_custom": False},
+                {"id": "ex2", "title": "Exercise 2", "type": "strength", "is_custom": False}
+            ]
+        }
+        
+        page2_response = Mock()
+        page2_response.status_code = 200
+        page2_response.json.return_value = {
+            "page": 2,
+            "page_count": 2,
+            "exercise_templates": [
+                {"id": "ex3", "title": "Exercise 3", "type": "cardio", "is_custom": False}
+            ]
+        }
+        
+        mock_client.get.side_effect = [page1_response, page2_response]
+        
+        # First call - should fetch from API
+        result1 = await service.get_all_exercise_templates("test_key")
+        
+        assert len(result1) == 3
+        assert result1[0].id == "ex1"
+        assert result1[2].id == "ex3"
+        assert mock_client.get.call_count == 2  # 2 pages fetched
+        
+        # Second call - should use cache (no new API calls)
+        mock_client.get.reset_mock()
+        result2 = await service.get_all_exercise_templates("test_key")
+        
+        assert len(result2) == 3
+        assert result2[0].id == "ex1"
+        assert mock_client.get.call_count == 0  # No new API calls
+        
+        # Verify cache contains the key
+        assert "test_key" in service._exercises_cache
+
+@pytest.mark.asyncio
+async def test_get_all_exercise_templates_cache_expiry(service):
+    """Test that cache expires after CACHE_DURATION"""
+    import time
+    from src.api.models.routine import ExerciseTemplateListResponse
+    
+    service._exercises_cache.clear()
+    
+    with patch("httpx.AsyncClient") as mock_client_cls:
+        mock_client = AsyncMock()
+        mock_client_cls.return_value.__aenter__.return_value = mock_client
+        
+        response = Mock()
+        response.status_code = 200
+        response.json.return_value = {
+            "page": 1,
+            "page_count": 1,
+            "exercise_templates": [
+                {"id": "ex1", "title": "Exercise 1", "type": "strength", "is_custom": False}
+            ]
+        }
+        mock_client.get.return_value = response
+        
+        # First call
+        await service.get_all_exercise_templates("test_key")
+        
+        # Manually expire the cache by setting old timestamp
+        old_timestamp = time.time() - (service.CACHE_DURATION + 1)
+        service._exercises_cache["test_key"] = (old_timestamp, service._exercises_cache["test_key"][1])
+        
+        # Second call - should fetch again due to expiry
+        mock_client.get.reset_mock()
+        await service.get_all_exercise_templates("test_key")
+        
+        assert mock_client.get.call_count == 1  # New API call made
