@@ -83,10 +83,13 @@ class LLMClient:
             
             tool_was_called = False
 
-            # Stream the agent execution
+            # Stream the agent execution with increased recursion limit
+            # Default is 25, but complex tool chains may need more
+            config = {"recursion_limit": 50}
             for event, metadata in agent.stream(
                 {"messages": messages},
-                stream_mode="messages"
+                stream_mode="messages",
+                config=config
             ):
                 # Detect tool calls in the stream
                 if hasattr(event, 'tool_calls') and event.tool_calls:

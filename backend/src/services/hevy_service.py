@@ -288,27 +288,42 @@ class HevyService:
                 logger.error(f"Failed to fetch routine {routine_id}: {e}")
                 return None
 
-    async def create_routine(self, api_key: str, routine: HevyRoutine) -> Optional[HevyRoutine]:
+    async def create_routine(self, api_key: str, routine: HevyRoutine) -> tuple[Optional[HevyRoutine], Optional[str]]:
         """
         Creates a new routine in Hevy.
+        Returns: (routine, error_message) - routine is None on failure, error_message contains details
         """
         async with httpx.AsyncClient() as client:
             try:
-                # Hevy expects the routine object wrapped in a "routine" key
-                payload = {"routine": routine.model_dump(exclude_unset=True, exclude_none=True)}
+                # Build payload manually to ensure folder_id is always sent (even as null)
+                routine_data = routine.model_dump(exclude_unset=True, exclude_none=True)
+                routine_data["folder_id"] = routine.folder_id  # Send null explicitly if None
+                
+                payload = {"routine": routine_data}
                 response = await client.post(
                     f"{self.BASE_URL}/routines",
                     headers={"api-key": api_key},
                     json=payload,
                     timeout=20.0
                 )
-                if response.status_code == 200 or response.status_code == 201:
-                    return HevyRoutine(**response.json().get("routine", {}))
-                logger.error(f"Hevy routine creation failed: {response.status_code} - {response.text}")
-                return None
+                if response.status_code in [200, 201]:
+                    return HevyRoutine(**response.json().get("routine", {})), None
+                
+                # Parse error response
+                error_text = response.text
+                try:
+                    error_json = response.json()
+                    if "routine-limit-exceeded" in str(error_json):
+                        return None, "LIMIT_EXCEEDED"
+                    error_text = error_json.get("error", error_text)
+                except Exception:
+                    pass
+                    
+                logger.error(f"Hevy routine creation failed: {response.status_code} - {error_text}")
+                return None, error_text
             except Exception as e:
                 logger.error(f"Failed to create routine: {e}")
-                return None
+                return None, str(e)
 
     async def update_routine(self, api_key: str, routine_id: str, routine: HevyRoutine) -> Optional[HevyRoutine]:
         """

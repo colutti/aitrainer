@@ -147,11 +147,16 @@ def create_create_hevy_routine_tool(hevy_service, database, user_email: str):
             )
             
             import asyncio
-            result = asyncio.run(hevy_service.create_routine(profile.hevy_api_key, routine))
+            result, error = asyncio.run(hevy_service.create_routine(profile.hevy_api_key, routine))
             
             if result:
-                return f"Rotina '{result.title}' criada com sucesso! ID: {result.id}"
-            return "Falha na criação. Verifique se os exercícios e o folder_id estão corretos."
+                return f"✅ Rotina '{result.title}' criada com sucesso! ID: {result.id}"
+            
+            # Handle specific errors
+            if error == "LIMIT_EXCEEDED":
+                return "❌ Limite atingido: Sua conta gratuita do Hevy permite apenas 4 rotinas. Delete uma rotina existente ou faça upgrade para Hevy Pro."
+            
+            return f"❌ Falha ao criar rotina: {error}"
         except Exception as e:
             logger.error(f"Error in create_hevy_routine tool: {e}")
             return f"Erro ao criar rotina: {str(e)}"
