@@ -404,101 +404,125 @@ class AITrainerBrain:
             else:
                 logger.info("Skipped Mem0 storage - write tool was called for user: %s", user_email)
 
-    def generate_insight_stream(self, user_email: str, stats: dict):
+    def generate_insight_stream(self, user_email: str, weeks: int = 3):
         """
-        Generates a focused AI insight about metabolism stats.
+        Generates a focused AI insight about metabolism using RAW data.
         Streams the response.
         """
-        logger.info("Generating metabolism insight stream for user: %s", user_email)
+        logger.info("Generating metabolism insight stream for user: %s (weeks=%d)", user_email, weeks)
         
         from src.services.metabolism_cache import MetabolismInsightCache
-        cache = MetabolismInsightCache(self._database)
+        from src.services.raw_metabolism_data import RawMetabolismDataService
         
+        cache = MetabolismInsightCache(self._database)
+        raw_service = RawMetabolismDataService(self._database)
+        
+        # 1. Fetch Raw Data
+        data = raw_service.get_raw_data_for_insight(user_email, lookback_weeks=weeks)
+        weight_logs = data["weight_logs"]
+        nutrition_logs = data["nutrition_logs"]
+        profile = data["user_profile"]
+        
+        if not profile:
+            profile = self._get_or_create_user_profile(user_email)
+
         trainer_profile_obj = self._get_or_create_trainer_profile(user_email)
         trainer_summary = trainer_profile_obj.get_trainer_profile_summary()
+        current_trainer_type = trainer_profile_obj.trainer_type or "atlas"
         
-        # 1. Check Cache
-        cached_insight = cache.get(user_email, stats, trainer_summary)
+        # Prepare User Goal Dict for Cache Key
+        user_goal = {
+            "goal_type": profile.goal_type,
+            "weekly_rate": profile.weekly_rate,
+            "target_weight": profile.target_weight
+        }
+        
+        # 2. Check Cache with NEW Strategy
+        cached_insight = cache.get(user_email, weight_logs, nutrition_logs, user_goal, current_trainer_type)
         if cached_insight:
             yield cached_insight
             return
 
-        # 2. Construct a specific prompt
-        # Determine strict goal context
-        goal_type = stats.get("goal_type", "maintain")
-        goal_verbs = {
-            "lose": "perda de peso",
-            "gain": "ganho de massa",
-            "maintain": "manutenção"
-        }
-        goal_display = goal_verbs.get(goal_type, "saúde")
-
+        # 3. Construct System Prompt
         system_prompt = f"""# 🏋️ Treinador Pessoal - Análise Metabólica
 
 {trainer_summary}
 
 ---
 
-## 🎯 Contexto da Análise
-- Objetivo do aluno: **{goal_display}**
+## 🎨 Contexto de Exibição
 - Este texto será exibido no **Hero Card** do dashboard de metabolismo
-- O aluno verá esta análise ao abrir a página de metabolismo
+- O aluno verá esta análise ao abrir a página
+- Você deve ser DIRETO e VISUAL (hero = destaque)
 
 ## 📋 Sua Tarefa
-Analise os dados metabólicos e dê sua **OPINIÃO como treinador** focada em:
-1. **Diferencial:** Como está a taxa real vs a desejada?
-2. **Alertas:** Identifique se há falta de proteína, inconsistência nos logs ou mudanças bruscas.
-3. **Próximo Passo:** Uma regra de ouro para o aluno seguir esta semana.
+Analise os dados brutos de PESO e DIETA fornecidos pelo aluno e dê sua **OPINIÃO como treinador**:
+
+1. **Tendência:** O que os números mostram? (calculando você mesmo)
+2. **Alertas:** Padrões preocupantes, gaps, inconsistências?
+3. **Próximo passo:** Uma ação concreta para esta semana.
 
 ## ⚠️ Regras de Formato
 - **Máximo 100 palavras**
-- Use **Emojis** moderadamente para destacar alertas (ex: ⚠️ para proteína baixa, 🎯 para meta atingida)
+- Use **Emojis** moderadamente para alertas (ex: ⚠️, 🎯, 🔥)
 - Vá direto à análise (sem saudações)
 - Use **negrito** para insights acionáveis
 """
+
+        # 4. Construct User Prompt (Raw Data)
+        start_date_str = data["period"]["start_date"].strftime("%d/%m")
+        end_date_str = data["period"]["end_date"].strftime("%d/%m")
         
+        # Limit tables to reasonable size (e.g. 30 most recent rows) to avoid context overflow
+        # Logs are already sorted ascending, so take last 30
+        clipped_weight_logs = weight_logs[-30:]
+        clipped_nutrition_logs = nutrition_logs[-30:]
+        
+        weight_table = raw_service.format_weight_logs_table(clipped_weight_logs)
+        nutrition_table = raw_service.format_nutrition_logs_table(clipped_nutrition_logs)
+        
+        goal_labels = {"lose": "Perder peso", "gain": "Ganhar massa", "maintain": "Manter peso"}
+        goal_label = goal_labels.get(profile.goal_type, profile.goal_type)
+        
+        target_weight_Line = f"- **Peso meta:** {profile.target_weight} kg" if profile.target_weight else ""
+        
+        user_prompt_content = f"""## 🎯 Meu Objetivo
+- **Objetivo:** {goal_label}
+- **Taxa desejada:** {profile.weekly_rate} kg/semana
+- **Peso ao cadastrar:** {profile.weight} kg
+- **Dados pessoais:** {profile.height}cm, {profile.age} anos, {profile.gender}
+{target_weight_Line}
+
+## ⚖️ Minhas Pesagens ({start_date_str} - {end_date_str})
+
+{weight_table}
+
+## 🍽️ Minha Dieta
+
+{nutrition_table}
+
+Analise meus dados e me dê seu feedback como treinador.
+"""
+
         prompt_template = ChatPromptTemplate.from_messages([
             ("system", system_prompt),
-            ("human", "Analise meus dados: {stats_context}")
+            ("human", "{user_prompt_content}")
         ])
         
-        # Format stats for the prompt
-        # Build stats context with RAW DATA (no conclusions)
-        stats_context = f"""## 📊 Dados do Período
-
-| Métrica | Valor |
-|---------|-------|
-| Período | {stats.get('startDate')} a {stats.get('endDate')} |
-| Pesagens realizadas | {stats.get('weight_logs_count')} |
-| Dias com dieta registrada | {stats.get('nutrition_logs_count')} |
-| Peso inicial | {stats.get('start_weight')} kg |
-| Peso final | {stats.get('end_weight')} kg |
-| Mudança semanal real | {stats.get('weight_change_per_week')} kg/sem |
-| Mudança semanal meta | {stats.get('goal_weekly_rate')} kg/sem |
-| TDEE calculado | {stats.get('tdee')} kcal |
-| Ingestão calórica média | {stats.get('avg_calories')} kcal |
-| Proteína média | {stats.get('avg_protein')} g |
-| Carboidratos médio | {stats.get('avg_carbs')} g |
-| Gordura média | {stats.get('avg_fat')} g |
-| Confiança do TDEE | {stats.get('confidence', 'none')} |
-| ETA Estimado | {stats.get('weeks_to_goal')} semanas |
-"""
-
-        if stats.get("fat_change_kg") is not None:
-             stats_context += f"""| Variação de gordura | {stats.get('fat_change_kg'):+.1f} kg |
-| Variação de massa muscular | {stats.get('muscle_change_kg'):+.1f} kg |
-"""
+        input_data = {"user_prompt_content": user_prompt_content}
         
-        input_data = {"stats_context": stats_context}
+        # Log the full prompt for debugging
+        full_prompt_log = f"\n=== 📤 INSIGHT PROMPT ENVIADO ===\n[SYSTEM]\n{system_prompt}\n\n[USER]\n{user_prompt_content}\n================================="
+        logger.info(full_prompt_log)
         
-        # 3. Stream & Collect for Cache
+        # 5. Stream & Collect for Cache
         full_content = []
         for chunk in self._llm_client.stream_simple(prompt_template, input_data):
             full_content.append(chunk)
             yield chunk
             
-        # 4. Save to Cache
-        cache.set(user_email, stats, trainer_summary, "".join(full_content))
+        # 6. Save to Cache
+        cache.set(user_email, weight_logs, nutrition_logs, user_goal, current_trainer_type, "".join(full_content))
 
     def get_all_memories(self, user_id: str, limit: int = 50) -> list[dict]:
         """

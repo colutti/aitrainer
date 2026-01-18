@@ -50,13 +50,16 @@ class TestMetabolismInsight:
         monkeypatch.setattr(metabolism_module, "AdaptiveTDEEService", MagicMock(return_value=mock_tdee_service))
         
         # Mock Brain to return an iterator
-        def stream_generator(email, stats):
+        def stream_generator(email, weeks=3):
             yield "Analysis Part 1"
             yield "Analysis Part 2"
             
         mock_brain.generate_insight_stream.side_effect = stream_generator
         
-        response = client.get("/metabolism/insight?lookback_weeks=3")
+        # Note: the query param in the code is 'weeks', but here it was 'lookback_weeks'.
+        # Let's check the endpoint definition: weeks: int = 3
+        # So we should call with ?weeks=3
+        response = client.get("/metabolism/insight?weeks=3")
         
         assert response.status_code == 200
         assert "text/event-stream" in response.headers["content-type"]
@@ -80,7 +83,7 @@ class TestMetabolismInsight:
         import src.api.endpoints.metabolism as metabolism_module
         monkeypatch.setattr(metabolism_module, "AdaptiveTDEEService", MagicMock(return_value=mock_tdee_service))
         
-        response = client.get("/metabolism/insight?lookback_weeks=3")
+        response = client.get("/metabolism/insight?weeks=3")
         
         assert response.status_code == 200
         assert "Dados insuficientes" in response.text

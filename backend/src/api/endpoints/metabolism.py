@@ -32,15 +32,17 @@ async def get_metabolism_insight_stream(
     """
     Streams an AI-generated insight about the user's metabolism stats.
     """
+    # Quick check for data availability using TDEE service (lightweight check)
     tdee_service = AdaptiveTDEEService(db)
     stats = tdee_service.calculate_tdee(user_email, lookback_weeks=weeks)
     
+    # Check if there is absolutely no data or insufficient data
     if not stats or stats.get("confidence") == "none":
         async def empty_stream():
-            yield "Dados insuficientes para análise."
+            yield "Dados insuficientes para análise no período."
         return StreamingResponse(empty_stream(), media_type="text/event-stream")
 
     return StreamingResponse(
-        brain.generate_insight_stream(user_email, stats),
+        brain.generate_insight_stream(user_email, weeks=weeks),
         media_type="text/event-stream"
     )
