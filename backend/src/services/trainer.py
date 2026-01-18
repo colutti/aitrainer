@@ -383,7 +383,9 @@ class AITrainerBrain:
             yield chunk
 
         final_response = "".join(full_response)
-        log_response = (final_response[:500] + "...") if len(final_response) > 500 else final_response
+        # Flatten response for single-line logging
+        flat_response = final_response.replace("\n", "\\n")
+        log_response = (flat_response[:500] + "...") if len(flat_response) > 500 else flat_response
         logger.debug("LLM responded with: %s", log_response)
 
         # Save to MongoDB synchronously
