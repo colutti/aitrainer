@@ -69,7 +69,7 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     LLM_MODEL_NAME: str = "gemini-1.5-flash"
     EMBEDDER_MODEL_NAME: str = "text-embedding-004"
-    LLM_TEMPERATURE: float = 0.7
+    LLM_TEMPERATURE: float = 0.4
     EMBEDDING_MODEL_DIMS: int = 768
     PROMPT_TEMPLATE: str = PROMPT_TEMPLATE
 

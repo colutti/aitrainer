@@ -4,6 +4,7 @@ from src.trainers.atlas_trainer import AtlasTrainer
 from src.trainers.luna_trainer import LunaTrainer
 from src.trainers.sargento_trainer import SargentoTrainer
 from src.trainers.sofia_trainer import SofiaTrainer
+from src.trainers.gymbro_trainer import GymBroTrainer
 
 class TrainerRegistry:
     """
@@ -26,7 +27,8 @@ class TrainerRegistry:
             AtlasTrainer(),
             LunaTrainer(),
             SargentoTrainer(),
-            SofiaTrainer()
+            SofiaTrainer(),
+            GymBroTrainer()
         ]
         for trainer in trainers:
             self._trainers[trainer.trainer_id] = trainer
