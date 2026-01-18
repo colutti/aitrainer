@@ -1,6 +1,6 @@
 describe('Chat Bugs Reproduction', () => {
   beforeEach(() => {
-    // Essential startup intercepts for Dashboard
+    // Intercepts
     cy.intercept('GET', '**/trainer/trainer_profile', { body: { trainer_type: 'atlas' } }).as('trainerProfile');
     cy.intercept('GET', '**/trainer/available_trainers', { body: [{ trainer_id: 'atlas', name: 'Atlas', avatar_url: '/assets/atlas.png' }] }).as('availableTrainers');
     cy.intercept('GET', '**/message/history*', {
@@ -17,29 +17,10 @@ describe('Chat Bugs Reproduction', () => {
     cy.intercept('GET', '**/workout/stats', { body: { streak: 0, frequency: [] } }).as('getWorkoutStats');
     cy.intercept('GET', '**/nutrition/stats', { body: { daily_target: 2000, current_macros: {} } }).as('getNutritionStats');
 
-    // Bypass UI login with properly structured JWT
-    cy.visit('/', {
-        onBeforeLoad: (win) => {
-            // Create a valid JWT structure: header.payload.signature
-            const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-            const payload = btoa(JSON.stringify({ 
-              email: 'cypress_user@test.com', 
-              exp: Math.floor(Date.now() / 1000) + 3600 
-            }));
-            const signature = btoa('fake-signature');
-            const fakeJWT = `${header}.${payload}.${signature}`;
-            win.localStorage.setItem('jwt_token', fakeJWT);
-        }
-    });
-
-    // Wait for app to be ready and navigate to chat
-    cy.get('app-sidebar', { timeout: 10000 }).should('be.visible');
-    cy.get('app-dashboard', { timeout: 10000 }).should('be.visible');
-    cy.wait(500); // Let Angular settle
-    
-    cy.contains('button', 'Chat').click({ force: true });
+    // Login and navigate to chat
+    cy.login('cypress_user@test.com', 'Test1234!');
+    cy.get('app-sidebar').contains('Chat').click();
     cy.get('app-chat', { timeout: 10000 }).should('be.visible');
-    cy.wait(500); // Let chat component settle
   });
 
   it('Bug 1: Should show ONLY "Digitando" bubble (not an extra timestamp bubble) while AI is responding', () => {

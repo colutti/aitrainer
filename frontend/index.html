@@ -8,22 +8,30 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico" />
   <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
   <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            'primary': '#10b981', // emerald-500
-            'primary-hover': '#059669', // emerald-600
-            'accent': '#2563eb', // blue-600
-            'secondary': '#3f3f46', // zinc-700
-            'dark-bg': '#18181b', // zinc-900
-            'light-bg': '#27272a', // zinc-800
-            'text-primary': '#f4f4f5', // zinc-100
-            'text-secondary': '#a1a1aa', // zinc-400
-          }
+    // Aguardar o Tailwind carregar antes de configurar
+    (function() {
+      const checkTailwind = setInterval(function() {
+        if (typeof tailwind !== 'undefined') {
+          clearInterval(checkTailwind);
+          tailwind.config = {
+            theme: {
+              extend: {
+                colors: {
+                  'primary': '#10b981', // emerald-500
+                  'primary-hover': '#059669', // emerald-600
+                  'accent': '#2563eb', // blue-600
+                  'secondary': '#3f3f46', // zinc-700
+                  'dark-bg': '#18181b', // zinc-900
+                  'light-bg': '#27272a', // zinc-800
+                  'text-primary': '#f4f4f5', // zinc-100
+                  'text-secondary': '#a1a1aa', // zinc-400
+                }
+              }
+            }
+          };
         }
-      }
-    }
+      }, 10);
+    })();
   </script>
   <style>
     @keyframes slide-in-fade {

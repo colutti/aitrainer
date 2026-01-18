@@ -57,7 +57,7 @@
         </div>
 
         <!-- W3: Body Comp Trends Widget -->
-        <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors min-h-[160px]">
+        <div [attr.data-cy]="'body-composition-widget'" class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors min-h-[160px]">
           <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-4">Evolução Composição</p>
           
           <div *ngIf="!isMetabolismLoading(); else loadingMini">

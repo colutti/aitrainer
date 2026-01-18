@@ -24,7 +24,7 @@ describe('Login Flow', () => {
 
   it('should log in a user successfully and redirect to chat', () => {
     cy.get('input#email').clear().type('cypress_user@test.com');
-    cy.get('input#password').clear().type('Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
+    cy.get('input#password').clear().type('Test1234!');
     cy.get('button[type="submit"]').contains('Entrar').click();
 
     // After login, wait for URL to change first (more reliable indicator of routing)
@@ -37,7 +37,7 @@ describe('Login Flow', () => {
   });
 
   it('should log out the user', () => {
-    cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
+    cy.login('cypress_user@test.com', 'Test1234!');
 
     // Reload to ensure clean state and AuthService initialization from localStorage
     cy.reload();
