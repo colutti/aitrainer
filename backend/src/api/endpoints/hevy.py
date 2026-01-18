@@ -198,7 +198,7 @@ def get_webhook_config(
         
     # Build URL (using a placeholder domain if not configured)
     base_url = "https://aitrainer-backend.onrender.com"
-    webhook_url = f"{base_url}/api/integrations/hevy/webhook/{token}"
+    webhook_url = f"{base_url}/integrations/hevy/webhook/{token}"
     
     # Mask secret: Bearer ****abcd
     masked_auth = f"Bearer ****{secret[-4:]}" if secret else None
@@ -233,7 +233,7 @@ def generate_webhook_credentials(
         logger.info("Webhook credentials saved successfully.")
         
         base_url = "https://aitrainer-backend.onrender.com"
-        webhook_url = f"{base_url}/api/integrations/hevy/webhook/{token}"
+        webhook_url = f"{base_url}/integrations/hevy/webhook/{token}"
         
         return WebhookGenerateResponse(
             webhook_url=webhook_url,
