@@ -511,9 +511,14 @@ Analise meus dados e me dê seu feedback como treinador.
         
         input_data = {"user_prompt_content": user_prompt_content}
         
-        # Log the full prompt for debugging
-        full_prompt_log = f"\n=== 📤 INSIGHT PROMPT ENVIADO ===\n[SYSTEM]\n{system_prompt}\n\n[USER]\n{user_prompt_content}\n================================="
-        logger.info(full_prompt_log)
+        # Log the full prompt as single-line JSON to avoid log fragmentation
+        import json
+        prompt_log_data = {
+            "event": "INSIGHT_PROMPT_SENT",
+            "system": system_prompt,
+            "user": user_prompt_content
+        }
+        logger.info(json.dumps(prompt_log_data, ensure_ascii=False))
         
         # 5. Stream & Collect for Cache
         full_content = []
