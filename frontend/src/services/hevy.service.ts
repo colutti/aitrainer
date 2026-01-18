@@ -52,4 +52,22 @@ export class HevyService {
       this.http.post(`${this.apiUrl}/import`, { from_date: fromDate, mode }).pipe(timeout(60000)) // Longer for import
     );
   }
+
+  async getWebhookConfig(): Promise<{ has_webhook: boolean, webhook_url?: string, auth_header?: string }> {
+    return firstValueFrom(
+      this.http.get<{ has_webhook: boolean, webhook_url?: string, auth_header?: string }>(`${this.apiUrl}/webhook/config`).pipe(timeout(this.TIMEOUT_MS))
+    );
+  }
+
+  async generateWebhook(): Promise<{ webhook_url: string, auth_header: string }> {
+    return firstValueFrom(
+      this.http.post<{ webhook_url: string, auth_header: string }>(`${this.apiUrl}/webhook/generate`, {}).pipe(timeout(this.TIMEOUT_MS))
+    );
+  }
+
+  async revokeWebhook(): Promise<void> {
+    await firstValueFrom(
+      this.http.delete(`${this.apiUrl}/webhook`).pipe(timeout(this.TIMEOUT_MS))
+    );
+  }
 }

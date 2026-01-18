@@ -37,3 +37,24 @@ class UserRepository(BaseRepository):
             return True
         self.logger.debug("Failed password validation for user: %s", email)
         return False
+
+    def find_by_webhook_token(self, token: str) -> UserProfile | None:
+        """
+        Finds a user by their Hevy webhook token.
+        Ensures a sparse index exists on the token field.
+        
+        Args:
+            token: The unique webhook token.
+            
+        Returns:
+            UserProfile if found, None otherwise.
+        """
+        # Ensure index exists (idempotent)
+        self.collection.create_index("hevy_webhook_token", sparse=True)
+        
+        user_data = self.collection.find_one({"hevy_webhook_token": token})
+        if not user_data:
+            self.logger.debug("No user found for webhook token")
+            return None
+        self.logger.debug("Found user %s for webhook token", user_data.get("email"))
+        return UserProfile(**user_data)

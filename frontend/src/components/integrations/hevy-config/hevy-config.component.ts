@@ -62,6 +62,7 @@ export class HevyConfigComponent implements OnInit {
         this.lastSync.set(status.lastSync || null);
         this.viewState.set('connected');
         this.loadCount();
+        this.loadWebhookConfig();
       } else {
         this.resetInternalState();
         this.viewState.set('setup');
@@ -114,6 +115,68 @@ export class HevyConfigComponent implements OnInit {
       this.validating.set(false);
       this.cdr.detectChanges();
     }
+  }
+
+  // Webhook
+  webhookUrl = signal<string | null>(null);
+  webhookAuthHeader = signal<string | null>(null);
+  generatingWebhook = signal<boolean>(false);
+  showFullAuth = signal<boolean>(false);
+
+  async loadWebhookConfig() {
+    try {
+      const config = await this.hevyService.getWebhookConfig();
+      this.webhookUrl.set(config.webhook_url || null);
+      this.webhookAuthHeader.set(config.auth_header || null);
+      this.showFullAuth.set(false);
+    } catch (e) {
+      console.error('Failed to load webhook config', e);
+    }
+  }
+
+  async generateWebhook() {
+    this.generatingWebhook.set(true);
+    this.errorMessage.set('');
+    this.successMessage.set('');
+    this.cdr.detectChanges();
+    
+    try {
+      const creds = await this.hevyService.generateWebhook();
+      this.webhookUrl.set(creds.webhook_url);
+      this.webhookAuthHeader.set(creds.auth_header);
+      this.showFullAuth.set(true);
+      this.successMessage.set('Webhook configurado! Copie o segredo agora.');
+    } catch (e) {
+      this.errorMessage.set('Erro ao gerar webhook.');
+    } finally {
+      this.generatingWebhook.set(false);
+      this.cdr.detectChanges();
+    }
+  }
+
+  async revokeWebhook() {
+    if (!confirm('Tem certeza que deseja revogar o webhook? A sincronização automática irá parar.')) return;
+    
+    try {
+      await this.hevyService.revokeWebhook();
+      this.webhookUrl.set(null);
+      this.webhookAuthHeader.set(null);
+      this.showFullAuth.set(false);
+      this.successMessage.set('Webhook revogado.');
+    } catch (e) {
+      this.errorMessage.set('Erro ao revogar webhook.');
+    } finally {
+      this.cdr.detectChanges();
+    }
+  }
+
+  copyToClipboard(text: string, label: string) {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      this.successMessage.set(`${label} copiado!`);
+      setTimeout(() => this.successMessage.set(''), 2000);
+      this.cdr.detectChanges();
+    });
   }
 
   startDisconnect() {

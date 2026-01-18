@@ -31,6 +31,8 @@ class UserProfile(UserProfileInput):
     hevy_api_key: Optional[str] = Field(None, description="Hevy API key, encrypted")
     hevy_enabled: bool = Field(False, description="Integration enabled/disabled toggle")
     hevy_last_sync: Optional[datetime] = Field(None, description="Last successful sync timestamp")
+    hevy_webhook_token: Optional[str] = Field(None, description="Unique token for webhook URL path")
+    hevy_webhook_secret: Optional[str] = Field(None, description="Secret for Authorization header validation")
 
     def get_profile_summary(self) -> str:
         """

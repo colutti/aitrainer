@@ -77,6 +77,27 @@ class HevyService:
                 logger.error(f"Failed to fetch workouts page {page}: {e}")
                 return []
 
+    async def fetch_workout_by_id(self, api_key: str, workout_id: str) -> Optional[dict]:
+        """
+        Fetches a single workout by ID from Hevy API.
+        Used by webhook handler.
+        """
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(
+                    f"{self.BASE_URL}/workouts/{workout_id}",
+                    headers={"api-key": api_key},
+                    timeout=10.0
+                )
+                if response.status_code == 200:
+                    # Hevy API returns {"workout": {...}}
+                    return response.json().get("workout")
+                logger.warning(f"Hevy API workout fetch returned {response.status_code} for {workout_id}")
+                return None
+            except Exception as e:
+                logger.error(f"Failed to fetch workout {workout_id}: {e}")
+                return None
+
     def transform_to_workout_log(self, hevy_workout: dict, user_email: str) -> Optional[WorkoutLog]:
         """
         Transforms a Hevy workout dict to our WorkoutLog model.

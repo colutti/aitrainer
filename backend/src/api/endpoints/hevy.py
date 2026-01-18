@@ -119,3 +119,175 @@ async def import_workouts(
     brain.save_user_profile(profile)
         
     return result
+
+# ==================== WEBHOOK MODELS ====================
+
+class WebhookPayload(BaseModel):
+    """Payload sent by Hevy webhook."""
+    id: str
+    payload: dict
+
+class WebhookConfigResponse(BaseModel):
+    """Response for webhook configuration."""
+    has_webhook: bool
+    webhook_url: Optional[str] = None
+    auth_header: Optional[str] = None # Masked for display
+
+class WebhookGenerateResponse(BaseModel):
+    """Response when generating webhook credentials."""
+    webhook_url: str
+    auth_header: str # FULL secret to show user once
+
+# ==================== WEBHOOK PROCESSING ====================
+
+async def process_webhook_async(
+    user_email: str,
+    api_key: str,
+    workout_id: str,
+    hevy_service: HevyService
+):
+    """
+    Background task to process Hevy webhook.
+    Fetches workout, transforms and saves.
+    """
+    from src.core.logs import logger
+    logger.info(f"[Webhook BG] Processing workout {workout_id} for {user_email}")
+    
+    try:
+        # 1. Fetch from Hevy
+        hevy_workout = await hevy_service.fetch_workout_by_id(api_key, workout_id)
+        if not hevy_workout:
+            logger.error(f"[Webhook BG] Workout {workout_id} not found in Hevy")
+            return
+            
+        # 2. Transform
+        workout_log = hevy_service.transform_to_workout_log(hevy_workout, user_email)
+        if not workout_log:
+            logger.error(f"[Webhook BG] Failed to transform workout {workout_id}")
+            return
+            
+        # 3. Save (deduplication handled by repository/service)
+        hevy_service.workout_repository.save_log(workout_log)
+        logger.info(f"[Webhook BG] Successfully synced workout {workout_id} for {user_email}")
+        
+    except Exception as e:
+        logger.error(f"[Webhook BG] Error: {e}")
+
+# ==================== WEBHOOK ENDPOINTS ====================
+
+from fastapi import BackgroundTasks, Header, Request
+import secrets
+
+@router.post("/webhook/{user_token}", include_in_schema=False)
+async def receive_hevy_webhook(
+    user_token: str,
+    body: WebhookPayload,
+    background_tasks: BackgroundTasks,
+    brain: BrainDep,
+    hevy_service: HevyServiceDep,
+    authorization: Optional[str] = Header(None)
+):
+    """
+    Receives webhook from Hevy. Identifies user by token and validates auth header.
+    Responds immediately and processes in background.
+    """
+    from src.core.logs import logger
+    
+    # 1. Find user by token
+    user_profile = brain._database.users.find_by_webhook_token(user_token)
+    if not user_profile:
+        logger.warning(f"[Webhook] Invalid token attempt: {user_token[:8]}...")
+        raise HTTPException(status_code=404, detail="Invalid token")
+        
+    # 2. Validate Authorization
+    if user_profile.hevy_webhook_secret:
+        expected = f"Bearer {user_profile.hevy_webhook_secret}"
+        if authorization != expected:
+            logger.warning(f"[Webhook] Unauthorized attempt for {user_profile.email}")
+            raise HTTPException(status_code=401, detail="Invalid authorization")
+            
+    # 3. Extract workout ID
+    workout_id = body.payload.get("workoutId")
+    if not workout_id:
+        raise HTTPException(status_code=400, detail="Missing workoutId")
+        
+    # 4. Queue background task
+    background_tasks.add_task(
+        process_webhook_async,
+        user_email=user_profile.email,
+        api_key=user_profile.hevy_api_key,
+        workout_id=workout_id,
+        hevy_service=hevy_service
+    )
+    
+    return {"status": "queued"}
+
+@router.get("/webhook/config")
+def get_webhook_config(
+    user_email: CurrentUser,
+    brain: BrainDep
+) -> WebhookConfigResponse:
+    """Returns current webhook configuration."""
+    profile = brain.get_user_profile(user_email)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+        
+    token = getattr(profile, "hevy_webhook_token", None)
+    secret = getattr(profile, "hevy_webhook_secret", None)
+    
+    if not token:
+        return WebhookConfigResponse(has_webhook=False)
+        
+    # Build URL (using a placeholder domain if not configured)
+    base_url = "https://aitrainer-backend.onrender.com"
+    webhook_url = f"{base_url}/api/integrations/hevy/webhook/{token}"
+    
+    # Mask secret: Bearer ****abcd
+    masked_auth = f"Bearer ****{secret[-4:]}" if secret else None
+    
+    return WebhookConfigResponse(
+        has_webhook=True,
+        webhook_url=webhook_url,
+        auth_header=masked_auth
+    )
+
+@router.post("/webhook/generate")
+def generate_webhook_credentials(
+    user_email: CurrentUser,
+    brain: BrainDep
+) -> WebhookGenerateResponse:
+    """Generates a new webhook token and secret."""
+    profile = brain.get_user_profile(user_email)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+        
+    token = secrets.token_urlsafe(16)
+    secret = secrets.token_urlsafe(24)
+    
+    profile.hevy_webhook_token = token
+    profile.hevy_webhook_secret = secret
+    brain.save_user_profile(profile)
+    
+    base_url = "https://aitrainer-backend.onrender.com"
+    webhook_url = f"{base_url}/api/integrations/hevy/webhook/{token}"
+    
+    return WebhookGenerateResponse(
+        webhook_url=webhook_url,
+        auth_header=f"Bearer {secret}"
+    )
+
+@router.delete("/webhook")
+def revoke_webhook(
+    user_email: CurrentUser,
+    brain: BrainDep
+):
+    """Revokes current webhook credentials."""
+    profile = brain.get_user_profile(user_email)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+        
+    profile.hevy_webhook_token = None
+    profile.hevy_webhook_secret = None
+    brain.save_user_profile(profile)
+    
+    return {"message": "Webhook credentials revoked"}

@@ -196,6 +196,95 @@
             </div>
           </div>
         </div>
+
+        <!-- Webhook Section -->
+        <div class="mt-6 p-4 rounded-xl bg-gradient-to-br from-blue-500/5 to-purple-500/5 border border-white/10 space-y-4">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">🔗</span>
+            <h3 class="text-sm font-bold text-white">Sincronização Automática</h3>
+          </div>
+          
+          <p class="text-xs text-gray-400">
+            Configure o webhook no app Hevy para sincronizar treinos automaticamente.
+          </p>
+
+          <div *ngIf="webhookUrl()" class="space-y-4">
+            <!-- URL -->
+            <div>
+              <label class="text-[9px] text-gray-500 font-bold uppercase mb-1 block">
+                URL do Webhook
+              </label>
+              <div class="flex items-center gap-2">
+                <input 
+                  type="text" 
+                  readonly 
+                  [value]="webhookUrl()" 
+                  class="flex-1 rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-gray-300 text-[10px] font-mono truncate"
+                />
+                <button 
+                  (click)="copyToClipboard(webhookUrl()!, 'URL')" 
+                  class="px-2 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 text-sm"
+                  title="Copiar URL"
+                >📋</button>
+              </div>
+            </div>
+            
+            <!-- Authorization Header -->
+            <div>
+              <label class="text-[9px] text-gray-500 font-bold uppercase mb-1 block">
+                Authorization Header
+              </label>
+              <div class="flex items-center gap-2">
+                <input 
+                  type="text" 
+                  readonly 
+                  [value]="webhookAuthHeader()" 
+                  class="flex-1 rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-gray-300 text-[10px] font-mono"
+                />
+                <button 
+                  (click)="copyToClipboard(webhookAuthHeader()!, 'Header')" 
+                  class="px-2 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 text-sm"
+                  title="Copiar Header"
+                >📋</button>
+              </div>
+            </div>
+
+            <!-- Warning if just generated -->
+            <div *ngIf="showFullAuth()" class="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+              <p class="text-xs text-yellow-300 font-medium">
+                ⚠️ Copie o Authorization Header agora! Ele não será mostrado novamente por segurança.
+              </p>
+            </div>
+            
+            <!-- Instructions -->
+            <div class="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 space-y-2">
+              <p class="text-xs text-blue-300 font-bold">📱 No app Hevy:</p>
+              <ol class="text-xs text-blue-200 space-y-1 list-decimal list-inside">
+                <li>Settings → Webhooks</li>
+                <li>Cole a <strong>URL</strong> no campo "URL"</li>
+                <li>Cole o <strong>Authorization Header</strong></li>
+                <li>Salve</li>
+              </ol>
+            </div>
+
+            <button 
+              (click)="revokeWebhook()"
+              class="w-full text-[10px] text-red-400 hover:underline uppercase font-bold tracking-widest text-center"
+            >
+              Revogar Webhook
+            </button>
+          </div>
+
+          <div *ngIf="!webhookUrl()">
+            <button 
+              (click)="generateWebhook()"
+              [disabled]="generatingWebhook()"
+              class="w-full rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3 font-bold text-sm text-white hover:from-blue-500 hover:to-purple-500 disabled:opacity-50 shadow-lg"
+            >
+              {{ generatingWebhook() ? 'Gerando...' : '⚡ Ativar Sincronização Automática' }}
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Confirm Disconnect State -->
