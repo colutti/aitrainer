@@ -13,6 +13,7 @@ from src.services.database import MongoDatabase
 from src.services.llm_client import LLMClient
 from src.services.workout_tools import create_save_workout_tool, create_get_workouts_tool
 from src.services.nutrition_tools import create_save_nutrition_tool, create_get_nutrition_tool
+from src.services.composition_tools import create_save_composition_tool, create_get_composition_tool
 from src.core.logs import logger
 from src.api.models.chat_history import ChatHistory
 from src.api.models.user_profile import UserProfile
@@ -353,6 +354,10 @@ class AITrainerBrain:
         save_nutrition_tool = create_save_nutrition_tool(self._database, user_email)
         get_nutrition_tool = create_get_nutrition_tool(self._database, user_email)
         
+        # Create composition tracking tools
+        save_composition_tool = create_save_composition_tool(self._database, user_email)
+        get_composition_tool = create_get_composition_tool(self._database, user_email)
+        
         # Create Hevy tools
         from src.services.hevy_tools import (
             create_list_hevy_routines_tool,
@@ -373,6 +378,8 @@ class AITrainerBrain:
             get_workouts_tool, 
             save_nutrition_tool, 
             get_nutrition_tool,
+            save_composition_tool,
+            get_composition_tool,
             list_hevy_routines_tool,
             create_hevy_routine_tool,
             update_hevy_routine_tool,

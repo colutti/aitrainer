@@ -18,7 +18,7 @@ describe('Chat Flow', () => {
     cy.intercept('GET', '**/nutrition/stats', { body: { daily_target: 2000, current_macros: {} } }).as('getNutritionStats');
 
     // Login and navigate to chat
-    cy.login('cypress_user@test.com', 'Test1234!');
+    cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
     cy.get('app-sidebar').contains('Chat').click();
     cy.get('app-chat', { timeout: 10000 }).should('be.visible');
   });

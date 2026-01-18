@@ -62,8 +62,8 @@ describe('Dashboard View', () => {
     cy.intercept('GET', '**/weight/stats*', { 
       body: { latest: null, weight_trend: [], fat_trend: [], muscle_trend: [] } 
     }).as('getWeightStats');
-    
-    cy.login('cypress_user@test.com', 'Test1234!'); // Password doesn't matter with mock
+    // Login
+    cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661'); // Password doesn't matter with mock
   });
 
   it('should land on dashboard after login', () => {

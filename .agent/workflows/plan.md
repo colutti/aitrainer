@@ -12,4 +12,5 @@ Instrucoes para criar um plano
 - Testar a funcionalidade bem como regressao de problemas usando o workflow test.md
 - Evitar testes via navegador, se algo puder ser testado que seja testado com um teste automatizado sempre que possivel.
 - A aplicacao e publicada no render com docker. Veja o workflow publish.md
-- So faca a publicacao em prod com o consentimento do usuario e se a 
+- So faca a publicacao em prod com o consentimento do usuario.
+- Tem que haver testes para as funcionalidades criadas.
