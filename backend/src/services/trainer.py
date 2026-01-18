@@ -369,14 +369,14 @@ class AITrainerBrain:
             update_user_goal_tool
         ]
         
-        tool_was_called = False
+        write_tool_was_called = False
         full_response = []
         for chunk in self._llm_client.stream_with_tools(
             prompt_template=prompt_template, input_data=input_data, tools=tools
         ):
             # Check for end-of-stream signal
             if isinstance(chunk, tuple):
-                _, tool_was_called = chunk
+                _, write_tool_was_called = chunk
                 continue  # Don't yield the signal tuple
 
             full_response.append(chunk)
@@ -392,7 +392,7 @@ class AITrainerBrain:
         self._add_to_mongo_history(user_email, user_input, final_response, current_trainer_type)
         
         if background_tasks:
-            if not tool_was_called:
+            if not write_tool_was_called:
                 background_tasks.add_task(
                     _add_to_mem0_background,
                     memory=self._memory,
@@ -402,7 +402,7 @@ class AITrainerBrain:
                 )
                 logger.info("Scheduled Mem0 background task for user: %s", user_email)
             else:
-                logger.info("Skipped Mem0 storage - tool was called for user: %s", user_email)
+                logger.info("Skipped Mem0 storage - write tool was called for user: %s", user_email)
 
     def generate_insight_stream(self, user_email: str, stats: dict):
         """

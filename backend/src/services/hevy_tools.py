@@ -100,7 +100,7 @@ def create_search_hevy_exercises_tool(hevy_service, database, user_email: str):
     return search_hevy_exercises
 
 def create_create_hevy_routine_tool(hevy_service, database, user_email: str):
-    @tool
+    @tool(extras={"is_write_operation": True})
     def create_hevy_routine(
         title: str,
         exercises: list[dict],
@@ -183,7 +183,7 @@ def create_create_hevy_routine_tool(hevy_service, database, user_email: str):
     return create_hevy_routine
 
 def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
-    @tool
+    @tool(extras={"is_write_operation": True})
     def update_hevy_routine(
         routine_id: str,
         title: str | None = None,

@@ -20,7 +20,7 @@ def create_save_nutrition_tool(database, user_email: str):
     """
     from src.api.models.nutrition_log import NutritionLog
 
-    @tool
+    @tool(extras={"is_write_operation": True})
     def save_daily_nutrition(
         calories: int,
         protein_grams: float,

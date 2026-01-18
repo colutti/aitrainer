@@ -21,7 +21,7 @@ def create_save_workout_tool(database, user_email: str):
     # Import here to avoid circular imports
     from src.api.models.workout_log import WorkoutLog, ExerciseLog
 
-    @tool
+    @tool(extras={"is_write_operation": True})
     def save_workout(
         workout_type: str,
         exercises: list[dict],

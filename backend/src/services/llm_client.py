@@ -81,7 +81,14 @@ class LLMClient:
             # Create the ReAct agent
             agent = create_react_agent(self._llm, tools)
             
-            tool_was_called = False
+            # Map tool names to their write status (default False)
+            write_tools = {
+                t.name: t.extras.get("is_write_operation", False)
+                for t in tools
+                if hasattr(t, "extras") and t.extras
+            }
+            
+            write_tool_was_called = False
 
             # Stream the agent execution with increased recursion limit
             # Default is 25, but complex tool chains may need more
@@ -93,8 +100,13 @@ class LLMClient:
             ):
                 # Detect tool calls in the stream
                 if hasattr(event, 'tool_calls') and event.tool_calls:
-                    tool_was_called = True
-                    logger.debug("Tool call detected: %s", event.tool_calls)
+                    for tc in event.tool_calls:
+                        tool_name = tc.get("name", "")
+                        if write_tools.get(tool_name, False):
+                            write_tool_was_called = True
+                            logger.debug("Write tool call detected: %s", tool_name)
+                        else:
+                            logger.debug("Read tool call detected (memory ok): %s", tool_name)
 
                 # Filter for AIMessageChunks (actual response content)
                 if isinstance(event, AIMessage) and event.content:
@@ -108,8 +120,8 @@ class LLMClient:
                             elif isinstance(block, dict) and "text" in block:
                                 yield block["text"]
 
-            # Signal end of stream with tool usage flag
-            yield ("", tool_was_called)
+            # Signal end of stream with write tool usage flag
+            yield ("", write_tool_was_called)
 
         except Exception as e:
             logger.error("Error in stream_with_tools: %s", e)
