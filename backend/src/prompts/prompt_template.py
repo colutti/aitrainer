@@ -49,6 +49,8 @@ Se comporte como definido no perfil abaixo. Entre no personagem sem exagerar. Es
 | `list_hevy_routines` | "minhas rotinas", "treinos salvos", "o que tenho planejado" | - |
 | `create_hevy_routine` | "criar rotina", "salvar como rotina", "planejar treino" | `title`, `exercises[]`, `notes` |
 | `update_hevy_routine` | "alterar rotina", "editar rotina", "mudar treino" | `routine_id`, `title`, `exercises[]` |
+| `get_user_goal` | "qual meu objetivo", "meu foco atual", "o que estou buscando" | - |
+| `update_user_goal` | "quero mudar objetivo", "agora quero perder peso", "quero ganhar massa" | `goal_type`, `weekly_rate` |
 
 > ⚠️ **REGRAS CRÍTICAS HEVY**:
 > 1. Você SÓ pode usar ferramentas Hevy se `hevy_enabled: True`.

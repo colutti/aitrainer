@@ -24,7 +24,7 @@ describe('User Profile Flow', () => {
     cy.get('select[name="gender"]').should('be.visible');
     cy.get('input[name="weight"]').should('be.visible');
     cy.get('input[name="height"]').should('be.visible');
-    cy.get('input[name="goal"]').should('be.visible');
+    cy.get('textarea[name="notes"]').should('be.visible');
   });
 
   it('should allow updating all user profile fields', () => {
@@ -32,14 +32,14 @@ describe('User Profile Flow', () => {
       age: '30',
       weight: '75',
       height: '175',
-      goal: 'Ganhar massa muscular',
+      notes: 'Lesão no joelho esquerdo e foco em hipertrofia',
     };
 
     // Fill all fields
     cy.get('input[name="age"]').clear().type(testData.age);
     cy.get('input[name="weight"]').clear().type(testData.weight);
     cy.get('input[name="height"]').clear().type(testData.height);
-    cy.get('input[name="goal"]').clear().type(testData.goal);
+    cy.get('textarea[name="notes"]').clear().type(testData.notes);
     
     // Select Goal Type
     cy.get('select[name="goal_type"]').select('Perder Peso');
@@ -53,15 +53,12 @@ describe('User Profile Flow', () => {
     // Check for success message
     cy.contains('Perfil salvo com sucesso!').should('be.visible');
 
-    // Re-verify the fields have the new values after navigation
-    cy.get('app-sidebar button').contains('Chat').click();
-    cy.get('app-sidebar button').contains('Meu Perfil').click();
-
+    // Re-verify the fields have the new values
     cy.get('input[name="age"]').should('have.value', testData.age);
     cy.get('input[name="weight"]').should('have.value', testData.weight);
     cy.get('input[name="height"]').should('have.value', testData.height);
-    cy.get('input[name="goal"]').should('have.value', testData.goal);
-    cy.get('select[name="goal_type"]').should('have.value', 'lose'); // assuming 'Perder Peso' maps to 'lose'
+    cy.get('textarea[name="notes"]').should('have.value', testData.notes);
+    cy.get('select[name="goal_type"]').should('have.value', 'lose');
     cy.get('input[name="weekly_rate"]').should('have.value', '0.5');
     cy.get('select[name="gender"]').should('have.value', 'Masculino');
   });

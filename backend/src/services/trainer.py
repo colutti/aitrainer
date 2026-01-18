@@ -373,6 +373,11 @@ class AITrainerBrain:
         update_hevy_routine_tool = create_update_hevy_routine_tool(hevy_service, self._database, user_email)
         search_hevy_exercises_tool = create_search_hevy_exercises_tool(hevy_service, self._database, user_email)
         
+        # Create profile management tools
+        from src.services.profile_tools import create_get_user_goal_tool, create_update_user_goal_tool
+        get_user_goal_tool = create_get_user_goal_tool(self._database, user_email)
+        update_user_goal_tool = create_update_user_goal_tool(self._database, user_email)
+        
         tools = [
             save_workout_tool, 
             get_workouts_tool, 
@@ -383,7 +388,9 @@ class AITrainerBrain:
             list_hevy_routines_tool,
             create_hevy_routine_tool,
             update_hevy_routine_tool,
-            search_hevy_exercises_tool
+            search_hevy_exercises_tool,
+            get_user_goal_tool,
+            update_user_goal_tool
         ]
         
         tool_was_called = False

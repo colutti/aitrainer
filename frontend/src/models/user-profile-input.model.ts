@@ -3,8 +3,9 @@ export interface UserProfileInput {
   age: number;
   weight: number;
   height: number;
-  goal: string;
+  goal?: string;
   goal_type: 'lose' | 'gain' | 'maintain';
   target_weight?: number;
   weekly_rate: number;
+  notes?: string;
 }

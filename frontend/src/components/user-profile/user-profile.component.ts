@@ -43,7 +43,8 @@ export class UserProfileComponent implements OnInit {
     goal: '',
     email: '',
     goal_type: 'maintain',
-    weekly_rate: 0.5
+    weekly_rate: 0,
+    notes: ''
   });
 
   isSaving = signal(false);
@@ -77,7 +78,8 @@ export class UserProfileComponent implements OnInit {
       goal: this.profile().goal,
       goal_type: this.profile().goal_type,
       weekly_rate: this.profile().goal_type === 'maintain' ? 0 : this.profile().weekly_rate,
-      target_weight: this.profile().target_weight
+      target_weight: this.profile().target_weight,
+      notes: this.profile().notes
     };
 
     try {

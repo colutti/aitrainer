@@ -27,7 +27,7 @@
         </div>
 
         <div>
-          <label for="weight" class="block text-sm font-medium text-text-secondary">Peso (kg)</label>
+          <label for="weight" class="block text-sm font-medium text-text-secondary">Peso Inicial (kg)</label>
           <input type="number" appNumericInput name="weight" id="weight" step="0.1" [(ngModel)]="profile().weight"
             class="mt-1 block w-full px-3 py-2 bg-dark-bg border border-secondary rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
           @if(validationErrors()['weight']) {
@@ -42,10 +42,10 @@
         </div>
 
         <div class="sm:col-span-2">
-          <label for="goal" class="block text-sm font-medium text-text-secondary">Objetivo Principal (Descrição)</label>
-          <input type="text" name="goal" id="goal" [(ngModel)]="profile().goal"
-            placeholder="Ex: Ganhar massa muscular e perder gordura"
-            class="mt-1 block w-full px-3 py-2 bg-dark-bg border border-secondary rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
+          <label for="notes" class="block text-sm font-medium text-text-secondary">Observações</label>
+          <textarea name="notes" id="notes" [(ngModel)]="profile().notes" rows="3"
+            placeholder="Ex: Lesões antigas, restrições alimentares, preferências de treino..."
+            class="mt-1 block w-full px-3 py-2 bg-dark-bg border border-secondary rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"></textarea>
         </div>
 
         <div>
@@ -63,7 +63,13 @@
            <input type="number" appNumericInput name="weekly_rate" id="weekly_rate" step="0.1" [(ngModel)]="profile().weekly_rate"
              [disabled]="profile().goal_type === 'maintain'"
              class="mt-1 block w-full px-3 py-2 bg-dark-bg border border-secondary rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+           @if(profile().goal_type !== 'maintain') {
+             <p class="mt-1 text-xs text-primary font-semibold">* Obrigatório para este objetivo.</p>
+           }
            <p class="mt-1 text-xs text-text-secondary">Recomendado: 0.2kg a 0.5kg/semana</p>
+           @if(validationErrors()['weekly_rate']) {
+             <p class="mt-1 text-sm text-red-400">{{ validationErrors()['weekly_rate'] }}</p>
+           }
         </div>
       </div>
 
