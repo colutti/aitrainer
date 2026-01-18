@@ -266,7 +266,16 @@ def generate_webhook_credentials(
     
     profile.hevy_webhook_token = token
     profile.hevy_webhook_secret = secret
-    brain.save_user_profile(profile)
+    
+    try:
+        from src.core.logs import logger
+        logger.info(f"Generating webhook for {user_email}. Token: {token[:4]}...")
+        brain.save_user_profile(profile)
+        logger.info("Webhook credentials saved successfully.")
+    except Exception as e:
+        from src.core.logs import logger
+        logger.exception(f"CRITICAL: Failed to save webhook credentials for {user_email}")
+        raise HTTPException(status_code=500, detail=f"Failed to save webhook credentials: {str(e)}")
     
     base_url = "https://aitrainer-backend.onrender.com"
     webhook_url = f"{base_url}/api/integrations/hevy/webhook/{token}"
