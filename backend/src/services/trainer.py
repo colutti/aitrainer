@@ -511,14 +511,12 @@ Analise meus dados e me dê seu feedback como treinador.
         
         input_data = {"user_prompt_content": user_prompt_content}
         
-        # Log the full prompt as single-line JSON to avoid log fragmentation
-        import json
-        prompt_log_data = {
-            "event": "INSIGHT_PROMPT_SENT",
-            "system": system_prompt,
-            "user": user_prompt_content
-        }
-        logger.info(json.dumps(prompt_log_data, ensure_ascii=False))
+        # Log the full prompt in a single line for easy reading in server logs
+        # Replace newlines with spaces to prevent log splitting
+        clean_system = system_prompt.replace('\n', ' ')
+        clean_user = user_prompt_content.replace('\n', ' ')
+        
+        logger.info(f"📤 INSIGHT PROMPT ENVIADO | SYSTEM: {clean_system} | USER: {clean_user}")
         
         # 5. Stream & Collect for Cache
         full_content = []
