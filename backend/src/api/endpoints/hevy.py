@@ -174,53 +174,11 @@ async def process_webhook_async(
         logger.error(f"[Webhook BG] Error: {e}")
 
 # ==================== WEBHOOK ENDPOINTS ====================
+# IMPORTANT: Static routes MUST be declared BEFORE parameterized routes!
+# Otherwise FastAPI will match /webhook/generate as /webhook/{user_token}
 
 from fastapi import BackgroundTasks, Header, Request
 import secrets
-
-@router.post("/webhook/{user_token}", include_in_schema=False)
-async def receive_hevy_webhook(
-    user_token: str,
-    body: WebhookPayload,
-    background_tasks: BackgroundTasks,
-    brain: BrainDep,
-    hevy_service: HevyServiceDep,
-    authorization: Optional[str] = Header(None)
-):
-    """
-    Receives webhook from Hevy. Identifies user by token and validates auth header.
-    Responds immediately and processes in background.
-    """
-    from src.core.logs import logger
-    
-    # 1. Find user by token
-    user_profile = brain._database.users.find_by_webhook_token(user_token)
-    if not user_profile:
-        logger.warning(f"[Webhook] Invalid token attempt: {user_token[:8]}...")
-        raise HTTPException(status_code=404, detail="Invalid token")
-        
-    # 2. Validate Authorization
-    if user_profile.hevy_webhook_secret:
-        expected = f"Bearer {user_profile.hevy_webhook_secret}"
-        if authorization != expected:
-            logger.warning(f"[Webhook] Unauthorized attempt for {user_profile.email}")
-            raise HTTPException(status_code=401, detail="Invalid authorization")
-            
-    # 3. Extract workout ID
-    workout_id = body.payload.get("workoutId")
-    if not workout_id:
-        raise HTTPException(status_code=400, detail="Missing workoutId")
-        
-    # 4. Queue background task
-    background_tasks.add_task(
-        process_webhook_async,
-        user_email=user_profile.email,
-        api_key=user_profile.hevy_api_key,
-        workout_id=workout_id,
-        hevy_service=hevy_service
-    )
-    
-    return {"status": "queued"}
 
 @router.get("/webhook/config")
 def get_webhook_config(
@@ -303,3 +261,48 @@ def revoke_webhook(
     brain.save_user_profile(profile)
     
     return {"message": "Webhook credentials revoked"}
+
+# Parameterized route MUST come LAST
+@router.post("/webhook/{user_token}", include_in_schema=False)
+async def receive_hevy_webhook(
+    user_token: str,
+    body: WebhookPayload,
+    background_tasks: BackgroundTasks,
+    brain: BrainDep,
+    hevy_service: HevyServiceDep,
+    authorization: Optional[str] = Header(None)
+):
+    """
+    Receives webhook from Hevy. Identifies user by token and validates auth header.
+    Responds immediately and processes in background.
+    """
+    from src.core.logs import logger
+    
+    # 1. Find user by token
+    user_profile = brain._database.users.find_by_webhook_token(user_token)
+    if not user_profile:
+        logger.warning(f"[Webhook] Invalid token attempt: {user_token[:8]}...")
+        raise HTTPException(status_code=404, detail="Invalid token")
+        
+    # 2. Validate Authorization
+    if user_profile.hevy_webhook_secret:
+        expected = f"Bearer {user_profile.hevy_webhook_secret}"
+        if authorization != expected:
+            logger.warning(f"[Webhook] Unauthorized attempt for {user_profile.email}")
+            raise HTTPException(status_code=401, detail="Invalid authorization")
+            
+    # 3. Extract workout ID
+    workout_id = body.payload.get("workoutId")
+    if not workout_id:
+        raise HTTPException(status_code=400, detail="Missing workoutId")
+        
+    # 4. Queue background task
+    background_tasks.add_task(
+        process_webhook_async,
+        user_email=user_profile.email,
+        api_key=user_profile.hevy_api_key,
+        workout_id=workout_id,
+        hevy_service=hevy_service
+    )
+    
+    return {"status": "queued"}
