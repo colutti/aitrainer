@@ -257,33 +257,36 @@ def generate_webhook_credentials(
     brain: BrainDep
 ) -> WebhookGenerateResponse:
     """Generates a new webhook token and secret."""
-    profile = brain.get_user_profile(user_email)
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-        
-    token = secrets.token_urlsafe(16)
-    secret = secrets.token_urlsafe(24)
-    
-    profile.hevy_webhook_token = token
-    profile.hevy_webhook_secret = secret
-    
     try:
         from src.core.logs import logger
+        
+        profile = brain.get_user_profile(user_email)
+        if not profile:
+            raise HTTPException(status_code=404, detail="Profile not found")
+            
+        token = secrets.token_urlsafe(16)
+        secret = secrets.token_urlsafe(24)
+        
+        profile.hevy_webhook_token = token
+        profile.hevy_webhook_secret = secret
+        
         logger.info(f"Generating webhook for {user_email}. Token: {token[:4]}...")
         brain.save_user_profile(profile)
         logger.info("Webhook credentials saved successfully.")
+        
+        base_url = "https://aitrainer-backend.onrender.com"
+        webhook_url = f"{base_url}/api/integrations/hevy/webhook/{token}"
+        
+        return WebhookGenerateResponse(
+            webhook_url=webhook_url,
+            auth_header=f"Bearer {secret}"
+        )
+    except HTTPException:
+        raise
     except Exception as e:
         from src.core.logs import logger
-        logger.exception(f"CRITICAL: Failed to save webhook credentials for {user_email}")
-        raise HTTPException(status_code=500, detail=f"Failed to save webhook credentials: {str(e)}")
-    
-    base_url = "https://aitrainer-backend.onrender.com"
-    webhook_url = f"{base_url}/api/integrations/hevy/webhook/{token}"
-    
-    return WebhookGenerateResponse(
-        webhook_url=webhook_url,
-        auth_header=f"Bearer {secret}"
-    )
+        logger.exception(f"CRITICAL UNHANDLED ERROR in generate_webhook: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 @router.delete("/webhook")
 def revoke_webhook(
