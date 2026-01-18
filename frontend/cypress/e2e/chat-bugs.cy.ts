@@ -1,24 +1,23 @@
 describe('Chat Bugs Reproduction', () => {
   beforeEach(() => {
-    // Intercepts
-    cy.intercept('GET', '**/trainer/trainer_profile', { body: { trainer_type: 'atlas' } }).as('trainerProfile');
-    cy.intercept('GET', '**/trainer/available_trainers', { body: [{ trainer_id: 'atlas', name: 'Atlas', avatar_url: '/assets/atlas.png' }] }).as('availableTrainers');
-    cy.intercept('GET', '**/message/history*', {
-      statusCode: 200,
-      body: [
-          {
-            sender: 'ai',
-            text: 'Olá! Como posso ajudar hoje?',
-            timestamp: new Date().toISOString()
-          }
-      ]
-    }).as('chatHistory');
-    cy.intercept('GET', '**/weight/stats*', { body: { latest: null, weight_trend: [] } }).as('getWeightStats');
-    cy.intercept('GET', '**/workout/stats', { body: { streak: 0, frequency: [] } }).as('getWorkoutStats');
-    cy.intercept('GET', '**/nutrition/stats', { body: { daily_target: 2000, current_macros: {} } }).as('getNutritionStats');
+    // 100% Mocked Login
+    cy.mockLogin({
+      intercepts: {
+        '**/message/history*': {
+          statusCode: 200,
+          body: [
+              {
+                sender: 'ai',
+                text: 'Olá! Como posso ajudar hoje?',
+                timestamp: new Date().toISOString()
+              }
+          ],
+          alias: 'chatHistory'
+        }
+      }
+    });
 
-    // Login and navigate
-    cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
+    // Navigate to chat
     cy.get('app-sidebar').contains('Chat').click();
     cy.get('app-chat', { timeout: 10000 }).should('be.visible');
   });

@@ -66,12 +66,9 @@ class AITrainerBrain:
         )
         rendered_prompt = prompt_template.format(**input_data)
         
-        # Multi-line formatted logging for better readability
-        separator = "=" * 60
-        logger.debug(
-            "\n%s\n📤 PROMPT ENVIADO AO LLM\n%s\n%s\n%s",
-            separator, separator, rendered_prompt, separator
-        )
+        # Flatten prompt for single-line logging
+        single_line_prompt = rendered_prompt.replace("\n", "\\n")
+        logger.debug("📤 PROMPT ENVIADO AO LLM: %s", single_line_prompt)
         return prompt_template
 
     # _extract_conversation_text removed (obsolete)
@@ -305,41 +302,11 @@ class AITrainerBrain:
         trainer_profile_summary = trainer_profile_obj.get_trainer_profile_summary()
         user_profile_summary = profile.get_profile_summary()
 
-        # Metabolism Context Injection
-        metabolism_context = "Dadox insuficientes para cálculo metabólico."
-        try:
-             from src.services.adaptive_tdee import AdaptiveTDEEService
-             tdee_service = AdaptiveTDEEService(self._database)
-             targets = tdee_service.get_current_targets(user_email)
-             
-             if targets.get("tdee"):
-                 tdee = targets["tdee"]
-                 target = targets["daily_target"]
-                 reason = targets["reason"]
-                 status = targets.get("status", "maintenance")
-                 balance = targets.get("energy_balance", 0)
-                 
-                 metabolism_context = (
-                     f"- **TDEE Estimado**: {tdee} kcal\n"
-                     f"- **Meta Diária Recomendada**: {target} kcal\n"
-                     f"- **Status Metabólico Atual**: {status} ({balance:+} kcal/dia)\n"
-                     f"- **Justificativa**: {reason}\n"
-                     f"> REGRAS CRÍTICAS:\n"
-                     f"> 1. Se o status for 'deficit', o aluno ESTÁ PERDENDO peso.\n"
-                     f"> 2. O TDEE é baseado na média histórica. PERGUNTE ao aluno se ele pretende manter a frequência de treinos nesta semana.\n"
-                     f"> 3. Se ele for treinar MENOS que a média, sugira reduzir a meta (ex: -200kcal).\n"
-                     f"> 4. Se ele for treinar MAIS, sugira aumentar levemente.\n"
-                     f"> 5. Explique que o TDEE já inclui os treinos na média semanal."
-                 )
-        except Exception as e:
-             logger.warning("Failed to inject metabolism context: %s", e)
-
         # Build input data and generate response
         input_data = {
             "trainer_profile": trainer_profile_summary,
             "user_profile": user_profile_summary,
             "relevant_memories": relevant_memories_str,
-            "metabolism_context": metabolism_context,
             "chat_history_summary": chat_history_summary,
             "user_message": user_input,
         }

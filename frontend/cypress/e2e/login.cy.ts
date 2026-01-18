@@ -1,3 +1,5 @@
+import { setupCommonIntercepts } from '../support/intercepts';
+
 describe('Login Flow', () => {
   beforeEach(() => {
     // Start from the root, which should redirect to login if not authenticated
@@ -15,32 +17,50 @@ describe('Login Flow', () => {
   });
 
   it('should show an error for invalid credentials', () => {
+    // Mock login failure
+    cy.intercept('POST', '**/user/login', {
+      statusCode: 401,
+      body: { detail: 'Credenciais inválidas' }
+    }).as('loginFail');
+
     cy.get('input#email').clear().type('invalid@email.com');
     cy.get('input#password').clear().type('wrongpassword');
     cy.get('button[type="submit"]').contains('Entrar').click();
 
+    cy.wait('@loginFail');
     cy.contains('Credenciais inválidas. Tente novamente.').should('be.visible');
   });
 
-  it('should log in a user successfully and redirect to chat', () => {
+  it('should log in a user successfully and redirect to dashboard', () => {
+    // Mock successful login
+    cy.intercept('POST', '**/user/login', {
+      statusCode: 200,
+      body: { token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImN5cHJlc3NfdXNlckB0ZXN0LmNvbSIsImV4cCI6OTk5OTk5OTk5OX0.fake' }
+    }).as('loginSuccess');
+
+    // Setup mocks for dashboard data that loads after login
+    setupCommonIntercepts();
+
     cy.get('input#email').clear().type('cypress_user@test.com');
-    cy.get('input#password').clear().type('Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
+    cy.get('input#password').clear().type('CorrectPassword');
     cy.get('button[type="submit"]').contains('Entrar').click();
 
+    cy.wait('@loginSuccess');
+
     // After login, wait for URL to change first (more reliable indicator of routing)
-    cy.url({ timeout: 20000 }).should('not.include', 'login');
+    cy.url({ timeout: 15000 }).should('not.include', 'login');
     
     // Then check for UI changes
-    cy.get('app-login', { timeout: 20000 }).should('not.exist');
-    cy.get('app-sidebar', { timeout: 20000 }).should('be.visible');
-    cy.get('app-dashboard', { timeout: 20000 }).should('be.visible');
+    cy.get('app-login', { timeout: 15000 }).should('not.exist');
+    cy.get('app-sidebar', { timeout: 15000 }).should('be.visible');
+    cy.get('app-dashboard', { timeout: 15000 }).should('be.visible');
   });
 
   it('should log out the user', () => {
-    cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
+    // Use mock login to start from a logged-in state
+    cy.mockLogin();
 
-    // Reload to ensure clean state and AuthService initialization from localStorage
-    cy.reload();
+    // Reload is NOT needed with mockLogin as it starts fresh
     cy.get('app-sidebar').should('be.visible');
 
     // Intercept POST logout call
@@ -49,11 +69,8 @@ describe('Login Flow', () => {
     // Find and click the logout button in the sidebar. Scroll into view and force click due to overflow.
     cy.get('app-sidebar button').contains('Sair').scrollIntoView().click({ force: true });
 
-    // Verify API was called - Commenting out as it causes flakes, but redirection proves flow completion
-    // cy.wait('@logout');
-
     // After logout, it should redirect back to the login page
-    cy.get('app-login').should('be.visible');
+    cy.get('app-login', { timeout: 10000 }).should('be.visible');
     cy.get('app-sidebar').should('not.exist');
   });
 });

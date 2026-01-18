@@ -1,25 +1,12 @@
 describe('Error Handling', () => {
-    beforeEach(() => {
-        // Essential startup intercepts for Dashboard
-        cy.intercept('GET', '**/trainer/trainer_profile', { body: { trainer_type: 'atlas' } }).as('trainerProfile');
-        cy.intercept('GET', '**/trainer/available_trainers', { body: [{ trainer_id: 'atlas', name: 'Atlas' }] }).as('availableTrainers');
-        cy.intercept('GET', '**/message/history*', { body: [] }).as('chatHistory');
-        cy.intercept('GET', '**/weight/stats*', { body: { latest: null, weight_trend: [] } }).as('getWeightStats');
-        cy.intercept('GET', '**/workout/stats', { body: { streak: 0, frequency: [] } }).as('getWorkoutStats');
-        cy.intercept('GET', '**/nutrition/stats', { body: { daily_target: 2000, current_macros: {} } }).as('getNutritionStats');
-        cy.intercept('GET', '**/user/profile', { body: { email: 'test@example.com' } }).as('userProfile');
+  beforeEach(() => {
+    // 100% Mocked Login
+    cy.mockLogin();
 
-        // Bypass UI login
-        cy.visit('/', {
-            onBeforeLoad: (win) => {
-                win.localStorage.setItem('jwt_token', 'fake-jwt-token');
-            }
-        });
-
-        // Ensure we land on app
-        cy.get('app-sidebar', { timeout: 10000 }).should('be.visible');
-        cy.get('app-dashboard', { timeout: 10000 }).should('be.visible');
-    });
+    // Ensure we land on app
+    cy.get('app-sidebar', { timeout: 10000 }).should('be.visible');
+    cy.get('app-dashboard', { timeout: 10000 }).should('be.visible');
+  });
 
     it('should display error message when chat API fails', () => {
         // Navigate to chat

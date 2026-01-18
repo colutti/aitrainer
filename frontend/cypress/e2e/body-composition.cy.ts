@@ -39,32 +39,36 @@ describe('Body Composition Page', () => {
   ];
 
   beforeEach(() => {
-    // 1. Set up ALL intercepts BEFORE any navigation
-    cy.intercept('GET', '**/weight/stats*', { body: mockStats }).as('getStats');
-    cy.intercept('GET', '**/weight?limit=*', { body: mockHistory }).as('getHistory');
-    cy.intercept('POST', '**/weight', { statusCode: 200, body: { message: 'OK' } }).as('saveWeight');
-    cy.intercept('DELETE', '**/weight/*', { statusCode: 200, body: { message: 'Deleted' } }).as('deleteWeight');
-    
-    // Other common endpoints
-    cy.intercept('GET', '**/workout/stats', { body: {} }).as('getWorkoutStats');
-    cy.intercept('GET', '**/nutrition/stats', { body: {} }).as('getNutritionStats');
-    cy.intercept('GET', '**/trainer/trainer_profile', { body: { trainer_type: 'atlas' } }).as('trainerProfile');
-    
-    // 2. Login (navigation happens here)
-    cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
+    // Pass ALL intercepts to mockLogin so they are active BEFORE the visit
+    cy.mockLogin({
+      intercepts: {
+        '**/weight/stats*': { body: mockStats, alias: 'getStats' },
+        '**/weight?limit=*': { body: mockHistory, alias: 'getHistory' },
+        'POST **/weight': { statusCode: 200, body: { message: 'OK' }, alias: 'saveWeight' },
+        'DELETE **/weight/*': { statusCode: 200, body: { message: 'Deleted' }, alias: 'deleteWeight' }
+      }
+    });
   });
 
   it('navigates to body composition page via sidebar', () => {
+    // Navigate to body composition
     cy.get('[data-cy="nav-body-composition"]').click();
-    cy.get('app-body-composition').should('be.visible');
+    cy.get('app-body-composition', { timeout: 15000 }).should('be.visible');
     cy.get('h1').should('contain', 'Composição Corporal');
   });
 
   it('displays hero card content when data exists', () => {
     cy.get('[data-cy="nav-body-composition"]').click();
-    cy.wait('@getStats');
-    cy.get('[data-cy="latest-weight"]').should('contain', '80.5');
-    cy.get('[data-cy="latest-body-fat"]').should('contain', '20,50');
+    // Re-verify visibility and content without strict wait if possible, or wait with longer timeout
+    cy.get('[data-cy="latest-weight"]', { timeout: 15000 }).should((el) => {
+      const text = el.text();
+      expect(text).to.match(/80[,.]5/); // Flexible check for decimal separator
+    });
+    // Flexible check for decimal separator (can be . or ,)
+    cy.get('[data-cy="latest-body-fat"]').should((el) => {
+      const text = el.text();
+      expect(text).to.match(/20[,.]50/);
+    });
   });
 
   it('displays history table', () => {

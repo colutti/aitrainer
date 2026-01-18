@@ -1,47 +1,23 @@
 describe('Navigation Flow', () => {
-    let userToken: string;
-    
-    before(() => {
-        cy.request('POST', '/api/user/login', {
-          email: 'cypress_user@test.com',
-          password: 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661'
-        }).then((response) => {
-          userToken = response.body.token;
-        });
-    });
-
     beforeEach(() => {
-        // Intercept user profile
-        cy.intercept('GET', '**/user/profile', {
-            statusCode: 200,
-            body: {
-                email: 'cypress@test.com',
-                gender: 'Masculino',
-                age: 30,
-                weight: 80,
-                height: 180,
-                goal: 'Ganhar massa'
-            }
-        }).as('userProfile');
-
-        // Essential startup intercepts for Dashboard
-        cy.intercept('GET', '**/trainer/trainer_profile', { body: { trainer_type: 'sofia' } }).as('trainerProfile');
-        cy.intercept('GET', '**/trainer/available_trainers', { body: [{ id: 'sofia', name: 'Sofia' }] }).as('availableTrainers');
-        cy.intercept('GET', '**/message/history*', { body: { messages: [] } }).as('chatHistory');
-        cy.intercept('GET', '**/weight/stats*', { body: { latest: null, weight_trend: [] } }).as('getWeightStats');
-        cy.intercept('GET', '**/workout/stats', { body: { streak: 0, frequency: [] } }).as('getWorkoutStats');
-        cy.intercept('GET', '**/nutrition/stats', { body: { daily_target: 2000, current_macros: {} } }).as('getNutritionStats');
-
-        // Visit with real token from API login
-        cy.visit('/', {
-            onBeforeLoad: (win) => {
-                win.localStorage.setItem('jwt_token', userToken);
+        // Use 100% mocked login
+        cy.mockLogin({
+            intercepts: {
+                '**/trainer/trainer_profile': { body: { trainer_type: 'sofia' }, alias: 'trainerProfile' },
+                '**/user/profile': {
+                    statusCode: 200,
+                    body: {
+                        email: 'cypress@test.com',
+                        gender: 'Masculino',
+                        age: 30,
+                        weight: 80,
+                        height: 180,
+                        goal: 'Ganhar massa'
+                    },
+                    alias: 'userProfile'
+                }
             }
         });
-
-        // Ensure we land on app and it's stable
-        cy.get('app-sidebar', { timeout: 10000 }).should('be.visible');
-        cy.get('app-dashboard', { timeout: 10000 }).should('be.visible');
     });
 
     it('should navigate from Dashboard to User Profile', () => {

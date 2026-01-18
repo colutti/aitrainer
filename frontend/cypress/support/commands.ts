@@ -1,3 +1,5 @@
+import { setupCommonIntercepts } from './intercepts';
+
 /// <reference types="cypress" />
 
 Cypress.Commands.add('login', (email, password) => {
@@ -37,4 +39,48 @@ Cypress.Commands.add('setFakeJWT', () => {
   const fakeJWT = `${header}.${payload}.${signature}`;
   
   window.localStorage.setItem('jwt_token', fakeJWT);
+});
+Cypress.Commands.add('mockLogin', (options: any = {}) => {
+  const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImN5cHJlc3NfdXNlckB0ZXN0LmNvbSIsImV4cCI6OTk5OTk5OTk5OX0.fake';
+  
+  cy.log('Setting up common intercepts...');
+  setupCommonIntercepts();
+  
+  if (options.intercepts) {
+    Object.entries(options.intercepts).forEach(([key, val]: [string, any]) => {
+      // Support "METHOD URL" or just "URL"
+      const parts = key.split(' ');
+      const method = parts.length === 2 ? parts[0] : 'GET';
+      const url = parts.length === 2 ? parts[1] : key;
+      
+      // Support simple response or { body, statusCode, alias, etc }
+      let response = val;
+      let alias = null;
+      
+      if (val && typeof val === 'object' && (val.body !== undefined || val.statusCode !== undefined)) {
+        response = { ...val };
+        alias = val.alias;
+        delete response.alias; // Don't pass alias to cy.intercept
+      }
+      
+      const intercept = cy.intercept(method as any, url, response);
+      if (alias) {
+        intercept.as(alias);
+      }
+    });
+  }
+  
+  cy.log('Visiting app with mock token...');
+  cy.visit('/', {
+    timeout: 60000,
+    onBeforeLoad: (win) => {
+      win.localStorage.setItem('jwt_token', mockToken);
+    }
+  });
+  
+  cy.log('Waiting for app stability...');
+  cy.get('app-sidebar', { timeout: 20000 }).should('exist');
+  cy.get('app-dashboard', { timeout: 20000 }).should('exist');
+  
+  cy.log('Login complete.');
 });

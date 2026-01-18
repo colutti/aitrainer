@@ -6,40 +6,24 @@
  */
 describe('Body Composition - Manual Entry Bug', () => {
   beforeEach(() => {
-    // Mock all endpoints BEFORE navigation
-    cy.intercept('GET', '**/weight/stats*', { 
-      body: { 
-        latest: null, 
-        weight_trend: [] 
-      } 
-    }).as('getStats');
-    
-    cy.intercept('GET', '**/weight?limit=*', { body: [] }).as('getHistory');
-    
-    cy.intercept('POST', '**/weight', (req) => {
-      // Echo back the request body to simulate successful save
-      req.reply({
-        statusCode: 200,
-        body: { message: 'Weight saved', data: req.body }
-      });
-    }).as('saveWeight');
-    
-    // Other common endpoints
-    cy.intercept('GET', '**/workout/stats', { body: {} }).as('getWorkoutStats');
-    cy.intercept('GET', '**/nutrition/stats', { body: {} }).as('getNutritionStats');
-    
-    cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
+    // Pass ALL intercepts to mockLogin
+    cy.mockLogin({
+      intercepts: {
+        '**/weight?limit=*': { body: [], alias: 'getHistory' },
+        'POST **/weight': { statusCode: 200, body: { message: 'Weight saved' }, alias: 'saveWeight' },
+        '**/weight/stats*': { body: { latest: null, weight_trend: [] }, alias: 'getStats' }
+      }
+    });
   });
 
   it('should save and display muscle mass value correctly', () => {
     // Navigate to body composition
     cy.get('[data-cy="nav-body-composition"]').click();
-    cy.get('app-body-composition').should('be.visible');
-    cy.wait('@getStats');
+    cy.get('app-body-composition', { timeout: 15000 }).should('be.visible');
     
     // Scroll to the form and wait for input to be visible
     cy.contains('Adicionar Registro Manual').scrollIntoView();
-    cy.get('[data-cy="weight-input"]', { timeout: 10000 }).should('be.visible');
+    cy.get('[data-cy="weight-input"]', { timeout: 15000 }).should('be.visible');
     
     // Fill the form
     cy.get('input[type="date"]').clear().type('2026-01-12');
@@ -56,7 +40,7 @@ describe('Body Composition - Manual Entry Bug', () => {
     cy.contains('button', 'Salvar Registro').click();
 
     // Verify the POST was called with correct data
-    cy.wait('@saveWeight').then((interception) => {
+    cy.wait('@saveWeight', { timeout: 20000 }).then((interception) => {
       expect(interception.request.body).to.include({
         weight_kg: 75.5,
         muscle_mass_pct: 54.0,
@@ -66,6 +50,6 @@ describe('Body Composition - Manual Entry Bug', () => {
     });
 
     // Success message shows inline (not a global toast)
-    cy.contains('Registro salvo com sucesso!').should('be.visible');
+    cy.contains('Registro salvo com sucesso!', { timeout: 10000 }).should('be.visible');
   });
 });

@@ -1,69 +1,36 @@
 describe('Dashboard View', () => {
   beforeEach(() => {
-    // Create a valid JWT structure for mocking
-    const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-    const payload = btoa(JSON.stringify({ 
-      email: 'cypress_user@test.com', 
-      exp: Math.floor(Date.now() / 1000) + 3600 
-    }));
-    const signature = btoa('fake-signature');
-    const fakeJWT = `${header}.${payload}.${signature}`;
-    
-    // Intercept Login with properly structured JWT
-    cy.intercept('POST', '**/user/login', {
-      statusCode: 200,
-      body: { token: fakeJWT }
-    }).as('login');
-    
-    // Intercept logout to prevent 401 errors
-    cy.intercept('POST', '**/user/logout', {
-      statusCode: 200,
-      body: { message: 'Logged out' }
-    }).as('logout');
-    
-    // Intercept metabolism summary to prevent 401 errors
-    cy.intercept('GET', '**/metabolism/summary*', {
-      statusCode: 200,
-      body: { tdee: null, trend: 'maintenance' }
-    }).as('getMetabolismSummary');
-
-    // Intercept stats
-    cy.intercept('GET', '**/workout/stats', {
-      statusCode: 200,
-      body: {
-        current_streak_weeks: 5,
-        weekly_frequency: [true, false, true, false, true, false, false], // M, W, F
-        weekly_volume: [
-          { category: 'Pernas', volume: 5000 },
-          { category: 'Peito', volume: 3000 },
-          { category: 'Costas', volume: 4000 }
-        ],
-        recent_prs: [
-          { exercise_name: 'Agachamento', weight: 120, reps: 5, date: new Date().toISOString(), workout_id: '1' },
-          { exercise_name: 'Supino', weight: 100, reps: 8, date: new Date().toISOString(), workout_id: '2' }
-        ],
-        total_workouts: 42,
-        last_workout: {
-          id: 'last',
-          user_email: 'cypress@test.com',
-          date: new Date().toISOString(),
-          workout_type: 'Full Body',
-          duration_minutes: 75
-        }
+    // Shared stats mock
+    const workoutStats = {
+      current_streak_weeks: 5,
+      weekly_frequency: [true, false, true, false, true, false, false],
+      weekly_volume: [
+        { category: 'Pernas', volume: 5000 },
+        { category: 'Peito', volume: 3000 },
+        { category: 'Costas', volume: 4000 }
+      ],
+      recent_prs: [
+        { exercise_name: 'Agachamento', weight: 120, reps: 5, date: new Date().toISOString(), workout_id: '1' },
+        { exercise_name: 'Supino', weight: 100, reps: 8, date: new Date().toISOString(), workout_id: '2' }
+      ],
+      total_workouts: 42,
+      last_workout: {
+        id: 'last',
+        user_email: 'cypress@test.com',
+        date: new Date().toISOString(),
+        workout_type: 'Full Body',
+        duration_minutes: 75
       }
-    }).as('getStats');
-    
-    cy.intercept('GET', '**/nutrition/stats', { body: {} }).as('getNutritionStats');
-    cy.intercept('GET', '**/trainer/trainer_profile', { body: { trainer_type: 'atlas' } }).as('trainerProfile');
-    cy.intercept('GET', '**/trainer/available_trainers', { body: [{ trainer_id: 'atlas', name: 'Atlas' }] }).as('availableTrainers');
-    cy.intercept('GET', '**/message/history*', { body: { messages: [] } }).as('chatHistory');
-    
-    // Default intercept for weight stats (can be overridden in specific tests)
-    cy.intercept('GET', '**/weight/stats*', { 
-      body: { latest: null, weight_trend: [], fat_trend: [], muscle_trend: [] } 
-    }).as('getWeightStats');
-    // Login
-    cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661'); // Password doesn't matter with mock
+    };
+
+    // 100% Mocked Login with customized intercepts and aliases
+    cy.mockLogin({
+      intercepts: {
+        '**/workout/stats': { statusCode: 200, body: workoutStats, alias: 'getStats' },
+        '**/metabolism/summary*': { statusCode: 200, body: { tdee: null, trend: 'maintenance' }, alias: 'getMetabolism' },
+        '**/user/logout': { statusCode: 200, body: { message: 'Logged out' } }
+      }
+    });
   });
 
   it('should land on dashboard after login', () => {

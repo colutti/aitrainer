@@ -18,4 +18,21 @@ Este workflow consolida a execução de todas as suítes de teste do projeto par
 - Voce deve monitorar os logs dos containers.
 - Se um teste falha, voce pode corrigir e reexecutar so ele ate estar corrigido, mas e necessario executar a suite de novo pq seu teste pode ter impactado em algo.
 - Nao pode ter erros, warnings ou mensagens de deprecated que possam ser solucionadas por voce. Trate esses avisos como erros.
-voce deve monitorar processos de build, containers, avisos de compilacao e pode usar ferramentas externas como black, etc.
+- Voce deve monitorar processos de build, containers, avisos de compilacao e pode usar ferramentas externas como black, etc.
+
+## Regras para Testes Cypress
+
+### Criação de Testes
+- **100% mockado**: Nunca depender do backend. Usar `cy.intercept()` para todas as APIs.
+- **Usar `cy.mockLogin()`**: Nunca `cy.login()` que faz chamada real.
+- **Proibido `cy.wait(ms)`**: Usar assertions com timeout (`cy.get('.el', { timeout: 5000 })`).
+- **Seletores `data-cy`**: Preferir `[data-cy="submit-btn"]` a seletores CSS frágeis.
+- **Intercepts ANTES de navegação**: Definir todos os mocks antes de `cy.visit()` ou cliques.
+
+### Reproduzir Bug com Teste
+1. Criar arquivo `cypress/e2e/{feature}-bug.cy.ts`
+2. Descrever o bug no nome do teste: `it('should NOT show X when Y happens - BUG#123')`
+3. Mock que reproduz o cenário de falha
+4. Assertion que falha com o bug presente
+5. Corrigir código → teste passa
+6. Mover teste para arquivo principal ou manter como regression test

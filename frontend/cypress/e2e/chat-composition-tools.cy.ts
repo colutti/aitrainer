@@ -1,14 +1,7 @@
 describe('AI Body Composition Tools', () => {
   beforeEach(() => {
-    // Intercept common stats used by dashboard/sidebar
-    cy.intercept('GET', '**/weight/stats*', { body: { latest: null, weight_trend: [] } }).as('getWeightStats');
-    cy.intercept('GET', '**/workout/stats', { body: { streak: 0, frequency: [] } }).as('getWorkoutStats');
-    cy.intercept('GET', '**/nutrition/stats', { body: { daily_target: 2000, current_macros: {} } }).as('getNutritionStats');
-    cy.intercept('GET', '**/trainer/trainer_profile', { body: { trainer_type: 'atlas' } }).as('trainerProfile');
-    cy.intercept('GET', '**/message/history*', { body: [] }).as('chatHistory');
-
-    // Login
-    cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
+    // 100% Mocked Login
+    cy.mockLogin();
     
     // Navigate to chat
     cy.get('app-sidebar').contains('Chat').click();

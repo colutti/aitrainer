@@ -1,9 +1,7 @@
 describe('Memories Page', () => {
   beforeEach(() => {
-    cy.intercept('GET', '**/workout/stats', { body: {} }).as('getStats');
-    cy.intercept('GET', '**/nutrition/stats', { body: {} }).as('getNutritionStats');
-    cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
-    cy.get('app-sidebar').should('be.visible');
+    // 100% Mocked Login
+    cy.mockLogin();
   });
 
   it('should navigate to memories page from sidebar', () => {

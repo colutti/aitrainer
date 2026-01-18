@@ -1,28 +1,26 @@
 describe('Mobile Navigation', () => {
     beforeEach(() => {
-        // Essential startup intercepts for Dashboard
-        cy.intercept('GET', '**/trainer/trainer_profile', { body: { trainer_type: 'atlas' } }).as('trainerProfile');
-        cy.intercept('GET', '**/trainer/available_trainers', { body: [{ id: 'atlas', name: 'Atlas' }] }).as('availableTrainers');
-        cy.intercept('GET', '**/message/history*', { body: [] }).as('chatHistory');
-        cy.intercept('GET', '**/weight/stats*', { body: { latest: null, weight_trend: [] } }).as('getWeightStats');
-        cy.intercept('GET', '**/workout/stats', { body: { streak: 0, frequency: [] } }).as('getWorkoutStats');
-        cy.intercept('GET', '**/nutrition/stats', { body: { daily_target: 2000, current_macros: {} } }).as('getNutritionStats');
-        cy.intercept('GET', '**/user/profile', { body: { email: 'cypress@test.com' } }).as('userProfile');
-    });
-
-    const silentLogin = () => {
-        cy.visit('/', {
-            onBeforeLoad: (win) => {
-                win.localStorage.setItem('jwt_token', 'fake-jwt-token');
+        // 100% Mocked Login with user profile intercept for navigation tests
+        cy.mockLogin({
+            intercepts: {
+                '**/user/profile': {
+                    statusCode: 200,
+                    body: {
+                        email: 'cypress@test.com',
+                        gender: 'Masculino',
+                        age: 30,
+                        weight: 80,
+                        height: 180,
+                        goal: 'Ganhar massa'
+                    },
+                    alias: 'userProfile'
+                }
             }
         });
-        cy.get('app-sidebar', { timeout: 10000 }).should('exist');
-        cy.get('app-dashboard', { timeout: 10000 }).should('exist');
-    };
+    });
 
     it('should show sidebar and hide hamburger on desktop', () => {
         cy.viewport(1280, 720);
-        silentLogin();
         
         // Sidebar wrapper should be visible and not translated
         cy.get('[data-cy="sidebar-wrapper"]').should('be.visible');
@@ -33,7 +31,6 @@ describe('Mobile Navigation', () => {
 
     it('should hide sidebar and show hamburger on mobile', () => {
         cy.viewport('iphone-x'); // 375 x 812
-        silentLogin();
         
         // Mobile header should be visible
         cy.get('[data-cy="mobile-header"]').should('be.visible');
@@ -47,7 +44,6 @@ describe('Mobile Navigation', () => {
 
     it('should open sidebar when hamburger is clicked on mobile', () => {
         cy.viewport('iphone-x');
-        silentLogin();
         
         // Click hamburger
         cy.get('[data-cy="mobile-menu-btn"]').should('be.visible').click();
@@ -61,7 +57,6 @@ describe('Mobile Navigation', () => {
 
     it('should close sidebar when backdrop is clicked', () => {
         cy.viewport('iphone-x');
-        silentLogin();
         
         // Open menu
         cy.get('[data-cy="mobile-menu-btn"]').click();
@@ -76,7 +71,6 @@ describe('Mobile Navigation', () => {
 
     it('should auto-close sidebar when navigating on mobile', () => {
         cy.viewport('iphone-x');
-        silentLogin();
         
         // Open menu
         cy.get('[data-cy="mobile-menu-btn"]').click();

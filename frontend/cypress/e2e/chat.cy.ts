@@ -1,24 +1,23 @@
 describe('Chat Flow', () => {
   beforeEach(() => {
-    // Intercepts
-    cy.intercept('GET', '**/trainer/trainer_profile', { body: { trainer_type: 'atlas' } }).as('trainerProfile');
-    cy.intercept('GET', '**/trainer/available_trainers', { body: [{ trainer_id: 'atlas', name: 'Atlas', avatar_url: '/assets/atlas.png' }] }).as('availableTrainers');
-    cy.intercept('GET', '**/message/history*', {
-      statusCode: 200,
-      body: [
-          {
-            sender: 'ai',
-            text: 'Olá! Sou seu personal trainer virtual. Como posso ajudar hoje?',
-            timestamp: new Date().toISOString()
-          }
-      ]
-    }).as('chatHistory');
-    cy.intercept('GET', '**/weight/stats*', { body: { latest: null, weight_trend: [] } }).as('getWeightStats');
-    cy.intercept('GET', '**/workout/stats', { body: { streak: 0, frequency: [] } }).as('getWorkoutStats');
-    cy.intercept('GET', '**/nutrition/stats', { body: { daily_target: 2000, current_macros: {} } }).as('getNutritionStats');
+    // Use mocks
+    cy.mockLogin({
+      intercepts: {
+        '**/message/history*': {
+          statusCode: 200,
+          body: [
+              {
+                sender: 'ai',
+                text: 'Olá! Sou seu personal trainer virtual. Como posso ajudar hoje?',
+                timestamp: new Date().toISOString()
+              }
+          ],
+          alias: 'chatHistory'
+        }
+      }
+    });
 
-    // Login and navigate to chat
-    cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
+    // Navigate to chat
     cy.get('app-sidebar').contains('Chat').click();
     cy.get('app-chat', { timeout: 10000 }).should('be.visible');
   });
@@ -34,12 +33,10 @@ describe('Chat Flow', () => {
   });
 
   it('should have submit button disabled when message is empty', () => {
-    // Clear the textarea field - break up chain to avoid detachment
-    cy.get('textarea[name="newMessage"]').as('textarea');
-    cy.get('@textarea').clear();
-    cy.wait(100); // Let Angular update
+    // Clear the textarea field
+    cy.get('textarea[name="newMessage"]').clear().should('have.value', '');
 
-    // Button should be disabled - re-query to avoid detachment
+    // Button should be disabled - retry logic handles Angular re-renders
     cy.get('button[type="submit"]').should('be.disabled');
   });
 
@@ -123,10 +120,8 @@ describe('Chat Flow', () => {
       // Send message by pressing Enter
       cy.get(textarea).type('{enter}');
 
-      // Wait for re-render
-      cy.wait(100);
-
       // Verify textarea height reset (with tolerance)
+      // Removal of cy.wait(100) - retry mechanism in .should() handles it
       cy.get(textarea).should(($reset) => {
         expect($reset[0].offsetHeight).to.be.lessThan(initialHeight + 20);
       });

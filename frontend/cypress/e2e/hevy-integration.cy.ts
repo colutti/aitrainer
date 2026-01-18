@@ -1,41 +1,30 @@
 describe('Hevy Integration - Unit E2E Tests', () => {
-  let userToken: string;
-
-  before(() => {
-    cy.request('POST', '/api/user/login', {
-      email: 'cypress_user@test.com',
-      password: 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661'
-    }).then((response) => {
-      userToken = response.body.token;
-    });
-  });
-
   const setupDisconnected = () => {
-    cy.intercept('GET', '/api/integrations/hevy/status', {
-      statusCode: 200,
-      body: { enabled: false, has_key: false, api_key_masked: null, last_sync: null }
-    }).as('getStatus');
-    
-    cy.visit('/', {
-      onBeforeLoad(win) {
-        win.localStorage.setItem('jwt_token', userToken);
+    cy.mockLogin({
+      intercepts: {
+        '**/integrations/hevy/status': {
+          statusCode: 200,
+          body: { enabled: false, has_key: false, api_key_masked: null, last_sync: null },
+          alias: 'getStatus'
+        }
       }
     });
+    
     cy.get('app-sidebar').contains('Integrações').click();
     cy.wait('@getStatus');
   };
 
   const setupConnected = (maskedKey = '****9999') => {
-    cy.intercept('GET', '/api/integrations/hevy/status', {
-      statusCode: 200,
-      body: { enabled: true, has_key: true, api_key_masked: maskedKey, last_sync: '2026-01-01T10:00:00Z' }
-    }).as('getStatusConnected');
-    
-    cy.visit('/', {
-      onBeforeLoad(win) {
-        win.localStorage.setItem('jwt_token', userToken);
+    cy.mockLogin({
+      intercepts: {
+        '**/integrations/hevy/status': {
+          statusCode: 200,
+          body: { enabled: true, has_key: true, api_key_masked: maskedKey, last_sync: '2026-01-01T10:00:00Z' },
+          alias: 'getStatusConnected'
+        }
       }
     });
+
     cy.get('app-sidebar').contains('Integrações').click();
     cy.wait('@getStatusConnected');
   };
@@ -54,17 +43,17 @@ describe('Hevy Integration - Unit E2E Tests', () => {
     cy.contains('Hevy').click();
     cy.get('input[placeholder*="Cole sua chave aqui"]').should('be.visible');
 
-    cy.intercept('POST', '/api/integrations/hevy/validate', {
+    cy.intercept('POST', '**/integrations/hevy/validate', {
       statusCode: 200,
       body: { valid: true, count: 20 }
     }).as('validateKey');
 
-    cy.intercept('POST', '/api/integrations/hevy/config', {
+    cy.intercept('POST', '**/integrations/hevy/config', {
       statusCode: 200,
       body: { message: 'Saved' }
     }).as('saveConfig');
 
-    cy.intercept('GET', '/api/integrations/hevy/status', {
+    cy.intercept('GET', '**/integrations/hevy/status', {
       statusCode: 200,
       body: { enabled: true, has_key: true, api_key_masked: '****4444', last_sync: null }
     }).as('getStatusActive');
@@ -72,7 +61,10 @@ describe('Hevy Integration - Unit E2E Tests', () => {
     cy.get('input[placeholder*="Cole sua chave aqui"]').type('xxxx-yyyy-4444');
     cy.contains('button', 'Conectar').click();
 
-    cy.wait(['@validateKey', '@saveConfig', '@getStatusActive']);
+    // Verify calls happen in order (or at least all happen) with increased timeout
+    cy.wait('@validateKey', { timeout: 10000 });
+    cy.wait('@saveConfig', { timeout: 10000 });
+    cy.wait('@getStatusActive', { timeout: 10000 });
     cy.contains('Conectado').should('be.visible');
     cy.contains('Conectado com sucesso!').should('be.visible');
     
@@ -86,19 +78,22 @@ describe('Hevy Integration - Unit E2E Tests', () => {
     cy.contains('Hevy').click();
     
     // Mock Import
-    cy.intercept('POST', '/api/integrations/hevy/import', {
+    cy.intercept('POST', '**/integrations/hevy/import', {
       statusCode: 200,
       body: { imported: 5, skipped: 2, failed: 0 }
     }).as('runImport');
 
     // Mock Status update after import
-    cy.intercept('GET', '/api/integrations/hevy/status', {
+    cy.intercept('GET', '**/integrations/hevy/status', {
       statusCode: 200,
       body: { enabled: true, has_key: true, api_key_masked: '****IMPT', last_sync: '2026-01-16T15:00:00Z' }
     }).as('getStatusUpdate');
 
     cy.contains('button', 'Importar Treinos do Hevy').click();
-    cy.wait(['@runImport', '@getStatusUpdate']);
+    
+    // Split waits with explicit timeout
+    cy.wait('@runImport', { timeout: 15000 });
+    cy.wait('@getStatusUpdate', { timeout: 15000 });
 
     // Check Success feedback
     cy.contains('5 treinos importados com sucesso!').should('be.visible');
@@ -118,19 +113,22 @@ describe('Hevy Integration - Unit E2E Tests', () => {
     cy.contains('button', 'Desconectar').click();
     cy.contains('Desconectar Hevy?').should('be.visible');
 
-    cy.intercept('POST', '/api/integrations/hevy/config', {
+    cy.intercept('POST', '**/integrations/hevy/config', {
       statusCode: 200,
       body: { message: 'Cleared' }
     }).as('clearConfig');
 
-    cy.intercept('GET', '/api/integrations/hevy/status', {
+    cy.intercept('GET', '**/integrations/hevy/status', {
       statusCode: 200,
       body: { enabled: false, has_key: false, api_key_masked: null, last_sync: null }
     }).as('getStatusDisconnected');
 
     cy.contains('button', 'Sim, desconectar').click();
 
-    cy.wait(['@clearConfig', '@getStatusDisconnected']);
+    // Split waits
+    cy.wait('@clearConfig', { timeout: 10000 });
+    cy.wait('@getStatusDisconnected', { timeout: 10000 });
+    
     cy.contains('button', 'Conectar').should('be.visible');
     
     cy.get('app-hevy-config button').find('svg').first().click({force: true});

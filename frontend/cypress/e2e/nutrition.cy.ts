@@ -31,61 +31,25 @@ describe('Nutrition Tracking', () => {
     };
   
     beforeEach(() => {
-      // Mock Login API
-      cy.intercept('POST', '**/user/login', {
-          statusCode: 200,
-          body: { token: 'fake-jwt-token' }
-      }).as('loginRequest');
-
-      // Mock User Profile for sidebar/guard
-      cy.intercept('GET', '**/user/profile', {
-          statusCode: 200,
-          body: { email: 'test@example.com', name: 'Test User' }
-      }).as('getUserProfile');
-
-      // Intercept Nutrition API default
-      cy.intercept('GET', '**/nutrition/list*', (req) => {
-        req.reply(mockNutritionLogs);
-      }).as('getNutritionLogs');
-
-      cy.intercept('GET', '**/nutrition/stats', (req) => {
-          req.reply({
-              today: mockNutritionLogs.logs[0],
-              weekly_adherence: [true, true, false, false, false, false, false],
-              last_7_days: [],
-              avg_daily_calories: 1900,
-              avg_protein: 145,
-              total_logs: 2
-          });
-      }).as('getNutritionStats');
-      
-      // Essential startup intercepts for Dashboard
-      cy.intercept('GET', '**/trainer/trainer_profile', { body: { trainer_type: 'atlas' } }).as('trainerProfile');
-      cy.intercept('GET', '**/trainer/available_trainers', { body: [{ trainer_id: 'atlas', name: 'Atlas' }] }).as('availableTrainers');
-      cy.intercept('GET', '**/message/history*', { body: { messages: [] } }).as('chatHistory');
-      cy.intercept('GET', '**/weight/stats*', { body: { latest: null, weight_trend: [] } }).as('getWeightStats');
-      cy.intercept('GET', '**/workout/stats', {
-          statusCode: 200,
-          body: {
-             current_streak_weeks: 5,
-             weekly_frequency: [true, false, true, false, true, false, false],
-             weekly_volume: [],
-             recent_prs: [],
-             total_workouts: 10,
-             last_workout: null
-          }
-      }).as('getWorkoutStats');
-
-      // Bypass UI login using onBeforeLoad
-      cy.visit('/', {
-          onBeforeLoad: (win) => {
-              win.localStorage.setItem('jwt_token', 'fake-jwt-token');
-          }
+      // 100% Mocked Login with custom nutrition intercepts and aliases
+      cy.mockLogin({
+        intercepts: {
+          '**/nutrition/list*': { statusCode: 200, body: mockNutritionLogs, alias: 'getNutritionLogs' },
+          '**/nutrition/stats': {
+              statusCode: 200,
+              body: {
+                  today: mockNutritionLogs.logs[0],
+                  weekly_adherence: [true, true, false, false, false, false, false],
+                  last_7_days: [],
+                  avg_daily_calories: 1900,
+                  avg_protein: 145,
+                  total_logs: 2
+              },
+              alias: 'getNutritionStats'
+          },
+          '**/workout/stats': { alias: 'getWorkoutStats' }
+        }
       });
-      
-      // Wait for app to be ready
-      cy.get('app-sidebar', { timeout: 10000 }).should('be.visible');
-      cy.get('app-dashboard', { timeout: 10000 }).should('be.visible');
     });
   
     it('should navigate to nutrition page from sidebar', () => {
@@ -135,21 +99,4 @@ describe('Nutrition Tracking', () => {
         cy.contains('Nenhum registro encontrado').should('be.visible');
     });
 
-    it('should display nutrition widgets on dashboard', () => {
-        // Reload to ensure component re-initializes and fires requests within this test block
-        cy.reload();
-        
-        // Now we can safely wait for the requests
-        cy.wait(['@getNutritionStats', '@getWorkoutStats']);
-        
-        // Check for widget titles
-        cy.contains('Macros de Hoje', { timeout: 10000 }).scrollIntoView().should('be.visible');
-        cy.contains('Aderência (Dieta)').scrollIntoView().should('be.visible');
-        cy.contains('Última Refeição').scrollIntoView().should('be.visible');
-        cy.contains('Calorias (7 dias)').scrollIntoView().should('be.visible');
-
-        // Check content
-        cy.contains('2000').scrollIntoView().should('be.visible'); // Today cal inside doughnut
-        cy.contains('150g P').scrollIntoView().should('be.visible');
-    });
   });

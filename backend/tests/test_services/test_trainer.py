@@ -122,44 +122,6 @@ class TestAITrainerBrain(unittest.TestCase):
         self.mock_db.save_trainer_profile.assert_called_once()
 
 
-    @patch('src.services.adaptive_tdee.AdaptiveTDEEService')
-    def test_send_message_ai_injects_metabolism_context(self, MockAdaptiveTDEEService):
-        """
-        Test that metabolism context is injected into input_data when TDEE is available.
-        """
-        # Arrange
-        user_email = "test@test.com"
-        user_input = "Hello"
-        
-        # Mock Profile
-        self.mock_db.get_user_profile.return_value = UserProfile(email=user_email, gender="Masculino", age=30, weight=80, height=180, goal="lose_weight", goal_type="lose")
-        self.mock_db.get_trainer_profile.return_value = TrainerProfile(user_email=user_email, trainer_type="atlas")
-        self.mock_memory.search.return_value = {}
-        self.mock_llm.stream_with_tools.return_value = iter(["Response"])
-        
-        # Mock TDEE Service Return
-        mock_tdee_instance = MockAdaptiveTDEEService.return_value
-        mock_tdee_instance.get_current_targets.return_value = {
-            "tdee": 2500,
-            "daily_target": 2000,
-            "reason": "Test Reason"
-        }
-        
-        # Act
-        response_generator = self.brain.send_message_ai(user_email, user_input, background_tasks=None)
-        "".join(list(response_generator))
-        
-        # Assert
-        # Check call args of stream_with_tools
-        args, kwargs = self.mock_llm.stream_with_tools.call_args
-        input_data = kwargs['input_data']
-        
-        # Check if metabolism_context is in input_data and formatted correctly
-        self.assertIn("metabolism_context", input_data)
-        context = input_data["metabolism_context"]
-        self.assertIn("2500 kcal", context)
-        self.assertIn("2000 kcal", context)
-        self.assertIn("Test Reason", context)
 
 if __name__ == "__main__":
     unittest.main()

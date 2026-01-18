@@ -1,58 +1,39 @@
 describe('Workout History & Drawer', () => {
-  beforeEach(() => {
-    // Intercept Login
-    cy.intercept('POST', '**/user/login', {
-      statusCode: 200,
-      body: { token: 'fake-jwt-token' }
-    }).as('login');
-
-    cy.intercept('GET', '**/workout/list*', {
-      statusCode: 200,
-      body: {
-        workouts: [
-          {
-            id: '1',
-            user_email: 'cypress@test.com',
-            date: '2024-01-01T10:00:00',
-            workout_type: 'Pernas',
-            duration_minutes: 60,
-            exercises: [
-              { name: 'Agachamento', sets: 3, reps_per_set: [10, 10, 10], weights_per_set: [100, 100, 100] }
-            ]
-          },
-          {
-            id: '2',
-            user_email: 'cypress@test.com',
-            date: '2024-01-02T10:00:00',
-            workout_type: 'Peito',
-            duration_minutes: 45,
-            exercises: []
-          }
-        ],
-        total: 2,
-        page: 1,
-        page_size: 10,
-        total_pages: 1
+  const mockWorkouts = {
+    workouts: [
+      {
+        id: '1',
+        user_email: 'cypress@test.com',
+        date: '2024-01-01T10:00:00',
+        workout_type: 'Pernas',
+        duration_minutes: 60,
+        exercises: [
+          { name: 'Agachamento', sets: 3, reps_per_set: [10, 10, 10], weights_per_set: [100, 100, 100] }
+        ]
+      },
+      {
+        id: '2',
+        user_email: 'cypress@test.com',
+        date: '2024-01-02T10:00:00',
+        workout_type: 'Peito',
+        duration_minutes: 45,
+        exercises: []
       }
-    }).as('getWorkouts');
+    ],
+    total: 2,
+    page: 1,
+    page_size: 10,
+    total_pages: 1
+  };
 
-    cy.intercept('GET', '**/workout/types', ['Pernas', 'Peito', 'Costas']).as('getTypes');
-    cy.intercept('GET', '**/trainer/trainer_profile', { body: { trainer_type: 'atlas' } }).as('trainerProfile');
-    cy.intercept('GET', '**/trainer/available_trainers', { body: [{ trainer_id: 'atlas', name: 'Atlas' }] }).as('availableTrainers');
-    cy.intercept('GET', '**/message/history*', { body: { messages: [] } }).as('chatHistory');
-    cy.intercept('GET', '**/workout/stats', { body: { streak: 0, frequency: [], last_workout: null, prs: [], volume_data: [] } }).as('getStats');
-    cy.intercept('GET', '**/nutrition/stats', { body: { daily_target: 2000, current_macros: { calories: 0, protein: 0, carbs: 0, fat: 0 } } }).as('getNutritionStats');
-    cy.intercept('GET', '**/weight/stats*', { body: { latest: null, weight_trend: [] } }).as('getWeightStats');
-
-    // Bypass UI login using onBeforeLoad
-    cy.visit('/', {
-        onBeforeLoad: (win) => {
-            win.localStorage.setItem('jwt_token', 'fake-jwt-token');
-        }
+  beforeEach(() => {
+    // 100% Mocked Login with custom intercepts and aliases
+    cy.mockLogin({
+      intercepts: {
+        '**/workout/list*': { statusCode: 200, body: mockWorkouts, alias: 'getWorkouts' },
+        '**/workout/types': { body: ['Pernas', 'Peito', 'Costas'], alias: 'getTypes' }
+      }
     });
-    
-    // Wait for app to be ready
-    cy.get('app-sidebar', { timeout: 10000 }).should('be.visible');
   });
 
   it('should display list of workouts', () => {

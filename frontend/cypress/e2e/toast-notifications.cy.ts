@@ -1,51 +1,26 @@
 describe('Toast Notifications', () => {
     beforeEach(() => {
-        // Essential startup intercepts for Dashboard
-        cy.intercept('GET', '**/trainer/trainer_profile', {
-            statusCode: 200,
-            body: { trainer_type: 'atlas' }
-        }).as('trainerProfile');
-        
-        cy.intercept('GET', '**/trainer/available_trainers', {
-            statusCode: 200,
-            body: [
-                { 
-                    trainer_id: 'atlas', 
-                    name: 'Atlas', 
-                    gender: 'Masculino',
-                    avatar_url: '/assets/atlas.png',
-                    short_description: 'Desc',
-                    catchphrase: 'Phrase',
-                    specialties: ['Force']
+        // 100% Mocked Login
+        cy.mockLogin({
+            intercepts: {
+                '**/trainer/available_trainers': {
+                    statusCode: 200,
+                    body: [
+                        { trainer_id: 'atlas', name: 'Atlas', avatar_url: '/assets/atlas.png' },
+                        { trainer_id: 'luna', name: 'Luna', avatar_url: '/assets/luna.png' }
+                    ],
+                    alias: 'availableTrainers'
                 },
-                { 
-                    trainer_id: 'luna', 
-                    name: 'Luna',
-                    gender: 'Feminino',
-                    avatar_url: '/assets/luna.png',
-                    short_description: 'Desc',
-                    catchphrase: 'Phrase',
-                    specialties: ['Yoga']
+                'PUT **/trainer/update_trainer_profile': {
+                    statusCode: 200,
+                    body: { trainer_type: 'luna' },
+                    alias: 'updateTrainer'
+                },
+                // Explicitly adding trainer profile alias since we wait for it
+                '**/trainer/trainer_profile': {
+                    body: { trainer_type: 'atlas' },
+                    alias: 'trainerProfile'
                 }
-            ]
-        }).as('availableTrainers');
-
-        cy.intercept('GET', '**/message/history*', { body: [] }).as('chatHistory');
-        cy.intercept('GET', '**/weight/stats*', { body: { latest: null, weight_trend: [] } }).as('getWeightStats');
-        cy.intercept('GET', '**/workout/stats', { body: { streak: 0, frequency: [] } }).as('getWorkoutStats');
-        cy.intercept('GET', '**/nutrition/stats', { body: { daily_target: 2000, current_macros: {} } }).as('getNutritionStats');
-        cy.intercept('GET', '**/user/profile', { body: { email: 'cypress@test.com' } }).as('userProfile');
-
-        // Intercept Update Profile
-        cy.intercept('PUT', '**/trainer/update_trainer_profile', {
-            statusCode: 200,
-            body: { trainer_type: 'luna' }
-        }).as('updateTrainer');
-
-        // Bypass UI login
-        cy.visit('/', {
-            onBeforeLoad: (win) => {
-                win.localStorage.setItem('jwt_token', 'fake-jwt-token');
             }
         });
 

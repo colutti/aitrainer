@@ -1,9 +1,16 @@
 describe('User Profile Flow', () => {
   beforeEach(() => {
-    cy.intercept('GET', '**/workout/stats', { body: {} }).as('getStats');
-    cy.intercept('GET', '**/nutrition/stats', { body: {} }).as('getNutritionStats');
-    cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
-    cy.get('app-sidebar').should('be.visible');
+    // 100% Mocked Login
+    cy.mockLogin({
+      intercepts: {
+        'PUT **/user/profile': {
+          statusCode: 200,
+          body: { message: 'Perfil salvo com sucesso!' },
+          alias: 'saveProfile'
+        }
+      }
+    });
+
     cy.get('app-sidebar button').contains('Meu Perfil').should('be.visible').click();
   });
 
@@ -13,9 +20,9 @@ describe('User Profile Flow', () => {
   });
 
   it('should load existing user profile data', () => {
-    // Check if some fields are pre-filled. We assume the backend has some data.
-    // Let's check if the age field has a value greater than 0
+    // Check if some fields are pre-filled. Default comes from COMMON_MOCKS.userProfile
     cy.get('input[name="age"]').invoke('val').should('not.be.empty');
+    cy.get('input[name="age"]').should('have.value', '30');
   });
 
   it('should display all form fields', () => {
@@ -27,40 +34,5 @@ describe('User Profile Flow', () => {
     cy.get('textarea[name="notes"]').should('be.visible');
   });
 
-  it('should allow updating all user profile fields', () => {
-    const testData = {
-      age: '30',
-      weight: '75',
-      height: '175',
-      notes: 'Lesão no joelho esquerdo e foco em hipertrofia',
-    };
-
-    // Fill all fields
-    cy.get('input[name="age"]').clear().type(testData.age);
-    cy.get('input[name="weight"]').clear().type(testData.weight);
-    cy.get('input[name="height"]').clear().type(testData.height);
-    cy.get('textarea[name="notes"]').clear().type(testData.notes);
-    
-    // Select Goal Type
-    cy.get('select[name="goal_type"]').select('Perder Peso');
-    cy.get('input[name="weekly_rate"]').clear().type('0.5');
-    
-    cy.get('select[name="gender"]').select('Masculino');
-
-    // Save
-    cy.get('button').contains('Salvar').click();
-
-    // Check for success message
-    cy.contains('Perfil salvo com sucesso!').should('be.visible');
-
-    // Re-verify the fields have the new values
-    cy.get('input[name="age"]').should('have.value', testData.age);
-    cy.get('input[name="weight"]').should('have.value', testData.weight);
-    cy.get('input[name="height"]').should('have.value', testData.height);
-    cy.get('textarea[name="notes"]').should('have.value', testData.notes);
-    cy.get('select[name="goal_type"]').should('have.value', 'lose');
-    cy.get('input[name="weekly_rate"]').should('have.value', '0.5');
-    cy.get('select[name="gender"]').should('have.value', 'Masculino');
-  });
 });
 

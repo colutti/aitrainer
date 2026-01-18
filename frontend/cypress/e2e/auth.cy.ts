@@ -1,16 +1,15 @@
 describe('Authorization Flow', () => {
   it('should not display the main app if the user is not logged in', () => {
-    cy.visit('/');
+    cy.visit('/', { timeout: 60000 });
     // Without logging in, the sidebar should not exist
     cy.get('app-sidebar').should('not.exist');
     // And the login component should be visible
-    cy.get('app-login').should('be.visible');
+    cy.get('app-login', { timeout: 20000 }).should('be.visible');
   });
 
-  // More tests will be added here
   it('should log the user out and redirect to login on API 401 error', () => {
-    // 1. Login normally
-    cy.login('cypress_user@test.com', 'Ce568f36-8bdc-47f6-8a63-ebbfd4bf4661');
+    // 1. Mock Login (No real API call)
+    cy.mockLogin();
 
     // 2. Intercept the next GET request to user profile and force a 401 response
     cy.intercept('GET', '**/user/profile', {
