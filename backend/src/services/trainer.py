@@ -207,39 +207,48 @@ class AITrainerBrain:
     ) -> str:
         """
         Formats LangChain messages with trainer context for the prompt.
-        Handles both raw messages and summarized content from ConversationSummaryBufferMemory.
-        
-        Args:
-            messages: List of LangChain messages (HumanMessage, AIMessage, or SystemMessage with summary)
-            current_trainer_type: The active trainer type for context formatting
-            
-        Returns:
-            Formatted string for the prompt
+        Uses compact single-line format:
+        [DD/MM HH:MM] 🧑 Aluno: msg
+        [DD/MM HH:MM] 🏋️ VOCÊ (Treinador): msg
+        [DD/MM HH:MM] 🏋️ EX-TREINADOR [Type]: msg
         """
         if not messages:
-            return "No previous messages."
+            return "Nenhuma mensagem anterior."
         
         formatted = []
         for msg in messages:
+            # Extract timestamp if available
+            timestamp_str = ""
+            if hasattr(msg, 'additional_kwargs') and msg.additional_kwargs:
+                ts = msg.additional_kwargs.get("timestamp", "")
+                if ts:
+                    try:
+                        dt = datetime.fromisoformat(ts)
+                        timestamp_str = f"[{dt.strftime('%d/%m %H:%M')}] "
+                    except (ValueError, TypeError):
+                        pass
+            
+            # Clean message content - single line
+            content = " ".join(msg.content.split())
+            
             # Check if it's a summary (SystemMessage with moving_summary_buffer content)
             if hasattr(msg, 'type') and msg.type == "system":
-                formatted.append(f"📜 **[RESUMO DO HISTÓRICO]**\n> {msg.content}")
+                formatted.append(f"📜 [RESUMO]: {content}")
             elif isinstance(msg, HumanMessage):
-                formatted.append(f"🧑 **Aluno**: {msg.content}")
+                formatted.append(f"{timestamp_str}🧑 Aluno: {content}")
             elif isinstance(msg, AIMessage):
-                # Check trainer_type from additional_kwargs
                 trainer_type = msg.additional_kwargs.get("trainer_type", current_trainer_type)
                 if trainer_type == current_trainer_type:
-                    formatted.append(f"🏋️ **Treinador**: {msg.content}")
+                    formatted.append(f"{timestamp_str}🏋️ VOCÊ (Treinador): {content}")
                 else:
                     formatted.append(
-                        f"🏋️ **Treinador [PERFIL ANTERIOR: {trainer_type}]**:\n> [Contexto] {msg.content}"
+                        f"{timestamp_str}🏋️ EX-TREINADOR [{trainer_type}]: {content}"
                     )
             else:
                 # Fallback for unknown message types
-                formatted.append(f"> {msg.content}")
+                formatted.append(f"{timestamp_str}> {content}")
         
-        return "\n\n---\n\n".join(formatted)
+        return "\n".join(formatted)
 
     def send_message_ai(self, user_email: str, user_input: str, background_tasks: BackgroundTasks = None):
         """
