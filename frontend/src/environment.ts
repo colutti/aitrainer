@@ -1,4 +1,5 @@
 export const environment = {
   production: false,
-  apiUrl: '/api' 
+  apiUrl: '/api',
+  telegramBotUrl: 'https://t.me/AITrainer_Colutti_Bot'
 };

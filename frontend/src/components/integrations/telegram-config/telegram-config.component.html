@@ -31,7 +31,12 @@
         <ol class="space-y-3 text-gray-300">
           <li class="flex items-start gap-3">
             <span class="flex-shrink-0 w-6 h-6 rounded-full bg-purple-500 text-white text-sm flex items-center justify-center font-bold">1</span>
-            <span>Abra o Telegram e busque <code class="bg-gray-800 px-2 py-1 rounded text-purple-400">@AITrainer_Bot</code></span>
+            <span>
+              Clique no botão abaixo ou busque por 
+              <a [href]="botUrl" target="_blank" class="bg-gray-800 px-2 py-1 rounded text-purple-400 hover:text-purple-300 transition-colors">
+                @{{ botUrl.split('/').pop() }}
+              </a>
+            </span>
           </li>
           <li class="flex items-start gap-3">
             <span class="flex-shrink-0 w-6 h-6 rounded-full bg-purple-500 text-white text-sm flex items-center justify-center font-bold">2</span>
@@ -39,17 +44,27 @@
           </li>
           <li class="flex items-start gap-3">
             <span class="flex-shrink-0 w-6 h-6 rounded-full bg-purple-500 text-white text-sm flex items-center justify-center font-bold">3</span>
-            <span>Cole o código abaixo no chat</span>
+            <span>Cole o código gerado no chat do Telegram</span>
           </li>
         </ol>
 
-        <div class="mt-6">
+        <div class="flex flex-col sm:flex-row gap-3 mt-6">
+          <a 
+            [href]="botUrl" 
+            target="_blank"
+            class="flex-1 flex items-center justify-center gap-2 bg-[#0088cc] hover:bg-[#0077b5] text-white font-semibold py-3 px-6 rounded-lg transition-all"
+          >
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M11.944 0C5.346 0 0 5.346 0 11.944c0 6.598 5.346 11.944 11.944 11.944 6.598 0 11.944-5.346 11.944-11.944C23.888 5.346 18.542 0 11.944 0zm5.206 16.561c-.19.646-.867.893-1.427.579-1.296-.724-4.636-2.583-5.378-2.997-.742-.414-.993-.827-.993-1.124 0-.297.251-.71.993-1.124.742-.414 4.082-2.273 5.378-2.997.56-.314 1.237-.067 1.427.579.19.646.31 1.616.31 2.542s-.12 1.896-.31 2.542z"/>
+            </svg>
+            Abrir Bot no Telegram
+          </a>
           <button 
             (click)="generateCode()"
             [disabled]="generatingCode()"
-            class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 text-white font-semibold py-3 px-6 rounded-lg transition-all"
+            class="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 text-white font-semibold py-3 px-6 rounded-lg transition-all"
           >
-            {{ generatingCode() ? 'Gerando...' : 'Gerar Código de Vinculação' }}
+            {{ generatingCode() ? 'Gerando...' : 'Gerar Código' }}
           </button>
         </div>
 

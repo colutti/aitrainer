@@ -1,6 +1,7 @@
 import { Component, EventEmitter, OnInit, Output, inject, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TelegramService } from '../../../services/telegram.service';
+import { environment } from '../../../environment';
 
 type ViewState = 'loading' | 'disconnected' | 'connected';
 
@@ -20,6 +21,7 @@ export class TelegramConfigComponent implements OnInit {
   viewState = signal<ViewState>('loading');
   errorMessage = signal<string>('');
   successMessage = signal<string>('');
+  botUrl = environment.telegramBotUrl;
   
   // Connected state
   telegramUsername = signal<string | null>(null);
