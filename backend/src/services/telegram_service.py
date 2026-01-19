@@ -124,7 +124,8 @@ class TelegramBotService:
             # Call AI (synchronous version)
             response = self.brain.send_message_sync(
                 user_email=link.user_email,
-                user_input=text
+                user_input=text,
+                is_telegram=True
             )
             
             # Convert markdown and send

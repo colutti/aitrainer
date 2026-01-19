@@ -58,11 +58,21 @@ class AITrainerBrain:
         self._llm_client: LLMClient = llm_client
         self._memory: Memory = memory
 
-    def _get_prompt_template(self, input_data: dict) -> ChatPromptTemplate:
+    def _get_prompt_template(self, input_data: dict, is_telegram: bool = False) -> ChatPromptTemplate:
         """Constructs and returns the chat prompt template."""
-        logger.debug("Constructing chat prompt template.")
+        logger.debug("Constructing chat prompt template (is_telegram=%s).", is_telegram)
+        
+        system_content = settings.PROMPT_TEMPLATE
+        if is_telegram:
+            system_content += (
+                "\n\n--- \n"
+                "⚠️ **FORMATO TELEGRAM (MOBILE)**: "
+                "O usuário está enviando mensagens via Telegram. Responda de forma direta e concisa. "
+                "Use Markdown simples (negrito e itálico). Evite tabelas muito largas ou blocos de código extensos que não cabem na tela do celular."
+            )
+
         prompt_template = ChatPromptTemplate.from_messages(
-            [("system", settings.PROMPT_TEMPLATE), ("human", "{user_message}")]
+            [("system", system_content), ("human", "{user_message}")]
         )
         rendered_prompt = prompt_template.format(**input_data)
         
@@ -250,7 +260,9 @@ class AITrainerBrain:
         
         return "\n".join(formatted)
 
-    def send_message_ai(self, user_email: str, user_input: str, background_tasks: BackgroundTasks = None):
+    def send_message_ai(
+        self, user_email: str, user_input: str, background_tasks: BackgroundTasks = None, is_telegram: bool = False
+    ):
         """
         Generates LLM response, summarizing history if needed.
         This function assumes one chat session per user (user_email is used as session_id).
@@ -320,7 +332,7 @@ class AITrainerBrain:
             "user_message": user_input,
         }
 
-        prompt_template = self._get_prompt_template(input_data)
+        prompt_template = self._get_prompt_template(input_data, is_telegram=is_telegram)
         
         # Create workout tracking tools with injected dependencies
         save_workout_tool = create_save_workout_tool(self._database, user_email)
@@ -405,7 +417,7 @@ class AITrainerBrain:
                 logger.info("Skipped Mem0 storage - write tool was called for user: %s", user_email)
 
     def send_message_sync(
-        self, user_email: str, user_input: str
+        self, user_email: str, user_input: str, is_telegram: bool = False
     ) -> str:
         """
         Synchronous version of send_message_ai for Telegram.
@@ -429,7 +441,8 @@ class AITrainerBrain:
         for chunk in self.send_message_ai(
             user_email=user_email,
             user_input=user_input,
-            background_tasks=background_tasks
+            background_tasks=background_tasks,
+            is_telegram=is_telegram
         ):
             response_parts.append(chunk)
         
