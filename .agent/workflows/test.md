@@ -7,6 +7,8 @@ description:
 Este workflow consolida a execução de todas as suítes de teste do projeto para garantir a qualidade antes de qualquer publicação.
 
 - Os testes dependem dos serviços (MongoDB, Qdrant, Mem0, API Backend) estarem rodando via Podman. Sempre garante que os containers estao sendo executados antes de fazer o teste.
+- Lembre-se de sempre fazer um podman-compose build antes de comecar os testes para garantir que a versao que vai ser testada tem a nova funcionalidade.
+- Certifique-se de que a versao que vai ser testada realmente esta em atualizada nos containers.
 - Sempre que for testar algo no navegador e nao encontrar o que esta buscando tente fazer um refresh do navegador.
 - Certifique-se de que o backend está acessível e saudável.
 - Execute testes unitários e de integração validando a cobertura de código.
@@ -19,6 +21,7 @@ Este workflow consolida a execução de todas as suítes de teste do projeto par
 - Se um teste falha, voce pode corrigir e reexecutar so ele ate estar corrigido, mas e necessario executar a suite de novo pq seu teste pode ter impactado em algo.
 - Nao pode ter erros, warnings ou mensagens de deprecated que possam ser solucionadas por voce. Trate esses avisos como erros.
 - Voce deve monitorar processos de build, containers, avisos de compilacao e pode usar ferramentas externas como black, etc.
+- Nunca publique nada em producao sem antes o consentimento do usuario ou que o usuario peca pra voce.
 
 ## Regras para Testes Cypress
 

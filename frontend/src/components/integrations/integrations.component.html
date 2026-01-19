@@ -10,13 +10,22 @@
   <div class="space-y-4">
     <!-- Hevy Specific Card -->
     <app-integration-card
+      [attr.data-cy]="'card-hevy'"
       [provider]="hevyProvider()"
       (configure)="openConfig('hevy')"
+    ></app-integration-card>
+
+    <!-- Telegram Card -->
+    <app-integration-card
+      [attr.data-cy]="'card-telegram'"
+      [provider]="telegramProvider()"
+      (configure)="openConfig('telegram')"
     ></app-integration-card>
 
     <!-- Other Cards -->
     <app-integration-card
       *ngFor="let provider of otherProviders()"
+      [attr.data-cy]="'card-' + provider.id"
       [provider]="provider"
       (configure)="openConfig(provider.id)"
     ></app-integration-card>
@@ -28,6 +37,13 @@
     (statusChanged)="onHevyStatusChanged()"
   ></app-hevy-config>
 
+  <!-- Telegram Config Modal -->
+  <app-telegram-config
+    *ngIf="showTelegramConfig()"
+    (close)="onTelegramConfigClose()"
+    (statusChanged)="onTelegramStatusChanged()"
+  ></app-telegram-config>
+
   <!-- MFP Import Modal -->
   <app-mfp-import
     *ngIf="showMfpImport()"
@@ -35,3 +51,4 @@
   ></app-mfp-import>
 
 </div>
+

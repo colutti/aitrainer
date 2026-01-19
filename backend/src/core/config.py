@@ -93,6 +93,10 @@ class Settings(BaseSettings):
     QDRANT_COLLECTION_NAME: str
     QDRANT_API_KEY: str
 
+    # ====== TELEGRAM STUFF ======
+    TELEGRAM_BOT_TOKEN: str = ""
+    TELEGRAM_WEBHOOK_SECRET: str = ""
+
     def get_mem0_config(self):
         llm_config = {
             "provider": self.AI_PROVIDER,

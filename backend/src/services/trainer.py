@@ -404,6 +404,37 @@ class AITrainerBrain:
             else:
                 logger.info("Skipped Mem0 storage - write tool was called for user: %s", user_email)
 
+    def send_message_sync(
+        self, user_email: str, user_input: str
+    ) -> str:
+        """
+        Synchronous version of send_message_ai for Telegram.
+        Returns complete response instead of streaming.
+        Also saves to MongoDB history.
+        
+        Args:
+            user_email: User's email address.
+            user_input: User's message text.
+            
+        Returns:
+            Complete AI response as string.
+        """
+        # Collect all chunks from the generator
+        response_parts = []
+        
+        # Create a dummy BackgroundTasks for the generator
+        from fastapi import BackgroundTasks
+        background_tasks = BackgroundTasks()
+        
+        for chunk in self.send_message_ai(
+            user_email=user_email,
+            user_input=user_input,
+            background_tasks=background_tasks
+        ):
+            response_parts.append(chunk)
+        
+        return "".join(response_parts)
+
     def generate_insight_stream(self, user_email: str, weeks: int = 3):
         """
         Generates a focused AI insight about metabolism using RAW data.

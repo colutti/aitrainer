@@ -1,19 +1,22 @@
 import { Component, OnInit, inject, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HevyService } from '../../services/hevy.service';
+import { TelegramService } from '../../services/telegram.service';
 import { IntegrationProvider } from '../../models/integration.model';
 import { IntegrationCardComponent } from './integration-card/integration-card.component';
 import { HevyConfigComponent } from './hevy-config/hevy-config.component';
 import { MfpImportComponent } from './mfp-import/mfp-import.component';
+import { TelegramConfigComponent } from './telegram-config/telegram-config.component';
 
 @Component({
   selector: 'app-integrations',
   standalone: true,
-  imports: [CommonModule, IntegrationCardComponent, HevyConfigComponent, MfpImportComponent],
+  imports: [CommonModule, IntegrationCardComponent, HevyConfigComponent, MfpImportComponent, TelegramConfigComponent],
   templateUrl: './integrations.component.html'
 })
 export class IntegrationsComponent implements OnInit {
   private hevyService = inject(HevyService);
+  private telegramService = inject(TelegramService);
   private cdr = inject(ChangeDetectorRef);
   
   hevyProvider = signal<IntegrationProvider>({ 
@@ -24,15 +27,25 @@ export class IntegrationsComponent implements OnInit {
     isEnabled: false 
   });
 
+  telegramProvider = signal<IntegrationProvider>({ 
+    id: 'telegram', 
+    name: 'Telegram', 
+    description: 'Converse com a IA pelo Telegram.', 
+    status: 'disconnected', 
+    isEnabled: true 
+  });
+
   otherProviders = signal<IntegrationProvider[]>([
     { id: 'mfp', name: 'MyFitnessPal', description: 'Importe seu histórico nutricional.', status: 'disconnected', isEnabled: true },
   ]);
   
   showHevyConfig = signal<boolean>(false);
   showMfpImport = signal<boolean>(false);
+  showTelegramConfig = signal<boolean>(false);
 
   ngOnInit() {
     this.refreshHevyStatus();
+    this.refreshTelegramStatus();
   }
 
   async refreshHevyStatus() {
@@ -59,11 +72,27 @@ export class IntegrationsComponent implements OnInit {
     }
   }
 
+  async refreshTelegramStatus() {
+    try {
+      const status = await this.telegramService.getStatus();
+      const newStatus = status.linked ? 'connected' : 'disconnected';
+      this.telegramProvider.set({
+        ...this.telegramProvider(),
+        status: newStatus
+      });
+      this.cdr.detectChanges();
+    } catch (e) {
+      console.error('Error loading Telegram status', e);
+    }
+  }
+
   openConfig(providerId: string) {
     if (providerId === 'hevy') {
       this.showHevyConfig.set(true);
     } else if (providerId === 'mfp') {
       this.showMfpImport.set(true);
+    } else if (providerId === 'telegram') {
+      this.showTelegramConfig.set(true);
     }
     this.cdr.detectChanges();
   }
@@ -81,5 +110,14 @@ export class IntegrationsComponent implements OnInit {
   onHevyStatusChanged() {
     // When Config modal says something changed (connect/disconnect/import)
     this.refreshHevyStatus();
+  }
+
+  onTelegramConfigClose() {
+    this.showTelegramConfig.set(false);
+    this.refreshTelegramStatus();
+  }
+
+  onTelegramStatusChanged() {
+    this.refreshTelegramStatus();
   }
 }

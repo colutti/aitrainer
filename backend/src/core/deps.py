@@ -76,3 +76,32 @@ def get_hevy_service() -> HevyService:
     database = get_mongo_database()
     return HevyService(workout_repository=database.workouts_repo)
 
+
+def get_telegram_repository():
+    """
+    Returns a Telegram repository instance.
+    """
+    from src.repositories.telegram_repository import TelegramRepository
+    database = get_mongo_database()
+    return TelegramRepository(database.database)
+
+
+def get_telegram_service():
+    """
+    Returns a Telegram bot service instance.
+    """
+    from src.services.telegram_service import TelegramBotService
+    
+    if not settings.TELEGRAM_BOT_TOKEN:
+        raise ValueError("TELEGRAM_BOT_TOKEN not configured")
+    
+    repository = get_telegram_repository()
+    brain = get_ai_trainer_brain()
+    
+    return TelegramBotService(
+        token=settings.TELEGRAM_BOT_TOKEN,
+        repository=repository,
+        brain=brain
+    )
+
+

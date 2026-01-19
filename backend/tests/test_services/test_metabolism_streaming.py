@@ -47,7 +47,7 @@ def test_generate_insight_stream_integration():
     }
     
     # Execute the real implementation
-    result = list(trainer.generate_insight_stream("user@test.com", stats))
+    result = list(trainer.generate_insight_stream("user@test.com", weeks=3))
     
     # Verify results
     assert result == ["Part 1", "Part 2"]

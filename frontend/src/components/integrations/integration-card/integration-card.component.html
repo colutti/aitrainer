@@ -10,12 +10,14 @@
     <div 
       [ngClass]="{
         'bg-orange-500/20 text-orange-400': provider.id === 'hevy',
+        'bg-blue-500/20 text-blue-400': provider.id === 'telegram',
         'bg-purple-500/20 text-purple-400': provider.status === 'coming_soon'
       }"
       class="flex h-12 w-12 items-center justify-center rounded-xl text-2xl shadow-inner shadow-white/5"
     >
       <ng-container [ngSwitch]="provider.id">
         <span *ngSwitchCase="'hevy'">🏋️</span>
+        <span *ngSwitchCase="'telegram'">✈️</span>
         <span *ngSwitchCase="'mfp'">🍎</span>
       </ng-container>
     </div>

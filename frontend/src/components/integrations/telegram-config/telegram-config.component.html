@@ -1,0 +1,123 @@
+<div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+  <div class="bg-[#1a1a2e] rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-purple-500/20 shadow-2xl">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between p-6 border-b border-gray-700">
+      <h2 class="text-2xl font-bold text-white">Configuração do Telegram</h2>
+      <button (click)="closeModal()" class="text-gray-400 hover:text-white transition-colors">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="viewState() === 'loading'" class="p-8 text-center">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto"></div>
+      <p class="text-gray-400 mt-4">Carregando...</p>
+    </div>
+
+    <!-- Disconnected State -->
+    <div *ngIf="viewState() === 'disconnected'" class="p-6 space-y-6">
+      <div class="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+        <p class="text-blue-300 text-sm">
+          💡 Vincule sua conta do Telegram para conversar com a IA diretamente pelo app!
+        </p>
+      </div>
+
+      <div class="space-y-4">
+        <h3 class="text-lg font-semibold text-white">Como vincular:</h3>
+        
+        <ol class="space-y-3 text-gray-300">
+          <li class="flex items-start gap-3">
+            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-purple-500 text-white text-sm flex items-center justify-center font-bold">1</span>
+            <span>Abra o Telegram e busque <code class="bg-gray-800 px-2 py-1 rounded text-purple-400">@AITrainer_Bot</code></span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-purple-500 text-white text-sm flex items-center justify-center font-bold">2</span>
+            <span>Envie o comando <code class="bg-gray-800 px-2 py-1 rounded text-purple-400">/vincular</code></span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-purple-500 text-white text-sm flex items-center justify-center font-bold">3</span>
+            <span>Cole o código abaixo no chat</span>
+          </li>
+        </ol>
+
+        <div class="mt-6">
+          <button 
+            (click)="generateCode()"
+            [disabled]="generatingCode()"
+            class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 text-white font-semibold py-3 px-6 rounded-lg transition-all"
+          >
+            {{ generatingCode() ? 'Gerando...' : 'Gerar Código de Vinculação' }}
+          </button>
+        </div>
+
+        <div *ngIf="linkingCode()" class="mt-4 space-y-3">
+          <div class="bg-gray-800 rounded-lg p-4 border border-purple-500/30">
+            <p class="text-gray-400 text-sm mb-2">Seu código:</p>
+            <div class="flex items-center gap-3">
+              <code class="text-3xl font-mono font-bold text-purple-400 tracking-wider">{{ linkingCode() }}</code>
+              <button 
+                (click)="copyCode()"
+                class="ml-auto bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                </svg>
+                Copiar
+              </button>
+            </div>
+          </div>
+          <p class="text-xs text-gray-500">⏱️ Código válido por 10 minutos</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connected State -->
+    <div *ngIf="viewState() === 'connected'" class="p-6 space-y-6">
+      <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+        <p class="text-green-300 font-semibold">✅ Conta vinculada com sucesso!</p>
+        <p class="text-gray-400 text-sm mt-1" *ngIf="telegramUsername()">
+          Telegram: <span class="text-white">{{ telegramUsername() }}</span>
+        </p>
+      </div>
+
+      <div class="space-y-4">
+        <h3 class="text-lg font-semibold text-white">Como usar:</h3>
+        <ul class="space-y-2 text-gray-300 text-sm">
+          <li class="flex items-start gap-2">
+            <span class="text-purple-400">•</span>
+            <span>Envie mensagens normalmente para o bot</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-purple-400">•</span>
+            <span>A IA tem acesso aos mesmos dados da web app</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-purple-400">•</span>
+            <span>Histórico compartilhado entre Telegram e web</span>
+          </li>
+        </ul>
+      </div>
+
+      <button 
+        (click)="unlink()"
+        class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+      >
+        Desvincular Conta
+      </button>
+    </div>
+
+    <!-- Messages -->
+    <div class="px-6 pb-6">
+      <div *ngIf="successMessage()" class="bg-green-500/20 border border-green-500/50 rounded-lg p-3 text-green-300 text-sm">
+        {{ successMessage() }}
+      </div>
+      <div *ngIf="errorMessage()" class="bg-red-500/20 border border-red-500/50 rounded-lg p-3 text-red-300 text-sm mt-2">
+        {{ errorMessage() }}
+      </div>
+    </div>
+
+  </div>
+</div>

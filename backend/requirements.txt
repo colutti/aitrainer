@@ -37,3 +37,6 @@ cachetools==6.2.2
 numpy==2.3.5
 slowapi==0.1.9
 python-multipart
+
+# Telegram
+python-telegram-bot==22.0
