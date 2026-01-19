@@ -14,6 +14,7 @@ import { MetabolismComponent } from './components/metabolism/metabolism.componen
 import { BodyCompositionComponent } from './components/body-composition/body-composition.component';
 import { SkeletonComponent } from './components/skeleton/skeleton.component';
 import { IntegrationsComponent } from './components/integrations/integrations.component';
+import { OnboardingComponent } from './components/onboarding/onboarding.component';
 import { AuthService } from './services/auth.service';
 import { NavigationService } from './services/navigation.service';
 
@@ -37,7 +38,8 @@ import { NavigationService } from './services/navigation.service';
     DashboardComponent,
     ToastComponent,
     SkeletonComponent,
-    IntegrationsComponent
+    IntegrationsComponent,
+    OnboardingComponent
   ],
 })
 
@@ -49,8 +51,15 @@ export class AppComponent {
   currentView = this.navigationService.currentView;
   
   isMobileMenuOpen = signal(false);
+  isOnboarding = signal(false);
 
   constructor() {
+    // Check if URL has onboarding token
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('token')) {
+      this.isOnboarding.set(true);
+    }
+
     // Automatically close mobile menu when the view changes
     effect(() => {
       this.currentView(); // Register dependency

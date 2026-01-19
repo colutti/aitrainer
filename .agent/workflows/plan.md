@@ -14,3 +14,4 @@ Instrucoes para criar um plano
 - A aplicacao e publicada no render com docker. Veja o workflow publish.md
 - So faca a publicacao em prod com o consentimento do usuario.
 - Tem que haver testes para as funcionalidades criadas.
+- Crie POCS para validar se o plano e possivel, sempre que possivel.

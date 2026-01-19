@@ -4,9 +4,11 @@ bcrypt==5.0.0
 fastapi==0.123.5
 pydantic==2.12.5
 pydantic-settings==2.12.0
+email-validator==2.3.0
 python-dotenv==1.2.1
 uvicorn==0.40.0
 gunicorn
+
 
 # Database
 pymongo==4.15.5

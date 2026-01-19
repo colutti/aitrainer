@@ -1,0 +1,286 @@
+<div class="onboarding-container">
+  @if (error()) {
+    <div class="error-card">
+      <h2>❌ Erro</h2>
+      <p>{{ error() }}</p>
+      <a href="/login" class="btn-secondary">Voltar para Login</a>
+    </div>
+  } @else if (isLoading() && currentStep() === 1) {
+    <div class="loading-card">
+      <div class="spinner"></div>
+      <p>Validando convite...</p>
+    </div>
+  } @else {
+    <div class="onboarding-card">
+      <!-- Progress Indicator -->
+      <div class="progress-indicator">
+        <div
+          class="step"
+          [class.active]="currentStep() >= 1"
+          [class.completed]="currentStep() > 1"
+        >
+          <div class="step-number">1</div>
+          <div class="step-label">Credenciais</div>
+        </div>
+        <div class="step-line" [class.active]="currentStep() >= 2"></div>
+        <div
+          class="step"
+          [class.active]="currentStep() >= 2"
+          [class.completed]="currentStep() > 2"
+        >
+          <div class="step-number">2</div>
+          <div class="step-label">Perfil</div>
+        </div>
+        <div class="step-line" [class.active]="currentStep() >= 3"></div>
+        <div class="step" [class.active]="currentStep() >= 3">
+          <div class="step-number">3</div>
+          <div class="step-label">Treinador</div>
+        </div>
+      </div>
+
+      <!-- Step 1: Credentials -->
+      @if (currentStep() === 1) {
+        <div class="step-content">
+          <h2>Crie sua Conta</h2>
+          <p class="subtitle">Bem-vindo! Configure sua senha para começar.</p>
+
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              [value]="email()"
+              disabled
+              class="input-disabled"
+            />
+            <span class="input-icon">🔒</span>
+          </div>
+
+          <div class="form-group">
+            <label for="password">Senha</label>
+            <input
+              type="password"
+              id="password"
+              [value]="formData().password"
+              (input)="updateFormData('password', $any($event.target).value)"
+              placeholder="Mínimo 8 caracteres"
+            />
+            <div class="password-requirements">
+              <small [class.valid]="formData().password.length >= 8"
+                >✓ 8+ caracteres</small
+              >
+              <small [class.valid]="formData().password.match(/[A-Z]/)"
+                >✓ Maiúscula</small
+              >
+              <small [class.valid]="formData().password.match(/[a-z]/)"
+                >✓ Minúscula</small
+              >
+              <small [class.valid]="formData().password.match(/[0-9]/)"
+                >✓ Número</small
+              >
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="confirmPassword">Confirmar Senha</label>
+            <input
+              type="password"
+              id="confirmPassword"
+              [value]="formData().confirmPassword"
+              (input)="
+                updateFormData('confirmPassword', $any($event.target).value)
+              "
+              placeholder="Digite a senha novamente"
+            />
+            @if (formData().confirmPassword && !passwordsMatch()) {
+              <small class="error-text">As senhas não coincidem</small>
+            }
+          </div>
+
+          <button
+            class="btn-primary"
+            [disabled]="!canProceedStep1()"
+            (click)="nextStep()"
+          >
+            Continuar
+          </button>
+        </div>
+      }
+
+      <!-- Step 2: Profile -->
+      @if (currentStep() === 2) {
+        <div class="step-content">
+          <h2>Seu Perfil</h2>
+          <p class="subtitle">Conte-nos um pouco sobre você</p>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="gender">Gênero</label>
+              <select
+                id="gender"
+                [value]="formData().gender"
+                (change)="updateFormData('gender', $any($event.target).value)"
+              >
+                <option value="Masculino">Masculino</option>
+                <option value="Feminino">Feminino</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="age">Idade</label>
+              <input
+                type="number"
+                id="age"
+                [value]="formData().age"
+                (input)="updateFormData('age', +$any($event.target).value)"
+                min="18"
+                max="100"
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="weight">Peso (kg)</label>
+              <input
+                type="number"
+                id="weight"
+                [value]="formData().weight"
+                (input)="updateFormData('weight', +$any($event.target).value)"
+                min="30"
+                max="500"
+                step="0.1"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="height">Altura (cm)</label>
+              <input
+                type="number"
+                id="height"
+                [value]="formData().height"
+                (input)="updateFormData('height', +$any($event.target).value)"
+                min="100"
+                max="250"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="goal_type">Objetivo</label>
+            <select
+              id="goal_type"
+              [value]="formData().goal_type"
+              (change)="updateFormData('goal_type', $any($event.target).value)"
+            >
+              <option value="lose">Perder Peso</option>
+              <option value="gain">Ganhar Massa</option>
+              <option value="maintain">Manter Peso</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="weekly_rate">Taxa Semanal (kg/semana)</label>
+            <input
+              type="range"
+              id="weekly_rate"
+              [value]="formData().weekly_rate"
+              (input)="
+                updateFormData('weekly_rate', +$any($event.target).value)
+              "
+              min="0"
+              max="2"
+              step="0.1"
+            />
+            <span class="range-value"
+              >{{ formData().weekly_rate }} kg/semana</span
+            >
+          </div>
+
+          <div class="button-group">
+            <button class="btn-secondary" (click)="previousStep()">
+              Voltar
+            </button>
+            <button
+              class="btn-primary"
+              [disabled]="!canProceedStep2()"
+              (click)="nextStep()"
+            >
+              Continuar
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Step 3: Trainer Selection -->
+      @if (currentStep() === 3) {
+        <div class="step-content">
+          <h2>Escolha seu Treinador</h2>
+          <p class="subtitle">
+            Selecione o estilo de treinamento ideal para você
+          </p>
+
+          <div class="trainer-grid">
+            <div
+              class="trainer-card"
+              [class.selected]="formData().trainer_type === 'atlas'"
+              (click)="updateFormData('trainer_type', 'atlas')"
+            >
+              <div class="trainer-avatar">💪</div>
+              <h3>Atlas</h3>
+              <p>Força e condicionamento</p>
+            </div>
+
+            <div
+              class="trainer-card"
+              [class.selected]="formData().trainer_type === 'luna'"
+              (click)="updateFormData('trainer_type', 'luna')"
+            >
+              <div class="trainer-avatar">🧘‍♀️</div>
+              <h3>Luna</h3>
+              <p>Bem-estar holístico</p>
+            </div>
+
+            <div
+              class="trainer-card"
+              [class.selected]="formData().trainer_type === 'sargento'"
+              (click)="updateFormData('trainer_type', 'sargento')"
+            >
+              <div class="trainer-avatar">🎖️</div>
+              <h3>Sargento</h3>
+              <p>Treino de alta intensidade</p>
+            </div>
+
+            <div
+              class="trainer-card"
+              [class.selected]="formData().trainer_type === 'sofia'"
+              (click)="updateFormData('trainer_type', 'sofia')"
+            >
+              <div class="trainer-avatar">🥗</div>
+              <h3>Sofia</h3>
+              <p>Nutrição personalizada</p>
+            </div>
+          </div>
+
+          <div class="button-group">
+            <button class="btn-secondary" (click)="previousStep()">
+              Voltar
+            </button>
+            <button
+              class="btn-primary"
+              [disabled]="isLoading()"
+              (click)="complete()"
+            >
+              @if (isLoading()) {
+                <span class="spinner-small"></span>
+                Criando conta...
+              } @else {
+                Começar Treino
+              }
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

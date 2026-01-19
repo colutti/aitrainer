@@ -40,6 +40,7 @@ class MongoDatabase:
             from src.repositories.workout_repository import WorkoutRepository
             from src.repositories.nutrition_repository import NutritionRepository
             from src.repositories.weight_repository import WeightRepository
+            from src.repositories.invite_repository import InviteRepository
             
             self.users = UserRepository(self.database)
             self.trainers = TrainerRepository(self.database)
@@ -48,6 +49,8 @@ class MongoDatabase:
             self.workouts_repo = WorkoutRepository(self.database)
             self.nutrition = NutritionRepository(self.database)
             self.weight = WeightRepository(self.database)
+            self.invites = InviteRepository(self.database)
+
             
             logger.info("Successfully connected to MongoDB.")
         except pymongo.errors.ConnectionFailure as e: # type: ignore

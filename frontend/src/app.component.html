@@ -1,6 +1,8 @@
 <div class="h-screen w-screen bg-dark-bg text-text-primary flex flex-col md:flex-row overflow-hidden">
   <app-toast></app-toast>
-  @if (isAuthenticated()) {
+  @if (isOnboarding()) {
+    <app-onboarding class="w-full h-full"></app-onboarding>
+  } @else if (isAuthenticated()) {
     <!-- Mobile Header -->
     <header data-cy="mobile-header" class="md:hidden flex items-center justify-between p-4 bg-light-bg border-b border-secondary flex-shrink-0 z-20">
       <div class="flex items-center space-x-3">

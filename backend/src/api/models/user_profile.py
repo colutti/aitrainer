@@ -33,6 +33,7 @@ class UserProfile(UserProfileInput):
     Data class to hold user configuration and profile data.
     """
     email: str = Field(..., description="User's email")
+    password_hash: Optional[str] = Field(None, description="Hashed password for authentication")
     
     # Hevy Integration
     hevy_api_key: Optional[str] = Field(None, description="Hevy API key, encrypted")
