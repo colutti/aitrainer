@@ -120,14 +120,19 @@ def list_invites(args, db):
     
     now = datetime.now(timezone.utc)
     for invite in invites:
+        # Ensure invite.expires_at is timezone-aware for comparison
+        expires_at_aware = invite.expires_at
+        if expires_at_aware.tzinfo is None:
+            expires_at_aware = expires_at_aware.replace(tzinfo=timezone.utc)
+            
         if invite.used:
             status_str = "Used"
-        elif invite.expires_at < now:
+        elif expires_at_aware < now:
             status_str = "Expired"
         else:
             status_str = "Active"
         
-        expires_str = invite.expires_at.strftime('%Y-%m-%d %H:%M')
+        expires_str = expires_at_aware.strftime('%Y-%m-%d %H:%M')
         print(f"{invite.email:<30} | {invite.token:<36} | {status_str:<10} | {expires_str}")
     print()
 

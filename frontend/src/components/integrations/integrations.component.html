@@ -22,11 +22,16 @@
     ></app-integration-card>
   </div>
 
-  <!-- Hevy Config Modal -->
   <app-hevy-config
     *ngIf="showHevyConfig()"
     (close)="onHevyConfigClose()"
     (statusChanged)="onHevyStatusChanged()"
   ></app-hevy-config>
+
+  <!-- MFP Import Modal -->
+  <app-mfp-import
+    *ngIf="showMfpImport()"
+    (close)="onMfpImportClose()"
+  ></app-mfp-import>
 
 </div>

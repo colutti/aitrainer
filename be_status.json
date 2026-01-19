@@ -1,0 +1,281 @@
+[
+  {
+    "commit": {
+      "createdAt": "2026-01-19T07:06:45Z",
+      "id": "45f6e3f16ef07dbbf4b59caa35a709693d8738b7",
+      "message": "feat: Add invite-based user onboarding system\n\n- Add invite management script (create, list, get, revoke)\n- Add InviteRepository with MongoDB integration\n- Add onboarding API endpoints (/validate, /complete)\n- Add OnboardingComponent with 3-step wizard (credentials, profile, trainer)\n- Add password strength validation (frontend + backend sync)\n- Fix password_hash field in UserProfile model\n- Fix timezone-aware datetime comparison in onboarding endpoints"
+    },
+    "createdAt": "2026-01-19T07:08:07.912758Z",
+    "id": "dep-d5mtglq9mqds73b8b060",
+    "startedAt": "2026-01-19T07:10:15.939271Z",
+    "status": "build_in_progress",
+    "trigger": "api",
+    "updatedAt": "2026-01-19T07:10:15.939643Z"
+  },
+  {
+    "commit": {
+      "createdAt": "2026-01-19T07:06:45Z",
+      "id": "45f6e3f16ef07dbbf4b59caa35a709693d8738b7",
+      "message": "feat: Add invite-based user onboarding system\n\n- Add invite management script (create, list, get, revoke)\n- Add InviteRepository with MongoDB integration\n- Add onboarding API endpoints (/validate, /complete)\n- Add OnboardingComponent with 3-step wizard (credentials, profile, trainer)\n- Add password strength validation (frontend + backend sync)\n- Fix password_hash field in UserProfile model\n- Fix timezone-aware datetime comparison in onboarding endpoints"
+    },
+    "createdAt": "2026-01-19T07:07:38.754434Z",
+    "finishedAt": "2026-01-19T07:10:10.715581Z",
+    "id": "dep-d5mtgdtactks73c3hr6g",
+    "startedAt": "2026-01-19T07:07:38.644058Z",
+    "status": "live",
+    "trigger": "api",
+    "updatedAt": "2026-01-19T07:10:10.715901Z"
+  },
+  {
+    "commit": {
+      "createdAt": "2026-01-18T19:27:38Z",
+      "id": "56edfeb67b00d2b14983f2388aa4554e2db200e7",
+      "message": "fix(logs): simplify prompt log to single line string"
+    },
+    "createdAt": "2026-01-18T19:29:22.424552Z",
+    "finishedAt": "2026-01-18T19:30:18.483792Z",
+    "id": "dep-d5mj93l6ubrc73a9cjd0",
+    "startedAt": "2026-01-18T19:29:21.904783Z",
+    "status": "deactivated",
+    "trigger": "manual",
+    "updatedAt": "2026-01-19T07:10:10.714038Z"
+  },
+  {
+    "commit": {
+      "createdAt": "2026-01-18T19:20:07Z",
+      "id": "41a33fdff5f1e28785ac2229a611d086f19ca414",
+      "message": "feat(metabolism): refactor insight to use raw data and hourly cache"
+    },
+    "createdAt": "2026-01-18T19:20:40.76697Z",
+    "finishedAt": "2026-01-18T19:22:41.321721Z",
+    "id": "dep-d5mj514oud1c739e71rg",
+    "startedAt": "2026-01-18T19:20:39.908121Z",
+    "status": "deactivated",
+    "trigger": "api",
+    "updatedAt": "2026-01-18T19:30:18.482553Z"
+  },
+  {
+    "commit": {
+      "createdAt": "2026-01-18T18:40:46Z",
+      "id": "d5582e2fc8c8076790d4ac42c821a572a5134f5a",
+      "message": "fix(backend): distinguish read vs write tool calls to fix memory generation bug"
+    },
+    "createdAt": "2026-01-18T18:41:19.70952Z",
+    "finishedAt": "2026-01-18T18:42:17.179886Z",
+    "id": "dep-d5miij3e5dus73ei73bg",
+    "startedAt": "2026-01-18T18:41:19.550926Z",
+    "status": "deactivated",
+    "trigger": "api",
+    "updatedAt": "2026-01-18T19:22:41.319719Z"
+  },
+  {
+    "commit": {
+      "createdAt": "2026-01-18T18:15:11Z",
+      "id": "e56c910e6ff0bf6829fc0155c3abe528b855625e",
+      "message": "fix(logging): flatten LLM response log to single line"
+    },
+    "createdAt": "2026-01-18T18:15:25.207946Z",
+    "finishedAt": "2026-01-18T18:17:18.452581Z",
+    "id": "dep-d5mi6e8gjchc738o84qg",
+    "startedAt": "2026-01-18T18:15:25.081162Z",
+    "status": "deactivated",
+    "trigger": "api",
+    "updatedAt": "2026-01-18T18:42:17.178868Z"
+  },
+  {
+    "commit": {
+      "createdAt": "2026-01-18T18:09:19Z",
+      "id": "1b899b6aa90e4b4eecb321c519d36429d4dd5d03",
+      "message": "refactor(prompt): improve prompt readability and token efficiency\n\n- Use compact list format for tools and rules\n\n- Use compact 1-line format for chat history with timestamps\n\n- Explicitly label sender as 'VOCÊ (Treinador)' or 'EX-TREINADOR [Type]'\n\n- Convert profile summaries to key-value format"
+    },
+    "createdAt": "2026-01-18T18:09:59.075035Z",
+    "finishedAt": "2026-01-18T18:11:16.921099Z",
+    "id": "dep-d5mi3sv5r7bs73d61ak0",
+    "startedAt": "2026-01-18T18:09:58.909662Z",
+    "status": "deactivated",
+    "trigger": "api",
+    "updatedAt": "2026-01-18T18:17:18.451449Z"
+  },
+  {
+    "commit": {
+      "createdAt": "2026-01-18T17:51:00Z",
+      "id": "8bece339fc6d08c43014bb5e10ba4a716f8fad80",
+      "message": "refactor: consolidate cypress tests to be backend-independent and improve stability"
+    },
+    "createdAt": "2026-01-18T17:51:19.736354Z",
+    "finishedAt": "2026-01-18T17:54:03.394283Z",
+    "id": "dep-d5mhr4vgi27c739jrjs0",
+    "startedAt": "2026-01-18T17:51:19.545161Z",
+    "status": "deactivated",
+    "trigger": "api",
+    "updatedAt": "2026-01-18T18:11:16.919852Z"
+  },
+  {
+    "commit": {
+      "createdAt": "2026-01-18T13:13:38Z",
+      "id": "50db2167f91a2365a5a54fcc35e606e1a57132e2",
+      "message": "feat(profile): allow AI to read/update user goal and add notes field"
+    },
+    "createdAt": "2026-01-18T17:28:33.147072Z",
+    "finishedAt": "2026-01-18T17:29:45.710827Z",
+    "id": "dep-d5mhgfbe5dus73ehf8m0",
+    "startedAt": "2026-01-18T17:28:32.999475Z",
+    "status": "deactivated",
+    "trigger": "manual",
+    "updatedAt": "2026-01-18T17:54:03.392723Z"
+  },
+  {
+    "commit": {
+      "createdAt": "2026-01-18T13:13:38Z",
+      "id": "50db2167f91a2365a5a54fcc35e606e1a57132e2",
+      "message": "feat(profile): allow AI to read/update user goal and add notes field"
+    },
+    "createdAt": "2026-01-18T13:14:00.555906Z",
+    "finishedAt": "2026-01-18T13:14:58.89262Z",
+    "id": "dep-d5mdp514tr6s73citfs0",
+    "startedAt": "2026-01-18T13:14:00.460154Z",
+    "status": "deactivated",
+    "trigger": "api",
+    "updatedAt": "2026-01-18T17:29:45.709746Z"
+  },
+  {
+    "commit": {
+      "createdAt": "2026-01-18T12:29:30Z",
+      "id": "88d0db593c86493384fc64a7f0779c5e7a95452a",
+      "message": "fix(hevy): remove /api prefix from webhook URL"
+    },
+    "createdAt": "2026-01-18T12:29:56.750265Z",
+    "finishedAt": "2026-01-18T12:31:53.264947Z",
+    "id": "dep-d5md4gbe5dus73ee3tog",
+    "startedAt": "2026-01-18T12:29:56.555822Z",
+    "status": "deactivated",
+    "trigger": "api",
+    "updatedAt": "2026-01-18T13:14:58.891242Z"
+  },
+  {
+    "commit": {
+      "createdAt": "2026-01-18T12:14:42Z",
+      "id": "0527fe6a3fc3b0ecfa4c7432663177da69d351c0",
+      "message": "fix(hevy): reorder routes - static before parameterized to fix route matching"
+    },
+    "createdAt": "2026-01-18T12:15:28.879997Z",
+    "finishedAt": "2026-01-18T12:17:09.535409Z",
+    "id": "dep-d5mctndactks73bpaegg",
+    "startedAt": "2026-01-18T12:15:28.749652Z",
+    "status": "deactivated",
+    "trigger": "api",
+    "updatedAt": "2026-01-18T12:31:53.263857Z"
+  },
+  {
+    "commit": {
+      "createdAt": "2026-01-18T11:15:08Z",
+      "id": "1217e689ebd20d7eaff1261c84bc483c077de005",
+      "message": "fix(hevy): generic try-catch for unhandled production errors"
+    },
+    "createdAt": "2026-01-18T11:15:43.979292Z",
+    "finishedAt": "2026-01-18T11:16:55.13785Z",
+    "id": "dep-d5mc1mp4tr6s73chkgmg",
+    "startedAt": "2026-01-18T11:15:43.872703Z",
+    "status": "deactivated",
+    "trigger": "api",
+    "updatedAt": "2026-01-18T12:17:09.532008Z"
+  },
+  {
+    "commit": {
+      "createdAt": "2026-01-18T11:06:12Z",
+      "id": "de6c575d2cadd33865fdd0f28258916bb293d10c",
+      "message": "fix(hevy): add critical logging for debug production error"
+    },
+    "createdAt": "2026-01-18T11:06:39.486237Z",
+    "finishedAt": "2026-01-18T11:07:38.221342Z",
+    "id": "dep-d5mbtev5r7bs73d1quc0",
+    "startedAt": "2026-01-18T11:06:39.410357Z",
+    "status": "deactivated",
+    "trigger": "api",
+    "updatedAt": "2026-01-18T11:16:55.136998Z"
+  },
+  {
+    "commit": {
+      "createdAt": "2026-01-18T10:55:46Z",
+      "id": "ff0757a70598042f111925c3cee7e756a071e605",
+      "message": "feat: add hevy webhook integration with async processing and dual security"
+    },
+    "createdAt": "2026-01-18T10:56:24.621635Z",
+    "finishedAt": "2026-01-18T10:57:45.794844Z",
+    "id": "dep-d5mbol14tr6s73che02g",
+    "startedAt": "2026-01-18T10:56:24.340777Z",
+    "status": "deactivated",
+    "trigger": "api",
+    "updatedAt": "2026-01-18T11:07:38.220085Z"
+  },
+  {
+    "commit": {
+      "createdAt": "2026-01-18T09:23:34Z",
+      "id": "5dacc7747cdb95d6fb04cced3b62815205f79ac5",
+      "message": "feat: enhance trainer personalities and add Gym Bro trainer with avatar"
+    },
+    "createdAt": "2026-01-18T10:11:36.18107Z",
+    "finishedAt": "2026-01-18T10:12:02.110118Z",
+    "id": "dep-d5mb3lu3jp1c739vvgi0",
+    "startedAt": "2026-01-18T10:11:39.317867Z",
+    "status": "deactivated",
+    "trigger": "service_updated",
+    "updatedAt": "2026-01-18T10:57:45.793853Z"
+  },
+  {
+    "commit": {
+      "createdAt": "2026-01-18T09:23:34Z",
+      "id": "5dacc7747cdb95d6fb04cced3b62815205f79ac5",
+      "message": "feat: enhance trainer personalities and add Gym Bro trainer with avatar"
+    },
+    "createdAt": "2026-01-18T09:25:21.336278Z",
+    "finishedAt": "2026-01-18T09:28:19.463206Z",
+    "id": "dep-d5madve3jp1c739vefug",
+    "startedAt": "2026-01-18T09:25:21.106571Z",
+    "status": "deactivated",
+    "trigger": "api",
+    "updatedAt": "2026-01-18T10:12:02.108702Z"
+  },
+  {
+    "commit": {
+      "createdAt": "2026-01-18T08:00:13Z",
+      "id": "c5e1c888d8d49e7fd97d3c146b8edc9636d597ba",
+      "message": "feat: add body composition tools to AI trainer and unified cypress test passwords"
+    },
+    "createdAt": "2026-01-18T08:00:32.542881Z",
+    "finishedAt": "2026-01-18T08:04:42.530636Z",
+    "id": "dep-d5m9673e5dus73eb125g",
+    "startedAt": "2026-01-18T08:00:32.474967Z",
+    "status": "deactivated",
+    "trigger": "api",
+    "updatedAt": "2026-01-18T09:28:19.46212Z"
+  },
+  {
+    "commit": {
+      "createdAt": "2026-01-18T07:19:20Z",
+      "id": "ded1847bdd04d83aa35451052b53aded4364f864",
+      "message": "fix: resolve tailwind error, fix cypress tests 100% and improve dashboard widget selectors"
+    },
+    "createdAt": "2026-01-18T07:19:32.029043Z",
+    "finishedAt": "2026-01-18T07:22:04.038695Z",
+    "id": "dep-d5m8j03e5dus73eaivc0",
+    "startedAt": "2026-01-18T07:19:31.874531Z",
+    "status": "deactivated",
+    "trigger": "api",
+    "updatedAt": "2026-01-18T08:04:42.529543Z"
+  },
+  {
+    "commit": {
+      "createdAt": "2026-01-17T13:32:38Z",
+      "id": "49c7e310375c40bb8a1c28cff56f409c370a7d4a",
+      "message": "perf: optimize render deployment with direct dependencies and multi-stage docker builds"
+    },
+    "createdAt": "2026-01-17T13:33:03.321396Z",
+    "finishedAt": "2026-01-17T13:37:20.693664Z",
+    "id": "dep-d5lov2emcj7s73bj4mj0",
+    "startedAt": "2026-01-17T13:33:03.085238Z",
+    "status": "deactivated",
+    "trigger": "api",
+    "updatedAt": "2026-01-18T07:22:04.037607Z"
+  }
+]

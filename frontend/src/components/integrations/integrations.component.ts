@@ -4,11 +4,12 @@ import { HevyService } from '../../services/hevy.service';
 import { IntegrationProvider } from '../../models/integration.model';
 import { IntegrationCardComponent } from './integration-card/integration-card.component';
 import { HevyConfigComponent } from './hevy-config/hevy-config.component';
+import { MfpImportComponent } from './mfp-import/mfp-import.component';
 
 @Component({
   selector: 'app-integrations',
   standalone: true,
-  imports: [CommonModule, IntegrationCardComponent, HevyConfigComponent],
+  imports: [CommonModule, IntegrationCardComponent, HevyConfigComponent, MfpImportComponent],
   templateUrl: './integrations.component.html'
 })
 export class IntegrationsComponent implements OnInit {
@@ -24,10 +25,11 @@ export class IntegrationsComponent implements OnInit {
   });
 
   otherProviders = signal<IntegrationProvider[]>([
-    { id: 'mfp', name: 'MyFitnessPal', description: 'Acompanhe nutrição e calorias.', status: 'coming_soon', isEnabled: false },
+    { id: 'mfp', name: 'MyFitnessPal', description: 'Importe seu histórico nutricional.', status: 'disconnected', isEnabled: true },
   ]);
   
   showHevyConfig = signal<boolean>(false);
+  showMfpImport = signal<boolean>(false);
 
   ngOnInit() {
     this.refreshHevyStatus();
@@ -60,8 +62,15 @@ export class IntegrationsComponent implements OnInit {
   openConfig(providerId: string) {
     if (providerId === 'hevy') {
       this.showHevyConfig.set(true);
-      this.cdr.detectChanges();
+    } else if (providerId === 'mfp') {
+      this.showMfpImport.set(true);
     }
+    this.cdr.detectChanges();
+  }
+
+  onMfpImportClose() {
+    this.showMfpImport.set(false);
+    this.cdr.detectChanges();
   }
 
   onHevyConfigClose() {

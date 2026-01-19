@@ -53,5 +53,19 @@ user-password:
 user-delete:
 	@cd backend && .venv/bin/python scripts/manage_users.py delete "$(EMAIL)"
 
+# Deleta TUDO do usuario (MongoDB + Vector DB + Logs)
+user-nuke:
+	@cd backend && export PYTHONPATH=. && .venv/bin/python scripts/delete_user.py "$(EMAIL)"
+
+user-nuke-force:
+	@cd backend && export PYTHONPATH=. && .venv/bin/python scripts/delete_user.py "$(EMAIL)" --force
+
+# Invite Commands
+invite-create:
+	@cd backend && export PYTHONPATH=. && .venv/bin/python scripts/manage_invites.py create --email "$(EMAIL)" --expires-hours 48
+
+invite-list:
+	@cd backend && export PYTHONPATH=. && .venv/bin/python scripts/manage_invites.py list
+
 cypress:
 	podman-compose --profile test run --rm --no-deps cypress run

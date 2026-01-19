@@ -3,7 +3,7 @@ API endpoints for nutrition management.
 """
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException, File, UploadFile
 
 from src.services.auth import verify_token
 from src.core.deps import get_mongo_database
@@ -11,6 +11,8 @@ from src.core.logs import logger
 from src.api.models.nutrition_log import NutritionWithId
 from src.api.models.nutrition_stats import NutritionStats
 from src.services.database import MongoDatabase
+from src.api.models.import_result import ImportResult
+from src.services.myfitnesspal_import_service import import_nutrition_from_csv
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -100,3 +102,39 @@ def get_today_nutrition(
     except Exception as e:
         logger.error("Error fetching today's nutrition for user %s: %s", user_email, e)
         raise HTTPException(status_code=500, detail="Failed to retrieve today's nutrition") from e
+
+
+@router.post("/import/myfitnesspal", response_model=ImportResult)
+async def import_myfitnesspal(
+    user_email: CurrentUser,
+    db: DatabaseDep,
+    file: UploadFile = File(...)
+) -> ImportResult:
+    """
+    Import nutrition data from MyFitnessPal CSV export.
+    Expects a CSV file with Portuguese headers.
+    """
+    logger.info("Importing MyFitnessPal data for user: %s", user_email)
+    
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="O arquivo deve ser um CSV.")
+        
+    try:
+        content = await file.read()
+        csv_content = content.decode('utf-8')
+        
+        result = import_nutrition_from_csv(user_email, csv_content, db)
+        
+        logger.info(
+            "Import finished for %s. Created: %d, Updated: %d, Errors: %d",
+            user_email, result.created, result.updated, result.errors
+        )
+        return result
+        
+    except ValueError as e:
+        logger.warning("Validation error importing CSV for %s: %s", user_email, e)
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error("Error importing CSV for user %s: %s", user_email, e)
+        raise HTTPException(status_code=500, detail="Falha ao importar dados.") from e
+

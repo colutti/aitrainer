@@ -36,3 +36,4 @@ mem0ai==1.0.1
 cachetools==6.2.2
 numpy==2.3.5
 slowapi==0.1.9
+python-multipart
