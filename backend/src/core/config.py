@@ -80,7 +80,7 @@ class Settings(BaseSettings):
 
     # ====== OPENAI STUFF ======
     OPENAI_API_KEY: str = ""
-    OPENAI_MODEL_NAME: str = "gpt-4o-mini"
+    OPENAI_MODEL_NAME: str = "gpt-5-mini"
 
     # ====== MONGO STUFF ======
     DB_NAME: str
