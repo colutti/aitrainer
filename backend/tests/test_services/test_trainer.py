@@ -68,7 +68,18 @@ class TestAITrainerBrain(unittest.TestCase):
         self.mock_db.get_user_profile.assert_called_once_with(user_email)
         self.mock_db.get_trainer_profile.assert_called_once_with(user_email)
         self.mock_db.get_conversation_memory.assert_called_once()
-        self.mock_memory.search.assert_called_once()
+        # Hybrid search makes 2 calls: Critical and Semantic
+        self.assertEqual(self.mock_memory.search.call_count, 2)
+        self.mock_memory.search.assert_any_call(
+            user_id=user_email, 
+            query="alergia lesão dor objetivo meta restrição médico cirurgia", 
+            limit=5
+        )
+        self.mock_memory.search.assert_any_call(
+            user_id=user_email, 
+            query=user_input, 
+            limit=5
+        )
 
     def test_send_message_ai_no_user_profile(self):
         """

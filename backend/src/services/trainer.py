@@ -51,6 +51,15 @@ class AITrainerBrain:
     Uses LLMClient for LLM operations (abstracted from specific providers).
     """
 
+    def _format_date(self, date_str: str) -> str:
+        """Helper to format date strings."""
+        if not date_str: return "Data desc."
+        try:
+            dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+            return dt.strftime("%d/%m")
+        except (ValueError, AttributeError):
+            return "Data desc."
+
     def __init__(
         self, database: MongoDatabase, llm_client: LLMClient, memory: Memory
     ):
@@ -76,6 +85,12 @@ class AITrainerBrain:
         )
         rendered_prompt = prompt_template.format(**input_data)
         
+        # --- PROMPT INSPECTOR (DEBUG) ---
+        # Checks if Critical Section is present and populated
+        critical_check = "✅ Presente" if "## 🚨 Fatos Críticos" in rendered_prompt else "❌ Ausente"
+        logger.debug("🛡️ PROMPT ANATOMY CHECK: Critical Section: %s | Total Chars: %d", critical_check, len(rendered_prompt))
+        # -------------------------------
+        
         # Flatten prompt for single-line logging
         single_line_prompt = rendered_prompt.replace("\n", "\\n")
         logger.debug("📤 PROMPT ENVIADO AO LLM: %s", single_line_prompt)
@@ -96,43 +111,83 @@ class AITrainerBrain:
         logger.debug("Attempting to retrieve chat history for session: %s", session_id)
         return self._database.get_chat_history(session_id)
     
-    def _retrieve_relevant_memories(
-        self, user_input: str, user_id: str
-    ) -> list[dict]:
+    def _normalize_mem0_results(self, results, source: str) -> list[dict]:
+        """Helper to normalize Mem0 results."""
+        normalized = []
+        data = results.get("results", []) if isinstance(results, dict) else results
+        for mem in data:
+            if text := mem.get("memory", ""):
+                normalized.append({
+                    "text": text,
+                    "created_at": mem.get("created_at", ""),
+                    "source": source
+                })
+        return normalized
+
+    def _retrieve_critical_facts(self, user_id: str) -> list[dict]:
         """
-        Retrieves relevant memories for a given user input.
-
-        Args:
-            user_input (str): The user's input.
-            user_id (str): The user's ID.
-
-        Returns:
-            list[dict]: A list of memory dicts with 'text' and 'created_at' keys.
+        Busca explícita por fatos críticos (saúde, lesões, objetivos) que devem ter precedência.
+        Garante que 'alergia', 'lesão', etc. sejam recuperados mesmo se semântica falhar.
         """
-        logger.debug("Retrieving relevant memories for user: %s", user_id)
-        # In Mem0 1.0.1+, search returns a dict: {"results": [...]}
-        search_result = self._memory.search(
-            user_id=user_id, 
-            query=user_input,
-            limit=settings.MAX_LONG_TERM_MEMORY_MESSAGES
-        )
-        
-        # Normalize result to list of dictionaries
-        memories_data = []
-        if isinstance(search_result, dict):
-            memories_data = search_result.get("results", [])
-        elif isinstance(search_result, list):
-            memories_data = search_result
+        critical_keywords = "alergia lesão dor objetivo meta restrição médico cirurgia"
+        results = self._memory.search(user_id=user_id, query=critical_keywords, limit=5)
+        return self._normalize_mem0_results(results, source="critical")
 
-        facts = []
-        for mem in memories_data:
-            text = mem.get("memory", "")
-            created_at = mem.get("created_at", "")
-            if text:
-                logger.info("Retrieved fact from Mem0: %s (created: %s)", text, created_at)
-                facts.append({"text": text, "created_at": created_at})
+    def _retrieve_semantic_memories(self, user_id: str, query: str, limit: int = 5) -> list[dict]:
+        """Busca contexto semântico baseado no input atual."""
+        results = self._memory.search(user_id=user_id, query=query, limit=limit)
+        return self._normalize_mem0_results(results, source="semantic")
+
+    def _retrieve_recent_memories(self, user_id: str, limit: int = 5) -> list[dict]:
+        """Busca memórias recém-adicionadas (contexto temporal de curto prazo expandido)."""
+        try:
+            # get_all returns newest first usually
+            results = self._memory.get_all(user_id=user_id, limit=limit)
+            return self._normalize_mem0_results(results, source="recent")
+        except Exception:
+            return []
+
+    def _retrieve_hybrid_memories(self, user_input: str, user_id: str) -> dict:
+        """
+        Retrieves memories using Hybrid Search (Critical + Semantic + Recent).
+        Returns a structured dictionary to allow explicit prompt placement.
+        """
+        logger.debug("Retrieving HYBRID memories for user: %s", user_id)
         
-        return facts
+        # 1. Critical Facts (Always fetch)
+        critical = self._retrieve_critical_facts(user_id)
+        
+        # 2. Semantic Context (Based on input)
+        semantic = self._retrieve_semantic_memories(user_id, user_input)
+        
+        # 3. Recent (Temporal context)
+        recent = self._retrieve_recent_memories(user_id)
+        
+        # Deduplicate (prefer Critical > Semantic > Recent)
+        seen_texts = set()
+        unique_critical = []
+        for m in critical:
+            if m["text"] not in seen_texts:
+                unique_critical.append(m)
+                seen_texts.add(m["text"])
+                
+        unique_semantic = []
+        for m in semantic:
+            if m["text"] not in seen_texts:
+                unique_semantic.append(m)
+                seen_texts.add(m["text"])
+                
+        unique_recent = []
+        for m in recent:
+            if m["text"] not in seen_texts:
+                unique_recent.append(m)
+                seen_texts.add(m["text"])
+
+        return {
+            "critical": unique_critical,
+            "semantic": unique_semantic,
+            "recent": unique_recent
+        }
 
     def get_user_profile(self, email: str) -> UserProfile | None:
         """
@@ -285,21 +340,35 @@ class AITrainerBrain:
         profile = self._get_or_create_user_profile(user_email)
         trainer_profile_obj = self._get_or_create_trainer_profile(user_email)
 
-        relevant_memories = self._retrieve_relevant_memories(user_input, user_email)
+        # Retrieve Hybrid Memories
+        hybrid_memories = self._retrieve_hybrid_memories(user_input, user_email)
         
-        # Format facts as a bulleted list with dates for the prompt
-        if relevant_memories:
-            formatted_memories = []
-            for mem in relevant_memories:
-                try:
-                    dt = datetime.fromisoformat(mem["created_at"].replace("Z", "+00:00"))
-                    date_str = dt.strftime("%d/%m/%Y %H:%M")
-                except (ValueError, KeyError, AttributeError):
-                    date_str = "Data desconhecida"
-                formatted_memories.append(f"- ({date_str}) {mem['text']}")
-            relevant_memories_str = "\n".join(formatted_memories)
-        else:
-            relevant_memories_str = "Nenhum conhecimento prévio relevante encontrado."
+        # Format memories into sections for the prompt
+        # TODO: Move this formatting logic to Prompt Template in Phase 2
+        memory_sections = []
+        
+        if hybrid_memories["critical"]:
+            sec = ["## 🚨 Fatos Críticos (ATENÇÃO MÁXIMA):"]
+            for mem in hybrid_memories["critical"]:
+                dt = self._format_date(mem.get("created_at"))
+                sec.append(f"- ⚠️ ({dt}) {mem['text']}")
+            memory_sections.append("\n".join(sec))
+            
+        if hybrid_memories["semantic"]:
+            sec = ["## 🧠 Contexto Relacionado:"]
+            for mem in hybrid_memories["semantic"]:
+                dt = self._format_date(mem.get("created_at"))
+                sec.append(f"- ({dt}) {mem['text']}")
+            memory_sections.append("\n".join(sec))
+            
+        if hybrid_memories["recent"]:
+            sec = ["## 📅 Fatos Recentes:"]
+            for mem in hybrid_memories["recent"]:
+                dt = self._format_date(mem.get("created_at"))
+                sec.append(f"- ({dt}) {mem['text']}")
+            memory_sections.append("\n".join(sec))
+
+        relevant_memories_str = "\n\n".join(memory_sections) if memory_sections else "Nenhum conhecimento prévio relevante encontrado."
 
         current_trainer_type = trainer_profile_obj.trainer_type or "atlas"
         
@@ -381,16 +450,10 @@ class AITrainerBrain:
             update_user_goal_tool
         ]
         
-        write_tool_was_called = False
         full_response = []
         for chunk in self._llm_client.stream_with_tools(
             prompt_template=prompt_template, input_data=input_data, tools=tools
         ):
-            # Check for end-of-stream signal
-            if isinstance(chunk, tuple):
-                _, write_tool_was_called = chunk
-                continue  # Don't yield the signal tuple
-
             full_response.append(chunk)
             yield chunk
 
@@ -404,17 +467,17 @@ class AITrainerBrain:
         self._add_to_mongo_history(user_email, user_input, final_response, current_trainer_type)
         
         if background_tasks:
-            if not write_tool_was_called:
-                background_tasks.add_task(
-                    _add_to_mem0_background,
-                    memory=self._memory,
-                    user_email=user_email,
-                    user_input=user_input,
-                    response_text=final_response
-                )
-                logger.info("Scheduled Mem0 background task for user: %s", user_email)
-            else:
-                logger.info("Skipped Mem0 storage - write tool was called for user: %s", user_email)
+            # We removed the restriction 'if not write_tool_was_called' because mixed messages
+            # (e.g. "updated goal AND have allergy") were causing critical facts (allergy) to be lost.
+            # Mem0 handles deduplication reasonably well, or we can refine later. Priority is capturing facts.
+            background_tasks.add_task(
+                _add_to_mem0_background,
+                memory=self._memory,
+                user_email=user_email,
+                user_input=user_input,
+                response_text=final_response
+            )
+            logger.info("Scheduled Mem0 background task for user: %s", user_email)
 
     def send_message_sync(
         self, user_email: str, user_input: str, is_telegram: bool = False

@@ -39,7 +39,7 @@ def create_update_user_goal_tool(database: MongoDatabase, user_email: str):
     Factory function to create an update_user_goal tool with injected dependencies.
     """
 
-    @tool(extras={"is_write_operation": True})
+    @tool
     def update_user_goal(
         goal_type: str,
         weekly_rate: float | None = None

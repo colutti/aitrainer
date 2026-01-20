@@ -47,7 +47,7 @@ class Settings(BaseSettings):
 
     MAX_SHORT_TERM_MEMORY_MESSAGES: int
     MAX_LONG_TERM_MEMORY_MESSAGES: int
-    SUMMARY_MAX_TOKEN_LIMIT: int = 1000  # Trigger summarization when buffer exceeds this
+    SUMMARY_MAX_TOKEN_LIMIT: int = 2000  # Trigger summarization when buffer exceeds this
     ALLOWED_ORIGINS: str | list[str]
     LOG_LEVEL: str = "INFO"
     RATE_LIMIT_LOGIN: str = "5/minute"  # Rate limit for login endpoint

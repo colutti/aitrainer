@@ -72,6 +72,9 @@ class ChatRepository(BaseRepository):
             history_size=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
         )
         
+        from langchain_core.prompts import PromptTemplate
+        from src.prompts.summary_prompt import SUMMARY_PROMPT
+        
         return ConversationSummaryBufferMemory(
             llm=llm,
             chat_memory=chat_history,
@@ -80,4 +83,8 @@ class ChatRepository(BaseRepository):
             memory_key="chat_history",
             human_prefix="Aluno",
             ai_prefix="Treinador",
+            prompt=PromptTemplate(
+                input_variables=["summary", "new_lines"],
+                template=SUMMARY_PROMPT.replace("{", "{{").replace("}", "}}") + "\n\nResumo atual:\n{summary}\n\nNovas linhas:\n{new_lines}\n\nNovo resumo:",
+            )
         )

@@ -93,7 +93,7 @@ class TestLLMClient(unittest.TestCase):
         gen = client.stream_with_tools(prompt, {}, [])
         results = list(gen)
         
-        self.assertEqual(results, ["Hello", ("", False)])
+        self.assertEqual(results, ["Hello"])
 
     @patch("src.services.llm_client.create_react_agent")
     def test_stream_with_tools_error(self, mock_create_agent):

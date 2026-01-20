@@ -20,7 +20,7 @@ def create_save_composition_tool(database, user_email: str):
     """
     from src.api.models.weight_log import WeightLog
 
-    @tool(extras={"is_write_operation": True})
+    @tool
     def save_body_composition(
         weight_kg: float,
         date: str | None = None,
