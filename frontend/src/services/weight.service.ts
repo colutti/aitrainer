@@ -11,7 +11,9 @@ export class WeightService {
   /** Check if saved recently to show feedback */
   lastSaved = signal<boolean>(false);
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) { 
+    // Service initialized
+  }
 
   /**
    * Logs a new weight entry.
@@ -66,6 +68,18 @@ export class WeightService {
   async deleteWeight(date: string): Promise<void> {
     await firstValueFrom(
       this.http.delete(`${environment.apiUrl}/weight/${date}`)
+    );
+  }
+
+  /**
+   * Imports Zepp Life data from CSV.
+   */
+  async importZeppLifeData(file: File): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    return await firstValueFrom(
+      this.http.post<any>(`${environment.apiUrl}/weight/import/zepp-life`, formData)
     );
   }
 }

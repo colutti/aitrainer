@@ -1,15 +1,20 @@
 from typing import Annotated
 from datetime import date
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
 from src.services.auth import verify_token
-from src.core.deps import get_ai_trainer_brain
+from src.core.deps import get_ai_trainer_brain, get_mongo_database
 from src.services.trainer import AITrainerBrain
+from src.services.database import MongoDatabase
 from src.api.models.weight_log import WeightLog, WeightLogInput
+from src.api.models.import_result import ImportResult
+from src.services.zepp_life_import_service import import_zepp_life_data
+from src.core.logs import logger
 
 router = APIRouter()
 
 CurrentUser = Annotated[str, Depends(verify_token)]
 AITrainerBrainDep = Annotated[AITrainerBrain, Depends(get_ai_trainer_brain)]
+DatabaseDep = Annotated[MongoDatabase, Depends(get_mongo_database)]
 
 @router.post("")
 def log_weight(
@@ -120,3 +125,37 @@ def get_body_composition_stats(
         "fat_trend": [{"date": log_item.date.isoformat(), "value": log_item.body_fat_pct} for log_item in logs_asc if log_item.body_fat_pct],
         "muscle_trend": [{"date": log_item.date.isoformat(), "value": log_item.muscle_mass_pct} for log_item in logs_asc if log_item.muscle_mass_pct]
     }
+
+
+@router.post("/import/zepp-life", response_model=ImportResult)
+async def import_zepp_life(
+    user_email: CurrentUser,
+    db: DatabaseDep,
+    file: UploadFile = File(...)
+) -> ImportResult:
+    """
+    Import weight/body composition data from Zepp Life CSV export.
+    """
+    logger.info("Importing Zepp Life data for user: %s", user_email)
+    
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="O arquivo deve ser um CSV.")
+        
+    try:
+        content = await file.read()
+        csv_content = content.decode('utf-8')
+        
+        result = import_zepp_life_data(user_email, csv_content, db)
+        
+        logger.info(
+            "Import finished for %s. Created: %d, Updated: %d, Errors: %d",
+            user_email, result.created, result.updated, result.errors
+        )
+        return result
+        
+    except ValueError as e:
+        logger.warning("Validation error importing Zepp Life CSV for %s: %s", user_email, e)
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error("Error importing Zepp Life CSV for user %s: %s", user_email, e)
+        raise HTTPException(status_code=500, detail="Falha ao importar dados.") from e

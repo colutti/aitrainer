@@ -1,27 +1,15 @@
 #!/usr/bin/env python3
 """
 Script to import body composition data from scale CSV export.
+Refactored to use shared Zepp Life import service.
 
 Usage:
   python scripts/import_scale_data.py USER_EMAIL path/to/BODY.csv [--dry-run]
-
-Column Mapping (auto-detected):
-  - time -> date
-  - weight -> weight_kg
-  - fatRate -> body_fat_pct
-  - muscleRate -> muscle_mass_pct
-  - boneMass -> bone_mass_kg
-  - bodyWaterRate -> body_water_pct
-  - visceralFat -> visceral_fat
-  - metabolism -> bmr
-  - bmi -> bmi
 """
 import argparse
-import csv
 import sys
 import os
 from datetime import datetime
-from typing import Optional, Dict, Any
 
 # Add backend directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -34,111 +22,16 @@ try:
     from src.api.models.weight_log import WeightLog
     from src.services.database import MongoDatabase
     from scripts.utils import confirm_execution
+    from src.services.zepp_life_import_service import parse_zepp_life_csv
 except ImportError as e:
     print(f"Error importing app modules: {e}")
     print("Make sure you are running this script from the 'backend' directory.")
     sys.exit(1)
 
-COLUMN_MAPPING = {
-    "time": "date",
-    "weight": "weight_kg",
-    "fatRate": "body_fat_pct",
-    "muscleRate": "muscle_mass_pct",
-    "boneMass": "bone_mass_kg",
-    "bodyWaterRate": "body_water_pct",
-    "visceralFat": "visceral_fat",
-    "metabolism": "bmr",
-    "bmi": "bmi",
-}
-
-def parse_scale_csv(file_path: str) -> Dict[str, Dict[str, Any]]:
-    """
-    Parse scale CSV and aggregate by date.
-    Keeps the last entry for each day.
-    
-    Returns:
-        Dict mapping date string (YYYY-MM-DD) to log data dict.
-    """
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"File not found: {file_path}")
-        
-    daily_data: Dict[str, Dict[str, Any]] = {}
-    
-    with open(file_path, 'r', encoding='utf-8-sig') as f:
-        # Strip potential BOM or whitespace from fieldnames
-        reader = csv.DictReader(f)
-        reader.fieldnames = [name.strip().lstrip('\ufeff') for name in reader.fieldnames] if reader.fieldnames else []
-        
-        for row_num, row in enumerate(reader, start=2):
-            try:
-                # Map columns
-                data = {}
-                for csv_col, model_field in COLUMN_MAPPING.items():
-                    if csv_col in row:
-                        val = row[csv_col]
-                        # Handle null/empty
-                        if not val or val.lower() == 'null':
-                            continue
-                            
-                        # Parse date specially
-                        if model_field == "date":
-                            # Format: 2025-12-09 06:06:59+0000
-                            # Take first 10 chars for YYYY-MM-DD
-                            val = val[:10]
-                        else:
-                            # Try parsing numbers
-                            try:
-                                if model_field in ["visceral_fat", "bmr"]:
-                                    val = int(float(val))
-                                else:
-                                    val = float(val)
-                            except ValueError:
-                                continue
-                                
-                        data[model_field] = val
-                
-                if "date" not in data or "weight_kg" not in data:
-                    print(f"  ⚠️  Line {row_num}: Missing date or weight, skipping.")
-                    continue
-                
-                date_str = data["date"]
-                
-                # Logic: If we already have data for this day, should we overwrite?
-                # Yes, assume latest in file (or latest time) is most accurate/final.
-                # However, if current row has missing composition data (nulls), 
-                # but existing data HAS composition, keep existing composition.
-                
-                existing = daily_data.get(date_str, {})
-                
-                # Check if current row has composition data
-                has_comp = "body_fat_pct" in data
-                existing_has_comp = "body_fat_pct" in existing
-                
-                if has_comp or not existing_has_comp:
-                    # Overwrite if we have better data, or if we just want to update weight
-                    # Merge with existing to keep other fields if needed? 
-                    # Simpler to just take the new row if it has composition.
-                    daily_data[date_str] = data
-                elif existing_has_comp and not has_comp:
-                    # If we simply update weight but lose composition, maybe we should update ONLY weight?
-                    # The user requirement said: "Rows with null composition fields will still import weight".
-                    # But for same day, we want "last complete reading".
-                    # Let's assume the user weighs multiple times.
-                    # Ideally we parse full datetime to sort. 
-                    # But for now, simple logic: prefer row with fat %.
-                    pass 
-
-            except Exception as e:
-                print(f"  ⚠️  Line {row_num}: Error processing - {e}")
-                continue
-                
-    return daily_data
-
 def import_scale_data(user_email: str, csv_path: str, dry_run: bool = False):
     print(f"\n📊 Importing scale data for: {user_email}")
     print(f"📁 File: {csv_path}")
     
-    # Safety confirm always
     confirm_execution(
         "Import Scale Data", 
         {"user": user_email, "csv": csv_path, "dry_run": dry_run}
@@ -146,7 +39,9 @@ def import_scale_data(user_email: str, csv_path: str, dry_run: bool = False):
 
     print("Parsing CSV...")
     try:
-        daily_data = parse_scale_csv(csv_path)
+        with open(csv_path, 'r', encoding='utf-8-sig') as f:
+            content = f.read()
+            daily_data = parse_zepp_life_csv(content)
     except Exception as e:
         print(f"❌ Error parsing CSV: {e}")
         return
@@ -175,7 +70,6 @@ def import_scale_data(user_email: str, csv_path: str, dry_run: bool = False):
     for date_str in sorted(daily_data.keys()):
         data = daily_data[date_str]
         
-        # Prepare WeightLog
         try:
             log_date = datetime.strptime(date_str, "%Y-%m-%d").date()
             
@@ -183,7 +77,7 @@ def import_scale_data(user_email: str, csv_path: str, dry_run: bool = False):
                 user_email=user_email,
                 date=log_date,
                 **{k: v for k, v in data.items() if k != "date"},
-                source="scale_import"
+                source="scale_import_script"
             )
             
             status = "preview"

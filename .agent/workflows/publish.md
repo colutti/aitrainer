@@ -12,23 +12,8 @@ Este workflow garante que o código verificado localmente seja publicado com seg
 - [ ] **CLI**: Comando `render` deve estar autenticado e funcional.
 
 ## 1. Validação Pré-Deploy (Crucial)
-Antes de enviar qualquer código, valide se o build de produção passa localmente. (Evita erros de `tsconfig`, `environment.prod.ts` ou variáveis).
 
-1. Execute a validação completa de testes (se não rodou recentemente):
-   ```bash
-   /test   # use o workflow de teste existente para rodar Backend e E2E
-   ```
-2. **Build de Produção Frontend** (Simulação):
-   Obrigatório rodar para garantir que arquivos de teste (`.spec.ts`) não estão quebrando o bundle.
-   ```bash
-   cd frontend && npm run build
-   # Se falhar, PARE. Corrija o erro antes de continuar.
-   ```
-3. Verificar integridade do Backend (Opcional):
-   ```bash
-   # Verifique se não há erros de sintaxe ou importação "perdidos"
-   cd backend && python -m compileall src/
-   ```
+Execute o workdlow test.md. So prossiga se estiver tudo OK.
 
 ## 2. Preparação do Release
 1. Identifique o Hash do Commit atual (será usado para rastreabilidade):
@@ -44,6 +29,7 @@ Antes de enviar qualquer código, valide se o build de produção passa localmen
 ## 3. Execução do Deploy (Render CLI)
 
 Sempre use o modo nao interativo: consulte https://render.com/docs/cli#non-interactive-mode
+Use os parametros --confirm --output text --wait quando possivel pra que nao abra TUI
 
 A publicacao no render pode demorar. Espere terminar.
 

@@ -294,8 +294,8 @@ class AdaptiveTDEEService:
             "consistency": [
                 {
                     "date": (date.today() - timedelta(days=i)).isoformat(),
-                    "weight": (date.today() - timedelta(days=i)) in {l.date for l in weight_logs},
-                    "nutrition": (date.today() - timedelta(days=i)) in {l.date for l in relevant_nutrition}
+                    "weight": (date.today() - timedelta(days=i)) in {l.date for l in weight_logs_raw},
+                    "nutrition": (date.today() - timedelta(days=i)) in {l.date.date() for l in nutrition_logs}
                 }
                 for i in range(27, -1, -1)
             ]

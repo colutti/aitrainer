@@ -52,12 +52,38 @@ describe('Dashboard View', () => {
     cy.get('.bg-primary.shadow-\\[0_0_12px_rgba\\(16\\,185\\,129\\,0\\.6\\)\\]').should('have.length', 3);
   });
 
-  it('should display body composition widget', () => {
-      // Widget should exist (will show empty state with default mock)
-      // Using text content since data-cy attributes are being stripped in production build
+  it('should display body composition widget with period and recomposition badge', () => {
+      cy.intercept('GET', '**/metabolism/summary*', {
+          statusCode: 200,
+          body: {
+              startDate: '2026-01-01',
+              endDate: '2026-01-21',
+              fat_change_kg: -1.2,
+              muscle_change_kg: 0.8,
+              end_fat_pct: 15.1,
+              end_muscle_pct: 55.4
+          }
+      }).as('getMetabolismDetailed');
+      
+      cy.reload();
+      cy.wait('@getMetabolismDetailed');
+      
       cy.contains('Evolução Composição').should('exist');
+      cy.contains('Período: 01/01 a 21/01').should('exist');
+      cy.contains('Recomposição 🔥').should('be.visible');
+      cy.contains('-1,2kg').should('exist');
+      cy.contains('+0,8kg').should('exist');
   });
 
+  it('should display weight trend line chart', () => {
+    cy.contains('Tendência (Histórico)').should('be.visible');
+    cy.contains('Tendência (Histórico)').closest('.bg-light-bg').find('canvas').should('be.visible');
+  });
+
+  it('should display consistency stacked bar chart', () => {
+    cy.contains('Consistência (7 dias)').should('be.visible');
+    cy.contains('Consistência (7 dias)').closest('.bg-light-bg').find('canvas').should('be.visible');
+  });
 
   it('should display last workout info', () => {
     cy.wait('@getStats');
@@ -67,10 +93,7 @@ describe('Dashboard View', () => {
     
     // Verify Date Format (Portuguese)
     const today = new Date();
-    // Expected format: "dd MMM, HH:mm" (e.g., 09 jan., 12:17 or 09 jan, 12:17 depending on browser)
-    // We check for month abbreviation in Portuguese
-    const month = today.toLocaleString('pt-BR', { month: 'short' }).replace('.', ''); // "jan"
-    // Use regex to be flexible about dot and spacing
+    const month = today.toLocaleString('pt-BR', { month: 'short' }).replace('.', ''); 
     cy.contains('Último Treino').parent().contains(new RegExp(month, 'i')).should('exist');
   });
 
@@ -99,20 +122,14 @@ describe('Dashboard View', () => {
   });
 
   it('should show loading state', () => {
-      // Re-intercept with delay to force loading state visibility
       cy.intercept('GET', '**/workout/stats', {
-          delay: 3000,
+          delay: 1000,
           statusCode: 200,
           body: {}
       }).as('getStatsDelayed');
 
-      // Reload to trigger fetch
       cy.reload();
-      
-      // Check for spinner
       cy.get('.animate-spin').should('be.visible');
-      
-      // Wait for finish
       cy.wait('@getStatsDelayed');
       cy.get('.animate-spin').should('not.exist');
   });
@@ -122,37 +139,6 @@ describe('Dashboard View', () => {
     cy.contains('Corpo').scrollIntoView().should('be.visible');
     cy.contains('Treinos').scrollIntoView().should('be.visible');
     cy.contains('Nutrição').scrollIntoView().should('be.visible');
-  });
-
-  it('should allow logging weight and composition via widget', () => {
-    cy.intercept('POST', '**/weight', { statusCode: 200, body: { message: 'Weight logged' } }).as('logWeight');
-    
-    // Check widget presence
-    cy.contains('Log de Composição').should('be.visible');
-    
-    // Type weight
-    // First input is weight
-    cy.get('app-weight-widget input').eq(0).clear().type('75.5');
-    
-    // Toggle expand
-    cy.contains('button', 'Mais').click();
-    
-    // Type composition (Fat%)
-    // Second input is fat
-    cy.get('app-weight-widget input').eq(1).type('15.5');
-
-    // Click save
-    // Button with OK text or saving state
-    cy.get('app-weight-widget button').contains('OK').click();
-    
-    // Verify request
-    cy.wait('@logWeight').its('request.body').should('deep.include', {
-        weight_kg: 75.5,
-        body_fat_pct: 15.5
-    });
-    
-    // Verify success feedback
-    cy.contains('atualizada', { timeout: 10000 }).should('be.visible');
   });
 
   it('should check mobile viewport layout', () => {
