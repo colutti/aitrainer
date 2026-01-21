@@ -11,6 +11,7 @@ from mem0 import Memory
 from src.core.config import settings
 from src.services.database import MongoDatabase
 from src.services.llm_client import LLMClient
+from src.services.history_compactor import HistoryCompactor
 from src.services.workout_tools import create_save_workout_tool, create_get_workouts_tool
 from src.services.nutrition_tools import create_save_nutrition_tool, create_get_nutrition_tool
 from src.services.composition_tools import create_save_composition_tool, create_get_composition_tool
@@ -66,12 +67,30 @@ class AITrainerBrain:
         self._database: MongoDatabase = database
         self._llm_client: LLMClient = llm_client
         self._memory: Memory = memory
+        self.compactor = HistoryCompactor(database, llm_client)
 
     def _get_prompt_template(self, input_data: dict, is_telegram: bool = False) -> ChatPromptTemplate:
         """Constructs and returns the chat prompt template."""
         logger.debug("Constructing chat prompt template (is_telegram=%s).", is_telegram)
         
+        # Base template from settings
         system_content = settings.PROMPT_TEMPLATE
+        
+        # 🛡️ DEFENSIVE INJECTION PATTERN (V3 Blindagem)
+        # We move potentially 'dirty' content (with braces {}) to dedicated placeholders 
+        # to prevent LangChain from interpreting them as template variables.
+        
+        # 1. Long-Term Summary
+        user_profile = input_data.get("user_profile_obj")
+        if user_profile and user_profile.long_term_summary:
+            input_data["long_term_summary_section"] = f"\n\n📜 [RESUMO DE LONGO PRAZO]:\n{user_profile.long_term_summary}"
+        else:
+            input_data["long_term_summary_section"] = ""
+        system_content += "{long_term_summary_section}"
+
+        # 2. Recent History & Memories (Already placeholders in settings.PROMPT_TEMPLATE)
+        # We ensure they are treated as values, not template parts.
+        
         if is_telegram:
             system_content += (
                 "\n\n--- \n"
@@ -83,17 +102,16 @@ class AITrainerBrain:
         prompt_template = ChatPromptTemplate.from_messages(
             [("system", system_content), ("human", "{user_message}")]
         )
-        rendered_prompt = prompt_template.format(**input_data)
         
-        # --- PROMPT INSPECTOR (DEBUG) ---
-        # Checks if Critical Section is present and populated
-        critical_check = "✅ Presente" if "## 🚨 Fatos Críticos" in rendered_prompt else "❌ Ausente"
-        logger.debug("🛡️ PROMPT ANATOMY CHECK: Critical Section: %s | Total Chars: %d", critical_check, len(rendered_prompt))
-        # -------------------------------
-        
-        # Flatten prompt for single-line logging
-        single_line_prompt = rendered_prompt.replace("\n", "\\n")
-        logger.debug("📤 PROMPT ENVIADO AO LLM: %s", single_line_prompt)
+        # Verify formatting works and log anatomy concisely
+        try:
+            rendered_prompt = prompt_template.format(**input_data)
+            critical_check = "✅ Presente" if "## 🚨 Fatos Críticos" in rendered_prompt else "❌ Ausente"
+            logger.debug("🛡️ PROMPT ANATOMY CHECK: Critical Section: %s | Total Chars: %d", critical_check, len(rendered_prompt))
+        except KeyError as e:
+            logger.error("🛡️ CRITICAL: KeyError during prompt formation: %s. Likely unescaped braces in data.", e)
+            raise
+
         return prompt_template
 
     # _extract_conversation_text removed (obsolete)
@@ -265,6 +283,18 @@ class AITrainerBrain:
         self._database.add_to_history(ai_message, user_email, trainer_type)
         logger.info("Successfully saved conversation to MongoDB for user: %s (trainer: %s)", user_email, trainer_type)
 
+    def _add_system_message_to_history(self, user_email: str, content: str):
+        """
+        Adds a SYSTEM message to history (e.g. tool feedback).
+        """
+        now = datetime.now().isoformat()
+        # System messages don't need trainer_type
+        system_msg = ChatHistory(
+            sender=Sender.SYSTEM, text=content, timestamp=now
+        )
+        self._database.add_to_history(system_msg, user_email)
+        logger.debug("Saved SYSTEM message to history: %s", content)
+
     def _format_memory_messages(
         self,
         messages: list,
@@ -276,6 +306,7 @@ class AITrainerBrain:
         [DD/MM HH:MM] 🧑 Aluno: msg
         [DD/MM HH:MM] 🏋️ VOCÊ (Treinador): msg
         [DD/MM HH:MM] 🏋️ EX-TREINADOR [Type]: msg
+        [DD/MM HH:MM] ⚙️ SISTEMA (Log): msg
         """
         if not messages:
             return "Nenhuma mensagem anterior."
@@ -294,11 +325,20 @@ class AITrainerBrain:
                         pass
             
             # Clean message content - single line
-            content = " ".join(msg.content.split())
+            raw_content = msg.content if msg.content else ""
+            if not isinstance(raw_content, str):
+                raw_content = str(raw_content)
+            content = " ".join(raw_content.split())
             
-            # Check if it's a summary (SystemMessage with moving_summary_buffer content)
-            if hasattr(msg, 'type') and msg.type == "system":
-                formatted.append(f"📜 [RESUMO]: {content}")
+            # Check message type
+            # In V3, system messages can be tool results or summaries
+            is_system = hasattr(msg, 'type') and msg.type == "system"
+            
+            if is_system:
+                if "📜 [RESUMO]" in content:
+                    formatted.append(content) # Already formatted summary line
+                else:
+                    formatted.append(f"{timestamp_str}⚙️ SISTEMA (Log): {content}")
             elif isinstance(msg, HumanMessage):
                 formatted.append(f"{timestamp_str}🧑 Aluno: {content}")
             elif isinstance(msg, AIMessage):
@@ -372,11 +412,11 @@ class AITrainerBrain:
 
         current_trainer_type = trainer_profile_obj.trainer_type or "atlas"
         
-        # Get conversation memory with summarization support
-        conversation_memory = self._database.get_conversation_memory(
+        # Get conversation memory with fixed window (V3 Strategy)
+        # We rely on HistoryCompactor for long-term summarization, so we only need recent history here.
+        conversation_memory = self._database.get_window_memory(
             session_id=user_email,
-            llm=self._llm_client._llm,  # Use same LLM for summarization
-            max_token_limit=settings.SUMMARY_MAX_TOKEN_LIMIT,
+            k=settings.MAX_SHORT_TERM_MEMORY_MESSAGES, # Typically 20-40 matches
         )
         
         # Load memory variables (includes summary + recent messages if buffer exceeded)
@@ -396,6 +436,7 @@ class AITrainerBrain:
         input_data = {
             "trainer_profile": trainer_profile_summary,
             "user_profile": user_profile_summary,
+            "user_profile_obj": profile, # Passed for prompt template extraction
             "relevant_memories": relevant_memories_str,
             "chat_history_summary": chat_history_summary,
             "user_message": user_input,
@@ -454,6 +495,16 @@ class AITrainerBrain:
         for chunk in self._llm_client.stream_with_tools(
             prompt_template=prompt_template, input_data=input_data, tools=tools
         ):
+            # Check for System Feedback (Dict)
+            if isinstance(chunk, dict) and chunk.get("type") == "tool_result":
+                tool_name = chunk.get("tool_name")
+                content = chunk.get("content")
+                # Create a concise log for the system
+                log_msg = f"✅ Tool '{tool_name}' executed. Result: {str(content)[:200]}"
+                self._add_system_message_to_history(user_email, log_msg)
+                continue
+
+            # It's a string chunk (AI Response)
             full_response.append(chunk)
             yield chunk
 
@@ -477,7 +528,15 @@ class AITrainerBrain:
                 user_input=user_input,
                 response_text=final_response
             )
-            logger.info("Scheduled Mem0 background task for user: %s", user_email)
+            
+            # V3: Schedule History Compaction
+            background_tasks.add_task(
+                 self.compactor.compact_history,
+                 user_email=user_email,
+                 active_window_size=settings.MAX_SHORT_TERM_MEMORY_MESSAGES # e.g. 40
+            )
+            
+            logger.info("Scheduled background tasks (Mem0 + Compactor) for user: %s", user_email)
 
     def send_message_sync(
         self, user_email: str, user_input: str, is_telegram: bool = False

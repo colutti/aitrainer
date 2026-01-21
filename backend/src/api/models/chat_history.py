@@ -16,6 +16,7 @@ class ChatHistory(BaseModel):
     sender: Sender
     timestamp: str  # ISO formatted timestamp
     trainer_type: str | None = None  # Track which trainer was active
+    summarized: bool = False  # Track if this message has been included in long-term summary
 
     def _get_clean_text(self) -> str:
         """
@@ -39,7 +40,11 @@ class ChatHistory(BaseModel):
         """
         Returns a readable sender label with emoji.
         """
-        return "🧑 Aluno" if self.sender == Sender.STUDENT else "🏋️ Treinador"
+        if self.sender == Sender.STUDENT:
+            return "🧑 Aluno"
+        if self.sender == Sender.SYSTEM:
+            return "⚙️ Sistema"
+        return "🏋️ Treinador"
 
     def __str__(self) -> str:
         """
@@ -65,10 +70,17 @@ class ChatHistory(BaseModel):
         """
         chat_history = []
         for msg in history.messages:
+            if msg.type == "human":
+                sender = Sender.STUDENT
+            elif msg.type == "system":
+                sender = Sender.SYSTEM
+            else:
+                sender = Sender.TRAINER
+
             chat_history.append(
                 ChatHistory(
                     text=msg.content,
-                    sender=Sender.STUDENT if msg.type == "human" else Sender.TRAINER,
+                    sender=sender,
                     timestamp=msg.additional_kwargs.get("timestamp", datetime(MINYEAR, 1, 1).isoformat()),
                     trainer_type=msg.additional_kwargs.get("trainer_type")
                 )

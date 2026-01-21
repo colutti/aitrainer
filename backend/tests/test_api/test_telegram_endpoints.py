@@ -31,7 +31,7 @@ def test_generate_code_authenticated(mock_telegram_repo):
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     app.dependency_overrides[get_telegram_repository] = lambda: mock_telegram_repo
     
-    response = client.post("/api/telegram/generate-code")
+    response = client.post("/telegram/generate-code")
     assert response.status_code == 200
     assert response.json()["code"] == "ABC123"
     assert response.json()["expires_in_seconds"] == 600
@@ -41,7 +41,7 @@ def test_generate_code_authenticated(mock_telegram_repo):
 
 def test_generate_code_unauthenticated():
     """Test generating code without authentication."""
-    response = client.post("/api/telegram/generate-code")
+    response = client.post("/telegram/generate-code")
     assert response.status_code == 401
 
 
@@ -52,7 +52,7 @@ def test_status_not_linked(mock_telegram_repo):
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     app.dependency_overrides[get_telegram_repository] = lambda: mock_telegram_repo
     
-    response = client.get("/api/telegram/status")
+    response = client.get("/telegram/status")
     assert response.status_code == 200
     assert response.json()["linked"] is False
     
@@ -72,7 +72,7 @@ def test_status_linked(mock_telegram_repo):
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     app.dependency_overrides[get_telegram_repository] = lambda: mock_telegram_repo
     
-    response = client.get("/api/telegram/status")
+    response = client.get("/telegram/status")
     assert response.status_code == 200
     data = response.json()
     assert data["linked"] is True
@@ -86,7 +86,7 @@ def test_unlink_success(mock_telegram_repo):
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     app.dependency_overrides[get_telegram_repository] = lambda: mock_telegram_repo
     
-    response = client.post("/api/telegram/unlink")
+    response = client.post("/telegram/unlink")
     assert response.status_code == 200
     assert "Unlinked successfully" in response.json()["message"]
     
@@ -98,7 +98,7 @@ def test_webhook_valid_request(mock_telegram_service):
     app.dependency_overrides[get_telegram_service] = lambda: mock_telegram_service
     
     response = client.post(
-        "/api/telegram/webhook",
+        "/telegram/webhook",
         json={"update_id": 1, "message": {"text": "test"}}
     )
     

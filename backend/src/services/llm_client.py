@@ -6,7 +6,7 @@ Provides a unified interface for different LLM providers (Gemini, Ollama, OpenAI
 from typing import Generator
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, ToolMessage
 from langgraph.prebuilt import create_react_agent
 
 import warnings
@@ -62,7 +62,7 @@ class LLMClient:
 
     def stream_with_tools(
         self, prompt_template, input_data: dict, tools: list
-    ) -> Generator[str, None, None]:
+    ) -> Generator[str | dict, None, None]:
         """
         Invokes the LLM with tool support using LangGraph's ReAct agent.
         
@@ -88,6 +88,17 @@ class LLMClient:
                 stream_mode="messages",
                 config=config
             ):
+                # V3: Intercept Tool Outputs (System Feedback)
+                if isinstance(event, ToolMessage):
+                    logger.debug("Intercepted ToolMessage: %s", event.name)
+                    yield {
+                        "type": "tool_result",
+                        "content": event.content,
+                        "tool_name": event.name,
+                        "tool_call_id": event.tool_call_id
+                    }
+                    continue
+
                 # Filter for AIMessageChunks (actual response content)
                 if isinstance(event, AIMessage) and event.content:
                     if isinstance(event.content, str):

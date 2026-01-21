@@ -35,12 +35,23 @@ class TestAITrainerBrain(unittest.TestCase):
         # Need to mock _llm attribute for the summarization LLM
         self.mock_llm._llm = MagicMock()
 
-        with patch('src.services.trainer.settings') as mock_settings:
+        with patch('src.services.trainer.settings') as mock_settings, \
+             patch('src.services.trainer.HistoryCompactor') as mock_compactor_cls:
+            self.mock_compactor = mock_compactor_cls.return_value
             mock_settings.MAX_LONG_TERM_MEMORY_MESSAGES = 20
             mock_settings.SUMMARY_MAX_TOKEN_LIMIT = 2000
+            mock_settings.MAX_SHORT_TERM_MEMORY_MESSAGES = 10
+            
+            # Mock get_window_memory to return our mock
+            self.mock_conversation_memory = MockConversationMemory()
+            self.mock_db.get_window_memory.return_value = self.mock_conversation_memory
+            
             self.brain = AITrainerBrain(database=self.mock_db,
                                         llm_client=self.mock_llm,
                                         memory=self.mock_memory)
+            
+            # Ensure compactor was instantiated
+            mock_compactor_cls.assert_called_with(self.mock_db, self.mock_llm)
 
     def test_send_message_ai_success(self):
         """
@@ -51,7 +62,7 @@ class TestAITrainerBrain(unittest.TestCase):
         user_input = "Hello"
 
         user_profile = UserProfile(email=user_email, gender="Masculino", age=25, weight=70, height=175, 
-                                   goal="Muscle gain", goal_type="gain")
+                                   goal="Muscle gain", goal_type="gain", weekly_rate=0.5)
         trainer_profile = TrainerProfile(user_email=user_email,
                                          trainer_type="atlas")
         self.mock_db.get_user_profile.return_value = user_profile
@@ -67,7 +78,8 @@ class TestAITrainerBrain(unittest.TestCase):
         self.assertEqual(response, "Test response")
         self.mock_db.get_user_profile.assert_called_once_with(user_email)
         self.mock_db.get_trainer_profile.assert_called_once_with(user_email)
-        self.mock_db.get_conversation_memory.assert_called_once()
+        self.mock_db.get_trainer_profile.assert_called_once_with(user_email)
+        self.mock_db.get_window_memory.assert_called_once()
         # Hybrid search makes 2 calls: Critical and Semantic
         self.assertEqual(self.mock_memory.search.call_count, 2)
         self.mock_memory.search.assert_any_call(
@@ -116,7 +128,7 @@ class TestAITrainerBrain(unittest.TestCase):
 
         user_profile = UserProfile(email=user_email, gender="Masculino",
                                    age=25, weight=70, height=175,
-                                   goal="Muscle gain", goal_type="gain")
+                                   goal="Muscle gain", goal_type="gain", weekly_rate=0.5)
 
         self.mock_db.get_user_profile.return_value = user_profile
         self.mock_db.get_trainer_profile.return_value = None

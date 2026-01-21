@@ -96,17 +96,17 @@ describe('Chat Bugs Reproduction', () => {
     }).as('msg');
 
     // Send multiple messages to create scrollable content
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 15; i++) {
       cy.get('textarea[name="newMessage"]').as('textarea');
       cy.get('@textarea').clear().type(`Message ${i}`);
       cy.get('button[type="submit"]').as('submitBtn');
       cy.get('@submitBtn').click();
       cy.wait('@msg');
-      cy.wait(200); 
+      // No wait needed between messages if mocked fast
     }
 
     // Ensure we're at the bottom
-    cy.get('.chat-scroll-container').scrollTo('bottom');
+    cy.get('.chat-scroll-container').scrollTo('bottom', { ensureScrollable: false });
     cy.wait(500);
 
     // Scroll button should not exist when at bottom

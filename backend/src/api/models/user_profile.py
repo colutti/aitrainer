@@ -21,6 +21,12 @@ class UserProfileInput(BaseModel):
     weekly_rate: float = Field(0.5, ge=0.0, le=2.0, description="Desired weekly weight change rate in kg")
     notes: Optional[str] = Field(None, max_length=1000, description="User observations/notes")
 
+    # New V3 Field: Stores compacted history context
+    long_term_summary: str | None = Field(None, description="Stores compacted history context")
+    
+    # New V3 Field: Tracks the timestamp of the last message included in the summary
+    last_compaction_timestamp: str | None = Field(None, description="ISO timestamp of the last summarized message")
+
     @model_validator(mode="after")
     def validate_weekly_rate(self) -> "UserProfileInput":
         if self.goal_type in ("lose", "gain") and (self.weekly_rate is None or self.weekly_rate <= 0):

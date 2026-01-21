@@ -10,12 +10,14 @@ class TestMem0AlwaysCalled(unittest.TestCase):
         self.mock_db = MagicMock()
         self.mock_llm = MagicMock()
         self.mock_memory = MagicMock()
-        self.mock_db.get_conversation_memory.return_value.load_memory_variables.return_value = {"chat_history": []}
+        self.mock_db.get_window_memory.return_value.load_memory_variables.return_value = {"chat_history": []}
         
         # Mock settings
-        with patch('src.services.trainer.settings') as mock_settings:
+        with patch('src.services.trainer.settings') as mock_settings, \
+             patch('src.services.trainer.HistoryCompactor'):
              mock_settings.MAX_LONG_TERM_MEMORY_MESSAGES = 20
              mock_settings.SUMMARY_MAX_TOKEN_LIMIT = 2000
+             mock_settings.MAX_SHORT_TERM_MEMORY_MESSAGES = 10
              self.brain = AITrainerBrain(database=self.mock_db, llm_client=self.mock_llm, memory=self.mock_memory)
 
     def test_mem0_task_scheduled_unconditionally(self):
@@ -48,14 +50,18 @@ class TestMem0AlwaysCalled(unittest.TestCase):
         # Assert
         # Mem0 should be scheduled
         mock_bg_tasks.add_task.assert_called()
-        call_args = mock_bg_tasks.add_task.call_args
-        
-        # First positional arg is the function
+        # Verify Mem0 task is in one of the calls
         from src.services.trainer import _add_to_mem0_background
-        self.assertEqual(call_args.args[0], _add_to_mem0_background)
         
-        # Other args are passed as kwargs in the implementation
-        self.assertEqual(call_args.kwargs['user_email'], user_email)
+        mem0_call_found = False
+        for call in mock_bg_tasks.add_task.call_args_list:
+            # Check if this call is the Mem0 task
+            if call.args[0] == _add_to_mem0_background:
+                mem0_call_found = True
+                self.assertEqual(call.kwargs['user_email'], user_email)
+                break
+        
+        self.assertTrue(mem0_call_found, "Mem0 background task was not scheduled")
         
         print("\n✅ Assertion Passed: Mem0 task scheduled.")
 

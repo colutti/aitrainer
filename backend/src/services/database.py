@@ -109,6 +109,17 @@ class MongoDatabase:
     ) -> ConversationSummaryBufferMemory:
         return self.chat.get_memory_buffer(session_id, llm, max_token_limit)
 
+    def get_window_memory(
+        self,
+        session_id: str,
+        k: int = 40,
+    ):
+        """
+        Returns a ConversationBufferWindowMemory (k messages).
+        Used for V3 Smart Context where summarization is handled by HistoryCompactor.
+        """
+        return self.chat.get_window_memory(session_id, k)
+
     # ====== WORKOUT REPOSITORY DELEGATION ======
     def save_workout_log(self, workout: WorkoutLog) -> str:
         return self.workouts_repo.save_log(workout)

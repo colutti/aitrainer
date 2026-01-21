@@ -17,7 +17,9 @@ def mock_deps():
 def test_send_message_ai_streaming_error(mock_deps):
     """Test streaming response when an error occurs mid-stream."""
     db, llm, memory = mock_deps
-    trainer = AITrainerBrain(db, llm, memory)
+    
+    with patch('src.services.trainer.HistoryCompactor'):
+        trainer = AITrainerBrain(db, llm, memory)
     
     # Mock user and trainer profiles
     db.get_user_profile.return_value = MagicMock(
@@ -31,7 +33,9 @@ def test_send_message_ai_streaming_error(mock_deps):
     # Mock conversation memory and variables
     mock_memory_obj = MagicMock()
     mock_memory_obj.load_memory_variables.return_value = {"chat_history": []}
-    db.get_conversation_memory.return_value = mock_memory_obj
+    mock_memory_obj = MagicMock()
+    mock_memory_obj.load_memory_variables.return_value = {"chat_history": []}
+    db.get_window_memory.return_value = mock_memory_obj
     
     # Mock stream to fail after first chunk
     def error_stream(**kwargs):
@@ -75,7 +79,9 @@ def test_add_to_mem0_background_failure():
 def test_get_memories_paginated_error(mock_deps):
     """Test get_memories_paginated handling Qdrant error."""
     db, llm, memory = mock_deps
-    trainer = AITrainerBrain(db, llm, memory)
+    db, llm, memory = mock_deps
+    with patch('src.services.trainer.HistoryCompactor'):
+        trainer = AITrainerBrain(db, llm, memory)
     
     mock_qdrant = MagicMock()
     mock_qdrant.count.side_effect = Exception("Qdrant unavailable")
@@ -88,31 +94,36 @@ def test_get_memories_paginated_error(mock_deps):
 def test_get_memory_by_id_error(mock_deps):
     """Test get_memory_by_id handling error gracefully."""
     db, llm, memory = mock_deps
-    trainer = AITrainerBrain(db, llm, memory)
+    db, llm, memory = mock_deps
+    with patch('src.services.trainer.HistoryCompactor'):
+        trainer = AITrainerBrain(db, llm, memory)
     
     memory.get.side_effect = Exception("Not found")
     
     result = trainer.get_memory_by_id("mem_id")
     assert result is None
 
-def test_retrieve_relevant_memories_list_response(mock_deps):
-    """Test _retrieve_relevant_memories handling list response from Mem0."""
+def test_normalize_mem0_results_list_response(mock_deps):
+    """Test _normalize_mem0_results handling list response from Mem0."""
     db, llm, memory = mock_deps
-    trainer = AITrainerBrain(db, llm, memory)
+    with patch('src.services.trainer.HistoryCompactor'):
+        trainer = AITrainerBrain(db, llm, memory)
     
-    # Mock Mem0 returning list directly (older version behavior)
-    memory.search.return_value = [
+    # Mock result list
+    results = [
         {"memory": "Fact 1", "created_at": "2024-01-01"}
     ]
     
-    facts = trainer._retrieve_relevant_memories("query", "user_id")
+    facts = trainer._normalize_mem0_results(results, "test_source")
     assert len(facts) == 1
     assert facts[0]["text"] == "Fact 1"
+    assert facts[0]["source"] == "test_source"
 
 def test_format_memory_messages_unknown_type(mock_deps):
     """Test _format_memory_messages with unknown message type."""
     db, llm, memory = mock_deps
-    trainer = AITrainerBrain(db, llm, memory)
+    with patch('src.services.trainer.HistoryCompactor'):
+        trainer = AITrainerBrain(db, llm, memory)
     
     class UnknownMessage:
         content = "Unknown content"

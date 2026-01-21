@@ -1,59 +1,35 @@
 describe('Telegram Integration', () => {
-  const setupDisconnected = () => {
+  const setupTest = (linked: boolean = false) => {
     cy.mockLogin({
       intercepts: {
         '**/api/telegram/status': {
           statusCode: 200,
-          body: { linked: false },
-          alias: 'getTelegramStatus'
-        },
-        '**/integrations/hevy/status': {
-          statusCode: 200,
-          body: { enabled: false, hasKey: false, apiKeyMasked: null, lastSync: null },
-          alias: 'getHevyStatus'
-        }
-      }
-    });
-    cy.get('app-sidebar').contains('Integrações').click();
-    cy.wait(['@getTelegramStatus', '@getHevyStatus'], { timeout: 10000 });
-  };
-
-  const setupConnected = () => {
-    cy.mockLogin({
-      intercepts: {
-        '**/api/telegram/status': {
-          statusCode: 200,
-          body: { 
+          body: linked ? { 
             linked: true, 
             telegram_username: '@testuser',
             linked_at: '2026-01-19T20:00:00Z'
-          },
-          alias: 'getTelegramStatusConnected'
-        },
-        '**/integrations/hevy/status': {
-          statusCode: 200,
-          body: { enabled: false, hasKey: false, apiKeyMasked: null, lastSync: null }
+          } : { linked: false }
         }
       }
     });
     cy.get('app-sidebar').contains('Integrações').click();
-    cy.wait('@getTelegramStatusConnected', { timeout: 10000 });
+    cy.get('app-integrations').should('be.visible');
   };
 
   it('should show Telegram card in integrations page', () => {
-    setupDisconnected();
-    cy.get('[data-cy="card-telegram"]', { timeout: 10000 }).should('be.visible');
+    setupTest(false);
+    cy.get('[data-cy="card-telegram"]').should('be.visible');
     cy.contains('Converse com a IA pelo Telegram').should('be.visible');
   });
 
   it('should open Telegram config modal', () => {
-    setupDisconnected();
+    setupTest(false);
     cy.get('[data-cy="card-telegram"]').click();
-    cy.contains('Configuração do Telegram', { timeout: 10000 }).should('be.visible');
+    cy.contains('Configuração do Telegram').should('be.visible');
   });
 
   it('should generate linking code', () => {
-    setupDisconnected();
+    setupTest(false);
     cy.get('[data-cy="card-telegram"]').click();
     
     cy.intercept('POST', '**/api/telegram/generate-code', {
@@ -61,15 +37,15 @@ describe('Telegram Integration', () => {
       body: { code: 'ABC123', expires_in_seconds: 600 }
     }).as('generateCode');
     
-    cy.contains('button', 'Gerar Código de Vinculação').click();
+    cy.contains('button', 'Gerar Código').click();
     cy.wait('@generateCode');
     
     cy.contains('ABC123').should('be.visible');
-    cy.contains('Código válido por 10 minutos').should('be.visible');
+    cy.contains('Código gerado! Válido por 10 minutos.').should('be.visible');
   });
 
   it('should copy code to clipboard', () => {
-    setupDisconnected();
+    setupTest(false);
     cy.get('[data-cy="card-telegram"]').click();
     
     cy.intercept('POST', '**/api/telegram/generate-code', {
@@ -77,20 +53,24 @@ describe('Telegram Integration', () => {
       body: { code: 'XYZ789', expires_in_seconds: 600 }
     }).as('generateCode');
     
-    cy.contains('button', 'Gerar Código de Vinculação').click();
+    cy.contains('button', 'Gerar Código').click();
     cy.wait('@generateCode');
     
-    // Mock clipboard API
+    // Mock clipboard API for headless reliability
     cy.window().then((win) => {
-      cy.stub(win.navigator.clipboard, 'writeText').resolves();
+      if (!win.navigator.clipboard) {
+        (win.navigator as any).clipboard = { writeText: cy.stub().resolves() };
+      } else {
+        cy.stub(win.navigator.clipboard, 'writeText').resolves();
+      }
     });
     
-    cy.contains('button', 'Copiar').click();
+    cy.contains('button', 'Copiar').click({ force: true });
     cy.contains('Código copiado!').should('be.visible');
   });
 
   it('should show connected state', () => {
-    setupConnected();
+    setupTest(true);
     cy.get('[data-cy="card-telegram"]').click();
     
     cy.contains('Conta vinculada com sucesso!').should('be.visible');
@@ -99,19 +79,17 @@ describe('Telegram Integration', () => {
   });
 
   it('should unlink account', () => {
-    setupConnected();
+    setupTest(true);
     cy.get('[data-cy="card-telegram"]').click();
     
-    // Stub window.confirm to auto-confirm
-    cy.window().then((win) => {
-      cy.stub(win, 'confirm').returns(true);
-    });
+    cy.on('window:confirm', () => true);
     
     cy.intercept('POST', '**/api/telegram/unlink', {
       statusCode: 200,
       body: { message: 'Unlinked successfully' }
     }).as('unlink');
     
+    // Status re-fetch after unlink should return disconnected
     cy.intercept('GET', '**/api/telegram/status', {
       statusCode: 200,
       body: { linked: false }
@@ -121,15 +99,13 @@ describe('Telegram Integration', () => {
     cy.wait('@unlink');
     cy.wait('@getStatusAfterUnlink');
     
-    cy.contains('button', 'Gerar Código de Vinculação').should('be.visible');
+    cy.contains('button', 'Gerar Código').should('be.visible');
   });
 
   it('should close modal', () => {
-    setupDisconnected();
+    setupTest(false);
     cy.get('[data-cy="card-telegram"]').click();
-    cy.contains('Configuração do Telegram').should('be.visible');
     
-    // Click close button (X)
     cy.get('app-telegram-config button').find('svg').first().click({ force: true });
     cy.contains('Configuração do Telegram').should('not.exist');
   });

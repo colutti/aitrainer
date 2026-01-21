@@ -22,6 +22,7 @@
     "@angular/forms": "^21.0.1",
     "@angular/platform-browser": "^21.0.0",
     "@angular/platform-browser-dynamic": "^21.0.8",
+    "autoprefixer": "^10.4.23",
     "chart.js": "^4.5.1",
     "clipboard": "^2.0.11",
     "emoji-toolkit": "^10.0.0",
@@ -30,9 +31,10 @@
     "mermaid": "^11.12.2",
     "ng2-charts": "^8.0.0",
     "ngx-markdown": "^19.1.1",
+    "postcss-loader": "^8.2.0",
     "prismjs": "^1.30.0",
     "rxjs": "^7.8.2",
-    "tailwindcss": "latest"
+    "tailwindcss": "^3.4.19"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^21.0.5",

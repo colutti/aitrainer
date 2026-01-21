@@ -101,7 +101,7 @@ describe('Dashboard View', () => {
   it('should show loading state', () => {
       // Re-intercept with delay to force loading state visibility
       cy.intercept('GET', '**/workout/stats', {
-          delay: 1000,
+          delay: 3000,
           statusCode: 200,
           body: {}
       }).as('getStatsDelayed');

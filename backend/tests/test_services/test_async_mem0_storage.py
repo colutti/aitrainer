@@ -142,14 +142,20 @@ class TestAsyncMem0Storage(unittest.TestCase):
         self.assertEqual(self.mock_db.add_to_history.call_count, 2)
         
         # Background task should be scheduled
-        mock_background_tasks.add_task.assert_called_once()
+        # Now we have 2 tasks (Mem0 + Compactor), so ensure add_task is part of the calls
+        self.assertTrue(mock_background_tasks.add_task.called)
         
-        # Verify the background task was called with correct function and parameters
-        call_args = mock_background_tasks.add_task.call_args
-        self.assertEqual(call_args[0][0], _add_to_mem0_background)
-        self.assertEqual(call_args[1]["memory"], self.mock_memory)
-        self.assertEqual(call_args[1]["user_email"], user_email)
-        self.assertEqual(call_args[1]["user_input"], user_input)
+        # Find the Mem0 call
+        mem0_call_found = False
+        for call in mock_background_tasks.add_task.call_args_list:
+            if call[0][0] == _add_to_mem0_background:
+                mem0_call_found = True
+                self.assertEqual(call[1]["memory"], self.mock_memory)
+                self.assertEqual(call[1]["user_email"], user_email)
+                self.assertEqual(call[1]["user_input"], user_input)
+                break
+                
+        self.assertTrue(mem0_call_found)
 
     def test_send_message_ai_without_background_tasks(self):
         """

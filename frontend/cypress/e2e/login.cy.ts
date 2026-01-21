@@ -32,14 +32,16 @@ describe('Login Flow', () => {
   });
 
   it('should log in a user successfully and redirect to dashboard', () => {
-    // Mock successful login
+    // Setup mocks for dashboard data that loads after login
+    setupCommonIntercepts();
+
+    // Mock successful login (Must be defined AFTER setupCommonIntercepts to override catch-all if catch-all is buggy, 
+    // OR if setupCommonIntercepts has its own defaults. Actually, explicit routes usually take precedence in Cypress 
+    // regardless of order IF they are more specific, but "specific" is tricky. Safe bet: Define specific AFTER general.)
     cy.intercept('POST', '**/user/login', {
       statusCode: 200,
       body: { token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImN5cHJlc3NfdXNlckB0ZXN0LmNvbSIsImV4cCI6OTk5OTk5OTk5OX0.fake' }
     }).as('loginSuccess');
-
-    // Setup mocks for dashboard data that loads after login
-    setupCommonIntercepts();
 
     cy.get('input#email').clear().type('cypress_user@test.com');
     cy.get('input#password').clear().type('CorrectPassword');

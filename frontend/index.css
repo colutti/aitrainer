@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /**
  * Shared utility classes for the AI Personal Trainer application.
  * These classes reduce duplication across component templates.

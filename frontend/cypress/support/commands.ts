@@ -43,24 +43,22 @@ Cypress.Commands.add('setFakeJWT', () => {
 Cypress.Commands.add('mockLogin', (options: any = {}) => {
   const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImN5cHJlc3NfdXNlckB0ZXN0LmNvbSIsImV4cCI6OTk5OTk5OTk5OX0.fake';
   
-  cy.log('Setting up common intercepts...');
+  // Setup common mocks before anything else
   setupCommonIntercepts();
   
   if (options.intercepts) {
     Object.entries(options.intercepts).forEach(([key, val]: [string, any]) => {
-      // Support "METHOD URL" or just "URL"
       const parts = key.split(' ');
       const method = parts.length === 2 ? parts[0] : 'GET';
       const url = parts.length === 2 ? parts[1] : key;
       
-      // Support simple response or { body, statusCode, alias, etc }
       let response = val;
       let alias = null;
       
       if (val && typeof val === 'object' && (val.body !== undefined || val.statusCode !== undefined)) {
         response = { ...val };
         alias = val.alias;
-        delete response.alias; // Don't pass alias to cy.intercept
+        delete response.alias;
       }
       
       const intercept = cy.intercept(method as any, url, response);
@@ -70,17 +68,20 @@ Cypress.Commands.add('mockLogin', (options: any = {}) => {
     });
   }
   
-  cy.log('Visiting app with mock token...');
+  // Speed up by preventing unnecessary font/asset loads if they are slow
+  cy.intercept('GET', '**/assets/**', { statusCode: 200, body: '' }).as('assets');
+
   cy.visit('/', {
-    timeout: 60000,
+    timeout: 30000,
     onBeforeLoad: (win) => {
+      win.localStorage.clear();
       win.localStorage.setItem('jwt_token', mockToken);
     }
   });
   
-  cy.log('Waiting for app stability...');
-  cy.get('app-sidebar', { timeout: 20000 }).should('exist');
-  cy.get('app-dashboard', { timeout: 20000 }).should('exist');
+  // Use much shorter timeouts. 5s is plenty for mocks.
+  cy.get('app-sidebar', { timeout: 15000 }).should('exist');
   
-  cy.log('Login complete.');
+  // Don't wait for app-dashboard specifically, as we might navigate away quickly
+  // or it might be replaced by other views. Sidebar is enough to prove we are "in".
 });

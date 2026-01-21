@@ -15,3 +15,8 @@ Instrucoes para criar um plano
 - So faca a publicacao em prod com o consentimento do usuario.
 - Tem que haver testes para as funcionalidades criadas.
 - Crie POCS para validar se o plano e possivel, sempre que possivel.
+- Seja detalhado, sempre tente incluir diagramas, mockups, exemplos, antes e depois quando possivel.
+- Se tiver duvidas, pergunte nao assuma.
+- Se for usar bilbiotecas externas, escolha sempre a mais usada que seja opensource. leia a documentacao da ferramenta pra enteder seu codigo e como usar os metodos que voce pretende usar.
+- Nao assuma que o codigo vai funcionar, teste.
+- Revise o plano ao terminar em busca de lacunas.

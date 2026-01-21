@@ -2,6 +2,10 @@ describe('Memories Page', () => {
   beforeEach(() => {
     // 100% Mocked Login
     cy.mockLogin();
+    // Default intercept for memories to ensure page loads without errors
+    cy.intercept('GET', '**/memory/list*', {
+      memories: [], total: 0, page: 1, page_size: 10, total_pages: 0
+    }).as('getMemoriesDefault');
   });
 
   it('should navigate to memories page from sidebar', () => {

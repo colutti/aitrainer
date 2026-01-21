@@ -6,3 +6,4 @@ class Sender(Enum):
     """
     STUDENT = "Student"
     TRAINER = "Trainer"
+    SYSTEM = "System"
