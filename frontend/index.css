@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-primary: #10b981; /* emerald-500 */
+  --color-primary-hover: #059669; /* emerald-600 */
+  --color-secondary: #3f3f46; /* zinc-700 */
+  --color-dark-bg: #18181b; /* zinc-900 */
+  --color-text-secondary: #a1a1aa; /* zinc-400 */
+}
+
 /**
  * Shared utility classes for the AI Personal Trainer application.
  * These classes reduce duplication across component templates.
