@@ -36,7 +36,7 @@ export class IntegrationsComponent implements OnInit {
     isEnabled: true 
   });
 
-  otherProviders = signal<IntegrationProvider[]>([
+  importTools = signal<IntegrationProvider[]>([
     { id: 'mfp', name: 'MyFitnessPal', description: 'Importe seu histórico nutricional.', status: 'disconnected', isEnabled: true },
     { id: 'zepp-life', name: 'Zepp Life', description: 'Importe seu histórico de peso.', status: 'disconnected', isEnabled: true },
   ]);

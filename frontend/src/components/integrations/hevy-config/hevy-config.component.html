@@ -10,7 +10,7 @@
     <div class="flex items-center justify-between p-6 border-b border-white/10">
       <div class="flex items-center gap-3">
         <div
-          class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500/20 text-xl"
+          class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/20 text-xl"
         >
           🏋️
         </div>
@@ -198,7 +198,7 @@
         </div>
 
         <!-- Webhook Section -->
-        <div class="mt-6 p-4 rounded-xl bg-gradient-to-br from-blue-500/5 to-purple-500/5 border border-white/10 space-y-4">
+        <div class="mt-6 p-4 rounded-xl bg-emerald-500/5 border border-white/10 space-y-4">
           <div class="flex items-center gap-2">
             <span class="text-lg">🔗</span>
             <h3 class="text-sm font-bold text-white">Sincronização Automática</h3>
@@ -257,9 +257,9 @@
             </div>
             
             <!-- Instructions -->
-            <div class="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 space-y-2">
-              <p class="text-xs text-blue-300 font-bold">📱 No app Hevy:</p>
-              <ol class="text-xs text-blue-200 space-y-1 list-decimal list-inside">
+            <div class="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-2">
+              <p class="text-xs text-emerald-300 font-bold">📱 No app Hevy:</p>
+              <ol class="text-xs text-emerald-200 space-y-1 list-decimal list-inside">
                 <li>Settings → Webhooks</li>
                 <li>Cole a <strong>URL</strong> no campo "URL"</li>
                 <li>Cole o <strong>Authorization Header</strong></li>
@@ -279,7 +279,7 @@
             <button 
               (click)="generateWebhook()"
               [disabled]="generatingWebhook()"
-              class="w-full rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3 font-bold text-sm text-white hover:from-blue-500 hover:to-purple-500 disabled:opacity-50 shadow-lg"
+              class="w-full rounded-lg bg-emerald-600 px-4 py-3 font-bold text-sm text-white hover:bg-emerald-500 disabled:opacity-50 shadow-lg"
             >
               {{ generatingWebhook() ? 'Gerando...' : '⚡ Ativar Sincronização Automática' }}
             </button>

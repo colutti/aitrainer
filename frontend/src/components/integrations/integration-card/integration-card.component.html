@@ -9,8 +9,7 @@
     <!-- Provider Icon -->
     <div 
       [ngClass]="{
-        'bg-orange-500/20 text-orange-400': provider.id === 'hevy',
-        'bg-blue-500/20 text-blue-400': provider.id === 'telegram',
+        'bg-emerald-500/20 text-emerald-400': provider.status !== 'coming_soon',
         'bg-purple-500/20 text-purple-400': provider.status === 'coming_soon'
       }"
       class="flex h-12 w-12 items-center justify-center rounded-xl text-2xl shadow-inner shadow-white/5"
@@ -19,6 +18,7 @@
         <span *ngSwitchCase="'hevy'">🏋️</span>
         <span *ngSwitchCase="'telegram'">✈️</span>
         <span *ngSwitchCase="'mfp'">🍎</span>
+        <span *ngSwitchCase="'zepp-life'">⚖️</span>
       </ng-container>
     </div>
 
@@ -45,10 +45,10 @@
         <span class="text-xs font-medium text-yellow-400">Pausado</span>
       </div>
 
-      <!-- Disconnected (Conectar) -->
+      <!-- Disconnected (Conectar/Importar) -->
       <div *ngSwitchCase="'disconnected'" class="status-badge bg-gray-500/10 border-white/5">
         <span class="h-2 w-2 rounded-full bg-gray-500"></span>
-        <span class="text-xs font-medium text-gray-400">Conectar</span>
+        <span class="text-xs font-medium text-gray-400">{{ isUtility ? 'Importar' : 'Conectar' }}</span>
       </div>
 
       <!-- Coming Soon -->

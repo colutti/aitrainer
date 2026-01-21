@@ -12,6 +12,10 @@ export class IntegrationCardComponent {
   @Input({ required: true }) provider!: IntegrationProvider;
   @Output() configure = new EventEmitter<void>();
 
+  get isUtility(): boolean {
+    return this.provider.id === 'mfp' || this.provider.id === 'zepp-life';
+  }
+
   onCardClick() {
     if (this.provider.status !== 'coming_soon') {
       this.configure.emit();

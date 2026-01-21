@@ -1,5 +1,5 @@
 <div class="header">
-  <h2>Importar Zepp Life</h2>
+  <h2 class="flex items-center gap-2"><span>⚖️</span> Importar Zepp Life</h2>
   <button class="close-btn" (click)="close.emit()">×</button>
 </div>
 
@@ -156,7 +156,7 @@
   .success-icon {
     width: 32px;
     height: 32px;
-    background: var(--color-success);
+    background: var(--color-primary);
     color: white;
     border-radius: 50%;
     display: flex;
@@ -187,13 +187,13 @@
     font-weight: 600;
   }
   .created {
-    color: var(--color-success);
+    color: var(--color-primary);
   }
   .updated {
     color: var(--color-info);
   }
   .error.has-errors {
-    color: var(--color-error);
+    color: #ef4444;
   }
 
   .full-width {
