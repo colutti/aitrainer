@@ -4,6 +4,7 @@ This module contains the AI trainer brain, which is responsible for interacting 
 
 from typing import Optional
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
 from fastapi import BackgroundTasks
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
@@ -204,14 +205,17 @@ class AITrainerBrain:
         """
         logger.debug("Retrieving HYBRID memories for user: %s", user_id)
 
-        # 1. Critical Facts (Always fetch)
-        critical = self._retrieve_critical_facts(user_id)
+        # Use ThreadPoolExecutor for parallel searches to reduce TTFT
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            future_critical = executor.submit(self._retrieve_critical_facts, user_id)
+            future_semantic = executor.submit(
+                self._retrieve_semantic_memories, user_id, user_input
+            )
+            future_recent = executor.submit(self._retrieve_recent_memories, user_id)
 
-        # 2. Semantic Context (Based on input)
-        semantic = self._retrieve_semantic_memories(user_id, user_input)
-
-        # 3. Recent (Temporal context)
-        recent = self._retrieve_recent_memories(user_id)
+            critical = future_critical.result()
+            semantic = future_semantic.result()
+            recent = future_recent.result()
 
         # Deduplicate (prefer Critical > Semantic > Recent)
         seen_texts = set()
@@ -440,8 +444,14 @@ class AITrainerBrain:
         """
         logger.info("Generating workout stream for user: %s", user_email)
 
-        profile = self._get_or_create_user_profile(user_email)
-        trainer_profile_obj = self._get_or_create_trainer_profile(user_email)
+        # Parallelize profile retrieval
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            future_user = executor.submit(self._get_or_create_user_profile, user_email)
+            future_trainer = executor.submit(
+                self._get_or_create_trainer_profile, user_email
+            )
+            profile = future_user.result()
+            trainer_profile_obj = future_trainer.result()
 
         # Retrieve Hybrid Memories
         hybrid_memories = self._retrieve_hybrid_memories(user_input, user_email)
@@ -599,12 +609,16 @@ class AITrainerBrain:
         )
         logger.debug("LLM responded with: %s", log_response)
 
-        # Save to MongoDB synchronously
-        self._add_to_mongo_history(
-            user_email, user_input, final_response, current_trainer_type
-        )
-
         if background_tasks:
+            # Move DB saving to background to avoid blocking the generator completion
+            background_tasks.add_task(
+                self._add_to_mongo_history,
+                user_email,
+                user_input,
+                final_response,
+                current_trainer_type,
+            )
+
             # We removed the restriction 'if not write_tool_was_called' because mixed messages
             # (e.g. "updated goal AND have allergy") were causing critical facts (allergy) to be lost.
             # Mem0 handles deduplication reasonably well, or we can refine later. Priority is capturing facts.
@@ -624,7 +638,13 @@ class AITrainerBrain:
             )
 
             logger.info(
-                "Scheduled background tasks (Mem0 + Compactor) for user: %s", user_email
+                "Scheduled background tasks (Mongo + Mem0 + Compactor) for user: %s",
+                user_email,
+            )
+        else:
+            # Fallback for sync callers (like Telegram)
+            self._add_to_mongo_history(
+                user_email, user_input, final_response, current_trainer_type
             )
 
     def send_message_sync(

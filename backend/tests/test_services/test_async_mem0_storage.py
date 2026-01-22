@@ -148,8 +148,8 @@ class TestAsyncMem0Storage(unittest.TestCase):
         list(self.brain.send_message_ai(user_email, user_input, mock_background_tasks))
 
         # Assert
-        # MongoDB should be called (synchronous)
-        self.assertEqual(self.mock_db.add_to_history.call_count, 2)
+        # MongoDB should be scheduled via BackgroundTasks (not synchronous anymore in V3)
+        self.assertEqual(self.mock_db.add_to_history.call_count, 0)
 
         # Background task should be scheduled
         # Now we have 2 tasks (Mem0 + Compactor), so ensure add_task is part of the calls
@@ -166,6 +166,19 @@ class TestAsyncMem0Storage(unittest.TestCase):
                 break
 
         self.assertTrue(mem0_call_found)
+
+        # Find the Mongo call
+        mongo_call_found = False
+        for call in mock_background_tasks.add_task.call_args_list:
+            if call[0][0] == self.brain._add_to_mongo_history:
+                mongo_call_found = True
+                self.assertEqual(call[0][1], user_email)
+                self.assertEqual(call[0][2], user_input)
+                self.assertEqual(call[0][3], "Response")
+                self.assertEqual(call[0][4], "atlas")
+                break
+
+        self.assertTrue(mongo_call_found)
 
     def test_send_message_ai_without_background_tasks(self):
         """

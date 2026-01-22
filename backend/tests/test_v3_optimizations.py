@@ -9,7 +9,9 @@ from src.api.models.user_profile import UserProfile
 
 @pytest.fixture
 def mock_db():
-    return MagicMock()
+    db = MagicMock()
+    db.update_user_profile_fields.return_value = True
+    return db
 
 
 @pytest.fixture
@@ -53,7 +55,7 @@ async def test_history_compactor_skips_short_history(mock_db, mock_llm_client):
 
     # Assertions
     mock_llm_client.stream_simple.assert_not_called()
-    mock_db.save_user_profile.assert_not_called()
+    mock_db.update_user_profile_fields.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -92,14 +94,14 @@ async def test_history_compactor_summarizes_old_messages(mock_db, mock_llm_clien
 
     # Assertions
     mock_llm_client.stream_simple.assert_called_once()
-    mock_db.save_user_profile.assert_called_once()
+    mock_db.update_user_profile_fields.assert_called_once()
 
-    # Check if profile was updated
-    updated_profile = mock_db.save_user_profile.call_args[0][0]
-    assert updated_profile.long_term_summary == "Updated Summary Content"
+    # Check if fields were updated correctly
+    updated_fields = mock_db.update_user_profile_fields.call_args[0][1]
+    assert updated_fields["long_term_summary"] == "Updated Summary Content"
     # The last compacted message should be index 19 (since 20-29 are active window)
     expected_ts = messages[19].timestamp
-    assert updated_profile.last_compaction_timestamp == expected_ts
+    assert updated_fields["last_compaction_timestamp"] == expected_ts
 
 
 @pytest.mark.asyncio
@@ -140,4 +142,4 @@ async def test_history_compactor_idempotency(mock_db, mock_llm_client):
     # Since all "old" messages (0-19) are <= last_compaction_timestamp,
     # NO NEW lines to summarize.
     mock_llm_client.stream_simple.assert_not_called()
-    mock_db.save_user_profile.assert_not_called()
+    mock_db.update_user_profile_fields.assert_not_called()
