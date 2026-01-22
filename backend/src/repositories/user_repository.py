@@ -22,6 +22,17 @@ class UserRepository(BaseRepository):
                 profile.email,
             )
 
+    def update_profile_fields(self, email: str, fields: dict) -> bool:
+        """
+        Partially updates a user profile with specific fields.
+        This is safer than save_profile for concurrent operations.
+        """
+        result = self.collection.update_one({"email": email}, {"$set": fields})
+        if result.modified_count > 0:
+            self.logger.info("Partially updated user profile for email: %s", email)
+            return True
+        return False
+
     def get_profile(self, email: str) -> UserProfile | None:
         user_data = self.collection.find_one({"email": email})
         if not user_data:

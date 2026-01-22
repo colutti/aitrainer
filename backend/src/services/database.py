@@ -72,6 +72,9 @@ class MongoDatabase:
     def save_user_profile(self, profile: UserProfile):
         return self.users.save_profile(profile)
 
+    def update_user_profile_fields(self, email: str, fields: dict):
+        return self.users.update_profile_fields(email, fields)
+
     def get_user_profile(self, email: str) -> UserProfile | None:
         return self.users.get_profile(email)
 

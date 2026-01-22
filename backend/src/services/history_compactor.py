@@ -119,9 +119,17 @@ class HistoryCompactor:
             return
 
         # 6. Atomic Update
-        # Update profile with new summary and new timestamp
-        profile.long_term_summary = response_text.strip()
-        profile.last_compaction_timestamp = new_last_ts_str
+        # Update profile with new summary and new timestamp using partial update
+        # to prevent overwriting concurrent changes (e.g. Hevy settings)
+        success = self.db.update_user_profile_fields(
+            user_email,
+            {
+                "long_term_summary": response_text.strip(),
+                "last_compaction_timestamp": new_last_ts_str,
+            },
+        )
 
-        self.db.save_user_profile(profile)
-        logger.info("Compaction complete. Summary updated.")
+        if success:
+            logger.info("Compaction complete. Summary updated atomically.")
+        else:
+            logger.warning("Compaction complete but no fields were updated.")
