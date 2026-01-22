@@ -23,6 +23,7 @@ export class NutritionComponent implements OnInit {
   
   // Filtering (optional for now, but UI shows dropdown)
   daysFilter = signal<number | undefined>(undefined);
+  deletingId = signal<string | null>(null);
 
   ngOnInit() {
     this.loadData();
@@ -71,6 +72,23 @@ export class NutritionComponent implements OnInit {
     if (this.currentPage() > 1) {
       this.currentPage.update(p => p - 1);
       this.loadLogs();
+    }
+  }
+
+  deleteLog(event: Event, log: NutritionLog) {
+    event.stopPropagation();
+    if (confirm('Tem certeza que deseja excluir este registro nutricional?')) {
+      this.deletingId.set(log.id);
+      this.nutritionService.deleteLog(log.id).subscribe({
+        next: () => {
+          this.loadData();
+          this.deletingId.set(null);
+        },
+        error: (err) => {
+          console.error('Failed to delete nutrition log', err);
+          this.deletingId.set(null);
+        }
+      });
     }
   }
 

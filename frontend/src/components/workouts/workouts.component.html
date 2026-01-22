@@ -1,101 +1,224 @@
-<div class="h-full flex flex-col relative overflow-hidden bg-dark-bg text-text-primary p-6"
-     (touchstart)="onTouchStart($event)"
-     (touchmove)="onTouchMove($event)"
-     (touchend)="onTouchEnd()">
-
+<div
+  class="h-full flex flex-col relative overflow-hidden bg-dark-bg text-text-primary p-6"
+  (touchstart)="onTouchStart($event)"
+  (touchmove)="onTouchMove($event)"
+  (touchend)="onTouchEnd()"
+>
   <!-- Refresh Indicator -->
-  <div class="absolute top-0 left-0 w-full flex justify-center pointer-events-none transition-all duration-200 z-50"
-       [style.opacity]="pullProgress() > 0 ? 1 : 0"
-       [style.transform]="'translateY(' + (pullProgress() * 0.5) + 'px)'">
-     <div class="bg-dark-bg p-2 rounded-full shadow-lg border border-secondary">
-       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" 
-            class="w-6 h-6 text-primary transition-transform"
-            [style.transform]="'rotate(' + (pullProgress() * 3.6) + 'deg)'">
-         <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-       </svg>
-     </div>
+  <div
+    class="absolute top-0 left-0 w-full flex justify-center pointer-events-none transition-all duration-200 z-50"
+    [style.opacity]="pullProgress() > 0 ? 1 : 0"
+    [style.transform]="'translateY(' + pullProgress() * 0.5 + 'px)'"
+  >
+    <div class="bg-dark-bg p-2 rounded-full shadow-lg border border-secondary">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="2"
+        stroke="currentColor"
+        class="w-6 h-6 text-primary transition-transform"
+        [style.transform]="'rotate(' + pullProgress() * 3.6 + 'deg)'"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+        />
+      </svg>
+    </div>
   </div>
 
   <!-- Header -->
   <div class="flex justify-between items-end mb-6 flex-shrink-0">
     <div>
       <h1 class="text-3xl font-bold tracking-tight">Histórico</h1>
-      <p class="text-text-secondary text-sm mt-1">{{ totalWorkouts() }} treinos registrados</p>
+      <p class="text-text-secondary text-sm mt-1">
+        {{ totalWorkouts() }} treinos registrados
+      </p>
     </div>
-    
+
     <!-- Filter -->
     <div class="relative">
-      <select (change)="onTypeChange($event)" class="appearance-none bg-light-bg border border-secondary text-text-primary py-2 pl-4 pr-10 rounded-lg focus:outline-none focus:border-primary cursor-pointer hover:border-primary/50 transition-colors text-sm">
+      <select
+        (change)="onTypeChange($event)"
+        class="appearance-none bg-light-bg border border-secondary text-text-primary py-2 pl-4 pr-10 rounded-lg focus:outline-none focus:border-primary cursor-pointer hover:border-primary/50 transition-colors text-sm"
+      >
         <option value="all">Todos</option>
-        <option *ngFor="let type of workoutTypes()" [value]="type">{{ type }}</option>
+        <option *ngFor="let type of workoutTypes()" [value]="type">
+          {{ type }}
+        </option>
       </select>
-      <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-text-secondary">
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      <div
+        class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-text-secondary"
+      >
+        <svg
+          class="h-4 w-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M19 9l-7 7-7-7"
+          ></path>
+        </svg>
       </div>
     </div>
   </div>
 
   <!-- Loading -->
   <div *ngIf="isLoading()" class="flex-1 flex justify-center items-center">
-    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+    <div
+      class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"
+    ></div>
   </div>
 
   <!-- List -->
-  <div *ngIf="!isLoading()" class="flex-1 overflow-y-auto pr-2 custom-scrollbar relative">
-    <div class="absolute left-[19px] top-0 bottom-0 w-0.5 bg-secondary/30 h-full"></div>
-    
+  <div
+    *ngIf="!isLoading()"
+    class="flex-1 overflow-y-auto pr-2 custom-scrollbar relative"
+  >
+    <div
+      class="absolute left-[19px] top-0 bottom-0 w-0.5 bg-secondary/30 h-full"
+    ></div>
+
     <div class="space-y-4 pb-10 pt-2">
-      
-      <div *ngFor="let w of workouts()" class="relative pl-12 group cursor-pointer" (click)="selectWorkout(w)">
+      <div
+        *ngFor="let w of workouts()"
+        class="relative pl-12 group cursor-pointer"
+        (click)="selectWorkout(w)"
+      >
         <!-- Timeline Dot -->
-        <div class="absolute left-[13px] top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-dark-bg border-2 border-secondary group-hover:border-primary group-hover:bg-primary group-hover:scale-125 transition-all duration-300 z-10 box-border"></div>
-        
+        <div
+          class="absolute left-[13px] top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-dark-bg border-2 border-secondary group-hover:border-primary group-hover:bg-primary group-hover:scale-125 transition-all duration-300 z-10 box-border"
+        ></div>
+
         <!-- Card -->
-        <div class="bg-light-bg p-4 rounded-xl border border-secondary group-hover:border-primary/50 group-hover:shadow-[0_0_15px_rgba(16,185,129,0.05)] transition-all duration-300 flex justify-between items-center transform group-hover:-translate-y-0.5 group-active:translate-y-0">
-           <div class="flex items-center gap-4">
-              <div class="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center text-xl">
-                 {{ w.workout_type?.toLowerCase()?.includes('perna') ? '🦵' : w.workout_type?.toLowerCase()?.includes('peito') ? '💪' : w.workout_type?.toLowerCase()?.includes('costas') ? '🦍' : '🏋️' }}
-              </div>
-              <div>
-                 <h3 class="font-bold text-base text-white group-hover:text-primary transition-colors">{{ w.workout_type || 'Treino sem nome' }}</h3>
-                 <p class="text-text-secondary text-xs font-medium mt-0.5 tracking-wide flex items-center gap-1">
-                    <span>{{ w.date | date:'dd MMM yyyy' }}</span>
-                    <span class="w-1 h-1 rounded-full bg-text-secondary opacity-50"></span>
-                    <span>{{ w.duration_minutes || '--' }} min</span>
-                 </p>
-              </div>
-           </div>
-           
-           <div class="text-secondary/50 group-hover:text-primary transition-colors transform group-hover:translate-x-1">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-           </div>
+        <div
+          class="bg-light-bg p-4 rounded-xl border border-secondary group-hover:border-primary/50 group-hover:shadow-[0_0_15px_rgba(16,185,129,0.05)] transition-all duration-300 flex justify-between items-center transform group-hover:-translate-y-0.5 group-active:translate-y-0"
+        >
+          <div class="flex items-center gap-4">
+            <div
+              class="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center text-xl"
+            >
+              {{
+                w.workout_type?.toLowerCase()?.includes("perna")
+                  ? "🦵"
+                  : w.workout_type?.toLowerCase()?.includes("peito")
+                    ? "💪"
+                    : w.workout_type?.toLowerCase()?.includes("costas")
+                      ? "🦍"
+                      : "🏋️"
+              }}
+            </div>
+            <div>
+              <h3
+                class="font-bold text-base text-white group-hover:text-primary transition-colors"
+              >
+                {{ w.workout_type || "Treino sem nome" }}
+              </h3>
+              <p
+                class="text-text-secondary text-xs font-medium mt-0.5 tracking-wide flex items-center gap-1"
+              >
+                <span>{{ w.date | date: "dd MMM yyyy" }}</span>
+                <span
+                  class="w-1 h-1 rounded-full bg-text-secondary opacity-50"
+                ></span>
+                <span>{{ w.duration_minutes || "--" }} min</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button
+              (click)="deleteWorkout($event, w)"
+              [disabled]="deletingId() === w.id"
+              title="Excluir treino"
+              data-cy="delete-workout"
+              class="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-red-400 hover:text-white hover:bg-red-600 border border-red-400 hover:border-red-600 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 opacity-0 group-hover:opacity-100"
+            >
+              @if (deletingId() === w.id) {
+                <div class="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+              } @else {
+                <svg
+                  class="w-3.5 h-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+                <span>Excluir</span>
+              }
+            </button>
+            <div
+              class="text-secondary/50 group-hover:text-primary transition-colors transform group-hover:translate-x-1"
+            >
+              <svg
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5l7 7-7 7"
+                ></path>
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Empty State -->
-      <div *ngIf="workouts().length === 0" class="pl-12 pt-10 text-center text-text-secondary italic">
-         <p>Nenhum treino encontrado.</p>
+      <div
+        *ngIf="workouts().length === 0"
+        class="pl-12 pt-10 text-center text-text-secondary italic"
+      >
+        <p>Nenhum treino encontrado.</p>
       </div>
-
     </div>
-    
+
     <!-- Pagination -->
-    <div *ngIf="workouts().length > 0" class="flex justify-between items-center py-4 border-t border-secondary mt-auto bg-dark-bg sticky bottom-0 z-20">
-       <button (click)="previousPage()" [disabled]="currentPage() === 1" class="px-4 py-2 bg-light-bg rounded-lg border border-secondary text-text-secondary text-sm font-medium hover:text-white hover:bg-secondary/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-          Anterior
-       </button>
-       <span class="text-text-secondary text-xs font-mono opacity-70">Pg {{ currentPage() }} / {{ totalPages() }}</span>
-       <button (click)="nextPage()" [disabled]="currentPage() === totalPages()" class="px-4 py-2 bg-light-bg rounded-lg border border-secondary text-text-secondary text-sm font-medium hover:text-white hover:bg-secondary/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-          Próxima
-       </button>
+    <div
+      *ngIf="workouts().length > 0"
+      class="flex justify-between items-center py-4 border-t border-secondary mt-auto bg-dark-bg sticky bottom-0 z-20"
+    >
+      <button
+        (click)="previousPage()"
+        [disabled]="currentPage() === 1"
+        class="px-4 py-2 bg-light-bg rounded-lg border border-secondary text-text-secondary text-sm font-medium hover:text-white hover:bg-secondary/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        Anterior
+      </button>
+      <span class="text-text-secondary text-xs font-mono opacity-70"
+        >Pg {{ currentPage() }} / {{ totalPages() }}</span
+      >
+      <button
+        (click)="nextPage()"
+        [disabled]="currentPage() === totalPages()"
+        class="px-4 py-2 bg-light-bg rounded-lg border border-secondary text-text-secondary text-sm font-medium hover:text-white hover:bg-secondary/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        Próxima
+      </button>
     </div>
   </div>
 
   <!-- Drawer -->
-  <app-workout-drawer 
-      *ngIf="selectedWorkout()" 
-      [workout]="selectedWorkout()!" 
-      (close)="closeDrawer()">
+  <app-workout-drawer
+    *ngIf="selectedWorkout()"
+    [workout]="selectedWorkout()!"
+    (close)="closeDrawer()"
+  >
   </app-workout-drawer>
-
 </div>

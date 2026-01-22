@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import pymongo
+from bson import ObjectId
 from pymongo.database import Database
 
 from src.api.models.workout_log import WorkoutLog, WorkoutWithId
@@ -31,6 +32,20 @@ class WorkoutRepository(BaseRepository):
             "Retrieved %d workout logs for user: %s", len(workouts), user_email
         )
         return workouts
+
+    def delete_log(self, workout_id: str) -> bool:
+        """Deletes a workout log by its ID."""
+        result = self.collection.delete_one({"_id": ObjectId(workout_id)})
+        deleted = result.deleted_count > 0
+        if deleted:
+            self.logger.info("Workout log %s deleted", workout_id)
+        else:
+            self.logger.warning("Workout log %s not found for deletion", workout_id)
+        return deleted
+
+    def get_log_by_id(self, workout_id: str) -> dict | None:
+        """Retrieves a single workout log by its ID."""
+        return self.collection.find_one({"_id": ObjectId(workout_id)})
 
     def get_paginated(
         self,

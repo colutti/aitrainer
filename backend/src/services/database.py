@@ -159,6 +159,12 @@ class MongoDatabase:
     def get_workout_types(self, user_email: str) -> list[str]:
         return self.workouts_repo.get_types(user_email)
 
+    def delete_workout_log(self, workout_id: str) -> bool:
+        return self.workouts_repo.delete_log(workout_id)
+
+    def get_workout_by_id(self, workout_id: str) -> dict | None:
+        return self.workouts_repo.get_log_by_id(workout_id)
+
     # ====== NUTRITION REPOSITORY DELEGATION ======
     def ensure_nutrition_indexes(self) -> None:
         return self.nutrition.ensure_indexes()
@@ -193,6 +199,12 @@ class MongoDatabase:
         except Exception:
             tdee_service = None
         return self.nutrition.get_stats(user_email, tdee_service)
+
+    def delete_nutrition_log(self, log_id: str) -> bool:
+        return self.nutrition.delete_log(log_id)
+
+    def get_nutrition_by_id(self, log_id: str) -> dict | None:
+        return self.nutrition.get_log_by_id(log_id)
 
     # ====== WEIGHT REPOSITORY DELEGATION ======
     def ensure_weight_indexes(self) -> None:

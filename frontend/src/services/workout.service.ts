@@ -80,4 +80,12 @@ export class WorkoutService {
       await this.getWorkouts(this.currentPage() - 1);
     }
   }
+
+  /**
+   * Deletes a workout log and reloads the list.
+   */
+  async deleteWorkout(workoutId: string): Promise<void> {
+    await firstValueFrom(this.http.delete(`${environment.apiUrl}/workout/${workoutId}`));
+    await this.getWorkouts(this.currentPage());
+  }
 }

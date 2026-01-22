@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import pymongo
+from bson import ObjectId
 from pymongo.database import Database
 
 from src.api.models.nutrition_log import NutritionLog, NutritionWithId
@@ -54,6 +55,20 @@ class NutritionRepository(BaseRepository):
             .limit(limit)
         )
         return [NutritionLog(**doc) for doc in cursor]
+
+    def delete_log(self, log_id: str) -> bool:
+        """Deletes a nutrition log by its ID."""
+        result = self.collection.delete_one({"_id": ObjectId(log_id)})
+        deleted = result.deleted_count > 0
+        if deleted:
+            self.logger.info("Nutrition log %s deleted", log_id)
+        else:
+            self.logger.warning("Nutrition log %s not found for deletion", log_id)
+        return deleted
+
+    def get_log_by_id(self, log_id: str) -> dict | None:
+        """Retrieves a single nutrition log by its ID."""
+        return self.collection.find_one({"_id": ObjectId(log_id)})
 
     def get_logs_by_date_range(
         self, user_email: str, start_date: datetime, end_date: datetime

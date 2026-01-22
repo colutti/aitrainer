@@ -86,3 +86,46 @@ def get_types(user_email: CurrentUser, db: DatabaseDep) -> list[str]:
         raise HTTPException(
             status_code=500, detail="Failed to retrieve workout types"
         ) from e
+
+
+@router.delete("/{workout_id}")
+def delete_workout(
+    workout_id: str, user_email: CurrentUser, db: DatabaseDep
+) -> dict:
+    """
+    Deletes a specific workout log for the authenticated user.
+    """
+    logger.info("=== Workout Delete Request ===")
+    logger.info("User: %s, Workout ID: %s", user_email, workout_id)
+
+    try:
+        # Validate ownership first
+        workout = db.get_workout_by_id(workout_id)
+        if not workout:
+            logger.warning("Workout not found: %s", workout_id)
+            raise HTTPException(status_code=404, detail="Workout not found")
+
+        if workout.get("user_email") != user_email:
+            logger.warning(
+                "Unauthorized delete attempt by %s for workout %s (owner: %s)",
+                user_email,
+                workout_id,
+                workout.get("user_email"),
+            )
+            raise HTTPException(
+                status_code=403, detail="Not authorized to delete this workout"
+            )
+
+        deleted = db.delete_workout_log(workout_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Workout not found for deletion")
+
+        logger.info("Workout %s deleted successfully by user %s", workout_id, user_email)
+        return {"message": "Workout deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Failed to delete workout %s for user %s: %s", workout_id, user_email, e
+        )
+        raise HTTPException(status_code=500, detail="Failed to delete workout") from e

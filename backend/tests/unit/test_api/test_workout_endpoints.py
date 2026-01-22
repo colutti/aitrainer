@@ -113,3 +113,50 @@ class TestWorkoutEndpoints(unittest.TestCase):
         self.assertEqual(response.status_code, 500)
         self.assertEqual(response.json()["detail"], "Failed to retrieve workout types")
         app.dependency_overrides = {}
+
+    def test_delete_workout_success(self):
+        """Test successful deletion of a workout log."""
+        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+        mock_db = MagicMock()
+        mock_db.get_workout_by_id.return_value = {"user_email": "test@test.com"}
+        mock_db.delete_workout_log.return_value = True
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
+
+        response = self.client.delete(
+            "/workout/workout123", headers={"Authorization": "Bearer token"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["message"], "Workout deleted successfully")
+        mock_db.delete_workout_log.assert_called_with("workout123")
+        app.dependency_overrides = {}
+
+    def test_delete_workout_not_found(self):
+        """Test deleting a non-existent workout."""
+        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+        mock_db = MagicMock()
+        mock_db.get_workout_by_id.return_value = None
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
+
+        response = self.client.delete(
+            "/workout/nonexistent", headers={"Authorization": "Bearer token"}
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json()["detail"], "Workout not found")
+        app.dependency_overrides = {}
+
+    def test_delete_workout_unauthorized(self):
+        """Test deleting a workout owned by another user."""
+        app.dependency_overrides[verify_token] = lambda: "attacker@test.com"
+        mock_db = MagicMock()
+        mock_db.get_workout_by_id.return_value = {"user_email": "victim@test.com"}
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
+
+        response = self.client.delete(
+            "/workout/workout123", headers={"Authorization": "Bearer token"}
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["detail"], "Not authorized to delete this workout")
+        app.dependency_overrides = {}

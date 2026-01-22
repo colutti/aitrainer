@@ -136,4 +136,40 @@ describe('Workout History & Drawer', () => {
       // Robust selector
       cy.get('app-workout-drawer').find('[role="dialog"]').should('be.visible');
   });
+
+  it('should delete a workout', () => {
+    cy.get('[data-cy="nav-workouts"]').click({ force: true });
+    cy.wait('@getWorkouts');
+    cy.get('.animate-spin').should('not.exist');
+
+    // Intercept DELETE
+    cy.intercept('DELETE', '**/workout/1', {
+      statusCode: 200,
+      body: { message: 'Workout deleted successfully' }
+    }).as('deleteWorkout');
+
+    // Mock re-fetch after deletion (only 1 workout left)
+    cy.intercept('GET', '**/workout/list*', {
+      statusCode: 200,
+      body: {
+        workouts: [mockWorkouts.workouts[1]],
+        total: 1, page: 1, page_size: 10, total_pages: 1
+      }
+    }).as('getWorkoutsAfterDelete');
+
+    // Trigger delete on the first card
+    // Use data-cy for reliable selection
+    cy.get('[data-cy="delete-workout"]').first().click({ force: true });
+
+    // Confirm browser dialog
+    cy.on('window:confirm', () => true);
+
+    cy.wait('@deleteWorkout');
+    cy.wait('@getWorkoutsAfterDelete');
+
+    // Verify it was removed from UI (specifically in the list)
+    cy.get('.space-y-4').contains('Pernas').should('not.exist');
+    cy.get('.space-y-4').contains('Peito').should('be.visible');
+    cy.contains('1 treinos registrados').should('be.visible');
+  });
 });

@@ -24,6 +24,7 @@ export class WorkoutsComponent implements OnInit {
   selectedWorkout = signal<Workout | null>(null);
   workoutTypes = signal<string[]>([]);
   selectedType = this.workoutService.selectedType;
+  deletingId = signal<string | null>(null);
 
   // Pull to refresh state
   private startY = 0;
@@ -101,6 +102,18 @@ export class WorkoutsComponent implements OnInit {
 
   async nextPage(): Promise<void> {
     await this.workoutService.nextPage();
+  }
+
+  async deleteWorkout(event: Event, workout: Workout): Promise<void> {
+    event.stopPropagation();
+    if (confirm('Tem certeza que deseja excluir este treino?')) {
+      this.deletingId.set(workout.id);
+      try {
+        await this.workoutService.deleteWorkout(workout.id);
+      } finally {
+        this.deletingId.set(null);
+      }
+    }
   }
 
   // Helper date format for list

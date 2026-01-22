@@ -46,4 +46,11 @@ export class NutritionService {
   getTodayLog(): Observable<NutritionLog | null> {
     return this.http.get<NutritionLog | null>(`${this.apiUrl}/today`);
   }
+
+  /**
+   * Deletes a nutrition log.
+   */
+  deleteLog(logId: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${logId}`);
+  }
 }

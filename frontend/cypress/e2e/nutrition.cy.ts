@@ -99,4 +99,37 @@ describe('Nutrition Tracking', () => {
         cy.contains('Nenhum registro encontrado').should('be.visible');
     });
 
+    it('should delete a nutrition log', () => {
+        cy.get('[data-cy="nav-nutrition"]').click({ force: true });
+        cy.wait(['@getNutritionLogs', '@getNutritionStats']);
+
+        // Intercept DELETE
+        cy.intercept('DELETE', '**/nutrition/1', {
+            statusCode: 200,
+            body: { message: 'Nutrition log deleted successfully' }
+        }).as('deleteLog');
+
+        // Mock re-fetch after deletion
+        cy.intercept('GET', '**/nutrition/list*', {
+            statusCode: 200,
+            body: {
+                logs: [mockNutritionLogs.logs[1]],
+                total: 1, page: 1, page_size: 10, total_pages: 1
+            }
+        }).as('getLogsAfterDelete');
+
+        // Trigger delete on the first card
+        // Use data-cy for reliable selection
+        cy.get('[data-cy="delete-nutrition-log"]').first().click({ force: true });
+
+        // Confirm browser dialog
+        cy.on('window:confirm', () => true);
+
+        cy.wait('@deleteLog');
+        cy.wait(['@getLogsAfterDelete', '@getNutritionStats']);
+
+        // Verify it was removed from UI
+        cy.contains('2000').should('not.exist');
+        cy.contains('1800').should('be.visible');
+    });
   });

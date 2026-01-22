@@ -142,3 +142,46 @@ async def import_myfitnesspal(
     except Exception as e:
         logger.error("Error importing CSV for user %s: %s", user_email, e)
         raise HTTPException(status_code=500, detail="Falha ao importar dados.") from e
+
+
+@router.delete("/{log_id}")
+def delete_nutrition(
+    log_id: str, user_email: CurrentUser, db: DatabaseDep
+) -> dict:
+    """
+    Deletes a specific nutrition log for the authenticated user.
+    """
+    logger.info("=== Nutrition Delete Request ===")
+    logger.info("User: %s, Log ID: %s", user_email, log_id)
+
+    try:
+        # Validate ownership first
+        log = db.get_nutrition_by_id(log_id)
+        if not log:
+            logger.warning("Nutrition log not found: %s", log_id)
+            raise HTTPException(status_code=404, detail="Nutrition log not found")
+
+        if log.get("user_email") != user_email:
+            logger.warning(
+                "Unauthorized delete attempt by %s for log %s (owner: %s)",
+                user_email,
+                log_id,
+                log.get("user_email"),
+            )
+            raise HTTPException(
+                status_code=403, detail="Not authorized to delete this nutrition log"
+            )
+
+        deleted = db.delete_nutrition_log(log_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Nutrition log not found for deletion")
+
+        logger.info("Nutrition log %s deleted successfully by user %s", log_id, user_email)
+        return {"message": "Nutrition log deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Failed to delete nutrition log %s for user %s: %s", log_id, user_email, e
+        )
+        raise HTTPException(status_code=500, detail="Failed to delete nutrition log") from e

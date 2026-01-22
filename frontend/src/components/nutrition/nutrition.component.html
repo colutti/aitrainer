@@ -58,7 +58,8 @@
 
                             <!-- Card -->
                             <div class="bg-light-bg rounded-2xl p-5 border border-secondary shadow-lg hover:border-primary/50 transition-all duration-300 group">
-                                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                                <!-- Header row: Left content + Delete button on right -->
+                                <div class="flex items-start justify-between gap-4 mb-4">
                                     <div>
                                         <p class="text-text-secondary text-xs uppercase font-bold tracking-wider mb-1">
                                             {{ getFormattedDate(log.date) }}
@@ -71,13 +72,33 @@
                                         </div>
                                     </div>
                                     
-                                    <!-- Log Details (Micros if available) -->
-                                    @if(log.sodium_mg || log.fiber_grams) {
-                                        <div class="flex gap-3 text-[10px] text-text-secondary/70 bg-secondary/10 px-3 py-1.5 rounded-full self-start md:self-center">
-                                            @if(log.fiber_grams) { <span>Fibras: {{log.fiber_grams}}g</span> }
-                                            @if(log.sodium_mg) { <span>Sódio: {{log.sodium_mg}}mg</span> }
-                                        </div>
-                                    }
+                                    <!-- Delete button on the right -->
+                                    <button
+                                        (click)="deleteLog($event, log)"
+                                        [disabled]="deletingId() === log.id"
+                                        title="Excluir registro"
+                                        data-cy="delete-nutrition-log"
+                                        class="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-red-400 hover:text-white hover:bg-red-600 border border-red-400 hover:border-red-600 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 opacity-0 group-hover:opacity-100"
+                                    >
+                                        @if (deletingId() === log.id) {
+                                            <div class="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
+                                        } @else {
+                                            <svg
+                                                class="w-3.5 h-3.5"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                />
+                                            </svg>
+                                            <span>Excluir</span>
+                                        }
+                                    </button>
                                 </div>
 
                                 <!-- Visual Bars -->
@@ -115,6 +136,14 @@
                                             <span class="text-text-secondary">Gord</span>
                                         </div>
                                     </div>
+
+                                    <!-- Micros (below bar/legend) -->
+                                    @if(log.sodium_mg || log.fiber_grams) {
+                                        <div class="flex gap-3 text-[10px] text-text-secondary/70 bg-secondary/10 px-3 py-1.5 rounded-full w-fit">
+                                            @if(log.fiber_grams) { <span>Fibras: {{log.fiber_grams}}g</span> }
+                                            @if(log.sodium_mg) { <span>Sódio: {{log.sodium_mg}}mg</span> }
+                                        </div>
+                                    }
                                 </div>
                             </div>
                         </div>
