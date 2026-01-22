@@ -1,6 +1,7 @@
 """
 Unit tests for async Mem0 storage functionality.
 """
+
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -16,6 +17,7 @@ class MockRunnable(Runnable):
     """
     A mock runnable class for testing purposes.
     """
+
     def invoke(self, *args, **kwargs):  # pylint: disable=unused-argument
         """
         Mock invoke method.
@@ -33,6 +35,7 @@ class TestAsyncMem0Storage(unittest.TestCase):
     """
     Tests for async Mem0 storage with BackgroundTasks.
     """
+
     # pylint: disable=invalid-name
     def setUp(self):
         """
@@ -41,9 +44,9 @@ class TestAsyncMem0Storage(unittest.TestCase):
         self.mock_db = MagicMock()
         self.mock_llm = MagicMock()
         self.mock_memory = MagicMock()
-        self.brain = AITrainerBrain(database=self.mock_db,
-                                    llm_client=self.mock_llm,
-                                    memory=self.mock_memory)
+        self.brain = AITrainerBrain(
+            database=self.mock_db, llm_client=self.mock_llm, memory=self.mock_memory
+        )
 
     def test_add_to_mongo_history_only_saves_to_mongodb(self):
         """
@@ -77,7 +80,7 @@ class TestAsyncMem0Storage(unittest.TestCase):
             memory=self.mock_memory,
             user_email=user_email,
             user_input=user_input,
-            response_text=response_text
+            response_text=response_text,
         )
 
         # Assert
@@ -85,7 +88,9 @@ class TestAsyncMem0Storage(unittest.TestCase):
             {"role": "user", "content": user_input},
             {"role": "assistant", "content": response_text},
         ]
-        self.mock_memory.add.assert_called_once_with(expected_messages, user_id=user_email)
+        self.mock_memory.add.assert_called_once_with(
+            expected_messages, user_id=user_email
+        )
 
     @patch("src.services.trainer.logger")
     def test_add_to_mem0_background_error_handling(self, mock_logger):
@@ -103,7 +108,7 @@ class TestAsyncMem0Storage(unittest.TestCase):
             memory=self.mock_memory,
             user_email=user_email,
             user_input=user_input,
-            response_text=response_text
+            response_text=response_text,
         )
 
         # Assert - error should be logged
@@ -117,17 +122,22 @@ class TestAsyncMem0Storage(unittest.TestCase):
         # Arrange
         user_email = "test@test.com"
         user_input = "Hello"
-        
-        user_profile = UserProfile(email=user_email, gender="Masculino",
-                                   age=25, weight=70, height=175,
-                                   goal="Muscle gain", goal_type="maintain")
-        trainer_profile = TrainerProfile(user_email=user_email,
-                                         trainer_type="atlas")
+
+        user_profile = UserProfile(
+            email=user_email,
+            gender="Masculino",
+            age=25,
+            weight=70,
+            height=175,
+            goal="Muscle gain",
+            goal_type="maintain",
+        )
+        trainer_profile = TrainerProfile(user_email=user_email, trainer_type="atlas")
         self.mock_db.get_user_profile.return_value = user_profile
         self.mock_db.get_trainer_profile.return_value = trainer_profile
         self.mock_db.get_chat_history.return_value = []
         self.mock_memory.search.return_value = {}
-        
+
         # Mock LLM stream response
         self.mock_llm.stream_with_tools.return_value = ["Response"]
 
@@ -140,11 +150,11 @@ class TestAsyncMem0Storage(unittest.TestCase):
         # Assert
         # MongoDB should be called (synchronous)
         self.assertEqual(self.mock_db.add_to_history.call_count, 2)
-        
+
         # Background task should be scheduled
         # Now we have 2 tasks (Mem0 + Compactor), so ensure add_task is part of the calls
         self.assertTrue(mock_background_tasks.add_task.called)
-        
+
         # Find the Mem0 call
         mem0_call_found = False
         for call in mock_background_tasks.add_task.call_args_list:
@@ -154,7 +164,7 @@ class TestAsyncMem0Storage(unittest.TestCase):
                 self.assertEqual(call[1]["user_email"], user_email)
                 self.assertEqual(call[1]["user_input"], user_input)
                 break
-                
+
         self.assertTrue(mem0_call_found)
 
     def test_send_message_ai_without_background_tasks(self):
@@ -164,12 +174,17 @@ class TestAsyncMem0Storage(unittest.TestCase):
         # Arrange
         user_email = "test@test.com"
         user_input = "Hello"
-        
-        user_profile = UserProfile(email=user_email, gender="Masculino",
-                                   age=25, weight=70, height=175,
-                                   goal="Muscle gain", goal_type="maintain")
-        trainer_profile = TrainerProfile(user_email=user_email,
-                                         trainer_type="atlas")
+
+        user_profile = UserProfile(
+            email=user_email,
+            gender="Masculino",
+            age=25,
+            weight=70,
+            height=175,
+            goal="Muscle gain",
+            goal_type="maintain",
+        )
+        trainer_profile = TrainerProfile(user_email=user_email, trainer_type="atlas")
         self.mock_db.get_user_profile.return_value = user_profile
         self.mock_db.get_trainer_profile.return_value = trainer_profile
         self.mock_db.get_chat_history.return_value = []

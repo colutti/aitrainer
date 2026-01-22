@@ -2,7 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../environment';
 import { Observable, tap } from 'rxjs';
-import { NutritionListResponse, NutritionStats } from '../models/nutrition.model';
+import { NutritionLog, NutritionListResponse, NutritionStats } from '../models/nutrition.model';
 
 @Injectable({
   providedIn: 'root'
@@ -43,7 +43,7 @@ export class NutritionService {
   /**
    * Fetches today's nutrition log specifically.
    */
-  getTodayLog(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/today`);
+  getTodayLog(): Observable<NutritionLog | null> {
+    return this.http.get<NutritionLog | null>(`${this.apiUrl}/today`);
   }
 }

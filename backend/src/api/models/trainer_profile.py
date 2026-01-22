@@ -1,19 +1,23 @@
 from pydantic import BaseModel, Field
 from src.trainers.registry import TrainerRegistry
 
+
 class TrainerProfileInput(BaseModel):
     """
     Editable fields of the trainer profile (user input).
     """
+
     trainer_type: str = Field(
         ...,
-        description="The ID of the selected trainer (e.g., 'atlas', 'luna', 'sargento', 'sofia')."
+        description="The ID of the selected trainer (e.g., 'atlas', 'luna', 'sargento', 'sofia').",
     )
+
 
 class TrainerProfile(TrainerProfileInput):
     """
     TrainerProfile model representing the complete profile (includes user_email).
     """
+
     user_email: str = Field(..., description="User's email")
 
     def get_trainer_profile_summary(self) -> str:

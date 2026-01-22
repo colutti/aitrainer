@@ -1,66 +1,80 @@
-
 import sys
 import os
 import argparse
-import asyncio
-from typing import List
 
 # Add parent directory of 'backend' -> 'backend/src' to path so we can import modules
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from src.core.deps import get_mongo_database, get_mem0_client
-from src.core.logs import logger
+
 
 def count_and_delete_mongo(db, collection_name, query, dry_run=False):
     collection = db.database[collection_name]
-    
+
     # SAFETY CHECK: Ensure query contains the user's email email if the collection expects it
     if collection_name == "message_store":
         if "SessionId" not in query:
-             print(f"❌ SAFETY ERROR: Query for {collection_name} does not contain SessionId!")
-             return 0
+            print(
+                f"❌ SAFETY ERROR: Query for {collection_name} does not contain SessionId!"
+            )
+            return 0
     elif collection_name == "token_blocklist":
-         if "sub" not in query:
-             print(f"❌ SAFETY ERROR: Query for {collection_name} does not contain sub!")
-             return 0
+        if "sub" not in query:
+            print(f"❌ SAFETY ERROR: Query for {collection_name} does not contain sub!")
+            return 0
     elif collection_name in ["users", "invites"]:
-         if "email" not in query:
-             print(f"❌ SAFETY ERROR: Query for {collection_name} does not contain email!")
-             return 0
-    elif collection_name in ["user_profiles", "trainer_profiles", "workout_logs", "nutrition_logs", "weight_logs", "ai_insight_cache"]:
-         # These collections use 'user_email' or 'email' depending on the model.
-         # Based on inspection:
-         # users: email
-         # user_profiles: email (ref UserProfile)
-         # trainer_profiles: user_email
-         # workout_logs: user_email
-         # nutrition_logs: user_email
-         # weight_logs: user_email
-         # ai_insight_cache: user_email
-         
-         # Verification logic
-         has_email = "email" in query
-         has_user_email = "user_email" in query
-         
-         if not (has_email or has_user_email):
-             print(f"❌ SAFETY ERROR: Query for {collection_name} does not contain email identifier!")
-             return 0
+        if "email" not in query:
+            print(
+                f"❌ SAFETY ERROR: Query for {collection_name} does not contain email!"
+            )
+            return 0
+    elif collection_name in [
+        "user_profiles",
+        "trainer_profiles",
+        "workout_logs",
+        "nutrition_logs",
+        "weight_logs",
+        "ai_insight_cache",
+    ]:
+        # These collections use 'user_email' or 'email' depending on the model.
+        # Based on inspection:
+        # users: email
+        # user_profiles: email (ref UserProfile)
+        # trainer_profiles: user_email
+        # workout_logs: user_email
+        # nutrition_logs: user_email
+        # weight_logs: user_email
+        # ai_insight_cache: user_email
+
+        # Verification logic
+        has_email = "email" in query
+        has_user_email = "user_email" in query
+
+        if not (has_email or has_user_email):
+            print(
+                f"❌ SAFETY ERROR: Query for {collection_name} does not contain email identifier!"
+            )
+            return 0
 
     count = collection.count_documents(query)
-    
+
     # Double check by finding one document and verifying the email field matches exactly if found
     if count > 0:
         sample = collection.find_one(query)
         if sample:
-             # Extract the value used in query to compare
-            query_val = list(query.values())[0] # Simplification assumes single field query
-            
+            # Extract the value used in query to compare
+            query_val = list(query.values())[
+                0
+            ]  # Simplification assumes single field query
+
             # Find the actual field in the doc that corresponds to the query key
             doc_val = sample.get(list(query.keys())[0])
-            
+
             if doc_val != query_val:
-                 print(f"❌ MISMATCH ERROR: Document found in {collection_name} but value {doc_val} != {query_val}")
-                 return 0
+                print(
+                    f"❌ MISMATCH ERROR: Document found in {collection_name} but value {doc_val} != {query_val}"
+                )
+                return 0
 
     if not dry_run and count > 0:
         result = collection.delete_many(query)
@@ -69,8 +83,11 @@ def count_and_delete_mongo(db, collection_name, query, dry_run=False):
         print(f"ℹ️  Found {count} documents in '{collection_name}'")
     return count
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Completely delete a user and all their data.")
+    parser = argparse.ArgumentParser(
+        description="Completely delete a user and all their data."
+    )
     parser.add_argument("email", type=str, help="The email of the user to delete")
     parser.add_argument("--force", action="store_true", help="Skip confirmation prompt")
     args = parser.parse_args()
@@ -108,7 +125,7 @@ def main():
         ("invites", {"email": email}),
         ("message_store", {"SessionId": email}),
         ("ai_insight_cache", {"user_email": email}),
-        ("token_blocklist", {"sub": email})
+        ("token_blocklist", {"sub": email}),
     ]
 
     total_mongo_docs = 0
@@ -125,7 +142,7 @@ def main():
         # Handle dict response (results vs direct list)
         if isinstance(memories, dict):
             memories = memories.get("results", []) or memories.get("memories", [])
-            
+
         print(f"ℹ️  Found {len(memories)} memories in Vector Store")
     except Exception as e:
         print(f"⚠️  Could not fetch memories: {e}")
@@ -159,12 +176,14 @@ def main():
         try:
             # According to Mem0 docs, delete_all(user_id=...) is supported in newer versions.
             # We'll try it first, then fall back to individual deletion.
-            if hasattr(mem0, 'delete_all'):
+            if hasattr(mem0, "delete_all"):
                 mem0.delete_all(user_id=email)
                 print(f"✅ Deleted ALL memories for user_id={email}")
             else:
                 # Fallback: Delete one by one
-                print("ℹ️  'delete_all' method not found, deleting individual memories...")
+                print(
+                    "ℹ️  'delete_all' method not found, deleting individual memories..."
+                )
                 deleted_count = 0
                 for mem in memories:
                     mem_id = mem.get("id")
@@ -176,6 +195,7 @@ def main():
             print(f"❌ Error deleting memories: {e}")
 
     print(f"\n✨ User '{email}' has been completely obliterated from the system.")
+
 
 if __name__ == "__main__":
     main()

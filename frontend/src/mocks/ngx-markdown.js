@@ -14,8 +14,10 @@ class MarkdownModule {
     }
 }
 
+/* global module */
 module.exports = {
   MarkdownService,
   MarkdownComponent,
-  MarkdownModule
+  MarkdownModule,
+  provideMarkdown: () => ({})
 };

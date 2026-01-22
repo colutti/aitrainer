@@ -26,10 +26,10 @@ export class TrainerSettingsComponent implements OnInit {
   }
 
   async loadTrainers(): Promise<void> {
-    console.log('DEBUG: calling loadTrainers');
+    console.warn('DEBUG: calling loadTrainers');
     try {
         const trainers = await this.trainerProfileService.getAvailableTrainers();
-        console.log('DEBUG: trainers loaded', trainers);
+        console.warn('DEBUG: trainers loaded', trainers);
         this.availableTrainers.set(trainers);
     } catch (err) {
         console.error('DEBUG: Failed to load trainers', err);

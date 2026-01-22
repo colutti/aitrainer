@@ -10,10 +10,10 @@ export default defineConfig({
       openMode: 0
     },
     experimentalRetryOnNetworkFailure: false,
-    setupNodeEvents(on, config) {
+    setupNodeEvents(on) {
       on('task', {
         log(message) {
-          console.log(message);
+          console.warn(message);
           return null;
         },
       });

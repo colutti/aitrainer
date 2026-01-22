@@ -18,8 +18,7 @@ import { MarkdownComponent } from 'ngx-markdown';
 import { ViewEncapsulation } from '@angular/core';
 
 import { TrainerProfileService } from '../../services/trainer-profile.service';
-import { UserProfileService } from '../../services/user-profile.service';
-import { TrainerCard } from '../../models/trainer-profile.model';
+import { TrainerCard, TrainerProfile } from '../../models/trainer-profile.model';
 
 @Component({
   selector: 'app-chat',
@@ -99,7 +98,7 @@ import { TrainerCard } from '../../models/trainer-profile.model';
 export class ChatComponent implements OnInit, AfterViewChecked {
   private chatService = inject(ChatService);
   private trainerProfileService = inject(TrainerProfileService);
-  private userProfileService = inject(UserProfileService);
+  // private userProfileService = inject(UserProfileService); // Removed as it was unused
   private cdr = inject(ChangeDetectorRef);
 
   @ViewChild('messageInput') messageInput!: ElementRef<HTMLTextAreaElement>;
@@ -109,7 +108,7 @@ export class ChatComponent implements OnInit, AfterViewChecked {
   isTyping = this.chatService.isTyping;
   
   availableTrainers = signal<TrainerCard[]>([]);
-  trainerProfile = signal<any>(null); // Using any temporarily or better TrainerProfile
+  trainerProfile = signal<TrainerProfile | null>(null);
   
   showScrollButton = signal(false);
   
@@ -134,7 +133,7 @@ export class ChatComponent implements OnInit, AfterViewChecked {
   });
 
   async ngOnInit(): Promise<void> {
-    const [_, trainers, profile] = await Promise.all([
+    const [, trainers, profile] = await Promise.all([
       this.chatService.loadHistory(),
       this.trainerProfileService.getAvailableTrainers(),
       this.trainerProfileService.fetchProfile()

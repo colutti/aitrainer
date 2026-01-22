@@ -62,3 +62,7 @@ Só considere sucesso se ambos retornarem sucesso.
 Se o deploy falhar ou o smoke test quebrar:
 1. Reverter o deploy no Render para a versão anterior via Dashboard ou CLI (`render deploys rollback <service_id>`).
 2. Não fazer rollback no git (`git revert`) sem análise prévia.
+
+## 6. Limpeza
+
+- Limpe arquivos temporais que voce pode ter gerado. Logs, dumps, script de test ou de POCs temporais, etc.

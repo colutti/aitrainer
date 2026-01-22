@@ -97,7 +97,7 @@ export class OnboardingComponent implements OnInit {
       
       // Try to restore from localStorage
       this.restoreFormData();
-    } catch (error) {
+    } catch {
       this.error.set('Erro ao validar convite. Tente novamente.');
     } finally {
       this.isLoading.set(false);
@@ -122,7 +122,7 @@ export class OnboardingComponent implements OnInit {
         delete data.password;
         delete data.confirmPassword;
         this.formData.set({ ...this.formData(), ...data });
-      } catch (e) {
+      } catch {
         // Ignore parse errors
       }
     }
@@ -151,7 +151,7 @@ export class OnboardingComponent implements OnInit {
     }
   }
 
-  updateFormData(field: keyof FormData, value: any) {
+  updateFormData(field: keyof FormData, value: string | number) {
     this.formData.update(data => ({ ...data, [field]: value }));
   }
 
@@ -188,10 +188,11 @@ export class OnboardingComponent implements OnInit {
       window.history.replaceState({}, document.title, window.location.pathname);
       window.location.href = '/'; // Hard redirect to clear all states and enter dashboard
       
-    } catch (error: any) {
-      if (error.status === 410) {
+    } catch (error: unknown) {
+      const err = error as { status?: number };
+      if (err.status === 410) {
         this.error.set('Seu convite expirou. Solicite um novo.');
-      } else if (error.status === 409) {
+      } else if (err.status === 409) {
         this.error.set('Este convite já foi utilizado.');
       } else {
         this.error.set('Erro ao criar conta. Tente novamente.');

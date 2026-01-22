@@ -1,5 +1,5 @@
 # Build stage - instala dependências com build tools
-FROM docker.io/library/python:3.11-slim AS builder
+FROM docker.io/library/python:3.12-slim AS builder
 
 WORKDIR /app
 
@@ -22,7 +22,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Runtime stage - imagem mínima
-FROM docker.io/library/python:3.11-slim
+FROM docker.io/library/python:3.12-slim
 
 WORKDIR /app
 

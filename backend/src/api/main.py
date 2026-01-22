@@ -1,7 +1,9 @@
 """
 This module contains the main FastAPI application.
 """
+
 import warnings
+
 # Suppress known deprecation warnings from libraries (LangChain, websockets, uvicorn)
 warnings.filterwarnings("ignore", message=".*migrating_memory.*")
 warnings.filterwarnings("ignore", message=".*websockets.legacy.*")
@@ -14,7 +16,20 @@ import uvicorn  # noqa: E402
 import os  # noqa: E402
 
 
-from src.api.endpoints import user, message, trainer, memory, workout, stats, nutrition, weight, metabolism, hevy, onboarding, telegram  # noqa: E402
+from src.api.endpoints import (  # noqa: E402
+    user,
+    message,
+    trainer,
+    memory,
+    workout,
+    stats,
+    nutrition,
+    weight,
+    metabolism,
+    hevy,
+    onboarding,
+    telegram,
+)
 from src.core.config import settings  # noqa: E402
 from src.core.deps import get_mongo_database, get_mem0_client  # noqa: E402
 from src.core.logs import logger  # noqa: E402
@@ -26,24 +41,26 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    openapi_url="/openapi.json"
+    openapi_url="/openapi.json",
 )
 
 # Rate limiting setup (only if slowapi is installed)
 if RATE_LIMITING_ENABLED and limiter:
     from slowapi.errors import RateLimitExceeded
+
     app.state.limiter = limiter
-    
+
     @app.exception_handler(RateLimitExceeded)
     async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
         return JSONResponse(
             status_code=429,
-            content={"detail": "Rate limit exceeded. Please try again later."}
+            content={"detail": "Rate limit exceeded. Please try again later."},
         )
+
 
 # CORS middleware for frontend-backend integration
 logger.info(f"Allowed Origins: {settings.ALLOWED_ORIGINS}")
-logger.info(f"Mongo URI: {settings.MONGO_URI.split('@')[-1]}") # Mask password
+logger.info(f"Mongo URI: {settings.MONGO_URI.split('@')[-1]}")  # Mask password
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
@@ -66,36 +83,31 @@ app.include_router(onboarding.router, prefix="/onboarding", tags=["onboarding"])
 app.include_router(telegram.router, prefix="/telegram", tags=["telegram"])
 
 
-
-
-
 @app.get("/health")
 def health_check() -> JSONResponse:
     """
     Health check endpoint to verify service status.
-    
+
     Checks:
     - MongoDB connection
     - Mem0 client availability
-    
+
     Returns:
         JSONResponse: Status of the application and its dependencies.
     """
-    health_status = {
-        "status": "healthy",
-        "services": {}
-    }
-    
+    from typing import Any
+    health_status: dict[str, Any] = {"status": "healthy", "services": {}}
+
     # Check MongoDB
     try:
         db = get_mongo_database()
-        db.client.admin.command('ping')
+        db.client.admin.command("ping")
         health_status["services"]["mongodb"] = "healthy"
     except Exception as e:
         logger.error("MongoDB health check failed: %s", e)
         health_status["status"] = "unhealthy"
         health_status["services"]["mongodb"] = f"unhealthy: {str(e)}"
-    
+
     # Check Mem0
     try:
         mem0 = get_mem0_client()
@@ -109,7 +121,7 @@ def health_check() -> JSONResponse:
         logger.error("Mem0 health check failed: %s", e)
         health_status["status"] = "unhealthy"
         health_status["services"]["mem0"] = f"unhealthy: {str(e)}"
-    
+
     status_code = 200 if health_status["status"] == "healthy" else 503
     return JSONResponse(content=health_status, status_code=status_code)
 
@@ -119,12 +131,10 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", settings.API_SERVER_PORT))
     # RENDER env var is automatically defined on Render
     is_production = os.environ.get("RENDER", "false").lower() == "true"
-    
+
     uvicorn.run(
-        "src.api.main:app", 
-        host="0.0.0.0", 
-        port=port, 
-        reload=not is_production  # reload only locally
+        "src.api.main:app",
+        host="0.0.0.0",
+        port=port,
+        reload=not is_production,  # reload only locally
     )
-
-

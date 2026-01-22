@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, firstValueFrom } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { environment } from '../environment';
 
 export interface OnboardingData {
@@ -40,10 +40,11 @@ export class OnboardingService {
           params: { token }
         })
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle HTTP errors (404, 410, 409)
-      if (error.error?.detail) {
-        return error.error.detail;
+      const err = error as { error?: { detail?: ValidateResponse } };
+      if (err.error?.detail) {
+        return err.error.detail;
       }
       throw error;
     }

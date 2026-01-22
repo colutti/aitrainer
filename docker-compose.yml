@@ -77,7 +77,7 @@ services:
       - aitrainer-network
 
   cypress:
-    image: docker.io/cypress/included:13.6.0
+    image: docker.io/cypress/included:13.13.0
     profiles:
       - test
     depends_on:

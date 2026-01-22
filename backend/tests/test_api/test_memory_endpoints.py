@@ -1,6 +1,7 @@
 """
 This module contains unit tests for the memory API endpoints.
 """
+
 import unittest
 from unittest.mock import MagicMock
 
@@ -14,13 +15,16 @@ from src.core.deps import get_ai_trainer_brain, get_qdrant_client
 
 def mock_unauthenticated_user():
     """Raises HTTPException for unauthenticated user."""
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
+    )
 
 
 class TestMemoryEndpoints(unittest.TestCase):
     """
     Tests for the memory management API endpoints.
     """
+
     # pylint: disable=invalid-name
 
     def setUp(self):
@@ -58,21 +62,21 @@ class TestMemoryEndpoints(unittest.TestCase):
                 "id": "mem_123",
                 "memory": "User prefers morning workouts",
                 "created_at": "2026-01-03T08:00:00Z",
-                "updated_at": None
+                "updated_at": None,
             },
             {
                 "id": "mem_456",
                 "memory": "User has left knee problem",
                 "created_at": "2026-01-02T10:30:00Z",
-                "updated_at": None
-            }
+                "updated_at": None,
+            },
         ]
         mock_brain = self._setup_pagination_mock(memories, total=25)
 
         # Act
         response = self.client.get(
             "/memory/list?page=1&page_size=10",
-            headers={"Authorization": "Bearer test_token"}
+            headers={"Authorization": "Bearer test_token"},
         )
 
         # Assert
@@ -97,7 +101,7 @@ class TestMemoryEndpoints(unittest.TestCase):
                 "id": "mem_789",
                 "memory": "User completed 10 workouts this month",
                 "created_at": "2026-01-01T08:00:00Z",
-                "updated_at": None
+                "updated_at": None,
             }
         ]
         self._setup_pagination_mock(memories, total=25)
@@ -105,7 +109,7 @@ class TestMemoryEndpoints(unittest.TestCase):
         # Act
         response = self.client.get(
             "/memory/list?page=2&page_size=10",
-            headers={"Authorization": "Bearer test_token"}
+            headers={"Authorization": "Bearer test_token"},
         )
 
         # Assert
@@ -125,8 +129,7 @@ class TestMemoryEndpoints(unittest.TestCase):
 
         # Act
         response = self.client.get(
-            "/memory/list",
-            headers={"Authorization": "Bearer test_token"}
+            "/memory/list", headers={"Authorization": "Bearer test_token"}
         )
 
         # Assert
@@ -147,7 +150,7 @@ class TestMemoryEndpoints(unittest.TestCase):
         # Act
         response = self.client.get(
             "/memory/list?page=1&page_size=25",
-            headers={"Authorization": "Bearer test_token"}
+            headers={"Authorization": "Bearer test_token"},
         )
 
         # Assert
@@ -179,14 +182,16 @@ class TestMemoryEndpoints(unittest.TestCase):
         app.dependency_overrides[verify_token] = lambda: user_email
         mock_brain = MagicMock()
         # Mock memory ownership check
-        mock_brain.get_memory_by_id.return_value = {"id": "mem_123", "user_id": user_email}
+        mock_brain.get_memory_by_id.return_value = {
+            "id": "mem_123",
+            "user_id": user_email,
+        }
         mock_brain.delete_memory.return_value = True
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
         # Act
         response = self.client.delete(
-            "/memory/mem_123",
-            headers={"Authorization": "Bearer test_token"}
+            "/memory/mem_123", headers={"Authorization": "Bearer test_token"}
         )
 
         # Assert
@@ -204,18 +209,22 @@ class TestMemoryEndpoints(unittest.TestCase):
         app.dependency_overrides[verify_token] = lambda: user_email
         mock_brain = MagicMock()
         # Memory belongs to SOMEONE ELSE
-        mock_brain.get_memory_by_id.return_value = {"id": "mem_123", "user_id": "other@test.com"}
+        mock_brain.get_memory_by_id.return_value = {
+            "id": "mem_123",
+            "user_id": "other@test.com",
+        }
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
         # Act
         response = self.client.delete(
-            "/memory/mem_123",
-            headers={"Authorization": "Bearer test_token"}
+            "/memory/mem_123", headers={"Authorization": "Bearer test_token"}
         )
 
         # Assert
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.json(), {"detail": "Not authorized to delete this memory"})
+        self.assertEqual(
+            response.json(), {"detail": "Not authorized to delete this memory"}
+        )
         mock_brain.delete_memory.assert_not_called()
 
     def test_delete_memory_not_found(self):
@@ -230,8 +239,7 @@ class TestMemoryEndpoints(unittest.TestCase):
 
         # Act
         response = self.client.delete(
-            "/memory/mem_xxx",
-            headers={"Authorization": "Bearer test_token"}
+            "/memory/mem_xxx", headers={"Authorization": "Bearer test_token"}
         )
 
         # Assert
@@ -260,14 +268,16 @@ class TestMemoryEndpoints(unittest.TestCase):
         user_email = "test@test.com"
         app.dependency_overrides[verify_token] = lambda: user_email
         mock_brain = MagicMock()
-        mock_brain.get_memory_by_id.return_value = {"id": "mem_123", "user_id": user_email}
+        mock_brain.get_memory_by_id.return_value = {
+            "id": "mem_123",
+            "user_id": user_email,
+        }
         mock_brain.delete_memory.side_effect = Exception("Mem0 error")
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
         # Act
         response = self.client.delete(
-            "/memory/mem_123",
-            headers={"Authorization": "Bearer test_token"}
+            "/memory/mem_123", headers={"Authorization": "Bearer test_token"}
         )
 
         # Assert
@@ -277,4 +287,3 @@ class TestMemoryEndpoints(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

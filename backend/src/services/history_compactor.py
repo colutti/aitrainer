@@ -1,11 +1,10 @@
-
 from datetime import datetime
 from src.core.logs import logger
-from src.core.config import settings
 from src.services.database import MongoDatabase
 from src.services.llm_client import LLMClient
 from src.prompts.summary_update_prompt import SUMMARY_UPDATE_PROMPT
 from langchain_core.prompts import PromptTemplate
+
 
 class HistoryCompactor:
     def __init__(self, database: MongoDatabase, llm_client: LLMClient):
@@ -14,11 +13,11 @@ class HistoryCompactor:
 
     async def compact_history(self, user_email: str, active_window_size: int = 40):
         """
-        Identifies old messages outside the active window, summarizes them, 
+        Identifies old messages outside the active window, summarizes them,
         and updates the user's long-term summary.
         """
         logger.info("Running History Compaction for user: %s", user_email)
-        
+
         # 1. Fetch User Profile
         profile = self.db.get_user_profile(user_email)
         if not profile:
@@ -30,14 +29,18 @@ class HistoryCompactor:
         # Assuming database.get_chat_history returns a list of ChatHistory objects
         # sorted by timestamp ASC (oldest first).
         all_messages = self.db.get_chat_history(user_email, limit=1000)
-        
+
         if not all_messages:
             logger.debug("No history to compact.")
             return
 
         total_msgs = len(all_messages)
         if total_msgs <= active_window_size:
-            logger.debug("History size (%d) within active window (%d). Skipping.", total_msgs, active_window_size)
+            logger.debug(
+                "History size (%d) within active window (%d). Skipping.",
+                total_msgs,
+                active_window_size,
+            )
             return
 
         # 3. Identify Candidates for Compaction
@@ -45,7 +48,7 @@ class HistoryCompactor:
         # Candidates = messages[0 : total - window]
         compaction_limit_index = total_msgs - active_window_size
         candidate_messages = all_messages[:compaction_limit_index]
-        
+
         # 4. Filter out already compacted messages based on timestamp
         last_ts_str = profile.last_compaction_timestamp
         last_ts = datetime.min
@@ -63,10 +66,10 @@ class HistoryCompactor:
             try:
                 msg_ts = datetime.fromisoformat(msg_ts_str)
             except (ValueError, TypeError):
-                # If no timestamp, treat as very old or skip? 
+                # If no timestamp, treat as very old or skip?
                 # Let's include if it has content.
                 msg_ts = datetime.min
-            
+
             if msg_ts > last_ts:
                 # This is a new message that needs compaction
                 if msg.sender == "student":
@@ -75,7 +78,7 @@ class HistoryCompactor:
                     sender_label = "Treinador"
                 else:
                     sender_label = "Sistema"
-                    
+
                 line = f"[{msg_ts.strftime('%d/%m %H:%M')}] {sender_label}: {msg.text}"
                 new_lines_to_summarize.append(line)
                 new_last_ts_str = msg_ts_str
@@ -85,25 +88,28 @@ class HistoryCompactor:
             return
 
         logger.info("Compacting %d new messages...", len(new_lines_to_summarize))
-        
+
         # 5. Generate Summary
         current_summary = profile.long_term_summary or ""
         new_lines_text = "\n".join(new_lines_to_summarize)
-        
+
         prompt = PromptTemplate.from_template(SUMMARY_UPDATE_PROMPT)
         # Since we just want a string back, use simple invoke
         # We can use the simple_invoke method if it exists, or stream and join
-        
-        # LLMClient abstraction might need a direct generation method. 
+
+        # LLMClient abstraction might need a direct generation method.
         # Using stream_simple for now and joining.
         response_text = ""
         try:
-             generator = self.llm_client.stream_simple(
-                 prompt_template=prompt,
-                 input_data={"current_summary": current_summary, "new_lines": new_lines_text}
-             )
-             for chunk in generator:
-                 response_text += chunk
+            generator = self.llm_client.stream_simple(
+                prompt_template=prompt,
+                input_data={
+                    "current_summary": current_summary,
+                    "new_lines": new_lines_text,
+                },
+            )
+            for chunk in generator:
+                response_text += chunk
         except Exception as e:
             logger.error("LLM Error during compaction: %s", e)
             return
@@ -116,6 +122,6 @@ class HistoryCompactor:
         # Update profile with new summary and new timestamp
         profile.long_term_summary = response_text.strip()
         profile.last_compaction_timestamp = new_last_ts_str
-        
+
         self.db.save_user_profile(profile)
         logger.info("Compaction complete. Summary updated.")

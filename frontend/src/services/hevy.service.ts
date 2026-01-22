@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, timeout } from 'rxjs';
 import { environment } from '../environment';
 import { HevyStatus } from '../models/integration.model';
+import { ImportResult } from '../models/import-result.model';
 
 @Injectable({
   providedIn: 'root'
@@ -20,7 +21,7 @@ export class HevyService {
   }
 
   async saveConfig(apiKey: string | null | undefined, enabled: boolean): Promise<void> {
-    const payload: any = { enabled };
+    const payload: { enabled: boolean; api_key?: string | null } = { enabled };
     if (apiKey !== undefined) {
       payload.api_key = apiKey;
     }
@@ -31,9 +32,13 @@ export class HevyService {
   }
 
   async getStatus(): Promise<HevyStatus> {
-    const res = await firstValueFrom(this.http.get<any>(`${this.apiUrl}/status`).pipe(timeout(this.TIMEOUT_MS)));
-    // Check if response is null (e.g. 404 handled globally?) 
-    // Backend throws 404 if profile not found, so this promise will reject.
+    interface HevyStatusResponse {
+      enabled: boolean;
+      has_key: boolean;
+      api_key_masked: string;
+      last_sync: string | null;
+    }
+    const res = await firstValueFrom(this.http.get<HevyStatusResponse>(`${this.apiUrl}/status`).pipe(timeout(this.TIMEOUT_MS)));
     return {
         enabled: res.enabled,
         hasKey: res.has_key,
@@ -47,9 +52,9 @@ export class HevyService {
       return res.count;
   }
 
-  async importWorkouts(fromDate: string | null, mode: 'skip_duplicates' | 'overwrite'): Promise<any> {
+  async importWorkouts(fromDate: string | null, mode: 'skip_duplicates' | 'overwrite'): Promise<ImportResult> {
     return firstValueFrom(
-      this.http.post(`${this.apiUrl}/import`, { from_date: fromDate, mode }).pipe(timeout(60000)) // Longer for import
+      this.http.post<ImportResult>(`${this.apiUrl}/import`, { from_date: fromDate, mode }).pipe(timeout(60000)) // Longer for import
     );
   }
 

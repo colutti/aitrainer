@@ -7,13 +7,16 @@ from typing import Generator
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import AIMessage, ToolMessage
-from langgraph.prebuilt import create_react_agent
+from langchain_core.runnables import RunnableConfig
+from langchain.agents import create_agent
+from langgraph.graph.state import CompiledStateGraph
 
 import warnings
+
 # Suppress Pydantic V1/LangSmith warning as we cannot easily upgrade right now
 warnings.filterwarnings("ignore", message=".*Core Pydantic V1 functionality.*")
 
-from src.core.logs import logger
+from src.core.logs import logger  # noqa: E402
 
 
 class LLMClient:
@@ -45,7 +48,9 @@ class LLMClient:
             )
 
         if settings.AI_PROVIDER == "openai":
-            logger.info("Creating OpenAIClient with model: %s", settings.OPENAI_MODEL_NAME)
+            logger.info(
+                "Creating OpenAIClient with model: %s", settings.OPENAI_MODEL_NAME
+            )
             return OpenAIClient(
                 api_key=settings.OPENAI_API_KEY,
                 model=settings.OPENAI_MODEL_NAME,
@@ -65,12 +70,13 @@ class LLMClient:
     ) -> Generator[str | dict, None, None]:
         """
         Invokes the LLM with tool support using LangGraph's ReAct agent.
-        
+
         Yields:
             str: Content chunks during streaming
         """
         logger.info(
-            "Invoking LLM with tools (LangGraph) for input: %s", input_data.get("user_message")
+            "Invoking LLM with tools (LangGraph) for input: %s",
+            input_data.get("user_message"),
         )
 
         try:
@@ -78,15 +84,13 @@ class LLMClient:
             messages = list(prompt_template.format_messages(**input_data))
 
             # Create the ReAct agent
-            agent = create_react_agent(self._llm, tools)
-            
+            agent: CompiledStateGraph = create_agent(self._llm, tools)
+
             # Stream the agent execution with increased recursion limit
             # Default is 25, but complex tool chains may need more
-            config = {"recursion_limit": 50}
+            config: RunnableConfig = {"recursion_limit": 50}
             for event, metadata in agent.stream(
-                {"messages": messages},
-                stream_mode="messages",
-                config=config
+                {"messages": messages}, stream_mode="messages", config=config
             ):
                 # V3: Intercept Tool Outputs (System Feedback)
                 if isinstance(event, ToolMessage):
@@ -95,7 +99,7 @@ class LLMClient:
                         "type": "tool_result",
                         "content": event.content,
                         "tool_name": event.name,
-                        "tool_call_id": event.tool_call_id
+                        "tool_call_id": event.tool_call_id,
                     }
                     continue
 
@@ -185,9 +189,10 @@ class OpenAIClient(LLMClient):
     def __init__(self, api_key: str, model: str, temperature: float):
         """Initialize OpenAI client."""
         from langchain_openai import ChatOpenAI
+        from pydantic import SecretStr
 
         self._llm = ChatOpenAI(
             model=model,
-            api_key=api_key,
+            api_key=SecretStr(api_key) if api_key else SecretStr(""),
             temperature=temperature,
         )

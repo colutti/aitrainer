@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from src.api.models.sender import Sender
 from datetime import datetime, MINYEAR
 
+
 class ChatHistory(BaseModel):
     """
     Represents a single chat message in the history between the user and the AI trainer.
@@ -16,7 +17,9 @@ class ChatHistory(BaseModel):
     sender: Sender
     timestamp: str  # ISO formatted timestamp
     trainer_type: str | None = None  # Track which trainer was active
-    summarized: bool = False  # Track if this message has been included in long-term summary
+    summarized: bool = (
+        False  # Track if this message has been included in long-term summary
+    )
 
     def _get_clean_text(self) -> str:
         """
@@ -81,8 +84,10 @@ class ChatHistory(BaseModel):
                 ChatHistory(
                     text=msg.content,
                     sender=sender,
-                    timestamp=msg.additional_kwargs.get("timestamp", datetime(MINYEAR, 1, 1).isoformat()),
-                    trainer_type=msg.additional_kwargs.get("trainer_type")
+                    timestamp=msg.additional_kwargs.get(
+                        "timestamp", datetime(MINYEAR, 1, 1).isoformat()
+                    ),
+                    trainer_type=msg.additional_kwargs.get("trainer_type"),
                 )
             )
         # order the results by timestamp
@@ -134,7 +139,7 @@ class ChatHistory(BaseModel):
         """
         if not chat_history:
             return empty_message
-        
+
         formatted = []
         for msg in chat_history:
             if msg.sender == Sender.STUDENT:
@@ -151,5 +156,5 @@ class ChatHistory(BaseModel):
                     f"**🏋️ Treinador [PERFIL ANTERIOR: {trainer_name}]** ({msg._get_formatted_timestamp()}):\n"
                     f"> [Contexto] {clean_text}"
                 )
-        
+
         return "\n\n---\n\n".join(formatted)

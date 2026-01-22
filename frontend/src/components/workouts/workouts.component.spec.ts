@@ -3,11 +3,12 @@ import { WorkoutsComponent } from './workouts.component';
 import { WorkoutService } from '../../services/workout.service';
 import { signal } from '@angular/core';
 import { WorkoutDrawerComponent } from './workout-drawer/workout-drawer.component';
+import { Workout } from '../../models/workout.model';
 
 describe('WorkoutsComponent', () => {
   let component: WorkoutsComponent;
   let fixture: ComponentFixture<WorkoutsComponent>;
-  let workoutServiceMock: any;
+  let workoutServiceMock: Partial<WorkoutService>;
 
   beforeEach(async () => {
     workoutServiceMock = {
@@ -17,12 +18,11 @@ describe('WorkoutsComponent', () => {
       totalPages: signal(1),
       totalWorkouts: signal(0),
       selectedType: signal(null),
-      selectedType: signal(null),
       getWorkouts: jest.fn().mockReturnValue(Promise.resolve([])),
       getTypes: jest.fn().mockReturnValue(Promise.resolve([])),
       previousPage: jest.fn(),
       nextPage: jest.fn()
-    };
+    } as unknown as WorkoutService;
 
     await TestBed.configureTestingModule({
       imports: [WorkoutsComponent, WorkoutDrawerComponent],
@@ -46,13 +46,13 @@ describe('WorkoutsComponent', () => {
   });
 
   it('should open drawer when workout selected', () => {
-    const mockWorkout: any = { id: '1', workout_type: 'Push' };
+    const mockWorkout = { id: '1', workout_type: 'Push' } as unknown as Workout;
     component.selectWorkout(mockWorkout);
     expect(component.selectedWorkout()).toEqual(mockWorkout);
   });
 
   it('should close drawer', () => {
-    component.selectedWorkout.set({} as any);
+    component.selectedWorkout.set({} as unknown as Workout);
     component.closeDrawer();
     expect(component.selectedWorkout()).toBeNull();
   });

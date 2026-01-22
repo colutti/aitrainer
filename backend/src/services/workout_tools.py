@@ -73,14 +73,14 @@ def create_save_workout_tool(database, user_email: str):
             for ex in exercises:
                 name = ex.get("name", "Exercício")
                 sets = ex.get("sets", 1)
-                
+
                 # Suporta novo formato (reps_per_set) e formato antigo (reps)
                 reps_per_set = ex.get("reps_per_set")
                 if reps_per_set is None:
                     # Formato antigo: converter reps único para lista
                     reps = ex.get("reps", 1)
                     reps_per_set = [reps] * sets
-                
+
                 # Suporta novo formato (weights_per_set) e formato antigo (weight_kg)
                 weights_per_set = ex.get("weights_per_set")
                 if weights_per_set is None:
@@ -89,7 +89,7 @@ def create_save_workout_tool(database, user_email: str):
                         weights_per_set = [weight_kg] * sets
                     else:
                         weights_per_set = []
-                
+
                 exercise_logs.append(
                     ExerciseLog(
                         name=name,
@@ -113,7 +113,7 @@ def create_save_workout_tool(database, user_email: str):
                 user_email,
                 len(exercise_logs),
                 workout_type,
-                log_date.strftime("%Y-%m-%d")
+                log_date.strftime("%Y-%m-%d"),
             )
             return f"Treino de {log_date.strftime('%d/%m/%Y')} registrado com sucesso! (ID: {workout_id})"
 
@@ -158,19 +158,24 @@ def create_get_workouts_tool(database, user_email: str):
             result = f"Encontrei {len(workouts)} treino(s):\n\n"
             for i, w in enumerate(workouts, 1):
                 date_str = w.date.strftime("%d/%m/%Y %H:%M")
-                
+
                 # Formatar exercícios com detalhes por série
                 ex_details = []
                 for e in w.exercises:
                     # Se todos os reps e pesos são iguais, formato simplificado
                     uniform_reps = all(r == e.reps_per_set[0] for r in e.reps_per_set)
-                    uniform_weights = (not e.weights_per_set or 
-                                     all(w == e.weights_per_set[0] for w in e.weights_per_set))
-                    
+                    uniform_weights = not e.weights_per_set or all(
+                        w == e.weights_per_set[0] for w in e.weights_per_set
+                    )
+
                     if uniform_reps and uniform_weights:
                         # Formato simples: "3x10 Supino @ 80kg"
-                        weight_str = f" @ {e.weights_per_set[0]}kg" if e.weights_per_set else ""
-                        ex_details.append(f"{e.sets}x{e.reps_per_set[0]} {e.name}{weight_str}")
+                        weight_str = (
+                            f" @ {e.weights_per_set[0]}kg" if e.weights_per_set else ""
+                        )
+                        ex_details.append(
+                            f"{e.sets}x{e.reps_per_set[0]} {e.name}{weight_str}"
+                        )
                     else:
                         # Formato detalhado: "Supino: 10@80kg, 10@85kg, 8@85kg"
                         series = []
@@ -180,15 +185,13 @@ def create_get_workouts_tool(database, user_email: str):
                             else:
                                 series.append(f"{reps} reps")
                         ex_details.append(f"{e.name}: {', '.join(series)}")
-                
+
                 exercises = "; ".join(ex_details)
                 duration = f" ({w.duration_minutes}min)" if w.duration_minutes else ""
                 result += f"{i}. [{w.workout_type or 'Treino'}] {date_str}{duration}\n"
                 result += f"   Exercícios: {exercises}\n\n"
 
-            logger.info(
-                "Retrieved %d workouts for user %s", len(workouts), user_email
-            )
+            logger.info("Retrieved %d workouts for user %s", len(workouts), user_email)
             return result
 
         except Exception as e:

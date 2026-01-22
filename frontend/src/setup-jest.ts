@@ -1,11 +1,30 @@
 import 'jest-preset-angular/setup-env/zone';
+import 'jest-canvas-mock';
+import 'jest-canvas-mock';
 
+global.ResizeObserver = class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
+import { TestBed } from '@angular/core/testing';
+import {
+  BrowserDynamicTestingModule,
+  platformBrowserDynamicTesting,
+} from '@angular/platform-browser-dynamic/testing';
+
+TestBed.initTestEnvironment(
+  BrowserDynamicTestingModule,
+  platformBrowserDynamicTesting(),
+);
+
+import { TextEncoder, TextDecoder } from 'util';
+import { ReadableStream, TransformStream } from 'stream/web';
 
 // Mock TextDecoder/Encoder (needed for streaming)
-const { TextEncoder, TextDecoder } = require('util');
-global.TextEncoder = TextEncoder;
-global.TextDecoder = TextDecoder;
+global.TextEncoder = TextEncoder as unknown as typeof global.TextEncoder;
+global.TextDecoder = TextDecoder as unknown as typeof global.TextDecoder;
 
 // Mock Stream API (needed for streaming)
-const { ReadableStream, TransformStream } = require('stream/web');
 Object.assign(global, { ReadableStream, TransformStream });

@@ -70,11 +70,13 @@ class WorkoutLog(BaseModel):
 
 class WorkoutWithId(WorkoutLog):
     """Workout log with MongoDB ID for API responses."""
+
     id: str = Field(..., description="ID do treino no MongoDB")
 
 
 class WorkoutListResponse(BaseModel):
     """Paginated response for workout list API."""
+
     workouts: list[WorkoutWithId]
     total: int
     page: int

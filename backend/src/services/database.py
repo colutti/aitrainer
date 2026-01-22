@@ -1,6 +1,7 @@
 """
 This module contains the database logic for the application.
 """
+
 from datetime import datetime, date
 import pymongo
 from langchain_mongodb.chat_message_histories import MongoDBChatMessageHistory
@@ -20,18 +21,16 @@ from src.api.models.nutrition_log import NutritionLog
 from src.api.models.nutrition_stats import NutritionStats
 
 
-
-
-
 class MongoDatabase:
     """
     This class handles all the database operations.
     """
+
     def __init__(self):
         try:
             self.client = pymongo.MongoClient(settings.MONGO_URI)
             self.database = self.client[settings.DB_NAME]
-            
+
             # Initialize Repositories
             from src.repositories.user_repository import UserRepository
             from src.repositories.trainer_repository import TrainerRepository
@@ -41,7 +40,7 @@ class MongoDatabase:
             from src.repositories.nutrition_repository import NutritionRepository
             from src.repositories.weight_repository import WeightRepository
             from src.repositories.invite_repository import InviteRepository
-            
+
             self.users = UserRepository(self.database)
             self.trainers = TrainerRepository(self.database)
             self.tokens = TokenRepository(self.database)
@@ -51,11 +50,24 @@ class MongoDatabase:
             self.weight = WeightRepository(self.database)
             self.invites = InviteRepository(self.database)
 
-            
             logger.info("Successfully connected to MongoDB.")
-        except pymongo.errors.ConnectionFailure as e: # type: ignore
+        except pymongo.errors.ConnectionFailure as e:  # type: ignore
             logger.error("Failed to connect to MongoDB: %s", e)
             raise
+    def close(self):
+        """
+        Closes the MongoDB connection.
+        """
+        if hasattr(self, "client"):
+            self.client.close()
+            logger.info("MongoDB connection closed.")
+
+    def __del__(self):
+        """
+        Destructor to ensure client is closed.
+        """
+        self.close()
+
 
     def save_user_profile(self, profile: UserProfile):
         return self.users.save_profile(profile)
@@ -124,22 +136,26 @@ class MongoDatabase:
     def save_workout_log(self, workout: WorkoutLog) -> str:
         return self.workouts_repo.save_log(workout)
 
-    def get_workout_logs(
-        self, user_email: str, limit: int = 50
-    ) -> list[WorkoutLog]:
+    def get_workout_logs(self, user_email: str, limit: int = 50) -> list[WorkoutLog]:
         return self.workouts_repo.get_logs(user_email, limit)
 
     def get_workouts_paginated(
-        self, user_email: str, page: int = 1, page_size: int = 10, workout_type: str | None = None
+        self,
+        user_email: str,
+        page: int = 1,
+        page_size: int = 10,
+        workout_type: str | None = None,
     ) -> tuple[list[dict], int]:
-        return self.workouts_repo.get_paginated(user_email, page, page_size, workout_type)
+        return self.workouts_repo.get_paginated(
+            user_email, page, page_size, workout_type
+        )
 
     def get_workout_stats(self, user_email: str) -> WorkoutStats:
         return self.workouts_repo.get_stats(user_email)
 
     def get_workout_types(self, user_email: str) -> list[str]:
         return self.workouts_repo.get_types(user_email)
-        
+
     # ====== NUTRITION REPOSITORY DELEGATION ======
     def ensure_nutrition_indexes(self) -> None:
         return self.nutrition.ensure_indexes()
@@ -156,14 +172,19 @@ class MongoDatabase:
         self, user_email: str, start_date: datetime, end_date: datetime
     ) -> list[NutritionLog]:
         return self.nutrition.get_logs_by_date_range(user_email, start_date, end_date)
-    
+
     def get_nutrition_paginated(
-        self, user_email: str, page: int = 1, page_size: int = 10, days: int | None = None
+        self,
+        user_email: str,
+        page: int = 1,
+        page_size: int = 10,
+        days: int | None = None,
     ) -> tuple[list[dict], int]:
         return self.nutrition.get_paginated(user_email, page, page_size, days)
 
     def get_nutrition_stats(self, user_email: str) -> NutritionStats:
         from src.services.adaptive_tdee import AdaptiveTDEEService
+
         try:
             tdee_service = AdaptiveTDEEService(self)
         except Exception:

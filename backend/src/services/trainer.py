@@ -2,19 +2,29 @@
 This module contains the AI trainer brain, which is responsible for interacting with the LLM.
 """
 
+from typing import Optional
 from datetime import datetime
 from fastapi import BackgroundTasks
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate
-from mem0 import Memory
+from mem0 import Memory  # type: ignore
 
 from src.core.config import settings
 from src.services.database import MongoDatabase
 from src.services.llm_client import LLMClient
 from src.services.history_compactor import HistoryCompactor
-from src.services.workout_tools import create_save_workout_tool, create_get_workouts_tool
-from src.services.nutrition_tools import create_save_nutrition_tool, create_get_nutrition_tool
-from src.services.composition_tools import create_save_composition_tool, create_get_composition_tool
+from src.services.workout_tools import (
+    create_save_workout_tool,
+    create_get_workouts_tool,
+)
+from src.services.nutrition_tools import (
+    create_save_nutrition_tool,
+    create_get_nutrition_tool,
+)
+from src.services.composition_tools import (
+    create_save_composition_tool,
+    create_get_composition_tool,
+)
 from src.core.logs import logger
 from src.api.models.chat_history import ChatHistory
 from src.api.models.user_profile import UserProfile
@@ -22,11 +32,13 @@ from src.api.models.sender import Sender
 from src.api.models.trainer_profile import TrainerProfile
 
 
-def _add_to_mem0_background(memory: Memory, user_email: str, user_input: str, response_text: str):
+def _add_to_mem0_background(
+    memory: Memory, user_email: str, user_input: str, response_text: str
+):
     """
     Background task function to add conversation to Mem0 (long-term memory).
     This runs asynchronously to avoid blocking the response stream.
-    
+
     Args:
         memory (Memory): The Mem0 Memory client instance.
         user_email (str): The user's email.
@@ -40,7 +52,9 @@ def _add_to_mem0_background(memory: Memory, user_email: str, user_input: str, re
             {"role": "assistant", "content": response_text},
         ]
         memory.add(messages, user_id=user_email)
-        logger.info("Successfully added conversation turn to Mem0 for user: %s", user_email)
+        logger.info(
+            "Successfully added conversation turn to Mem0 for user: %s", user_email
+        )
     except Exception as e:
         # Log error but don't crash - Mem0 storage is not critical for user experience
         logger.error("Failed to add memory to Mem0 for user %s: %s", user_email, e)
@@ -54,43 +68,46 @@ class AITrainerBrain:
 
     def _format_date(self, date_str: str) -> str:
         """Helper to format date strings."""
-        if not date_str: return "Data desc."
+        if not date_str:
+            return "Data desc."
         try:
             dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
             return dt.strftime("%d/%m")
         except (ValueError, AttributeError):
             return "Data desc."
 
-    def __init__(
-        self, database: MongoDatabase, llm_client: LLMClient, memory: Memory
-    ):
+    def __init__(self, database: MongoDatabase, llm_client: LLMClient, memory: Memory):
         self._database: MongoDatabase = database
         self._llm_client: LLMClient = llm_client
         self._memory: Memory = memory
         self.compactor = HistoryCompactor(database, llm_client)
 
-    def _get_prompt_template(self, input_data: dict, is_telegram: bool = False) -> ChatPromptTemplate:
+    def _get_prompt_template(
+        self, input_data: dict, is_telegram: bool = False
+    ) -> ChatPromptTemplate:
         """Constructs and returns the chat prompt template."""
         logger.debug("Constructing chat prompt template (is_telegram=%s).", is_telegram)
-        
+
         # Base template from settings
         system_content = settings.PROMPT_TEMPLATE
-        
+
         # 🛡️ DEFENSIVE INJECTION PATTERN (V3 Blindagem)
-        # We move potentially 'dirty' content (with braces {}) to dedicated placeholders 
+        # We move potentially 'dirty' content (with braces {}) to dedicated placeholders
         # to prevent LangChain from interpreting them as template variables.
-        
+
         # 1. Long-Term Summary
         user_profile = input_data.get("user_profile_obj")
         if user_profile and user_profile.long_term_summary:
-            input_data["long_term_summary_section"] = f"\n\n📜 [RESUMO DE LONGO PRAZO]:\n{user_profile.long_term_summary}"
+            input_data["long_term_summary_section"] = (
+                f"\n\n📜 [RESUMO DE LONGO PRAZO]:\n{user_profile.long_term_summary}"
+            )
         else:
             input_data["long_term_summary_section"] = ""
         system_content += "{long_term_summary_section}"
 
         # 2. Recent History & Memories (Already placeholders in settings.PROMPT_TEMPLATE)
         # We ensure they are treated as values, not template parts.
-        
+
         if is_telegram:
             system_content += (
                 "\n\n--- \n"
@@ -102,14 +119,25 @@ class AITrainerBrain:
         prompt_template = ChatPromptTemplate.from_messages(
             [("system", system_content), ("human", "{user_message}")]
         )
-        
+
         # Verify formatting works and log anatomy concisely
         try:
             rendered_prompt = prompt_template.format(**input_data)
-            critical_check = "✅ Presente" if "## 🚨 Fatos Críticos" in rendered_prompt else "❌ Ausente"
-            logger.debug("🛡️ PROMPT ANATOMY CHECK: Critical Section: %s | Total Chars: %d", critical_check, len(rendered_prompt))
+            critical_check = (
+                "✅ Presente"
+                if "## 🚨 Fatos Críticos" in rendered_prompt
+                else "❌ Ausente"
+            )
+            logger.debug(
+                "🛡️ PROMPT ANATOMY CHECK: Critical Section: %s | Total Chars: %d",
+                critical_check,
+                len(rendered_prompt),
+            )
         except KeyError as e:
-            logger.error("🛡️ CRITICAL: KeyError during prompt formation: %s. Likely unescaped braces in data.", e)
+            logger.error(
+                "🛡️ CRITICAL: KeyError during prompt formation: %s. Likely unescaped braces in data.",
+                e,
+            )
             raise
 
         return prompt_template
@@ -128,18 +156,20 @@ class AITrainerBrain:
         """
         logger.debug("Attempting to retrieve chat history for session: %s", session_id)
         return self._database.get_chat_history(session_id)
-    
+
     def _normalize_mem0_results(self, results, source: str) -> list[dict]:
         """Helper to normalize Mem0 results."""
         normalized = []
         data = results.get("results", []) if isinstance(results, dict) else results
         for mem in data:
             if text := mem.get("memory", ""):
-                normalized.append({
-                    "text": text,
-                    "created_at": mem.get("created_at", ""),
-                    "source": source
-                })
+                normalized.append(
+                    {
+                        "text": text,
+                        "created_at": mem.get("created_at", ""),
+                        "source": source,
+                    }
+                )
         return normalized
 
     def _retrieve_critical_facts(self, user_id: str) -> list[dict]:
@@ -151,7 +181,9 @@ class AITrainerBrain:
         results = self._memory.search(user_id=user_id, query=critical_keywords, limit=5)
         return self._normalize_mem0_results(results, source="critical")
 
-    def _retrieve_semantic_memories(self, user_id: str, query: str, limit: int = 5) -> list[dict]:
+    def _retrieve_semantic_memories(
+        self, user_id: str, query: str, limit: int = 5
+    ) -> list[dict]:
         """Busca contexto semântico baseado no input atual."""
         results = self._memory.search(user_id=user_id, query=query, limit=limit)
         return self._normalize_mem0_results(results, source="semantic")
@@ -171,16 +203,16 @@ class AITrainerBrain:
         Returns a structured dictionary to allow explicit prompt placement.
         """
         logger.debug("Retrieving HYBRID memories for user: %s", user_id)
-        
+
         # 1. Critical Facts (Always fetch)
         critical = self._retrieve_critical_facts(user_id)
-        
+
         # 2. Semantic Context (Based on input)
         semantic = self._retrieve_semantic_memories(user_id, user_input)
-        
+
         # 3. Recent (Temporal context)
         recent = self._retrieve_recent_memories(user_id)
-        
+
         # Deduplicate (prefer Critical > Semantic > Recent)
         seen_texts = set()
         unique_critical = []
@@ -188,13 +220,13 @@ class AITrainerBrain:
             if m["text"] not in seen_texts:
                 unique_critical.append(m)
                 seen_texts.add(m["text"])
-                
+
         unique_semantic = []
         for m in semantic:
             if m["text"] not in seen_texts:
                 unique_semantic.append(m)
                 seen_texts.add(m["text"])
-                
+
         unique_recent = []
         for m in recent:
             if m["text"] not in seen_texts:
@@ -204,7 +236,7 @@ class AITrainerBrain:
         return {
             "critical": unique_critical,
             "semantic": unique_semantic,
-            "recent": unique_recent
+            "recent": unique_recent,
         }
 
     def get_user_profile(self, email: str) -> UserProfile | None:
@@ -235,15 +267,29 @@ class AITrainerBrain:
         """Retrieves user profile or creates a default one if not found."""
         profile = self.get_user_profile(user_email)
         if not profile:
-            logger.info("User profile not found, creating default for user: %s", user_email)
+            logger.info(
+                "User profile not found, creating default for user: %s", user_email
+            )
             profile = UserProfile(
                 email=user_email,
+                password_hash=None,
                 gender="Masculino",
                 age=30,
                 weight=70.0,
                 height=175,
                 goal="Melhorar condicionamento",
-                goal_type="maintain"
+                goal_type="maintain",
+                # Mandatory fields for Mypy
+                target_weight=None,
+                weekly_rate=0.5,
+                notes=None,
+                long_term_summary=None,
+                last_compaction_timestamp=None,
+                hevy_api_key=None,
+                hevy_enabled=False,
+                hevy_last_sync=None,
+                hevy_webhook_token=None,
+                hevy_webhook_secret=None,
             )
             self.save_user_profile(profile)
         return profile
@@ -252,18 +298,21 @@ class AITrainerBrain:
         """Retrieves trainer profile or creates a default one if not found."""
         trainer_profile_obj = self._database.get_trainer_profile(user_email)
         if not trainer_profile_obj:
-            logger.info("Trainer profile not found, creating default for user: %s", user_email)
+            logger.info(
+                "Trainer profile not found, creating default for user: %s", user_email
+            )
             trainer_profile_obj = TrainerProfile(
-                user_email=user_email,
-                trainer_type="atlas"
+                user_email=user_email, trainer_type="atlas"
             )
             self.save_trainer_profile(trainer_profile_obj)
         return trainer_profile_obj
 
-    def _add_to_mongo_history(self, user_email: str, user_input: str, response_text: str, trainer_type: str):
+    def _add_to_mongo_history(
+        self, user_email: str, user_input: str, response_text: str, trainer_type: str
+    ):
         """
         Adds the user input and AI response to MongoDB chat history (synchronous).
-        
+
         Args:
             user_email (str): The user's email.
             user_input (str): The user's input message.
@@ -272,16 +321,26 @@ class AITrainerBrain:
         """
         now = datetime.now().isoformat()
         user_message = ChatHistory(
-            sender=Sender.STUDENT, text=user_input, timestamp=now, trainer_type=trainer_type
+            sender=Sender.STUDENT,
+            text=user_input,
+            timestamp=now,
+            trainer_type=trainer_type,
         )
         ai_message = ChatHistory(
-            sender=Sender.TRAINER, text=response_text, timestamp=now, trainer_type=trainer_type
+            sender=Sender.TRAINER,
+            text=response_text,
+            timestamp=now,
+            trainer_type=trainer_type,
         )
 
         # Save to MongoDB (Session History) - synchronous
         self._database.add_to_history(user_message, user_email, trainer_type)
         self._database.add_to_history(ai_message, user_email, trainer_type)
-        logger.info("Successfully saved conversation to MongoDB for user: %s (trainer: %s)", user_email, trainer_type)
+        logger.info(
+            "Successfully saved conversation to MongoDB for user: %s (trainer: %s)",
+            user_email,
+            trainer_type,
+        )
 
     def _add_system_message_to_history(self, user_email: str, content: str):
         """
@@ -289,9 +348,7 @@ class AITrainerBrain:
         """
         now = datetime.now().isoformat()
         # System messages don't need trainer_type
-        system_msg = ChatHistory(
-            sender=Sender.SYSTEM, text=content, timestamp=now
-        )
+        system_msg = ChatHistory(sender=Sender.SYSTEM, text=content, timestamp=now)
         self._database.add_to_history(system_msg, user_email)
         logger.debug("Saved SYSTEM message to history: %s", content)
 
@@ -310,12 +367,12 @@ class AITrainerBrain:
         """
         if not messages:
             return "Nenhuma mensagem anterior."
-        
+
         formatted = []
         for msg in messages:
             # Extract timestamp if available
             timestamp_str = ""
-            if hasattr(msg, 'additional_kwargs') and msg.additional_kwargs:
+            if hasattr(msg, "additional_kwargs") and msg.additional_kwargs:
                 ts = msg.additional_kwargs.get("timestamp", "")
                 if ts:
                     try:
@@ -323,26 +380,28 @@ class AITrainerBrain:
                         timestamp_str = f"[{dt.strftime('%d/%m %H:%M')}] "
                     except (ValueError, TypeError):
                         pass
-            
+
             # Clean message content - single line
             raw_content = msg.content if msg.content else ""
             if not isinstance(raw_content, str):
                 raw_content = str(raw_content)
             content = " ".join(raw_content.split())
-            
+
             # Check message type
             # In V3, system messages can be tool results or summaries
-            is_system = hasattr(msg, 'type') and msg.type == "system"
-            
+            is_system = hasattr(msg, "type") and msg.type == "system"
+
             if is_system:
                 if "📜 [RESUMO]" in content:
-                    formatted.append(content) # Already formatted summary line
+                    formatted.append(content)  # Already formatted summary line
                 else:
                     formatted.append(f"{timestamp_str}⚙️ SISTEMA (Log): {content}")
             elif isinstance(msg, HumanMessage):
                 formatted.append(f"{timestamp_str}🧑 Aluno: {content}")
             elif isinstance(msg, AIMessage):
-                trainer_type = msg.additional_kwargs.get("trainer_type", current_trainer_type)
+                trainer_type = msg.additional_kwargs.get(
+                    "trainer_type", current_trainer_type
+                )
                 if trainer_type == current_trainer_type:
                     formatted.append(f"{timestamp_str}🏋️ VOCÊ (Treinador): {content}")
                 else:
@@ -352,11 +411,15 @@ class AITrainerBrain:
             else:
                 # Fallback for unknown message types
                 formatted.append(f"{timestamp_str}> {content}")
-        
-        return "\n".join(formatted)
+
+        return "\n".join([str(item) for item in formatted])
 
     def send_message_ai(
-        self, user_email: str, user_input: str, background_tasks: BackgroundTasks = None, is_telegram: bool = False
+        self,
+        user_email: str,
+        user_input: str,
+        background_tasks: Optional[BackgroundTasks] = None,
+        is_telegram: bool = False,
     ):
         """
         Generates LLM response, summarizing history if needed.
@@ -382,25 +445,25 @@ class AITrainerBrain:
 
         # Retrieve Hybrid Memories
         hybrid_memories = self._retrieve_hybrid_memories(user_input, user_email)
-        
+
         # Format memories into sections for the prompt
         # TODO: Move this formatting logic to Prompt Template in Phase 2
         memory_sections = []
-        
+
         if hybrid_memories["critical"]:
             sec = ["## 🚨 Fatos Críticos (ATENÇÃO MÁXIMA):"]
             for mem in hybrid_memories["critical"]:
                 dt = self._format_date(mem.get("created_at"))
                 sec.append(f"- ⚠️ ({dt}) {mem['text']}")
             memory_sections.append("\n".join(sec))
-            
+
         if hybrid_memories["semantic"]:
             sec = ["## 🧠 Contexto Relacionado:"]
             for mem in hybrid_memories["semantic"]:
                 dt = self._format_date(mem.get("created_at"))
                 sec.append(f"- ({dt}) {mem['text']}")
             memory_sections.append("\n".join(sec))
-            
+
         if hybrid_memories["recent"]:
             sec = ["## 📅 Fatos Recentes:"]
             for mem in hybrid_memories["recent"]:
@@ -408,21 +471,25 @@ class AITrainerBrain:
                 sec.append(f"- ({dt}) {mem['text']}")
             memory_sections.append("\n".join(sec))
 
-        relevant_memories_str = "\n\n".join(memory_sections) if memory_sections else "Nenhum conhecimento prévio relevante encontrado."
+        relevant_memories_str = (
+            "\n\n".join(memory_sections)
+            if memory_sections
+            else "Nenhum conhecimento prévio relevante encontrado."
+        )
 
         current_trainer_type = trainer_profile_obj.trainer_type or "atlas"
-        
+
         # Get conversation memory with fixed window (V3 Strategy)
         # We rely on HistoryCompactor for long-term summarization, so we only need recent history here.
         conversation_memory = self._database.get_window_memory(
             session_id=user_email,
-            k=settings.MAX_SHORT_TERM_MEMORY_MESSAGES, # Typically 20-40 matches
+            k=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,  # Typically 20-40 matches
         )
-        
+
         # Load memory variables (includes summary + recent messages if buffer exceeded)
         memory_vars = conversation_memory.load_memory_variables({})
         chat_history_messages = memory_vars.get("chat_history", [])
-        
+
         # Format messages with trainer context
         chat_history_summary = self._format_memory_messages(
             chat_history_messages,
@@ -436,50 +503,63 @@ class AITrainerBrain:
         input_data = {
             "trainer_profile": trainer_profile_summary,
             "user_profile": user_profile_summary,
-            "user_profile_obj": profile, # Passed for prompt template extraction
+            "user_profile_obj": profile,  # Passed for prompt template extraction
             "relevant_memories": relevant_memories_str,
             "chat_history_summary": chat_history_summary,
             "user_message": user_input,
         }
 
         prompt_template = self._get_prompt_template(input_data, is_telegram=is_telegram)
-        
+
         # Create workout tracking tools with injected dependencies
         save_workout_tool = create_save_workout_tool(self._database, user_email)
         get_workouts_tool = create_get_workouts_tool(self._database, user_email)
-        
+
         # Create nutrition tracking tools
         save_nutrition_tool = create_save_nutrition_tool(self._database, user_email)
         get_nutrition_tool = create_get_nutrition_tool(self._database, user_email)
-        
+
         # Create composition tracking tools
         save_composition_tool = create_save_composition_tool(self._database, user_email)
         get_composition_tool = create_get_composition_tool(self._database, user_email)
-        
+
         # Create Hevy tools
         from src.services.hevy_tools import (
             create_list_hevy_routines_tool,
             create_create_hevy_routine_tool,
             create_update_hevy_routine_tool,
-            create_search_hevy_exercises_tool
+            create_search_hevy_exercises_tool,
         )
         from src.services.hevy_service import HevyService
+
         hevy_service = HevyService(workout_repository=self._database.workouts_repo)
-        
-        list_hevy_routines_tool = create_list_hevy_routines_tool(hevy_service, self._database, user_email)
-        create_hevy_routine_tool = create_create_hevy_routine_tool(hevy_service, self._database, user_email)
-        update_hevy_routine_tool = create_update_hevy_routine_tool(hevy_service, self._database, user_email)
-        search_hevy_exercises_tool = create_search_hevy_exercises_tool(hevy_service, self._database, user_email)
-        
+
+        list_hevy_routines_tool = create_list_hevy_routines_tool(
+            hevy_service, self._database, user_email
+        )
+        create_hevy_routine_tool = create_create_hevy_routine_tool(
+            hevy_service, self._database, user_email
+        )
+        update_hevy_routine_tool = create_update_hevy_routine_tool(
+            hevy_service, self._database, user_email
+        )
+        search_hevy_exercises_tool = create_search_hevy_exercises_tool(
+            hevy_service, self._database, user_email
+        )
+
         # Create profile management tools
-        from src.services.profile_tools import create_get_user_goal_tool, create_update_user_goal_tool
+        from src.services.profile_tools import (
+            create_get_user_goal_tool,
+            create_update_user_goal_tool,
+        )
+
         get_user_goal_tool = create_get_user_goal_tool(self._database, user_email)
         update_user_goal_tool = create_update_user_goal_tool(self._database, user_email)
-        
+
         tools = [
-            save_workout_tool, 
-            get_workouts_tool, 
-            save_nutrition_tool, 
+            save_workout_tool,
+            get_workouts_tool,
+            save_nutrition_tool,
             get_nutrition_tool,
             save_composition_tool,
             get_composition_tool,
@@ -488,9 +568,9 @@ class AITrainerBrain:
             update_hevy_routine_tool,
             search_hevy_exercises_tool,
             get_user_goal_tool,
-            update_user_goal_tool
+            update_user_goal_tool,
         ]
-        
+
         full_response = []
         for chunk in self._llm_client.stream_with_tools(
             prompt_template=prompt_template, input_data=input_data, tools=tools
@@ -500,23 +580,30 @@ class AITrainerBrain:
                 tool_name = chunk.get("tool_name")
                 content = chunk.get("content")
                 # Create a concise log for the system
-                log_msg = f"✅ Tool '{tool_name}' executed. Result: {str(content)[:200]}"
+                log_msg = (
+                    f"✅ Tool '{tool_name}' executed. Result: {str(content)[:200]}"
+                )
                 self._add_system_message_to_history(user_email, log_msg)
                 continue
 
             # It's a string chunk (AI Response)
-            full_response.append(chunk)
+            if isinstance(chunk, str):
+                full_response.append(chunk)
             yield chunk
 
         final_response = "".join(full_response)
         # Flatten response for single-line logging
         flat_response = final_response.replace("\n", "\\n")
-        log_response = (flat_response[:500] + "...") if len(flat_response) > 500 else flat_response
+        log_response = (
+            (flat_response[:500] + "...") if len(flat_response) > 500 else flat_response
+        )
         logger.debug("LLM responded with: %s", log_response)
 
         # Save to MongoDB synchronously
-        self._add_to_mongo_history(user_email, user_input, final_response, current_trainer_type)
-        
+        self._add_to_mongo_history(
+            user_email, user_input, final_response, current_trainer_type
+        )
+
         if background_tasks:
             # We removed the restriction 'if not write_tool_was_called' because mixed messages
             # (e.g. "updated goal AND have allergy") were causing critical facts (allergy) to be lost.
@@ -526,17 +613,19 @@ class AITrainerBrain:
                 memory=self._memory,
                 user_email=user_email,
                 user_input=user_input,
-                response_text=final_response
+                response_text=final_response,
             )
-            
+
             # V3: Schedule History Compaction
             background_tasks.add_task(
-                 self.compactor.compact_history,
-                 user_email=user_email,
-                 active_window_size=settings.MAX_SHORT_TERM_MEMORY_MESSAGES # e.g. 40
+                self.compactor.compact_history,
+                user_email=user_email,
+                active_window_size=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,  # e.g. 40
             )
-            
-            logger.info("Scheduled background tasks (Mem0 + Compactor) for user: %s", user_email)
+
+            logger.info(
+                "Scheduled background tasks (Mem0 + Compactor) for user: %s", user_email
+            )
 
     def send_message_sync(
         self, user_email: str, user_input: str, is_telegram: bool = False
@@ -545,29 +634,30 @@ class AITrainerBrain:
         Synchronous version of send_message_ai for Telegram.
         Returns complete response instead of streaming.
         Also saves to MongoDB history.
-        
+
         Args:
             user_email: User's email address.
             user_input: User's message text.
-            
+
         Returns:
             Complete AI response as string.
         """
         # Collect all chunks from the generator
         response_parts = []
-        
+
         # Create a dummy BackgroundTasks for the generator
         from fastapi import BackgroundTasks
+
         background_tasks = BackgroundTasks()
-        
+
         for chunk in self.send_message_ai(
             user_email=user_email,
             user_input=user_input,
             background_tasks=background_tasks,
-            is_telegram=is_telegram
+            is_telegram=is_telegram,
         ):
             response_parts.append(chunk)
-        
+
         return "".join(response_parts)
 
     def generate_insight_stream(self, user_email: str, weeks: int = 3):
@@ -575,36 +665,42 @@ class AITrainerBrain:
         Generates a focused AI insight about metabolism using RAW data.
         Streams the response.
         """
-        logger.info("Generating metabolism insight stream for user: %s (weeks=%d)", user_email, weeks)
-        
+        logger.info(
+            "Generating metabolism insight stream for user: %s (weeks=%d)",
+            user_email,
+            weeks,
+        )
+
         from src.services.metabolism_cache import MetabolismInsightCache
         from src.services.raw_metabolism_data import RawMetabolismDataService
-        
+
         cache = MetabolismInsightCache(self._database)
         raw_service = RawMetabolismDataService(self._database)
-        
+
         # 1. Fetch Raw Data
         data = raw_service.get_raw_data_for_insight(user_email, lookback_weeks=weeks)
-        weight_logs = data["weight_logs"]
-        nutrition_logs = data["nutrition_logs"]
-        profile = data["user_profile"]
-        
+        weight_logs = data.weight_logs
+        nutrition_logs = data.nutrition_logs
+        profile = data.user_profile
+
         if not profile:
             profile = self._get_or_create_user_profile(user_email)
 
         trainer_profile_obj = self._get_or_create_trainer_profile(user_email)
         trainer_summary = trainer_profile_obj.get_trainer_profile_summary()
         current_trainer_type = trainer_profile_obj.trainer_type or "atlas"
-        
+
         # Prepare User Goal Dict for Cache Key
         user_goal = {
             "goal_type": profile.goal_type,
             "weekly_rate": profile.weekly_rate,
-            "target_weight": profile.target_weight
+            "target_weight": profile.target_weight,
         }
-        
+
         # 2. Check Cache with NEW Strategy
-        cached_insight = cache.get(user_email, weight_logs, nutrition_logs, user_goal, current_trainer_type)
+        cached_insight = cache.get(
+            user_email, weight_logs, nutrition_logs, user_goal, current_trainer_type
+        )
         if cached_insight:
             yield cached_insight
             return
@@ -636,22 +732,32 @@ Analise os dados brutos de PESO e DIETA fornecidos pelo aluno e dê sua **OPINI�
 """
 
         # 4. Construct User Prompt (Raw Data)
-        start_date_str = data["period"]["start_date"].strftime("%d/%m")
-        end_date_str = data["period"]["end_date"].strftime("%d/%m")
-        
+        start_date_str = data.period.start_date.strftime("%d/%m")
+        end_date_str = data.period.end_date.strftime("%d/%m")
+
         # Limit tables to reasonable size (e.g. 30 most recent rows) to avoid context overflow
         # Logs are already sorted ascending, so take last 30
         clipped_weight_logs = weight_logs[-30:]
         clipped_nutrition_logs = nutrition_logs[-30:]
-        
+
         weight_table = raw_service.format_weight_logs_table(clipped_weight_logs)
-        nutrition_table = raw_service.format_nutrition_logs_table(clipped_nutrition_logs)
-        
-        goal_labels = {"lose": "Perder peso", "gain": "Ganhar massa", "maintain": "Manter peso"}
+        nutrition_table = raw_service.format_nutrition_logs_table(
+            clipped_nutrition_logs
+        )
+
+        goal_labels = {
+            "lose": "Perder peso",
+            "gain": "Ganhar massa",
+            "maintain": "Manter peso",
+        }
         goal_label = goal_labels.get(profile.goal_type, profile.goal_type)
-        
-        target_weight_Line = f"- **Peso meta:** {profile.target_weight} kg" if profile.target_weight else ""
-        
+
+        target_weight_Line = (
+            f"- **Peso meta:** {profile.target_weight} kg"
+            if profile.target_weight
+            else ""
+        )
+
         user_prompt_content = f"""## 🎯 Meu Objetivo
 - **Objetivo:** {goal_label}
 - **Taxa desejada:** {profile.weekly_rate} kg/semana
@@ -670,28 +776,36 @@ Analise os dados brutos de PESO e DIETA fornecidos pelo aluno e dê sua **OPINI�
 Analise meus dados e me dê seu feedback como treinador.
 """
 
-        prompt_template = ChatPromptTemplate.from_messages([
-            ("system", system_prompt),
-            ("human", "{user_prompt_content}")
-        ])
-        
+        prompt_template = ChatPromptTemplate.from_messages(
+            [("system", system_prompt), ("human", "{user_prompt_content}")]
+        )
+
         input_data = {"user_prompt_content": user_prompt_content}
-        
+
         # Log the full prompt in a single line for easy reading in server logs
         # Replace newlines with spaces to prevent log splitting
-        clean_system = system_prompt.replace('\n', ' ')
-        clean_user = user_prompt_content.replace('\n', ' ')
-        
-        logger.info(f"📤 INSIGHT PROMPT ENVIADO | SYSTEM: {clean_system} | USER: {clean_user}")
-        
+        clean_system = system_prompt.replace("\n", " ")
+        clean_user = user_prompt_content.replace("\n", " ")
+
+        logger.info(
+            f"📤 INSIGHT PROMPT ENVIADO | SYSTEM: {clean_system} | USER: {clean_user}"
+        )
+
         # 5. Stream & Collect for Cache
         full_content = []
         for chunk in self._llm_client.stream_simple(prompt_template, input_data):
             full_content.append(chunk)
             yield chunk
-            
+
         # 6. Save to Cache
-        cache.set(user_email, weight_logs, nutrition_logs, user_goal, current_trainer_type, "".join(full_content))
+        cache.set(
+            user_email,
+            weight_logs,
+            nutrition_logs,
+            user_goal,
+            current_trainer_type,
+            "".join(full_content),
+        )
 
     def get_all_memories(self, user_id: str, limit: int = 50) -> list[dict]:
         """
@@ -708,21 +822,29 @@ Analise meus dados e me dê seu feedback como treinador.
         try:
             result = self._memory.get_all(user_id=user_id)
             logger.debug("Raw Mem0 get_all response type: %s", type(result))
-            
+
             # Debug: log actual response structure
             if isinstance(result, dict):
                 logger.debug("Mem0 response keys: %s", result.keys())
                 logger.debug("Mem0 full response: %s", result)
 
-            memories = result if isinstance(result, list) else result.get("memories", result.get("results", []))
-            logger.info("Retrieved %d memories from Mem0 for user: %s", len(memories), user_id)
-
+            memories = (
+                result
+                if isinstance(result, list)
+                else result.get("memories", result.get("results", []))
+            )
+            logger.info(
+                "Retrieved %d memories from Mem0 for user: %s", len(memories), user_id
+            )
 
             # Sort by created_at descending (newest first) and limit
             memories.sort(key=lambda x: x.get("created_at", ""), reverse=True)
             limited_memories = memories[:limit]
 
-            logger.debug("Returning %d memories after sorting and limiting", len(limited_memories))
+            logger.debug(
+                "Returning %d memories after sorting and limiting",
+                len(limited_memories),
+            )
             return limited_memories
         except Exception as e:
             logger.error("Failed to retrieve memories for user %s: %s", user_id, e)
@@ -750,10 +872,10 @@ Analise meus dados e me dê seu feedback como treinador.
     def get_memory_by_id(self, memory_id: str) -> dict | None:
         """
         Retrieves a specific memory by ID.
-        
+
         Args:
             memory_id (str): The unique ID of the memory.
-            
+
         Returns:
             dict | None: The memory object if found, otherwise None.
         """
@@ -769,7 +891,7 @@ Analise meus dados e me dê seu feedback como treinador.
         page: int,
         page_size: int,
         qdrant_client,
-        collection_name: str
+        collection_name: str,
     ) -> tuple[list[dict], int]:
         """
         Retrieves memories for a user with pagination via Qdrant scroll.
@@ -788,7 +910,9 @@ Analise meus dados e me dê seu feedback como treinador.
 
         logger.info(
             "Retrieving paginated memories for user: %s (page: %d, size: %d)",
-            user_id, page, page_size
+            user_id,
+            page,
+            page_size,
         )
 
         try:
@@ -796,16 +920,14 @@ Analise meus dados e me dê seu feedback como treinador.
             user_filter = qdrant_models.Filter(
                 must=[
                     qdrant_models.FieldCondition(
-                        key="user_id",
-                        match=qdrant_models.MatchValue(value=user_id)
+                        key="user_id", match=qdrant_models.MatchValue(value=user_id)
                     )
                 ]
             )
 
             # Get total count for this user
             count_result = qdrant_client.count(
-                collection_name=collection_name,
-                count_filter=user_filter
+                collection_name=collection_name, count_filter=user_filter
             )
             total = count_result.count
             logger.debug("Total memories for user %s: %d", user_id, total)
@@ -828,7 +950,7 @@ Analise meus dados e me dê seu feedback como treinador.
                     scroll_filter=user_filter,
                     limit=100,  # Fetch in batches
                     offset=next_offset,
-                    with_payload=True
+                    with_payload=True,
                 )
                 all_points.extend(points)
                 if next_offset is None:
@@ -837,29 +959,36 @@ Analise meus dados e me dê seu feedback como treinador.
             # Sort by created_at descending (newest first)
             all_points.sort(
                 key=lambda p: p.payload.get("created_at", "") if p.payload else "",
-                reverse=True
+                reverse=True,
             )
 
             # Apply pagination
-            paginated_points = all_points[offset:offset + page_size]
+            paginated_points = all_points[offset : offset + page_size]
 
             # Convert to memory dictionaries
             memories = []
             for point in paginated_points:
                 payload = point.payload or {}
-                memories.append({
-                    "id": payload.get("id", str(point.id)),
-                    "memory": payload.get("memory", payload.get("data", "")),
-                    "created_at": payload.get("created_at"),
-                    "updated_at": payload.get("updated_at"),
-                })
+                memories.append(
+                    {
+                        "id": payload.get("id", str(point.id)),
+                        "memory": payload.get("memory", payload.get("data", "")),
+                        "created_at": payload.get("created_at"),
+                        "updated_at": payload.get("updated_at"),
+                    }
+                )
 
             logger.info(
                 "Returning %d memories for user %s (page %d of %d)",
-                len(memories), user_id, page, (total + page_size - 1) // page_size
+                len(memories),
+                user_id,
+                page,
+                (total + page_size - 1) // page_size,
             )
             return memories, total
 
         except Exception as e:
-            logger.error("Failed to retrieve paginated memories for user %s: %s", user_id, e)
+            logger.error(
+                "Failed to retrieve paginated memories for user %s: %s", user_id, e
+            )
             raise

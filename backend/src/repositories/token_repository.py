@@ -2,6 +2,7 @@ from datetime import datetime
 from pymongo.database import Database
 from src.repositories.base import BaseRepository
 
+
 class TokenRepository(BaseRepository):
     def __init__(self, database: Database):
         super().__init__(database, "token_blocklist")
@@ -19,7 +20,5 @@ class TokenRepository(BaseRepository):
         return result is not None
 
     def ensure_indexes(self) -> None:
-        self.collection.create_index(
-            "expires_at", expireAfterSeconds=0
-        )
+        self.collection.create_index("expires_at", expireAfterSeconds=0)
         self.logger.info("Blocklist TTL index ensured.")

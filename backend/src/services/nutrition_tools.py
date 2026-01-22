@@ -30,15 +30,15 @@ def create_save_nutrition_tool(database, user_email: str):
         sugar_grams: float | None = None,
         sodium_mg: float | None = None,
         cholesterol_mg: float | None = None,
-        date: str | None = None, 
+        date: str | None = None,
     ) -> str:
         """
         Salva o resumo nutricional DIÁRIO do aluno.
         Geralmente usado quando o aluno reporta o que comeu no dia (ex: dados do MyFitnessPal).
         Se já existe log para a data, ATUALIZA os dados (upsert).
-        
+
         EXTRAIA os TOTAIS do texto do aluno (linha "TOTAIS" se for tabela).
-        
+
         Args:
             calories (int): Calorias totais (kcal).
             protein_grams (float): Proteínas totais (g).
@@ -49,7 +49,7 @@ def create_save_nutrition_tool(database, user_email: str):
             sodium_mg (float, opcional): Sódio total (mg).
             cholesterol_mg (float, opcional): Colesterol total (mg).
             date (str, opcional): Data no formato ISO (YYYY-MM-DD). Se omitido, usa hoje.
-        
+
         Returns:
             Confirmação de que o log foi salvo/atualizado.
         """
@@ -74,14 +74,15 @@ def create_save_nutrition_tool(database, user_email: str):
                 sugar_grams=sugar_grams,
                 sodium_mg=sodium_mg,
                 cholesterol_mg=cholesterol_mg,
-                source="chat"
+                source="chat",
+                notes=None,
             )
 
             doc_id, is_new = database.save_nutrition_log(log)
-            
+
             action = "criado" if is_new else "atualizado"
             date_str = log_date.strftime("%d/%m/%Y")
-            
+
             logger.info(
                 "Nutrition log %s for user %s on %s", action, user_email, date_str
             )
@@ -89,7 +90,9 @@ def create_save_nutrition_tool(database, user_email: str):
 
         except Exception as e:
             logger.error("Failed to save nutrition log for user %s: %s", user_email, e)
-            return "Erro ao salvar log nutricional. Verifique os dados e tente novamente."
+            return (
+                "Erro ao salvar log nutricional. Verifique os dados e tente novamente."
+            )
 
     return save_daily_nutrition
 
@@ -125,9 +128,9 @@ def create_get_nutrition_tool(database, user_email: str):
                     micros.append(f"Fibras: {log.fiber_grams}g")
                 if log.sodium_mg:
                     micros.append(f"Sódio: {log.sodium_mg}mg")
-                
+
                 micros_str = f" | {', '.join(micros)}" if micros else ""
-                
+
                 result += (
                     f"📅 {date_str}: {log.calories} kcal\n"
                     f"   P: {log.protein_grams}g | C: {log.carbs_grams}g | G: {log.fat_grams}g{micros_str}\n\n"
@@ -136,7 +139,9 @@ def create_get_nutrition_tool(database, user_email: str):
             return result
 
         except Exception as e:
-            logger.error("Failed to get nutrition history for user %s: %s", user_email, e)
+            logger.error(
+                "Failed to get nutrition history for user %s: %s", user_email, e
+            )
             return "Erro ao buscar histórico nutricional."
 
     return get_nutrition

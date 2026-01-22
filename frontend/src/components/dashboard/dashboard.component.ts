@@ -6,9 +6,10 @@ import { NutritionService } from '../../services/nutrition.service';
 import { MetabolismService } from '../../services/metabolism.service';
 import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import { VolumeStat } from '../../models/stats.model';
-
-import { WeightWidgetComponent } from './weight-widget/weight-widget.component';
+import { WeightLog } from '../../models/weight-log.model';
 import { WeightService } from '../../services/weight.service';
+import { MetabolismResponse } from '../../models/metabolism.model';
+import { NutritionStats } from '../../models/nutrition.model';
 
 @Component({
   selector: 'app-dashboard',
@@ -24,8 +25,8 @@ export class DashboardComponent implements OnInit {
   
   stats = this.statsService.stats;
   nutritionStats = this.nutritionService.stats;
-  metabolismStats = signal<any>(null);
-  latestComposition = signal<any>(null);
+  metabolismStats = signal<MetabolismResponse | null>(null);
+  latestComposition = signal<WeightLog | null>(null);
   
   isLoading = this.statsService.isLoading;
   isMetabolismLoading = signal<boolean>(false);
@@ -102,14 +103,14 @@ export class DashboardComponent implements OnInit {
   };
 
   // --- Macros Doughnut Chart ---
-  public doughnutChartOptions: ChartConfiguration['options'] = {
+  public doughnutChartOptions: ChartConfiguration<'doughnut'>['options'] = {
     responsive: true,
     maintainAspectRatio: false,
     cutout: '75%',
     plugins: { legend: { display: false }, tooltip: { enabled: true } }
-  } as any; // Cast to any to allow 'cutout' which is valid for Doughnut but strict typing might miss it in generic Options
+  };
   public doughnutChartType: ChartType = 'doughnut';
-  public doughnutChartData: ChartData<'doughnut'> = {
+  public doughnutChartData: ChartData<'doughnut', number[]> = {
     labels: ['Proteína', 'Carbs', 'Gordura'],
     datasets: [{ 
        data: [0, 0, 0], 
@@ -280,9 +281,7 @@ export class DashboardComponent implements OnInit {
 
   getSparklinePath(): string {
     const s = this.metabolismStats();
-    if (!s || !s.weight_trend || s.weight_trend.length < 2) return '';
-    
-    const weights = s.weight_trend.map((t: any) => t.weight);
+    const weights = s.weight_trend.map((t: { weight: number }) => t.weight);
     const min = Math.min(...weights) - 0.5;
     const max = Math.max(...weights) + 0.5;
     const range = max - min;
@@ -292,7 +291,7 @@ export class DashboardComponent implements OnInit {
     const width = 100;
     const height = 40;
     
-    const points = weights.map((w: any, i: number) => {
+    const points = weights.map((w: number, i: number) => {
       const x = (i / (weights.length - 1)) * width;
       const y = height - ((w - min) / range) * height;
       return `${x},${y}`;
@@ -370,13 +369,13 @@ export class DashboardComponent implements OnInit {
     };
   }
 
-  updateNutritionCharts(n: any) {
+  updateNutritionCharts(n: NutritionStats) {
       // 1. Macros Doughnut
       if (n.today) {
           this.doughnutChartData = {
               labels: ['Proteína', 'Carbs', 'Gordura'],
               datasets: [{
-                  data: [n.today.protein_grams, n.today.carbs_grams, n.today.fat_grams],
+                  data: [n.today.protein_grams, n.today.carbs_grams, n.today.fat_grams] as number[],
                   backgroundColor: ['#10b981', '#3b82f6', '#f97316'],
                   borderWidth: 0
               }]
@@ -386,9 +385,9 @@ export class DashboardComponent implements OnInit {
       // 2. Calories Line
       if (n.last_7_days) {
           this.lineChartData = {
-              labels: n.last_7_days.map((d: any) => new Date(d.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })),
+              labels: n.last_7_days.map((d: { date: string }) => new Date(d.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })),
               datasets: [{
-                  data: n.last_7_days.map((d: any) => d.calories),
+                  data: n.last_7_days.map((d: { calories: number }) => d.calories) as number[],
                   borderColor: '#10b981',
                   backgroundColor: 'rgba(16, 185, 129, 0.1)',
                   fill: true,
@@ -414,7 +413,7 @@ export class DashboardComponent implements OnInit {
             hour: '2-digit', 
             minute: '2-digit' 
         }).format(date);
-    } catch (e) {
+    } catch {
         return dateStr;
     }
   } 

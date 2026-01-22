@@ -11,8 +11,8 @@ gunicorn
 
 
 # Database
-pymongo==4.15.5
-qdrant-client==1.16.1
+pymongo==4.16.0
+qdrant-client==1.16.2
 
 # HTTP Client
 httpx==0.28.1
@@ -26,10 +26,10 @@ langchain-google-genai
 langchain-mongodb
 langchain-ollama
 langchain-openai
-langgraph==1.0.4
-langgraph-checkpoint==3.0.1
-langgraph-prebuilt==1.0.5
-langgraph-sdk==0.2.12
+langgraph>=1.0.6
+langgraph-checkpoint>=4.0.0
+langgraph-prebuilt>=1.0.6
+langgraph-sdk
 mem0ai==1.0.1
 
 # Utilities
@@ -39,7 +39,7 @@ slowapi==0.1.9
 python-multipart
 
 # Telegram
-python-telegram-bot==22.0
+python-telegram-bot==22.5
 
 # Testing
 pytest==8.2.1

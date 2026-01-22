@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class LoginRequest(BaseModel):
     """
     Represents a login request containing user credentials.

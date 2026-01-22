@@ -1,7 +1,9 @@
 import unittest
-from unittest.mock import MagicMock, patch, ANY
+from unittest.mock import MagicMock
+
 # We need to ensure AITrainerBrain can be imported even if we strictly mock everything
 from src.services.trainer import AITrainerBrain
+
 
 class TestTrainerMemories(unittest.TestCase):
     def setUp(self):
@@ -37,15 +39,23 @@ class TestTrainerMemories(unittest.TestCase):
         # Point 1 (New)
         p1 = MagicMock()
         p1.id = "1"
-        p1.payload = {"id": "1", "memory": "Fact 1", "created_at": "2024-01-02T10:00:00"}
-        
+        p1.payload = {
+            "id": "1",
+            "memory": "Fact 1",
+            "created_at": "2024-01-02T10:00:00",
+        }
+
         # Point 2 (Old)
         p2 = MagicMock()
         p2.id = "2"
-        p2.payload = {"id": "2", "memory": "Fact 2", "created_at": "2024-01-01T10:00:00"}
-        
+        p2.payload = {
+            "id": "2",
+            "memory": "Fact 2",
+            "created_at": "2024-01-01T10:00:00",
+        }
+
         # Return all points in one go
-        mock_qdrant.scroll.return_value = ([p2, p1], None) # Unsorted initially
+        mock_qdrant.scroll.return_value = ([p2, p1], None)  # Unsorted initially
 
         # Request page 1 with size 1
         memories, total = self.brain.get_memories_paginated(
@@ -68,19 +78,19 @@ class TestTrainerMemories(unittest.TestCase):
         # Setup 2 batches
         p = MagicMock()
         p.payload = {"created_at": "2023"}
-        
+
         mock_qdrant.scroll.side_effect = [
-            ([p], "next_offset"), # Batch 1
-            ([p], None)           # Batch 2 (Finish)
+            ([p], "next_offset"),  # Batch 1
+            ([p], None),  # Batch 2 (Finish)
         ]
 
         memories, total = self.brain.get_memories_paginated(
             "user", 1, 10, mock_qdrant, "collection"
         )
-        
+
         # Verify scroll called twice
         self.assertEqual(mock_qdrant.scroll.call_count, 2)
-        self.assertEqual(len(memories), 2) # 2 points total returned/mocked
+        self.assertEqual(len(memories), 2)  # 2 points total returned/mocked
 
     def test_all_memories_fallback(self):
         """Test get_all_memories handles dictionary return from Mem0 (v1.0.1+ behavior)."""
@@ -88,9 +98,9 @@ class TestTrainerMemories(unittest.TestCase):
         self.mock_memory.get_all.return_value = {
             "results": [{"memory": "test", "created_at": "2024"}]
         }
-        
+
         memories = self.brain.get_all_memories("user", limit=10)
-        
+
         self.assertEqual(len(memories), 1)
         self.assertEqual(memories[0]["memory"], "test")
 
@@ -98,12 +108,12 @@ class TestTrainerMemories(unittest.TestCase):
         """Test get_all_memories limits output."""
         self.mock_memory.get_all.return_value = [
             {"memory": "1", "created_at": "B"},
-            {"memory": "2", "created_at": "A"} # Older
+            {"memory": "2", "created_at": "A"},  # Older
         ]
-        
+
         # Sorts by created_at DESC -> B, A
         # Limit 1 -> B
-        
+
         memories = self.brain.get_all_memories("user", limit=1)
         self.assertEqual(len(memories), 1)
         self.assertEqual(memories[0]["memory"], "1")

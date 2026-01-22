@@ -2,7 +2,7 @@
 LangChain tools for body composition tracking.
 """
 
-from datetime import datetime, date
+from datetime import datetime
 from langchain_core.tools import tool
 from src.core.logs import logger
 
@@ -73,7 +73,7 @@ def create_save_composition_tool(database, user_email: str):
                 bmr=bmr,
                 bmi=bmi,
                 notes=notes,
-                source="chat"
+                source="chat",
             )
 
             doc_id, is_new = database.save_weight_log(log)
@@ -86,7 +86,9 @@ def create_save_composition_tool(database, user_email: str):
             return f"Composição corporal de {date_str} {action} com sucesso! (ID: {doc_id})"
 
         except Exception as e:
-            logger.error("Failed to save body composition for user %s: %s", user_email, e)
+            logger.error(
+                "Failed to save body composition for user %s: %s", user_email, e
+            )
             return "Erro ao salvar composição corporal. Tente novamente."
 
     return save_body_composition
@@ -125,7 +127,7 @@ def create_get_composition_tool(database, user_email: str):
             result = f"Encontrei {len(logs)} registro(s) de composição corporal:\n\n"
             for log in logs:
                 date_str = log.date.strftime("%d/%m/%Y")
-                
+
                 metrics = [f"Peso: {log.weight_kg}kg"]
                 if log.body_fat_pct:
                     metrics.append(f"Gordura: {log.body_fat_pct}%")
@@ -135,7 +137,7 @@ def create_get_composition_tool(database, user_email: str):
                     metrics.append(f"Gord. Visceral: {log.visceral_fat}")
                 if log.bmr:
                     metrics.append(f"BMR: {log.bmr} kcal")
-                
+
                 result += f"📅 {date_str}: {', '.join(metrics)}\n"
                 if log.notes:
                     result += f"   Nota: {log.notes}\n"
@@ -144,7 +146,9 @@ def create_get_composition_tool(database, user_email: str):
             return result
 
         except Exception as e:
-            logger.error("Failed to get body composition for user %s: %s", user_email, e)
+            logger.error(
+                "Failed to get body composition for user %s: %s", user_email, e
+            )
             return "Erro ao buscar histórico de composição corporal."
 
     return get_body_composition

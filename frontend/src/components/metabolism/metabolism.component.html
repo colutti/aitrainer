@@ -120,7 +120,11 @@
       <div
         class="bg-light-bg rounded-2xl border border-secondary p-6 flex flex-col justify-between shadow-lg hover:border-primary/50 transition-colors"
       >
-        <h3 class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-4">Meta Diária</h3>
+        <h3
+          class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-4"
+        >
+          Meta Diária
+        </h3>
 
         <div class="flex items-baseline gap-2 mb-2">
           <span
@@ -162,7 +166,11 @@
         class="bg-light-bg rounded-2xl border border-secondary p-6 flex flex-col justify-between shadow-lg hover:border-primary/50 transition-colors"
       >
         <div class="flex justify-between items-start mb-2">
-          <h3 class="text-text-secondary text-xs font-bold uppercase tracking-wider">Confiança do TDEE</h3>
+          <h3
+            class="text-text-secondary text-xs font-bold uppercase tracking-wider"
+          >
+            Confiança do TDEE
+          </h3>
           <div class="text-text-secondary">•••</div>
         </div>
 
@@ -208,8 +216,13 @@
         class="bg-light-bg rounded-2xl border border-secondary p-6 flex flex-col justify-between h-full min-h-[280px] shadow-lg hover:border-primary/50 transition-colors"
       >
         <div class="flex justify-between items-start mb-4">
-          <h3 class="text-text-secondary text-xs font-bold uppercase tracking-wider">Peso Atual</h3>
-          <span class="text-[10px] text-text-secondary uppercase tracking-widest"
+          <h3
+            class="text-text-secondary text-xs font-bold uppercase tracking-wider"
+          >
+            Peso Atual
+          </h3>
+          <span
+            class="text-[10px] text-text-secondary uppercase tracking-widest"
             >30 dias</span
           >
         </div>
@@ -372,7 +385,11 @@
       <div
         class="bg-light-bg rounded-2xl border border-secondary p-6 flex flex-col justify-center shadow-lg hover:border-primary/50 transition-colors"
       >
-        <h3 class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-4">Composição Corporal</h3>
+        <h3
+          class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-4"
+        >
+          Composição Corporal
+        </h3>
 
         <div *ngIf="stats()?.fat_change_kg" class="space-y-6">
           <!-- Fat -->
@@ -418,28 +435,15 @@
               <span
                 class="font-bold"
                 [ngClass]="
-                  (stats()?.muscle_change_kg ?? stats()?.lean_change_kg) > 0
+                  stats()?.muscle_change_kg > 0
                     ? 'text-green-400'
                     : 'text-text-secondary'
                 "
               >
-                <span
-                  *ngIf="
-                    (stats()?.muscle_change_kg ?? stats()?.lean_change_kg) > 0
-                  "
-                  >↑</span
-                >
-                <span
-                  *ngIf="
-                    (stats()?.muscle_change_kg ?? stats()?.lean_change_kg) < 0
-                  "
-                  >↓</span
-                >
-                {{
-                  (stats()?.muscle_change_kg ?? stats()?.lean_change_kg) > 0
-                    ? "+"
-                    : ""
-                }}{{ stats()?.muscle_change_kg ?? stats()?.lean_change_kg }} kg
+                <span *ngIf="stats()?.muscle_change_kg > 0">↑</span>
+                <span *ngIf="stats()?.muscle_change_kg < 0">↓</span>
+                {{ stats()?.muscle_change_kg > 0 ? "+" : ""
+                }}{{ stats()?.muscle_change_kg }} kg
               </span>
             </div>
             <div class="h-2 bg-gray-800 rounded-full overflow-hidden">

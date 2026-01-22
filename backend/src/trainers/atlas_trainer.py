@@ -1,11 +1,13 @@
 from src.trainers.base_trainer import BaseTrainer
 
+
 class AtlasTrainer(BaseTrainer):
     """Atlas: Scientific and biomechanics expert."""
+
     trainer_id = "atlas"
     name = "Atlas Prime"
     gender = "Masculino"
-    avatar_url = "assets/avatars/atlas.png" 
+    avatar_url = "assets/avatars/atlas.png"
     short_description = "A eficiência é a única métrica que importa."
     specialties = ["#biomecânica", "#dados", "#hipertrofia"]
     catchphrase = "Seus músculos são máquinas biológicas. Vamos otimizá-las."

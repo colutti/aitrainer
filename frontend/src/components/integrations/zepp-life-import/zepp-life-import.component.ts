@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { WeightService } from '../../../services/weight.service';
+import { ImportResult } from '../../../models/import-result.model';
 
 @Component({
   selector: 'app-zepp-life-import',
@@ -51,7 +52,7 @@ export class ZeppLifeImportComponent {
   @Output() close = new EventEmitter<void>();
   
   error = signal<string | null>(null);
-  result = signal<any>(null);
+  result = signal<ImportResult | null>(null);
   selectedFile = signal<File | null>(null);
   isUploading = signal<boolean>(false);
   isDragOver = signal<boolean>(false);
@@ -105,8 +106,9 @@ export class ZeppLifeImportComponent {
     try {
       const res = await this.weightService.importZeppLifeData(file);
       this.result.set(res);
-    } catch (err: any) {
-      this.error.set(err.error?.detail || 'Falha ao importar dados. Tente novamente.');
+    } catch (err: unknown) {
+      const errorResponse = err as { error?: { detail?: string } };
+      this.error.set(errorResponse.error?.detail || 'Falha ao importar dados. Tente novamente.');
     } finally {
       this.isUploading.set(false);
     }

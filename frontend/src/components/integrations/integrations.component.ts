@@ -52,10 +52,10 @@ export class IntegrationsComponent implements OnInit {
   }
 
   async refreshHevyStatus() {
-    console.log('Integrations: refreshing Hevy status...');
+    console.warn('Integrations: refreshing Hevy status...');
     try {
       const status = await this.hevyService.getStatus();
-      console.log('Integrations: Status received', status);
+      console.warn('Integrations: Status received', status);
       
       let newStatus: 'connected' | 'paused' | 'disconnected' = 'disconnected';
       if (status.hasKey) {
@@ -68,7 +68,7 @@ export class IntegrationsComponent implements OnInit {
         status: newStatus
       });
       
-      console.log('Integrations: New provider state', this.hevyProvider());
+      console.warn('Integrations: New provider state', this.hevyProvider());
       this.cdr.detectChanges();
     } catch (e) {
       console.error('Integrations: load error', e);

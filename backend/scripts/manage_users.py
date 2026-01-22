@@ -3,14 +3,13 @@ import argparse
 import sys
 import os
 import re
-import getpass
 from pprint import pprint
 import bcrypt
 from pymongo import MongoClient
 from datetime import datetime, timezone
 
 # Add backend directory to sys.path to allow imports from src
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 try:
     from src.core.config import settings
     from src.api.models.user_profile import UserProfile
@@ -21,17 +20,19 @@ except ImportError as e:
     print("Make sure you are running this script from the 'backend' directory.")
     sys.exit(1)
 
+
 def get_database():
     """Connects to MongoDB using settings."""
     try:
         client = MongoClient(settings.MONGO_URI)
         db = client[settings.DB_NAME]
         # Pymongo lazy connection, force a check
-        client.admin.command('ping')
+        client.admin.command("ping")
         return db
     except Exception as e:
         print(f"Failed to connect to MongoDB: {e}")
         sys.exit(1)
+
 
 def validate_password(password):
     """
@@ -51,14 +52,16 @@ def validate_password(password):
         return False, "Password must contain at least one digit."
     return True, ""
 
+
 def hash_password(password):
     """Hashes password using bcrypt (matching app logic)."""
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
+
 def create_user(args, db):
     email = args.email
     password = args.password
-    
+
     if db.users.find_one({"email": email}):
         print(f"Error: User with email {email} already exists.")
         return
@@ -72,9 +75,9 @@ def create_user(args, db):
     # User Profile (Defaults or Interactive?)
     # The plan says "Create a new user with email, password, and default profiles"
     # But also "Default user profile: prompted interactively or via CLI args"
-    # To keep it simple and automatable as requested ("default configurations"), 
+    # To keep it simple and automatable as requested ("default configurations"),
     # I'll use sensible defaults if flags aren't provided.
-    
+
     print(f"Creating user {email}...")
 
     # Default User Profile Data
@@ -86,7 +89,7 @@ def create_user(args, db):
         "height": args.height or 175,
         "goal": args.goal or "Manter a forma",
         "goal_type": args.goal_type or "maintain",
-        "weekly_rate": args.weekly_rate or 0.5
+        "weekly_rate": args.weekly_rate or 0.5,
     }
 
     try:
@@ -96,11 +99,8 @@ def create_user(args, db):
         return
 
     # Default Trainer Profile Data
-    trainer_data = {
-        "user_email": email,
-        "trainer_type": args.trainer_type or "atlas"
-    }
-    
+    trainer_data = {"user_email": email, "trainer_type": args.trainer_type or "atlas"}
+
     try:
         trainer = TrainerProfile(**trainer_data)
     except Exception as e:
@@ -111,37 +111,37 @@ def create_user(args, db):
     user_doc = profile.model_dump()
     user_doc["password_hash"] = hash_password(password)
     user_doc["created_at"] = datetime.now(timezone.utc)
-    
+
     try:
         db.users.insert_one(user_doc)
-        
+
         # Save trainer profile
         db.trainer_profiles.update_one(
-            {"user_email": email},
-            {"$set": trainer.model_dump()},
-            upsert=True
+            {"user_email": email}, {"$set": trainer.model_dump()}, upsert=True
         )
-        
+
         print("User created successfully!")
         print("User Profile:")
-        pprint(profile.model_dump(exclude={'password_hash'}))
+        pprint(profile.model_dump(exclude={"password_hash"}))
         print("Trainer Profile:")
         pprint(trainer.model_dump())
-        
+
     except Exception as e:
         print(f"Database error: {e}")
+
 
 def list_users(args, db):
     users = list(db.users.find({}, {"email": 1, "created_at": 1, "_id": 0}))
     if not users:
         print("No users found.")
         return
-    
+
     print(f"{'Email':<30} | {'Created At'}")
     print("-" * 50)
     for u in users:
-        created = u.get('created_at', 'N/A')
+        created = u.get("created_at", "N/A")
         print(f"{u['email']:<30} | {created}")
+
 
 def get_user(args, db):
     email = args.email
@@ -160,6 +160,7 @@ def get_user(args, db):
     else:
         print("No trainer profile found.")
 
+
 def update_user(args, db):
     email = args.email
     user = db.users.find_one({"email": email})
@@ -168,14 +169,22 @@ def update_user(args, db):
         return
 
     updates = {}
-    if args.age: updates["age"] = args.age
-    if args.weight: updates["weight"] = args.weight
-    if args.height: updates["height"] = args.height
-    if args.goal: updates["goal"] = args.goal
-    if args.gender: updates["gender"] = args.gender
-    if args.goal_type: updates["goal_type"] = args.goal_type
-    if args.weekly_rate: updates["weekly_rate"] = args.weekly_rate
-    if args.target_weight: updates["target_weight"] = args.target_weight
+    if args.age:
+        updates["age"] = args.age
+    if args.weight:
+        updates["weight"] = args.weight
+    if args.height:
+        updates["height"] = args.height
+    if args.goal:
+        updates["goal"] = args.goal
+    if args.gender:
+        updates["gender"] = args.gender
+    if args.goal_type:
+        updates["goal_type"] = args.goal_type
+    if args.weekly_rate:
+        updates["weekly_rate"] = args.weekly_rate
+    if args.target_weight:
+        updates["target_weight"] = args.target_weight
 
     if not updates:
         print("No updates provided.")
@@ -183,24 +192,32 @@ def update_user(args, db):
 
     try:
         # Validate updates by merging with existing data and validating via pydantic
-        current_data = {k: v for k, v in user.items() if k != '_id' and k != 'password_hash'}
+        current_data = {
+            k: v for k, v in user.items() if k != "_id" and k != "password_hash"
+        }
         # Ensure input types are correct
-        if 'age' in updates: updates['age'] = int(updates['age'])
-        if 'height' in updates: updates['height'] = int(updates['height'])
-        if 'weight' in updates: updates['weight'] = float(updates['weight'])
-        if 'weekly_rate' in updates: updates['weekly_rate'] = float(updates['weekly_rate'])
-        if 'target_weight' in updates: updates['target_weight'] = float(updates['target_weight'])
-        
+        if "age" in updates:
+            updates["age"] = int(updates["age"])
+        if "height" in updates:
+            updates["height"] = int(updates["height"])
+        if "weight" in updates:
+            updates["weight"] = float(updates["weight"])
+        if "weekly_rate" in updates:
+            updates["weekly_rate"] = float(updates["weekly_rate"])
+        if "target_weight" in updates:
+            updates["target_weight"] = float(updates["target_weight"])
+
         current_data.update(updates)
         # Re-validate
         UserProfile(**current_data)
-        
+
         # Apply updates
         db.users.update_one({"email": email}, {"$set": updates})
         print(f"User {email} updated successfully.")
-        
+
     except Exception as e:
         print(f"Validation error: {e}")
+
 
 def change_password(args, db):
     email = args.email
@@ -218,14 +235,17 @@ def change_password(args, db):
     db.users.update_one({"email": email}, {"$set": {"password_hash": new_hash}})
     print(f"Password for {email} updated successfully.")
 
+
 def delete_user(args, db):
     email = args.email
     if not db.users.find_one({"email": email}):
         print(f"User {email} not found.")
         return
 
-    confirm = input(f"Are you sure you want to delete user {email} and all related data? (y/N): ")
-    if confirm.lower() != 'y':
+    confirm = input(
+        f"Are you sure you want to delete user {email} and all related data? (y/N): "
+    )
+    if confirm.lower() != "y":
         print("Operation cancelled.")
         return
 
@@ -241,8 +261,9 @@ def delete_user(args, db):
     # Checking database.py: collection name is likely default or 'message_store' inside db
     # The 'MongoDBChatMessageHistory' from langchain uses a specific collection.
     # We should delete that too if possible, but let's stick to knowns.
-    
+
     print(f"User {email} deleted.")
+
 
 def main():
     parser = argparse.ArgumentParser(description="Manage AI Trainer Users")
@@ -256,12 +277,20 @@ def main():
     create_parser.add_argument("--age", type=int, help="User age")
     create_parser.add_argument("--weight", type=float, help="User weight (kg)")
     create_parser.add_argument("--height", type=int, help="User height (cm)")
-    create_parser.add_argument("--gender", choices=["Masculino", "Feminino"], help="User gender")
+    create_parser.add_argument(
+        "--gender", choices=["Masculino", "Feminino"], help="User gender"
+    )
     create_parser.add_argument("--goal", help="User goal")
-    create_parser.add_argument("--goal-type", choices=["lose", "gain", "maintain"], help="Goal type")
+    create_parser.add_argument(
+        "--goal-type", choices=["lose", "gain", "maintain"], help="Goal type"
+    )
     create_parser.add_argument("--weekly-rate", type=float, help="Weekly change rate")
     create_parser.add_argument("--target-weight", type=float, help="Target weight")
-    create_parser.add_argument("--trainer-type", choices=["atlas", "luna", "sargento", "sofia"], help="Trainer type")
+    create_parser.add_argument(
+        "--trainer-type",
+        choices=["atlas", "luna", "sargento", "sofia"],
+        help="Trainer type",
+    )
 
     # LIST
     subparsers.add_parser("list", help="List all users")
@@ -276,9 +305,13 @@ def main():
     update_parser.add_argument("--age", type=int, help="User age")
     update_parser.add_argument("--weight", type=float, help="User weight")
     update_parser.add_argument("--height", type=int, help="User height")
-    update_parser.add_argument("--gender", choices=["Masculino", "Feminino"], help="User gender")
+    update_parser.add_argument(
+        "--gender", choices=["Masculino", "Feminino"], help="User gender"
+    )
     update_parser.add_argument("--goal", help="User goal")
-    update_parser.add_argument("--goal-type", choices=["lose", "gain", "maintain"], help="Goal type")
+    update_parser.add_argument(
+        "--goal-type", choices=["lose", "gain", "maintain"], help="Goal type"
+    )
     update_parser.add_argument("--weekly-rate", type=float, help="Weekly change rate")
     update_parser.add_argument("--target-weight", type=float, help="Target weight")
 
@@ -312,6 +345,7 @@ def main():
         change_password(args, db)
     elif args.command == "delete":
         delete_user(args, db)
+
 
 if __name__ == "__main__":
     main()

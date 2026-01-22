@@ -8,13 +8,16 @@ import { MetabolismService } from '../../services/metabolism.service';
 import { NutritionService } from '../../services/nutrition.service';
 import { WeightService } from '../../services/weight.service';
 
+import { WorkoutStats } from '../../models/stats.model';
+import { MetabolismResponse } from '../../models/metabolism.model';
+
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
   let fixture: ComponentFixture<DashboardComponent>;
-  let statsServiceMock: any;
-  let nutritionServiceMock: any;
-  let metabolismServiceMock: any;
-  let weightServiceMock: any;
+  let statsServiceMock: Partial<StatsService>;
+  let nutritionServiceMock: Partial<NutritionService>;
+  let metabolismServiceMock: Partial<MetabolismService>;
+  let weightServiceMock: Partial<WeightService>;
 
   beforeEach(async () => {
     statsServiceMock = {
@@ -62,7 +65,7 @@ describe('DashboardComponent', () => {
   });
 
   it('should update chart when stats change', () => {
-    const mockStats: any = {
+    const mockStats: WorkoutStats = {
       weekly_volume: [
         { category: 'Chest', volume: 1000 },
         { category: 'Legs', volume: 2000 }
@@ -80,7 +83,7 @@ describe('DashboardComponent', () => {
     statsServiceMock.stats.set(mockStats);
     
     // Also set metabolism stats so widgets don't crash
-    const mockMetabolism: any = {
+    const mockMetabolism: MetabolismResponse = {
       latest_weight: 75,
       target_weight: 70,
       start_weight: 80,

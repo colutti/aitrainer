@@ -1,6 +1,7 @@
 """
 This module contains the API endpoints for memory management.
 """
+
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -26,7 +27,7 @@ def list_memories(
     brain: AITrainerBrainDep,
     qdrant: QdrantClientDep,
     page: int = Query(default=1, ge=1, description="Page number (1-indexed)"),
-    page_size: int = Query(default=10, ge=1, le=50, description="Items per page")
+    page_size: int = Query(default=10, ge=1, le=50, description="Items per page"),
 ) -> MemoryListResponse:
     """
     Retrieves paginated memories for the authenticated user.
@@ -50,7 +51,7 @@ def list_memories(
             page=page,
             page_size=page_size,
             qdrant_client=qdrant,
-            collection_name=settings.QDRANT_COLLECTION_NAME
+            collection_name=settings.QDRANT_COLLECTION_NAME,
         )
         logger.debug("Processing %d raw memories", len(raw_memories))
 
@@ -68,18 +69,23 @@ def list_memories(
 
         logger.info(
             "Returning %d memories for user: %s (page %d/%d)",
-            len(memories), user_email, page, total_pages
+            len(memories),
+            user_email,
+            page,
+            total_pages,
         )
         return MemoryListResponse(
             memories=memories,
             total=total,
             page=page,
             page_size=page_size,
-            total_pages=total_pages
+            total_pages=total_pages,
         )
     except Exception as e:
         logger.error("Error listing memories for user %s: %s", user_email, e)
-        raise HTTPException(status_code=500, detail="Failed to retrieve memories") from e
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve memories"
+        ) from e
 
 
 @router.delete("/{memory_id}")
@@ -109,11 +115,17 @@ def delete_memory(
         if not memory:
             logger.warning("Memory not found: %s", memory_id)
             raise HTTPException(status_code=404, detail="Memory not found")
-            
+
         if memory.get("user_id") != user_email:
-            logger.warning("Unauthorized delete attempt by %s for memory %s (owner: %s)", 
-                         user_email, memory_id, memory.get("user_id"))
-            raise HTTPException(status_code=403, detail="Not authorized to delete this memory")
+            logger.warning(
+                "Unauthorized delete attempt by %s for memory %s (owner: %s)",
+                user_email,
+                memory_id,
+                memory.get("user_id"),
+            )
+            raise HTTPException(
+                status_code=403, detail="Not authorized to delete this memory"
+            )
 
         brain.delete_memory(memory_id)
         logger.info("Memory %s deleted successfully by user %s", memory_id, user_email)
@@ -121,6 +133,7 @@ def delete_memory(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Failed to delete memory %s for user %s: %s", memory_id, user_email, e)
+        logger.error(
+            "Failed to delete memory %s for user %s: %s", memory_id, user_email, e
+        )
         raise HTTPException(status_code=500, detail="Failed to delete memory") from e
-

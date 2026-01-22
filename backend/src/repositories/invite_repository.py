@@ -1,6 +1,7 @@
 """
 Repository for managing invite tokens in MongoDB.
 """
+
 from datetime import datetime, timezone
 from typing import Optional
 from pymongo.database import Database
@@ -41,7 +42,9 @@ class InviteRepository(BaseRepository):
             DuplicateKeyError: If token already exists.
         """
         self.collection.insert_one(invite.model_dump())
-        self.logger.info("Created invite for email: %s, token: %s", invite.email, invite.token)
+        self.logger.info(
+            "Created invite for email: %s, token: %s", invite.email, invite.token
+        )
 
     def get_by_token(self, token: str) -> Optional[Invite]:
         """
@@ -70,8 +73,7 @@ class InviteRepository(BaseRepository):
             Most recent Invite object if found, None otherwise.
         """
         invite_data = self.collection.find_one(
-            {"email": email},
-            sort=[("created_at", -1)]
+            {"email": email}, sort=[("created_at", -1)]
         )
         if not invite_data:
             self.logger.debug("No invite found for email: %s", email)
@@ -90,12 +92,7 @@ class InviteRepository(BaseRepository):
         """
         result = self.collection.update_one(
             {"token": token},
-            {
-                "$set": {
-                    "used": True,
-                    "used_at": datetime.now(timezone.utc)
-                }
-            }
+            {"$set": {"used": True, "used_at": datetime.now(timezone.utc)}},
         )
         if result.modified_count > 0:
             self.logger.info("Marked invite as used: %s", token)
@@ -128,11 +125,10 @@ class InviteRepository(BaseRepository):
             List of active Invite objects.
         """
         now = datetime.now(timezone.utc)
-        invites_data = self.collection.find({
-            "used": False,
-            "expires_at": {"$gt": now}
-        }).sort("created_at", -1)
-        
+        invites_data = self.collection.find(
+            {"used": False, "expires_at": {"$gt": now}}
+        ).sort("created_at", -1)
+
         invites = [Invite(**data) for data in invites_data]
         self.logger.debug("Found %d active invites", len(invites))
         return invites
@@ -148,9 +144,7 @@ class InviteRepository(BaseRepository):
             True if active invite exists, False otherwise.
         """
         now = datetime.now(timezone.utc)
-        count = self.collection.count_documents({
-            "email": email,
-            "used": False,
-            "expires_at": {"$gt": now}
-        })
+        count = self.collection.count_documents(
+            {"email": email, "used": False, "expires_at": {"$gt": now}}
+        )
         return count > 0

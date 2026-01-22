@@ -1,7 +1,9 @@
 from src.trainers.base_trainer import BaseTrainer
 
+
 class SargentoTrainer(BaseTrainer):
     """Sargento Steel: Hardcore military style."""
+
     trainer_id = "sargento"
     name = "Major Steel"
     gender = "Masculino"

@@ -7,11 +7,12 @@ from src.trainers.registry import TrainerRegistry
 
 router = APIRouter()
 
+
 @router.put("/update_trainer_profile", response_model=TrainerProfile)
 async def update_trainer_profile(
     profile_input: TrainerProfileInput,
     user_email: str = Depends(verify_token),
-    brain: AITrainerBrain = Depends(get_ai_trainer_brain)
+    brain: AITrainerBrain = Depends(get_ai_trainer_brain),
 ):
     """
     Updates the user's trainer profile preference.
@@ -20,10 +21,11 @@ async def update_trainer_profile(
     brain.save_trainer_profile(profile)
     return profile
 
+
 @router.get("/trainer_profile", response_model=TrainerProfile)
 async def get_trainer_profile(
     user_email: str = Depends(verify_token),
-    brain: AITrainerBrain = Depends(get_ai_trainer_brain)
+    brain: AITrainerBrain = Depends(get_ai_trainer_brain),
 ):
     """
     Retrieves the user's current trainer profile.
@@ -34,10 +36,9 @@ async def get_trainer_profile(
         return TrainerProfile(user_email=user_email, trainer_type="atlas")
     return profile
 
+
 @router.get("/available_trainers")
-async def get_available_trainers(
-    user_email: str = Depends(verify_token)
-):
+async def get_available_trainers(user_email: str = Depends(verify_token)):
     """
     Returns a list of all available trainer cards for the frontend.
     """

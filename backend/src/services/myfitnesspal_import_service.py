@@ -23,12 +23,19 @@ COLUMN_MAPPING = {
     "Proteínas (g)": "protein",
 }
 
-REQUIRED_COLUMNS = ["Data", "Calorias", "Gorduras (g)", "Carboidratos (g)", "Proteínas (g)"]
+REQUIRED_COLUMNS = [
+    "Data",
+    "Calorias",
+    "Gorduras (g)",
+    "Carboidratos (g)",
+    "Proteínas (g)",
+]
 
 
 @dataclass
 class DailyNutrition:
     """Aggregated daily nutrition from multiple meals."""
+
     date: datetime
     calories: float = 0.0
     protein: float = 0.0
@@ -47,7 +54,7 @@ class DailyNutrition:
         self.protein += float(row.get("protein", 0) or 0)
         self.carbs += float(row.get("carbs", 0) or 0)
         self.fat += float(row.get("fat", 0) or 0)
-        
+
         # Optional fields - accumulate only if present
         if row.get("fiber"):
             self.fiber = (self.fiber or 0) + float(row["fiber"])
@@ -72,32 +79,34 @@ class DailyNutrition:
             sodium_mg=round(self.sodium, 1) if self.sodium else None,
             cholesterol_mg=round(self.cholesterol, 1) if self.cholesterol else None,
             source="myfitnesspal",
-            notes=f"Importado do MyFitnessPal ({len(self.meals)} refeições)"
+            notes=f"Importado do MyFitnessPal ({len(self.meals)} refeições)",
         )
 
 
 def parse_csv_content(file_content: str) -> dict[str, DailyNutrition]:
     """
     Parse MyFitnessPal CSV content and aggregate by date.
-    
+
     Args:
         file_content: Raw CSV string content.
-        
+
     Returns:
         Dictionary mapping date strings to DailyNutrition objects.
     """
     daily_data: dict[str, DailyNutrition] = {}
-    
+
     # Handle both \n and \r\n line endings
     f = io.StringIO(file_content, newline=None)
     reader = csv.DictReader(f)
-    
+
     # Validate required columns
     headers = reader.fieldnames or []
     missing = [col for col in REQUIRED_COLUMNS if col not in headers]
     if missing:
-        raise ValueError(f"Colunas obrigatórias ausentes: {', '.join(missing)}. Verifique se o CSV é do MyFitnessPal em português.")
-    
+        raise ValueError(
+            f"Colunas obrigatórias ausentes: {', '.join(missing)}. Verifique se o CSV é do MyFitnessPal em português."
+        )
+
     for row_num, row in enumerate(reader, start=2):  # Start at 2 (header is 1)
         try:
             # Normalize column names
@@ -105,26 +114,26 @@ def parse_csv_content(file_content: str) -> dict[str, DailyNutrition]:
             for orig_col, internal_name in COLUMN_MAPPING.items():
                 if orig_col in row:
                     normalized[internal_name] = row[orig_col]
-            
+
             date_str = normalized.get("date", "").strip()
             if not date_str:
                 continue
-            
+
             # Parse date
             try:
                 date_obj = datetime.strptime(date_str, "%Y-%m-%d")
             except ValueError:
-                # Try explicit skip of malformed dates silently to avoid log spam, 
+                # Try explicit skip of malformed dates silently to avoid log spam,
                 # or we could log/track errors if needed.
                 continue
-            
+
             # Get or create daily aggregation
             if date_str not in daily_data:
                 daily_data[date_str] = DailyNutrition(date=date_obj)
-            
+
             meal_name = normalized.get("meal", "Refeição")
             daily_data[date_str].add_meal(meal_name, normalized)
-            
+
         except Exception:
             # Skip rows with errors
             continue
@@ -133,18 +142,16 @@ def parse_csv_content(file_content: str) -> dict[str, DailyNutrition]:
 
 
 def import_nutrition_from_csv(
-    user_email: str, 
-    csv_content: str, 
-    db: MongoDatabase
+    user_email: str, csv_content: str, db: MongoDatabase
 ) -> ImportResult:
     """
     Import nutrition data from MyFitnessPal CSV content.
-    
+
     Args:
         user_email: User's email address.
         csv_content: Raw CSV string content.
         db: Database instance.
-        
+
     Returns:
         ImportResult object with counts.
     """
@@ -158,18 +165,18 @@ def import_nutrition_from_csv(
 
     if not daily_data:
         return ImportResult(created=0, updated=0, errors=0, total_days=0)
-    
+
     created = 0
     updated = 0
     errors = 0
     error_messages = []
-    
+
     sorted_dates = sorted(daily_data.keys())
-    
+
     for date_str in sorted_dates:
         daily = daily_data[date_str]
         log = daily.to_nutrition_log(user_email)
-        
+
         try:
             _, is_new = db.save_nutrition_log(log)
             if is_new:
@@ -179,11 +186,11 @@ def import_nutrition_from_csv(
         except Exception as e:
             errors += 1
             error_messages.append(f"Erro em {date_str}: {str(e)}")
-            
+
     return ImportResult(
         created=created,
         updated=updated,
         errors=errors,
         total_days=len(daily_data),
-        error_messages=error_messages
+        error_messages=error_messages,
     )

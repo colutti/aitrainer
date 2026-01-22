@@ -6,10 +6,12 @@ from src.trainers.sargento_trainer import SargentoTrainer
 from src.trainers.sofia_trainer import SofiaTrainer
 from src.trainers.gymbro_trainer import GymBroTrainer
 
+
 class TrainerRegistry:
     """
     Singleton registry for managing available trainers.
     """
+
     _instance = None
     _trainers: Dict[str, BaseTrainer] = {}
 
@@ -28,7 +30,7 @@ class TrainerRegistry:
             LunaTrainer(),
             SargentoTrainer(),
             SofiaTrainer(),
-            GymBroTrainer()
+            GymBroTrainer(),
         ]
         for trainer in trainers:
             self._trainers[trainer.trainer_id] = trainer
@@ -50,7 +52,7 @@ class TrainerRegistry:
         Returns the default trainer (Atlas).
         """
         return self._trainers["atlas"]
-    
+
     def list_trainers_for_api(self) -> List[dict]:
         """
         Returns list of dicts suitable for frontend consumption (cards).

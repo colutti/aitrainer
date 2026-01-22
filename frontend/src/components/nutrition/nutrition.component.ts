@@ -38,7 +38,7 @@ export class NutritionComponent implements OnInit {
   loadStats() {
     this.nutritionService.getStats().subscribe({
       next: (s) => this.stats.set(s),
-      error: (e) => console.error("Failed to load nutrition stats", e)
+      error: (error) => console.error("Failed to load nutrition stats", error)
     });
   }
 
@@ -93,7 +93,7 @@ export class NutritionComponent implements OnInit {
         month: 'long',
         year: 'numeric'
       }).format(date);
-    } catch (e) {
+    } catch {
       return dateStr;
     }
   }

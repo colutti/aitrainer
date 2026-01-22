@@ -1,6 +1,7 @@
 """
 This module contains the API endpoints for messaging.
 """
+
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
@@ -31,10 +32,10 @@ def get_history(user_email: CurrentUser, brain: AITrainerBrainDep) -> list:
 
 @router.post("/message")
 def message_ai(
-    message: MessageRequest, 
-    user_email: CurrentUser, 
+    message: MessageRequest,
+    user_email: CurrentUser,
     brain: AITrainerBrainDep,
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
 ) -> StreamingResponse:
     """
     Handles an AI messaging request for an authenticated user.
@@ -56,10 +57,9 @@ def message_ai(
         response_generator = brain.send_message_ai(
             user_email=user_email,
             user_input=message.user_message,
-            background_tasks=background_tasks
+            background_tasks=background_tasks,
         )
         return StreamingResponse(response_generator, media_type="text/plain")
     except ValueError as e:
         logger.error("Error processing message for user %s: %s", user_email, e)
         raise HTTPException(status_code=404, detail=str(e)) from e
-

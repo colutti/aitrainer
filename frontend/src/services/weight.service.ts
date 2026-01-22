@@ -2,7 +2,8 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../environment';
-import { WeightLog } from '../models/weight-log.model';
+import { WeightLog, BodyCompositionStats } from '../models/weight-log.model';
+import { ImportResult } from '../models/import-result.model';
 
 @Injectable({
   providedIn: 'root',
@@ -52,10 +53,10 @@ export class WeightService {
     }
   }
 
-  async getBodyCompositionStats(): Promise<any> {
+  async getBodyCompositionStats(): Promise<BodyCompositionStats | null> {
     try {
       return await firstValueFrom(
-        this.http.get<any>(`${environment.apiUrl}/weight/stats`)
+        this.http.get<BodyCompositionStats>(`${environment.apiUrl}/weight/stats`)
       );
     } catch {
       return null;
@@ -74,12 +75,12 @@ export class WeightService {
   /**
    * Imports Zepp Life data from CSV.
    */
-  async importZeppLifeData(file: File): Promise<any> {
+  async importZeppLifeData(file: File): Promise<ImportResult> {
     const formData = new FormData();
     formData.append('file', file);
     
     return await firstValueFrom(
-      this.http.post<any>(`${environment.apiUrl}/weight/import/zepp-life`, formData)
+      this.http.post<ImportResult>(`${environment.apiUrl}/weight/import/zepp-life`, formData)
     );
   }
 }

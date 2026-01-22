@@ -1,6 +1,7 @@
 """
 API endpoints for nutrition management.
 """
+
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, HTTPException, File, UploadFile
@@ -23,6 +24,7 @@ DatabaseDep = Annotated[MongoDatabase, Depends(get_mongo_database)]
 
 class NutritionListResponse(BaseModel):
     """Paginated response for nutrition list API."""
+
     logs: list[NutritionWithId]
     total: int
     page: int
@@ -36,7 +38,7 @@ def list_nutrition(
     db: DatabaseDep,
     page: int = Query(default=1, ge=1, description="Page number (1-indexed)"),
     page_size: int = Query(default=10, ge=1, le=50, description="Items per page"),
-    days: int | None = Query(default=None, description="Filter by last N days")
+    days: int | None = Query(default=None, description="Filter by last N days"),
 ) -> NutritionListResponse:
     """
     Retrieves paginated nutrition logs for the authenticated user.
@@ -46,36 +48,35 @@ def list_nutrition(
 
     try:
         raw_logs, total = db.get_nutrition_paginated(
-            user_email=user_email,
-            page=page,
-            page_size=page_size,
-            days=days
+            user_email=user_email, page=page, page_size=page_size, days=days
         )
-        
+
         logs = [NutritionWithId(**log) for log in raw_logs]
         total_pages = (total + page_size - 1) // page_size if total > 0 else 0
 
         logger.info(
             "Returning %d logs for user: %s (page %d/%d)",
-            len(logs), user_email, page, total_pages
+            len(logs),
+            user_email,
+            page,
+            total_pages,
         )
         return NutritionListResponse(
             logs=logs,
             total=total,
             page=page,
             page_size=page_size,
-            total_pages=total_pages
+            total_pages=total_pages,
         )
     except Exception as e:
         logger.error("Error listing nutrition logs for user %s: %s", user_email, e)
-        raise HTTPException(status_code=500, detail="Failed to retrieve nutrition logs") from e
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve nutrition logs"
+        ) from e
 
 
 @router.get("/stats", response_model=NutritionStats)
-def get_nutrition_stats(
-    user_email: CurrentUser,
-    db: DatabaseDep
-) -> NutritionStats:
+def get_nutrition_stats(user_email: CurrentUser, db: DatabaseDep) -> NutritionStats:
     """
     Retrieves nutrition stats for the dashboard.
     """
@@ -84,13 +85,14 @@ def get_nutrition_stats(
         return db.get_nutrition_stats(user_email)
     except Exception as e:
         logger.error("Error fetching nutrition stats for user %s: %s", user_email, e)
-        raise HTTPException(status_code=500, detail="Failed to retrieve nutrition stats") from e
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve nutrition stats"
+        ) from e
 
 
 @router.get("/today", response_model=NutritionWithId | None)
 def get_today_nutrition(
-    user_email: CurrentUser,
-    db: DatabaseDep
+    user_email: CurrentUser, db: DatabaseDep
 ) -> NutritionWithId | None:
     """
     Retrieves today's nutrition log if exists by reusing stats logic.
@@ -101,40 +103,42 @@ def get_today_nutrition(
         return stats.today
     except Exception as e:
         logger.error("Error fetching today's nutrition for user %s: %s", user_email, e)
-        raise HTTPException(status_code=500, detail="Failed to retrieve today's nutrition") from e
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve today's nutrition"
+        ) from e
 
 
 @router.post("/import/myfitnesspal", response_model=ImportResult)
 async def import_myfitnesspal(
-    user_email: CurrentUser,
-    db: DatabaseDep,
-    file: UploadFile = File(...)
+    user_email: CurrentUser, db: DatabaseDep, file: UploadFile = File(...)
 ) -> ImportResult:
     """
     Import nutrition data from MyFitnessPal CSV export.
     Expects a CSV file with Portuguese headers.
     """
     logger.info("Importing MyFitnessPal data for user: %s", user_email)
-    
-    if not file.filename.endswith('.csv'):
+
+    if not file.filename or not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="O arquivo deve ser um CSV.")
-        
+
     try:
         content = await file.read()
-        csv_content = content.decode('utf-8')
-        
+        csv_content = content.decode("utf-8")
+
         result = import_nutrition_from_csv(user_email, csv_content, db)
-        
+
         logger.info(
             "Import finished for %s. Created: %d, Updated: %d, Errors: %d",
-            user_email, result.created, result.updated, result.errors
+            user_email,
+            result.created,
+            result.updated,
+            result.errors,
         )
         return result
-        
+
     except ValueError as e:
         logger.warning("Validation error importing CSV for %s: %s", user_email, e)
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error("Error importing CSV for user %s: %s", user_email, e)
         raise HTTPException(status_code=500, detail="Falha ao importar dados.") from e
-

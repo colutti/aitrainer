@@ -1,4 +1,5 @@
 """Repository for Telegram integration data."""
+
 import secrets
 import string
 from datetime import datetime, timezone, timedelta
@@ -7,7 +8,7 @@ from typing import Optional
 from pymongo.database import Database
 
 from src.repositories.base import BaseRepository
-from src.api.models.telegram_link import TelegramLink, TelegramLinkCode
+from src.api.models.telegram_link import TelegramLink
 
 
 class TelegramRepository(BaseRepository):
@@ -34,21 +35,23 @@ class TelegramRepository(BaseRepository):
         """
         # Delete existing codes for this user
         self.codes_collection.delete_many({"user_email": user_email})
-        
+
         # Generate new code
         alphabet = string.ascii_uppercase + string.digits
-        code = ''.join(secrets.choice(alphabet) for _ in range(6))
-        
+        code = "".join(secrets.choice(alphabet) for _ in range(6))
+
         now = datetime.now(timezone.utc)
         expires_at = now + timedelta(minutes=10)
-        
-        self.codes_collection.insert_one({
-            "code": code,
-            "user_email": user_email,
-            "created_at": now,
-            "expires_at": expires_at
-        })
-        
+
+        self.codes_collection.insert_one(
+            {
+                "code": code,
+                "user_email": user_email,
+                "created_at": now,
+                "expires_at": expires_at,
+            }
+        )
+
         self.logger.info("Created linking code for %s", user_email)
         return code
 
@@ -61,27 +64,28 @@ class TelegramRepository(BaseRepository):
         """
         # Find and delete code atomically
         code_doc = self.codes_collection.find_one_and_delete({"code": code.upper()})
-        
+
         if not code_doc:
             self.logger.warning("Invalid or expired code: %s", code)
             return None
-        
+
         user_email = code_doc["user_email"]
-        
+
         # Delete any existing link for this user or chat_id
-        self.collection.delete_many({"$or": [
-            {"user_email": user_email},
-            {"chat_id": chat_id}
-        ]})
-        
+        self.collection.delete_many(
+            {"$or": [{"user_email": user_email}, {"chat_id": chat_id}]}
+        )
+
         # Create new link
-        self.collection.insert_one({
-            "chat_id": chat_id,
-            "user_email": user_email,
-            "telegram_username": username,
-            "linked_at": datetime.now(timezone.utc)
-        })
-        
+        self.collection.insert_one(
+            {
+                "chat_id": chat_id,
+                "user_email": user_email,
+                "telegram_username": username,
+                "linked_at": datetime.now(timezone.utc),
+            }
+        )
+
         self.logger.info("Linked %s to chat_id %s", user_email, chat_id)
         return user_email
 

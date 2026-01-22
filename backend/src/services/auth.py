@@ -1,6 +1,7 @@
 """
 This module contains the authentication and authorization logic for the application.
 """
+
 from datetime import datetime, timedelta, timezone
 
 import jwt
@@ -99,4 +100,3 @@ def user_logout(token: str) -> None:
 
     get_mongo_database().add_token_to_blocklist(token, expires_at)
     logger.info("Token added to MongoDB blocklist for logout.")
-

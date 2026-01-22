@@ -1,7 +1,9 @@
 from pydantic import BaseModel
 
+
 class ImportResult(BaseModel):
     """Result summary of a bulk data import."""
+
     created: int
     updated: int
     errors: int

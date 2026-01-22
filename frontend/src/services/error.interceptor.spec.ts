@@ -8,8 +8,8 @@ import { NotificationService } from './notification.service';
 describe('ErrorInterceptor', () => {
   let httpMock: HttpTestingController;
   let httpClient: HttpClient;
-  let authServiceSpy: any;
-  let notificationServiceSpy: any;
+  let authServiceSpy: Partial<AuthService>;
+  let notificationServiceSpy: Partial<NotificationService>;
 
   beforeEach(() => {
     authServiceSpy = { logout: jest.fn() };
@@ -30,6 +30,7 @@ describe('ErrorInterceptor', () => {
 
     httpMock = TestBed.inject(HttpTestingController);
     httpClient = TestBed.inject(HttpClient);
+    ErrorInterceptor.resetThrottle();
   });
 
   afterEach(() => {
@@ -125,5 +126,27 @@ describe('ErrorInterceptor', () => {
     // but the key requirement is NOT logging out recursively.
     // In our implementation we check !isLoginEndpoint for both logout AND notification.
     expect(notificationServiceSpy.error).not.toHaveBeenCalled(); 
+  });
+
+  it('should only notify ONCE and logout ONCE on simultaneous 401 errors', () => {
+    // Request 1
+    httpClient.get('/api/data1').subscribe({
+      error: (error) => expect(error.status).toBe(401)
+    });
+
+    // Request 2
+    httpClient.get('/api/data2').subscribe({
+      error: (error) => expect(error.status).toBe(401)
+    });
+
+    const req1 = httpMock.expectOne('/api/data1');
+    const req2 = httpMock.expectOne('/api/data2');
+
+    req1.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
+    req2.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
+
+    expect(authServiceSpy.logout).toHaveBeenCalledTimes(1);
+    expect(notificationServiceSpy.error).toHaveBeenCalledTimes(1);
+    expect(notificationServiceSpy.error).toHaveBeenCalledWith('Sessão expirada. Faça login novamente.');
   });
 });

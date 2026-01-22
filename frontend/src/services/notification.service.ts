@@ -15,6 +15,12 @@ export class NotificationService {
   private counter = 0;
 
   show(message: string, type: 'success' | 'error' | 'info' = 'info', duration: number = 3000) {
+    // Prevent duplicate simultaneous messages
+    const alreadyShowing = this.toasts().some(t => t.message === message && t.type === type);
+    if (alreadyShowing) {
+      return;
+    }
+
     const id = this.counter++;
     const toast: Toast = { id, message, type, duration };
     

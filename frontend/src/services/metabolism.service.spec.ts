@@ -3,6 +3,7 @@ import { MetabolismService } from './metabolism.service';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { environment } from '../environment';
+import { MetabolismResponse } from '../models/metabolism.model';
 
 describe('MetabolismService', () => {
   let service: MetabolismService;
@@ -66,14 +67,14 @@ describe('MetabolismService', () => {
       const promise = service.fetchSummary();
 
       const req = httpMock.expectOne(`${environment.apiUrl}/metabolism/summary?weeks=3`);
-      req.flush({ tdee: 2000, confidence: 'low' });
+      req.flush({ tdee: 2000, confidence: 'low' } as MetabolismResponse);
 
       await promise;
     });
 
     it('should set stats to null on error', async () => {
       // First set some stats
-      service.stats.set({ tdee: 1000 } as any);
+      service.stats.set({ tdee: 1000 } as unknown as MetabolismResponse);
 
       const promise = service.fetchSummary();
 

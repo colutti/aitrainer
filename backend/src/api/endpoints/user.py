@@ -1,6 +1,7 @@
 """
 This module contains the API endpoints for user management.
 """
+
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -20,11 +21,13 @@ router = APIRouter()
 CurrentUser = Annotated[str, Depends(verify_token)]
 AITrainerBrainDep = Annotated[AITrainerBrain, Depends(get_ai_trainer_brain)]
 
+
 # Conditional rate limit decorator
 def rate_limit_login(func):
     if RATE_LIMITING_ENABLED and limiter:
         return limiter.limit(settings.RATE_LIMIT_LOGIN)(func)
     return func
+
 
 @router.post("/login")
 @rate_limit_login
@@ -52,6 +55,7 @@ def login(request: Request, data: LoginRequest) -> dict:
         logger.info("Failed login attempt for email: %s", data.email)
         raise HTTPException(status_code=401, detail="Invalid credentials") from exc
 
+
 @router.get("/profile")
 def get_profile(user_email: CurrentUser, brain: AITrainerBrainDep) -> UserProfile:
     """
@@ -69,7 +73,9 @@ def get_profile(user_email: CurrentUser, brain: AITrainerBrainDep) -> UserProfil
     """
     user_profile = brain.get_user_profile(user_email)
     if not user_profile:
-        logger.warning("Attempted to retrieve non-existent user profile for email: %s", user_email)
+        logger.warning(
+            "Attempted to retrieve non-existent user profile for email: %s", user_email
+        )
         raise HTTPException(status_code=404, detail="User profile not found")
     return user_profile
 
@@ -97,7 +103,9 @@ def update_profile(
 
 
 @router.post("/logout")
-def logout(user_email: CurrentUser, token: str = Depends(oauth2_scheme)) -> JSONResponse:
+def logout(
+    user_email: CurrentUser, token: str = Depends(oauth2_scheme)
+) -> JSONResponse:
     """
     Logs out the current user by calling the user_logout function
     and returns a JSON response indicating success.

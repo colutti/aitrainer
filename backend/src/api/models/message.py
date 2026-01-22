@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class MessageRequest(BaseModel):
     """
     Represents a request containing a user's message.

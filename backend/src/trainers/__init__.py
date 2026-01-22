@@ -9,7 +9,7 @@ __all__ = [
     "BaseTrainer",
     "AtlasTrainer",
     "LunaTrainer",
-    "SargentoTrainer", 
+    "SargentoTrainer",
     "SofiaTrainer",
-    "TrainerRegistry"
+    "TrainerRegistry",
 ]

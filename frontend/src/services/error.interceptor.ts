@@ -21,6 +21,14 @@ export class ErrorInterceptor implements HttpInterceptor {
   private authService = inject(AuthService);
   private notificationService = inject(NotificationService);
 
+  private static lastSessionExpiredNotification = 0;
+  private readonly SESSION_EXPIRED_THROTTLE = 5000; // 5 seconds
+
+  /** For testing purposes only */
+  static resetThrottle() {
+    this.lastSessionExpiredNotification = 0;
+  }
+
   intercept(
     req: HttpRequest<unknown>,
     next: HttpHandler
@@ -32,8 +40,12 @@ export class ErrorInterceptor implements HttpInterceptor {
 
         // 401: Unauthorized (handled by checking endpoints to avoid loops)
         if (error.status === 401 && !isLoginEndpoint && !isLogoutEndpoint) {
-          this.authService.logout();
-          this.notificationService.error('Sessão expirada. Faça login novamente.');
+          const now = Date.now();
+          if (now - ErrorInterceptor.lastSessionExpiredNotification > this.SESSION_EXPIRED_THROTTLE) {
+            ErrorInterceptor.lastSessionExpiredNotification = now;
+            this.authService.logout();
+            this.notificationService.error('Sessão expirada. Faça login novamente.');
+          }
         }
         
         // 403: Forbidden

@@ -1,7 +1,9 @@
 from src.trainers.base_trainer import BaseTrainer
 
+
 class SofiaTrainer(BaseTrainer):
     """Sofia: Women's health specialist."""
+
     trainer_id = "sofia"
     name = "Dr. Sofia Pulse"
     gender = "Feminino"

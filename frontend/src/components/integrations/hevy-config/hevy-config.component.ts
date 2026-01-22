@@ -67,7 +67,7 @@ export class HevyConfigComponent implements OnInit {
         this.resetInternalState();
         this.viewState.set('setup');
       }
-    } catch (e) {
+    } catch {
       this.resetInternalState();
       this.viewState.set('setup');
     } finally {
@@ -88,7 +88,9 @@ export class HevyConfigComponent implements OnInit {
       const count = await this.hevyService.getCount();
       this.workoutCount.set(count);
       this.cdr.detectChanges();
-    } catch { }
+    } catch {
+      // Ignore count fetch errors 
+    }
   }
 
   async validateAndConnect() {
@@ -109,7 +111,7 @@ export class HevyConfigComponent implements OnInit {
       } else {
         this.errorMessage.set('Chave inválida.');
       }
-    } catch (e) {
+    } catch {
       this.errorMessage.set('Erro ao conectar.');
     } finally {
       this.validating.set(false);
@@ -129,8 +131,8 @@ export class HevyConfigComponent implements OnInit {
       this.webhookUrl.set(config.webhook_url || null);
       this.webhookAuthHeader.set(config.auth_header || null);
       this.showFullAuth.set(false);
-    } catch (e) {
-      console.error('Failed to load webhook config', e);
+    } catch (error) {
+      console.error('Failed to load webhook config', error);
     }
   }
 
@@ -146,7 +148,7 @@ export class HevyConfigComponent implements OnInit {
       this.webhookAuthHeader.set(creds.auth_header);
       this.showFullAuth.set(true);
       this.successMessage.set('Webhook configurado! Copie o segredo agora.');
-    } catch (e) {
+    } catch {
       this.errorMessage.set('Erro ao gerar webhook.');
     } finally {
       this.generatingWebhook.set(false);
@@ -163,7 +165,7 @@ export class HevyConfigComponent implements OnInit {
       this.webhookAuthHeader.set(null);
       this.showFullAuth.set(false);
       this.successMessage.set('Webhook revogado.');
-    } catch (e) {
+    } catch {
       this.errorMessage.set('Erro ao revogar webhook.');
     } finally {
       this.cdr.detectChanges();
@@ -199,7 +201,7 @@ export class HevyConfigComponent implements OnInit {
       this.resetInternalState();
       this.viewState.set('setup');
       this.statusChanged.emit();
-    } catch (e) {
+    } catch {
       this.errorMessage.set('Erro ao desconectar.');
       this.viewState.set('connected');
     } finally {
@@ -216,7 +218,7 @@ export class HevyConfigComponent implements OnInit {
     
     try {
       const fromDateIso = this.parseDisplayDate(this.importDateDisplay);
-      const res = await this.hevyService.importWorkouts(fromDateIso, this.importMode as any);
+      const res = await this.hevyService.importWorkouts(fromDateIso, this.importMode as 'skip_duplicates' | 'overwrite');
       this.importResult.set(res);
       this.statusChanged.emit();
       
@@ -229,7 +231,7 @@ export class HevyConfigComponent implements OnInit {
       }
 
       await this.loadStatus();
-    } catch (e) {
+    } catch {
       this.errorMessage.set('Erro na importação.');
     } finally {
       this.importing.set(false);

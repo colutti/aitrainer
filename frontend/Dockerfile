@@ -1,5 +1,5 @@
 # Build stage
-FROM docker.io/library/node:20-slim AS build
+FROM docker.io/library/node:22-slim AS build
 
 # ARG permite override: docker build --build-arg BUILD_MODE=production
 ARG BUILD_MODE=development

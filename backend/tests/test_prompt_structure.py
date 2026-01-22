@@ -4,10 +4,10 @@ import sys
 import os
 
 # Add src to python path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
 from src.services.trainer import AITrainerBrain
-from src.core.config import settings
+
 
 class TestPromptStructure(unittest.TestCase):
     def setUp(self):
@@ -24,32 +24,35 @@ class TestPromptStructure(unittest.TestCase):
         # via _get_prompt_template.
         # Como o template é construído dinamicamente na string relevant_memories,
         # precisamos testar se o output final contém os headers.
-        
+
         # Simulando o que o send_message_ai faz para construir input_data
-        critical_memories = [{"text": "Alergia a lactose", "created_at": "2026-01-01"}]
         input_data = {
-             "trainer_profile": "Perfil Teste",
-             "user_profile": "User Teste",
-             "relevant_memories": "## 🚨 Fatos Críticos (ATENÇÃO MÁXIMA):\n- ⚠️ (01/01) Alergia a lactose",
-             "chat_history_summary": "Histórico...",
-             "user_message": "Oi"
+            "trainer_profile": "Perfil Teste",
+            "user_profile": "User Teste",
+            "relevant_memories": "## 🚨 Fatos Críticos (ATENÇÃO MÁXIMA):\n- ⚠️ (01/01) Alergia a lactose",
+            "chat_history_summary": "Histórico...",
+            "user_message": "Oi",
         }
-        
+
         # Render prompt
         template = self.trainer._get_prompt_template(input_data)
         prompt_text = template.format(**input_data)
-        
+
         print(f"\n[DEBUG] Rendered Prompt:\n{prompt_text[:500]}...")
 
         # Assert Section Headers Exist
         self.assertIn("## 🚨 Fatos Críticos", prompt_text)
         self.assertIn("Alergia a lactose", prompt_text)
-        
+
         # Validar hierarquia: Fatos críticos devem aparecer ANTES do histórico
         critical_pos = prompt_text.find("## 🚨 Fatos Críticos")
         history_pos = prompt_text.find("## 💬 Histórico")
-        
-        self.assertTrue(critical_pos < history_pos, "Fatos Críticos devem aparecer antes do Histórico")
 
-if __name__ == '__main__':
+        self.assertTrue(
+            critical_pos < history_pos,
+            "Fatos Críticos devem aparecer antes do Histórico",
+        )
+
+
+if __name__ == "__main__":
     unittest.main()

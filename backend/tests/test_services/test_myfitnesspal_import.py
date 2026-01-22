@@ -1,7 +1,9 @@
 import pytest
-from datetime import datetime
 from unittest.mock import MagicMock
-from src.services.myfitnesspal_import_service import parse_csv_content, import_nutrition_from_csv, DailyNutrition
+from src.services.myfitnesspal_import_service import (
+    parse_csv_content,
+    import_nutrition_from_csv,
+)
 from src.api.models.nutrition_log import NutritionLog
 
 CSV_CONTENT_VALID = """Data,Refeição,Calorias,Gorduras (g),Carboidratos (g),Proteínas (g)
@@ -14,19 +16,19 @@ CSV_CONTENT_INVALID = """Data,Refeição,Calorias
 2024-01-01,Café da Manhã,300
 """
 
-class TestMyFitnessPalImport:
 
+class TestMyFitnessPalImport:
     def test_parse_csv_content_valid(self):
         """Test parsing valid CSV content."""
         result = parse_csv_content(CSV_CONTENT_VALID)
-        
+
         assert len(result) == 2
         assert "2024-01-01" in result
         assert "2024-01-02" in result
-        
+
         day1 = result["2024-01-01"]
         assert day1.calories == 900.0  # 300 + 600
-        assert day1.protein == 60.0    # 20 + 40
+        assert day1.protein == 60.0  # 20 + 40
         assert len(day1.meals) == 2
 
     def test_parse_csv_content_invalid_columns(self):
@@ -39,21 +41,21 @@ class TestMyFitnessPalImport:
         """Test the full import process with mock DB."""
         mock_db = MagicMock()
         mock_db.save_nutrition_log.return_value = ("id123", True)
-        
+
         user_email = "test@user.com"
         result = import_nutrition_from_csv(user_email, CSV_CONTENT_VALID, mock_db)
-        
+
         assert result.total_days == 2
         assert result.created == 2
         assert result.updated == 0
         assert result.errors == 0
-        
+
         # Verify DB was called correctly
         assert mock_db.save_nutrition_log.call_count == 2
-        
+
         # Check first call arg
         call_args = mock_db.save_nutrition_log.call_args_list
-        log1 = call_args[0][0][0] # First call, first arg
+        log1 = call_args[0][0][0]  # First call, first arg
         # Since we sort by date, 2024-01-01 comes first
         assert isinstance(log1, NutritionLog)
         assert log1.user_email == user_email
@@ -65,9 +67,9 @@ class TestMyFitnessPalImport:
         mock_db = MagicMock()
         # First call new, Second call update
         mock_db.save_nutrition_log.side_effect = [("id1", True), ("id2", False)]
-        
+
         result = import_nutrition_from_csv("u", CSV_CONTENT_VALID, mock_db)
-        
+
         assert result.created == 1
         assert result.updated == 1
 
@@ -75,9 +77,9 @@ class TestMyFitnessPalImport:
         """Test handling of DB errors during save."""
         mock_db = MagicMock()
         mock_db.save_nutrition_log.side_effect = Exception("DB Bomb")
-        
+
         result = import_nutrition_from_csv("u", CSV_CONTENT_VALID, mock_db)
-        
+
         assert result.errors == 2
         assert len(result.error_messages) == 2
         assert "DB Bomb" in result.error_messages[0]

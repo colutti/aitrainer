@@ -1,4 +1,3 @@
-
 SUMMARY_PROMPT = """
 Resuma a conversa progressivamente, MAS PRESERVE EXATAMENTE:
 1. Últimos PRs (cargas e repetições)

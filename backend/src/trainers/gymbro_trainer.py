@@ -1,7 +1,9 @@
 from src.trainers.base_trainer import BaseTrainer
 
+
 class GymBroTrainer(BaseTrainer):
     """Gym Bro: Friendly, informal and highly encouraging."""
+
     trainer_id = "gymbro"
     name = "Breno 'The Bro' Silva"
     gender = "Masculino"

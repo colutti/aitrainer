@@ -82,8 +82,8 @@ export class MetabolismComponent implements OnInit {
                 const chunk = decoder.decode(value, { stream: true });
                 this.insightText.update(prev => prev + chunk);
            }
-      } catch (err) {
-          console.error("Stream error", err);
+      } catch (error) {
+          console.error("Stream error", error);
           this.insightText.set("Não foi possível gerar a análise do treinador no momento.");
       } finally {
           this.isInsightLoading.set(false);
@@ -136,7 +136,7 @@ export class MetabolismComponent implements OnInit {
       }
   }
 
-  getConfidenceReason(s: any): string {
+  getConfidenceReason(s: { confidence?: string, confidence_reason?: string } | null): string {
       if (!s) return 'Dados carregando...';
       if (s.confidence === 'low') {
           return s.confidence_reason || 'Dados inconsistentes.';

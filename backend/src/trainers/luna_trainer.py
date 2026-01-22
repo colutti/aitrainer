@@ -1,7 +1,9 @@
 from src.trainers.base_trainer import BaseTrainer
 
+
 class LunaTrainer(BaseTrainer):
     """Luna: Holistic and wellness guide."""
+
     trainer_id = "luna"
     name = "Luna Stardust"
     gender = "Feminino"

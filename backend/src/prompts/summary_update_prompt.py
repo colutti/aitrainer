@@ -1,4 +1,3 @@
-
 SUMMARY_UPDATE_PROMPT = """
 Você é um assistente especialista em sumarização de contexto de longo prazo.
 

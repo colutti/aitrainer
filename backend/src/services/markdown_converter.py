@@ -1,11 +1,13 @@
 """Convert standard Markdown to Telegram MarkdownV2."""
+
 import re
+from typing import Optional
 
 
 def convert_to_telegram_markdown(text: str) -> str:
     """
     Convert standard Markdown to Telegram MarkdownV2.
-    
+
     Conversions:
     - **bold** → *bold*
     - *italic* or _italic_ → _italic_
@@ -13,37 +15,37 @@ def convert_to_telegram_markdown(text: str) -> str:
     - Remove unsupported elements (headers, lists)
     """
     # Remove headers (# Header)
-    text = re.sub(r'^#+\s+', '', text, flags=re.MULTILINE)
-    
+    text = re.sub(r"^#+\s+", "", text, flags=re.MULTILINE)
+
     # Step 1: Convert **bold** to placeholder
-    text = re.sub(r'\*\*(.+?)\*\*', r'XBOLDSTARTX\1XBOLDENDX', text)
-    
+    text = re.sub(r"\*\*(.+?)\*\*", r"XBOLDSTARTX\1XBOLDENDX", text)
+
     # Step 2: Convert remaining *italic* to _italic_
-    text = re.sub(r'\*(.+?)\*', r'_\1_', text)
-    
+    text = re.sub(r"\*(.+?)\*", r"_\1_", text)
+
     # Step 3: Convert bold placeholders to *
-    text = text.replace('XBOLDSTARTX', '*')
-    text = text.replace('XBOLDENDX', '*')
-    
+    text = text.replace("XBOLDSTARTX", "*")
+    text = text.replace("XBOLDENDX", "*")
+
     # Escape special characters for MarkdownV2
     # Characters that need escaping: _ * [ ] ( ) ~ ` > # + - = | { } . !
     # But NOT inside code blocks or already-converted formatting
-    
+
     # Protect our formatting markers
-    text = text.replace('*', 'XASTERISKX')
-    text = text.replace('_', 'XUNDERSCOREX')
-    
+    text = text.replace("*", "XASTERISKX")
+    text = text.replace("_", "XUNDERSCOREX")
+
     # Escape remaining special chars
-    text = re.sub(r'([.!>\-#+=|{}()\[\]~`])', r'\\\1', text)
-    
+    text = re.sub(r"([.!>\-#+=|{}()\[\]~`])", r"\\\1", text)
+
     # Restore formatting
-    text = text.replace('XASTERISKX', '*')
-    text = text.replace('XUNDERSCOREX', '_')
-    
+    text = text.replace("XASTERISKX", "*")
+    text = text.replace("XUNDERSCOREX", "_")
+
     return text
 
 
-def safe_telegram_send(text: str) -> tuple[str, str]:
+def safe_telegram_send(text: str) -> tuple[str, Optional[str]]:
     """
     Returns (formatted_text, parse_mode).
     If conversion fails, returns plain text.

@@ -3,6 +3,7 @@ import bcrypt
 from src.api.models.user_profile import UserProfile
 from src.repositories.base import BaseRepository
 
+
 class UserRepository(BaseRepository):
     def __init__(self, database: Database):
         super().__init__(database, "users")
@@ -16,7 +17,10 @@ class UserRepository(BaseRepository):
         elif result.modified_count > 0:
             self.logger.info("User profile updated for email: %s", profile.email)
         else:
-            self.logger.debug("User profile for email %s already up-to-date or no changes.", profile.email)
+            self.logger.debug(
+                "User profile for email %s already up-to-date or no changes.",
+                profile.email,
+            )
 
     def get_profile(self, email: str) -> UserProfile | None:
         user_data = self.collection.find_one({"email": email})
@@ -42,16 +46,16 @@ class UserRepository(BaseRepository):
         """
         Finds a user by their Hevy webhook token.
         Ensures a sparse index exists on the token field.
-        
+
         Args:
             token: The unique webhook token.
-            
+
         Returns:
             UserProfile if found, None otherwise.
         """
         # Ensure index exists (idempotent)
         self.collection.create_index("hevy_webhook_token", sparse=True)
-        
+
         user_data = self.collection.find_one({"hevy_webhook_token": token})
         if not user_data:
             self.logger.debug("No user found for webhook token")

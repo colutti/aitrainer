@@ -1,11 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import List
 
+
 class BaseTrainer(ABC):
     """
     Abstract base class for all AI trainers.
     Defines the interface that all specific trainer personalities must implement.
     """
+
     trainer_id: str
     name: str
     gender: str

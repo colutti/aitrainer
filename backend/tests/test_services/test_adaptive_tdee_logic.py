@@ -1,11 +1,10 @@
-
 import pytest
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from unittest.mock import MagicMock
 from src.services.adaptive_tdee import AdaptiveTDEEService
 from src.api.models.weight_log import WeightLog
-from src.api.models.nutrition_log import NutritionLog
 from src.services.database import MongoDatabase
+
 
 # Mock the NutritionLog since it's used in the service but we don't need its logic for the weight filter test
 class MockNutritionLog:
@@ -13,10 +12,10 @@ class MockNutritionLog:
         self.date = datetime(date_obj.year, date_obj.month, date_obj.day)
         self.calories = calories
 
-from datetime import datetime
+
+
 
 class TestAdaptiveTDEELogic:
-
     @pytest.fixture
     def mock_db(self):
         return MagicMock(spec=MongoDatabase)
@@ -28,14 +27,16 @@ class TestAdaptiveTDEELogic:
     def _create_logs(self, weight_values, start_date=None):
         if start_date is None:
             start_date = date(2025, 1, 1)
-        
+
         logs = []
         for i, w in enumerate(weight_values):
-            logs.append(WeightLog(
-                user_email="test@test.com",
-                date=start_date + timedelta(days=i),
-                weight_kg=w
-            ))
+            logs.append(
+                WeightLog(
+                    user_email="test@test.com",
+                    date=start_date + timedelta(days=i),
+                    weight_kg=w,
+                )
+            )
         return logs
 
     def test_filter_outliers_water_drop(self, service):
@@ -45,14 +46,14 @@ class TestAdaptiveTDEELogic:
         Expectation: Service should identify the drop and return the stable baseline (76.5 series).
         """
         logs = self._create_logs([78.0, 76.5, 76.5, 76.5, 76.5])
-        
+
         filtered, count = service._filter_outliers(logs)
-        
-        # Should exclude the first one (78.0) because the subsequent logs confirm the drop was a 'step' 
-        # OR it treats it as a new baseline. 
-        # The logic proposed is: if step change, reset window. 
+
+        # Should exclude the first one (78.0) because the subsequent logs confirm the drop was a 'step'
+        # OR it treats it as a new baseline.
+        # The logic proposed is: if step change, reset window.
         # So we expect 76.5, 76.5, 76.5, 76.5
-        
+
         assert len(filtered) == 4
         assert filtered[0].weight_kg == 76.5
         assert filtered[-1].weight_kg == 76.5
@@ -65,9 +66,9 @@ class TestAdaptiveTDEELogic:
         Expectation: Service should identify 78.0 as outlier and remove it.
         """
         logs = self._create_logs([76.5, 76.5, 78.0, 76.5, 76.5])
-        
+
         filtered, count = service._filter_outliers(logs)
-        
+
         assert len(filtered) == 4
         assert count == 1
         for log in filtered:
@@ -81,9 +82,9 @@ class TestAdaptiveTDEELogic:
         """
         # 0.5kg is < 1.0kg limit, so treated as normal
         logs = self._create_logs([80.0, 79.5, 79.0, 78.5, 78.0])
-        
+
         filtered, count = service._filter_outliers(logs)
-        
+
         assert len(filtered) == 5
         assert count == 0
         assert filtered[0].weight_kg == 80.0
@@ -96,9 +97,9 @@ class TestAdaptiveTDEELogic:
         Expectation: Reset window to start at 78.0
         """
         logs = self._create_logs([76.5, 78.0, 78.0, 78.0])
-        
+
         filtered, count = service._filter_outliers(logs)
-        
+
         assert len(filtered) == 3
         assert count == 1
         assert filtered[0].weight_kg == 78.0

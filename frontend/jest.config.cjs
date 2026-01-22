@@ -1,6 +1,7 @@
+/* global module */
 module.exports = {
   preset: 'jest-preset-angular',
-  setupFilesAfterEnv: ['<rootDir>/setup-jest.ts'],
+  setupFilesAfterEnv: ['<rootDir>/src/setup-jest.ts'],
   moduleNameMapper: {
     'ngx-markdown': '<rootDir>/src/mocks/ngx-markdown.js'
   },
