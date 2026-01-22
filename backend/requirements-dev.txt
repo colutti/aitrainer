@@ -1,0 +1,13 @@
+-r requirements.txt
+
+# Linting & Formatting
+black==25.11.0
+isort==7.0.0
+pylint==4.0.4
+pyright==1.1.407
+ruff==0.14.9
+
+# Testing
+pytest
+pytest-asyncio
+pytest-benchmark

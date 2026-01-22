@@ -100,8 +100,68 @@ describe('DashboardComponent', () => {
 
     fixture.detectChanges(); // Run change detection
 
-    // Check if chart data was updated
     expect(component.barChartData.labels).toEqual(['Chest', 'Legs']);
     expect(component.barChartData.datasets[0].data).toEqual([1000, 2000]);
+  });
+
+  it('should update metabolism charts when metabolism stats change', () => {
+      const mockMetabolism: MetabolismResponse = {
+          latest_weight: 75,
+          target_weight: 70,
+          start_weight: 80,
+          goal_type: 'lose',
+          weeks_to_goal: 10,
+          fat_change_kg: -2,
+          muscle_change_kg: 1,
+          end_fat_pct: 20,
+          end_muscle_pct: 40,
+          weight_trend: [
+              { date: '2024-01-01', weight: 80 },
+              { date: '2024-01-02', weight: 79 }
+          ],
+          consistency: [
+              { date: '2024-01-01', weight: true, nutrition: true },
+              { date: '2024-01-02', weight: false, nutrition: true }
+          ]
+      };
+
+      component.metabolismStats.set(mockMetabolism);
+      fixture.detectChanges();
+
+      // Check Weight Chart
+      expect(component.weightChartData.labels?.length).toBe(2);
+      expect(component.weightChartData.datasets[0].data).toEqual([80, 79]);
+
+      // Check Consistency Chart
+      expect(component.consistencyChartData.labels?.length).toBe(2);
+      expect(component.consistencyChartData.datasets[0].data).toEqual([1, 1]); // Nutrition
+      expect(component.consistencyChartData.datasets[1].data).toEqual([1, 0]); // Weight
+  });
+
+  it('should format dates correctly', () => {
+    // Valid date
+    const formatted = component.getFormattedDate('2024-01-01T10:00:00');
+    // We expect basic formatting presence, precise string depends on locale which might vary in test env
+    expect(formatted).not.toBe('2024-01-01T10:00:00'); 
+    expect(formatted).toBeTruthy();
+
+    // Invalid date fallback
+    const invalid = component.getFormattedDate('baddate');
+    expect(invalid).toBe('baddate');
+    
+    // Empty
+    expect(component.getFormattedDate('')).toBe('');
+  });
+
+  it('should handle metabolism fetch error gracefully', async () => {
+    // Override manual call from ngOnInit to fail
+    metabolismServiceMock.getSummary = jest.fn().mockRejectedValue(new Error('API Fail'));
+    
+    // Manually call fetchMetabolismTrend (ngOnInit calls it, but we want to await it specifically)
+    await component.fetchMetabolismTrend();
+    
+    expect(component.isMetabolismLoading()).toBe(false);
+    // Should NOT have crashed and likely stats are null (or stale)
+    // Spy on console.error?
   });
 });

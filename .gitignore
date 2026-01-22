@@ -1,47 +1,69 @@
-# Python-generated files
+# === Python ===
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# === Python Backend ===
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.db
-*.sqlite3
-*.log
+# Virtual Environment
+venv/
+.venv/
+env/
+.env/
+
+# Environment Variables
 .env
 .env.*
-venv/
-.env.local
-.mypy_cache/
-.pytest_cache/
-.coverage
-htmlcov/
-.DS_Store
+!.env.example
 
-# === Node/Angular Frontend ===
+# Testing & Quality
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.benchmarks/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# === Frontend (Angular/Node) ===
+node_modules/
 frontend/node_modules/
 frontend/dist/
 frontend/.angular/
-frontend/cache/
+frontend/coverage/
 frontend/.env.local
-frontend/.DS_Store
-frontend/package-lock.json
+frontend/.env
 
-# === General ===
+# === IDEs & Editors ===
+.idea/
+.vscode/
 *.swp
 *.swo
-*.bak
-*.tmp
-*.orig
-*.idea/
-*.vscode/
-*.code-workspace
-
-# === OS Files ===
-Thumbs.db
 .DS_Store
-node_modules/
-screenshots/
-*.txt
-.coverage
+.cursor/
+
+# === OS ===
+Thumbs.db

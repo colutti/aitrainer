@@ -24,10 +24,15 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         
-    - name: Run Tests
+    - name: Run Tests (Unit)
       run: |
         cd backend
-        pytest
+        pytest tests/unit
+
+    - name: Run Benchmarks
+      run: |
+        cd backend
+        pytest tests/performance --benchmark-only
         
     - name: Lint with Ruff
       run: |
