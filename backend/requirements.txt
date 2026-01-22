@@ -47,3 +47,6 @@ pytest-asyncio==0.23.6
 pytest-cov==5.0.0
 pytest-mock==3.14.0
 
+
+# Pinned to avoid deprecation warnings in uvicorn
+websockets==13.1
