@@ -314,3 +314,96 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
             return f"Erro técnico na atualização: {str(e)}"
 
     return update_hevy_routine
+
+
+def create_replace_hevy_exercise_tool(hevy_service, database, user_email: str):
+    @tool
+    async def replace_hevy_exercise(
+        routine_title: str,
+        old_exercise_name_or_id: str,
+        new_exercise_id: str
+    ) -> str:
+        """
+        Substitui um exercício por outro em uma rotina do Hevy, mantendo as séries e cargas existentes.
+        
+        Args:
+            routine_title: Título da rotina (ex: "Pull", "Legs").
+            old_exercise_name_or_id: Nome (fuzzy match) ou ID do exercício antigo a ser removido.
+            new_exercise_id: ID do novo exercício (template ID) que entrará no lugar.
+        """
+        profile = database.get_user_profile(user_email)
+        if not profile or not profile.hevy_enabled or not profile.hevy_api_key:
+            return "Integração desativada."
+
+        logger.info(f"replace_hevy_exercise: {routine_title} | {old_exercise_name_or_id} -> {new_exercise_id}")
+
+        try:
+            # 1. Buscar a rotina
+            target_routine = None
+            # Tentar buscar nas primeiras páginas
+            for p in range(1, 6):
+                response = await hevy_service.get_routines(profile.hevy_api_key, page=p, page_size=10)
+                if not response or not response.routines:
+                    break
+                
+                # Exact match first
+                for r in response.routines:
+                    if r.title.lower().strip() == routine_title.lower().strip():
+                        target_routine = r
+                        break
+                if target_routine: break
+                
+                # Fuzzy match second
+                for r in response.routines:
+                    if routine_title.lower() in r.title.lower():
+                        target_routine = r
+                        break
+                if target_routine: break
+            
+            if not target_routine:
+                return f"Rotina '{routine_title}' não encontrada."
+
+            # 2. Fetch full routine details
+            current = await hevy_service.get_routine_by_id(profile.hevy_api_key, target_routine.id)
+            if not current:
+                return "Falha ao recuperar detalhes da rotina."
+
+            # 3. Find and Swap Exercise
+            found = False
+            exercises_list = current.exercises
+            
+            target_old = old_exercise_name_or_id.lower().strip()
+            
+            for ex in exercises_list:
+                # Check by ID
+                if ex.exercise_template_id and ex.exercise_template_id.lower() == target_old:
+                    ex.exercise_template_id = new_exercise_id
+                    found = True
+                    break
+                
+                # Check by Title (need to match title from GET response)
+                if ex.title and (target_old in ex.title.lower() or ex.title.lower() in target_old):
+                   ex.exercise_template_id = new_exercise_id
+                   found = True
+                   break
+
+            if not found:
+                current_names = [e.title for e in exercises_list if e.title]
+                return f"Exercício '{old_exercise_name_or_id}' não encontrado na rotina '{current.title}'. Exercícios atuais: {', '.join(current_names)}"
+
+            # 4. Clean Payload (Implicit via Pydantic + HevyService)
+            # HevyRoutine Pydantic model ignores extras (index, etc)
+            # HevyService.update_routine now strictly excludes forbidden fields.
+            
+            result = await hevy_service.update_routine(profile.hevy_api_key, target_routine.id, current)
+            if result:
+                 return f"✅ Substituição realizada com sucesso! '{old_exercise_name_or_id}' -> Novo ID {new_exercise_id}."
+            
+            return "Erro ao atualizar no Hevy (API retornou falha na validação)."
+
+        except Exception as e:
+            logger.error(f"Error in replace_hevy_exercise: {e}", exc_info=True)
+            return f"Erro técnico: {str(e)}"
+
+    return replace_hevy_exercise
+

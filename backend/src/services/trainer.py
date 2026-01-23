@@ -567,6 +567,7 @@ class AITrainerBrain:
             create_create_hevy_routine_tool,
             create_update_hevy_routine_tool,
             create_search_hevy_exercises_tool,
+            create_replace_hevy_exercise_tool,
         )
         from src.services.hevy_service import HevyService
 
@@ -582,6 +583,9 @@ class AITrainerBrain:
             hevy_service, self._database, user_email
         )
         search_hevy_exercises_tool = create_search_hevy_exercises_tool(
+            hevy_service, self._database, user_email
+        )
+        replace_hevy_exercise_tool = create_replace_hevy_exercise_tool(
             hevy_service, self._database, user_email
         )
 
@@ -605,6 +609,7 @@ class AITrainerBrain:
             create_hevy_routine_tool,
             update_hevy_routine_tool,
             search_hevy_exercises_tool,
+            replace_hevy_exercise_tool,
             get_user_goal_tool,
             update_user_goal_tool,
         ]
