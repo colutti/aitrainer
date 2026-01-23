@@ -383,20 +383,22 @@ class HevyService:
         async with httpx.AsyncClient() as client:
             try:
                 # Prepare payload: Hevy API is strict about fields
-                # Use exclude_none=False (preserve nulls) as seen in docs example
+                # Use exclude_none=True (Hevy rejects many null fields)
                 routine_data = routine.model_dump(
                     exclude={"id", "created_at", "updated_at"},
-                    exclude_none=False,
+                    exclude_none=True,
                 )
                 
-                # Exclude exercise-metadata (like title) from each exercise
+                # Exclude exercise-metadata (forbidden in POST/PUT)
                 if "exercises" in routine_data:
                     for ex in routine_data["exercises"]:
+                        # Always remove title even if not None
                         if "title" in ex:
                             del ex["title"]
 
-                # Ensure folder_id is always sent (Hevy API requirement for some accounts)
-                routine_data["folder_id"] = routine.folder_id
+                # folder_id is allowed in POST
+                if routine.folder_id is not None:
+                    routine_data["folder_id"] = routine.folder_id
 
                 import json
                 payload = {"routine": routine_data}
@@ -456,19 +458,19 @@ class HevyService:
         async with httpx.AsyncClient() as client:
             try:
                 # Prepare payload: Hevy API is strict about fields
-                # Use exclude_none=False (preserve nulls) as seen in docs example
+                # Use exclude_none=True (Hevy rejects many null fields)
                 routine_data = routine.model_dump(
                     exclude={"id", "created_at", "updated_at"},
-                    exclude_none=False,
+                    exclude_none=True,
                 )
                 
-                # Exclude exercise-metadata (like title)
+                # Exclude exercise-metadata (forbidden in PUT)
                 if "exercises" in routine_data:
                     for ex in routine_data["exercises"]:
                         if "title" in ex:
                             del ex["title"]
                 
-                # IMPORTANT: According to docs, 'folder_id' is NOT in PUT payload.
+                # IMPORTANT: 'folder_id' is NOT allowed in PUT payload
                 if "folder_id" in routine_data:
                     del routine_data["folder_id"]
                 
