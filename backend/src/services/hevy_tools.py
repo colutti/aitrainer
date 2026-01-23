@@ -225,6 +225,12 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
         if not profile or not profile.hevy_enabled or not profile.hevy_api_key:
             return "Integração desativada."
 
+        logger.info(
+            f"update_hevy_routine called by {user_email}: "
+            f"routine_title='{routine_title}', new_title='{new_title}', "
+            f"notes='{notes}', exercises_count={len(exercises) if exercises else 'None'}"
+        )
+
         try:
             # Buscar rotinas paginadas (limite da API é 10 por página)
             # Vamos tentar encontrar nas primeiras 5 páginas (50 rotinas)
@@ -281,14 +287,20 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
             if notes:
                 current.notes = notes
             if exercises:
+                logger.info(f"Assigning {len(exercises)} new exercises to routine '{target_routine.title}'")
                 new_exercises = []
                 for ex in exercises:
                     if not ex.get("exercise_template_id"):
                         return "Cada exercício atualizado deve ter um `exercise_template_id`."
                     if not ex.get("sets"):
                         ex["sets"] = [{"type": "normal", "weight_kg": 0, "reps": 10}]
-                    new_exercises.append(HevyRoutineExercise(**ex))
+                    
+                    exercise_obj = HevyRoutineExercise(**ex)
+                    logger.debug(f"Adding exercise: {exercise_obj.exercise_template_id}")
+                    new_exercises.append(exercise_obj)
                 current.exercises = new_exercises
+            else:
+                logger.info("No exercise updates provided in this tool call.")
 
             result = await hevy_service.update_routine(profile.hevy_api_key, routine_id, current)
             if result:
