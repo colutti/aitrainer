@@ -211,12 +211,15 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
         Args:
             routine_title: Título da rotina a ser atualizada (ex: "Pull Workout", "Treino A")
             new_title: Novo título para a rotina (opcional, se quiser renomear)
-            exercises: Lista de exercícios atualizada (opcional)
+            exercises: Lista COMPLETA de exercícios que a rotina deve ter (opcional). 
+                       Cada exercício deve ser um objeto com 'exercise_template_id'.
+                       IMPORTANTE: Ao fornecer esta lista, ela substituirá INTEIRAMENTE a lista atual de exercícios.
             notes: Notas atualizadas (opcional)
 
         IMPORTANTE:
         1. Use o título que aparece em `list_hevy_routines`.
-        2. Se alterar exercícios, use `search_hevy_exercises` para validar os IDs.
+        2. Se alterar exercícios, use `search_hevy_exercises` para validar os IDs dos novos exercícios.
+        3. Para manter os exercícios existentes, você DEVE incluí-los na lista enviada.
         """
         if not routine_title:
             return "Título da rotina é obrigatório para atualização."
