@@ -472,7 +472,16 @@ class HevyService:
                         if "title" in ex:
                             del ex["title"]
                 
+                # Ensure folder_id is always sent (Hevy API requirement for some accounts)
+                # Consistent with create_routine logic
+                routine_data["folder_id"] = routine.folder_id
+                
                 payload = {"routine": routine_data}
+
+                logger.info(
+                    f"[update_routine] Sending payload for routine {routine_id}: {payload.get('routine', {}).get('title')}, "
+                    f"exercises: {len(payload.get('routine', {}).get('exercises', []))}"
+                )
 
                 response = await client.put(
                     f"{self.BASE_URL}/routines/{routine_id}",

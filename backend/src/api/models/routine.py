@@ -1,5 +1,5 @@
 from typing import List, Optional
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 
 class HevyRepRange(BaseModel):
@@ -10,12 +10,23 @@ class HevyRepRange(BaseModel):
 
 class HevySet(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    type: str = Field(..., description="e.g., normal, warm_up, drop_set, failure")
+    type: str = Field(..., description="e.g., normal, warmup, dropset, failure")
     weight_kg: Optional[float] = None
     reps: Optional[int] = None
     distance_meters: Optional[float] = None
     duration_seconds: Optional[int] = None
     rep_range: Optional[HevyRepRange] = None
+
+    @field_validator("type", mode="before")
+    @classmethod
+    def normalize_type(cls, v: str) -> str:
+        if isinstance(v, str):
+            v = v.lower().strip()
+            if v == "warm_up":
+                return "warmup"
+            if v == "drop_set":
+                return "dropset"
+        return v
 
 
 class HevyRoutineExercise(BaseModel):
