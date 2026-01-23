@@ -359,7 +359,13 @@ class HevyService:
                     timeout=10.0,
                 )
                 if response.status_code == 200:
-                    return HevyRoutine(**response.json().get("routine", {}))
+                    data = response.json()
+                    routine_data = data.get("routine")
+                    if isinstance(routine_data, list) and routine_data:
+                        routine_data = routine_data[0]
+                    
+                    if isinstance(routine_data, dict):
+                        return HevyRoutine(**routine_data)
                 return None
             except Exception as e:
                 logger.error(f"Failed to fetch routine {routine_id}: {e}")
@@ -374,11 +380,21 @@ class HevyService:
         """
         async with httpx.AsyncClient() as client:
             try:
-                # Build payload manually to ensure folder_id is always sent (even as null)
-                routine_data = routine.model_dump(exclude_unset=True, exclude_none=True)
-                routine_data["folder_id"] = (
-                    routine.folder_id
-                )  # Send null explicitly if None
+                # Prepare payload: Hevy API is strict about fields
+                # Exclude routine-metadata
+                routine_data = routine.model_dump(
+                    exclude={"id", "created_at", "updated_at"},
+                    exclude_none=True,
+                )
+                
+                # Exclude exercise-metadata (like title) from each exercise
+                if "exercises" in routine_data:
+                    for ex in routine_data["exercises"]:
+                        if "title" in ex:
+                            del ex["title"]
+
+                # Ensure folder_id is always sent (Hevy API requirement for some accounts)
+                routine_data["folder_id"] = routine.folder_id
 
                 payload = {"routine": routine_data}
 
@@ -443,9 +459,21 @@ class HevyService:
         """
         async with httpx.AsyncClient() as client:
             try:
-                payload = {
-                    "routine": routine.model_dump(exclude_unset=True, exclude_none=True)
-                }
+                # Prepare payload: Hevy API is strict about fields
+                # Exclude routine-metadata
+                routine_data = routine.model_dump(
+                    exclude={"id", "created_at", "updated_at"},
+                    exclude_none=True,
+                )
+                
+                # Exclude exercise-metadata (like title)
+                if "exercises" in routine_data:
+                    for ex in routine_data["exercises"]:
+                        if "title" in ex:
+                            del ex["title"]
+                
+                payload = {"routine": routine_data}
+
                 response = await client.put(
                     f"{self.BASE_URL}/routines/{routine_id}",
                     headers={"api-key": api_key},
@@ -453,7 +481,13 @@ class HevyService:
                     timeout=20.0,
                 )
                 if response.status_code == 200:
-                    return HevyRoutine(**response.json().get("routine", {}))
+                    data = response.json()
+                    routine_data = data.get("routine")
+                    if isinstance(routine_data, list) and routine_data:
+                        routine_data = routine_data[0]
+                    
+                    if isinstance(routine_data, dict):
+                        return HevyRoutine(**routine_data)
                 logger.error(
                     f"Hevy routine update failed: {response.status_code} - {response.text}"
                 )
