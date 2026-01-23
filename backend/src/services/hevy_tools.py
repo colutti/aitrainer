@@ -239,16 +239,24 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
 
         try:
             # Buscar todas rotinas para encontrar a correta por título
+            # Usando pageSize=50 para evitar limites da API
             all_routines_response = asyncio.run(
-                hevy_service.get_routines(profile.hevy_api_key, page=1, page_size=100)
+                hevy_service.get_routines(profile.hevy_api_key, page=1, page_size=50)
             )
 
-            if not all_routines_response or not all_routines_response.routines:
-                return "Nenhuma rotina encontrada no Hevy. Crie uma rotina primeiro."
+            if all_routines_response is None:
+                return "Erro ao conectar com a API do Hevy. Verifique sua chave nas configurações."
+
+            if not all_routines_response.routines:
+                key_masked = f"{profile.hevy_api_key[:4]}..." if profile.hevy_api_key else "MISSING"
+                logger.warning(f"No routines returned for user {user_email} (Key starts with: {key_masked})")
+                return "Nenhuma rotina encontrada na sua conta do Hevy. Certifique-se de que você criou rotinas no aplicativo Hevy antes de tentar atualizá-las."
 
             # Procurar rotina por título (case-insensitive match)
             target_routine = None
             routine_title_lower = routine_title.lower().strip()
+            
+            logger.info(f"Searching for routine '{routine_title}' among {len(all_routines_response.routines)} routines")
 
             for r in all_routines_response.routines:
                 if r.title.lower().strip() == routine_title_lower:
@@ -264,16 +272,17 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
 
             if not target_routine:
                 available_titles = [r.title for r in all_routines_response.routines[:5]]
-                return f"Rotina '{routine_title}' não encontrada. Rotinas disponíveis: {', '.join(available_titles)}"
+                return f"Rotina '{routine_title}' não encontrada. Rotinas disponíveis: {', '.join(available_titles)}. Use o nome exato que aparece no Hevy."
 
             routine_id = target_routine.id
+            logger.info(f"Found routine '{target_routine.title}' with ID {routine_id}")
 
             # Fetch current to preserve fields not being updated
             current = asyncio.run(
                 hevy_service.get_routine_by_id(profile.hevy_api_key, routine_id)
             )
             if not current:
-                return f"Detalhes da rotina '{routine_title}' não encontrados no Hevy."
+                return f"Detalhes da rotina '{routine_title}' não puderam ser recuperados do Hevy."
 
             if new_title:
                 current.title = new_title
@@ -294,7 +303,7 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
             )
             if result:
                 return f"✅ Rotina '{result.title}' atualizada com sucesso!"
-            return "Falha ao atualizar rotina no Hevy. Verifique os dados."
+            return "Falha ao enviar atualização para o Hevy. Verifique os dados dos exercícios."
         except Exception as e:
             logger.error(f"Error in update_hevy_routine: {e}")
             return f"Erro técnico na atualização: {str(e)}"

@@ -323,6 +323,7 @@ class HevyService:
         """
         Fetches a paginated list of routines from Hevy.
         """
+        logger.info(f"Fetching routines from Hevy (page={page}, page_size={page_size})")
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.get(
@@ -332,8 +333,11 @@ class HevyService:
                     timeout=20.0,
                 )
                 if response.status_code == 200:
-                    return RoutineListResponse(**response.json())
-                logger.warning(f"Hevy API routines returned {response.status_code}")
+                    data = response.json()
+                    logger.info(f"Hevy API returned {len(data.get('routines', []))} routines")
+                    return RoutineListResponse(**data)
+                
+                logger.error(f"Hevy API routines error: {response.status_code} - {response.text}")
                 return None
             except Exception as e:
                 logger.error(f"Failed to fetch routines: {e}")
