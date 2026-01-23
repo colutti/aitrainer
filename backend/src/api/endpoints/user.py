@@ -95,9 +95,24 @@ def update_profile(
     Returns:
         JSONResponse: A response indicating the profile was updated successfully.
     """
-    # Create the UserProfile object, including the user_email from the token
-    profile = UserProfile(**profile_data.model_dump(), email=user_email)
-    brain.save_user_profile(profile)
+    # Fetch existing profile first to preserve system fields (Hevy, etc.)
+    existing_profile = brain.get_user_profile(user_email)
+
+    if existing_profile:
+        # Update existing profile with new data
+        # model_dump(exclude_unset=True) ensures we only update fields provided in request
+        update_data = profile_data.model_dump(exclude_unset=True)
+        updated_profile = existing_profile.model_copy(update=update_data)
+        brain.save_user_profile(updated_profile)
+    else:
+        # Fallback: Create new profile if weirdly not found (shouldn't happen for auth user)
+        # Note: This will use defaults for system fields
+        logger.warning(
+            "Creating new profile during update for %s (unexpected)", user_email
+        )
+        profile = UserProfile(**profile_data.model_dump(), email=user_email)
+        brain.save_user_profile(profile)
+
     logger.info("User profile updated for email: %s", user_email)
     return JSONResponse(content={"message": "Profile updated successfully"})
 
