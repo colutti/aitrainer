@@ -25,11 +25,11 @@ async def get_metabolism_summary(
 
 @router.get("/insight")
 async def get_metabolism_insight_stream(
+    background_tasks: BackgroundTasks,
     weeks: int = 3,
     user_email: str = Depends(verify_token),
     db: MongoDatabase = Depends(get_mongo_database),
     brain: AITrainerBrain = Depends(get_ai_trainer_brain),
-    background_tasks: BackgroundTasks,
 ):
     """
     Streams an AI-generated insight about the user's metabolism stats.
