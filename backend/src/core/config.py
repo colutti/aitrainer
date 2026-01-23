@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: str | list[str]
     LOG_LEVEL: str = "INFO"
     RATE_LIMIT_LOGIN: str = "5/minute"  # Rate limit for login endpoint
+    MAX_PROMPT_LOGS: int = 20  # Number of LLM prompts to keep per user
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod

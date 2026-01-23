@@ -55,7 +55,7 @@ class TestMetabolismInsight:
         )
 
         # Mock Brain to return an iterator
-        def stream_generator(email, weeks=3):
+        def stream_generator(*args, **kwargs):
             yield "Analysis Part 1"
             yield "Analysis Part 2"
 

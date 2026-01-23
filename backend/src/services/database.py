@@ -40,6 +40,7 @@ class MongoDatabase:
             from src.repositories.nutrition_repository import NutritionRepository
             from src.repositories.weight_repository import WeightRepository
             from src.repositories.invite_repository import InviteRepository
+            from src.repositories.prompt_repository import PromptRepository
 
             self.users = UserRepository(self.database)
             self.trainers = TrainerRepository(self.database)
@@ -49,6 +50,7 @@ class MongoDatabase:
             self.nutrition = NutritionRepository(self.database)
             self.weight = WeightRepository(self.database)
             self.invites = InviteRepository(self.database)
+            self.prompts = PromptRepository(self.database)
 
             logger.info("Successfully connected to MongoDB.")
         except pymongo.errors.ConnectionFailure as e:  # type: ignore
@@ -106,6 +108,12 @@ class MongoDatabase:
         trainer_type: str | None = None,
     ):
         return self.chat.add_message(chat_history, session_id, trainer_type)
+
+    def log_prompt(self, user_email: str, prompt_data: dict):
+        """
+        Logs an LLM prompt for debugging purposes.
+        """
+        return self.prompts.log_prompt(user_email, prompt_data, settings.MAX_PROMPT_LOGS)
 
     def _get_chat_message_history(self, session_id: str) -> MongoDBChatMessageHistory:
         # Deprecated: functionality moved to repository

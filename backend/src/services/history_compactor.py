@@ -11,7 +11,7 @@ class HistoryCompactor:
         self.db = database
         self.llm_client = llm_client
 
-    async def compact_history(self, user_email: str, active_window_size: int = 40):
+    async def compact_history(self, user_email: str, active_window_size: int = 40, log_callback=None):
         """
         Identifies old messages outside the active window, summarizes them,
         and updates the user's long-term summary.
@@ -107,6 +107,8 @@ class HistoryCompactor:
                     "current_summary": current_summary,
                     "new_lines": new_lines_text,
                 },
+                user_email=user_email,
+                log_callback=log_callback,
             )
             async for chunk in generator:
                 response_text += chunk

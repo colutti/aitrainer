@@ -83,6 +83,34 @@ class AITrainerBrain:
         self._memory: Memory = memory
         self.compactor = HistoryCompactor(database, llm_client)
 
+    def _log_prompt_in_background(
+        self,
+        user_email: str,
+        prompt_data: dict,
+        background_tasks: Optional[BackgroundTasks] = None,
+    ):
+        """
+        Helper to log prompts to DB in background if tasks available, or sync if not.
+        """
+        if background_tasks:
+            background_tasks.add_task(self._database.log_prompt, user_email, prompt_data)
+        else:
+            try:
+                # Fallback for sync callers or when BackgroundTasks not provided
+                self._database.log_prompt(user_email, prompt_data)
+            except Exception as e:
+                logger.error("Error logging prompt to DB: %s", e)
+
+    def _get_log_callback(self, background_tasks: Optional[BackgroundTasks] = None):
+        """
+        Returns a callback for LLMClient to use for logging.
+        """
+
+        def callback(email: str, data: dict):
+            self._log_prompt_in_background(email, data, background_tasks)
+
+        return callback
+
     def _get_prompt_template(
         self, input_data: dict, is_telegram: bool = False
     ) -> ChatPromptTemplate:
@@ -581,9 +609,16 @@ class AITrainerBrain:
             update_user_goal_tool,
         ]
 
+        # Create log callback
+        log_callback = self._get_log_callback(background_tasks)
+
         full_response = []
         async for chunk in self._llm_client.stream_with_tools(
-            prompt_template=prompt_template, input_data=input_data, tools=tools
+            prompt_template=prompt_template,
+            input_data=input_data,
+            tools=tools,
+            user_email=user_email,
+            log_callback=log_callback,
         ):
             # Check for System Feedback (Dict)
             if isinstance(chunk, dict) and chunk.get("type") == "tool_result":
@@ -635,6 +670,7 @@ class AITrainerBrain:
                 self.compactor.compact_history,
                 user_email=user_email,
                 active_window_size=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,  # e.g. 40
+                log_callback=log_callback,
             )
 
             logger.info(
@@ -680,7 +716,12 @@ class AITrainerBrain:
 
         return "".join(response_parts)
 
-    async def generate_insight_stream(self, user_email: str, weeks: int = 3):
+    async def generate_insight_stream(
+        self,
+        user_email: str,
+        weeks: int = 3,
+        background_tasks: Optional[BackgroundTasks] = None,
+    ):
         """
         Generates a focused AI insight about metabolism using RAW data.
         Streams the response.
@@ -812,9 +853,16 @@ Analise meus dados e me dê seu feedback como treinador.
             f"📤 INSIGHT PROMPT ENVIADO | SYSTEM: {clean_system} | USER: {clean_user}"
         )
 
+        log_callback = self._get_log_callback(background_tasks)
+
         # 5. Stream & Collect for Cache
         full_content = []
-        async for chunk in self._llm_client.stream_simple(prompt_template, input_data):
+        async for chunk in self._llm_client.stream_simple(
+            prompt_template,
+            input_data,
+            user_email=user_email,
+            log_callback=log_callback,
+        ):
             full_content.append(chunk)
             yield chunk
 

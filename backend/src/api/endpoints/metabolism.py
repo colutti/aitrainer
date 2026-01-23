@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from src.core.deps import get_ai_trainer_brain, get_mongo_database
 from src.services.trainer import AITrainerBrain
@@ -29,6 +29,7 @@ async def get_metabolism_insight_stream(
     user_email: str = Depends(verify_token),
     db: MongoDatabase = Depends(get_mongo_database),
     brain: AITrainerBrain = Depends(get_ai_trainer_brain),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
 ):
     """
     Streams an AI-generated insight about the user's metabolism stats.
@@ -46,6 +47,6 @@ async def get_metabolism_insight_stream(
         return StreamingResponse(empty_stream(), media_type="text/event-stream")
 
     return StreamingResponse(
-        brain.generate_insight_stream(user_email, weeks=weeks),
+        brain.generate_insight_stream(user_email, weeks=weeks, background_tasks=background_tasks),
         media_type="text/event-stream",
     )
