@@ -4,7 +4,7 @@ from src.services.llm_client import LLMClient, GeminiClient, OllamaClient, OpenA
 from langchain_core.messages import AIMessage
 
 
-class TestLLMClient(unittest.TestCase):
+class TestLLMClient(unittest.IsolatedAsyncioTestCase):
     @patch("src.core.config.settings")
     def test_factory_gemini(self, mock_settings):
         """Test creating Gemini client via factory."""
@@ -42,40 +42,27 @@ class TestLLMClient(unittest.TestCase):
             LLMClient.from_config()
             MockOpenAI.assert_called_once()
 
-    def test_stream_simple_success(self):
+    async def test_stream_simple_success(self):
         """Test simple streaming success."""
         client = LLMClient()
         client._llm = MagicMock()
 
-        # Mock chain
-        with patch("src.services.llm_client.StrOutputParser"):
-            # Mock the chain behavior: prompt | llm | parser -> stream()
-            mock_chain = MagicMock()
-            mock_chain.stream.return_value = iter(["Chunk 1", "Chunk 2"])
+        # Mock the chain behavior
+        prompt = MagicMock()
+        
+        async def mock_stream(*args, **kwargs):
+            yield "res"
+            
+        prompt.__or__.return_value.__or__.return_value.astream = mock_stream
 
-            # Since chain is constructed via pipe, we need to mock the pipe operations or just the chain execution logic if isolated.
-            # But the method constructs chain inside.
-            # chain = prompt_template | self._llm | StrOutputParser()
-
-            # Easier to verify if we just assume the chain works or mock the whole logic block if possible.
-            # Or we can just mock the __or__ calls.
-
-            pass  # Skipped effectively testing the pipe logic without complex mocks.
-
-            # Let'simplement a direct test of the method logic if we can control the chain construction.
-            # Given the pipe operator, it's hard to mock.
-            # However, we can mock the behavior of `prompt_template`
-
-            prompt = MagicMock()
-            # When prompt | something ...
-            prompt.__or__.return_value.__or__.return_value.stream.return_value = ["res"]
-
-            gen = client.stream_simple(prompt, {})
-            list(gen)
-            # We expect at least something if mocks align, or error handling.
+        results = []
+        async for chunk in client.stream_simple(prompt, {}):
+            results.append(chunk)
+            
+        self.assertEqual(results, ["res"])
 
     @patch("src.services.llm_client.create_agent")
-    def test_stream_with_tools_success(self, mock_create_agent):
+    async def test_stream_with_tools_success(self, mock_create_agent):
         """Test streaming with tool support."""
         client = LLMClient()
         client._llm = MagicMock()
@@ -83,29 +70,33 @@ class TestLLMClient(unittest.TestCase):
         mock_agent = MagicMock()
         mock_create_agent.return_value = mock_agent
 
-        # Mock stream yield
-        # Event must be AIMessage object
-        msg = AIMessage(content="Hello")
-        mock_agent.stream.return_value = iter([(msg, "meta")])
+        # Mock astream yield
+        async def mock_astream(*args, **kwargs):
+            msg = AIMessage(content="Hello")
+            yield (msg, "meta")
+            
+        mock_agent.astream = mock_astream
 
         prompt = MagicMock()
         prompt.format_messages.return_value = []
 
-        gen = client.stream_with_tools(prompt, {}, [])
-        results = list(gen)
+        results = []
+        async for chunk in client.stream_with_tools(prompt, {}, []):
+            results.append(chunk)
 
         self.assertEqual(results, ["Hello"])
 
     @patch("src.services.llm_client.create_agent")
-    def test_stream_with_tools_error(self, mock_create_agent):
+    async def test_stream_with_tools_error(self, mock_create_agent):
         """Test error handling in tools stream."""
         client = LLMClient()
         mock_create_agent.side_effect = Exception("Agent Error")
 
         prompt = MagicMock()
 
-        gen = client.stream_with_tools(prompt, {}, [])
-        results = list(gen)
+        results = []
+        async for chunk in client.stream_with_tools(prompt, {}, []):
+            results.append(chunk)
 
         self.assertIn("Error processing request", results[0])
 
@@ -126,3 +117,7 @@ class TestLLMClient(unittest.TestCase):
         with patch("langchain_openai.ChatOpenAI") as mock_cls:
             OpenAIClient("key", "model", 0.5)
             mock_cls.assert_called_once()
+
+
+if __name__ == "__main__":
+    unittest.main()

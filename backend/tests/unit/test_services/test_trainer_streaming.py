@@ -15,7 +15,8 @@ def mock_deps():
     return db, llm, memory
 
 
-def test_send_message_ai_streaming_error(mock_deps):
+@pytest.mark.asyncio
+async def test_send_message_ai_streaming_error(mock_deps):
     """Test streaming response when an error occurs mid-stream."""
     db, llm, memory = mock_deps
 
@@ -33,12 +34,10 @@ def test_send_message_ai_streaming_error(mock_deps):
     # Mock conversation memory and variables
     mock_memory_obj = MagicMock()
     mock_memory_obj.load_memory_variables.return_value = {"chat_history": []}
-    mock_memory_obj = MagicMock()
-    mock_memory_obj.load_memory_variables.return_value = {"chat_history": []}
     db.get_window_memory.return_value = mock_memory_obj
 
     # Mock stream to fail after first chunk
-    def error_stream(**kwargs):
+    async def error_stream(**kwargs):
         yield "First chunk"
         raise Exception("Stream failed")
 
@@ -47,10 +46,11 @@ def test_send_message_ai_streaming_error(mock_deps):
     # Execute generator
     gen = trainer.send_message_ai("user@test.com", "Hello")
 
+    first = await anext(gen)
+    assert first == "First chunk"
+    
     with pytest.raises(Exception, match="Stream failed"):
-        first = next(gen)
-        assert first == "First chunk"
-        next(gen)  # Should raise
+        await anext(gen)
 
 
 def test_add_to_mem0_background_success():

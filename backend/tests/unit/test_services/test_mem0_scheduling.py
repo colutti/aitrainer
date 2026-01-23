@@ -5,7 +5,7 @@ from src.api.models.user_profile import UserProfile
 from src.api.models.trainer_profile import TrainerProfile
 
 
-class TestMem0AlwaysCalled(unittest.TestCase):
+class TestMem0AlwaysCalled(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.mock_db = MagicMock()
         self.mock_llm = MagicMock()
@@ -26,7 +26,7 @@ class TestMem0AlwaysCalled(unittest.TestCase):
                 database=self.mock_db, llm_client=self.mock_llm, memory=self.mock_memory
             )
 
-    def test_mem0_task_scheduled_unconditionally(self):
+    async def test_mem0_task_scheduled_unconditionally(self):
         """
         Verify that Mem0 background task is scheduled regardless of tool usage (simulated).
         Since we removed the conditional logic, this test just checks if add_task is called.
@@ -48,19 +48,19 @@ class TestMem0AlwaysCalled(unittest.TestCase):
         )
         self.mock_memory.search.return_value = {}  # Hybrid search defaults
 
-        # Mock LLM Response (String only, no tool call signal needed as per new architecture)
-        self.mock_llm.stream_with_tools.return_value = iter(
-            ["Response with tool logic executed inside agent"]
-        )
+        # Mock LLM Response
+        async def mock_stream(*args, **kwargs):
+            yield "Response with tool logic executed inside agent"
+        self.mock_llm.stream_with_tools = mock_stream
 
         # Mock BackgroundTasks
         mock_bg_tasks = MagicMock()
 
         # Act
-        generator = self.brain.send_message_ai(
+        async for chunk in self.brain.send_message_ai(
             user_email, user_input, background_tasks=mock_bg_tasks
-        )
-        list(generator)  # Consume generator
+        ):
+            pass
 
         # Assert
         # Mem0 should be scheduled
@@ -77,8 +77,6 @@ class TestMem0AlwaysCalled(unittest.TestCase):
                 break
 
         self.assertTrue(mem0_call_found, "Mem0 background task was not scheduled")
-
-        print("\n✅ Assertion Passed: Mem0 task scheduled.")
 
 
 if __name__ == "__main__":
