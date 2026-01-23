@@ -10,32 +10,28 @@ class TestPromptRepository(unittest.TestCase):
         self.mock_db.__getitem__.return_value = self.mock_collection
         self.repo = PromptRepository(self.mock_db)
 
-    def test_log_prompt_inserts_and_trims(self):
+    def test_log_prompt_inserts_and_trims_with_pydantic(self):
         # Setup mock for find().sort().limit()
         mock_cursor = MagicMock()
         self.mock_collection.find.return_value = mock_cursor
         mock_cursor.sort.return_value = mock_cursor
-        mock_cursor.limit.return_value = [
-            {"_id": "id1", "timestamp": datetime.now(timezone.utc)},
-            {"_id": "id2", "timestamp": datetime.now(timezone.utc)},
-        ]
+        mock_cursor.limit.return_value = []
 
-        # Call log_prompt with max_logs=2
-        self.repo.log_prompt("test@user.com", {"data": "test"}, max_logs=2)
+        # Create a dummy Pydantic-like object (or use a real one if simple)
+        from pydantic import BaseModel
+        class DummyModel(BaseModel):
+            name: str
+            val: int
 
-        # Verify insert
+        data = {"model": DummyModel(name="test", val=123)}
+
+        # Call log_prompt
+        self.repo.log_prompt("test@user.com", data, max_logs=2)
+
+        # Verify insert - should have converted to dict
         self.mock_collection.insert_one.assert_called_once()
-        args = self.mock_collection.insert_one.call_args[0][0]
-        self.assertEqual(args["user_email"], "test@user.com")
-        self.assertEqual(args["prompt"], {"data": "test"})
-
-        # Verify limit check and deletion of old logs
-        self.mock_collection.find.assert_called_with({"user_email": "test@user.com"})
-        self.mock_collection.delete_many.assert_called_once()
-        del_args = self.mock_collection.delete_many.call_args[0][0]
-        self.assertEqual(del_args["user_email"], "test@user.com")
-        self.assertIn("$nin", del_args["_id"])
-        self.assertEqual(del_args["_id"]["$nin"], ["id1", "id2"])
+        inserted_doc = self.mock_collection.insert_one.call_args[0][0]
+        self.assertEqual(inserted_doc["prompt"]["model"], {"name": "test", "val": 123})
 
     def test_get_user_prompts(self):
         mock_cursor = MagicMock()

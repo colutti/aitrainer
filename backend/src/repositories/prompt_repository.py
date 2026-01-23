@@ -12,16 +12,25 @@ class PromptRepository(BaseRepository):
     def log_prompt(self, user_email: str, prompt_data: dict, max_logs: int = 10):
         """
         Logs a prompt for a specific user and ensures only the last `max_logs` are kept for that user.
-        
-        Args:
-            user_email: The email of the user who triggered the prompt.
-            prompt_data: The full prompt data (messages, input, etc.).
-            max_logs: Maximum number of logs to keep per user.
         """
+        # Sanitize data: convert Pydantic models or other non-serializable objects
+        def sanitize(obj):
+            if isinstance(obj, dict):
+                return {k: sanitize(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [sanitize(i) for i in obj]
+            elif hasattr(obj, "model_dump"):  # Pydantic v2
+                return obj.model_dump()
+            elif hasattr(obj, "dict"):  # Pydantic v1 fallback
+                return obj.dict()
+            return obj
+
+        sanitized_prompt = sanitize(prompt_data)
+
         log_entry = {
             "user_email": user_email,
             "timestamp": datetime.now(timezone.utc),
-            "prompt": prompt_data
+            "prompt": sanitized_prompt
         }
         
         # Insert the new log
