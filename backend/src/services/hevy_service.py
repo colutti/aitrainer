@@ -339,7 +339,7 @@ class HevyService:
                     logger.info(f"Hevy API returned {len(data.get('routines', []))} routines")
                     return RoutineListResponse(**data)
                 
-                logger.error(f"Hevy API routines error: {response.status_code} - {response.text}")
+                logger.error(f"Hevy API routines error: {response.status_code} - Body: {response.text}")
                 return None
             except Exception as e:
                 logger.error(f"Failed to fetch routines: {e}")
@@ -366,6 +366,8 @@ class HevyService:
                     
                     if isinstance(routine_data, dict):
                         return HevyRoutine(**routine_data)
+                
+                logger.error(f"Hevy API get routine error: {response.status_code} - Body: {response.text}")
                 return None
             except Exception as e:
                 logger.error(f"Failed to fetch routine {routine_id}: {e}")
@@ -381,10 +383,10 @@ class HevyService:
         async with httpx.AsyncClient() as client:
             try:
                 # Prepare payload: Hevy API is strict about fields
-                # Exclude routine-metadata
+                # Use exclude_none=False (preserve nulls) as seen in docs example
                 routine_data = routine.model_dump(
                     exclude={"id", "created_at", "updated_at"},
-                    exclude_none=True,
+                    exclude_none=False,
                 )
                 
                 # Exclude exercise-metadata (like title) from each exercise
@@ -396,11 +398,11 @@ class HevyService:
                 # Ensure folder_id is always sent (Hevy API requirement for some accounts)
                 routine_data["folder_id"] = routine.folder_id
 
+                import json
                 payload = {"routine": routine_data}
 
                 logger.info(
-                    f"[create_routine] Sending payload: {payload.get('routine', {}).get('title')}, "
-                    f"exercises: {len(payload.get('routine', {}).get('exercises', []))}"
+                    f"[create_routine] Sending payload:\n{json.dumps(payload, indent=2, default=str)}"
                 )
 
                 response = await client.post(
@@ -414,41 +416,35 @@ class HevyService:
 
                 if response.status_code in [200, 201]:
                     response_json = response.json()
-                    logger.debug(f"[create_routine] Raw response: {response_json}")
-
                     routine_resp = response_json.get("routine")
 
-                    # Handle case where response is a list (take first item)
                     if isinstance(routine_resp, list):
-                        logger.warning(
-                            "[create_routine] Response 'routine' is a list, taking first element"
-                        )
                         if routine_resp:
                             routine_resp = routine_resp[0]
                         else:
                             return None, "API returned empty list"
 
-                    # Handle case where response is a dict (normal case)
                     if isinstance(routine_resp, dict):
                         return HevyRoutine(**routine_resp), None
 
-                    # Unexpected format
                     return None, f"Unexpected response format: {type(routine_resp)}"
 
                 # Parse error response
-                error_text = response.text
-                logger.error(f"[create_routine] Error response: {error_text}")
+                error_body = response.text
+                logger.error(f"[create_routine] Error: {response.status_code} - Body: {error_body}")
+                
                 try:
                     error_json = response.json()
                     if "routine-limit-exceeded" in str(error_json):
                         return None, "LIMIT_EXCEEDED"
-                    error_text = error_json.get("error", error_text)
+                    error_msg = error_json.get("error", error_body)
+                    return None, f"API Error ({response.status_code}): {error_msg}"
                 except Exception:
                     pass
 
-                return None, error_text
+                return None, f"API Error ({response.status_code}): {error_body}"
             except Exception as e:
-                logger.error(f"Failed to create routine: {e}")
+                logger.error(f"Failed to create routine: {e}", exc_info=True)
                 return None, str(e)
 
     async def update_routine(
@@ -460,10 +456,10 @@ class HevyService:
         async with httpx.AsyncClient() as client:
             try:
                 # Prepare payload: Hevy API is strict about fields
-                # Exclude routine-metadata
+                # Use exclude_none=False (preserve nulls) as seen in docs example
                 routine_data = routine.model_dump(
                     exclude={"id", "created_at", "updated_at"},
-                    exclude_none=True,
+                    exclude_none=False,
                 )
                 
                 # Exclude exercise-metadata (like title)
@@ -472,15 +468,15 @@ class HevyService:
                         if "title" in ex:
                             del ex["title"]
                 
-                # Ensure folder_id is always sent (Hevy API requirement for some accounts)
-                # Consistent with create_routine logic
-                routine_data["folder_id"] = routine.folder_id
+                # IMPORTANT: According to docs, 'folder_id' is NOT in PUT payload.
+                if "folder_id" in routine_data:
+                    del routine_data["folder_id"]
                 
+                import json
                 payload = {"routine": routine_data}
 
                 logger.info(
-                    f"[update_routine] Sending payload for routine {routine_id}: {payload.get('routine', {}).get('title')}, "
-                    f"exercises: {len(payload.get('routine', {}).get('exercises', []))}"
+                    f"[update_routine] Sending payload for routine {routine_id}:\n{json.dumps(payload, indent=2, default=str)}"
                 )
 
                 response = await client.put(
@@ -489,6 +485,9 @@ class HevyService:
                     json=payload,
                     timeout=20.0,
                 )
+                
+                logger.info(f"[update_routine] Status: {response.status_code}")
+                
                 if response.status_code == 200:
                     data = response.json()
                     routine_data = data.get("routine")
@@ -497,12 +496,15 @@ class HevyService:
                     
                     if isinstance(routine_data, dict):
                         return HevyRoutine(**routine_data)
+                
+                # Detailed error logging
+                error_body = response.text
                 logger.error(
-                    f"Hevy routine update failed: {response.status_code} - {response.text}"
+                    f"Hevy routine update failed: {response.status_code} - Body: {error_body}"
                 )
                 return None
             except Exception as e:
-                logger.error(f"Failed to update routine {routine_id}: {e}")
+                logger.error(f"Failed to update routine {routine_id}: {e}", exc_info=True)
                 return None
 
     async def get_exercise_templates(

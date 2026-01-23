@@ -35,7 +35,7 @@ class HevyRoutineExercise(BaseModel):
     superset_id: Optional[int] = None
     rest_seconds: Optional[int] = None
     notes: Optional[str] = None
-    sets: List[HevySet]
+    sets: List[HevySet] = []
     title: Optional[str] = None  # Returned by Hevy in GET responses
 
 
@@ -45,7 +45,7 @@ class HevyRoutine(BaseModel):
     title: str
     folder_id: Optional[int] = None
     notes: Optional[str] = None
-    exercises: List[HevyRoutineExercise]
+    exercises: List[HevyRoutineExercise] = []
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
 
