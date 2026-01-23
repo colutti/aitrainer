@@ -31,7 +31,7 @@ def get_history(user_email: CurrentUser, brain: AITrainerBrainDep) -> list:
 
 
 @router.post("/message")
-def message_ai(
+async def message_ai(
     message: MessageRequest,
     user_email: CurrentUser,
     brain: AITrainerBrainDep,

@@ -65,7 +65,7 @@ class LLMClient:
             temperature=settings.LLM_TEMPERATURE,
         )
 
-    def stream_with_tools(
+    async def stream_with_tools(
         self, prompt_template, input_data: dict, tools: list
     ) -> Generator[str | dict, None, None]:
         """
@@ -89,7 +89,7 @@ class LLMClient:
             # Stream the agent execution with increased recursion limit
             # Default is 25, but complex tool chains may need more
             config: RunnableConfig = {"recursion_limit": 50}
-            for event, metadata in agent.stream(
+            async for event, metadata in agent.astream(
                 {"messages": messages}, stream_mode="messages", config=config
             ):
                 # V3: Intercept Tool Outputs (System Feedback)
@@ -119,7 +119,7 @@ class LLMClient:
             logger.error("Error in stream_with_tools: %s", e)
             yield f"Error processing request: {str(e)}"
 
-    def stream_simple(
+    async def stream_simple(
         self, prompt_template, input_data: dict
     ) -> Generator[str, None, None]:
         """
@@ -138,7 +138,7 @@ class LLMClient:
 
         try:
             chain = prompt_template | self._llm | StrOutputParser()
-            for chunk in chain.stream(input_data):
+            async for chunk in chain.astream(input_data):
                 yield chunk
         except Exception as e:
             logger.error("Error in stream_simple: %s", e)

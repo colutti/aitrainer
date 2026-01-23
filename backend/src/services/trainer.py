@@ -418,7 +418,7 @@ class AITrainerBrain:
 
         return "\n".join([str(item) for item in formatted])
 
-    def send_message_ai(
+    async def send_message_ai(
         self,
         user_email: str,
         user_input: str,
@@ -582,7 +582,7 @@ class AITrainerBrain:
         ]
 
         full_response = []
-        for chunk in self._llm_client.stream_with_tools(
+        async for chunk in self._llm_client.stream_with_tools(
             prompt_template=prompt_template, input_data=input_data, tools=tools
         ):
             # Check for System Feedback (Dict)
