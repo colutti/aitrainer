@@ -108,7 +108,7 @@ class HistoryCompactor:
                     "new_lines": new_lines_text,
                 },
             )
-            for chunk in generator:
+            async for chunk in generator:
                 response_text += chunk
         except Exception as e:
             logger.error("LLM Error during compaction: %s", e)

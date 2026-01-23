@@ -9,8 +9,12 @@ class UserRepository(BaseRepository):
         super().__init__(database, "users")
 
     def save_profile(self, profile: UserProfile) -> None:
+        # Exclude None values to prevent overwriting existing password_hash
+        # This is critical for security: we never want to accidentally clear a password
+        data = profile.model_dump(exclude_none=True)
+        
         result = self.collection.update_one(
-            {"email": profile.email}, {"$set": profile.model_dump()}, upsert=True
+            {"email": profile.email}, {"$set": data}, upsert=True
         )
         if result.upserted_id:
             self.logger.info("New user profile created for email: %s", profile.email)

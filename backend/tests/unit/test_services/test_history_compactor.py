@@ -19,15 +19,11 @@ def mock_db():
 def mock_llm_client():
     client = MagicMock()
 
-    # Mock stream_simple to return a generator of chunks
-    async def async_gen(chunks):
-        for c in chunks:
-            yield c
-
-    def sync_gen(prompt_template, input_data):
+    # Mock stream_simple to return an async generator
+    async def async_gen(*args, **kwargs):
         yield "Updated Summary Content"
 
-    client.stream_simple = MagicMock(side_effect=sync_gen)
+    client.stream_simple = MagicMock(side_effect=async_gen)
     return client
 
 
