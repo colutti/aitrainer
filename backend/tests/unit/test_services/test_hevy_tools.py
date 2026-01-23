@@ -145,32 +145,98 @@ class TestHevyTools(unittest.TestCase):
         self.assertIn("título da rotina é obrigatório", result)
 
     def test_update_routine_success(self):
-        """Test updating a routine successfully."""
+        """Test updating a routine successfully using title."""
         tool = create_update_hevy_routine_tool(self.mock_hevy_service, self.mock_db, self.user_email)
-        
+
+        # Mock list response
+        routine1 = MagicMock()
+        routine1.id = "routine_123"
+        routine1.title = "Pull Workout"
+
+        list_response = MagicMock()
+        list_response.routines = [routine1]
+
+        # Mock get by ID response
         current_routine = MagicMock()
-        current_routine.title = "Old Title"
-        
+        current_routine.id = "routine_123"
+        current_routine.title = "Pull Workout"
+        current_routine.notes = "Old notes"
+        current_routine.exercises = []
+
         updated_routine = MagicMock()
-        updated_routine.title = "New Title"
-        
+        updated_routine.title = "Pull Workout"
+        updated_routine.notes = "Updated!"
+
+        self.mock_hevy_service.get_routines = AsyncMock(return_value=list_response)
         self.mock_hevy_service.get_routine_by_id = AsyncMock(return_value=current_routine)
         self.mock_hevy_service.update_routine = AsyncMock(return_value=updated_routine)
-        
+
+        # Call with TITLE instead of ID
         result = tool.invoke({
-            "routine_id": "123",
-            "title": "New Title"
+            "routine_title": "Pull Workout",
+            "notes": "Updated!"
         })
-        
+
         self.assertIn("atualizada com sucesso", result)
-        self.assertEqual(current_routine.title, "New Title")
+        self.assertEqual(current_routine.notes, "Updated!")
+
+    def test_update_routine_fuzzy_match(self):
+        """Test updating a routine with case-insensitive fuzzy matching."""
+        tool = create_update_hevy_routine_tool(self.mock_hevy_service, self.mock_db, self.user_email)
+
+        routine1 = MagicMock()
+        routine1.id = "routine_123"
+        routine1.title = "Pull Workout A"
+
+        list_response = MagicMock()
+        list_response.routines = [routine1]
+
+        current_routine = MagicMock()
+        current_routine.id = "routine_123"
+        current_routine.title = "Pull Workout A"
+        current_routine.exercises = []
+
+        updated_routine = MagicMock()
+        updated_routine.title = "Pull Workout A"
+
+        self.mock_hevy_service.get_routines = AsyncMock(return_value=list_response)
+        self.mock_hevy_service.get_routine_by_id = AsyncMock(return_value=current_routine)
+        self.mock_hevy_service.update_routine = AsyncMock(return_value=updated_routine)
+
+        # Call with partial/fuzzy title
+        result = tool.invoke({
+            "routine_title": "pull",  # lowercase, partial
+            "notes": "Test"
+        })
+
+        self.assertIn("atualizada com sucesso", result)
 
     def test_update_routine_not_found(self):
-        """Test updating a non-existent routine."""
+        """Test updating a routine that is not in the list."""
         tool = create_update_hevy_routine_tool(self.mock_hevy_service, self.mock_db, self.user_email)
-        
-        self.mock_hevy_service.get_routine_by_id = AsyncMock(return_value=None)
-        
-        result = tool.invoke({"routine_id": "999"})
-        
+
+        # Mock list with some routines
+        routine1 = MagicMock()
+        routine1.title = "Other Routine"
+        list_response = MagicMock()
+        list_response.routines = [routine1]
+        self.mock_hevy_service.get_routines = AsyncMock(return_value=list_response)
+
+        result = tool.invoke({"routine_title": "NonExistent"})
+
         self.assertIn("não encontrada", result)
+        self.assertIn("Rotinas disponíveis", result)
+        self.assertIn("Other Routine", result)
+
+    def test_update_routine_no_routines_at_all(self):
+        """Test updating when user has no routines at all."""
+        tool = create_update_hevy_routine_tool(self.mock_hevy_service, self.mock_db, self.user_email)
+
+        # Mock empty list
+        list_response = MagicMock()
+        list_response.routines = []
+        self.mock_hevy_service.get_routines = AsyncMock(return_value=list_response)
+
+        result = tool.invoke({"routine_title": "Any"})
+
+        self.assertIn("Nenhuma rotina encontrada", result)

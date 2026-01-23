@@ -210,20 +210,26 @@ def create_create_hevy_routine_tool(hevy_service, database, user_email: str):
 def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
     @tool
     def update_hevy_routine(
-        routine_id: str,
-        title: str | None = None,
+        routine_title: str,
+        new_title: str | None = None,
         exercises: list[dict] | None = None,
         notes: str | None = None,
     ) -> str:
         """
         Atualiza uma rotina existente no Hevy.
 
+        Args:
+            routine_title: Título da rotina a ser atualizada (ex: "Pull Workout", "Treino A")
+            new_title: Novo título para a rotina (opcional, se quiser renomear)
+            exercises: Lista de exercícios atualizada (opcional)
+            notes: Notas atualizadas (opcional)
+
         IMPORTANTE:
-        1. Você DEVE fornecer o `routine_id` (use `list_hevy_routines` para encontrar).
+        1. Use o título que aparece em `list_hevy_routines`.
         2. Se alterar exercícios, use `search_hevy_exercises` para validar os IDs.
         """
-        if not routine_id:
-            return "ID da rotina é obrigatório para atualização."
+        if not routine_title:
+            return "Título da rotina é obrigatório para atualização."
 
         profile = database.get_user_profile(user_email)
         if not profile or not profile.hevy_enabled or not profile.hevy_api_key:
@@ -232,15 +238,45 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
         import asyncio
 
         try:
+            # Buscar todas rotinas para encontrar a correta por título
+            all_routines_response = asyncio.run(
+                hevy_service.get_routines(profile.hevy_api_key, page=1, page_size=100)
+            )
+
+            if not all_routines_response or not all_routines_response.routines:
+                return "Nenhuma rotina encontrada no Hevy. Crie uma rotina primeiro."
+
+            # Procurar rotina por título (case-insensitive match)
+            target_routine = None
+            routine_title_lower = routine_title.lower().strip()
+
+            for r in all_routines_response.routines:
+                if r.title.lower().strip() == routine_title_lower:
+                    target_routine = r
+                    break
+
+            if not target_routine:
+                # Tentar match parcial fuzzy
+                for r in all_routines_response.routines:
+                    if routine_title_lower in r.title.lower():
+                        target_routine = r
+                        break
+
+            if not target_routine:
+                available_titles = [r.title for r in all_routines_response.routines[:5]]
+                return f"Rotina '{routine_title}' não encontrada. Rotinas disponíveis: {', '.join(available_titles)}"
+
+            routine_id = target_routine.id
+
             # Fetch current to preserve fields not being updated
             current = asyncio.run(
                 hevy_service.get_routine_by_id(profile.hevy_api_key, routine_id)
             )
             if not current:
-                return f"Rotina com ID {routine_id} não encontrada no Hevy."
+                return f"Detalhes da rotina '{routine_title}' não encontrados no Hevy."
 
-            if title:
-                current.title = title
+            if new_title:
+                current.title = new_title
             if notes:
                 current.notes = notes
             if exercises:
@@ -257,8 +293,8 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
                 hevy_service.update_routine(profile.hevy_api_key, routine_id, current)
             )
             if result:
-                return f"Rotina '{result.title}' atualizada com sucesso!"
-            return "Falha ao atualizar rotina no Hevy. Verifique o ID e os dados."
+                return f"✅ Rotina '{result.title}' atualizada com sucesso!"
+            return "Falha ao atualizar rotina no Hevy. Verifique os dados."
         except Exception as e:
             logger.error(f"Error in update_hevy_routine: {e}")
             return f"Erro técnico na atualização: {str(e)}"

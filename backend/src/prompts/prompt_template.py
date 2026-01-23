@@ -51,7 +51,9 @@ Use ferramentas ANTES de responder. NUNCA mostre IDs internos ao usuário.
 
 **Hevy** (só se hevy_enabled=True):
 - `search_hevy_exercises`: query — OBRIGATÓRIO antes de criar/editar rotinas
-- `list_hevy_routines` / `create_hevy_routine` / `update_hevy_routine`
+- `list_hevy_routines` → mostra títulos das rotinas do aluno
+- `create_hevy_routine` → criar nova rotina
+- `update_hevy_routine` → atualizar rotina existente (use o TÍTULO que aparece em list_hevy_routines)
 
 ## ⚠️ **ROLEPLAY (MUITO IMPORTANTE!!!!)**: 
 
