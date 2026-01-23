@@ -46,10 +46,19 @@ class UserRepository(BaseRepository):
         if not user:
             self.logger.debug("Login attempt for non-existent user: %s", email)
             return False
-        password_hash = user.get("password_hash", "")
-        if bcrypt.checkpw(password.encode(), password_hash.encode()):
-            self.logger.debug("Successful password validation for user: %s", email)
-            return True
+        password_hash = user.get("password_hash")
+        if not password_hash or not password:
+            self.logger.debug("Missing password or password hash for user: %s", email)
+            return False
+
+        try:
+            if bcrypt.checkpw(password.encode(), password_hash.encode()):
+                self.logger.debug("Successful password validation for user: %s", email)
+                return True
+        except (AttributeError, ValueError) as e:
+            self.logger.error("Error during password validation for %s: %s", email, e)
+            return False
+
         self.logger.debug("Failed password validation for user: %s", email)
         return False
 
