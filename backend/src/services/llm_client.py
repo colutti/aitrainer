@@ -82,6 +82,13 @@ class LLMClient:
         try:
             # Format initial messages
             messages = list(prompt_template.format_messages(**input_data))
+            
+            # Log complete prompt in single line for debugging
+            prompt_str = " ".join([
+                f"[{msg.__class__.__name__}]: {str(msg.content).replace(chr(10), ' ')}"
+                for msg in messages
+            ])
+            logger.debug("FULL_PROMPT: %s", prompt_str)
 
             # Create the ReAct agent
             agent: CompiledStateGraph = create_agent(self._llm, tools)
@@ -137,6 +144,10 @@ class LLMClient:
         )
 
         try:
+            # Log complete prompt data in single line for debugging
+            formatted_data = {k: str(v).replace("\n", " ")[:500] for k, v in input_data.items()}
+            logger.debug("FULL_PROMPT_DATA: %s", formatted_data)
+            
             chain = prompt_template | self._llm | StrOutputParser()
             async for chunk in chain.astream(input_data):
                 yield chunk
