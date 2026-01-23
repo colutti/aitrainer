@@ -144,8 +144,8 @@ class LLMClient:
         )
 
         try:
-            # Log complete prompt data in single line for debugging
-            formatted_data = {k: str(v).replace("\n", " ")[:500] for k, v in input_data.items()}
+            # Log complete prompt data in single line - NO TRUNCATION
+            formatted_data = {k: str(v).replace("\n", " ") for k, v in input_data.items()}
             logger.debug("FULL_PROMPT_DATA: %s", formatted_data)
             
             chain = prompt_template | self._llm | StrOutputParser()
