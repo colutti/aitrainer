@@ -15,7 +15,9 @@ def create_list_hevy_routines_tool(hevy_service, database, user_email: str):
             return "A integração com Hevy está desativada ou a chave API não está configurada. Por favor, ative-a nas configurações."
 
         try:
-            response = await hevy_service.get_routines(profile.hevy_api_key, page, page_size)
+            # Hevy API limits pageSize to 10
+            safe_page_size = min(page_size, 10)
+            response = await hevy_service.get_routines(profile.hevy_api_key, page, safe_page_size)
 
             if not response or not response.routines:
                 logger.info("[list_hevy_routines] No routines found")
@@ -224,16 +226,22 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
             return "Integração desativada."
 
         try:
-            # Buscar todas rotinas para encontrar a correta por título
-            # Usando pageSize=50 para evitar limites da API
-            all_routines_response = await hevy_service.get_routines(
-                profile.hevy_api_key, page=1, page_size=50
-            )
+            # Buscar rotinas paginadas (limite da API é 10 por página)
+            # Vamos tentar encontrar nas primeiras 5 páginas (50 rotinas)
+            all_routines = []
+            for p in range(1, 6):
+                logger.info(f"Fetching routines from Hevy (page={p}, page_size=10)")
+                response = await hevy_service.get_routines(
+                    profile.hevy_api_key, page=p, page_size=10
+                )
+                if response and response.routines:
+                    all_routines.extend(response.routines)
+                    if p >= response.page_count:
+                        break
+                else:
+                    break
 
-            if all_routines_response is None:
-                return "Erro ao conectar com a API do Hevy. Verifique sua chave nas configurações."
-
-            if not all_routines_response.routines:
+            if not all_routines:
                 key_masked = f"{profile.hevy_api_key[:4]}..." if profile.hevy_api_key else "MISSING"
                 logger.warning(f"No routines returned for user {user_email} (Key starts with: {key_masked})")
                 return "Nenhuma rotina encontrada na sua conta do Hevy. Certifique-se de que você criou rotinas no aplicativo Hevy antes de tentar atualizá-las."
@@ -242,22 +250,22 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
             target_routine = None
             routine_title_lower = routine_title.lower().strip()
             
-            logger.info(f"Searching for routine '{routine_title}' among {len(all_routines_response.routines)} routines")
+            logger.info(f"Searching for routine '{routine_title}' among {len(all_routines)} routines")
 
-            for r in all_routines_response.routines:
+            for r in all_routines:
                 if r.title.lower().strip() == routine_title_lower:
                     target_routine = r
                     break
 
             if not target_routine:
                 # Tentar match parcial fuzzy
-                for r in all_routines_response.routines:
+                for r in all_routines:
                     if routine_title_lower in r.title.lower():
                         target_routine = r
                         break
 
             if not target_routine:
-                available_titles = [r.title for r in all_routines_response.routines[:5]]
+                available_titles = [r.title for r in all_routines[:5]]
                 return f"Rotina '{routine_title}' não encontrada. Rotinas disponíveis: {', '.join(available_titles)}. Use o nome exato que aparece no Hevy."
 
             routine_id = target_routine.id

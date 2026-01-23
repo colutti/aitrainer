@@ -322,7 +322,9 @@ class HevyService:
     ) -> Optional[RoutineListResponse]:
         """
         Fetches a paginated list of routines from Hevy.
+        Max pageSize is 10.
         """
+        page_size = min(page_size, 10)
         logger.info(f"Fetching routines from Hevy (page={page}, page_size={page_size})")
         async with httpx.AsyncClient() as client:
             try:
