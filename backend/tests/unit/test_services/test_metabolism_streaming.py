@@ -1,10 +1,12 @@
+import pytest
 from unittest.mock import MagicMock
 from src.api.models.user_profile import UserProfile
 from src.services.trainer import AITrainerBrain
 from src.services.llm_client import LLMClient
 
 
-def test_generate_insight_stream_integration():
+@pytest.mark.asyncio
+async def test_generate_insight_stream_integration():
     """
     Test that generate_insight_stream correctly calls the LLM client.
     This test uses the REAL AITrainerBrain but mocks the low-level LLMClient.
@@ -20,12 +22,12 @@ def test_generate_insight_stream_integration():
     # Fix: MetabolismInsightCache accesses db.database["collection_name"]
     db.database.__getitem__.return_value = mock_collection
 
-    # Mock the response from stream_simple
-    def mock_stream(*args, **kwargs):
+    # Mock the response from stream_simple - MUST BE ASYNC
+    async def mock_stream(*args, **kwargs):
         yield "Part 1"
         yield "Part 2"
 
-    llm.stream_simple.side_effect = mock_stream
+    llm.stream_simple = MagicMock(side_effect=mock_stream)
 
     trainer = AITrainerBrain(db, llm, memory)
 
@@ -45,8 +47,10 @@ def test_generate_insight_stream_integration():
     )
 
 
-    # Execute the real implementation
-    result = list(trainer.generate_insight_stream("user@test.com", weeks=3))
+    # Execute the real implementation - NOW ASYNC
+    result = []
+    async for chunk in trainer.generate_insight_stream("user@test.com", weeks=3):
+        result.append(chunk)
 
     # Verify results
     assert result == ["Part 1", "Part 2"]

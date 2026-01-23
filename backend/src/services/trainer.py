@@ -680,7 +680,7 @@ class AITrainerBrain:
 
         return "".join(response_parts)
 
-    def generate_insight_stream(self, user_email: str, weeks: int = 3):
+    async def generate_insight_stream(self, user_email: str, weeks: int = 3):
         """
         Generates a focused AI insight about metabolism using RAW data.
         Streams the response.
@@ -749,6 +749,7 @@ Analise os dados brutos de PESO e DIETA fornecidos pelo aluno e dê sua **OPINI�
 - Use **Emojis** moderadamente para alertas (ex: ⚠️, 🎯, 🔥)
 - Vá direto à análise (sem saudações)
 - Use **negrito** para insights acionáveis
+
 """
 
         # 4. Construct User Prompt (Raw Data)
@@ -813,7 +814,7 @@ Analise meus dados e me dê seu feedback como treinador.
 
         # 5. Stream & Collect for Cache
         full_content = []
-        for chunk in self._llm_client.stream_simple(prompt_template, input_data):
+        async for chunk in self._llm_client.stream_simple(prompt_template, input_data):
             full_content.append(chunk)
             yield chunk
 
