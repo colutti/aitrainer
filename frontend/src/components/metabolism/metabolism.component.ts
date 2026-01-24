@@ -8,11 +8,12 @@ import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import { WidgetMetabolicGaugeComponent } from '../widgets/widget-metabolic-gauge.component';
 import { WidgetLineChartComponent } from '../widgets/widget-line-chart.component';
 import { WidgetCaloriesWeightComparisonComponent } from '../widgets/widget-calories-weight-comparison.component';
+import { WidgetTdeeSummaryComponent } from '../widgets/widget-tdee-summary.component';
 
 @Component({
   selector: 'app-metabolism',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective, WidgetMetabolicGaugeComponent, WidgetLineChartComponent, WidgetCaloriesWeightComparisonComponent],
+  imports: [CommonModule, BaseChartDirective, WidgetMetabolicGaugeComponent, WidgetLineChartComponent, WidgetCaloriesWeightComparisonComponent, WidgetTdeeSummaryComponent],
   templateUrl: './metabolism.component.html',
 })
 export class MetabolismComponent implements OnInit {

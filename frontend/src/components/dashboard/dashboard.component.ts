@@ -23,6 +23,7 @@ import { WidgetBodyEvolutionComponent } from '../widgets/widget-body-evolution.c
 import { WidgetLineChartComponent } from '../widgets/widget-line-chart.component';
 import { WidgetCaloriesWeightComparisonComponent } from '../widgets/widget-calories-weight-comparison.component';
 import { WidgetMacroTargetsComponent } from '../widgets/widget-macro-targets.component';
+import { WidgetTdeeSummaryComponent } from '../widgets/widget-tdee-summary.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -40,7 +41,8 @@ import { WidgetMacroTargetsComponent } from '../widgets/widget-macro-targets.com
     WidgetBodyEvolutionComponent,
     WidgetLineChartComponent,
     WidgetCaloriesWeightComparisonComponent,
-    WidgetMacroTargetsComponent
+    WidgetMacroTargetsComponent,
+    WidgetTdeeSummaryComponent
   ],
   templateUrl: './dashboard.component.html',
 })

@@ -94,7 +94,13 @@
             <div class="flex-1 h-px bg-secondary/30"></div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- W0: TDEE Summary (New) -->
+            <app-widget-tdee-summary 
+                [tdee]="metabolismStats()?.tdee || 0" 
+                [energyBalance]="metabolismStats()?.energy_balance || 0">
+            </app-widget-tdee-summary>
+
             <!-- W1: Long-term Weight Trend (Shared Widget) -->
             <app-widget-line-chart 
                 title="Tendência (Histórico)" 
@@ -128,14 +134,14 @@
                 [endDate]="metabolismStats()?.endDate">
             </app-widget-body-evolution>
 
-            <!-- W4: Consistency Tracker (Stay local for now, unique layout) -->
-            <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors min-h-[160px]">
+            <!-- W4: Consistency Tracker -->
+            <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors h-full">
                 <div class="flex justify-between items-start mb-4">
                     <p class="text-text-secondary text-xs font-bold uppercase tracking-wider">Consistência (7 dias)</p>
                     <span *ngIf="metabolismStats()?.consistency_score" class="text-[10px] font-bold text-primary">{{ metabolismStats()?.consistency_score }}% score</span>
                 </div>
                 
-                <div *ngIf="!isMetabolismLoading(); else loadingMini" class="flex-1 h-40">
+                <div *ngIf="!isMetabolismLoading(); else loadingMini" class="h-32">
                     <canvas baseChart
                         [data]="consistencyChartData"
                         [options]="consistencyChartOptions"
@@ -299,6 +305,7 @@
 
             <!-- Calories vs Weight Correlation -->
             <app-widget-calories-weight-comparison
+                class="h-64"
                 [startDate]="metabolismStats()?.startDate"
                 [endDate]="metabolismStats()?.endDate"
                 [weightTrend]="metabolismStats()?.weight_trend || []"

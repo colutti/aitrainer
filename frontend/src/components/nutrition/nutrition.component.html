@@ -74,7 +74,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 w-full shrink-0 relative z-10" *ngIf="stats() as s">
         <!-- Calorie Trend vs Weight -->
         <app-widget-calories-weight-comparison
-            class="lg:col-span-2"
+            class="lg:col-span-2 h-64"
             [startDate]="s.startDate"
             [endDate]="s.endDate"
             [weightTrend]="metabolismService.stats()?.weight_trend || []"
@@ -117,100 +117,55 @@
                 <!-- Timeline Line -->
                 <div class="absolute left-2.5 top-0 bottom-0 w-0.5 bg-secondary/30"></div>
 
-                <div class="space-y-6">
+                <div class="space-y-3">
                     @for (log of logs(); track log.id) {
-                        <div class="relative">
+                        <div class="relative group">
                             <!-- Timeline Dot -->
-                            <div class="absolute -left-[1.8rem] md:-left-[2.3rem] top-6 w-5 h-5 rounded-full bg-dark-bg border-4 border-primary z-10 shadow-lg shadow-primary/20"></div>
+                            <div class="absolute -left-[1.8rem] md:-left-[2.1rem] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-dark-bg border-[3px] border-primary z-10"></div>
 
-                            <!-- Card -->
-                            <div class="bg-light-bg rounded-2xl p-5 border border-secondary shadow-lg hover:border-primary/50 transition-all duration-300 group">
-                                <!-- Header row: Left content + Delete button on right -->
-                                <div class="flex items-start justify-between gap-4 mb-4">
-                                    <div>
-                                        <p class="text-text-secondary text-xs uppercase font-bold tracking-wider mb-1">
-                                            {{ getFormattedDate(log.date) }}
-                                        </p>
-                                        <div class="flex items-baseline gap-2">
-                                            <span class="text-2xl font-black text-white group-hover:text-primary transition-colors">
-                                                {{ log.calories }}
-                                            </span>
-                                            <span class="text-sm font-medium text-text-secondary">kcal</span>
+                            <!-- Compact Card -->
+                            <div class="bg-light-bg/80 hover:bg-light-bg rounded-xl p-3 border border-secondary/50 hover:border-primary/30 shadow-sm transition-all flex items-center gap-4">
+                                <!-- Calories & Date -->
+                                <div class="min-w-[100px] shrink-0">
+                                    <p class="text-[9px] text-text-secondary uppercase font-bold tracking-tight mb-0.5">{{ getFormattedDate(log.date) | date:'HH:mm' }} • {{ getFormattedDate(log.date) | date:'dd MMM' }}</p>
+                                    <div class="flex items-baseline gap-1">
+                                        <span class="text-xl font-black text-white">{{ log.calories }}</span>
+                                        <span class="text-[10px] text-text-secondary uppercase font-bold">kcal</span>
+                                    </div>
+                                </div>
+
+                                <!-- Progress Bar & Macros -->
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex justify-between text-[9px] font-bold uppercase mb-1">
+                                        <div class="flex gap-3">
+                                            <span class="text-primary">P: {{log.protein_grams}}g</span>
+                                            <span class="text-blue-400">C: {{log.carbs_grams}}g</span>
+                                            <span class="text-orange-400">G: {{log.fat_grams}}g</span>
+                                        </div>
+                                        <div class="flex gap-2 text-text-secondary/50" *ngIf="log.fiber_grams || log.sodium_mg">
+                                            <span *ngIf="log.fiber_grams">FB: {{log.fiber_grams}}g</span>
+                                            <span *ngIf="log.sodium_mg">NA: {{log.sodium_mg}}mg</span>
                                         </div>
                                     </div>
-                                    
-                                    <!-- Delete button on the right -->
+                                    <div class="h-1.5 w-full bg-secondary/10 rounded-full overflow-hidden flex">
+                                        <div class="bg-primary h-full" [style.width]="getMacroPercentage(log.protein_grams, 'protein', log.calories)"></div>
+                                        <div class="bg-blue-500 h-full" [style.width]="getMacroPercentage(log.carbs_grams, 'carbs', log.calories)"></div>
+                                        <div class="bg-orange-500 h-full" [style.width]="getMacroPercentage(log.fat_grams, 'fat', log.calories)"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Actions -->
+                                <div class="shrink-0">
                                     <button
                                         (click)="deleteLog($event, log)"
                                         [disabled]="deletingId() === log.id"
-                                        title="Excluir registro"
-                                        data-cy="delete-nutrition-log"
-                                        class="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-red-400 hover:text-white hover:bg-red-600 border border-red-400 hover:border-red-600 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 opacity-0 group-hover:opacity-100"
+                                        class="p-2 text-text-secondary hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                                     >
-                                        @if (deletingId() === log.id) {
-                                            <div class="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
-                                        } @else {
-                                            <svg
-                                                class="w-3.5 h-3.5"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                            >
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="2"
-                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                                />
-                                            </svg>
-                                            <span>Excluir</span>
-                                        }
+                                        <svg *ngIf="deletingId() !== log.id" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        <div *ngIf="deletingId() === log.id" class="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
                                     </button>
-                                </div>
-
-                                <!-- Visual Bars -->
-                                <div class="space-y-3">
-                                    <div class="h-3 w-full bg-secondary/20 rounded-full overflow-hidden flex">
-                                        <!-- Protein -->
-                                        <div class="bg-primary h-full first:rounded-l-full relative group/bar" 
-                                             [style.width]="getMacroPercentage(log.protein_grams, 'protein', log.calories)">
-                                        </div>
-                                        <!-- Carbs -->
-                                        <div class="bg-blue-500 h-full relative group/bar" 
-                                             [style.width]="getMacroPercentage(log.carbs_grams, 'carbs', log.calories)">
-                                        </div>
-                                        <!-- Fat -->
-                                        <div class="bg-orange-500 h-full last:rounded-r-full relative group/bar" 
-                                             [style.width]="getMacroPercentage(log.fat_grams, 'fat', log.calories)">
-                                        </div>
-                                    </div>
-
-                                    <!-- Legend -->
-                                    <div class="flex justify-between text-xs font-mono">
-                                        <div class="flex items-center gap-1.5">
-                                            <div class="w-2 h-2 rounded-full bg-primary"></div>
-                                            <span class="text-white">{{ log.protein_grams }}g</span>
-                                            <span class="text-text-secondary">Prot</span>
-                                        </div>
-                                        <div class="flex items-center gap-1.5">
-                                            <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-                                            <span class="text-white">{{ log.carbs_grams }}g</span>
-                                            <span class="text-text-secondary">Carb</span>
-                                        </div>
-                                        <div class="flex items-center gap-1.5">
-                                            <div class="w-2 h-2 rounded-full bg-orange-500"></div>
-                                            <span class="text-white">{{ log.fat_grams }}g</span>
-                                            <span class="text-text-secondary">Gord</span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Micros (below bar/legend) -->
-                                    @if(log.sodium_mg || log.fiber_grams) {
-                                        <div class="flex gap-3 text-[10px] text-text-secondary/70 bg-secondary/10 px-3 py-1.5 rounded-full w-fit">
-                                            @if(log.fiber_grams) { <span>Fibras: {{log.fiber_grams}}g</span> }
-                                            @if(log.sodium_mg) { <span>Sódio: {{log.sodium_mg}}mg</span> }
-                                        </div>
-                                    }
                                 </div>
                             </div>
                         </div>

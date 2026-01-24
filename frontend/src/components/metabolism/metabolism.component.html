@@ -39,8 +39,14 @@
 
 
     <!-- Widgets Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-      <!-- W1: Metabolic Phase Gauge (Shared Widget) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- W0: TDEE Summary (New) -->
+      <app-widget-tdee-summary
+        [tdee]="stats()?.tdee || 0"
+        [energyBalance]="stats()?.energy_balance || 0">
+      </app-widget-tdee-summary>
+
+      <!-- W1: Metabolic Phase Gauge -->
       <app-widget-metabolic-gauge 
         [status]="stats()?.status || 'maintenance'" 
         [energyBalance]="stats()?.energy_balance || 0">
@@ -97,11 +103,12 @@
         </div>
       </div>
 
-      <!-- W3: Weight Trend (Shared Line Chart Widget) -->
+      <!-- W3: Weight Trend -->
       <app-widget-line-chart 
         title="Tendência de Peso" 
         subtitle="Peso suavizado (30 dias)"
         footerLabel="Variação no Período"
+        class="h-64 md:h-auto"
         [startDate]="stats()?.startDate"
         [endDate]="stats()?.endDate"
         [chartData]="weightChartData"
@@ -115,6 +122,7 @@
     <!-- Comparative Analytics -->
     <div class="mb-8">
         <app-widget-calories-weight-comparison
+            class="h-64"
             [startDate]="stats()?.startDate"
             [endDate]="stats()?.endDate"
             [weightTrend]="stats()?.weight_trend || []"
