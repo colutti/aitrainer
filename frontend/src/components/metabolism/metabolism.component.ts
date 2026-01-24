@@ -2,20 +2,23 @@ import { Component, inject, OnInit, effect, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MetabolismService } from "../../services/metabolism.service";
 import { UserProfileService } from "../../services/user-profile.service";
+import { NutritionService } from "../../services/nutrition.service";
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import { WidgetMetabolicGaugeComponent } from '../widgets/widget-metabolic-gauge.component';
 import { WidgetLineChartComponent } from '../widgets/widget-line-chart.component';
+import { WidgetCaloriesWeightComparisonComponent } from '../widgets/widget-calories-weight-comparison.component';
 
 @Component({
   selector: 'app-metabolism',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective, WidgetMetabolicGaugeComponent, WidgetLineChartComponent],
+  imports: [CommonModule, BaseChartDirective, WidgetMetabolicGaugeComponent, WidgetLineChartComponent, WidgetCaloriesWeightComparisonComponent],
   templateUrl: './metabolism.component.html',
 })
 export class MetabolismComponent implements OnInit {
   metabolismService = inject(MetabolismService);
   userProfileService = inject(UserProfileService);
+  nutritionService = inject(NutritionService);
   
   stats = this.metabolismService.stats;
   isLoading = this.metabolismService.isLoading;
@@ -71,6 +74,7 @@ export class MetabolismComponent implements OnInit {
   ngOnInit() {
     this.metabolismService.fetchSummary(3);
     this.userProfileService.getProfile();
+    this.nutritionService.getStats().subscribe();
   }
   
 

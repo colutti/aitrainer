@@ -110,6 +110,14 @@
       </app-widget-line-chart>
     </div>
 
+    <!-- Comparative Analytics -->
+    <div class="mb-8">
+        <app-widget-calories-weight-comparison
+            [weightTrend]="stats()?.weight_trend || []"
+            [calorieHistory]="nutritionService.stats()?.last_14_days || []">
+        </app-widget-calories-weight-comparison>
+    </div>
+
     <!-- ROW 3: Transparency & Body Comp -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Transparency Chart Content -->

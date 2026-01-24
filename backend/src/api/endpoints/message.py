@@ -23,11 +23,15 @@ AITrainerBrainDep = Annotated[AITrainerBrain, Depends(get_ai_trainer_brain)]
 @router.get("/history")
 def get_history(user_email: CurrentUser, brain: AITrainerBrainDep) -> list:
     """
-    Returns the chat message history for the authenticated user.
+    Returns the chat message history for the authenticated user,
+    excluding internal system notifications.
     """
+    from src.api.models.sender import Sender
     logger.info("Retrieving chat history for user: %s", user_email)
     messages = brain.get_chat_history(user_email)
-    return messages
+    # Filter out SYSTEM messages (internal tool logs, etc.)
+    public_messages = [msg for msg in messages if msg.sender != Sender.SYSTEM]
+    return public_messages
 
 
 @router.post("/message")

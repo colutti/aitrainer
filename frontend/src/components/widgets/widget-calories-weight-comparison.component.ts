@@ -134,7 +134,8 @@ export class WidgetCaloriesWeightComparisonComponent implements OnChanges {
           pointBorderWidth: 2,
           tension: 0.4,
           yAxisID: 'y',
-          order: 1
+          order: 1,
+          spanGaps: true
         },
         {
           type: 'line',
@@ -148,7 +149,8 @@ export class WidgetCaloriesWeightComparisonComponent implements OnChanges {
           pointBackgroundColor: '#3b82f6',
           tension: 0.4,
           yAxisID: 'y1',
-          order: 2
+          order: 2,
+          spanGaps: true
         }
       ]
     };

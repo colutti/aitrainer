@@ -81,13 +81,18 @@ export class ChatService {
           .map((msg, idx) => {
             const senderStr = String(msg.sender).toLowerCase();
             const isUser = senderStr === 'student' || senderStr === 'user';
+            const isAi = senderStr === 'trainer' || senderStr === 'ai';
+            
+            if (!isUser && !isAi) return null;
+
             return {
-              id: idx, // IDs for history are simpler, but we can make them unique if needed
+              id: idx,
               text: msg.text,
               sender: isUser ? 'user' : 'ai' as 'user' | 'ai',
               timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
             };
-          });
+          })
+          .filter((msg): msg is Message => msg !== null);
         mapped.push(...historyMessages);
       } else {
         // No history, add welcome message if no local messages exist?

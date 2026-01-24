@@ -1,21 +1,24 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NutritionService } from '../../services/nutrition.service';
+import { MetabolismService } from '../../services/metabolism.service';
 import { NutritionLog, NutritionStats } from '../../models/nutrition.model';
 import { SkeletonComponent } from '../skeleton/skeleton.component';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import { WidgetMacrosTodayComponent } from '../widgets/widget-macros-today.component';
 import { WidgetAdherenceComponent } from '../widgets/widget-adherence.component';
+import { WidgetCaloriesWeightComparisonComponent } from '../widgets/widget-calories-weight-comparison.component';
 
 @Component({
   selector: 'app-nutrition',
   standalone: true,
-  imports: [CommonModule, SkeletonComponent, BaseChartDirective, WidgetMacrosTodayComponent, WidgetAdherenceComponent],
+  imports: [CommonModule, SkeletonComponent, BaseChartDirective, WidgetMacrosTodayComponent, WidgetAdherenceComponent, WidgetCaloriesWeightComparisonComponent],
   templateUrl: './nutrition.component.html',
 })
 export class NutritionComponent implements OnInit {
   private nutritionService = inject(NutritionService);
+  public metabolismService = inject(MetabolismService);
 
   logs = signal<NutritionLog[]>([]);
   isLoading = signal(true);
@@ -97,6 +100,7 @@ export class NutritionComponent implements OnInit {
 
   ngOnInit() {
     this.loadData();
+    this.metabolismService.fetchSummary(3);
   }
 
   loadData() {
