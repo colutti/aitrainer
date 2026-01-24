@@ -12,7 +12,10 @@ import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
       <div class="flex justify-between items-start mb-4">
         <div>
           <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">{{ title }}</p>
-          <p class="text-xs text-text-secondary opacity-60 mt-0.5">{{ subtitle }}</p>
+          <div class="text-[10px] text-text-secondary font-bold uppercase tracking-tighter opacity-60" *ngIf="startDate && endDate">
+            Período: {{ startDate | date:'dd/MM' }} a {{ endDate | date:'dd/MM' }}
+          </div>
+          <p class="text-xs text-text-secondary opacity-60 mt-0.5" *ngIf="!startDate && subtitle">{{ subtitle }}</p>
         </div>
         <slot name="header-action"></slot>
       </div>
@@ -34,6 +37,8 @@ import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 export class WidgetLineChartComponent {
   @Input({ required: true }) title: string = '';
   @Input() subtitle: string = '';
+  @Input() startDate?: string;
+  @Input() endDate?: string;
   @Input() footerLabel?: string;
   @Input({ required: true }) chartData: ChartData<'line'> = { labels: [], datasets: [] };
   

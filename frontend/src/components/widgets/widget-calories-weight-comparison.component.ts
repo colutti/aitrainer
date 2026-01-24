@@ -12,7 +12,10 @@ import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
       <div class="flex justify-between items-center mb-4">
         <div>
             <h3 class="text-text-secondary text-xs font-bold uppercase tracking-wider">{{ title }}</h3>
-            <p class="text-xs text-text-secondary opacity-70">Correlação Diária</p>
+            <p class="text-[10px] text-text-secondary font-bold uppercase tracking-tighter opacity-60" *ngIf="startDate && endDate">
+                Período: {{ startDate | date:'dd/MM' }} a {{ endDate | date:'dd/MM' }}
+            </p>
+            <p class="text-[10px] text-text-secondary opacity-50 uppercase font-bold mt-0.5" *ngIf="!startDate">{{ subtitle }}</p>
         </div>
         <div class="flex items-center gap-3">
             <div class="flex items-center gap-1.5">
@@ -38,6 +41,9 @@ import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 })
 export class WidgetCaloriesWeightComparisonComponent implements OnChanges {
   @Input() title: string = 'Calorias vs Peso';
+  @Input() subtitle: string = 'Correlação Diária';
+  @Input() startDate?: string;
+  @Input() endDate?: string;
   @Input() weightTrend: { date: string, weight: number }[] = [];
   @Input() calorieHistory: { date: string, calories: number }[] = [];
 

@@ -102,6 +102,8 @@
         title="Tendência de Peso" 
         subtitle="Peso suavizado (30 dias)"
         footerLabel="Variação no Período"
+        [startDate]="stats()?.startDate"
+        [endDate]="stats()?.endDate"
         [chartData]="weightChartData"
         [options]="weightChartOptions">
         <div slot="footer-value" class="text-xs font-bold" [ngClass]="(stats()?.end_weight - stats()?.start_weight) < 0 ? 'text-green-400' : 'text-red-400'">
@@ -113,6 +115,8 @@
     <!-- Comparative Analytics -->
     <div class="mb-8">
         <app-widget-calories-weight-comparison
+            [startDate]="stats()?.startDate"
+            [endDate]="stats()?.endDate"
             [weightTrend]="stats()?.weight_trend || []"
             [calorieHistory]="nutritionService.stats()?.last_14_days || []">
         </app-widget-calories-weight-comparison>

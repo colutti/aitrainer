@@ -75,63 +75,24 @@
         <!-- Calorie Trend vs Weight -->
         <app-widget-calories-weight-comparison
             class="lg:col-span-2"
+            [startDate]="s.startDate"
+            [endDate]="s.endDate"
             [weightTrend]="metabolismService.stats()?.weight_trend || []"
             [calorieHistory]="s.last_14_days || []">
         </app-widget-calories-weight-comparison>
-
-        <!-- Macro Targets -->
-        <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg flex flex-col">
-             <div class="flex justify-between items-center mb-6">
-                 <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Alvos Sugeridos vs Média</p>
-                 <div class="flex items-center gap-1" *ngIf="s.stability_score !== undefined">
-                    <div class="w-2 h-2 rounded-full" [ngClass]="s.stability_score > 70 ? 'bg-green-400 animate-pulse' : 'bg-yellow-400'"></div>
-                    <span class="text-[10px] font-bold text-text-secondary tracking-tight">{{ s.stability_score }}% Estabilidade</span>
-                 </div>
-             </div>
-
-             <div class="space-y-4 flex-1 flex flex-col justify-center" *ngIf="s.macro_targets">
-                 <!-- Protein -->
-                 <div class="space-y-1.5">
-                     <div class="flex justify-between items-end text-[10px]">
-                         <span class="text-white font-bold uppercase">Proteína</span>
-                         <span class="text-text-secondary">{{ s.avg_protein }}g <span class="opacity-40">/</span> <span class="text-primary">{{ s.macro_targets.protein }}g</span></span>
-                     </div>
-                     <div class="h-1.5 w-full bg-secondary/20 rounded-full overflow-hidden">
-                         <div class="bg-primary h-full rounded-full transition-all duration-1000" [style.width.%]="(s.avg_protein / s.macro_targets.protein) * 100"></div>
-                     </div>
-                 </div>
-
-                 <!-- Carbs -->
-                 <div class="space-y-1.5">
-                     <div class="flex justify-between items-end text-[10px]">
-                         <span class="text-white font-bold uppercase">Carbos</span>
-                         <span class="text-text-secondary">
-                             {{ s.avg_daily_calories ? (s.avg_daily_calories * 0.4 / 4 | number:'1.0-0') : 0 }}g 
-                             <span class="opacity-40">/</span> 
-                             <span class="text-blue-400">{{ s.macro_targets.carbs }}g</span>
-                         </span>
-                     </div>
-                     <div class="h-1.5 w-full bg-secondary/20 rounded-full overflow-hidden">
-                         <div class="bg-blue-400 h-full rounded-full transition-all duration-1000" [style.width.%]="( ( (s.avg_daily_calories || 0) * 0.4 / 4) / s.macro_targets.carbs) * 100"></div>
-                     </div>
-                 </div>
-
-                 <!-- Fats -->
-                 <div class="space-y-1.5">
-                     <div class="flex justify-between items-end text-[10px]">
-                         <span class="text-white font-bold uppercase">Gorduras</span>
-                         <span class="text-text-secondary">
-                             {{ s.avg_daily_calories ? (s.avg_daily_calories * 0.3 / 9 | number:'1.0-0') : 0 }}g 
-                             <span class="opacity-40">/</span> 
-                             <span class="text-orange-400">{{ s.macro_targets.fat }}g</span>
-                         </span>
-                     </div>
-                     <div class="h-1.5 w-full bg-secondary/20 rounded-full overflow-hidden">
-                         <div class="bg-orange-400 h-full rounded-full transition-all duration-1000" [style.width.%]="( ( (s.avg_daily_calories || 0) * 0.3 / 9) / s.macro_targets.fat) * 100"></div>
-                     </div>
-                 </div>
-             </div>
-        </div>
+        
+        <!-- Macro Targets vs Actuals -->
+        <app-widget-macro-targets
+            [avgProtein]="s.avg_protein || 0"
+            [targetProtein]="s.macro_targets.protein"
+            [avgCarbs]="( (s.avg_daily_calories || 0) * 0.4 / 4)"
+            [targetCarbs]="s.macro_targets.carbs"
+            [avgFat]="( (s.avg_daily_calories || 0) * 0.3 / 9)"
+            [targetFat]="s.macro_targets.fat"
+            [stabilityScore]="s.stability_score"
+            [startDate]="s.startDate"
+            [endDate]="s.endDate">
+        </app-widget-macro-targets>
     </div>
 
     <!-- Content Area -->

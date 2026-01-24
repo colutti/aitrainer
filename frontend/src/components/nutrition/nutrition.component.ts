@@ -9,11 +9,12 @@ import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import { WidgetMacrosTodayComponent } from '../widgets/widget-macros-today.component';
 import { WidgetAdherenceComponent } from '../widgets/widget-adherence.component';
 import { WidgetCaloriesWeightComparisonComponent } from '../widgets/widget-calories-weight-comparison.component';
+import { WidgetMacroTargetsComponent } from '../widgets/widget-macro-targets.component';
 
 @Component({
   selector: 'app-nutrition',
   standalone: true,
-  imports: [CommonModule, SkeletonComponent, BaseChartDirective, WidgetMacrosTodayComponent, WidgetAdherenceComponent, WidgetCaloriesWeightComparisonComponent],
+  imports: [CommonModule, SkeletonComponent, BaseChartDirective, WidgetMacrosTodayComponent, WidgetAdherenceComponent, WidgetCaloriesWeightComparisonComponent, WidgetMacroTargetsComponent],
   templateUrl: './nutrition.component.html',
 })
 export class NutritionComponent implements OnInit {

@@ -22,6 +22,7 @@ import { WidgetMetabolicGaugeComponent } from '../widgets/widget-metabolic-gauge
 import { WidgetBodyEvolutionComponent } from '../widgets/widget-body-evolution.component';
 import { WidgetLineChartComponent } from '../widgets/widget-line-chart.component';
 import { WidgetCaloriesWeightComparisonComponent } from '../widgets/widget-calories-weight-comparison.component';
+import { WidgetMacroTargetsComponent } from '../widgets/widget-macro-targets.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -38,7 +39,8 @@ import { WidgetCaloriesWeightComparisonComponent } from '../widgets/widget-calor
     WidgetMetabolicGaugeComponent,
     WidgetBodyEvolutionComponent,
     WidgetLineChartComponent,
-    WidgetCaloriesWeightComparisonComponent
+    WidgetCaloriesWeightComparisonComponent,
+    WidgetMacroTargetsComponent
   ],
   templateUrl: './dashboard.component.html',
 })
