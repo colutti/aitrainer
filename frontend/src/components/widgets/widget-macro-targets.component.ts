@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors flex flex-col h-full">
+    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors flex flex-col">
       <div class="flex justify-between items-center mb-6">
         <div>
           <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">{{ title }}</p>

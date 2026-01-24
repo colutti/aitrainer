@@ -8,7 +8,7 @@ import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
   standalone: true,
   imports: [CommonModule, BaseChartDirective],
   template: `
-    <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 h-full flex flex-col">
+    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 flex flex-col">
       <div class="flex justify-between items-start mb-4">
         <div>
           <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">{{ title }}</p>
@@ -20,7 +20,7 @@ import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
         <slot name="header-action"></slot>
       </div>
       
-      <div class="flex-1 min-h-[140px] relative mt-2">
+      <div class="flex-1 min-h-[120px] relative mt-2">
         <canvas baseChart [data]="chartData" [options]="options" [type]="type"></canvas>
       </div>
       
