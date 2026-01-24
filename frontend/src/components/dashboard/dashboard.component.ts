@@ -205,8 +205,9 @@ export class DashboardComponent implements OnInit {
         borderColor: '#f97316',
         backgroundColor: 'rgba(249, 115, 22, 0.1)',
         fill: true,
-        pointRadius: 2,
-        label: 'Gordura (%)'
+        pointRadius: 3,
+        label: 'Gordura (%)',
+        spanGaps: true
     }]
   };
 
@@ -217,8 +218,9 @@ export class DashboardComponent implements OnInit {
         borderColor: '#3b82f6',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         fill: true,
-        pointRadius: 2,
-        label: 'Músculo (%)'
+        pointRadius: 3,
+        label: 'Músculo (%)',
+        spanGaps: true
     }]
   };
 
@@ -238,6 +240,61 @@ export class DashboardComponent implements OnInit {
        borderWidth: 0,
        hoverOffset: 4 
     }]
+  };
+
+  public compositionChartOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      tooltip: {
+        backgroundColor: '#18181b',
+        titleColor: '#fff',
+        bodyColor: '#a1a1aa',
+        borderColor: '#3f3f46',
+        borderWidth: 1,
+        padding: 10,
+        displayColors: true,
+        callbacks: {
+          label: (context) => ` ${context.dataset.label}: ${context.parsed.y.toFixed(1)}%`
+        }
+      },
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: {
+          color: '#a1a1aa',
+          boxWidth: 8,
+          usePointStyle: true,
+          pointStyle: 'circle',
+          font: { size: 9 }
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: { 
+          color: '#a1a1aa', 
+          font: { family: 'Inter', size: 10 },
+          maxRotation: 0,
+          autoSkip: true,
+          maxTicksLimit: 7
+        },
+        grid: { display: false }
+      },
+      y: {
+        ticks: { 
+          color: '#a1a1aa', 
+          font: { family: 'Inter', size: 10 },
+          callback: (value) => `${Number(value).toFixed(1)}%`
+        },
+        grid: { color: 'rgba(39, 39, 42, 0.5)' },
+        beginAtZero: false
+      }
+    },
+    elements: {
+        point: { radius: 3, hoverRadius: 5, backgroundColor: '#3b82f6', borderWidth: 0 },
+        line: { tension: 0.3 }
+    }
   };
 
   // --- Weight Trend Chart ---
@@ -401,16 +458,28 @@ export class DashboardComponent implements OnInit {
     effect(async () => {
        const comp = await this.weightService.getBodyCompositionStats();
        if (comp) {
-          const labels = comp.weight_trend?.map(d => new Date(d.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })) || [];
+          const allDates = comp.weight_trend || [];
+          const labels = allDates.map(d => new Date(d.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }));
           
+          // Align data points with labels to prevent shifting
+          const fatData = allDates.map(d => {
+             const entry = comp.fat_trend?.find(f => f.date === d.date);
+             return entry ? entry.value : null;
+          });
+
+          const muscleData = allDates.map(d => {
+             const entry = comp.muscle_trend?.find(m => m.date === d.date);
+             return entry ? entry.value : null;
+          });
+
           this.fatTrendChartData = {
             labels,
-            datasets: [{ ...this.fatTrendChartData.datasets[0], data: comp.fat_trend?.map(d => d.value) || [] }]
+            datasets: [{ ...this.fatTrendChartData.datasets[0], data: fatData }]
           };
           
           this.muscleTrendChartData = {
             labels,
-            datasets: [{ ...this.muscleTrendChartData.datasets[0], data: comp.muscle_trend?.map(d => d.value) || [] }]
+            datasets: [{ ...this.muscleTrendChartData.datasets[0], data: muscleData }]
           };
        }
     });
