@@ -94,8 +94,8 @@
             <div class="flex-1 h-px bg-secondary/30"></div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16">
-            <!-- W1: Long-term Weight Trend (Wider) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Row 1 -->
             <app-widget-line-chart 
                 class="lg:col-span-2"
                 title="Tendência (Histórico)" 
@@ -115,7 +115,6 @@
                 </div>
             </app-widget-line-chart>
 
-            <!-- W3: Body Comp Trends -->
             <app-widget-body-evolution 
                 class="lg:col-span-2"
                 [fatChange]="metabolismStats()?.fat_change_kg" 
@@ -125,7 +124,6 @@
             </app-widget-body-evolution>
 
             <!-- Row 2 -->
-            <!-- W0: TDEE Summary -->
             <app-widget-tdee-summary 
                 [tdee]="metabolismStats()?.tdee || 0" 
                 [targetCalories]="metabolismStats()?.daily_target || 0"
@@ -133,7 +131,6 @@
                 [energyBalance]="metabolismStats()?.energy_balance || 0">
             </app-widget-tdee-summary>
 
-            <!-- W4: Consistency Tracker -->
             <div class="lg:col-span-2 bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors">
                 <div class="flex justify-between items-start mb-4">
                     <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Consistência de Registro</p>
@@ -149,7 +146,6 @@
                 </div>
             </div>
 
-            <!-- W2: Metabolic Phase Gauge (Now under Body Evolution) -->
             <app-widget-metabolic-gauge 
                 [status]="metabolismStats()?.status || 'maintenance'" 
                 [energyBalance]="metabolismStats()?.energy_balance || 0">
@@ -179,11 +175,11 @@
 
         <!-- Grid 1: Performance Summary -->
         <!-- Main Data Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16">
-            <!-- W1: Recent PRs -->
+        <!-- Main Data Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Row 1 -->
             <app-widget-recent-prs class="lg:col-span-2" [prs]="s.recent_prs"></app-widget-recent-prs>
 
-            <!-- W2: Volume Trend -->
             <app-widget-line-chart 
                 class="lg:col-span-2"
                 title="Trend de Volume (8 semanas)" 
@@ -193,29 +189,26 @@
             </app-widget-line-chart>
 
             <!-- Row 2 -->
-            <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-16">
-                <app-widget-streak [streakWeeks]="s.current_streak_weeks"></app-widget-streak>
-                <div class="space-y-16">
-                    <app-widget-frequency [weeklyFrequency]="s.weekly_frequency"></app-widget-frequency>
-                    <!-- Last Workout Mini -->
-                    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 relative overflow-hidden flex flex-col justify-center min-h-[90px]">
-                        <div class="absolute top-0 right-0 p-3 opacity-5">
-                            <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path></svg>
-                        </div>
-                        <p class="text-text-secondary text-[8px] font-bold uppercase tracking-widest mb-1.5 line-clamp-1">Última Atividade</p>
-                        <div *ngIf="s.last_workout; else noWorkout">
-                            <h3 class="text-sm font-black text-white mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">{{ s.last_workout.workout_type || 'Treino' }}</h3>
-                            <p class="text-[8px] text-primary font-bold uppercase tracking-tight">{{ getFormattedDate(s.last_workout.date) }} • {{ s.last_workout.duration_minutes || '--' }} min </p>
-                        </div>
-                        <ng-template #noWorkout>
-                            <p class="text-text-secondary italic text-[9px]">Sem treinos.</p>
-                        </ng-template>
-                    </div>
+            <app-widget-streak [streakWeeks]="s.current_streak_weeks"></app-widget-streak>
+            
+            <app-widget-frequency [weeklyFrequency]="s.weekly_frequency"></app-widget-frequency>
+            
+            <!-- Last Workout Activity -->
+            <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 relative overflow-hidden flex flex-col justify-center min-h-[90px]">
+                <div class="absolute top-0 right-0 p-3 opacity-5">
+                    <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path></svg>
                 </div>
+                <p class="text-text-secondary text-[8px] font-bold uppercase tracking-widest mb-1.5 line-clamp-1">Última Atividade</p>
+                <div *ngIf="s.last_workout; else noWorkout">
+                    <h3 class="text-sm font-black text-white mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">{{ s.last_workout.workout_type || 'Treino' }}</h3>
+                    <p class="text-[8px] text-primary font-bold uppercase tracking-tight">{{ getFormattedDate(s.last_workout.date) }} • {{ s.last_workout.duration_minutes || '--' }} min </p>
+                </div>
+                <ng-template #noWorkout>
+                    <p class="text-text-secondary italic text-[9px]">Sem treinos.</p>
+                </ng-template>
             </div>
 
-            <!-- Volume Category Chart -->
-            <div class="lg:col-span-2 bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300">
+            <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300">
                 <div class="flex justify-between items-center mb-4">
                     <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Distribuição Semanal</p>
                     <span class="bg-primary/10 text-primary text-[8px] px-2 py-0.5 rounded-full border border-primary/20 font-bold uppercase">Volume Kg</span>
@@ -238,7 +231,7 @@
             <div class="flex-1 h-px bg-secondary/30"></div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-8 w-full">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 w-full">
             <!-- Row 1: Major Trends -->
             <app-widget-line-chart 
                 class="lg:col-span-2"
@@ -273,28 +266,24 @@
                 [endDate]="n.endDate">
             </app-widget-macro-targets>
 
-            <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-16">
-                <!-- Today's Macros -->
-                <app-widget-macros-today 
-                    [calories]="n.today?.calories || 0" 
-                    [protein]="n.today?.protein_grams || 0" 
-                    [carbs]="n.today?.carbs_grams || 0" 
-                    [fat]="n.today?.fat_grams || 0">
-                </app-widget-macros-today>
+            <app-widget-macros-today 
+                [calories]="n.today?.calories || 0" 
+                [protein]="n.today?.protein_grams || 0" 
+                [carbs]="n.today?.carbs_grams || 0" 
+                [fat]="n.today?.fat_grams || 0">
+            </app-widget-macros-today>
 
-                <!-- Status Stack -->
-                <div class="space-y-16">
-                    <app-widget-adherence [weeklyAdherence]="n.weekly_adherence"></app-widget-adherence>
-                    
-                    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg flex flex-col justify-center items-center text-center relative overflow-hidden group min-h-[100px]">
-                        <div class="absolute -top-10 -right-10 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"></div>
-                        <p class="text-text-secondary text-[9px] font-bold uppercase tracking-wider mb-1">Estabilidade</p>
-                        <div class="flex items-center gap-3">
-                            <span class="text-xl">⚖️</span>
-                            <div class="text-left">
-                                <p class="text-xs font-black text-white">Consistente</p>
-                                <p class="text-[8px] text-text-secondary uppercase tracking-tighter">Variação <span class="text-primary font-bold">±120kcal</span></p>
-                            </div>
+            <div class="grid grid-cols-1 gap-6">
+                <app-widget-adherence [weeklyAdherence]="n.weekly_adherence"></app-widget-adherence>
+                
+                <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg flex flex-col justify-center items-center text-center relative overflow-hidden group min-h-[100px]">
+                    <div class="absolute -top-10 -right-10 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"></div>
+                    <p class="text-text-secondary text-[9px] font-bold uppercase tracking-wider mb-1">Estabilidade</p>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl">⚖️</span>
+                        <div class="text-left">
+                            <p class="text-xs font-black text-white">Consistente</p>
+                            <p class="text-[8px] text-text-secondary uppercase tracking-tighter">Variação <span class="text-primary font-bold">±120kcal</span></p>
                         </div>
                     </div>
                 </div>
