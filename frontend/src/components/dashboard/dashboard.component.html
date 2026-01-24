@@ -125,28 +125,15 @@
 
             <!-- Row 2 -->
             <app-widget-tdee-summary 
+                class="lg:col-span-2"
                 [tdee]="metabolismStats()?.tdee || 0" 
                 [targetCalories]="metabolismStats()?.daily_target || 0"
                 [goalType]="metabolismStats()?.status"
                 [energyBalance]="metabolismStats()?.energy_balance || 0">
             </app-widget-tdee-summary>
 
-            <div class="lg:col-span-2 bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors">
-                <div class="flex justify-between items-start mb-4">
-                    <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Consistência de Registro</p>
-                    <span *ngIf="metabolismStats()?.consistency_score" class="text-[10px] font-bold text-primary">{{ metabolismStats()?.consistency_score }}% score</span>
-                </div>
-                
-                <div *ngIf="!isMetabolismLoading(); else loadingMini" class="h-28">
-                    <canvas baseChart
-                        [data]="consistencyChartData"
-                        [options]="consistencyChartOptions"
-                        [type]="consistencyChartType">
-                    </canvas>
-                </div>
-            </div>
-
             <app-widget-metabolic-gauge 
+                class="lg:col-span-2"
                 [status]="metabolismStats()?.status || 'maintenance'" 
                 [energyBalance]="metabolismStats()?.energy_balance || 0">
             </app-widget-metabolic-gauge>
@@ -177,23 +164,9 @@
         <!-- Main Data Grid -->
         <!-- Main Data Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Row 1 -->
+            <!-- Training Performance -->
             <app-widget-recent-prs class="lg:col-span-2" [prs]="s.recent_prs"></app-widget-recent-prs>
-
-            <app-widget-line-chart 
-                class="lg:col-span-2"
-                title="Trend de Volume (8 semanas)" 
-                subtitle="CARGA ACUMULADA (KG)"
-                [chartData]="volumeTrendChartData"
-                [options]="volumeTrendChartOptions">
-            </app-widget-line-chart>
-
-            <!-- Row 2 -->
-            <app-widget-streak [streakWeeks]="s.current_streak_weeks"></app-widget-streak>
             
-            <app-widget-frequency [weeklyFrequency]="s.weekly_frequency"></app-widget-frequency>
-            
-            <!-- Last Workout Activity -->
             <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 relative overflow-hidden flex flex-col justify-center min-h-[90px]">
                 <div class="absolute top-0 right-0 p-3 opacity-5">
                     <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path></svg>
@@ -217,6 +190,15 @@
                     <canvas baseChart [data]="barChartData" [options]="barChartOptions" [type]="barChartType"></canvas>
                 </div>
             </div>
+
+            <!-- Volume Trend (Wide) -->
+            <app-widget-line-chart 
+                class="lg:col-span-4"
+                title="Evolução de Volume Total de Carga (8 semanas)" 
+                subtitle="CARGA ACUMULADA (KG POR SEMANA)"
+                [chartData]="volumeTrendChartData"
+                [options]="volumeTrendChartOptions">
+            </app-widget-line-chart>
         </div>
     </ng-container>
 
@@ -232,29 +214,20 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 w-full">
-            <!-- Row 1: Major Trends -->
-            <app-widget-line-chart 
-                class="lg:col-span-2"
-                title="Histórico de Calorias" 
-                subtitle="CONSUMO DIÁRIO (14 DIAS)"
-                [startDate]="nutritionStats()?.startDate"
-                [endDate]="nutritionStats()?.endDate"
-                [chartData]="lineChartData"
-                [options]="lineChartOptions">
-            </app-widget-line-chart>
-
+            <!-- Nutrition Correlation (Wide) -->
             <app-widget-calories-weight-comparison
-                class="lg:col-span-2"
+                class="lg:col-span-4"
+                title="Análise de Correlação: Calorias vs Peso"
                 [startDate]="metabolismStats()?.startDate"
                 [endDate]="metabolismStats()?.endDate"
                 [weightTrend]="metabolismStats()?.weight_trend || []"
                 [calorieHistory]="n.last_14_days || []">
             </app-widget-calories-weight-comparison>
 
-            <!-- Row 2: Analysis & Status -->
+            <!-- Row 2 -->
             <app-widget-macro-targets
                 class="lg:col-span-2"
-                title="Metas vs Média (7 dias)"
+                title="Performance de Macros (7 dias)"
                 [avgProtein]="n.avg_protein || 0"
                 [targetProtein]="n.macro_targets.protein"
                 [avgCarbs]="( (n.avg_daily_calories || 0) * 0.4 / 4)"
@@ -267,29 +240,86 @@
             </app-widget-macro-targets>
 
             <app-widget-macros-today 
+                class="lg:col-span-2"
                 [calories]="n.today?.calories || 0" 
                 [protein]="n.today?.protein_grams || 0" 
                 [carbs]="n.today?.carbs_grams || 0" 
                 [fat]="n.today?.fat_grams || 0">
             </app-widget-macros-today>
 
-            <div class="grid grid-cols-1 gap-6">
-                <app-widget-adherence [weeklyAdherence]="n.weekly_adherence"></app-widget-adherence>
+            <!-- History Trend (Wide) -->
+            <app-widget-line-chart 
+                class="lg:col-span-4"
+                title="Trend de Ingestão de Calorias (14 dias)" 
+                subtitle="KCAL / DIA"
+                [startDate]="nutritionStats()?.startDate"
+                [endDate]="nutritionStats()?.endDate"
+                [chartData]="lineChartData"
+                [options]="lineChartOptions">
+            </app-widget-line-chart>
+        </div>
+    </ng-container>
+
+        <!-- ==================== ESTATÍSTICAS E CONSISTÊNCIA ==================== -->
+        <div class="col-span-full flex items-center gap-4 mt-8 mb-2">
+            <h2 class="text-lg font-bold text-text-secondary flex items-center gap-2">
+                <span>📊</span>
+                <span>Estatísticas e Consistência</span>
+            </h2>
+            <div class="flex-1 h-px bg-secondary/30"></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 w-full col-span-full">
+            <!-- Training Stats Group -->
+            @if (stats(); as s) {
+                <app-widget-streak title="Consistência de Treino (Semanas)" [streakWeeks]="s.current_streak_weeks"></app-widget-streak>
+                <app-widget-frequency title="Frequência de Treino (7 dias)" [weeklyFrequency]="s.weekly_frequency"></app-widget-frequency>
+            }
+
+            <!-- Nutrition Stats Group -->
+            @if (nutritionStats(); as n) {
+                <app-widget-adherence title="Aderência à Dieta (7 dias)" [weeklyAdherence]="n.weekly_adherence"></app-widget-adherence>
                 
                 <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg flex flex-col justify-center items-center text-center relative overflow-hidden group min-h-[100px]">
                     <div class="absolute -top-10 -right-10 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"></div>
-                    <p class="text-text-secondary text-[9px] font-bold uppercase tracking-wider mb-1">Estabilidade</p>
+                    <p class="text-text-secondary text-[9px] font-bold uppercase tracking-wider mb-1">Volatilidade Calórica (7d)</p>
                     <div class="flex items-center gap-3">
                         <span class="text-xl">⚖️</span>
                         <div class="text-left">
-                            <p class="text-xs font-black text-white">Consistente</p>
-                            <p class="text-[8px] text-text-secondary uppercase tracking-tighter">Variação <span class="text-primary font-bold">±120kcal</span></p>
+                            <p class="text-xs font-black text-white">Estável</p>
+                            <p class="text-[8px] text-text-secondary uppercase tracking-tighter">Variância <span class="text-primary font-bold">±120kcal</span></p>
                         </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Weight Log Stats (Wide) -->
+            <div class="lg:col-span-2 bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300">
+                 <div class="flex justify-between items-center mb-4">
+                     <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Histograma de Registro de Peso (30 dias)</p>
+                     <div class="flex gap-2">
+                         <span class="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
+                         <span class="w-1.5 h-1.5 rounded-full bg-[#3b82f6]"></span>
+                     </div>
+                 </div>
+                 <div class="h-28 w-full">
+                    <canvas baseChart [data]="consistencyChartData" [options]="consistencyChartOptions" [type]="consistencyChartType"></canvas>
+                 </div>
+            </div>
+
+            <!-- Global Confidence Info -->
+            <div class="lg:col-span-2 bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors flex flex-col justify-center text-center group">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/0 via-primary/40 to-primary/0 scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+                <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-2">Qualidade Global dos Dados</p>
+                <div class="flex items-center justify-center gap-4">
+                    <span class="text-4xl font-black text-primary">{{ metabolismStats()?.consistency_score || 0 }}%</span>
+                    <div class="text-left">
+                        <p class="text-[10px] text-text-secondary uppercase font-bold">Nível de Confiança</p>
+                        <p class="text-[10px] text-white font-medium opacity-60">Baseado em {{ metabolismStats()?.weight_logs_count || 0 }} pesagens</p>
                     </div>
                 </div>
             </div>
         </div>
-    </ng-container>
 
         <!-- ========== COMPOSIÇÃO SECTION ========== -->
         <div class="col-span-full flex items-center gap-4 mt-8 mb-2">
@@ -322,20 +352,6 @@
                 [chartData]="muscleTrendChartData"
                 [options]="compositionChartOptions">
             </app-widget-line-chart>
-
-            <!-- Consistency Stats (More Compact) -->
-            <div class="lg:col-span-2 bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300">
-                 <div class="flex justify-between items-center mb-4">
-                     <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Histórico de Pesagens</p>
-                     <div class="flex gap-2">
-                         <span class="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
-                         <span class="w-1.5 h-1.5 rounded-full bg-[#3b82f6]"></span>
-                     </div>
-                 </div>
-                 <div class="h-32 w-full">
-                    <canvas baseChart [data]="consistencyChartData" [options]="consistencyChartOptions" [type]="consistencyChartType"></canvas>
-                 </div>
-            </div>
         </div>
 
 </div>

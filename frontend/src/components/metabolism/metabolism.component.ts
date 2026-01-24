@@ -3,7 +3,6 @@ import { CommonModule } from "@angular/common";
 import { MetabolismService } from "../../services/metabolism.service";
 import { UserProfileService } from "../../services/user-profile.service";
 import { NutritionService } from "../../services/nutrition.service";
-import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import { WidgetMetabolicGaugeComponent } from '../widgets/widget-metabolic-gauge.component';
 import { WidgetLineChartComponent } from '../widgets/widget-line-chart.component';
@@ -13,7 +12,7 @@ import { WidgetTdeeSummaryComponent } from '../widgets/widget-tdee-summary.compo
 @Component({
   selector: 'app-metabolism',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective, WidgetMetabolicGaugeComponent, WidgetLineChartComponent, WidgetCaloriesWeightComparisonComponent, WidgetTdeeSummaryComponent],
+  imports: [CommonModule, WidgetMetabolicGaugeComponent, WidgetLineChartComponent, WidgetCaloriesWeightComparisonComponent, WidgetTdeeSummaryComponent],
   templateUrl: './metabolism.component.html',
 })
 export class MetabolismComponent implements OnInit {

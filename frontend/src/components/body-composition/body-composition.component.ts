@@ -5,7 +5,6 @@ import { WeightService } from '../../services/weight.service';
 import { MetabolismService } from '../../services/metabolism.service';
 import { WeightLog, BodyCompositionStats } from '../../models/weight-log.model';
 import { MetabolismResponse } from '../../models/metabolism.model';
-import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData } from 'chart.js';
 import { NumericInputDirective } from '../../directives/numeric-input.directive';
 import { WidgetBodyEvolutionComponent } from '../widgets/widget-body-evolution.component';
@@ -14,7 +13,7 @@ import { WidgetLineChartComponent } from '../widgets/widget-line-chart.component
 @Component({
   selector: 'app-body-composition',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective, FormsModule, NumericInputDirective, WidgetBodyEvolutionComponent, WidgetLineChartComponent],
+  imports: [CommonModule, FormsModule, NumericInputDirective, WidgetBodyEvolutionComponent, WidgetLineChartComponent],
   templateUrl: './body-composition.component.html'
 })
 export class BodyCompositionComponent implements OnInit {

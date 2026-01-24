@@ -4,7 +4,6 @@ import { NutritionService } from '../../services/nutrition.service';
 import { MetabolismService } from '../../services/metabolism.service';
 import { NutritionLog, NutritionStats } from '../../models/nutrition.model';
 import { SkeletonComponent } from '../skeleton/skeleton.component';
-import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import { WidgetMacrosTodayComponent } from '../widgets/widget-macros-today.component';
 import { WidgetAdherenceComponent } from '../widgets/widget-adherence.component';
@@ -14,7 +13,7 @@ import { WidgetMacroTargetsComponent } from '../widgets/widget-macro-targets.com
 @Component({
   selector: 'app-nutrition',
   standalone: true,
-  imports: [CommonModule, SkeletonComponent, BaseChartDirective, WidgetMacrosTodayComponent, WidgetAdherenceComponent, WidgetCaloriesWeightComparisonComponent, WidgetMacroTargetsComponent],
+  imports: [CommonModule, SkeletonComponent, WidgetMacrosTodayComponent, WidgetAdherenceComponent, WidgetCaloriesWeightComparisonComponent, WidgetMacroTargetsComponent],
   templateUrl: './nutrition.component.html',
 })
 export class NutritionComponent implements OnInit {
