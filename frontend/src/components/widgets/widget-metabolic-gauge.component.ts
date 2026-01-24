@@ -6,10 +6,10 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 flex flex-col justify-between h-full">
-      <div class="flex justify-between items-start mb-4">
+    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 flex flex-col justify-between min-h-[90px]">
+      <div class="flex justify-between items-start mb-3">
         <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Fase Metabólica</p>
-        <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded border" [ngClass]="{
+        <span class="text-[9px] font-bold uppercase px-2 py-0.5 rounded border" [ngClass]="{
             'text-red-400 border-red-400/20 bg-red-400/5': status === 'surplus',
             'text-blue-400 border-blue-400/20 bg-blue-400/5': status === 'deficit',
             'text-primary border-primary/20 bg-primary/5': status === 'maintenance'
@@ -17,7 +17,7 @@ import { CommonModule } from '@angular/common';
       </div>
       
       <div class="flex-1 flex flex-col justify-center">
-        <div class="relative h-3 w-full bg-secondary/20 rounded-full overflow-hidden mb-3">
+        <div class="relative h-2.5 w-full bg-secondary/20 rounded-full overflow-hidden mb-2">
           <div class="absolute inset-y-0 left-1/2 w-0.5 bg-white/20 z-10" title="Manutenção"></div>
           <div class="h-full rounded-full transition-all duration-1000" 
                [style.width.%]="progress"
@@ -28,9 +28,9 @@ import { CommonModule } from '@angular/common';
                }">
           </div>
         </div>
-        <div class="flex justify-between items-center text-[9px] text-text-secondary font-bold uppercase tracking-tighter">
+        <div class="flex justify-between items-center text-[8px] text-text-secondary font-bold uppercase tracking-tighter">
           <span>← Déficit</span>
-          <span class="text-white text-sm font-black">{{ energyBalance | number:'1.0-0' }} <span class="text-[9px] font-normal opacity-60">kcal/dia</span></span>
+          <span class="text-white text-xs font-black">{{ energyBalance | number:'1.0-0' }} <span class="text-[8px] font-normal opacity-60">kcal/dia</span></span>
           <span>Superávit →</span>
         </div>
       </div>

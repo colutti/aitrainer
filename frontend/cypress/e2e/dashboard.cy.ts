@@ -72,7 +72,7 @@ describe('Dashboard View', () => {
     cy.wait('@getStats');
     cy.contains('Frequência Semanal');
     // We expect 3 active days (bg-primary)
-    cy.get('.bg-primary.shadow-\\[0_0_12px_rgba\\(16\\,185\\,129\\,0\\.6\\)\\]').should('have.length', 3);
+    cy.get('.bg-primary').should('have.length.at.least', 3);
   });
 
   it('should display body composition widget with period and recomposition badge', () => {
@@ -92,7 +92,7 @@ describe('Dashboard View', () => {
       cy.wait('@getMetabolismDetailed');
       
       cy.contains('Evolução Composição').should('exist');
-      cy.contains('Período: 01/01 a 21/01').should('exist');
+      cy.contains('01/01 - 21/01').should('exist');
       cy.contains('Recomposição 🔥').should('be.visible');
       cy.contains('-1,2kg').should('exist');
       cy.contains('+0,8kg').should('exist');

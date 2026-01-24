@@ -8,7 +8,7 @@ import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
   standalone: true,
   imports: [CommonModule, BaseChartDirective],
   template: `
-    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg flex flex-col items-center justify-center relative hover:border-primary/50 transition-all duration-300 h-full min-h-[140px]">
+    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg flex flex-col items-center justify-center relative hover:border-primary/50 transition-all duration-300 min-h-[120px]">
       <div *ngIf="calories > 0; else noLog" class="flex flex-col items-center justify-center w-full">
         <div class="h-24 w-24 relative">
           <canvas baseChart [data]="chartData" [options]="chartOptions" [type]="chartType"></canvas>
@@ -18,18 +18,18 @@ import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
           </div>
         </div>
         
-        <div class="flex gap-4 mt-4 w-full px-2">
+        <div class="flex gap-3 mt-3 w-full px-1">
             <div class="flex-1 text-center">
-                <span class="text-[8px] text-[#10b981] font-black uppercase">Prot</span>
-                <p class="text-xs font-bold text-white">{{ protein }}g</p>
+                <span class="text-[7px] text-[#10b981] font-black uppercase">Prot</span>
+                <p class="text-[10px] font-bold text-white">{{ protein }}g</p>
             </div>
             <div class="flex-1 text-center">
-                <span class="text-[8px] text-[#3b82f6] font-black uppercase">Carb</span>
-                <p class="text-xs font-bold text-white">{{ carbs }}g</p>
+                <span class="text-[7px] text-[#3b82f6] font-black uppercase">Carb</span>
+                <p class="text-[10px] font-bold text-white">{{ carbs }}g</p>
             </div>
             <div class="flex-1 text-center">
-                <span class="text-[8px] text-[#f97316] font-black uppercase">Gord</span>
-                <p class="text-xs font-bold text-white">{{ fat }}g</p>
+                <span class="text-[7px] text-[#f97316] font-black uppercase">Gord</span>
+                <p class="text-[10px] font-bold text-white">{{ fat }}g</p>
             </div>
         </div>
       </div>

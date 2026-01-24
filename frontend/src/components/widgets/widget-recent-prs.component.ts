@@ -7,13 +7,13 @@ import { PersonalRecord } from '../../models/stats.model';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg overflow-hidden flex flex-col hover:border-primary/50 transition-colors duration-300 h-full">
-      <div class="flex justify-between items-center mb-4">
+    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg overflow-hidden flex flex-col hover:border-primary/50 transition-colors duration-300 min-h-[90px]">
+      <div class="flex justify-between items-center mb-3">
         <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Recordes Recentes</p>
         <span class="text-sm">🏆</span>
       </div>
       
-      <div *ngIf="prs.length > 0; else noPrs" class="space-y-3 overflow-y-auto max-h-64 pr-2 custom-scrollbar flex-1">
+      <div *ngIf="prs.length > 0; else noPrs" class="space-y-2 overflow-y-auto max-h-40 pr-2 custom-scrollbar flex-1">
         <div *ngFor="let pr of prs" class="flex items-center justify-between p-2 rounded-xl bg-secondary/10 hover:bg-secondary/30 transition-colors border border-transparent hover:border-secondary/50 group">
           <div>
             <p class="font-bold text-white text-xs group-hover:text-primary transition-colors truncate max-w-[100px]">{{ pr.exercise_name }}</p>
@@ -26,10 +26,9 @@ import { PersonalRecord } from '../../models/stats.model';
       </div>
       
       <ng-template #noPrs>
-        <div class="flex-1 flex flex-col items-center justify-center text-center opacity-[60%]">
-          <span class="text-3xl mb-2 grayscale">🏅</span>
-          <p class="text-text-secondary text-xs">Sem novos recordes ainda.</p>
-          <p class="text-text-secondary text-[10px] mt-1">Continue firme!</p>
+        <div class="flex-1 flex flex-col items-center justify-center text-center opacity-[60%] py-4">
+          <span class="text-xl mb-1 grayscale">🏅</span>
+          <p class="text-text-secondary text-[10px]">Sem recordes.</p>
         </div>
       </ng-template>
     </div>

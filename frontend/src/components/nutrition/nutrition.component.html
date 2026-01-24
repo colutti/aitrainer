@@ -1,4 +1,4 @@
-<div class="h-full flex flex-col overflow-hidden bg-dark-bg text-text-primary p-6 md:p-8 animate-fade-in relative">
+<div class="h-full overflow-y-auto bg-dark-bg text-text-primary p-6 md:p-8 animate-fade-in relative">
     
     <!-- Pattern Background -->
     <div class="absolute inset-0 opacity-5 pointer-events-none z-0" 
@@ -96,7 +96,7 @@
     </div>
 
     <!-- Content Area -->
-    <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar relative z-10">
+    <div class="relative z-10">
         
         @if (isLoading()) {
             <div class="space-y-4">
