@@ -27,10 +27,30 @@ describe('Dashboard View', () => {
     cy.mockLogin({
       intercepts: {
         '**/workout/stats': { statusCode: 200, body: workoutStats, alias: 'getStats' },
-        '**/metabolism/summary*': { statusCode: 200, body: { tdee: null, trend: 'maintenance' }, alias: 'getMetabolism' },
+        '**/metabolism/summary*': { 
+            statusCode: 200, 
+            body: { 
+                tdee: 2500, 
+                confidence: 'medium', 
+                trend: 'maintenance',
+                status: 'maintenance',
+                energy_balance: 100,
+                start_weight: 80,
+                end_weight: 79.5,
+                weight_trend: [{ date: '2026-01-01', weight: 80 }, { date: '2026-01-02', weight: 79.8 }],
+                consistency: [{ date: '2026-01-01', weight: true, nutrition: true }],
+                fat_change_kg: -0.5,
+                muscle_change_kg: 0.2,
+                weight_logs_count: 10,
+                startDate: '2026-01-01',
+                endDate: '2026-01-10'
+            }, 
+            alias: 'getMetabolism' 
+        },
         '**/trainer/available_trainers': { statusCode: 200, body: [{ trainer_id: 'atlas', name: 'Atlas', avatar_url: 'assets/atlas.png' }] },
         '**/trainer/trainer_profile': { statusCode: 200, body: { trainer_type: 'atlas' } },
         '**/metabolism/insight*': { statusCode: 200, body: "Analysis mock" },
+        '**/nutrition/stats': { statusCode: 200, body: { today: { calories: 2000, protein_grams: 150, carbs_grams: 200, fat_grams: 60 }, last_14_days: [] } },
         '**/user/logout': { statusCode: 200, body: { message: 'Logged out' } }
       }
     });

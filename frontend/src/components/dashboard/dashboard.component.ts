@@ -415,7 +415,7 @@ export class DashboardComponent implements OnInit {
 
     effect(() => {
         const s = this.metabolismStats();
-        if (s && s.confidence !== 'none') {
+        if (s && s.confidence && s.confidence !== 'none') {
            untracked(() => { this.metabolismService.generateInsight(3); });
         }
     });
