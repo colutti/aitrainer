@@ -94,7 +94,7 @@
             <div class="flex-1 h-px bg-secondary/30"></div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16">
             <!-- W1: Long-term Weight Trend (Wider) -->
             <app-widget-line-chart 
                 class="lg:col-span-2"
@@ -179,7 +179,7 @@
 
         <!-- Grid 1: Performance Summary -->
         <!-- Main Data Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16">
             <!-- W1: Recent PRs -->
             <app-widget-recent-prs class="lg:col-span-2" [prs]="s.recent_prs"></app-widget-recent-prs>
 
@@ -193,9 +193,9 @@
             </app-widget-line-chart>
 
             <!-- Row 2 -->
-            <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-8">
+            <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-16">
                 <app-widget-streak [streakWeeks]="s.current_streak_weeks"></app-widget-streak>
-                <div class="space-y-8">
+                <div class="space-y-16">
                     <app-widget-frequency [weeklyFrequency]="s.weekly_frequency"></app-widget-frequency>
                     <!-- Last Workout Mini -->
                     <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 relative overflow-hidden flex flex-col justify-center min-h-[90px]">
@@ -238,7 +238,7 @@
             <div class="flex-1 h-px bg-secondary/30"></div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8 w-full">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-8 w-full">
             <!-- Row 1: Major Trends -->
             <app-widget-line-chart 
                 class="lg:col-span-2"
@@ -273,7 +273,7 @@
                 [endDate]="n.endDate">
             </app-widget-macro-targets>
 
-            <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-8">
+            <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-16">
                 <!-- Today's Macros -->
                 <app-widget-macros-today 
                     [calories]="n.today?.calories || 0" 
@@ -283,7 +283,7 @@
                 </app-widget-macros-today>
 
                 <!-- Status Stack -->
-                <div class="space-y-8">
+                <div class="space-y-16">
                     <app-widget-adherence [weeklyAdherence]="n.weekly_adherence"></app-widget-adherence>
                     
                     <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg flex flex-col justify-center items-center text-center relative overflow-hidden group min-h-[100px]">
