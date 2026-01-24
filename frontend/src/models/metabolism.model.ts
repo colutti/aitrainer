@@ -32,6 +32,8 @@ export interface MetabolismResponse {
   target_weight?: number;
   weeks_to_goal?: number;
   goal_eta_weeks?: number;
-  weight_trend?: { date: string, weight: number }[];
+  weight_trend?: { date: string, weight: number, trend?: number }[];
   consistency?: { date: string, weight: boolean, nutrition: boolean }[];
+  expenditure_trend?: 'up' | 'down' | 'stable';
+  consistency_score?: number;
 }

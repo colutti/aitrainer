@@ -11,6 +11,7 @@ export interface WeightLog {
   bmi?: number;
   source?: string;
   notes?: string;
+  trend_weight?: number;
 }
 
 export interface BodyCompositionStats {

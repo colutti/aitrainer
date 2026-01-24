@@ -22,7 +22,11 @@
         <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors flex flex-col justify-between min-h-[160px]">
           <div class="flex justify-between items-start mb-2">
             <p class="text-text-secondary text-xs font-bold uppercase tracking-wider">Tendência (Histórico)</p>
-            <span class="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20 font-bold uppercase">{{ metabolismStats()?.confidence || 'Geral' }}</span>
+            <div class="flex items-center gap-2">
+              <span *ngIf="metabolismStats()?.expenditure_trend === 'up'" class="text-[10px] text-green-400 font-bold">↑ METABOLISMO</span>
+              <span *ngIf="metabolismStats()?.expenditure_trend === 'down'" class="text-[10px] text-red-400 font-bold">↓ METABOLISMO</span>
+              <span class="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20 font-bold uppercase">{{ metabolismStats()?.confidence || 'Geral' }}</span>
+            </div>
           </div>
 
           <div *ngIf="!isMetabolismLoading(); else loadingMini" class="flex flex-col flex-1">
@@ -94,7 +98,10 @@
 
         <!-- W3: Consistency Tracker -->
         <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors min-h-[160px]">
-          <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-4">Consistência (7 dias)</p>
+          <div class="flex justify-between items-start mb-4">
+            <p class="text-text-secondary text-xs font-bold uppercase tracking-wider">Consistência (7 dias)</p>
+            <span *ngIf="metabolismStats()?.consistency_score" class="text-[10px] font-bold text-primary">{{ metabolismStats()?.consistency_score }}% score</span>
+          </div>
           
           <div *ngIf="!isMetabolismLoading(); else loadingMini" class="flex-1 h-40">
              <canvas baseChart

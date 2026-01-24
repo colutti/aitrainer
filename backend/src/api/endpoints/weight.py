@@ -19,40 +19,45 @@ DatabaseDep = Annotated[MongoDatabase, Depends(get_mongo_database)]
 
 @router.post("")
 def log_weight(
-    log_input: WeightLogInput, user_email: CurrentUser, brain: AITrainerBrainDep
+    log_input: WeightLogInput,
+    user_email: CurrentUser,
+    brain: AITrainerBrainDep,
+    db: DatabaseDep,
 ) -> dict:
     """
     Logs a weight entry for the user.
     If an entry exists for the same date, it updates it.
     """
-    # Convert input to full WeightLog with user identification
-    log = WeightLog(user_email=user_email, **log_input.model_dump())
+    from src.services.adaptive_tdee import AdaptiveTDEEService
 
-    # We need to access the database directly or add a method to brain.
-    # Brain keeps business logic abstract.
-    # Let's add weight methods to AITrainerBrain or verify if we should use DB directly here.
-    # Looking at user.py, it uses `brain.save_user_profile`.
-    # It's cleaner if Brain delegates to DB.
-    # For now, let's assume we can access db via brain for consistency,
-    # OR we follow the pattern.
-    # Wait, `brain` is `AITrainerBrain`. Let's check `trainer.py`.
-    # If `AITrainerBrain` just wraps DB, we should add methods there.
-    # For speed in this phase, and since Brain is mostly for LLM/Trainer logic,
-    # maybe accessing DB directly is acceptable if `AITrainerBrain` exposes it?
-    # `AITrainerBrain` has `db` attribute? Let's check.
-    # User endpoint: `brain.get_user_profile`
-    # Let's assume we should update `AITrainerBrain` in `src/services/trainer.py` to forward calls.
-    # Or, we can just inject database service if we want to decouple from "Brain" logic which implies AI.
-    # But `get_ai_trainer_brain` is the main dependency.
+    tdee_service = AdaptiveTDEEService(db)
 
-    # Let's update Brain to support weight logging.
-    doc_id, is_new = brain._database.save_weight_log(log)
+    # 1. Get previous log to continue the EMA trend
+    # We look for the most recent log BEFORE the current date
+    recent_logs = db.weight.get_logs(user_email, limit=1)
+    prev_trend = None
+    if recent_logs:
+        # If logging for today, the "limit=1" might be today's log (if updating)
+        # or the previous day's log.
+        # To be safe, let's just get the latest and check date.
+        # But if it's an update, we should ideally look for the *actual* previous one.
+        # For simplicity and performance, if we have a trend weight in the latest log, we use it.
+        prev_trend = recent_logs[0].trend_weight
+
+    # 2. Calculate new trend weight
+    new_trend = tdee_service.calculate_ema_trend(log_input.weight_kg, prev_trend)
+
+    # 3. Create full WeightLog
+    log = WeightLog(user_email=user_email, trend_weight=new_trend, **log_input.model_dump())
+
+    doc_id, is_new = db.weight.save_log(log)
 
     return {
         "message": "Weight logged successfully",
         "id": doc_id,
         "is_new": is_new,
         "date": log.date,
+        "trend_weight": round(new_trend, 2) if new_trend else None,
     }
 
 

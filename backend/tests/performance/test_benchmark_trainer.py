@@ -38,8 +38,8 @@ def trainer_brain():
     mock_db.get_window_memory.return_value = mock_window_memory
     
     # 4. LLM Client Mock
-    # stream_with_tools returns a generator
-    def mock_stream(*args, **kwargs):
+    # stream_with_tools returns an async generator
+    async def mock_stream(*args, **kwargs):
         yield "This is a mocked AI response based on the input."
     
     mock_llm.stream_with_tools.side_effect = mock_stream

@@ -42,3 +42,6 @@ class WeightLog(WeightLogInput):
     user_email: str = Field(
         ..., description="The email of the user who logged the weight"
     )
+    trend_weight: float | None = Field(
+        None, description="Calculated trend weight using EMA smoothing"
+    )

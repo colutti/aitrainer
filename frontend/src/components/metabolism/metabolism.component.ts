@@ -157,10 +157,14 @@ export class MetabolismComponent implements OnInit {
     return Math.min(100, Math.max(0, percentage));
   }
 
-  getSparklinePath(): string {
+  getSparklinePath(type: 'weight' | 'trend' = 'weight'): string {
     const s = this.stats();
     if (!s || !s.weight_trend || s.weight_trend.length < 2) return '';
     
+    // Filter out points that don't have the requested value (e.g. trend might be null for some)
+    const validTrend = s.weight_trend.filter(t => type === 'weight' ? t.weight !== undefined : t.trend !== undefined);
+    if (validTrend.length < 2) return '';
+
     const weights = s.weight_trend.map(t => t.weight);
     const min = Math.min(...weights) - 0.5;
     const max = Math.max(...weights) + 0.5;
@@ -171,11 +175,14 @@ export class MetabolismComponent implements OnInit {
     const width = 100;
     const height = 40;
     
-    const points = weights.map((w, i) => {
-      const x = (i / (weights.length - 1)) * width;
-      const y = height - ((w - min) / range) * height;
+    const points = s.weight_trend.map((w_obj, i) => {
+      const val = type === 'weight' ? w_obj.weight : w_obj.trend;
+      if (val === undefined || val === null) return null;
+      
+      const x = (i / (s.weight_trend.length - 1)) * width;
+      const y = height - ((val - min) / range) * height;
       return `${x},${y}`;
-    });
+    }).filter(p => p !== null);
     
     return `M ${points.join(' L ')}`;
   }

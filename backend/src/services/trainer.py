@@ -703,23 +703,39 @@ class AITrainerBrain:
         Returns:
             Complete AI response as string.
         """
-        # Collect all chunks from the generator
-        response_parts = []
+        import asyncio
 
-        # Create a dummy BackgroundTasks for the generator
-        from fastapi import BackgroundTasks
+        async def collect_response():
+            response_parts = []
+            # Create a dummy BackgroundTasks for the generator
+            from fastapi import BackgroundTasks
 
-        background_tasks = BackgroundTasks()
+            background_tasks = BackgroundTasks()
 
-        for chunk in self.send_message_ai(
-            user_email=user_email,
-            user_input=user_input,
-            background_tasks=background_tasks,
-            is_telegram=is_telegram,
-        ):
-            response_parts.append(chunk)
+            async for chunk in self.send_message_ai(
+                user_email=user_email,
+                user_input=user_input,
+                background_tasks=background_tasks,
+                is_telegram=is_telegram,
+            ):
+                if isinstance(chunk, str):
+                    response_parts.append(chunk)
 
-        return "".join(response_parts)
+            return "".join(response_parts)
+
+        try:
+            # Try to run in existing loop or create new one
+            return asyncio.run(collect_response())
+        except RuntimeError:
+            # Fallback if loop is already running (e.g. in some specific test environments)
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # This is tricky in sync code. 
+                # But pytest benchmarks usually don't run their own loop during the call.
+                import nest_asyncio # type: ignore
+                nest_asyncio.apply()
+                return loop.run_until_complete(collect_response())
+            return loop.run_until_complete(collect_response())
 
     async def generate_insight_stream(
         self,

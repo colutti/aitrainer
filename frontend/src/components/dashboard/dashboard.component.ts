@@ -336,18 +336,31 @@ export class DashboardComponent implements OnInit {
     };
   }
 
-  updateWeightChart(trend: { date: string, weight: number }[]) {
+  updateWeightChart(trend: { date: string, weight: number, trend?: number }[]) {
     this.weightChartData = {
       labels: trend.map(t => new Date(t.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })),
-      datasets: [{
-        data: trend.map(t => t.weight),
-        borderColor: '#10b981',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-        fill: true,
-        borderWidth: 3,
-        pointBackgroundColor: '#10b981',
-        label: 'Peso'
-      }]
+      datasets: [
+        {
+          data: trend.map(t => t.weight),
+          borderColor: 'rgba(16, 185, 129, 0.3)',
+          backgroundColor: 'transparent',
+          fill: false,
+          borderWidth: 1,
+          pointBackgroundColor: 'rgba(16, 185, 129, 0.6)',
+          pointRadius: 2,
+          label: 'Real'
+        },
+        {
+          data: trend.map(t => t.trend ?? null),
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          fill: true,
+          borderWidth: 3,
+          pointRadius: 0,
+          label: 'Tendência',
+          tension: 0.4
+        }
+      ]
     };
   }
 

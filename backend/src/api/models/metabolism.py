@@ -1,6 +1,16 @@
 from pydantic import BaseModel, Field
 
 
+class WeightTrendPoint(BaseModel):
+    """
+    Represents a single point in the weight history.
+    """
+
+    date: str
+    weight: float
+    trend: float | None = None
+
+
 class MetabolismResponse(BaseModel):
     """
     Response model for the Adaptive TDEE calculation.
@@ -58,5 +68,16 @@ class MetabolismResponse(BaseModel):
     start_muscle_pct: float | None = Field(None)
     end_muscle_pct: float | None = Field(None)
     scale_bmr: int | None = Field(None)
+
+    # New Trend Fields
+    weight_trend: list[WeightTrendPoint] | None = Field(
+        None, description="History of weights including trend values"
+    )
+    expenditure_trend: str | None = Field(
+        None, description="Direction of TDEE change (up, down, stable)"
+    )
+    consistency_score: int | None = Field(
+        None, description="Adherence score (0-100) based on logs"
+    )
 
     message: str | None = Field(None, description="Optional informational message")

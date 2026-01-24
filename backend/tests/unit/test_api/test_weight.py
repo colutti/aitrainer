@@ -17,8 +17,14 @@ def test_log_weight():
     # Arrange
     app.dependency_overrides[verify_token] = mock_get_current_user
     mock_brain = MagicMock()
-    mock_brain._database.save_weight_log.return_value = ("123", True)
+    mock_db = MagicMock()
+    mock_db.weight.save_log.return_value = ("123", True)
+    # mock_db.weight.get_logs should return empty or some trend for EMA
+    mock_db.weight.get_logs.return_value = []
+    
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    from src.core.deps import get_mongo_database
+    app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     payload = {
         "user_email": "test@example.com",
@@ -34,13 +40,13 @@ def test_log_weight():
 
     # Assert
     assert response.status_code == 200
-    assert response.json() == {
-        "message": "Weight logged successfully",
-        "id": "123",
-        "is_new": True,
-        "date": str(date.today()),
-    }
-    mock_brain._database.save_weight_log.assert_called_once()
+    res_data = response.json()
+    assert res_data["message"] == "Weight logged successfully"
+    assert res_data["id"] == "123"
+    assert res_data["is_new"] is True
+    assert res_data["date"] == str(date.today())
+    assert "trend_weight" in res_data
+    mock_db.weight.save_log.assert_called_once()
 
     # Clean up
     app.dependency_overrides = {}

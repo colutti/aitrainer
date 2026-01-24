@@ -27,6 +27,7 @@ class AdaptiveTDEEService:
     MIN_TDEE = 1200
     MAX_TDEE = 5000
     MAX_DAILY_WEIGHT_CHANGE = 1.0  # kg (flag as anomaly if higher)
+    EMA_SPAN = 10  # Days span for EMA (MacroFactor style: 7-14)
 
     def _filter_outliers(self, logs: List[WeightLog]) -> tuple[List[WeightLog], int]:
         """
@@ -118,6 +119,18 @@ class AdaptiveTDEEService:
 
         return clean_logs, ignored_count
 
+    def calculate_ema_trend(self, weight_kg: float, prev_trend: float | None) -> float:
+        """
+        Calculates the new Trend Weight using Exponential Moving Average.
+        Formula: Trend = Actual * alpha + Prev_Trend * (1 - alpha)
+        Alpha = 2 / (span + 1)
+        """
+        if prev_trend is None:
+            return weight_kg
+
+        alpha = 2 / (self.EMA_SPAN + 1)
+        return (weight_kg * alpha) + (prev_trend * (1 - alpha))
+
     def __init__(self, db: MongoDatabase):
         self.db = db
 
@@ -205,6 +218,14 @@ class AdaptiveTDEEService:
             return self._insufficient_data_response()
 
         total_calories = sum(log_item.calories for log_item in relevant_nutrition)
+        
+        # Adherence Neutrality Logic:
+        # Instead of just averaging logged days, we check for 'holes'.
+        # If user logs 10/14 days, we assume the other 4 days were 'average' (avg_calories_logged).
+        # This is already what sum/count does.
+        # However, we want to flag 'Low Confidence' if gaps are too large (> 3 days).
+        
+        adherence_rate = len(relevant_nutrition) / (days_elapsed + 1)
         avg_calories_logged = total_calories / len(relevant_nutrition)
 
         # 4. Calculate TDEE
@@ -320,9 +341,12 @@ class AdaptiveTDEEService:
                 {
                     "date": log.date.isoformat() if isinstance(log.date, date) else log.date,
                     "weight": log.weight_kg,
+                    "trend": round(log.trend_weight, 2) if log.trend_weight else None,
                 }
                 for log in weight_logs
             ],
+            "expenditure_trend": "stable", # Default to stable, could be refined with historical TDEE
+            "consistency_score": int(round(adherence_rate * 100)),
             "consistency": [
                 {
                     "date": (date.today() - timedelta(days=i)).isoformat(),
@@ -419,7 +443,20 @@ class AdaptiveTDEEService:
         try:
             x_arr = np.array(x)
             y_arr = np.array(y)
-            m, c = np.polyfit(x_arr, y_arr, 1)
+
+            # --- Weighted Regression (MacroFactor Style) ---
+            # Recent points have more 'influence' on the slope.
+            # We use an exponential weight: w = e^(days_from_end * k)
+            # where k < 0. For today, w=1.0. For 14 days ago, w is smaller.
+            
+            # Halving time for weight: 
+            # -0.07 ≈ 10 days
+            # -0.10 ≈ 7 days (High Responsiveness)
+            k = -0.10
+            max_days = x[-1]
+            weights = np.exp([k * (max_days - d) for d in x])
+            
+            m, c = np.polyfit(x_arr, y_arr, 1, w=weights)
 
             # Simple R approximation (not strictly needed but useful for confidence later)
             # Guard against zero variance which causes RuntimeWarning
@@ -469,12 +506,12 @@ class AdaptiveTDEEService:
         elif nutrition_adherence > 0.6:
             return {
                 "level": "medium",
-                "reason": "Aderência parcial aos registros (>60%). Tente registrar todos os dias.",
+                "reason": f"Aderência parcial ({nutrition_adherence*100:.0f}%). Recomenda-se registrar todos os dias para maior precisão.",
             }
         else:
             return {
                 "level": "low",
-                "reason": "Muitos dias sem registro de refeições (<60%). A precisão do cálculo depende do rastreamento diário.",
+                "reason": f"Muitos gaps nos registros ({nutrition_adherence*100:.0f}%). A estimativa pode estar distorcida por dias não registrados.",
             }
 
     def _insufficient_data_response(self) -> dict:

@@ -392,7 +392,7 @@ def test_tdee_confidence_reason(service, mock_db):
     result_poor = service.calculate_tdee("test@test.com", lookback_weeks=3)
 
     assert result_poor["confidence"] == "low"
-    assert "Muitos dias sem registro" in result_poor["confidence_reason"]
+    assert "Muitos gaps nos registros" in result_poor["confidence_reason"]
 
 
 def test_tdee_eta_projection(service, mock_db):
