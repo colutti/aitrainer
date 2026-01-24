@@ -26,4 +26,6 @@ export interface WorkoutStats {
   recent_prs: PersonalRecord[];
   total_workouts: number;
   last_workout: WorkoutWithId | null;
+  volume_trend?: number[];
+  strength_radar?: { [key: string]: number };
 }

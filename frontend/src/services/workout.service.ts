@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../environment';
 import { Workout, WorkoutListResponse } from '../models/workout.model';
+import { WorkoutStats } from '../models/stats.model';
 
 /**
  * Service for managing workout logs with pagination.
@@ -68,6 +69,10 @@ export class WorkoutService {
   }
 
 
+
+  async getStats(): Promise<WorkoutStats> {
+      return await firstValueFrom(this.http.get<WorkoutStats>(`${environment.apiUrl}/workout/stats`));
+  }
 
   async nextPage(): Promise<void> {
     if (this.currentPage() < this.totalPages()) {

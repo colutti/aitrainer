@@ -49,3 +49,8 @@ class NutritionStats(BaseModel):
     daily_target: Optional[int] = Field(
         None, description="Meta calórica diária baseada no TDEE e objetivo"
     )
+    macro_targets: Optional[dict] = Field(None, description="Metas de macros")
+    stability_score: Optional[int] = Field(None, description="Score de estabilidade")
+    last_14_days: list[DailyMacros] = Field(
+        default_factory=list, description="Lista de macros dos últimos 14 dias"
+    )

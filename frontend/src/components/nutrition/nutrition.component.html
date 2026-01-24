@@ -6,11 +6,11 @@
     </div>
 
     <!-- Header -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 relative z-10 shrink-0 gap-4">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 relative z-10 shrink-0 gap-4">
         <div>
             <h1 class="text-3xl font-extrabold tracking-tight text-white mb-2 flex items-center gap-3">
                 <span class="bg-primary/10 p-2 rounded-lg text-primary">🍎</span>
-                Histórico Nutricional
+                Nutrição
             </h1>
             <p class="text-text-secondary text-sm md:text-base max-w-lg leading-relaxed">
                 @if (stats()?.daily_target) {
@@ -24,7 +24,117 @@
         <!-- Filter (Visual only for now) -->
         <div class="bg-light-bg border border-secondary rounded-lg px-3 py-1.5 flex items-center space-x-2 text-sm text-text-secondary">
              <span class="text-primary">📅</span>
-             <span>Todos os registros</span>
+             <span>Histórico Completo</span>
+        </div>
+    </div>
+
+    <!-- Summary Row (Macros, Adherence, Last Log) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8 w-full shrink-0 relative z-10" *ngIf="stats() as s">
+        <div class="lg:col-span-1">
+            <app-widget-macros-today 
+                [calories]="s.today?.calories || 0" 
+                [protein]="s.today?.protein_grams || 0" 
+                [carbs]="s.today?.carbs_grams || 0" 
+                [fat]="s.today?.fat_grams || 0">
+            </app-widget-macros-today>
+        </div>
+
+        <div class="lg:col-span-2">
+            <app-widget-adherence [weeklyAdherence]="s.weekly_adherence"></app-widget-adherence>
+        </div>
+
+        <!-- Last Log Status (Wide) -->
+        <div class="lg:col-span-2 bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg flex items-center justify-between group">
+             <div class="flex-1">
+                 <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-2">Resumo de Hoje</p>
+                 @if (s.today) {
+                     <div class="grid grid-cols-3 gap-2">
+                        <div class="bg-secondary/10 p-2 rounded flex flex-col items-center border border-secondary/20">
+                            <span class="text-[8px] text-text-secondary font-bold uppercase">Proteína</span>
+                            <span class="text-sm font-black text-white">{{ s.today.protein_grams }}g</span>
+                        </div>
+                        <div class="bg-secondary/10 p-2 rounded flex flex-col items-center border border-secondary/20">
+                            <span class="text-[8px] text-text-secondary font-bold uppercase">Carbos</span>
+                            <span class="text-sm font-black text-white">{{ s.today.carbs_grams }}g</span>
+                        </div>
+                        <div class="bg-secondary/10 p-2 rounded flex flex-col items-center border border-secondary/20">
+                            <span class="text-[8px] text-text-secondary font-bold uppercase">Gordura</span>
+                            <span class="text-sm font-black text-white">{{ s.today.fat_grams }}g</span>
+                        </div>
+                     </div>
+                 } @else {
+                     <p class="text-xs text-text-secondary italic">Aguardando seu primeiro registro do dia.</p>
+                 }
+             </div>
+             <span class="text-2xl ml-4 opacity-40 group-hover:opacity-100 transition-opacity">🍽️</span>
+        </div>
+    </div>
+
+    <!-- Insights Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 w-full shrink-0 relative z-10" *ngIf="stats() as s">
+        <!-- Calorie Trend -->
+        <div class="lg:col-span-2 bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg">
+             <div class="flex justify-between items-center mb-4">
+                 <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Consumo Calórico (14 dias)</p>
+                 <span class="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20 font-bold uppercase" *ngIf="s.tdee">TDEE: {{ s.tdee }} kcal</span>
+             </div>
+             <div class="h-40 w-full">
+                 <canvas baseChart [data]="calorieChartData" [options]="calorieChartOptions" [type]="calorieChartType"></canvas>
+             </div>
+        </div>
+
+        <!-- Macro Targets -->
+        <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg flex flex-col">
+             <div class="flex justify-between items-center mb-6">
+                 <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Alvos Sugeridos vs Média</p>
+                 <div class="flex items-center gap-1" *ngIf="s.stability_score !== undefined">
+                    <div class="w-2 h-2 rounded-full" [ngClass]="s.stability_score > 70 ? 'bg-green-400 animate-pulse' : 'bg-yellow-400'"></div>
+                    <span class="text-[10px] font-bold text-text-secondary tracking-tight">{{ s.stability_score }}% Estabilidade</span>
+                 </div>
+             </div>
+
+             <div class="space-y-4 flex-1 flex flex-col justify-center" *ngIf="s.macro_targets">
+                 <!-- Protein -->
+                 <div class="space-y-1.5">
+                     <div class="flex justify-between items-end text-[10px]">
+                         <span class="text-white font-bold uppercase">Proteína</span>
+                         <span class="text-text-secondary">{{ s.avg_protein }}g <span class="opacity-40">/</span> <span class="text-primary">{{ s.macro_targets.protein }}g</span></span>
+                     </div>
+                     <div class="h-1.5 w-full bg-secondary/20 rounded-full overflow-hidden">
+                         <div class="bg-primary h-full rounded-full transition-all duration-1000" [style.width.%]="(s.avg_protein / s.macro_targets.protein) * 100"></div>
+                     </div>
+                 </div>
+
+                 <!-- Carbs -->
+                 <div class="space-y-1.5">
+                     <div class="flex justify-between items-end text-[10px]">
+                         <span class="text-white font-bold uppercase">Carbos</span>
+                         <span class="text-text-secondary">
+                             {{ s.avg_daily_calories ? (s.avg_daily_calories * 0.4 / 4 | number:'1.0-0') : 0 }}g 
+                             <span class="opacity-40">/</span> 
+                             <span class="text-blue-400">{{ s.macro_targets.carbs }}g</span>
+                         </span>
+                     </div>
+                     <div class="h-1.5 w-full bg-secondary/20 rounded-full overflow-hidden">
+                         <div class="bg-blue-400 h-full rounded-full transition-all duration-1000" [style.width.%]="( ( (s.avg_daily_calories || 0) * 0.4 / 4) / s.macro_targets.carbs) * 100"></div>
+                     </div>
+                 </div>
+
+                 <!-- Fats -->
+                 <div class="space-y-1.5">
+                     <div class="flex justify-between items-end text-[10px]">
+                         <span class="text-white font-bold uppercase">Gorduras</span>
+                         <span class="text-text-secondary">
+                             {{ s.avg_daily_calories ? (s.avg_daily_calories * 0.3 / 9 | number:'1.0-0') : 0 }}g 
+                             <span class="opacity-40">/</span> 
+                             <span class="text-orange-400">{{ s.macro_targets.fat }}g</span>
+                         </span>
+                     </div>
+                     <div class="h-1.5 w-full bg-secondary/20 rounded-full overflow-hidden">
+                         <div class="bg-orange-400 h-full rounded-full transition-all duration-1000" [style.width.%]="( ( (s.avg_daily_calories || 0) * 0.3 / 9) / s.macro_targets.fat) * 100"></div>
+                     </div>
+                 </div>
+             </div>
         </div>
     </div>
 

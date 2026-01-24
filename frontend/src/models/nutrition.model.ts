@@ -35,6 +35,9 @@ export interface NutritionStats {
   total_logs: number;
   tdee?: number;
   daily_target?: number;
+  macro_targets?: { protein: number, carbs: number, fat: number };
+  stability_score?: number;
+  last_14_days: DayMacros[];
 }
 
 export interface NutritionListResponse {

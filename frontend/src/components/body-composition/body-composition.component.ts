@@ -2,21 +2,27 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { WeightService } from '../../services/weight.service';
+import { MetabolismService } from '../../services/metabolism.service';
 import { WeightLog, BodyCompositionStats } from '../../models/weight-log.model';
+import { MetabolismResponse } from '../../models/metabolism.model';
 import { BaseChartDirective } from 'ng2-charts';
-import { ChartConfiguration } from 'chart.js';
+import { ChartConfiguration, ChartData } from 'chart.js';
 import { NumericInputDirective } from '../../directives/numeric-input.directive';
+import { WidgetBodyEvolutionComponent } from '../widgets/widget-body-evolution.component';
+import { WidgetLineChartComponent } from '../widgets/widget-line-chart.component';
 
 @Component({
   selector: 'app-body-composition',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective, FormsModule, NumericInputDirective],
+  imports: [CommonModule, BaseChartDirective, FormsModule, NumericInputDirective, WidgetBodyEvolutionComponent, WidgetLineChartComponent],
   templateUrl: './body-composition.component.html'
 })
 export class BodyCompositionComponent implements OnInit {
   weightService = inject(WeightService);
+  metabolismService = inject(MetabolismService);
   
   stats = signal<BodyCompositionStats | null>(null);
+  metabolismStats = signal<MetabolismResponse | null>(null);
   history = signal<WeightLog[]>([]);
   isLoading = signal(true);
 
@@ -43,11 +49,22 @@ export class BodyCompositionComponent implements OnInit {
     maintainAspectRatio: false,
     elements: { line: { tension: 0.4 } },
     scales: {
-        y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+        y: { 
+          display: true, 
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { callback: (value) => Number(value).toFixed(1) }
+        },
         x: { display: false }
     },
     plugins: { legend: { display: false } }
   };
+
+  public fatChartOptions: ChartConfiguration['options'] = {
+      ...this.chartOptions,
+      scales: { ...this.chartOptions?.scales, y: { ...this.chartOptions?.scales?.['y'], ticks: { callback: (v) => `${v}%` } } }
+  };
+
+  public muscleChartOptions = this.fatChartOptions;
 
   async ngOnInit() {
     await this.loadData();
@@ -56,13 +73,15 @@ export class BodyCompositionComponent implements OnInit {
   async loadData() {
     this.isLoading.set(true);
     try {
-        const [stats, history] = await Promise.all([
+        const [stats, history, metabSummary] = await Promise.all([
           this.weightService.getBodyCompositionStats(),
-          this.weightService.getHistory()
+          this.weightService.getHistory(),
+          this.metabolismService.getSummary(30)
         ]);
         
         this.stats.set(stats);
         this.history.set(history);
+        this.metabolismStats.set(metabSummary);
         
         if (stats) {
            this.setupCharts(stats);

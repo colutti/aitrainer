@@ -133,16 +133,14 @@ class NutritionRepository(BaseRepository):
                 del today_log_doc["_id"]
             today_log = NutritionWithId(**today_log_doc)
 
-        last_7_days_stats = []
-
-        for i in range(7):
+        last_14_days_stats = []
+        for i in range(14):
             d = (now - timedelta(days=i)).replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
             log = next((log_item for log_item in logs if log_item["date"] == d), None)
-
             if log:
-                last_7_days_stats.append(
+                last_14_days_stats.append(
                     DailyMacros(
                         date=d,
                         calories=log["calories"],
@@ -152,11 +150,10 @@ class NutritionRepository(BaseRepository):
                     )
                 )
             else:
-                last_7_days_stats.append(
+                last_14_days_stats.append(
                     DailyMacros(date=d, calories=0, protein=0, carbs=0, fat=0)
                 )
-
-        last_7_days_stats.sort(key=lambda x: x.date)
+        last_14_days_stats.sort(key=lambda x: x.date)
 
         current_week_start = now - timedelta(days=now.weekday())
         current_week_start = current_week_start.replace(
@@ -193,12 +190,16 @@ class NutritionRepository(BaseRepository):
 
         tdee_val = None
         target_val = None
+        macro_targets = None
+        stability_score = None
 
         if tdee_service:
             try:
-                targets = tdee_service.get_current_targets(user_email)
-                tdee_val = targets.get("tdee")
-                target_val = targets.get("daily_target")
+                period_stats = tdee_service.calculate_tdee(user_email)
+                tdee_val = period_stats.get("tdee")
+                target_val = period_stats.get("daily_target")
+                macro_targets = period_stats.get("macro_targets")
+                stability_score = period_stats.get("stability_score")
             except Exception as e:
                 self.logger.warning(
                     "Failed to calculate Adaptive TDEE for stats: %s", e
@@ -209,10 +210,13 @@ class NutritionRepository(BaseRepository):
         return NutritionStats(
             today=today_log,
             weekly_adherence=weekly_adherence,
-            last_7_days=last_7_days_stats,
+            last_7_days=last_14_days_stats[-7:],
+            last_14_days=last_14_days_stats,
             avg_daily_calories=round(avg_cal, 1),
             avg_protein=round(avg_prot, 1),
             total_logs=total_logs,
             tdee=tdee_val,
             daily_target=target_val,
+            macro_targets=macro_targets,
+            stability_score=stability_score,
         )

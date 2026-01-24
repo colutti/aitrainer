@@ -1,5 +1,8 @@
-import { Component, inject, OnInit, signal, effect } from '@angular/core';
+import { Component, inject, OnInit, signal, effect, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MarkdownModule } from 'ngx-markdown';
+import { TrainerProfileService } from '../../services/trainer-profile.service';
+import { TrainerCard } from '../../models/trainer-profile.model';
 import { BaseChartDirective } from 'ng2-charts';
 import { StatsService } from '../../services/stats.service';
 import { NutritionService } from '../../services/nutrition.service';
@@ -10,11 +13,33 @@ import { WeightLog } from '../../models/weight-log.model';
 import { WeightService } from '../../services/weight.service';
 import { MetabolismResponse } from '../../models/metabolism.model';
 import { NutritionStats } from '../../models/nutrition.model';
+import { WidgetStreakComponent } from '../widgets/widget-streak.component';
+import { WidgetFrequencyComponent } from '../widgets/widget-frequency.component';
+import { WidgetRecentPrsComponent } from '../widgets/widget-recent-prs.component';
+import { WidgetMacrosTodayComponent } from '../widgets/widget-macros-today.component';
+import { WidgetAdherenceComponent } from '../widgets/widget-adherence.component';
+import { WidgetMetabolicGaugeComponent } from '../widgets/widget-metabolic-gauge.component';
+import { WidgetBodyEvolutionComponent } from '../widgets/widget-body-evolution.component';
+import { WidgetLineChartComponent } from '../widgets/widget-line-chart.component';
+import { WidgetCaloriesWeightComparisonComponent } from '../widgets/widget-calories-weight-comparison.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
+  imports: [
+    CommonModule, 
+    MarkdownModule,
+    BaseChartDirective,
+    WidgetStreakComponent,
+    WidgetFrequencyComponent,
+    WidgetRecentPrsComponent,
+    WidgetMacrosTodayComponent,
+    WidgetAdherenceComponent,
+    WidgetMetabolicGaugeComponent,
+    WidgetBodyEvolutionComponent,
+    WidgetLineChartComponent,
+    WidgetCaloriesWeightComparisonComponent
+  ],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent implements OnInit {
@@ -22,6 +47,7 @@ export class DashboardComponent implements OnInit {
   nutritionService = inject(NutritionService);
   weightService = inject(WeightService);
   metabolismService = inject(MetabolismService);
+  trainerService = inject(TrainerProfileService);
   
   stats = this.statsService.stats;
   nutritionStats = this.nutritionService.stats;
@@ -30,6 +56,8 @@ export class DashboardComponent implements OnInit {
   
   isLoading = this.statsService.isLoading;
   isMetabolismLoading = signal<boolean>(false);
+  
+  currentTrainer = signal<TrainerCard | null>(null);
 
   // --- Volume Chart Config ---
   public barChartOptions: ChartConfiguration['options'] = {
@@ -53,7 +81,11 @@ export class DashboardComponent implements OnInit {
         grid: { display: false }
       },
       y: {
-        ticks: { color: '#a1a1aa', font: { family: 'Inter' } },
+        ticks: { 
+          color: '#a1a1aa', 
+          font: { family: 'Inter' },
+          callback: (value) => Math.round(Number(value))
+        },
         grid: { color: '#27272a' },
         beginAtZero: true
       }
@@ -83,7 +115,10 @@ export class DashboardComponent implements OnInit {
     },
     scales: {
         x: { display: false },
-        y: { display: false }
+        y: { 
+            display: false,
+            ticks: { callback: (value) => Math.round(Number(value)) }
+        }
     },
     elements: {
         point: { radius: 2, hoverRadius: 4 },
@@ -98,8 +133,91 @@ export class DashboardComponent implements OnInit {
           borderColor: '#10b981',
           backgroundColor: 'rgba(16, 185, 129, 0.1)',
           fill: true,
-          borderWidth: 2
+          borderWidth: 2,
+          pointRadius: 2,
+          label: 'Calorias'
       }]
+  };
+
+  // --- Volume Trend Chart (8 weeks) ---
+  public volumeTrendChartData: ChartData<'line'> = {
+    labels: ['-7 sem', '-6 sem', '-5 sem', '-4 sem', '-3 sem', '-2 sem', '-1 sem', 'Atual'],
+    datasets: [{ 
+      data: [], 
+      label: 'Volume (kg)', 
+      borderColor: '#10b981',
+      backgroundColor: 'rgba(16, 185, 129, 0.1)',
+      fill: true,
+      tension: 0.4,
+      pointRadius: 4,
+      pointBackgroundColor: '#10b981'
+    }]
+  };
+
+  // --- Strength Radar Chart ---
+  public radarChartData: ChartData<'radar'> = {
+    labels: ['Push', 'Pull', 'Legs'],
+    datasets: [{ 
+      data: [], 
+      label: 'Strength peak ratio',
+      borderColor: '#3b82f6',
+      backgroundColor: 'rgba(59, 130, 246, 0.2)',
+      pointBackgroundColor: '#3b82f6'
+    }]
+  };
+
+  public radarChartOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      r: {
+        angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+        pointLabels: { color: '#94a3b8', font: { size: 10, weight: 'bold' } },
+        ticks: { display: false },
+        suggestedMin: 0,
+        suggestedMax: 1
+      }
+    }
+  };
+
+  public volumeTrendChartOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { 
+        grid: { color: 'rgba(255, 255, 255, 0.05)' }, 
+        ticks: { color: '#94a3b8', font: { size: 10 }, callback: (v) => Math.round(Number(v)) } 
+      },
+      x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } }
+    }
+  };
+
+  // --- Fat & Muscle Trends ---
+  public fatTrendChartData: ChartData<'line'> = {
+    labels: [],
+    datasets: [{
+        data: [],
+        borderColor: '#f97316',
+        backgroundColor: 'rgba(249, 115, 22, 0.1)',
+        fill: true,
+        pointRadius: 2,
+        label: 'Gordura (%)'
+    }]
+  };
+
+  public muscleTrendChartData: ChartData<'line'> = {
+    labels: [],
+    datasets: [{
+        data: [],
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        fill: true,
+        pointRadius: 2,
+        label: 'Músculo (%)'
+    }]
   };
 
   // --- Macros Doughnut Chart ---
@@ -125,7 +243,6 @@ export class DashboardComponent implements OnInit {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: false },
       tooltip: {
         backgroundColor: '#18181b',
         titleColor: '#fff',
@@ -133,9 +250,20 @@ export class DashboardComponent implements OnInit {
         borderColor: '#3f3f46',
         borderWidth: 1,
         padding: 10,
-        displayColors: false,
+        displayColors: true,
         callbacks: {
-          label: (context) => ` ${context.parsed.y.toFixed(1)} kg`
+          label: (context) => ` ${context.dataset.label}: ${context.parsed.y.toFixed(1)} kg`
+        }
+      },
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: {
+          color: '#a1a1aa',
+          boxWidth: 8,
+          usePointStyle: true,
+          pointStyle: 'circle',
+          font: { size: 9 }
         }
       }
     },
@@ -154,7 +282,7 @@ export class DashboardComponent implements OnInit {
         ticks: { 
           color: '#a1a1aa', 
           font: { family: 'Inter', size: 10 },
-          callback: (value) => `${value}kg`
+          callback: (value) => `${Number(value).toFixed(1)}kg`
         },
         grid: { color: 'rgba(39, 39, 42, 0.5)' },
         beginAtZero: false
@@ -236,8 +364,20 @@ export class DashboardComponent implements OnInit {
   constructor() {
     effect(() => {
       const s = this.stats();
-      if (s?.weekly_volume) {
-        this.updateVolumeChart(s.weekly_volume);
+      if (s) {
+        if (s.weekly_volume) this.updateVolumeChart(s.weekly_volume);
+        if (s.volume_trend) {
+           this.volumeTrendChartData = {
+              ...this.volumeTrendChartData,
+              datasets: [{ ...this.volumeTrendChartData.datasets[0], data: s.volume_trend }]
+           };
+        }
+        if (s.strength_radar) {
+           this.radarChartData = {
+              labels: Object.keys(s.strength_radar),
+              datasets: [{ ...this.radarChartData.datasets[0], data: Object.values(s.strength_radar) }]
+           };
+        }
       }
     });
 
@@ -254,6 +394,49 @@ export class DashboardComponent implements OnInit {
         if (m.weight_trend) this.updateWeightChart(m.weight_trend);
         if (m.consistency) this.updateConsistencyChart(m.consistency);
       }
+    });
+
+    effect(async () => {
+       const comp = await this.weightService.getBodyCompositionStats();
+       if (comp) {
+          const labels = comp.weight_trend?.map(d => new Date(d.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })) || [];
+          
+          this.fatTrendChartData = {
+            labels,
+            datasets: [{ ...this.fatTrendChartData.datasets[0], data: comp.fat_trend?.map(d => d.value) || [] }]
+          };
+          
+          this.muscleTrendChartData = {
+            labels,
+            datasets: [{ ...this.muscleTrendChartData.datasets[0], data: comp.muscle_trend?.map(d => d.value) || [] }]
+          };
+       }
+    });
+
+    effect(() => {
+        const s = this.metabolismStats();
+        if (s && s.confidence !== 'none') {
+           untracked(() => { this.metabolismService.generateInsight(3); });
+        }
+    });
+    
+    // Auto-load trainer on init (simulated by empty dependency effect or explicit call in OnInit, but we want reactivity to profile change if possible)
+    // Actually we can just load it once.
+    effect(async () => {
+        // We need user profile access? Not necessarily, trainer service handles its own state usually.
+        // But let's follow the pattern from MetabolismComponent which uses userProfileService.userProfile.
+        // Since we don't have profile signal here yet, let's just fetch directly.
+        try {
+            const trainers = await this.trainerService.getAvailableTrainers();
+            const trainerProfile = await this.trainerService.fetchProfile();
+            const matched = trainers.find(t => t.trainer_id === trainerProfile.trainer_type);
+            
+            if (matched) {
+                this.currentTrainer.set(matched);
+            }
+        } catch (e) {
+            console.error('Failed to load trainer for dashboard', e);
+        }
     });
   }
 
@@ -298,6 +481,16 @@ export class DashboardComponent implements OnInit {
     });
     
     return `M ${points.join(' L ')}`;
+  }
+
+  getMetabolicBalanceProgress(): number {
+    const s = this.metabolismStats();
+    if (!s || !s.energy_balance) return 50; // Center
+    
+    // Scale -500 to +500 into 0 to 100
+    const balance = s.energy_balance;
+    const progress = ((balance + 500) / 1000) * 100;
+    return Math.min(100, Math.max(0, progress));
   }
 
   getWeightVariation(): number {
@@ -395,17 +588,19 @@ export class DashboardComponent implements OnInit {
           };
       }
 
-      // 2. Calories Line
-      if (n.last_7_days) {
+      // 2. Calories Line (14 days)
+      if (n.last_14_days) {
           this.lineChartData = {
-              labels: n.last_7_days.map((d: { date: string }) => new Date(d.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })),
+              labels: n.last_14_days.map((d: { date: string }) => new Date(d.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })),
               datasets: [{
-                  data: n.last_7_days.map((d: { calories: number }) => d.calories) as number[],
+                  data: n.last_14_days.map((d: { calories: number }) => d.calories) as number[],
                   borderColor: '#10b981',
                   backgroundColor: 'rgba(16, 185, 129, 0.1)',
                   fill: true,
                   borderWidth: 2,
-                  pointBackgroundColor: '#10b981'
+                  pointBackgroundColor: '#10b981',
+                  pointRadius: 2,
+                  label: 'Calorias'
               }]
           };
       }
@@ -429,5 +624,6 @@ export class DashboardComponent implements OnInit {
     } catch {
         return dateStr;
     }
-  } 
+  }
 }
+

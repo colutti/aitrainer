@@ -32,9 +32,9 @@
   <!-- Header -->
   <div class="flex justify-between items-end mb-6 flex-shrink-0">
     <div>
-      <h1 class="text-3xl font-bold tracking-tight">Histórico</h1>
+      <h1 class="text-3xl font-bold tracking-tight">Treinos</h1>
       <p class="text-text-secondary text-sm mt-1">
-        {{ totalWorkouts() }} treinos registrados
+        Acompanhe sua evolução e volume de carga.
       </p>
     </div>
 
@@ -44,7 +44,7 @@
         (change)="onTypeChange($event)"
         class="appearance-none bg-light-bg border border-secondary text-text-primary py-2 pl-4 pr-10 rounded-lg focus:outline-none focus:border-primary cursor-pointer hover:border-primary/50 transition-colors text-sm"
       >
-        <option value="all">Todos</option>
+        <option value="all">Filtro: Todos</option>
         <option *ngFor="let type of workoutTypes()" [value]="type">
           {{ type }}
         </option>
@@ -66,6 +66,43 @@
           ></path>
         </svg>
       </div>
+    </div>
+  </div>
+
+  <!-- Summary Row (Streak, Frequency, PRs) -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8 w-full" *ngIf="stats() as s">
+      <div class="lg:col-span-1">
+          <app-widget-streak [streakWeeks]="s.current_streak_weeks"></app-widget-streak>
+      </div>
+      <div class="lg:col-span-2">
+          <app-widget-frequency [weeklyFrequency]="s.weekly_frequency"></app-widget-frequency>
+      </div>
+      <div class="lg:col-span-2">
+          <app-widget-recent-prs [prs]="s.recent_prs"></app-widget-recent-prs>
+      </div>
+  </div>
+
+  <!-- Statistics Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 w-full shrink-0 relative z-10" *ngIf="stats() as s">
+    <!-- Volume Trend -->
+    <div class="lg:col-span-2 bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg">
+         <div class="flex justify-between items-center mb-4">
+             <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Volume Total Semanal (8 semanas)</p>
+             <span class="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20 font-bold uppercase">Kg Acumulado</span>
+         </div>
+         <div class="h-40 w-full">
+             <canvas baseChart [data]="volumeChartData" [options]="volumeChartOptions" [type]="volumeChartType"></canvas>
+         </div>
+    </div>
+
+    <!-- Strength Radar -->
+    <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg flex flex-col items-center justify-center relative overflow-hidden">
+         <div class="absolute inset-0 bg-blue-500/5 pointer-events-none"></div>
+         <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-2 w-full text-left relative z-10">Equilíbrio de Força</p>
+         <div class="h-44 w-full relative z-10">
+             <canvas baseChart [data]="radarChartData" [options]="radarChartOptions" [type]="radarChartType"></canvas>
+         </div>
+         <p class="text-[9px] text-text-secondary mt-2 italic text-center opacity-60 relative z-10">Atual vs. Máximo Histórico</p>
     </div>
   </div>
 

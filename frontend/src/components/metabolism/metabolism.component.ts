@@ -1,94 +1,78 @@
-import { Component, inject, OnInit, effect, signal, untracked } from "@angular/core";
+import { Component, inject, OnInit, effect, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MetabolismService } from "../../services/metabolism.service";
 import { UserProfileService } from "../../services/user-profile.service";
-import { MarkdownModule } from "ngx-markdown";
-import { TrainerProfileService } from '../../services/trainer-profile.service';
-import { TrainerCard } from '../../models/trainer-profile.model';
+import { BaseChartDirective } from 'ng2-charts';
+import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
+import { WidgetMetabolicGaugeComponent } from '../widgets/widget-metabolic-gauge.component';
+import { WidgetLineChartComponent } from '../widgets/widget-line-chart.component';
 
 @Component({
   selector: 'app-metabolism',
   standalone: true,
-  imports: [CommonModule, MarkdownModule],
+  imports: [CommonModule, BaseChartDirective, WidgetMetabolicGaugeComponent, WidgetLineChartComponent],
   templateUrl: './metabolism.component.html',
 })
 export class MetabolismComponent implements OnInit {
   metabolismService = inject(MetabolismService);
   userProfileService = inject(UserProfileService);
-  trainerService = inject(TrainerProfileService);
   
   stats = this.metabolismService.stats;
   isLoading = this.metabolismService.isLoading;
   profile = this.userProfileService.userProfile;
-  
-  // New signal to store the resolved trainer card
-  currentTrainer = signal<TrainerCard | null>(null);
 
-  insightText = signal<string>('');
-  isInsightLoading = signal<boolean>(false);
+  // --- Weight Trend Chart (Mirrored from Home) ---
+  public weightChartOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      tooltip: {
+        backgroundColor: '#18181b',
+        titleColor: '#fff',
+        bodyColor: '#a1a1aa',
+        borderColor: '#3f3f46',
+        borderWidth: 1,
+        padding: 10,
+        displayColors: true,
+        callbacks: { label: (context) => ` ${context.dataset.label}: ${context.parsed.y.toFixed(1)} kg` }
+      },
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: { color: '#a1a1aa', boxWidth: 8, usePointStyle: true, pointStyle: 'circle', font: { size: 9 } }
+      }
+    },
+    scales: {
+      x: { ticks: { color: '#a1a1aa', font: { family: 'Inter', size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 7 }, grid: { display: false } },
+      y: { ticks: { color: '#a1a1aa', font: { family: 'Inter', size: 10 }, callback: (value) => `${Number(value).toFixed(1)}kg` }, grid: { color: 'rgba(39, 39, 42, 0.5)' }, beginAtZero: false }
+    },
+    elements: { point: { radius: 3, hoverRadius: 5, backgroundColor: '#10b981', borderWidth: 0 }, line: { tension: 0.3 } }
+  };
+  public weightChartType: ChartType = 'line';
+  public weightChartData: ChartData<'line'> = {
+    labels: [],
+    datasets: [
+        { data: [], borderColor: 'rgba(16, 185, 129, 0.3)', backgroundColor: 'transparent', fill: false, borderWidth: 1, pointRadius: 2, label: 'Real' },
+        { data: [], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, borderWidth: 3, pointRadius: 0, label: 'Tendência', tension: 0.4 }
+    ]
+  };
 
   constructor() {
       effect(() => {
           const s = this.stats();
-          if (s && s.confidence !== 'none') {
-             // Use untracked to avoid loops if needed, but here we just react to stats
-             untracked(() => {
-                 this.streamInsight();
-             });
-          }
-      });
-      
-      // Update current trainer when profile changes
-      effect(async () => {
-          const p = this.profile();
-          if (p) {
-              const trainers = await this.trainerService.getAvailableTrainers();
-              // Backend 'get_profile' doesn't return trainer_type directly in UserProfile, 
-              // we need to fetch TrainerProfile or assume.
-              // Wait, previous messages show UserProfile stores personal data. 
-              // Trainer selection is in TrainerProfile endpoint.
-              
-              // Let's fetch the trainer profile separately to get the type
-              const trainerProfile = await this.trainerService.fetchProfile();
-              const matched = trainers.find(t => t.trainer_id === trainerProfile.trainer_type);
-              
-              if (matched) {
-                  this.currentTrainer.set(matched);
-              }
+          if (s) {
+             if (s.weight_trend) {
+                this.updateWeightChart(s.weight_trend);
+             }
           }
       });
   }
 
   ngOnInit() {
     this.metabolismService.fetchSummary(3);
-    // Trigger profile load just in case
     this.userProfileService.getProfile();
   }
   
-  async streamInsight() {
-      if (this.isInsightLoading() || this.insightText()) return; // Already loading or loaded
-      
-      this.isInsightLoading.set(true);
-      this.insightText.set('');
-      
-      try {
-          const reader = await this.metabolismService.getInsightStream();
-           const decoder = new TextDecoder();
-
-           while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                
-                const chunk = decoder.decode(value, { stream: true });
-                this.insightText.update(prev => prev + chunk);
-           }
-      } catch (error) {
-          console.error("Stream error", error);
-          this.insightText.set("Não foi possível gerar a análise do treinador no momento.");
-      } finally {
-          this.isInsightLoading.set(false);
-      }
-  }
 
   getRecommendation(): string {
     const s = this.stats();
@@ -136,7 +120,7 @@ export class MetabolismComponent implements OnInit {
       }
   }
 
-  getConfidenceReason(s: { confidence?: string, confidence_reason?: string } | null): string {
+  getConfidenceReason(s: any): string {
       if (!s) return 'Dados carregando...';
       if (s.confidence === 'low') {
           return s.confidence_reason || 'Dados inconsistentes.';
@@ -157,33 +141,22 @@ export class MetabolismComponent implements OnInit {
     return Math.min(100, Math.max(0, percentage));
   }
 
-  getSparklinePath(type: 'weight' | 'trend' = 'weight'): string {
-    const s = this.stats();
-    if (!s || !s.weight_trend || s.weight_trend.length < 2) return '';
-    
-    // Filter out points that don't have the requested value (e.g. trend might be null for some)
-    const validTrend = s.weight_trend.filter(t => type === 'weight' ? t.weight !== undefined : t.trend !== undefined);
-    if (validTrend.length < 2) return '';
+  updateWeightChart(trend: any[]) {
+     const labels = trend.map(t => new Date(t.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }));
+     this.weightChartData = {
+       labels,
+       datasets: [
+         { ...this.weightChartData.datasets[0], data: trend.map(t => t.weight) },
+         { ...this.weightChartData.datasets[1], data: trend.map(t => t.trend ?? null) }
+       ]
+     };
+  }
 
-    const weights = s.weight_trend.map(t => t.weight);
-    const min = Math.min(...weights) - 0.5;
-    const max = Math.max(...weights) + 0.5;
-    const range = max - min;
-    
-    if (range === 0) return 'M 0 20 L 100 20';
-    
-    const width = 100;
-    const height = 40;
-    
-    const points = s.weight_trend.map((w_obj, i) => {
-      const val = type === 'weight' ? w_obj.weight : w_obj.trend;
-      if (val === undefined || val === null) return null;
-      
-      const x = (i / (s.weight_trend.length - 1)) * width;
-      const y = height - ((val - min) / range) * height;
-      return `${x},${y}`;
-    }).filter(p => p !== null);
-    
-    return `M ${points.join(' L ')}`;
+  getMetabolicBalanceProgress(): number {
+    const s = this.stats();
+    if (!s || !s.energy_balance) return 50; 
+    const balance = s.energy_balance;
+    const progress = ((balance + 500) / 1000) * 100;
+    return Math.min(100, Math.max(0, progress));
   }
 }

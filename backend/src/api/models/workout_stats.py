@@ -43,3 +43,9 @@ class WorkoutStats(BaseModel):
     last_workout: Optional[WorkoutWithId] = Field(
         None, description="The most recent workout logged"
     )
+    volume_trend: list[float] = Field(
+        default_factory=list, description="Weekly total volume for the last 8 weeks"
+    )
+    strength_radar: dict[str, float] = Field(
+        default_factory=dict, description="Strength peak vs current by category"
+    )

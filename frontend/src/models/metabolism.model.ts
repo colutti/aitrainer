@@ -36,4 +36,12 @@ export interface MetabolismResponse {
   consistency?: { date: string, weight: boolean, nutrition: boolean }[];
   expenditure_trend?: 'up' | 'down' | 'stable';
   consistency_score?: number;
+  macro_targets?: MacroTargets;
+  stability_score?: number;
+}
+
+export interface MacroTargets {
+  protein: number;
+  carbs: number;
+  fat: number;
 }

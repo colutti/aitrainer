@@ -11,6 +11,26 @@ class WeightTrendPoint(BaseModel):
     trend: float | None = None
 
 
+class WeightTrendPoint(BaseModel):
+    """
+    Represents a single point in the weight history.
+    """
+
+    date: str
+    weight: float
+    trend: float | None = None
+
+
+class MacroTargets(BaseModel):
+    """
+    Target macronutrients in grams.
+    """
+
+    protein: int
+    carbs: int
+    fat: int
+
+
 class MetabolismResponse(BaseModel):
     """
     Response model for the Adaptive TDEE calculation.
@@ -68,6 +88,9 @@ class MetabolismResponse(BaseModel):
     start_muscle_pct: float | None = Field(None)
     end_muscle_pct: float | None = Field(None)
     scale_bmr: int | None = Field(None)
+
+    macro_targets: MacroTargets | None = Field(None, description="Calculated macro targets")
+    stability_score: int | None = Field(None, description="Calorie stability score (0-100)")
 
     # New Trend Fields
     weight_trend: list[WeightTrendPoint] | None = Field(

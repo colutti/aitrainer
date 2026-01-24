@@ -14,59 +14,75 @@
     @if (stats()?.latest; as latest) {
       <!-- Hero Card -->
       <div class="bg-gradient-to-br from-light-bg to-secondary/10 rounded-3xl p-8 border border-secondary shadow-lg mb-8 relative overflow-hidden">
-         <div class="absolute top-0 right-0 p-6 opacity-10">
-            <span class="text-9xl">⚖️</span>
-         </div>
-         
-         <div class="relative z-10">
-             <p class="text-sm font-bold text-text-secondary uppercase mb-2">Última Leitura • {{ latest.date | date:'dd/MM/yyyy' }}</p>
-             
-             <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mt-4">
-                 <div>
-                     <p class="text-4xl font-extrabold text-white" data-cy="latest-weight">{{ latest.weight_kg }}<span class="text-lg font-normal text-text-secondary ml-1">kg</span></p>
-                     <p class="text-sm text-text-secondary">Peso Total</p>
-                 </div>
-                 
-                 <div>
-                     <p class="text-4xl font-extrabold text-[#f97316]" data-cy="latest-body-fat">{{ (latest.body_fat_pct | number:'1.2-2') || '--' }}<span class="text-lg font-normal text-text-secondary ml-1">%</span></p>
-                     <p class="text-sm text-text-secondary">Gordura Corporal</p>
-                 </div>
-                 
-                 <div>
-                     <p class="text-4xl font-extrabold text-[#3b82f6]">{{ (latest.muscle_mass_pct | number:'1.2-2') || '--' }}<span class="text-lg font-normal text-text-secondary ml-1">%</span></p>
-                     <p class="text-sm text-text-secondary">Massa Muscular</p>
-                 </div>
+          <div class="absolute top-0 right-0 p-6 opacity-10">
+             <span class="text-9xl">⚖️</span>
+          </div>
+          
+          <div class="relative z-10">
+              <p class="text-sm font-bold text-text-secondary uppercase mb-2">Última Leitura • {{ latest.date | date:'dd/MM/yyyy' }}</p>
+              
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mt-4">
+                  <div>
+                      <p class="text-4xl font-extrabold text-white" data-cy="latest-weight">{{ latest.weight_kg }}<span class="text-lg font-normal text-text-secondary ml-1">kg</span></p>
+                      <p class="text-sm text-text-secondary">Peso Total</p>
+                  </div>
+                  
+                  <div>
+                      <p class="text-4xl font-extrabold text-[#f97316]" data-cy="latest-body-fat">{{ (latest.body_fat_pct | number:'1.2-2') || '--' }}<span class="text-lg font-normal text-text-secondary ml-1">%</span></p>
+                      <p class="text-sm text-text-secondary">Gordura Corporal</p>
+                  </div>
+                  
+                  <div>
+                      <p class="text-4xl font-extrabold text-[#3b82f6]">{{ (latest.muscle_mass_pct | number:'1.2-2') || '--' }}<span class="text-lg font-normal text-text-secondary ml-1">%</span></p>
+                      <p class="text-sm text-text-secondary">Massa Muscular</p>
+                  </div>
+                  
+                  <div class="space-y-1">
+                      <p class="text-sm text-text-secondary flex justify-between"><span>Água:</span> <span class="text-white">{{ (latest.body_water_pct | number:'1.2-2') || '--' }}%</span></p>
+                      <p class="text-sm text-text-secondary flex justify-between"><span>Visceral:</span> <span class="text-white">{{ latest.visceral_fat || '--' }}</span></p>
+                      <p class="text-sm text-text-secondary flex justify-between"><span>BMR:</span> <span class="text-white">{{ latest.bmr || '--' }} kcal</span></p>
+                      <p class="text-sm text-text-secondary flex justify-between"><span>BMI:</span> <span class="text-white">{{ (latest.bmi | number:'1.2-2') || '--' }}</span></p>
+                  </div>
+              </div>
+          </div>
+      </div>
 
-                 <div class="space-y-1">
-                     <p class="text-sm text-text-secondary flex justify-between"><span>Água:</span> <span class="text-white">{{ (latest.body_water_pct | number:'1.2-2') || '--' }}%</span></p>
-                     <p class="text-sm text-text-secondary flex justify-between"><span>Visceral:</span> <span class="text-white">{{ latest.visceral_fat || '--' }}</span></p>
-                     <p class="text-sm text-text-secondary flex justify-between"><span>BMR:</span> <span class="text-white">{{ latest.bmr || '--' }} kcal</span></p>
-                     <p class="text-sm text-text-secondary flex justify-between"><span>BMI:</span> <span class="text-white">{{ (latest.bmi | number:'1.2-2') || '--' }}</span></p>
-                 </div>
-             </div>
-         </div>
+      <!-- Summary Row (Evolução) Shared Widget -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8" *ngIf="metabolismStats() as m">
+          <div class="lg:col-span-2">
+            <app-widget-body-evolution 
+                [fatChange]="m.fat_change_kg" 
+                [muscleChange]="m.muscle_change_kg || 0"
+                [startDate]="m.startDate"
+                [endDate]="m.endDate">
+            </app-widget-body-evolution>
+          </div>
+
+          <div class="bg-primary/5 border border-primary/20 p-6 rounded-2xl flex flex-col justify-center text-xs text-text-secondary italic leading-relaxed">
+              <p class="text-primary text-[10px] font-bold uppercase mb-2">Análise de Tecidos</p>
+              Sua taxa de mudança tecidual indica preservação de massa magra. Continue focado nos macros.
+          </div>
       </div>
       
-      <!-- Charts Row -->
+      <!-- Charts Row (Shared Line Chart Widgets) -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg">
-              <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-4">Tendência de Peso</p>
-              <div class="h-32">
-                 <canvas baseChart [data]="weightChartData" [options]="chartOptions" [type]="lineChartType"></canvas>
-              </div>
-          </div>
-          <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg">
-              <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-4">Gordura (%)</p>
-              <div class="h-32">
-                 <canvas baseChart [data]="fatChartData" [options]="chartOptions" [type]="lineChartType"></canvas>
-              </div>
-          </div>
-          <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg">
-              <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-4">Músculo (%)</p>
-              <div class="h-32">
-                 <canvas baseChart [data]="muscleChartData" [options]="chartOptions" [type]="lineChartType"></canvas>
-              </div>
-          </div>
+          <app-widget-line-chart 
+            title="Tendência de Peso" 
+            [chartData]="weightChartData" 
+            [options]="chartOptions">
+          </app-widget-line-chart>
+
+          <app-widget-line-chart 
+            title="Gordura (%)" 
+            [chartData]="fatChartData" 
+            [options]="fatChartOptions">
+          </app-widget-line-chart>
+
+          <app-widget-line-chart 
+            title="Músculo (%)" 
+            [chartData]="muscleChartData" 
+            [options]="muscleChartOptions">
+          </app-widget-line-chart>
       </div>
 
     } @else {

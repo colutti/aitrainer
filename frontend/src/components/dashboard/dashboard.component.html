@@ -5,111 +5,142 @@
     <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-1">
+  <div class="space-y-8 p-1">
     
-    <!-- ========== CORPO SECTION ========== -->
-    <div class="col-span-full flex items-center gap-4 mt-2 mb-2">
-      <h2 class="text-lg font-bold text-text-secondary flex items-center gap-2">
-        <span>⚖️</span>
-        <span>Corpo</span>
-      </h2>
-      <div class="flex-1 h-px bg-secondary/30"></div>
+    <!-- AI Insight (HERO) -->
+    <div class="mb-4" *ngIf="metabolismStats()?.confidence !== 'none'">
+      <div
+        class="bg-light-bg rounded-2xl border border-primary/20 p-[1px] shadow-2xl relative overflow-hidden group"
+      >
+        <!-- Animated shine effect -->
+        <div
+          class="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none z-10"
+        ></div>
+
+        <div
+          class="bg-dark-bg/50 backdrop-blur-sm rounded-2xl p-6 md:p-8 flex flex-col md:flex-row gap-8 relative z-0 h-full"
+        >
+          <!-- Trainer Avatar & Pulse -->
+          <div class="flex-shrink-0 flex justify-center md:block">
+            <div class="relative w-24 h-24 md:w-32 md:h-32">
+              <div
+                class="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse"
+              ></div>
+              <img
+                [src]="currentTrainer()?.avatar_url || 'assets/trainer-ai.png'"
+                onerror="
+                  this.src =
+                    'https://api.dicebear.com/7.x/bottts/svg?seed=Atlas'
+                "
+                alt="Trainer"
+                class="w-full h-full rounded-full border-2 border-primary/50 relative z-10 bg-dark-bg object-cover"
+              />
+              <div
+                class="absolute -bottom-2 -right-2 bg-dark-bg px-3 py-1 rounded-full border border-primary/30 text-[10px] font-bold text-primary uppercase shadow-lg z-20"
+              >
+                AI Coach
+              </div>
+            </div>
+          </div>
+
+          <!-- Insight Text -->
+          <div class="flex-1">
+            <div class="flex items-center gap-3 mb-4">
+              <span class="animate-pulse text-primary">●</span>
+              <h2
+                class="text-xs font-bold text-text-secondary uppercase tracking-widest"
+                data-cy="trainer-analysis-header"
+              >
+                Análise de Hoje
+              </h2>
+            </div>
+
+            <div
+              *ngIf="metabolismService.isInsightLoading() && !metabolismService.insightText()"
+              class="space-y-3 opacity-50 animate-pulse"
+            >
+              <div class="h-4 bg-secondary/30 rounded w-3/4"></div>
+              <div class="h-4 bg-secondary/30 rounded w-1/2"></div>
+            </div>
+
+            <markdown
+              [data]="metabolismService.insightText()"
+              class="prose prose-invert prose-p:text-text-primary prose-p:leading-relaxed prose-p:font-light text-base md:text-lg max-w-none prose-strong:font-bold prose-strong:text-primary [&_*]:no-underline"
+            >
+            </markdown>
+
+            <div
+              class="mt-6 flex items-center gap-4 text-xs text-text-secondary font-mono border-t border-secondary/30 pt-4"
+            >
+              <span>Modelo: v3.5-Turbo</span>
+              <span>•</span>
+              <span
+                >Calibrado com {{ metabolismStats()?.weight_logs_count }} pontos de
+                dados</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
+    <!-- ==================== CORPO SECTION ==================== -->
     <ng-container *ngIf="!isLoading()">
-        
-        <!-- W1: Long-term Weight Trend Widget -->
-        <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors flex flex-col justify-between min-h-[160px]">
-          <div class="flex justify-between items-start mb-2">
-            <p class="text-text-secondary text-xs font-bold uppercase tracking-wider">Tendência (Histórico)</p>
-            <div class="flex items-center gap-2">
-              <span *ngIf="metabolismStats()?.expenditure_trend === 'up'" class="text-[10px] text-green-400 font-bold">↑ METABOLISMO</span>
-              <span *ngIf="metabolismStats()?.expenditure_trend === 'down'" class="text-[10px] text-red-400 font-bold">↓ METABOLISMO</span>
-              <span class="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20 font-bold uppercase">{{ metabolismStats()?.confidence || 'Geral' }}</span>
-            </div>
-          </div>
-
-          <div *ngIf="!isMetabolismLoading(); else loadingMini" class="flex flex-col flex-1">
-            <div class="flex-1 h-24 mt-2">
-              <canvas baseChart
-                  [data]="weightChartData"
-                  [options]="weightChartOptions"
-                  [type]="weightChartType">
-              </canvas>
-            </div>
-
-            <div class="flex justify-between items-center mt-4 pt-3 border-t border-secondary/30">
-              <div class="text-[10px] text-text-secondary uppercase font-bold">Variação Total</div>
-              <div class="text-sm font-bold" [ngClass]="getWeightVariation() < 0 ? 'text-green-400' : 'text-red-400'">
-                {{ getWeightVariation() > 0 ? '+' : '' }}{{ getWeightVariation() | number:'1.1-1' }} kg
-              </div>
-            </div>
-          </div>
+        <div class="col-span-full flex items-center gap-4 mt-2 mb-2">
+            <h2 class="text-lg font-bold text-text-secondary flex items-center gap-2">
+                <span>⚖️</span>
+                <span>Corpo</span>
+            </h2>
+            <div class="flex-1 h-px bg-secondary/30"></div>
         </div>
 
-        <!-- W3: Body Comp Trends Widget -->
-        <div [attr.data-cy]="'body-composition-widget'" class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors min-h-[160px]">
-          <div class="flex justify-between items-start mb-4">
-            <p class="text-text-secondary text-xs font-bold uppercase tracking-wider">Evolução Composição</p>
-            <div *ngIf="metabolismStats()?.fat_change_kg < 0 && metabolismStats()?.muscle_change_kg > 0" 
-                 class="text-[10px] text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded border border-yellow-400/20 font-bold uppercase animate-pulse">
-              Recomposição 🔥
-            </div>
-          </div>
-          
-          <div *ngIf="!isMetabolismLoading(); else loadingMini">
-            <div class="flex flex-col gap-4" *ngIf="metabolismStats() as m; else noTrendData">
-              <div class="text-[10px] text-text-secondary font-bold uppercase tracking-tighter opacity-60 mb-1">
-                Período: {{ m.startDate | date:'dd/MM' }} a {{ m.endDate | date:'dd/MM' }}
-              </div>
-              <div class="grid grid-cols-2 gap-4" *ngIf="m.fat_change_kg !== undefined">
-                <!-- Fat Change Card -->
-                <div class="bg-secondary/10 p-3 rounded-xl border border-secondary/20">
-                  <p class="text-[10px] text-text-secondary uppercase font-bold mb-1">Gordura</p>
-                  <div class="flex flex-col">
-                    <span class="text-lg font-bold" [ngClass]="m.fat_change_kg < 0 ? 'text-green-400' : 'text-red-400'">
-                      {{ m.fat_change_kg > 0 ? '+' : '' }}{{ m.fat_change_kg | number:'1.1-1' }}<span class="text-xs font-normal ml-0.5">kg</span>
-                    </span>
-                    <span class="text-[10px] text-text-secondary">{{ m.end_fat_pct }}% atual</span>
-                  </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- W1: Long-term Weight Trend (Shared Widget) -->
+            <app-widget-line-chart 
+                title="Tendência (Histórico)" 
+                subtitle="Peso suavizado (Geral)"
+                footerLabel="Variação Total"
+                [chartData]="weightChartData"
+                [options]="weightChartOptions">
+                <div slot="header-action" class="flex items-center gap-2">
+                    <span *ngIf="metabolismStats()?.expenditure_trend === 'up'" class="text-[10px] text-green-400 font-bold">↑ METABOLISMO</span>
+                    <span *ngIf="metabolismStats()?.expenditure_trend === 'down'" class="text-[10px] text-red-400 font-bold">↓ METABOLISMO</span>
+                    <span class="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20 font-bold uppercase">{{ metabolismStats()?.confidence || 'Geral' }}</span>
                 </div>
-
-                <!-- Muscle Change Card -->
-                <div class="bg-secondary/10 p-3 rounded-xl border border-secondary/20">
-                  <p class="text-[10px] text-text-secondary uppercase font-bold mb-1">Músculo</p>
-                  <div class="flex flex-col">
-                    <span class="text-lg font-bold text-primary">
-                      {{ (m.muscle_change_kg ?? 0) > 0 ? '+' : '' }}{{ (m.muscle_change_kg ?? 0) | number:'1.1-1' }}<span class="text-xs font-normal ml-0.5">kg</span>
-                    </span>
-                    <span class="text-[10px] text-text-secondary">{{ m.end_muscle_pct }}% atual</span>
-                  </div>
+                <div slot="footer-value" class="text-sm font-bold" [ngClass]="getWeightVariation() < 0 ? 'text-green-400' : 'text-red-400'">
+                    {{ getWeightVariation() > 0 ? '+' : '' }}{{ getWeightVariation() | number:'1.1-1' }} kg
                 </div>
-              </div>
+            </app-widget-line-chart>
+
+            <!-- W2: Metabolic Phase Gauge (Shared Widget) -->
+            <app-widget-metabolic-gauge 
+                [status]="metabolismStats()?.status || 'maintenance'" 
+                [energyBalance]="metabolismStats()?.energy_balance || 0">
+            </app-widget-metabolic-gauge>
+
+            <!-- W3: Body Comp Trends (Shared Widget) -->
+            <app-widget-body-evolution 
+                [fatChange]="metabolismStats()?.fat_change_kg" 
+                [muscleChange]="metabolismStats()?.muscle_change_kg || 0"
+                [startDate]="metabolismStats()?.startDate"
+                [endDate]="metabolismStats()?.endDate">
+            </app-widget-body-evolution>
+
+            <!-- W4: Consistency Tracker (Stay local for now, unique layout) -->
+            <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors min-h-[160px]">
+                <div class="flex justify-between items-start mb-4">
+                    <p class="text-text-secondary text-xs font-bold uppercase tracking-wider">Consistência (7 dias)</p>
+                    <span *ngIf="metabolismStats()?.consistency_score" class="text-[10px] font-bold text-primary">{{ metabolismStats()?.consistency_score }}% score</span>
+                </div>
+                
+                <div *ngIf="!isMetabolismLoading(); else loadingMini" class="flex-1 h-40">
+                    <canvas baseChart
+                        [data]="consistencyChartData"
+                        [options]="consistencyChartOptions"
+                        [type]="consistencyChartType">
+                    </canvas>
+                </div>
             </div>
-          </div>
-
-          <ng-template #noTrendData>
-             <div class="flex flex-col items-center justify-center py-4 opacity-40">
-                <span class="text-2xl mb-2">⚖️</span>
-                <p class="text-[10px] text-center uppercase font-bold tracking-tight">Dados insuficientes para tendência</p>
-             </div>
-          </ng-template>
-        </div>
-
-        <!-- W3: Consistency Tracker -->
-        <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors min-h-[160px]">
-          <div class="flex justify-between items-start mb-4">
-            <p class="text-text-secondary text-xs font-bold uppercase tracking-wider">Consistência (7 dias)</p>
-            <span *ngIf="metabolismStats()?.consistency_score" class="text-[10px] font-bold text-primary">{{ metabolismStats()?.consistency_score }}% score</span>
-          </div>
-          
-          <div *ngIf="!isMetabolismLoading(); else loadingMini" class="flex-1 h-40">
-             <canvas baseChart
-                 [data]="consistencyChartData"
-                 [options]="consistencyChartOptions"
-                 [type]="consistencyChartType">
-             </canvas>
-          </div>
         </div>
     </ng-container>
 
@@ -122,201 +153,216 @@
        </div>
     </ng-template>
 
-    <!-- ========== TREINOS SECTION ========== -->
-    <div class="col-span-full flex items-center gap-4 mt-6 mb-2">
-      <h2 class="text-lg font-bold text-text-secondary flex items-center gap-2">
-        <span>🏋️</span>
-        <span>Treinos</span>
-      </h2>
-      <div class="flex-1 h-px bg-secondary/30"></div>
-    </div>
-
+    <!-- ==================== TREINOS SECTION ==================== -->
     <ng-container *ngIf="!isLoading() && stats() as s">
-        <!-- Streak Widget -->
-        <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg flex items-center justify-between hover:border-primary/50 transition-colors duration-300">
-        <div>
-            <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-2">Sequência Atual</p>
-            <div class="flex items-baseline">
-                <p class="text-4xl font-extrabold text-white mt-1">{{ s.current_streak_weeks }}</p>
-                <span class="ml-2 text-sm font-medium text-text-secondary">semanas</span>
-            </div>
-        </div>
-        <div class="h-14 w-14 bg-[#fb923c]/20 rounded-full flex items-center justify-center text-3xl animate-pulse">
-            🔥
-        </div>
+        <!-- Header -->
+        <div class="col-span-full flex items-center gap-4 mt-6 mb-2">
+            <h2 class="text-lg font-bold text-text-secondary flex items-center gap-2">
+                <span>🏋️</span>
+                <span>Treinos</span>
+            </h2>
+            <div class="flex-1 h-px bg-secondary/30"></div>
         </div>
 
-        <!-- Frequency Widget -->
-        <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300">
-        <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-4">Frequência Semanal</p>
-        <div class="flex justify-between items-center px-1">
-            <!-- Mon to Sun -->
-            <div *ngFor="let dayActive of s.weekly_frequency; let i = index" class="flex flex-col items-center gap-2">
-                <div [class]="dayActive ? 'bg-primary shadow-[0_0_12px_rgba(16,185,129,0.6)] scale-110' : 'bg-secondary/30'" 
-                    class="w-6 h-6 rounded-full transition-all duration-300"></div>
-                <span class="text-[10px] font-bold text-text-secondary">{{ ['S','T','Q','Q','S','S','D'][i] }}</span>
+        <!-- Grid 1: Performance Summary -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div class="lg:col-span-1">
+                <app-widget-streak [streakWeeks]="s.current_streak_weeks"></app-widget-streak>
             </div>
-        </div>
+            <div class="lg:col-span-2">
+                <app-widget-frequency [weeklyFrequency]="s.weekly_frequency"></app-widget-frequency>
+            </div>
+            <div class="lg:col-span-2">
+                <app-widget-recent-prs [prs]="s.recent_prs"></app-widget-recent-prs>
+            </div>
         </div>
 
-        <!-- Last Workout Widget -->
-        <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 relative overflow-hidden">
-        <div class="absolute top-0 right-0 p-4 opacity-5">
-            <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path></svg>
-        </div>
-        <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-3">Último Treino</p>
-        <div *ngIf="s.last_workout; else noWorkout" class="relative z-10">
-            <h3 class="text-2xl font-bold text-white mb-1">{{ s.last_workout.workout_type || 'Treino' }}</h3>
-            <p class="text-sm text-primary font-medium mb-4">{{ getFormattedDate(s.last_workout.date) }}</p>
-            <div class="flex items-center space-x-3">
-                <span class="bg-secondary/30 border border-secondary px-2 py-1 rounded text-xs text-text-secondary font-mono flex items-center">
-                ⏱️ {{ s.last_workout.duration_minutes || '--' }} min
-                </span>
+        <!-- Grid 2: Last Workout & Regional Analysis -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Last Workout Widget (Stay local for specific metadata) -->
+            <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 relative overflow-hidden flex flex-col justify-center">
+                <div class="absolute top-0 right-0 p-4 opacity-5">
+                    <svg class="w-24 h-24" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path></svg>
+                </div>
+                <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-3">Último Treino</p>
+                <div *ngIf="s.last_workout; else noWorkout" class="relative z-10">
+                    <h3 class="text-2xl font-bold text-white mb-1">{{ s.last_workout.workout_type || 'Treino' }}</h3>
+                    <p class="text-sm text-primary font-medium mb-4">{{ getFormattedDate(s.last_workout.date) }}</p>
+                    <div class="flex items-center space-x-3">
+                        <span class="bg-secondary/30 border border-secondary px-2 py-1 rounded text-xs text-text-secondary font-mono flex items-center">
+                        ⏱️ {{ s.last_workout.duration_minutes || '--' }} min
+                        </span>
+                    </div>
+                </div>
+                <ng-template #noWorkout>
+                    <div class="h-full flex items-center justify-center py-8">
+                        <p class="text-text-secondary italic text-sm">Nenhum treino registrado.</p>
+                    </div>
+                </ng-template>
             </div>
-        </div>
-        <ng-template #noWorkout>
-            <div class="h-full flex items-center justify-center">
-                <p class="text-text-secondary italic text-sm">Nenhum treino registrado.</p>
+
+            <!-- Volume Trend Chart (Shared Widget) -->
+            <div class="lg:col-span-2">
+                <app-widget-line-chart 
+                    title="Trend de Volume (8 semanas)" 
+                    subtitle="CARGA ACUMULADA"
+                    [chartData]="volumeTrendChartData"
+                    [options]="volumeTrendChartOptions">
+                </app-widget-line-chart>
             </div>
-        </ng-template>
         </div>
 
-        <!-- Recent PRs -->
-        <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg overflow-hidden flex flex-col hover:border-primary/50 transition-colors duration-300">
-        <div class="flex justify-between items-center mb-4">
-            <p class="text-text-secondary text-xs font-bold uppercase tracking-wider">Recordes Recentes</p>
-            <span class="text-lg">🏆</span>
-        </div>
-        
-        <div *ngIf="s.recent_prs.length > 0; else noPrs" class="space-y-3 overflow-y-auto max-h-64 pr-2 custom-scrollbar">
-            <div *ngFor="let pr of s.recent_prs" class="flex items-center justify-between p-3 rounded-xl bg-secondary/10 hover:bg-secondary/30 transition-colors border border-transparent hover:border-secondary/50 group">
-            <div>
-                <p class="font-bold text-white text-sm group-hover:text-primary transition-colors">{{ pr.exercise_name }}</p>
-                <p class="text-[10px] text-text-secondary uppercase mt-0.5 tracking-wide">{{ getFormattedDate(pr.date) }}</p>
-            </div>
-            <div class="text-right">
-                <p class="text-base font-bold text-primary">{{ pr.weight }}<span class="text-xs ml-0.5 font-normal text-primary/70">kg</span></p>
-                <div class="flex items-center justify-end text-[10px] text-text-secondary space-x-1">
-                    <span>{{ pr.reps }} reps</span>
+        <!-- Grid 3: Muscle Distribution -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <!-- Volume Category Chart (Wide) -->
+            <div class="col-span-1 md:col-span-3 bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300">
+                <div class="flex justify-between items-center mb-4">
+                    <p class="text-text-secondary text-xs font-bold uppercase tracking-wider">Volume por Categoria (Esta Semana)</p>
+                    <span class="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full border border-primary/20">Kg Total</span>
+                </div>
+                <div class="h-44 w-full">
+                    <canvas baseChart [data]="barChartData" [options]="barChartOptions" [type]="barChartType"></canvas>
                 </div>
             </div>
-            </div>
-        </div>
-        <ng-template #noPrs>
-            <div class="flex-1 flex flex-col items-center justify-center text-center opacity-60">
-                <span class="text-3xl mb-2 grayscale">🏅</span>
-                <p class="text-text-secondary text-xs">Sem novos recordes ainda.</p>
-                <p class="text-text-secondary text-[10px] mt-1">Continue firme!</p>
-            </div>
-        </ng-template>
-        </div>
 
-        <!-- Volume Chart (Wide) -->
-        <div class="col-span-1 md:col-span-2 lg:col-span-2 bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300">
-        <div class="flex justify-between items-center mb-4">
-            <p class="text-text-secondary text-xs font-bold uppercase tracking-wider">Volume por Categoria (Esta Semana)</p>
-            <span class="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full border border-primary/20">Kg Total</span>
-        </div>
-        <div class="h-64 w-full">
-            <canvas baseChart
-                [data]="barChartData"
-                [options]="barChartOptions"
-                [type]="barChartType">
-            </canvas>
-        </div>
+            <!-- Strength Radar (Stay local) -->
+            <div class="col-span-1 md:col-span-2 bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg flex flex-col items-center justify-center relative overflow-hidden">
+                <div class="absolute inset-0 bg-blue-500/5 pointer-events-none"></div>
+                <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-2 w-full text-left">Equilíbrio de Força</p>
+                <div class="h-44 w-full">
+                    <canvas baseChart [data]="radarChartData" [options]="radarChartOptions" [type]="'radar'"></canvas>
+                </div>
+            </div>
         </div>
     </ng-container>
 
-    <!-- ========== NUTRIÇÃO SECTION ========== -->
-    <div class="col-span-full flex items-center gap-4 mt-6 mb-2">
-      <h2 class="text-lg font-bold text-text-secondary flex items-center gap-2">
-        <span>🍽️</span>
-        <span>Nutrição</span>
-      </h2>
-      <div class="flex-1 h-px bg-secondary/30"></div>
-    </div>
-
-    <!-- === NUTRITION WIDGETS === -->
+    <!-- ==================== NUTRIÇÃO SECTION ==================== -->
     <ng-container *ngIf="nutritionStats() as n">
-        
-        <!-- Macros Doughnut Widget -->
-        <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 relative">
-             <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-4">Macros de Hoje</p>
-             
-             @if (n.today) {
-                <div class="relative h-48 w-full flex items-center justify-center">
-                    <canvas baseChart [data]="doughnutChartData" [options]="doughnutChartOptions" [type]="doughnutChartType"></canvas>
-                    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span class="text-2xl font-bold text-white">{{ n.today.calories }}</span>
-                        <span class="text-[10px] text-text-secondary uppercase">kcal</span>
-                    </div>
-                </div>
-                <div class="flex justify-center gap-4 mt-2">
-                     <div class="flex items-center gap-1">
-                         <div class="w-2 h-2 rounded-full bg-[#10b981]"></div>
-                         <span class="text-[10px] text-text-secondary">{{ n.today.protein_grams }}g P</span>
-                     </div>
-                     <div class="flex items-center gap-1">
-                         <div class="w-2 h-2 rounded-full bg-[#3b82f6]"></div>
-                         <span class="text-[10px] text-text-secondary">{{ n.today.carbs_grams }}g C</span>
-                     </div>
-                     <div class="flex items-center gap-1">
-                         <div class="w-2 h-2 rounded-full bg-[#f97316]"></div>
-                         <span class="text-[10px] text-text-secondary">{{ n.today.fat_grams }}g G</span>
-                     </div>
-                </div>
-             } @else {
-                 <div class="h-48 flex flex-col items-center justify-center text-center opacity-60">
-                     <span class="text-3xl mb-2 grayscale">🍩</span>
-                     <p class="text-text-secondary text-xs">Sem registro hoje.</p>
-                 </div>
-             }
+        <!-- Header -->
+        <div class="col-span-full flex items-center gap-4 mt-6 mb-2">
+            <h2 class="text-lg font-bold text-text-secondary flex items-center gap-2">
+                <span>🍽️</span>
+                <span>Nutrição</span>
+            </h2>
+            <div class="flex-1 h-px bg-secondary/30"></div>
         </div>
 
-        <!-- Nutrition Adherence & Last Meal -->
-        <div class="flex flex-col gap-6">
-            
-            <!-- Nutrition Adherence -->
-            <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 flex-1">
-                <p class="text-text-secondary text-xs font-bold uppercase tracking-wider mb-4">Aderência (Dieta)</p>
-                <div class="flex justify-between items-center px-1">
-                    <div *ngFor="let dayActive of n.weekly_adherence; let i = index" class="flex flex-col items-center gap-2">
-                        <div [class]="dayActive ? 'bg-primary shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-secondary/20 border border-secondary/50'" 
-                             class="w-5 h-5 rounded-full transition-all duration-300"></div>
-                        <span class="text-[9px] font-bold text-text-secondary">{{ ['S','T','Q','Q','S','S','D'][i] }}</span>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 w-full">
+            <!-- W1: Today's Macros (Shared) -->
+            <app-widget-macros-today 
+                [calories]="n.today?.calories || 0" 
+                [protein]="n.today?.protein_grams || 0" 
+                [carbs]="n.today?.carbs_grams || 0" 
+                [fat]="n.today?.fat_grams || 0">
+            </app-widget-macros-today>
+
+            <!-- W2: Adherence (Shared) -->
+            <app-widget-adherence [weeklyAdherence]="n.weekly_adherence"></app-widget-adherence>
+
+            <!-- W3: Stability dial (Keep local for now, unique Dial) -->
+            <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg flex flex-col justify-center items-center text-center relative overflow-hidden group">
+                <div class="absolute -top-10 -right-10 w-32 h-32 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors"></div>
+                <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-1">Estabilidade Calórica</p>
+                <div class="text-4xl mb-1">⚖️</div>
+                <p class="text-base font-black text-white">Consistente</p>
+                <p class="text-[9px] text-text-secondary uppercase mt-2 tracking-tighter">Variação média <span class="text-primary font-bold">±120kcal</span></p>
+            </div>
+
+            <!-- W4: Calorie History (Shared Line Chart) -->
+            <app-widget-line-chart 
+                title="Histórico (14 dias)" 
+                subtitle="CALORIAS CONSUMIDAS"
+                [chartData]="lineChartData"
+                [options]="lineChartOptions">
+            </app-widget-line-chart>
+        </div>
+
+        <!-- Row 2: Deep Analysis -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Macro Targets vs Actuals -->
+            <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg flex flex-col justify-between">
+                <div class="flex justify-between items-center mb-6">
+                    <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Metas vs Média (7 dias)</p>
+                    <div class="flex items-center gap-1" *ngIf="n.stability_score !== undefined">
+                        <div class="w-2 h-2 rounded-full" [ngClass]="n.stability_score > 70 ? 'bg-green-400 animate-pulse' : 'bg-yellow-400'"></div>
+                        <span class="text-[10px] font-bold text-text-secondary">{{ n.stability_score }}% Estabilidade</span>
+                    </div>
+                </div>
+
+                <div class="space-y-4" *ngIf="n.macro_targets">
+                    <!-- Protein -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between items-end text-[10px]">
+                            <span class="text-white font-bold uppercase tracking-tighter">Proteína</span>
+                            <span class="text-text-secondary">{{ (n.avg_protein || 0) | number:'1.0-0' }}g / {{ n.macro_targets.protein }}g</span>
+                        </div>
+                        <div class="h-1.5 w-full bg-secondary/20 rounded-full overflow-hidden">
+                            <div class="bg-primary h-full rounded-full transition-all duration-1000" [style.width.%]="((n.avg_protein || 0) / n.macro_targets.protein) * 100"></div>
+                        </div>
+                    </div>
+
+                    <!-- Carbs / Fat simplified on Home -->
+                    <div class="flex gap-4 items-center pt-2">
+                        <div class="flex-1 text-center">
+                            <p class="text-[9px] text-text-secondary uppercase font-bold">Carbos</p>
+                            <p class="text-xs font-bold text-blue-400">{{ ( (n.avg_daily_calories || 0) * 0.4 / 4) | number:'1.0-0' }}g / {{ n.macro_targets.carbs }}g</p>
+                        </div>
+                        <div class="w-px h-6 bg-secondary/30"></div>
+                        <div class="flex-1 text-center">
+                            <p class="text-[9px] text-text-secondary uppercase font-bold">Gorduras</p>
+                            <p class="text-xs font-bold text-orange-400">{{ ( (n.avg_daily_calories || 0) * 0.3 / 9) | number:'1.0-0' }}g / {{ n.macro_targets.fat }}g</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Last Log Card -->
-            <div class="bg-light-bg p-5 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 flex-1 flex flex-col justify-center">
-                 <div class="flex justify-between items-start mb-2">
-                     <p class="text-text-secondary text-xs font-bold uppercase tracking-wider">Última Refeição</p>
-                     <span class="text-lg">🍽️</span>
-                 </div>
-                 @if (n.today) {
-                     <p class="text-lg font-bold text-white mb-0.5">Hoje</p>
-                     <p class="text-sm text-primary font-medium">{{ n.today.calories }} kcal</p>
-                     <div class="text-[10px] text-text-secondary mt-1">
-                         {{ n.today.protein_grams }}g P • {{ n.today.carbs_grams }}g C • {{ n.today.fat_grams }}g G
-                     </div>
-                 } @else {
-                     <p class="text-sm text-text-secondary italic">Nenhum log recente.</p>
-                 }
-            </div>
+            <!-- Calories vs Weight Correlation -->
+            <app-widget-calories-weight-comparison
+                [weightTrend]="metabolismStats()?.weight_trend || []"
+                [calorieHistory]="n.last_14_days || []">
+            </app-widget-calories-weight-comparison>
         </div>
-
-        <!-- Calories Line Chart -->
-        <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300">
-             <div class="flex justify-between items-center mb-4">
-                 <p class="text-text-secondary text-xs font-bold uppercase tracking-wider">Calorias (7 dias)</p>
-                 <span class="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full border border-primary/20">Média: {{ n.avg_daily_calories }}</span>
-             </div>
-             <div class="h-40 w-full">
-                 <canvas baseChart [data]="lineChartData" [options]="lineChartOptions" [type]="lineChartType"></canvas>
-             </div>
-        </div>
-
     </ng-container>
-  </div>
+
+        <!-- ========== COMPOSIÇÃO SECTION ========== -->
+        <div class="col-span-full flex items-center gap-4 mt-8 mb-2">
+            <h2 class="text-lg font-bold text-text-secondary flex items-center gap-2">
+                <span>🧬</span>
+                <span>Composição Corporal</span>
+            </h2>
+            <div class="flex-1 h-px bg-secondary/30"></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12 w-full col-span-full">
+            <!-- Fat Trend (Shared Widget) -->
+            <app-widget-line-chart 
+                title="Tendência Massa Gorda" 
+                subtitle="PERCENTUAL (%)"
+                [chartData]="fatTrendChartData"
+                [options]="weightChartOptions">
+            </app-widget-line-chart>
+
+            <!-- Muscle Trend (Shared Widget) -->
+            <app-widget-line-chart 
+                title="Tendência Massa Magra" 
+                subtitle="PERCENTUAL (%)"
+                [chartData]="muscleTrendChartData"
+                [options]="weightChartOptions">
+            </app-widget-line-chart>
+
+            <!-- Consistency Stats (Local) -->
+            <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300">
+                 <div class="flex justify-between items-center mb-4">
+                     <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Consistência de Logs</p>
+                     <div class="flex gap-2">
+                         <span class="w-2 h-2 rounded-full bg-[#10b981]"></span>
+                         <span class="w-2 h-2 rounded-full bg-[#3b82f6]"></span>
+                     </div>
+                 </div>
+                 <div class="h-44 w-full">
+                    <canvas baseChart [data]="consistencyChartData" [options]="consistencyChartOptions" [type]="consistencyChartType"></canvas>
+                 </div>
+            </div>
+        </div>
+
 </div>

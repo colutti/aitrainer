@@ -2,6 +2,7 @@ from datetime import date, timedelta, datetime
 from typing import List
 
 from src.api.models.weight_log import WeightLog
+from src.api.models.nutrition_log import NutritionLog
 from src.core.logs import logger
 from src.services.database import MongoDatabase
 
@@ -310,6 +311,13 @@ class AdaptiveTDEEService:
             relevant_nutrition
         )
 
+        # 9. Macro Targets & Stability
+        macro_targets = None
+        stability_score = None
+        if daily_target:
+             macro_targets = self._calculate_macro_targets(daily_target, actual_latest_weight)
+             stability_score = self._calculate_stability_score(daily_target, relevant_nutrition)
+
         result = {
             "tdee": int(round(tdee)),
             "confidence": conf_data["level"],
@@ -347,6 +355,8 @@ class AdaptiveTDEEService:
             ],
             "expenditure_trend": "stable", # Default to stable, could be refined with historical TDEE
             "consistency_score": int(round(adherence_rate * 100)),
+            "macro_targets": macro_targets,
+            "stability_score": stability_score,
             "consistency": [
                 {
                     "date": (date.today() - timedelta(days=i)).isoformat(),
@@ -575,3 +585,34 @@ class AdaptiveTDEEService:
             "energy_balance": tdee_stats.get("energy_balance", 0),
             "reason": f"TDEE: {tdee} (Based on Weekly Average including workouts), Status: {tdee_stats.get('status')}, Goal: {profile.goal_type}",
         }
+    def _calculate_macro_targets(self, daily_target: int, weight_kg: float) -> dict:
+        """Calculates macro targets based on body weight and calorie goal."""
+        # 2.0g Protein per kg (standard for active individuals)
+        protein_g = int(round(weight_kg * 2.0))
+        # 25% Fat (standard healthy range)
+        fat_g = int(round((daily_target * 0.25) / 9))
+        # Carbs = remainder
+        carb_cals = daily_target - (protein_g * 4) - (fat_g * 9)
+        # Ensure we don't return negative carbs (if protein/fat already exceed target)
+        carb_g = int(round(max(0, carb_cals / 4)))
+
+        return {"protein": protein_g, "carbs": carb_g, "fat": fat_g}
+
+    def _calculate_stability_score(
+        self, target: int, nutrition_logs: list[NutritionLog]
+    ) -> int:
+        """Calculates calorie consistency score (0-100) based on last 7 logs."""
+        if not nutrition_logs or target <= 0:
+            return 0
+
+        last_7_logs = sorted(nutrition_logs, key=lambda x: x.date, reverse=True)[:7]
+        if not last_7_logs:
+            return 0
+
+        # Stability = % of days within ±10% of target
+        window = target * 0.10
+        stable_days = sum(
+            1 for log in last_7_logs if abs(log.calories - target) <= window
+        )
+
+        return int(round((stable_days / len(last_7_logs)) * 100))

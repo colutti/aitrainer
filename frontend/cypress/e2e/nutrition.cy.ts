@@ -55,7 +55,7 @@ describe('Nutrition Tracking', () => {
     it('should navigate to nutrition page from sidebar', () => {
       cy.get('[data-cy="nav-nutrition"]').click({ force: true });
       // cy.url().should('include', '/nutrition'); // Skipping URL check as we use signal-based nav
-      cy.get('h1').contains('Histórico Nutricional');
+      cy.get('h1').contains('Nutrição');
     });
   
     it('should display nutrition logs in timeline', () => {

@@ -127,6 +127,10 @@ class WorkoutRepository(BaseRepository):
         # 6. Recent PRs
         prs = self._calculate_recent_prs(all_workouts)
 
+        # 7. Volume Trend & Strength Radar
+        vol_trend = self._calculate_volume_trend(all_workouts)
+        strength_radar = self._calculate_strength_radar(all_workouts)
+
         return WorkoutStats(
             current_streak_weeks=current_streak,
             weekly_frequency=freq,
@@ -134,6 +138,8 @@ class WorkoutRepository(BaseRepository):
             recent_prs=prs,
             total_workouts=total_workouts,
             last_workout=last_workout,
+            volume_trend=vol_trend,
+            strength_radar=strength_radar,
         )
 
     def _calculate_weekly_streak(self, workouts: list[dict]) -> int:
@@ -254,3 +260,62 @@ class WorkoutRepository(BaseRepository):
 
         prs_list.sort(key=lambda x: x.date, reverse=True)
         return prs_list[:limit]
+    def _calculate_volume_trend(self, workouts: list[dict]) -> list[float]:
+        """Calculates weekly volume total for the last 8 weeks."""
+        from datetime import datetime
+        now = datetime.now()
+        weeks: list[float] = [0.0] * 8
+        
+        for w in workouts:
+            age_days = (now - w["date"]).days
+            week_idx = age_days // 7
+            if week_idx < 8:
+                vol = 0.0
+                for ex in w.get("exercises", []):
+                    reps_list = ex.get("reps_per_set", [])
+                    weights_list = ex.get("weights_per_set", [])
+                    for i, r in enumerate(reps_list):
+                        vol += r * (weights_list[i] if i < len(weights_list) else 0.0)
+                weeks[week_idx] += vol
+        
+        # Return reversed to show chronological order in chart
+        return [round(v, 1) for v in reversed(weeks)]
+
+    def _calculate_strength_radar(self, workouts: list[dict]) -> dict[str, float]:
+        """Calculates current vs peak strength ratio (0-1.0) for major muscle groups."""
+        categories = {
+            "Push": ["Supino", "Peito", "Ombro", "Tríceps", "Militar", "Bench"],
+            "Pull": ["Costas", "Remada", "Puxada", "Bíceps", "Levantamento Terra", "Deadlift", "Row"],
+            "Legs": ["Agachamento", "Leg Press", "Extensora", "Flexora", "Pernas", "Panturrilha", "Squat"]
+        }
+        
+        peak_strength: dict[str, float] = {}
+        current_strength: dict[str, float] = {}
+        
+        # Sort by date to find latest
+        sorted_workouts = sorted(workouts, key=lambda x: x["date"])
+        
+        for w in sorted_workouts:
+            for ex in w.get("exercises", []):
+                name = ex.get("name", "")
+                cat = next((k for k, v in categories.items() if any(term.lower() in name.lower() for term in v)), "Outros")
+                if cat == "Outros": continue
+                
+                weights = ex.get("weights_per_set", [])
+                if not weights: continue
+                # We skip bodyweight exercises (0 weight) for strength radar
+                valid_weights = [w for w in weights if w > 0]
+                if not valid_weights: continue
+                
+                max_w = max(valid_weights)
+                peak_strength[cat] = max(peak_strength.get(cat, 0), max_w)
+                current_strength[cat] = max_w # Latest session max
+                
+        # Return ratio of current / peak (0 to 1.0)
+        result = {}
+        for cat in categories:
+            peak = peak_strength.get(cat, 0)
+            curr = current_strength.get(cat, 0)
+            result[cat] = round(curr / peak if peak > 0 else 0, 2)
+            
+        return result

@@ -28,6 +28,9 @@ describe('Dashboard View', () => {
       intercepts: {
         '**/workout/stats': { statusCode: 200, body: workoutStats, alias: 'getStats' },
         '**/metabolism/summary*': { statusCode: 200, body: { tdee: null, trend: 'maintenance' }, alias: 'getMetabolism' },
+        '**/trainer/available_trainers': { statusCode: 200, body: [{ trainer_id: 'atlas', name: 'Atlas', avatar_url: 'assets/atlas.png' }] },
+        '**/trainer/trainer_profile': { statusCode: 200, body: { trainer_type: 'atlas' } },
+        '**/metabolism/insight*': { statusCode: 200, body: "Analysis mock" },
         '**/user/logout': { statusCode: 200, body: { message: 'Logged out' } }
       }
     });
