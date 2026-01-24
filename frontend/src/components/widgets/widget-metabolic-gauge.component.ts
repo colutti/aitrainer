@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 flex flex-col justify-between h-full">
+    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 flex flex-col justify-between h-full">
       <div class="flex justify-between items-start mb-4">
         <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Fase Metabólica</p>
         <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded border" [ngClass]="{

@@ -226,29 +226,30 @@
       </div>
     </div>
 
-    <!-- Pagination -->
-    <div
-      *ngIf="workouts().length > 0"
-      class="flex justify-between items-center py-4 border-t border-secondary mt-auto bg-dark-bg sticky bottom-0 z-20"
+  </div>
+
+  <!-- Pagination -->
+  <div
+    *ngIf="!isLoading() && workouts().length > 0"
+    class="flex justify-between items-center py-4 border-t border-secondary mt-auto bg-dark-bg shrink-0 z-20"
+  >
+    <button
+      (click)="previousPage()"
+      [disabled]="currentPage() === 1"
+      class="px-4 py-2 bg-light-bg rounded-lg border border-secondary text-text-secondary text-sm font-medium hover:text-white hover:bg-secondary/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
     >
-      <button
-        (click)="previousPage()"
-        [disabled]="currentPage() === 1"
-        class="px-4 py-2 bg-light-bg rounded-lg border border-secondary text-text-secondary text-sm font-medium hover:text-white hover:bg-secondary/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-      >
-        Anterior
-      </button>
-      <span class="text-text-secondary text-xs font-mono opacity-70"
-        >Pg {{ currentPage() }} / {{ totalPages() }}</span
-      >
-      <button
-        (click)="nextPage()"
-        [disabled]="currentPage() === totalPages()"
-        class="px-4 py-2 bg-light-bg rounded-lg border border-secondary text-text-secondary text-sm font-medium hover:text-white hover:bg-secondary/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-      >
-        Próxima
-      </button>
-    </div>
+      Anterior
+    </button>
+    <span class="text-text-secondary text-xs font-mono opacity-70"
+      >Pg {{ currentPage() }} / {{ totalPages() }}</span
+    >
+    <button
+      (click)="nextPage()"
+      [disabled]="currentPage() === totalPages()"
+      class="px-4 py-2 bg-light-bg rounded-lg border border-secondary text-text-secondary text-sm font-medium hover:text-white hover:bg-secondary/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+    >
+      Próxima
+    </button>
   </div>
 
   <!-- Drawer -->

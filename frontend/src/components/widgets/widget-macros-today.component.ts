@@ -8,13 +8,13 @@ import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
   standalone: true,
   imports: [CommonModule, BaseChartDirective],
   template: `
-    <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg flex flex-col items-center justify-center relative hover:border-primary/50 transition-all duration-300 h-full min-h-[160px]">
+    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg flex flex-col items-center justify-center relative hover:border-primary/50 transition-all duration-300 h-full min-h-[140px]">
       <div *ngIf="calories > 0; else noLog" class="flex flex-col items-center justify-center w-full">
-        <div class="h-28 w-28 relative">
+        <div class="h-24 w-24 relative">
           <canvas baseChart [data]="chartData" [options]="chartOptions" [type]="chartType"></canvas>
           <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span class="text-xl font-bold text-white">{{ calories }}</span>
-            <span class="text-[8px] text-text-secondary uppercase font-bold tracking-widest">kcal hoje</span>
+            <span class="text-lg font-bold text-white">{{ calories }}</span>
+            <span class="text-[7px] text-text-secondary uppercase font-bold tracking-widest">kcal</span>
           </div>
         </div>
         

@@ -98,6 +98,8 @@
             <!-- W0: TDEE Summary (New) -->
             <app-widget-tdee-summary 
                 [tdee]="metabolismStats()?.tdee || 0" 
+                [targetCalories]="metabolismStats()?.daily_target || 0"
+                [goalType]="metabolismStats()?.status"
                 [energyBalance]="metabolismStats()?.energy_balance || 0">
             </app-widget-tdee-summary>
 

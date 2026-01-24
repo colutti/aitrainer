@@ -43,6 +43,8 @@
       <!-- W0: TDEE Summary (New) -->
       <app-widget-tdee-summary
         [tdee]="stats()?.tdee || 0"
+        [targetCalories]="stats()?.daily_target || 0"
+        [goalType]="stats()?.status"
         [energyBalance]="stats()?.energy_balance || 0">
       </app-widget-tdee-summary>
 

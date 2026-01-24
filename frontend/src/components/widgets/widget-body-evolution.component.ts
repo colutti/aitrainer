@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="bg-light-bg p-6 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors flex items-center justify-between group h-full">
+    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors flex items-start justify-between group h-full">
       <div class="flex-1">
         <div class="flex justify-between items-center mb-2">
           <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Evolução Composição</p>
@@ -20,17 +20,17 @@ import { CommonModule } from '@angular/common';
           Período: {{ startDate | date:'dd/MM' }} a {{ endDate | date:'dd/MM' }}
         </div>
         
-        <div class="grid grid-cols-2 gap-4">
-          <div class="bg-secondary/10 p-3 rounded-xl border border-secondary/20">
-            <p class="text-[10px] text-text-secondary uppercase font-bold mb-1">Gordura</p>
-            <span class="text-xl font-bold" [ngClass]="fatChange < 0 ? 'text-green-400' : 'text-red-400'">
-              {{ fatChange > 0 ? '+' : '' }}{{ fatChange | number:'1.1-1' }}<span class="text-xs font-normal ml-0.5">kg</span>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-secondary/10 p-2.5 rounded-xl border border-secondary/20">
+            <p class="text-[9px] text-text-secondary uppercase font-bold mb-1">Gordura</p>
+            <span class="text-lg font-bold" [ngClass]="fatChange < 0 ? 'text-green-400' : 'text-red-400'">
+              {{ fatChange > 0 ? '+' : '' }}{{ fatChange | number:'1.1-1' }}<span class="text-[10px] font-normal ml-0.5">kg</span>
             </span>
           </div>
-          <div class="bg-secondary/10 p-3 rounded-xl border border-secondary/20">
-            <p class="text-[10px] text-text-secondary uppercase font-bold mb-1">Músculo</p>
-            <span class="text-xl font-bold text-primary">
-              {{ muscleChange > 0 ? '+' : '' }}{{ muscleChange | number:'1.1-1' }}<span class="text-xs font-normal ml-0.5">kg</span>
+          <div class="bg-secondary/10 p-2.5 rounded-xl border border-secondary/20">
+            <p class="text-[9px] text-text-secondary uppercase font-bold mb-1">Músculo</p>
+            <span class="text-lg font-bold text-primary">
+              {{ muscleChange > 0 ? '+' : '' }}{{ muscleChange | number:'1.1-1' }}<span class="text-[10px] font-normal ml-0.5">kg</span>
             </span>
           </div>
         </div>
