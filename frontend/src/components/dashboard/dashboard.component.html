@@ -94,8 +94,8 @@
             <div class="flex-1 h-px bg-secondary/30"></div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- W1: Long-term Weight Trend (Now Wider) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <!-- W1: Long-term Weight Trend (Wider) -->
             <app-widget-line-chart 
                 class="lg:col-span-2"
                 title="Tendência (Histórico)" 
@@ -115,7 +115,7 @@
                 </div>
             </app-widget-line-chart>
 
-            <!-- W3: Body Comp Trends (Now Wider) -->
+            <!-- W3: Body Comp Trends -->
             <app-widget-body-evolution 
                 class="lg:col-span-2"
                 [fatChange]="metabolismStats()?.fat_change_kg" 
@@ -124,6 +124,7 @@
                 [endDate]="metabolismStats()?.endDate">
             </app-widget-body-evolution>
 
+            <!-- Row 2 -->
             <!-- W0: TDEE Summary -->
             <app-widget-tdee-summary 
                 [tdee]="metabolismStats()?.tdee || 0" 
@@ -132,16 +133,10 @@
                 [energyBalance]="metabolismStats()?.energy_balance || 0">
             </app-widget-tdee-summary>
 
-            <!-- W2: Metabolic Phase Gauge -->
-            <app-widget-metabolic-gauge 
-                [status]="metabolismStats()?.status || 'maintenance'" 
-                [energyBalance]="metabolismStats()?.energy_balance || 0">
-            </app-widget-metabolic-gauge>
-
             <!-- W4: Consistency Tracker -->
             <div class="lg:col-span-2 bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors">
                 <div class="flex justify-between items-start mb-4">
-                    <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Consistência de Registro (Últimos dias)</p>
+                    <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Consistência de Registro</p>
                     <span *ngIf="metabolismStats()?.consistency_score" class="text-[10px] font-bold text-primary">{{ metabolismStats()?.consistency_score }}% score</span>
                 </div>
                 
@@ -153,6 +148,12 @@
                     </canvas>
                 </div>
             </div>
+
+            <!-- W2: Metabolic Phase Gauge (Now under Body Evolution) -->
+            <app-widget-metabolic-gauge 
+                [status]="metabolismStats()?.status || 'maintenance'" 
+                [energyBalance]="metabolismStats()?.energy_balance || 0">
+            </app-widget-metabolic-gauge>
         </div>
     </ng-container>
 
@@ -178,11 +179,11 @@
 
         <!-- Grid 1: Performance Summary -->
         <!-- Main Data Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- W1: Recent PRs (Wider for list readability) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <!-- W1: Recent PRs -->
             <app-widget-recent-prs class="lg:col-span-2" [prs]="s.recent_prs"></app-widget-recent-prs>
 
-            <!-- W2: Volume Trend (Wider Line Chart) -->
+            <!-- W2: Volume Trend -->
             <app-widget-line-chart 
                 class="lg:col-span-2"
                 title="Trend de Volume (8 semanas)" 
@@ -192,9 +193,9 @@
             </app-widget-line-chart>
 
             <!-- Row 2 -->
-            <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-8">
                 <app-widget-streak [streakWeeks]="s.current_streak_weeks"></app-widget-streak>
-                <div class="space-y-6">
+                <div class="space-y-8">
                     <app-widget-frequency [weeklyFrequency]="s.weekly_frequency"></app-widget-frequency>
                     <!-- Last Workout Mini -->
                     <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 relative overflow-hidden flex flex-col justify-center min-h-[90px]">
@@ -213,7 +214,7 @@
                 </div>
             </div>
 
-            <!-- Volume Category Chart (Wide) -->
+            <!-- Volume Category Chart -->
             <div class="lg:col-span-2 bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300">
                 <div class="flex justify-between items-center mb-4">
                     <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Distribuição Semanal</p>
@@ -221,15 +222,6 @@
                 </div>
                 <div class="h-32 w-full">
                     <canvas baseChart [data]="barChartData" [options]="barChartOptions" [type]="barChartType"></canvas>
-                </div>
-            </div>
-            
-            <!-- Radar Chart (Balanced) -->
-            <div class="lg:col-span-4 bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg flex flex-col items-center justify-center relative overflow-hidden">
-                <div class="absolute inset-0 bg-blue-500/5 pointer-events-none"></div>
-                <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-2 w-full text-left">Evolução Força vs. Histórico</p>
-                <div class="h-48 w-full">
-                    <canvas baseChart [data]="radarChartData" [options]="radarChartOptions" [type]="'radar'"></canvas>
                 </div>
             </div>
         </div>
@@ -246,7 +238,7 @@
             <div class="flex-1 h-px bg-secondary/30"></div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 w-full">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8 w-full">
             <!-- Row 1: Major Trends -->
             <app-widget-line-chart 
                 class="lg:col-span-2"
@@ -281,7 +273,7 @@
                 [endDate]="n.endDate">
             </app-widget-macro-targets>
 
-            <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-8">
                 <!-- Today's Macros -->
                 <app-widget-macros-today 
                     [calories]="n.today?.calories || 0" 
@@ -291,7 +283,7 @@
                 </app-widget-macros-today>
 
                 <!-- Status Stack -->
-                <div class="space-y-6">
+                <div class="space-y-8">
                     <app-widget-adherence [weeklyAdherence]="n.weekly_adherence"></app-widget-adherence>
                     
                     <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg flex flex-col justify-center items-center text-center relative overflow-hidden group min-h-[100px]">
