@@ -95,11 +95,11 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Row 1 -->
+            <!-- Row 1: Weight & Scale Evolution -->
             <app-widget-line-chart 
                 class="lg:col-span-2"
-                title="Tendência (Histórico)" 
-                subtitle="Peso suavizado (Geral)"
+                title="Tendência de Peso" 
+                subtitle="Peso suavizado (Histórico)"
                 footerLabel="Variação Total"
                 [startDate]="metabolismStats()?.startDate"
                 [endDate]="metabolismStats()?.endDate"
@@ -123,7 +123,28 @@
                 [endDate]="metabolismStats()?.endDate">
             </app-widget-body-evolution>
 
-            <!-- Row 2 -->
+            <!-- Row 2: Composition Details -->
+            <app-widget-line-chart 
+                class="lg:col-span-2"
+                title="Massa Gorda (%)" 
+                subtitle="TENDÊNCIA DE PERCENTUAL"
+                [startDate]="metabolismStats()?.startDate"
+                [endDate]="metabolismStats()?.endDate"
+                [chartData]="fatTrendChartData"
+                [options]="compositionChartOptions">
+            </app-widget-line-chart>
+
+            <app-widget-line-chart 
+                class="lg:col-span-2"
+                title="Massa Magra (%)" 
+                subtitle="TENDÊNCIA DE PERCENTUAL"
+                [startDate]="metabolismStats()?.startDate"
+                [endDate]="metabolismStats()?.endDate"
+                [chartData]="muscleTrendChartData"
+                [options]="compositionChartOptions">
+            </app-widget-line-chart>
+
+            <!-- Row 3: Metabolism & TDEE -->
             <app-widget-tdee-summary 
                 class="lg:col-span-2"
                 [tdee]="metabolismStats()?.tdee || 0" 
@@ -319,39 +340,6 @@
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- ========== COMPOSIÇÃO SECTION ========== -->
-        <div class="col-span-full flex items-center gap-4 mt-8 mb-2">
-            <h2 class="text-lg font-bold text-text-secondary flex items-center gap-2">
-                <span>🧬</span>
-                <span>Composição Corporal</span>
-            </h2>
-            <div class="flex-1 h-px bg-secondary/30"></div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 w-full col-span-full">
-            <!-- Fat Trend -->
-            <app-widget-line-chart 
-                class="lg:col-span-2"
-                title="Massa Gorda (%)" 
-                subtitle="TENDÊNCIA DE PERCENTUAL"
-                [startDate]="metabolismStats()?.startDate"
-                [endDate]="metabolismStats()?.endDate"
-                [chartData]="fatTrendChartData"
-                [options]="compositionChartOptions">
-            </app-widget-line-chart>
-
-            <!-- Muscle Trend -->
-            <app-widget-line-chart 
-                class="lg:col-span-2"
-                title="Massa Magra (%)" 
-                subtitle="TENDÊNCIA DE PERCENTUAL"
-                [startDate]="metabolismStats()?.startDate"
-                [endDate]="metabolismStats()?.endDate"
-                [chartData]="muscleTrendChartData"
-                [options]="compositionChartOptions">
-            </app-widget-line-chart>
         </div>
 
 </div>
