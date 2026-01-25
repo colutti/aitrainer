@@ -95,9 +95,12 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Row 1: Weight & Scale Evolution -->
+            <!-- Column 1-2: Weight & Metabolic Flow -->
+            <!-- Column 3-4: Targets & Trends Flow -->
+
+            <!-- Row 1 -->
             <app-widget-line-chart 
-                class="lg:col-span-2"
+                class="lg:col-span-2 lg:order-1"
                 title="Tendência de Peso" 
                 subtitle="Peso suavizado (Histórico)"
                 footerLabel="Variação Total"
@@ -115,17 +118,25 @@
                 </div>
             </app-widget-line-chart>
 
+            <app-widget-tdee-summary 
+                class="lg:col-span-2 lg:order-2"
+                [tdee]="metabolismStats()?.tdee || 0" 
+                [targetCalories]="metabolismStats()?.daily_target || 0"
+                [goalType]="metabolismStats()?.status"
+                [energyBalance]="metabolismStats()?.energy_balance || 0">
+            </app-widget-tdee-summary>
+
+            <!-- Row 2 -->
             <app-widget-body-evolution 
-                class="lg:col-span-2"
+                class="lg:col-span-2 lg:order-3"
                 [fatChange]="metabolismStats()?.fat_change_kg" 
                 [muscleChange]="metabolismStats()?.muscle_change_kg || 0"
                 [startDate]="metabolismStats()?.startDate"
                 [endDate]="metabolismStats()?.endDate">
             </app-widget-body-evolution>
 
-            <!-- Row 2: Composition Details -->
             <app-widget-line-chart 
-                class="lg:col-span-2"
+                class="lg:col-span-2 lg:order-4"
                 title="Massa Gorda (%)" 
                 subtitle="TENDÊNCIA DE PERCENTUAL"
                 [startDate]="metabolismStats()?.startDate"
@@ -134,8 +145,15 @@
                 [options]="compositionChartOptions">
             </app-widget-line-chart>
 
+            <!-- Row 3 -->
+            <app-widget-metabolic-gauge 
+                class="lg:col-span-2 lg:order-5"
+                [status]="metabolismStats()?.status || 'maintenance'" 
+                [energyBalance]="metabolismStats()?.energy_balance || 0">
+            </app-widget-metabolic-gauge>
+
             <app-widget-line-chart 
-                class="lg:col-span-2"
+                class="lg:col-span-2 lg:order-6"
                 title="Massa Magra (%)" 
                 subtitle="TENDÊNCIA DE PERCENTUAL"
                 [startDate]="metabolismStats()?.startDate"
@@ -143,21 +161,6 @@
                 [chartData]="muscleTrendChartData"
                 [options]="compositionChartOptions">
             </app-widget-line-chart>
-
-            <!-- Row 3: Metabolism & TDEE -->
-            <app-widget-tdee-summary 
-                class="lg:col-span-2"
-                [tdee]="metabolismStats()?.tdee || 0" 
-                [targetCalories]="metabolismStats()?.daily_target || 0"
-                [goalType]="metabolismStats()?.status"
-                [energyBalance]="metabolismStats()?.energy_balance || 0">
-            </app-widget-tdee-summary>
-
-            <app-widget-metabolic-gauge 
-                class="lg:col-span-2"
-                [status]="metabolismStats()?.status || 'maintenance'" 
-                [energyBalance]="metabolismStats()?.energy_balance || 0">
-            </app-widget-metabolic-gauge>
         </div>
     </ng-container>
 
@@ -169,59 +172,6 @@
           <div class="h-4 bg-secondary/20 rounded w-3/4"></div>
        </div>
     </ng-template>
-
-    <!-- ==================== TREINOS SECTION ==================== -->
-    <ng-container *ngIf="!isLoading() && stats() as s">
-        <!-- Header -->
-        <div class="col-span-full flex items-center gap-4 mt-6 mb-2">
-            <h2 class="text-lg font-bold text-text-secondary flex items-center gap-2">
-                <span>🏋️</span>
-                <span>Treinos</span>
-            </h2>
-            <div class="flex-1 h-px bg-secondary/30"></div>
-        </div>
-
-        <!-- Grid 1: Performance Summary -->
-        <!-- Main Data Grid -->
-        <!-- Main Data Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Training Performance -->
-            <app-widget-recent-prs class="lg:col-span-2" [prs]="s.recent_prs"></app-widget-recent-prs>
-            
-            <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 relative overflow-hidden flex flex-col justify-center min-h-[90px]">
-                <div class="absolute top-0 right-0 p-3 opacity-5">
-                    <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path></svg>
-                </div>
-                <p class="text-text-secondary text-[8px] font-bold uppercase tracking-widest mb-1.5 line-clamp-1">Última Atividade</p>
-                <div *ngIf="s.last_workout; else noWorkout">
-                    <h3 class="text-sm font-black text-white mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">{{ s.last_workout.workout_type || 'Treino' }}</h3>
-                    <p class="text-[8px] text-primary font-bold uppercase tracking-tight">{{ getFormattedDate(s.last_workout.date) }} • {{ s.last_workout.duration_minutes || '--' }} min </p>
-                </div>
-                <ng-template #noWorkout>
-                    <p class="text-text-secondary italic text-[9px]">Sem treinos.</p>
-                </ng-template>
-            </div>
-
-            <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300">
-                <div class="flex justify-between items-center mb-4">
-                    <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Distribuição Semanal</p>
-                    <span class="bg-primary/10 text-primary text-[8px] px-2 py-0.5 rounded-full border border-primary/20 font-bold uppercase">Volume Kg</span>
-                </div>
-                <div class="h-32 w-full">
-                    <canvas baseChart [data]="barChartData" [options]="barChartOptions" [type]="barChartType"></canvas>
-                </div>
-            </div>
-
-            <!-- Volume Trend (Wide) -->
-            <app-widget-line-chart 
-                class="lg:col-span-4"
-                title="Evolução de Volume Total de Carga (8 semanas)" 
-                subtitle="CARGA ACUMULADA (KG POR SEMANA)"
-                [chartData]="volumeTrendChartData"
-                [options]="volumeTrendChartOptions">
-            </app-widget-line-chart>
-        </div>
-    </ng-container>
 
     <!-- ==================== NUTRIÇÃO SECTION ==================== -->
     <ng-container *ngIf="nutritionStats() as n">
@@ -277,6 +227,59 @@
                 [endDate]="nutritionStats()?.endDate"
                 [chartData]="lineChartData"
                 [options]="lineChartOptions">
+            </app-widget-line-chart>
+        </div>
+    </ng-container>
+
+    <!-- ==================== TREINOS SECTION ==================== -->
+    <ng-container *ngIf="!isLoading() && stats() as s">
+        <!-- Header -->
+        <div class="col-span-full flex items-center gap-4 mt-6 mb-2">
+            <h2 class="text-lg font-bold text-text-secondary flex items-center gap-2">
+                <span>🏋️</span>
+                <span>Treinos</span>
+            </h2>
+            <div class="flex-1 h-px bg-secondary/30"></div>
+        </div>
+
+        <!-- Grid 1: Performance Summary -->
+        <!-- Main Data Grid -->
+        <!-- Main Data Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Training Performance -->
+            <app-widget-recent-prs class="lg:col-span-2" [prs]="s.recent_prs"></app-widget-recent-prs>
+            
+            <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 relative overflow-hidden flex flex-col justify-center min-h-[90px]">
+                <div class="absolute top-0 right-0 p-3 opacity-5">
+                    <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path></svg>
+                </div>
+                <p class="text-text-secondary text-[8px] font-bold uppercase tracking-widest mb-1.5 line-clamp-1">Última Atividade</p>
+                <div *ngIf="s.last_workout; else noWorkout">
+                    <h3 class="text-sm font-black text-white mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">{{ s.last_workout.workout_type || 'Treino' }}</h3>
+                    <p class="text-[8px] text-primary font-bold uppercase tracking-tight">{{ getFormattedDate(s.last_workout.date) }} • {{ s.last_workout.duration_minutes || '--' }} min </p>
+                </div>
+                <ng-template #noWorkout>
+                    <p class="text-text-secondary italic text-[9px]">Sem treinos.</p>
+                </ng-template>
+            </div>
+
+            <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300">
+                <div class="flex justify-between items-center mb-4">
+                    <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Distribuição Semanal</p>
+                    <span class="bg-primary/10 text-primary text-[8px] px-2 py-0.5 rounded-full border border-primary/20 font-bold uppercase">Volume Kg</span>
+                </div>
+                <div class="h-32 w-full">
+                    <canvas baseChart [data]="barChartData" [options]="barChartOptions" [type]="barChartType"></canvas>
+                </div>
+            </div>
+
+            <!-- Volume Trend (Wide) -->
+            <app-widget-line-chart 
+                class="lg:col-span-4"
+                title="Evolução de Volume Total de Carga (8 semanas)" 
+                subtitle="CARGA ACUMULADA (KG POR SEMANA)"
+                [chartData]="volumeTrendChartData"
+                [options]="volumeTrendChartOptions">
             </app-widget-line-chart>
         </div>
     </ng-container>
