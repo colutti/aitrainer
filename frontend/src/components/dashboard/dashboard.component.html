@@ -182,9 +182,9 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 w-full">
-            <!-- Nutrition Correlation (Wide) -->
+            <!-- Row 1: Correlation & History Side-by-Side -->
             <app-widget-calories-weight-comparison
-                class="lg:col-span-4"
+                class="lg:col-span-2"
                 title="Análise de Correlação: Calorias vs Peso"
                 [startDate]="metabolismStats()?.startDate"
                 [endDate]="metabolismStats()?.endDate"
@@ -192,7 +192,17 @@
                 [calorieHistory]="n.last_14_days || []">
             </app-widget-calories-weight-comparison>
 
-            <!-- Row 2 -->
+            <app-widget-line-chart 
+                class="lg:col-span-2"
+                title="Trend de Ingestão de Calorias (14 dias)" 
+                subtitle="KCAL / DIA"
+                [startDate]="nutritionStats()?.startDate"
+                [endDate]="nutritionStats()?.endDate"
+                [chartData]="lineChartData"
+                [options]="lineChartOptions">
+            </app-widget-line-chart>
+
+            <!-- Row 2: Macros & Targets -->
             <app-widget-macro-targets
                 class="lg:col-span-2"
                 title="Performance de Macros (7 dias)"
@@ -214,17 +224,6 @@
                 [carbs]="n.today?.carbs_grams || 0" 
                 [fat]="n.today?.fat_grams || 0">
             </app-widget-macros-today>
-
-            <!-- History Trend (Wide) -->
-            <app-widget-line-chart 
-                class="lg:col-span-4"
-                title="Trend de Ingestão de Calorias (14 dias)" 
-                subtitle="KCAL / DIA"
-                [startDate]="nutritionStats()?.startDate"
-                [endDate]="nutritionStats()?.endDate"
-                [chartData]="lineChartData"
-                [options]="lineChartOptions">
-            </app-widget-line-chart>
         </div>
     </ng-container>
 

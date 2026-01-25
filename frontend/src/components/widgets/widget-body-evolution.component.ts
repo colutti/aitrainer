@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors flex items-start justify-between group min-h-[90px]">
+    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors flex items-start justify-between group min-h-[90px] h-full">
       <div class="flex-1">
         <div class="flex justify-between items-center mb-2">
           <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Evolução Composição</p>

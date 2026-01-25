@@ -8,7 +8,7 @@ import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
   standalone: true,
   imports: [CommonModule, BaseChartDirective],
   template: `
-    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors flex flex-col">
+    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors flex flex-col h-full">
       <div class="flex justify-between items-center mb-4">
         <div>
             <h3 class="text-text-secondary text-xs font-bold uppercase tracking-wider">{{ title }}</h3>
