@@ -69,44 +69,42 @@
     </div>
   </div>
 
-  <!-- Performance & Consistency Row -->
+  <!-- Performance & Consistency Grid -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 w-full shrink-0 relative z-10" *ngIf="stats() as s">
     
-    <!-- Weekly Volume (1) -->
-    <div class="lg:col-span-1 bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors h-full flex flex-col">
-         <div class="flex justify-between items-center mb-3">
-             <p class="text-[9px] text-text-secondary font-bold uppercase tracking-wider">Volume Semanal</p>
-             <span class="text-[8px] text-primary font-bold uppercase">Kg</span>
+    <!-- Row 1: Analytics -->
+    <div class="lg:col-span-2 bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors h-full flex flex-col">
+         <div class="flex justify-between items-center mb-4">
+             <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Volume Semanal (8 semanas)</p>
+             <span class="text-[8px] text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20 font-bold uppercase tracking-tighter">Kg</span>
          </div>
-         <div class="flex-1 min-h-[140px] w-full">
+         <div class="flex-1 min-h-[180px] w-full">
              <canvas baseChart [data]="volumeChartData" [options]="volumeChartOptions" [type]="volumeChartType"></canvas>
          </div>
     </div>
 
-    <!-- Strength Balance (1) -->
-    <div class="lg:col-span-1 bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg flex flex-col items-center justify-center relative overflow-hidden h-full group">
+    <div class="lg:col-span-2 bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg flex flex-col items-center justify-center relative overflow-hidden h-full group">
          <div class="absolute inset-0 bg-blue-500/5 pointer-events-none group-hover:bg-blue-500/10 transition-colors"></div>
-         <p class="text-text-secondary text-[9px] font-bold uppercase tracking-wider mb-2 w-full text-left relative z-10">Equilíbrio</p>
-         <div class="flex-1 min-h-[140px] w-full relative z-10">
+         <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-2 w-full text-left relative z-10">Equilíbrio de Força</p>
+         <div class="flex-1 min-h-[180px] w-full relative z-10">
              <canvas baseChart [data]="radarChartData" [options]="radarChartOptions" [type]="radarChartType"></canvas>
          </div>
     </div>
 
-    <!-- Streak (1) -->
+    <!-- Row 2: Streak & Frequency -->
     <app-widget-streak 
-        class="lg:col-span-1"
+        class="lg:col-span-2"
         title="Streak"
         [streakWeeks]="s.current_streak_weeks">
     </app-widget-streak>
 
-    <!-- Frequency (1) -->
     <app-widget-frequency 
-        class="lg:col-span-1"
+        class="lg:col-span-2"
         title="Frequência"
         [weeklyFrequency]="s.weekly_frequency">
     </app-widget-frequency>
 
-    <!-- Row 2: Recent PRs (Wide) -->
+    <!-- Row 3: Recent PRs (Wide) -->
     <app-widget-recent-prs 
         class="lg:col-span-4" 
         [prs]="s.recent_prs">
