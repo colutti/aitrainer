@@ -8,7 +8,7 @@ import { CommonModule } from '@angular/common';
   template: `
     <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 min-h-[90px] flex flex-col justify-center">
       <div class="flex justify-between items-start mb-3">
-        <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Aderência Semanal</p>
+        <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">{{ title || 'Aderência Semanal' }}</p>
         <div class="flex items-center gap-1" *ngIf="score !== undefined">
             <span class="text-[10px] font-black text-primary">{{ score }}%</span>
         </div>
@@ -26,6 +26,7 @@ import { CommonModule } from '@angular/common';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class WidgetAdherenceComponent {
+  @Input() title?: string;
   @Input({ required: true }) weeklyAdherence: boolean[] = [];
   @Input() score?: number;
 }

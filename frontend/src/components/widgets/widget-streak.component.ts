@@ -8,7 +8,7 @@ import { CommonModule } from '@angular/common';
   template: `
     <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg flex items-center justify-between hover:border-primary/50 transition-colors duration-300 min-h-[90px]">
       <div>
-        <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-1">Sequência Atual</p>
+        <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-1">{{ title || 'Sequência Atual' }}</p>
         <div class="flex items-baseline">
           <p class="text-3xl font-extrabold text-white mt-1">{{ streakWeeks }}</p>
           <span class="ml-2 text-xs font-medium text-text-secondary">semanas</span>
@@ -22,5 +22,6 @@ import { CommonModule } from '@angular/common';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class WidgetStreakComponent {
+  @Input() title?: string;
   @Input({ required: true }) streakWeeks: number = 0;
 }

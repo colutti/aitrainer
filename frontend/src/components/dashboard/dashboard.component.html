@@ -95,12 +95,9 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Column 1-2: Weight & Metabolic Flow -->
-            <!-- Column 3-4: Targets & Trends Flow -->
-
             <!-- Row 1 -->
             <app-widget-line-chart 
-                class="lg:col-span-2 lg:order-1"
+                class="lg:col-span-2"
                 title="Tendência de Peso" 
                 subtitle="Peso suavizado (Histórico)"
                 footerLabel="Variação Total"
@@ -119,7 +116,7 @@
             </app-widget-line-chart>
 
             <app-widget-tdee-summary 
-                class="lg:col-span-2 lg:order-2"
+                class="lg:col-span-2"
                 [tdee]="metabolismStats()?.tdee || 0" 
                 [targetCalories]="metabolismStats()?.daily_target || 0"
                 [goalType]="metabolismStats()?.status"
@@ -128,15 +125,22 @@
 
             <!-- Row 2 -->
             <app-widget-body-evolution 
-                class="lg:col-span-2 lg:order-3"
+                class="lg:col-span-2"
                 [fatChange]="metabolismStats()?.fat_change_kg" 
                 [muscleChange]="metabolismStats()?.muscle_change_kg || 0"
                 [startDate]="metabolismStats()?.startDate"
                 [endDate]="metabolismStats()?.endDate">
             </app-widget-body-evolution>
 
+            <app-widget-metabolic-gauge 
+                class="lg:col-span-2"
+                [status]="metabolismStats()?.status || 'maintenance'" 
+                [energyBalance]="metabolismStats()?.energy_balance || 0">
+            </app-widget-metabolic-gauge>
+
+            <!-- Row 3 -->
             <app-widget-line-chart 
-                class="lg:col-span-2 lg:order-4"
+                class="lg:col-span-2"
                 title="Massa Gorda (%)" 
                 subtitle="TENDÊNCIA DE PERCENTUAL"
                 [startDate]="metabolismStats()?.startDate"
@@ -145,15 +149,8 @@
                 [options]="compositionChartOptions">
             </app-widget-line-chart>
 
-            <!-- Row 3 -->
-            <app-widget-metabolic-gauge 
-                class="lg:col-span-2 lg:order-5"
-                [status]="metabolismStats()?.status || 'maintenance'" 
-                [energyBalance]="metabolismStats()?.energy_balance || 0">
-            </app-widget-metabolic-gauge>
-
             <app-widget-line-chart 
-                class="lg:col-span-2 lg:order-6"
+                class="lg:col-span-2"
                 title="Massa Magra (%)" 
                 subtitle="TENDÊNCIA DE PERCENTUAL"
                 [startDate]="metabolismStats()?.startDate"
