@@ -20,6 +20,7 @@ describe('WorkoutsComponent', () => {
       selectedType: signal(null),
       getWorkouts: jest.fn().mockReturnValue(Promise.resolve([])),
       getTypes: jest.fn().mockReturnValue(Promise.resolve([])),
+      getStats: jest.fn().mockReturnValue(Promise.resolve({})),
       previousPage: jest.fn(),
       nextPage: jest.fn()
     } as unknown as WorkoutService;

@@ -6,8 +6,8 @@ from typing import Optional
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 from fastapi import BackgroundTasks
-from langchain_core.messages import HumanMessage, AIMessage
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from mem0 import Memory  # type: ignore
 
 from src.core.config import settings
@@ -137,6 +137,10 @@ class AITrainerBrain:
         # 2. Recent History & Memories (Already placeholders in settings.PROMPT_TEMPLATE)
         # We ensure they are treated as values, not template parts.
 
+        # REPLACE the string placeholder for history with nothing, 
+        # because we will use MessagesPlaceholder for true history injection.
+        system_content = system_content.replace("{chat_history_summary}", "")
+
         if is_telegram:
             system_content += (
                 "\n\n--- \n"
@@ -145,9 +149,11 @@ class AITrainerBrain:
                 "Use Markdown simples (negrito e itálico). Evite tabelas muito largas ou blocos de código extensos que não cabem na tela do celular."
             )
 
-        prompt_template = ChatPromptTemplate.from_messages(
-            [("system", system_content), ("human", "{user_message}")]
-        )
+        messages = [("system", system_content)]
+        messages.append(MessagesPlaceholder(variable_name="chat_history"))
+        messages.append(("human", "{user_message}"))
+
+        prompt_template = ChatPromptTemplate.from_messages(messages)
 
         # Verify formatting works and log anatomy concisely
         try:
@@ -446,6 +452,70 @@ class AITrainerBrain:
 
         return "\n".join([str(item) for item in formatted])
 
+    def _format_history_as_messages(
+        self,
+        messages: list,
+        current_trainer_type: str,
+    ) -> list[BaseMessage]:
+        """
+        Formats LangChain messages into a list of BaseMessage objects for the prompt.
+        Preserves the structural integrity of the history (Message objects) while
+        injecting context labels (Timestamp, Sender, etc.) into the content.
+        """
+        if not messages:
+            return []
+
+        formatted_msgs: list[BaseMessage] = []
+        for msg in messages:
+            # Extract timestamp if available
+            timestamp_str = ""
+            if hasattr(msg, "additional_kwargs") and msg.additional_kwargs:
+                ts = msg.additional_kwargs.get("timestamp", "")
+                if ts:
+                    try:
+                        dt = datetime.fromisoformat(ts)
+                        timestamp_str = f"[{dt.strftime('%d/%m %H:%M')}] "
+                    except (ValueError, TypeError):
+                        pass
+
+            # Clean message content - single line
+            raw_content = msg.content if msg.content else ""
+            if not isinstance(raw_content, str):
+                raw_content = str(raw_content)
+            content = " ".join(raw_content.split())
+
+            # Check message type
+            is_system = hasattr(msg, "type") and msg.type == "system"
+
+            new_content = ""
+            if is_system:
+                if "📜 [RESUMO]" in content:
+                    # Summaries might be better as SystemMessages, but HumanMessage ensures visibility
+                    new_content = content
+                else:
+                    new_content = f"{timestamp_str}⚙️ SISTEMA (Log): {content}"
+                formatted_msgs.append(HumanMessage(content=new_content))
+
+            elif isinstance(msg, HumanMessage):
+                new_content = f"{timestamp_str}🧑 Aluno: {content}"
+                formatted_msgs.append(HumanMessage(content=new_content))
+
+            elif isinstance(msg, AIMessage):
+                trainer_type = msg.additional_kwargs.get(
+                    "trainer_type", current_trainer_type
+                )
+                if trainer_type == current_trainer_type:
+                    new_content = f"{timestamp_str}🏋️ VOCÊ (Treinador): {content}"
+                else:
+                    new_content = f"{timestamp_str}🏋️ EX-TREINADOR [{trainer_type}]: {content}"
+                formatted_msgs.append(AIMessage(content=new_content))
+            else:
+                # Fallback
+                new_content = f"{timestamp_str}> {content}"
+                formatted_msgs.append(HumanMessage(content=new_content))
+
+        return formatted_msgs
+
     async def send_message_ai(
         self,
         user_email: str,
@@ -533,6 +603,12 @@ class AITrainerBrain:
             chat_history_messages,
             current_trainer_type=current_trainer_type,
         )
+        
+        # New Structured History
+        formatted_history_msgs = self._format_history_as_messages(
+            chat_history_messages,
+            current_trainer_type=current_trainer_type,
+        )
 
         trainer_profile_summary = trainer_profile_obj.get_trainer_profile_summary()
         user_profile_summary = profile.get_profile_summary()
@@ -543,7 +619,8 @@ class AITrainerBrain:
             "user_profile": user_profile_summary,
             "user_profile_obj": profile,  # Passed for prompt template extraction
             "relevant_memories": relevant_memories_str,
-            "chat_history_summary": chat_history_summary,
+            "chat_history_summary": chat_history_summary, # Kept for logging/compatibility or if template still uses it (we removed it)
+            "chat_history": formatted_history_msgs,       # Passed to MessagesPlaceholder
             "user_message": user_input,
         }
 

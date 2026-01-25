@@ -7,6 +7,8 @@ import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { MetabolismService } from '../../services/metabolism.service';
 import { NutritionService } from '../../services/nutrition.service';
 import { WeightService } from '../../services/weight.service';
+import { TrainerProfileService } from '../../services/trainer-profile.service';
+import { MarkdownModule } from 'ngx-markdown';
 
 import { WorkoutStats } from '../../models/stats.model';
 import { MetabolismResponse } from '../../models/metabolism.model';
@@ -33,7 +35,17 @@ describe('DashboardComponent', () => {
 
     metabolismServiceMock = {
       getSummary: jest.fn().mockResolvedValue(null),
-      stats: signal(null)
+      stats: signal(null),
+      isInsightLoading: signal(false),
+      insightText: signal(''),
+      generateInsight: jest.fn()
+    };
+    
+    // Mock TrainerProfileService
+    const trainerServiceMock = {
+        getAvailableTrainers: jest.fn().mockResolvedValue([]),
+        fetchProfile: jest.fn().mockResolvedValue({ trainer_type: 'atlas' }),
+        currentTrainer: signal(null)
     };
 
     weightServiceMock = {
@@ -47,9 +59,14 @@ describe('DashboardComponent', () => {
         { provide: NutritionService, useValue: nutritionServiceMock },
         { provide: MetabolismService, useValue: metabolismServiceMock },
         { provide: WeightService, useValue: weightServiceMock },
+        { provide: TrainerProfileService, useValue: trainerServiceMock },
         provideCharts(withDefaultRegisterables())
       ]
-    }).compileComponents();
+    })
+    .overrideComponent(DashboardComponent, {
+      remove: { imports: [MarkdownModule] }
+    })
+    .compileComponents();
 
     fixture = TestBed.createComponent(DashboardComponent);
     component = fixture.componentInstance;
