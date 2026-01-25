@@ -27,12 +27,17 @@ async def get_metabolism_summary(
 async def get_metabolism_insight_stream(
     background_tasks: BackgroundTasks,
     weeks: int = 3,
+    force: bool = False,
     user_email: str = Depends(verify_token),
     db: MongoDatabase = Depends(get_mongo_database),
     brain: AITrainerBrain = Depends(get_ai_trainer_brain),
 ):
     """
     Streams an AI-generated insight about the user's metabolism stats.
+
+    Args:
+        weeks: Number of weeks to analyze (default: 3)
+        force: If True, bypass cache and regenerate insight (default: False)
     """
     # Quick check for data availability using TDEE service (lightweight check)
     tdee_service = AdaptiveTDEEService(db)
@@ -47,6 +52,6 @@ async def get_metabolism_insight_stream(
         return StreamingResponse(empty_stream(), media_type="text/event-stream")
 
     return StreamingResponse(
-        brain.generate_insight_stream(user_email, weeks=weeks, background_tasks=background_tasks),
+        brain.generate_insight_stream(user_email, weeks=weeks, force=force, background_tasks=background_tasks),
         media_type="text/event-stream",
     )

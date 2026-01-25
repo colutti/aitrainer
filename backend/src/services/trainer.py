@@ -818,16 +818,24 @@ class AITrainerBrain:
         self,
         user_email: str,
         weeks: int = 3,
+        force: bool = False,
         background_tasks: Optional[BackgroundTasks] = None,
     ):
         """
         Generates a focused AI insight about metabolism using RAW data.
         Streams the response.
+
+        Args:
+            user_email: User's email
+            weeks: Number of weeks to analyze (default: 3)
+            force: If True, bypass cache and regenerate insight (default: False)
+            background_tasks: Optional FastAPI background tasks
         """
         logger.info(
-            "Generating metabolism insight stream for user: %s (weeks=%d)",
+            "Generating metabolism insight stream for user: %s (weeks=%d, force=%s)",
             user_email,
             weeks,
+            force,
         )
 
         from src.services.metabolism_cache import MetabolismInsightCache
@@ -856,13 +864,14 @@ class AITrainerBrain:
             "target_weight": profile.target_weight,
         }
 
-        # 2. Check Cache with NEW Strategy
-        cached_insight = cache.get(
-            user_email, weight_logs, nutrition_logs, user_goal, current_trainer_type
-        )
-        if cached_insight:
-            yield cached_insight
-            return
+        # 2. Check Cache with NEW Strategy (skip if force=True)
+        if not force:
+            cached_insight = cache.get(
+                user_email, weight_logs, nutrition_logs, user_goal, current_trainer_type
+            )
+            if cached_insight:
+                yield cached_insight
+                return
 
         # 3. Prepare goal labels (used in system prompt)
         goal_labels = {

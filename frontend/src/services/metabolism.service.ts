@@ -42,13 +42,13 @@ export class MetabolismService {
       if (force) this.insightText.set('');
 
       try {
-          const reader = await this.getInsightStream(weeks);
+          const reader = await this.getInsightStream(weeks, force);
           const decoder = new TextDecoder();
 
           while (true) {
               const { done, value } = await reader.read();
               if (done) break;
-              
+
               const chunk = decoder.decode(value, { stream: true });
               this.insightText.update(prev => prev + chunk);
           }
@@ -62,9 +62,10 @@ export class MetabolismService {
       }
   }
 
-  async getInsightStream(weeks: number = 3): Promise<ReadableStreamDefaultReader<Uint8Array>> {
+  async getInsightStream(weeks: number = 3, force: boolean = false): Promise<ReadableStreamDefaultReader<Uint8Array>> {
       const token = localStorage.getItem('jwt_token');
-      const response = await fetch(`${environment.apiUrl}/metabolism/insight?weeks=${weeks}`, {
+      const url = `${environment.apiUrl}/metabolism/insight?weeks=${weeks}${force ? '&force=true' : ''}`;
+      const response = await fetch(url, {
           headers: {
               'Authorization': `Bearer ${token}`
           }
