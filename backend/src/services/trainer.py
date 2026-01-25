@@ -864,66 +864,123 @@ class AITrainerBrain:
             yield cached_insight
             return
 
-        # 3. Construct System Prompt
+        # 3. Prepare goal labels (used in system prompt)
+        goal_labels = {
+            "lose": "Perder peso",
+            "gain": "Ganhar massa",
+            "maintain": "Manter peso",
+        }
+
+        # 4. Construct System Prompt (OPTIMIZED - reduced from 115 to 32 lines for performance)
         system_prompt = f"""# 🏋️ Treinador Pessoal - Análise Metabólica
 
 {trainer_summary}
 
 ---
 
-## 🎨 Contexto de Exibição
-- Este texto será exibido no **Hero Card** do dashboard de metabolismo
-- O aluno verá esta análise ao abrir a página
-- Você deve ser DIRETO e VISUAL (hero = destaque)
+## 🎨 Contexto
+Este texto aparece no **Hero Card** do dashboard. O aluno verá isso PRIMEIRO. Tempo de leitura: 15-20 segundos.
 
-## 📋 Sua Tarefa
-Analise os dados brutos de PESO e DIETA fornecidos pelo aluno e dê sua **OPINIÃO como treinador**:
+## 📋 Estrutura Obrigatória (3 blocos)
 
-1. **Tendência:** O que os números mostram? (calculando você mesmo)
-2. **Alertas:** Padrões preocupantes, gaps, inconsistências?
-3. **Próximo passo:** Uma ação concreta para esta semana.
+**1️⃣ Tendência (25-35 palavras):** Evolução do peso + composição. Use números. Compare com meta.
 
-## ⚠️ Regras de Formato
-- **Máximo 100 palavras**
-- Use **Emojis** moderadamente para alertas (ex: ⚠️, 🎯, 🔥)
-- Vá direto à análise (sem saudações)
-- Use **negrito** para insights acionáveis
+**2️⃣ Observação (20-30 palavras):** Destaque UM padrão (volatilidade, gaps, etc). Cite números.
 
+**3️⃣ Ação (15-25 palavras):** Comece com 🎯. UMA ação mensurável + condição de revisão.
+
+## ⚠️ Regras
+- **70-95 palavras** (máx 100)
+- **2-3 emojis** no total
+- **Negrito** em números-chave
+- **Segunda pessoa** ("você", não "o aluno")
+- Sem saudações/despedidas
+
+## 📊 Análise Esperada
+Calcule manualmente:
+- Variação peso (primeira → última pesagem) e taxa semanal
+- Comparar taxa real vs desejada ({profile.weekly_rate} kg/sem)
+- Variação composição (% gordura/músculo)
+- Range de calorias (mín-máx) e média
+- Gaps nos registros (dias sem dados)
+- Tendência últimos 3 dias vs período todo
+
+Compare com: Meta **{goal_labels.get(profile.goal_type, profile.goal_type)}**, taxa **{profile.weekly_rate} kg/sem**
+
+Use termos simples ou explique entre parênteses quando necessário.
+
+## 📝 Exemplo de Formato
+
+"**Progresso consistente:** Você perdeu 1.4kg em 15 dias (0.65kg/semana), levemente acima da meta de 0.5kg/semana. Composição melhorou: -1.2% gordura, +0.8% músculo.
+
+⚠️ **Volatilidade:** Calorias oscilaram entre 1900-2250kcal (range de 350kcal). Estabilizar em ~2050kcal melhora previsibilidade.
+
+🎯 **Ação:** Mantenha 2050kcal fixos por 7 dias. Se perder >0.7kg/semana, aumente 100kcal."
+
+_Adapte este formato para outros cenários (alerta, dados insuficientes)._
+
+---
+
+**IMPORTANTE:** Você recebe dados BRUTOS. Faça seus próprios cálculos. Seja honesto se houver problemas.
 """
 
-        # 4. Construct User Prompt (Raw Data)
+        # 5. Construct User Prompt (Raw Data)
         start_date_str = data.period.start_date.strftime("%d/%m")
         end_date_str = data.period.end_date.strftime("%d/%m")
 
-        # Limit tables to reasonable size (e.g. 30 most recent rows) to avoid context overflow
-        # Logs are already sorted ascending, so take last 30
-        clipped_weight_logs = weight_logs[-30:]
-        clipped_nutrition_logs = nutrition_logs[-30:]
+        # Limit tables to 15 most recent rows to reduce context size
+        # Logs are already sorted ascending, so take last 15
+        clipped_weight_logs = weight_logs[-15:]
+        clipped_nutrition_logs = nutrition_logs[-15:]
+
+        # Calculate last 3 days for focused analysis
+        last_3_weight_logs = weight_logs[-3:] if len(weight_logs) >= 3 else weight_logs
+        last_3_nutrition_logs = nutrition_logs[-3:] if len(nutrition_logs) >= 3 else nutrition_logs
+
+        # Format last 3 days
+        last_3_weight_str = ""
+        if last_3_weight_logs:
+            last_3_weight_str = "**Pesagens:**\n"
+            for log in last_3_weight_logs:
+                last_3_weight_str += f"- {log.date.strftime('%d/%m')}: {log.weight_kg}kg"
+                if log.body_fat_pct:
+                    last_3_weight_str += f" (Gordura: {log.body_fat_pct}%, Músculo: {log.muscle_mass_pct}%)"
+                last_3_weight_str += "\n"
+        else:
+            last_3_weight_str = "- Sem pesagens nos últimos 3 dias\n"
+
+        last_3_nutrition_str = ""
+        if last_3_nutrition_logs:
+            last_3_nutrition_str = "**Dieta:**\n"
+            for log in last_3_nutrition_logs:
+                last_3_nutrition_str += f"- {log.date.strftime('%d/%m')}: {log.calories}kcal (P: {int(log.protein_grams)}g, C: {int(log.carbs_grams)}g, G: {int(log.fat_grams)}g)\n"
+        else:
+            last_3_nutrition_str = "- Sem registros de dieta nos últimos 3 dias\n"
 
         weight_table = raw_service.format_weight_logs_table(clipped_weight_logs)
         nutrition_table = raw_service.format_nutrition_logs_table(
             clipped_nutrition_logs
         )
 
-        goal_labels = {
-            "lose": "Perder peso",
-            "gain": "Ganhar massa",
-            "maintain": "Manter peso",
-        }
         goal_label = goal_labels.get(profile.goal_type, profile.goal_type)
 
-        target_weight_Line = (
-            f"- **Peso meta:** {profile.target_weight} kg"
+        target_weight_line = (
+            f"- **Peso que quero atingir:** {profile.target_weight} kg"
             if profile.target_weight
-            else ""
+            else "- **Peso que quero atingir:** não definido"
         )
 
         user_prompt_content = f"""## 🎯 Meu Objetivo
-- **Objetivo:** {goal_label}
+- **Meta final:** {goal_label}
 - **Taxa desejada:** {profile.weekly_rate} kg/semana
-- **Peso ao cadastrar:** {profile.weight} kg
-- **Dados pessoais:** {profile.height}cm, {profile.age} anos, {profile.gender}
-{target_weight_Line}
+- **Peso ao me cadastrar:** {profile.weight} kg
+{target_weight_line}
+- **Perfil:** {profile.height}cm, {profile.age} anos, {profile.gender}
+
+## ⚡ Foco: Últimos 3 Dias
+
+{last_3_weight_str}
+{last_3_nutrition_str}
 
 ## ⚖️ Minhas Pesagens ({start_date_str} - {end_date_str})
 
@@ -933,7 +990,7 @@ Analise os dados brutos de PESO e DIETA fornecidos pelo aluno e dê sua **OPINI�
 
 {nutrition_table}
 
-Analise meus dados e me dê seu feedback como treinador.
+Analise meus dados seguindo o checklist acima e faça seus próprios cálculos.
 """
 
         prompt_template = ChatPromptTemplate.from_messages(
@@ -953,7 +1010,7 @@ Analise meus dados e me dê seu feedback como treinador.
 
         log_callback = self._get_log_callback(background_tasks)
 
-        # 5. Stream & Collect for Cache
+        # 6. Stream & Collect for Cache
         full_content = []
         async for chunk in self._llm_client.stream_simple(
             prompt_template,
@@ -964,7 +1021,7 @@ Analise meus dados e me dê seu feedback como treinador.
             full_content.append(chunk)
             yield chunk
 
-        # 6. Save to Cache
+        # 7. Save to Cache
         cache.set(
             user_email,
             weight_logs,
