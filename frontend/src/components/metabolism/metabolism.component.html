@@ -88,6 +88,7 @@
       <!-- Weight Trend Chart -->
       <app-widget-line-chart
         class="lg:col-span-2"
+        style="height: 245px; display: block;"
         title="Tendência de Peso"
         subtitle="Suavizado (30 dias)"
         footerLabel="Variação Total"
@@ -103,6 +104,7 @@
       <!-- Comparative Analytics -->
       <app-widget-calories-weight-comparison
         class="lg:col-span-2"
+        style="height: 245px; display: block;"
         [startDate]="stats()?.startDate"
         [endDate]="stats()?.endDate"
         [weightTrend]="stats()?.weight_trend || []"
