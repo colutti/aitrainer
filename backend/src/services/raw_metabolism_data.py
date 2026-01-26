@@ -62,9 +62,12 @@ class RawMetabolismDataService:
         )
 
     def format_weight_logs_table(self, logs: List[WeightLog]) -> str:
-        """Formats weight logs into a Markdown table."""
+        """Formats weight logs into a Markdown table with header count."""
         if not logs:
             return "_Nenhuma pesagem registrada no período._"
+
+        # Header com contagem
+        header = f"📊 **{len(logs)} pesagens registradas**\n\n"
 
         table = "| Data | Peso | %Gord | %Musc | %Água | Visc | BMR | Fonte |\n"
         table += "|---|---|---|---|---|---|---|---|\n"
@@ -81,12 +84,15 @@ class RawMetabolismDataService:
 
             table += f"| {date_str} | {weight} | {fat} | {muscle} | {water} | {visc} | {bmr} | {source} |\n"
 
-        return table
+        return header + table
 
     def format_nutrition_logs_table(self, logs: List[NutritionLog]) -> str:
-        """Formats nutrition logs into a Markdown table."""
+        """Formats nutrition logs into a Markdown table with header count."""
         if not logs:
             return "_Nenhuma dieta registrada no período._"
+
+        # Header com contagem
+        header = f"📊 **{len(logs)} dias de dieta registrados**\n\n"
 
         table = "| Data | Kcal | Prot | Carbs | Gord | Fibra |\n"
         table += "|---|---|---|---|---|---|\n"
@@ -101,4 +107,4 @@ class RawMetabolismDataService:
 
             table += f"| {date_str} | {kcal} | {prot} | {carbs} | {fat} | {fiber} |\n"
 
-        return table
+        return header + table

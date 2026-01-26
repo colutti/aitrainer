@@ -62,3 +62,53 @@ def test_get_raw_data_formatting(service, mock_db):
     assert data.weight_logs
     w_table = service.format_weight_logs_table(data.weight_logs)
     assert "| Data | Peso | %Gord |" in w_table
+
+
+def test_weight_table_includes_count_header(service):
+    """Test that weight table includes header with count."""
+    logs = [
+        WeightLog(
+            user_email="test@test.com",
+            date=date.today() - timedelta(days=i),
+            weight_kg=80.0,
+            source="manual",
+        )
+        for i in range(5)
+    ]
+
+    table = service.format_weight_logs_table(logs)
+
+    assert "📊 **5 pesagens registradas**" in table
+    assert "| Data | Peso |" in table
+
+
+def test_nutrition_table_includes_count_header(service):
+    """Test that nutrition table includes header with count."""
+    logs = [
+        NutritionLog(
+            user_email="test@test.com",
+            date=datetime.now() - timedelta(days=i),
+            calories=2000,
+            protein_grams=150,
+            carbs_grams=200,
+            fat_grams=70,
+        )
+        for i in range(7)
+    ]
+
+    table = service.format_nutrition_logs_table(logs)
+
+    assert "📊 **7 dias de dieta registrados**" in table
+    assert "| Data | Kcal |" in table
+
+
+def test_empty_weight_logs_returns_message(service):
+    """Test that empty weight logs return appropriate message."""
+    table = service.format_weight_logs_table([])
+    assert "Nenhuma pesagem registrada" in table
+
+
+def test_empty_nutrition_logs_returns_message(service):
+    """Test that empty nutrition logs return appropriate message."""
+    table = service.format_nutrition_logs_table([])
+    assert "Nenhuma dieta registrada" in table

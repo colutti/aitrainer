@@ -20,26 +20,38 @@ class MetabolismInsightCache:
         Generates a cache key based on RAW data availability.
         Invalidates when:
         - New weight or nutrition log is added (count + last date changes)
-        - User goal changes
+        - First log changes (detects historical edits)
+        - User goal changes (goal_type, weekly_rate, target_weight)
         - Trainer type changes
         - Hourly (includes current hour in key)
         """
-        # Use last date + count as a performant proxy for logs hash
+        # Last date + count
         last_weight = weight_logs[-1].date.isoformat() if weight_logs else "none"
         last_nutrition = (
             nutrition_logs[-1].date.isoformat() if nutrition_logs else "none"
+        )
+
+        # First date (detects historical edits)
+        first_weight = weight_logs[0].date.isoformat() if weight_logs else "none"
+        first_nutrition = (
+            nutrition_logs[0].date.isoformat() if nutrition_logs else "none"
         )
 
         # Include current hour for hourly invalidation
         # Use UTC to be consistent
         current_hour = datetime.now(timezone.utc).strftime("%Y-%m-%d-%H")
 
+        # User goal with target_weight
+        goal_type = user_goal.get("goal_type", "maintain")
+        weekly_rate = user_goal.get("weekly_rate", 0.5)
+        target_weight = user_goal.get("target_weight", 0) or 0  # Handle None
+
         payload = (
             f"{user_email}:"
             f"h:{current_hour}:"
-            f"w:{len(weight_logs)}:{last_weight}:"
-            f"n:{len(nutrition_logs)}:{last_nutrition}:"
-            f"g:{user_goal.get('goal_type')}:{user_goal.get('weekly_rate')}:"
+            f"w:{len(weight_logs)}:{first_weight}:{last_weight}:"
+            f"n:{len(nutrition_logs)}:{first_nutrition}:{last_nutrition}:"
+            f"g:{goal_type}:{weekly_rate}:{target_weight}:"
             f"t:{trainer_type}"
         )
         return hashlib.sha256(payload.encode()).hexdigest()

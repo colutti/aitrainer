@@ -459,25 +459,14 @@ class AITrainerBrain:
     ) -> list[BaseMessage]:
         """
         Formats LangChain messages into a list of BaseMessage objects for the prompt.
-        Preserves the structural integrity of the history (Message objects) while
-        injecting context labels (Timestamp, Sender, etc.) into the content.
+        Preserves the structural integrity of the history (Message objects) without
+        adding prefixes, as LangChain already differentiates message types correctly.
         """
         if not messages:
             return []
 
         formatted_msgs: list[BaseMessage] = []
         for msg in messages:
-            # Extract timestamp if available
-            timestamp_str = ""
-            if hasattr(msg, "additional_kwargs") and msg.additional_kwargs:
-                ts = msg.additional_kwargs.get("timestamp", "")
-                if ts:
-                    try:
-                        dt = datetime.fromisoformat(ts)
-                        timestamp_str = f"[{dt.strftime('%d/%m %H:%M')}] "
-                    except (ValueError, TypeError):
-                        pass
-
             # Clean message content - single line
             raw_content = msg.content if msg.content else ""
             if not isinstance(raw_content, str):
@@ -487,32 +476,20 @@ class AITrainerBrain:
             # Check message type
             is_system = hasattr(msg, "type") and msg.type == "system"
 
-            new_content = ""
             if is_system:
-                if "📜 [RESUMO]" in content:
-                    # Summaries might be better as SystemMessages, but HumanMessage ensures visibility
-                    new_content = content
-                else:
-                    new_content = f"{timestamp_str}⚙️ SISTEMA (Log): {content}"
-                formatted_msgs.append(HumanMessage(content=new_content))
+                # Keep system messages as HumanMessage for visibility
+                formatted_msgs.append(HumanMessage(content=content))
 
             elif isinstance(msg, HumanMessage):
-                new_content = f"{timestamp_str}🧑 Aluno: {content}"
-                formatted_msgs.append(HumanMessage(content=new_content))
+                # Pass user messages as-is
+                formatted_msgs.append(HumanMessage(content=content))
 
             elif isinstance(msg, AIMessage):
-                trainer_type = msg.additional_kwargs.get(
-                    "trainer_type", current_trainer_type
-                )
-                if trainer_type == current_trainer_type:
-                    new_content = f"{timestamp_str}🏋️ VOCÊ (Treinador): {content}"
-                else:
-                    new_content = f"{timestamp_str}🏋️ EX-TREINADOR [{trainer_type}]: {content}"
-                formatted_msgs.append(AIMessage(content=new_content))
+                # Pass AI messages as-is, preserving trainer_type in metadata if needed
+                formatted_msgs.append(AIMessage(content=content, additional_kwargs=msg.additional_kwargs))
             else:
-                # Fallback
-                new_content = f"{timestamp_str}> {content}"
-                formatted_msgs.append(HumanMessage(content=new_content))
+                # Fallback for unknown message types
+                formatted_msgs.append(HumanMessage(content=content))
 
         return formatted_msgs
 
