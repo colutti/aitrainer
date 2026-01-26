@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 min-h-[90px] flex flex-col justify-center">
+    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 h-24 flex flex-col justify-center">
       <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-3">{{ title || 'Frequência Semanal' }}</p>
       <div class="flex justify-between items-center px-1">
         <div *ngFor="let dayActive of weeklyFrequency; let i = index" class="flex flex-col items-center gap-1.5">

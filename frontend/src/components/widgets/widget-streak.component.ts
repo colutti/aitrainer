@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg flex items-center justify-between hover:border-primary/50 transition-colors duration-300 min-h-[90px]">
+    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg flex items-center justify-between hover:border-primary/50 transition-colors duration-300 h-24">
       <div>
         <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-1">{{ title || 'Sequência Atual' }}</p>
         <div class="flex items-baseline">

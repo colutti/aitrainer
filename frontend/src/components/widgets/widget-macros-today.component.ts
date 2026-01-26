@@ -8,7 +8,7 @@ import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
   standalone: true,
   imports: [CommonModule, BaseChartDirective],
   template: `
-    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg flex flex-col items-center justify-center relative hover:border-primary/50 transition-all duration-300 min-h-[120px]">
+    <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg flex flex-col items-center justify-center relative hover:border-primary/50 transition-all duration-300 h-40">
       <div *ngIf="calories > 0; else noLog" class="flex flex-col items-center justify-center w-full">
         <div class="h-24 w-24 relative">
           <canvas baseChart [data]="chartData" [options]="chartOptions" [type]="chartType"></canvas>

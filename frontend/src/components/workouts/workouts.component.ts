@@ -4,11 +4,11 @@ import { WorkoutService } from '../../services/workout.service';
 import { WorkoutDrawerComponent } from './workout-drawer/workout-drawer.component';
 import { Workout } from '../../models/workout.model';
 import { WorkoutStats } from '../../models/stats.model';
-import { BaseChartDirective } from 'ng2-charts';
-import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import { WidgetStreakComponent } from '../widgets/widget-streak.component';
 import { WidgetFrequencyComponent } from '../widgets/widget-frequency.component';
 import { WidgetRecentPrsComponent } from '../widgets/widget-recent-prs.component';
+import { WidgetVolumeTrendComponent } from '../widgets/workouts/widget-volume-trend.component';
+import { WidgetStrengthRadarComponent } from '../widgets/workouts/widget-strength-radar.component';
 
 @Component({
   selector: 'app-workouts',
@@ -16,7 +16,7 @@ import { WidgetRecentPrsComponent } from '../widgets/widget-recent-prs.component
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block h-full w-full' },
   standalone: true,
-  imports: [CommonModule, WorkoutDrawerComponent, BaseChartDirective, WidgetStreakComponent, WidgetFrequencyComponent, WidgetRecentPrsComponent]
+  imports: [CommonModule, WorkoutDrawerComponent, WidgetStreakComponent, WidgetFrequencyComponent, WidgetRecentPrsComponent, WidgetVolumeTrendComponent, WidgetStrengthRadarComponent]
 })
 export class WorkoutsComponent implements OnInit {
   private workoutService = inject(WorkoutService);
@@ -32,68 +32,6 @@ export class WorkoutsComponent implements OnInit {
   selectedType = this.workoutService.selectedType;
   deletingId = signal<string | null>(null);
   stats = signal<WorkoutStats | null>(null);
-
-  // Volume Chart Properties
-  public volumeChartType: ChartType = 'line';
-  public volumeChartData: ChartData<'line'> = {
-    labels: ['-7 sem', '-6 sem', '-5 sem', '-4 sem', '-3 sem', '-2 sem', '-1 sem', 'Atual'],
-    datasets: [{ 
-      data: [], 
-      label: 'Volume (kg)', 
-      borderColor: '#10b981',
-      backgroundColor: 'rgba(16, 185, 129, 0.1)',
-      fill: true,
-      tension: 0.4,
-      pointRadius: 4,
-      pointBackgroundColor: '#10b981'
-    }]
-  };
-
-  public volumeChartOptions: ChartConfiguration['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-      y: { 
-        grid: { color: 'rgba(255, 255, 255, 0.05)' }, 
-        ticks: { 
-          color: '#94a3b8', 
-          font: { size: 10 },
-          callback: (value) => Math.round(Number(value))
-        } 
-      },
-      x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } }
-    }
-  };
-
-  // Radar Chart Properties
-  public radarChartType: ChartType = 'radar';
-  public radarChartData: ChartData<'radar'> = {
-    labels: ['Push', 'Pull', 'Legs'],
-    datasets: [{ 
-      data: [], 
-      label: 'Strength peak ratio',
-      borderColor: '#3b82f6',
-      backgroundColor: 'rgba(59, 130, 246, 0.2)',
-      pointBackgroundColor: '#3b82f6'
-    }]
-  };
-
-  public radarChartOptions: ChartConfiguration['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-      r: {
-        angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
-        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-        pointLabels: { color: '#94a3b8', font: { size: 11, weight: 'bold' } },
-        ticks: { display: false },
-        suggestedMin: 0,
-        suggestedMax: 1
-      }
-    }
-  };
 
   // Pull to refresh state
   private startY = 0;
@@ -145,22 +83,6 @@ export class WorkoutsComponent implements OnInit {
   async loadStats() {
     const s = await this.workoutService.getStats();
     this.stats.set(s);
-    
-    if (s.volume_trend) {
-       this.volumeChartData = {
-         ...this.volumeChartData,
-         datasets: [{ ...this.volumeChartData.datasets[0], data: s.volume_trend }]
-       };
-    }
-    
-    if (s.strength_radar) {
-       const labels = Object.keys(s.strength_radar);
-       const data = Object.values(s.strength_radar);
-       this.radarChartData = {
-         labels,
-         datasets: [{ ...this.radarChartData.datasets[0], data }]
-       };
-    }
   }
 
   async ngOnInit(): Promise<void> {

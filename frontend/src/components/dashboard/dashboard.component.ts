@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { MarkdownModule } from 'ngx-markdown';
 import { TrainerProfileService } from '../../services/trainer-profile.service';
 import { TrainerCard } from '../../models/trainer-profile.model';
-import { BaseChartDirective } from 'ng2-charts';
 import { StatsService } from '../../services/stats.service';
 import { NutritionService } from '../../services/nutrition.service';
 import { MetabolismService } from '../../services/metabolism.service';
@@ -24,14 +23,19 @@ import { WidgetLineChartComponent } from '../widgets/widget-line-chart.component
 import { WidgetCaloriesWeightComparisonComponent } from '../widgets/widget-calories-weight-comparison.component';
 import { WidgetMacroTargetsComponent } from '../widgets/widget-macro-targets.component';
 import { WidgetTdeeSummaryComponent } from '../widgets/widget-tdee-summary.component';
+import { SectionHeaderComponent } from '../widgets/shared/section-header.component';
+import { WidgetLastActivityComponent } from '../widgets/workouts/widget-last-activity.component';
+import { WidgetWeeklyDistributionComponent } from '../widgets/workouts/widget-weekly-distribution.component';
+import { WidgetCalorieVolatilityComponent } from '../widgets/nutrition/widget-calorie-volatility.component';
+import { WidgetWeightHistogramComponent } from '../widgets/body/widget-weight-histogram.component';
+import { WidgetDataQualityComponent } from '../widgets/statistics/widget-data-quality.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [
-    CommonModule, 
+    CommonModule,
     MarkdownModule,
-    BaseChartDirective,
     WidgetStreakComponent,
     WidgetFrequencyComponent,
     WidgetRecentPrsComponent,
@@ -42,7 +46,13 @@ import { WidgetTdeeSummaryComponent } from '../widgets/widget-tdee-summary.compo
     WidgetLineChartComponent,
     WidgetCaloriesWeightComparisonComponent,
     WidgetMacroTargetsComponent,
-    WidgetTdeeSummaryComponent
+    WidgetTdeeSummaryComponent,
+    SectionHeaderComponent,
+    WidgetLastActivityComponent,
+    WidgetWeeklyDistributionComponent,
+    WidgetCalorieVolatilityComponent,
+    WidgetWeightHistogramComponent,
+    WidgetDataQualityComponent
   ],
   templateUrl: './dashboard.component.html',
 })
@@ -533,6 +543,11 @@ export class DashboardComponent implements OnInit {
     } finally {
       this.isMetabolismLoading.set(false);
     }
+  }
+
+  regenerateInsight() {
+    // Force=true invalida o cache e regenera o insight
+    this.metabolismService.generateInsight(3, true);
   }
 
   getSparklinePath(): string {
