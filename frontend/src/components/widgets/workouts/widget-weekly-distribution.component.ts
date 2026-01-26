@@ -52,7 +52,7 @@ export class WidgetWeeklyDistributionComponent implements OnChanges {
       y: {
         ticks: {
           color: '#a1a1aa',
-          font: { family: 'Inter' },
+          font: { family: 'Inter', size: 9 },
           callback: (value) => Math.round(Number(value))
         },
         grid: { color: '#27272a' },

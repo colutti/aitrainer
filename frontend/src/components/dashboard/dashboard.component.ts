@@ -26,6 +26,7 @@ import { WidgetTdeeSummaryComponent } from '../widgets/widget-tdee-summary.compo
 import { SectionHeaderComponent } from '../widgets/shared/section-header.component';
 import { WidgetLastActivityComponent } from '../widgets/workouts/widget-last-activity.component';
 import { WidgetWeeklyDistributionComponent } from '../widgets/workouts/widget-weekly-distribution.component';
+import { WidgetStrengthRadarComponent } from '../widgets/workouts/widget-strength-radar.component';
 import { WidgetCalorieVolatilityComponent } from '../widgets/nutrition/widget-calorie-volatility.component';
 import { WidgetWeightHistogramComponent } from '../widgets/body/widget-weight-histogram.component';
 import { WidgetDataQualityComponent } from '../widgets/statistics/widget-data-quality.component';
@@ -50,6 +51,7 @@ import { WidgetDataQualityComponent } from '../widgets/statistics/widget-data-qu
     SectionHeaderComponent,
     WidgetLastActivityComponent,
     WidgetWeeklyDistributionComponent,
+    WidgetStrengthRadarComponent,
     WidgetCalorieVolatilityComponent,
     WidgetWeightHistogramComponent,
     WidgetDataQualityComponent

@@ -109,9 +109,9 @@ export class WidgetCaloriesWeightComparisonComponent implements OnChanges {
     const weightDates = this.weightTrend.map(d => d.date.split('T')[0]);
     const calorieDates = this.calorieHistory.map(d => d.date.split('T')[0]);
     const allDates = Array.from(new Set([...weightDates, ...calorieDates])).sort();
-    
-    // Limit to last 14 days if too many
-    const displayDates = allDates.slice(-14);
+
+    // Limit to last 30 days if too many
+    const displayDates = allDates.slice(-30);
 
     const weights = displayDates.map(date => {
         const entry = this.weightTrend.find(d => d.date.startsWith(date));
