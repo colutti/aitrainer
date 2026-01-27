@@ -220,7 +220,13 @@
                 [carbs]="n.today?.carbs_grams || 0" 
                 [fat]="n.today?.fat_grams || 0">
             </app-widget-macros-today>
-        </div>
+
+            <app-widget-average-calories 
+                class="lg:col-span-2" 
+                [avg7Days]="n.avg_daily_calories" 
+                [avg14Days]="n.avg_daily_calories_14_days">
+            </app-widget-average-calories>
+</div>
     </ng-container>
 
     <!-- ==================== TREINOS SECTION ==================== -->

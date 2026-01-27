@@ -39,6 +39,10 @@ class NutritionStats(BaseModel):
         ..., description="Média de calorias diárias nos últimos 7 dias"
     )
 
+    avg_daily_calories_14_days: float = Field(
+        0.0, description="Média de calorias diárias nos últimos 14 dias"
+    )
+
     avg_protein: float = Field(
         ..., description="Média de proteína diária (g) nos últimos 7 dias"
     )

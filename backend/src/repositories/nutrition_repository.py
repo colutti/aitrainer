@@ -186,6 +186,21 @@ class NutritionRepository(BaseRepository):
             else 0
         )
 
+        recent_logs_14 = [
+            log_item
+            for log_item in logs
+            if log_item["date"]
+            >= (now - timedelta(days=14)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+        ]
+        count_14 = len(recent_logs_14)
+        avg_cal_14 = (
+            sum(log_item["calories"] for log_item in recent_logs_14) / count_14
+            if count_14 > 0
+            else 0
+        )
+
         total_logs = self.collection.count_documents({"user_email": user_email})
 
         tdee_val = None
@@ -213,6 +228,7 @@ class NutritionRepository(BaseRepository):
             last_7_days=last_14_days_stats[-7:],
             last_14_days=last_14_days_stats,
             avg_daily_calories=round(avg_cal, 1),
+            avg_daily_calories_14_days=round(avg_cal_14, 1),
             avg_protein=round(avg_prot, 1),
             total_logs=total_logs,
             tdee=tdee_val,

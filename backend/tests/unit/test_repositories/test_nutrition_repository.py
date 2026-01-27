@@ -182,6 +182,9 @@ class TestNutritionRepository(unittest.TestCase):
         self.assertIsNotNone(stats.today)
         self.assertEqual(stats.today.calories, 2500)
         self.assertEqual(stats.total_logs, 2)
-        # Check average (2500 + 2000) / 2 = 2250
+        # Check averages:
+        # 7 days: (2500 + 2000) / 2 = 2250
+        # 14 days: (2500 + 2000) / 2 = 2250 (since we only have 2 logs in the range)
         self.assertEqual(stats.avg_daily_calories, 2250)
+        self.assertEqual(stats.avg_daily_calories_14_days, 2250)
 

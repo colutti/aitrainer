@@ -30,6 +30,7 @@ import { WidgetStrengthRadarComponent } from '../widgets/workouts/widget-strengt
 import { WidgetCalorieVolatilityComponent } from '../widgets/nutrition/widget-calorie-volatility.component';
 import { WidgetWeightHistogramComponent } from '../widgets/body/widget-weight-histogram.component';
 import { WidgetDataQualityComponent } from '../widgets/statistics/widget-data-quality.component';
+import { WidgetAverageCaloriesComponent } from '../widgets/nutrition/widget-average-calories.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -54,7 +55,8 @@ import { WidgetDataQualityComponent } from '../widgets/statistics/widget-data-qu
     WidgetStrengthRadarComponent,
     WidgetCalorieVolatilityComponent,
     WidgetWeightHistogramComponent,
-    WidgetDataQualityComponent
+    WidgetDataQualityComponent,
+    WidgetAverageCaloriesComponent
   ],
   templateUrl: './dashboard.component.html',
 })

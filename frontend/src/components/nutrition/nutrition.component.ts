@@ -10,11 +10,12 @@ import { WidgetCaloriesWeightComparisonComponent } from '../widgets/widget-calor
 import { WidgetMacroTargetsComponent } from '../widgets/widget-macro-targets.component';
 import { WidgetCalorieHistoryComponent } from '../widgets/nutrition/widget-calorie-history.component';
 import { WidgetCalorieVolatilityComponent } from '../widgets/nutrition/widget-calorie-volatility.component';
+import { WidgetAverageCaloriesComponent } from '../widgets/nutrition/widget-average-calories.component';
 
 @Component({
   selector: 'app-nutrition',
   standalone: true,
-  imports: [CommonModule, SkeletonComponent, WidgetMacrosTodayComponent, WidgetAdherenceComponent, WidgetCaloriesWeightComparisonComponent, WidgetMacroTargetsComponent, WidgetCalorieHistoryComponent, WidgetCalorieVolatilityComponent],
+  imports: [CommonModule, SkeletonComponent, WidgetMacrosTodayComponent, WidgetAdherenceComponent, WidgetCaloriesWeightComparisonComponent, WidgetMacroTargetsComponent, WidgetCalorieHistoryComponent, WidgetCalorieVolatilityComponent, WidgetAverageCaloriesComponent],
   templateUrl: './nutrition.component.html',
 })
 export class NutritionComponent implements OnInit {

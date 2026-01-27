@@ -61,6 +61,12 @@
 
         <app-widget-adherence class="lg:col-span-2" title="Meta Calórica Atingida" [weeklyAdherence]="s.weekly_adherence"></app-widget-adherence>
 
+        <app-widget-average-calories 
+            class="lg:col-span-2" 
+            [avg7Days]="s.avg_daily_calories" 
+            [avg14Days]="s.avg_daily_calories_14_days">
+        </app-widget-average-calories>
+
         <app-widget-calorie-volatility class="lg:col-span-2" [variance]="120"></app-widget-calorie-volatility>
 
         <!-- Row 3: Today's Snapshot -->

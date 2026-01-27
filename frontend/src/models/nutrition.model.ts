@@ -31,6 +31,7 @@ export interface NutritionStats {
   weekly_adherence: boolean[];
   last_7_days: DayMacros[];
   avg_daily_calories: number;
+  avg_daily_calories_14_days: number;
   avg_protein: number;
   total_logs: number;
   tdee?: number;
