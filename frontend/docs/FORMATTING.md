@@ -21,7 +21,7 @@ Todas as datas devem exibir no formato **dd/MM/yyyy** ou variações conforme o 
 
 ### Input de Data
 
-Use o componente reutilizável `<app-date-input>`:
+Use o componente reutilizável `<app-date-input>` (baseado em HTML5 nativo):
 
 ```html
 <app-date-input
@@ -37,8 +37,8 @@ Use o componente reutilizável `<app-date-input>`:
 - `placeholder` (string) - Placeholder padrão é "dd/mm/aaaa"
 - `required` (boolean) - Marca campo como obrigatório
 - `disabled` (boolean) - Desabilita o input
-- `minDate` (NgbDateStruct) - Data mínima permitida
-- `maxDate` (NgbDateStruct) - Data máxima permitida
+- `min` (string) - Data mínima permitida (formato ISO: YYYY-MM-DD)
+- `max` (string) - Data máxima permitida (formato ISO: YYYY-MM-DD)
 - `[(ngModel)]` - Vinculação bidirecional (formato ISO YYYY-MM-DD)
 
 **Exemplo completo:**
@@ -47,11 +47,13 @@ Use o componente reutilizável `<app-date-input>`:
   label="Data do Treino"
   [ngModel]="workoutDate()"
   (ngModelChange)="workoutDate.set($event)"
-  [minDate]="{year: 2024, month: 1, day: 1}"
-  [maxDate]="{year: 2026, month: 12, day: 31}"
+  [min]="'2024-01-01'"
+  [max]="'2026-12-31'"
   [required]="true">
 </app-date-input>
 ```
+
+**Nota:** Usa HTML5 `<input type="date">` nativo - sem dependências externas!
 
 ### Display de Data (Pipes)
 

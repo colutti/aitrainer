@@ -1,11 +1,13 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { NgbModule, NgbDateStruct } from '@ng-bootstrap/ng-bootstrap';
 
 /**
- * Reusable date input component with ng-bootstrap datepicker
- * Supports two-way binding with [(ngModel)]
+ * Simple date input wrapper around HTML5 native input type="date"
+ * - No external dependencies (ng-bootstrap removed for stability)
+ * - Works with ISO format (YYYY-MM-DD) for backend compatibility
+ * - Browser handles locale formatting automatically
+ * - Much lighter and more reliable
  *
  * Usage:
  * <app-date-input
@@ -18,7 +20,7 @@ import { NgbModule, NgbDateStruct } from '@ng-bootstrap/ng-bootstrap';
 @Component({
   selector: 'app-date-input',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgbModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './date-input.component.html',
   styleUrls: ['./date-input.component.css']
 })
@@ -27,35 +29,18 @@ export class DateInputComponent {
   @Input() placeholder: string = 'dd/mm/aaaa';
   @Input() disabled: boolean = false;
   @Input() required: boolean = false;
-  @Input() minDate?: NgbDateStruct;
-  @Input() maxDate?: NgbDateStruct;
+  @Input() min?: string; // ISO format YYYY-MM-DD
+  @Input() max?: string; // ISO format YYYY-MM-DD
 
   // ngModel support
   @Input() ngModel: string = '';
   @Output() ngModelChange = new EventEmitter<string>();
 
   /**
-   * Convert ISO date string (YYYY-MM-DD) to NgbDateStruct
+   * Handle date value changes
    */
-  get dateStruct(): NgbDateStruct | null {
-    if (!this.ngModel) return null;
-
-    try {
-      const [year, month, day] = this.ngModel.split('-').map(Number);
-      return { year, month, day };
-    } catch {
-      return null;
-    }
-  }
-
-  /**
-   * Handle date selection from datepicker
-   */
-  onDateChange(date: NgbDateStruct | null): void {
-    if (date) {
-      const isoDate = `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`;
-      this.ngModel = isoDate;
-      this.ngModelChange.emit(isoDate);
-    }
+  onValueChange(value: string): void {
+    this.ngModel = value;
+    this.ngModelChange.emit(value);
   }
 }

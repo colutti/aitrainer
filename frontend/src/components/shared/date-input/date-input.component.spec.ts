@@ -6,16 +6,24 @@ describe('DateInputComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should convert ISO date string to NgbDateStruct', () => {
+  it('should emit value on change', () => {
     const component = new DateInputComponent();
-    component.ngModel = '2026-01-27';
-    const dateStruct = component.dateStruct;
-    expect(dateStruct).toEqual({ year: 2026, month: 1, day: 27 });
+    spyOn(component.ngModelChange, 'emit');
+    component.onValueChange('2026-01-27');
+    expect(component.ngModelChange.emit).toHaveBeenCalledWith('2026-01-27');
   });
 
-  it('should handle null date', () => {
+  it('should handle empty date', () => {
     const component = new DateInputComponent();
     component.ngModel = '';
-    expect(component.dateStruct).toBeNull();
+    expect(component.ngModel).toBe('');
+  });
+
+  it('should have default properties', () => {
+    const component = new DateInputComponent();
+    expect(component.label).toBe('');
+    expect(component.placeholder).toBe('dd/mm/aaaa');
+    expect(component.disabled).toBe(false);
+    expect(component.required).toBe(false);
   });
 });

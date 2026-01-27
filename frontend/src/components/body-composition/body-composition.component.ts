@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { WeightService } from '../../services/weight.service';
@@ -22,6 +22,7 @@ import { WidgetLineChartComponent } from '../widgets/widget-line-chart.component
 export class BodyCompositionComponent implements OnInit {
   weightService = inject(WeightService);
   metabolismService = inject(MetabolismService);
+  cdr = inject(ChangeDetectorRef);
   
   stats = signal<BodyCompositionStats | null>(null);
   metabolismStats = signal<MetabolismResponse | null>(null);
@@ -80,18 +81,22 @@ export class BodyCompositionComponent implements OnInit {
           this.weightService.getHistory(),
           this.metabolismService.getSummary(30)
         ]);
-        
+
         this.stats.set(stats);
         this.history.set(history);
         this.metabolismStats.set(metabSummary);
-        
+
         if (stats) {
            this.setupCharts(stats);
         }
+
+        // Force change detection to ensure data appears immediately
+        this.cdr.markForCheck();
     } catch (e) {
         console.error(e);
     } finally {
         this.isLoading.set(false);
+        this.cdr.markForCheck();
     }
   }
 
