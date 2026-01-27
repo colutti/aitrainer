@@ -11,6 +11,7 @@
     ngbDatepicker
     #d="ngbDatepicker"
     [ngModel]="dateStruct"
+    [ngModelOptions]="{standalone: true}"
     (ngModelChange)="onDateChange($event)"
     (click)="d.toggle()"
     [minDate]="minDate"

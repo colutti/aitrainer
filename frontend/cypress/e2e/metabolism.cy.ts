@@ -22,7 +22,9 @@ describe('Metabolism Dashboard', () => {
         // 100% Mocked Login
         cy.mockLogin({
             intercepts: {
-                '**/metabolism/summary*': { statusCode: 200, body: metabolismSummary, alias: 'getMetabolism' },
+                // Dashboard chama com weeks=100, Metabolism chama com weeks=3
+                '**/metabolism/summary?weeks=100': { statusCode: 200, body: metabolismSummary, alias: 'getDashboardMetabolism' },
+                '**/metabolism/summary?weeks=3': { statusCode: 200, body: metabolismSummary, alias: 'getMetabolism' },
                 '**/metabolism/insight*': {
                     statusCode: 200,
                     body: "Analysis of your metabolism... Insight generated.",

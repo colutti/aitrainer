@@ -16,6 +16,7 @@
       [disabled]="disabled"
       [attr.data-cy]="dataCy"
       [ngModel]="ngModel"
+      [ngModelOptions]="{standalone: true}"
       (ngModelChange)="onValueChange($event)"
     />
     <span *ngIf="unit" class="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary text-sm pointer-events-none">
