@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, AfterViewInit, effect, signal } from "@angular/core";
+import { Component, inject, OnInit, AfterViewInit, ChangeDetectorRef, ChangeDetectionStrategy, effect, signal } from "@angular/core";
 import { CommonModule, DatePipe } from "@angular/common";
 import { MetabolismService } from "../../services/metabolism.service";
 import { UserProfileService } from "../../services/user-profile.service";
@@ -16,13 +16,15 @@ import { WidgetTdeeSummaryComponent } from '../widgets/widget-tdee-summary.compo
   standalone: true,
   imports: [CommonModule, AppDateFormatPipe, AppNumberFormatPipe, WidgetMetabolicGaugeComponent, WidgetLineChartComponent, WidgetCaloriesWeightComparisonComponent, WidgetTdeeSummaryComponent],
   templateUrl: './metabolism.component.html',
-  providers: [DatePipe]
+  providers: [DatePipe],
+  changeDetection: ChangeDetectionStrategy.Default
 })
 export class MetabolismComponent implements OnInit, AfterViewInit {
   metabolismService = inject(MetabolismService);
   userProfileService = inject(UserProfileService);
   nutritionService = inject(NutritionService);
   datePipe = inject(DatePipe);
+  cdr = inject(ChangeDetectorRef);
   
   stats = this.metabolismService.stats;
   isLoading = this.metabolismService.isLoading;
@@ -68,19 +70,22 @@ export class MetabolismComponent implements OnInit, AfterViewInit {
       // Efeito para atualizar gráfico quando stats mudam
       effect(() => {
           const s = this.stats();
-          if (s) {
-             if (s.weight_trend) {
-                this.updateWeightChart(s.weight_trend);
-             }
+          if (s && s.weight_trend) {
+             this.updateWeightChart(s.weight_trend);
+             // Força change detection para widgets filhos com OnPush
+             this.cdr.markForCheck();
           }
       });
   }
 
   ngOnInit() {
     // Carrega dados de metabolismo (async)
-    this.metabolismService.fetchSummary(3).catch(err =>
-      console.error('Erro ao carregar metabolismo:', err)
-    );
+    this.metabolismService.fetchSummary(3)
+      .then(() => this.cdr.markForCheck())
+      .catch(err => {
+        console.error('Erro ao carregar metabolismo:', err);
+        this.cdr.markForCheck();
+      });
 
     // Carrega perfil do usuário
     this.userProfileService.getProfile();
@@ -90,12 +95,13 @@ export class MetabolismComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    // Force change detection para garantir que dados apareçam após renderização inicial
-    // Se os dados ainda não foram carregados, recarrega
+    // Se os dados ainda não foram carregados, recarrega com delay
     if (!this.stats()) {
-      this.metabolismService.fetchSummary(3).catch(err =>
-        console.error('Erro ao recarregar metabolismo:', err)
-      );
+      setTimeout(() => {
+        this.metabolismService.fetchSummary(3)
+          .then(() => this.cdr.markForCheck())
+          .catch(err => console.error('Erro ao recarregar:', err));
+      }, 500);
     }
   }
   
