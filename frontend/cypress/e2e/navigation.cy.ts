@@ -83,4 +83,35 @@ describe('Navigation Flow', () => {
         cy.contains('button', 'Home')
             .should('not.have.class', 'bg-primary');
     });
+
+    it('should allow scrolling to logout button when user is admin', () => {
+        cy.viewport(1280, 500); // Very small height to force overflow
+    
+        // We need to re-login as admin for this test logic, or mock the specific state
+        // Since beforeEach logs in with default mock, we override it here
+        cy.mockLogin({
+          intercepts: {
+            'GET **/user/me': {
+                 statusCode: 200,
+                 body: { email: 'admin@test.com', role: 'admin' },
+                 alias: 'userInfo'
+            }
+          }
+        });
+    
+        cy.get('app-sidebar').should('be.visible');
+        
+        // Check that admin menu items are present
+        cy.contains('SPAN', 'Dashboard').should('exist'); // Admin dashboard text inside span
+        
+        // Sair button should exist
+        cy.contains('button', 'Sair').should('exist');
+    
+        // Verify nav has overflow property and can scroll
+        cy.get('nav')
+          .should('have.css', 'overflow-y', 'auto')
+          .scrollTo('bottom');
+          
+        cy.contains('button', 'Sair').should('be.visible');
+    });
 });
