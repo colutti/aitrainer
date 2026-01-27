@@ -22,7 +22,7 @@ import { NumericInputDirective } from '../../../directives/numeric-input.directi
 @Component({
   selector: 'app-number-input',
   standalone: true,
-  imports: [CommonModule, FormsModule, NumericInputDirective],
+  imports: [CommonModule, FormsModule, NumericInputDirective], // NumericInputDirective é usado no template via appNumericInput
   templateUrl: './number-input.component.html',
   styleUrls: ['./number-input.component.css']
 })

@@ -149,22 +149,22 @@
            }
         }
         @case ('body-composition') {
-           @defer {
-             <app-body-composition class="h-full block"></app-body-composition>
-           } @loading (minimum 500ms) {
-             <div class="h-full p-6 space-y-6">
-                <app-skeleton width="100%" height="300px" [borderRadius]="'2rem'"></app-skeleton>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-                    <app-skeleton height="200px"></app-skeleton>
-                    <app-skeleton height="200px"></app-skeleton>
-                    <app-skeleton height="200px"></app-skeleton>
-                </div>
-                <div class="space-y-4">
-                  <app-skeleton width="100%" height="60px"></app-skeleton>
-                  <app-skeleton width="100%" height="60px"></app-skeleton>
-                </div>
-             </div>
-           }
+          @defer {
+            <app-body-composition class="h-full block"></app-body-composition>
+          } @loading (minimum 500ms) {
+            <div class="h-full p-6 space-y-6">
+               <app-skeleton width="100%" height="300px" [borderRadius]="'2rem'"></app-skeleton>
+               <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+                   <app-skeleton height="200px"></app-skeleton>
+                   <app-skeleton height="200px"></app-skeleton>
+                   <app-skeleton height="200px"></app-skeleton>
+               </div>
+               <div class="space-y-4">
+                 <app-skeleton width="100%" height="60px"></app-skeleton>
+                 <app-skeleton width="100%" height="60px"></app-skeleton>
+               </div>
+            </div>
+          }
         }
         @case ('integrations') {
           @defer {

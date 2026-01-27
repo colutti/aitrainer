@@ -109,37 +109,37 @@
             <!-- Weight -->
             <div class="col-span-1">
                 <label class="block text-xs text-text-secondary mb-1">Peso (kg)*</label>
-                <input type="number" data-cy="weight-input" appNumericInput [ngModel]="entryWeight()" (ngModelChange)="entryWeight.set($event)" step="0.1" placeholder="0.0" class="w-full bg-dark-bg border border-secondary rounded px-3 py-2 text-white focus:outline-none focus:border-primary">
+                <input type="number" name="weight" data-cy="weight-input" appNumericInput [ngModel]="entryWeight()" (ngModelChange)="entryWeight.set($event)" step="0.1" placeholder="0.0" class="w-full bg-dark-bg border border-secondary rounded px-3 py-2 text-white focus:outline-none focus:border-primary">
             </div>
 
             <!-- Fat -->
             <div class="col-span-1">
                 <label class="block text-xs text-text-secondary mb-1">Gordura (%)</label>
-                <input type="number" data-cy="fat-input" appNumericInput [ngModel]="entryFat()" (ngModelChange)="entryFat.set($event)" step="0.1" placeholder="0.0" class="w-full bg-dark-bg border border-secondary rounded px-3 py-2 text-white focus:outline-none focus:border-primary">
+                <input type="number" name="fat" data-cy="fat-input" appNumericInput [ngModel]="entryFat()" (ngModelChange)="entryFat.set($event)" step="0.1" placeholder="0.0" class="w-full bg-dark-bg border border-secondary rounded px-3 py-2 text-white focus:outline-none focus:border-primary">
             </div>
 
             <!-- Muscle -->
             <div class="col-span-1">
                 <label class="block text-xs text-text-secondary mb-1">Músculo (%)</label>
-                <input type="number" appNumericInput [ngModel]="entryMuscle()" (ngModelChange)="entryMuscle.set($event)" step="0.1" placeholder="0.0" class="w-full bg-dark-bg border border-secondary rounded px-3 py-2 text-white focus:outline-none focus:border-primary">
+                <input type="number" name="muscle" appNumericInput [ngModel]="entryMuscle()" (ngModelChange)="entryMuscle.set($event)" step="0.1" placeholder="0.0" class="w-full bg-dark-bg border border-secondary rounded px-3 py-2 text-white focus:outline-none focus:border-primary">
             </div>
 
             <!-- Water -->
             <div class="col-span-1">
                 <label class="block text-xs text-text-secondary mb-1">Água (%)</label>
-                <input type="number" appNumericInput [ngModel]="entryWater()" (ngModelChange)="entryWater.set($event)" step="0.1" placeholder="0.0" class="w-full bg-dark-bg border border-secondary rounded px-3 py-2 text-white focus:outline-none focus:border-primary">
+                <input type="number" name="water" appNumericInput [ngModel]="entryWater()" (ngModelChange)="entryWater.set($event)" step="0.1" placeholder="0.0" class="w-full bg-dark-bg border border-secondary rounded px-3 py-2 text-white focus:outline-none focus:border-primary">
             </div>
 
             <!-- Visceral -->
             <div class="col-span-1">
                 <label class="block text-xs text-text-secondary mb-1">Visceral</label>
-                <input type="number" appNumericInput [ngModel]="entryVisceral()" (ngModelChange)="entryVisceral.set($event)" step="1" placeholder="0" class="w-full bg-dark-bg border border-secondary rounded px-3 py-2 text-white focus:outline-none focus:border-primary">
+                <input type="number" name="visceral" appNumericInput [ngModel]="entryVisceral()" (ngModelChange)="entryVisceral.set($event)" step="1" placeholder="0" class="w-full bg-dark-bg border border-secondary rounded px-3 py-2 text-white focus:outline-none focus:border-primary">
             </div>
 
             <!-- BMR -->
             <div class="col-span-1">
                 <label class="block text-xs text-text-secondary mb-1">BMR (kcal)</label>
-                <input type="number" appNumericInput [ngModel]="entryBmr()" (ngModelChange)="entryBmr.set($event)" step="1" placeholder="0" class="w-full bg-dark-bg border border-secondary rounded px-3 py-2 text-white focus:outline-none focus:border-primary">
+                <input type="number" name="bmr" appNumericInput [ngModel]="entryBmr()" (ngModelChange)="entryBmr.set($event)" step="1" placeholder="0" class="w-full bg-dark-bg border border-secondary rounded px-3 py-2 text-white focus:outline-none focus:border-primary">
             </div>
         </div>
 

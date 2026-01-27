@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, inject, signal } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ChangeDetectorRef, inject, signal, effect, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { WeightService } from '../../services/weight.service';
@@ -19,10 +19,11 @@ import { WidgetLineChartComponent } from '../widgets/widget-line-chart.component
   imports: [CommonModule, FormsModule, NumericInputDirective, DateInputComponent, AppDateFormatPipe, AppNumberFormatPipe, WidgetBodyEvolutionComponent, WidgetLineChartComponent],
   templateUrl: './body-composition.component.html'
 })
-export class BodyCompositionComponent implements OnInit {
+export class BodyCompositionComponent implements OnInit, AfterViewInit {
   weightService = inject(WeightService);
   metabolismService = inject(MetabolismService);
   cdr = inject(ChangeDetectorRef);
+  ngZone = inject(NgZone);
   
   stats = signal<BodyCompositionStats | null>(null);
   metabolismStats = signal<MetabolismResponse | null>(null);
@@ -69,8 +70,25 @@ export class BodyCompositionComponent implements OnInit {
 
   public muscleChartOptions = this.fatChartOptions;
 
+  constructor() {
+    // Efeito para atualizar gráficos quando stats mudam
+    effect(() => {
+      const s = this.stats();
+      if (s) {
+        this.setupCharts(s);
+        // Força change detection para widgets filhos com OnPush
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
   async ngOnInit() {
     await this.loadData();
+  }
+
+  ngAfterViewInit() {
+    // Force change detection após view init
+    this.cdr.markForCheck();
   }
 
   async loadData() {
@@ -82,21 +100,24 @@ export class BodyCompositionComponent implements OnInit {
           this.metabolismService.getSummary(30)
         ]);
 
-        this.stats.set(stats);
-        this.history.set(history);
-        this.metabolismStats.set(metabSummary);
+        this.ngZone.run(() => {
+          this.stats.set(stats);
+          this.history.set(history);
+          this.metabolismStats.set(metabSummary);
 
-        if (stats) {
-           this.setupCharts(stats);
-        }
+          this.isLoading.set(false);
+          
+          // Force immediate update and then another check on next tick
+          this.cdr.detectChanges();
+          setTimeout(() => this.cdr.detectChanges(), 0);
+        });
 
-        // Force change detection to ensure data appears immediately
-        this.cdr.markForCheck();
     } catch (e) {
         console.error(e);
-    } finally {
-        this.isLoading.set(false);
-        this.cdr.markForCheck();
+        this.ngZone.run(() => {
+             this.isLoading.set(false);
+             this.cdr.detectChanges();
+        });
     }
   }
 
@@ -108,6 +129,8 @@ export class BodyCompositionComponent implements OnInit {
     this.entryWater.set(log.body_water_pct || null);
     this.entryVisceral.set(log.visceral_fat || null);
     this.entryBmr.set(log.bmr || null);
+    
+    this.cdr.detectChanges();
     
     // Scroll to top to see form
     window.scrollTo({ top: 0, behavior: 'smooth' });
