@@ -4,6 +4,13 @@ import { environment } from '../environment';
 import { firstValueFrom } from 'rxjs';
 
 
+export interface UserInfo {
+  email: string;
+  role: 'user' | 'admin';
+}
+
+export const AUTH_TOKEN_KEY = 'jwt_token';
+
 /**
  * Service responsible for user authentication.
  * Manages JWT tokens storage and login state using Angular signals.
@@ -15,14 +22,50 @@ export class AuthService {
   /** Signal indicating whether the user is currently authenticated */
   isAuthenticated = signal<boolean>(false);
 
-  /** Local storage key for storing the JWT token */
-  private tokenKey = 'jwt_token';
+  /** Signal indicating whether the user is an admin */
+  isAdmin = signal<boolean>(false);
+
+  /** Signal containing user information */
+  userInfo = signal<UserInfo | null>(null);
+
+  /** Signal indicating whether user info is being loaded */
+  isLoadingUserInfo = signal<boolean>(false);
+
+  /** Signal indicating whether authentication is being checked on app initialization */
+  isCheckingAuth = signal<boolean>(false);
 
   constructor(private http: HttpClient) {
     // Check for a stored JWT token to maintain login state across page refreshes
-    const token = localStorage.getItem(this.tokenKey);
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
     if (token) {
+      // Don't set isAuthenticated immediately - wait for validation
+      this.isCheckingAuth.set(true);
+      // Validate token by loading user info
+      this.loadUserInfo().finally(() => {
+        this.isCheckingAuth.set(false);
+      });
+    }
+  }
+
+  async loadUserInfo(): Promise<void> {
+    this.isLoadingUserInfo.set(true);
+    try {
+      const info = await firstValueFrom(
+        this.http.get<UserInfo>(`${environment.apiUrl}/user/me`)
+      );
+      // Token is valid - set authenticated state
       this.isAuthenticated.set(true);
+      this.userInfo.set(info);
+      this.isAdmin.set(info.role === 'admin');
+    } catch (error) {
+      console.error('Failed to load user info:', error);
+      this.isAdmin.set(false);
+      this.userInfo.set(null);
+      // If user info fails to load, token might be invalid
+      this.isAuthenticated.set(false);
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+    } finally {
+      this.isLoadingUserInfo.set(false);
     }
   }
 
@@ -39,8 +82,9 @@ export class AuthService {
         this.http.post<{ token: string }>(`${environment.apiUrl}/user/login`, { email, password })
       );
       if (response && response.token) {
-        localStorage.setItem(this.tokenKey, response.token);
+        localStorage.setItem(AUTH_TOKEN_KEY, response.token);
         this.isAuthenticated.set(true);
+        await this.loadUserInfo();
         return true;
       }
       this.isAuthenticated.set(false);
@@ -63,8 +107,12 @@ export class AuthService {
     } catch (error) {
       console.error('Logout failed on backend:', error);
     } finally {
+      // Clear all authentication state
       this.isAuthenticated.set(false);
-      localStorage.removeItem(this.tokenKey);
+      this.isAdmin.set(false);
+      this.userInfo.set(null);
+      this.isLoadingUserInfo.set(false);
+      localStorage.removeItem(AUTH_TOKEN_KEY);
     }
   }
 
@@ -73,7 +121,7 @@ export class AuthService {
    * @returns The JWT token string or null if not authenticated
    */
   getToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
+    return localStorage.getItem(AUTH_TOKEN_KEY);
   }
 }
 

@@ -15,6 +15,10 @@ import { BodyCompositionComponent } from './components/body-composition/body-com
 import { SkeletonComponent } from './components/skeleton/skeleton.component';
 import { IntegrationsComponent } from './components/integrations/integrations.component';
 import { OnboardingComponent } from './components/onboarding/onboarding.component';
+import { AdminDashboardComponent } from './components/admin/admin-dashboard.component';
+import { AdminUsersComponent } from './components/admin/admin-users.component';
+import { AdminLogsComponent } from './components/admin/admin-logs.component';
+import { AdminPromptsComponent } from './components/admin/admin-prompts.component';
 import { AuthService } from './services/auth.service';
 import { NavigationService } from './services/navigation.service';
 
@@ -39,7 +43,11 @@ import { NavigationService } from './services/navigation.service';
     ToastComponent,
     SkeletonComponent,
     IntegrationsComponent,
-    OnboardingComponent
+    OnboardingComponent,
+    AdminDashboardComponent,
+    AdminUsersComponent,
+    AdminLogsComponent,
+    AdminPromptsComponent
   ],
 })
 
@@ -48,8 +56,9 @@ export class AppComponent {
   navigationService = inject(NavigationService);
 
   isAuthenticated = this.authService.isAuthenticated;
+  isCheckingAuth = this.authService.isCheckingAuth;
   currentView = this.navigationService.currentView;
-  
+
   isMobileMenuOpen = signal(false);
   isOnboarding = signal(false);
 

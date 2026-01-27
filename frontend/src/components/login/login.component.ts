@@ -27,9 +27,13 @@ export class LoginComponent {
       const success = await this.authService.login(this.email(), this.password());
       if (!success) {
         this.error.set('Credenciais inválidas. Tente novamente.');
+        // Clear password on failed login
+        this.password.set('');
       }
     } catch {
       this.error.set('Ocorreu um erro. Tente novamente mais tarde.');
+      // Clear password on error
+      this.password.set('');
     } finally {
       this.isLoading.set(false);
     }

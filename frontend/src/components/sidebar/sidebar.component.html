@@ -94,6 +94,38 @@
       </li>
     </ul>
 
+    <!-- Admin Section (only show when loading is complete) -->
+    @if (!authService.isLoadingUserInfo() && authService.isAdmin()) {
+      <div class="mt-6 pt-4 border-t border-zinc-700">
+        <div class="text-xs text-zinc-500 mb-2 px-3 font-semibold">ADMIN</div>
+        <ul class="space-y-2">
+          <li>
+            <button data-cy="nav-admin-dashboard" (click)="navigateTo('admin-dashboard')" [class]="currentView() === 'admin-dashboard' ? 'bg-yellow-600 text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
+              <span class="text-xl mr-3">🔧</span>
+              <span>Dashboard</span>
+            </button>
+          </li>
+          <li>
+            <button data-cy="nav-admin-users" (click)="navigateTo('admin-users')" [class]="currentView() === 'admin-users' ? 'bg-yellow-600 text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
+              <span class="text-xl mr-3">👥</span>
+              <span>Usuários</span>
+            </button>
+          </li>
+          <li>
+            <button data-cy="nav-admin-logs" (click)="navigateTo('admin-logs')" [class]="currentView() === 'admin-logs' ? 'bg-yellow-600 text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
+              <span class="text-xl mr-3">📋</span>
+              <span>Logs</span>
+            </button>
+          </li>
+          <li>
+            <button data-cy="nav-admin-prompts" (click)="navigateTo('admin-prompts')" [class]="currentView() === 'admin-prompts' ? 'bg-yellow-600 text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
+              <span class="text-xl mr-3">💬</span>
+              <span>Prompts</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+    }
 
     <hr class="border-secondary my-2">
     <button (click)="logout()" class="w-full text-left flex items-center p-3 rounded-lg hover:bg-secondary transition-colors text-text-secondary">

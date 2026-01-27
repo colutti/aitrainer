@@ -64,6 +64,7 @@ class UserProfile(UserProfileInput):
     password_hash: Optional[str] = Field(
         None, description="Hashed password for authentication"
     )
+    role: str = Field("user", description="User role: user or admin")
 
     # Hevy Integration
     hevy_api_key: Optional[str] = Field(None, description="Hevy API key, encrypted")

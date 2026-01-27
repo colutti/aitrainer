@@ -11,7 +11,7 @@ class HistoryCompactor:
         self.db = database
         self.llm_client = llm_client
 
-    async def compact_history(self, user_email: str, active_window_size: int = 40, log_callback=None):
+    async def compact_history(self, user_email: str, active_window_size: int = 40, log_callback=None):  # Default matches config.MAX_SHORT_TERM_MEMORY_MESSAGES
         """
         Identifies old messages outside the active window, summarizes them,
         and updates the user's long-term summary.

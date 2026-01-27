@@ -125,6 +125,7 @@ class AITrainerBrain:
         # to prevent LangChain from interpreting them as template variables.
 
         # 1. Long-Term Summary
+        # Now positioned in template BEFORE Mem0 memories for better hierarchy
         user_profile = input_data.get("user_profile_obj")
         if user_profile and user_profile.long_term_summary:
             input_data["long_term_summary_section"] = (
@@ -132,7 +133,6 @@ class AITrainerBrain:
             )
         else:
             input_data["long_term_summary_section"] = ""
-        system_content += "{long_term_summary_section}"
 
         # 2. Recent History & Memories (Already placeholders in settings.PROMPT_TEMPLATE)
         # We ensure they are treated as values, not template parts.
@@ -211,19 +211,24 @@ class AITrainerBrain:
         """
         Busca explícita por fatos críticos (saúde, lesões, objetivos) que devem ter precedência.
         Garante que 'alergia', 'lesão', etc. sejam recuperados mesmo se semântica falhar.
+        Expanded keywords include: health, preferences, equipment, schedule, experience.
         """
-        critical_keywords = "alergia lesão dor objetivo meta restrição médico cirurgia"
-        results = self._memory.search(user_id=user_id, query=critical_keywords, limit=5)
+        critical_keywords = (
+            "alergia lesão dor objetivo meta restrição médico cirurgia "
+            "preferência equipamento disponível horário treino experiência "
+            "limitação físico histórico peso altura"
+        )
+        results = self._memory.search(user_id=user_id, query=critical_keywords, limit=10)  # Increased from 5 to 10
         return self._normalize_mem0_results(results, source="critical")
 
     def _retrieve_semantic_memories(
-        self, user_id: str, query: str, limit: int = 5
+        self, user_id: str, query: str, limit: int = 10  # Increased from 5 to 10
     ) -> list[dict]:
         """Busca contexto semântico baseado no input atual."""
         results = self._memory.search(user_id=user_id, query=query, limit=limit)
         return self._normalize_mem0_results(results, source="semantic")
 
-    def _retrieve_recent_memories(self, user_id: str, limit: int = 5) -> list[dict]:
+    def _retrieve_recent_memories(self, user_id: str, limit: int = 10) -> list[dict]:  # Increased from 5 to 10
         """Busca memórias recém-adicionadas (contexto temporal de curto prazo expandido)."""
         try:
             # get_all returns newest first usually
@@ -531,6 +536,17 @@ class AITrainerBrain:
         # Retrieve Hybrid Memories
         hybrid_memories = self._retrieve_hybrid_memories(user_input, user_email)
 
+        # Log memory retrieval statistics
+        summary_length = len(profile.long_term_summary) if profile.long_term_summary else 0
+        logger.info(
+            "Memory retrieval for user %s: critical=%d, semantic=%d, recent=%d, summary_chars=%d",
+            user_email,
+            len(hybrid_memories["critical"]),
+            len(hybrid_memories["semantic"]),
+            len(hybrid_memories["recent"]),
+            summary_length,
+        )
+
         # Format memories into sections for the prompt
         # TODO: Move this formatting logic to Prompt Template in Phase 2
         memory_sections = []
@@ -728,7 +744,7 @@ class AITrainerBrain:
             background_tasks.add_task(
                 self.compactor.compact_history,
                 user_email=user_email,
-                active_window_size=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,  # e.g. 40
+                active_window_size=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,  # Synced with window memory
                 log_callback=log_callback,
             )
 

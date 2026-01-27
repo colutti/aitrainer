@@ -68,6 +68,8 @@ Use ferramentas ANTES de responder. NUNCA mostre IDs internos ao usuário.
 
 {user_profile}
 
+{long_term_summary_section}
+
 ## 💾 Memórias de conversas anteriores
 
 {relevant_memories}

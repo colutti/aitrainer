@@ -80,6 +80,32 @@ def get_profile(user_email: CurrentUser, brain: AITrainerBrainDep) -> UserProfil
     return user_profile
 
 
+@router.get("/me")
+def get_current_user(user_email: CurrentUser, brain: AITrainerBrainDep) -> dict:
+    """
+    Returns basic information about the currently authenticated user.
+    Used by frontend to determine user role (admin or user).
+
+    Args:
+        user_email (str): The authenticated user's email.
+        brain (AITrainerBrain): The AI trainer brain dependency.
+
+    Returns:
+        dict: User info containing email and role.
+
+    Raises:
+        HTTPException: If the user profile is not found (404).
+    """
+    user_profile = brain.get_user_profile(user_email)
+    if not user_profile:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {
+        "email": user_profile.email,
+        "role": user_profile.role
+    }
+
+
 @router.post("/update_profile")
 def update_profile(
     profile_data: UserProfileInput, user_email: CurrentUser, brain: AITrainerBrainDep

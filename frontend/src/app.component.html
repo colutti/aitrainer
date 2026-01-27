@@ -1,6 +1,14 @@
 <div class="h-screen w-screen bg-dark-bg text-text-primary flex flex-col md:flex-row overflow-hidden">
   <app-toast></app-toast>
-  @if (isOnboarding()) {
+  @if (isCheckingAuth()) {
+    <!-- Loading spinner while checking authentication -->
+    <div class="w-full h-full flex items-center justify-center">
+      <div class="text-center space-y-4">
+        <div class="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary"></div>
+        <p class="text-text-secondary">Verificando autenticação...</p>
+      </div>
+    </div>
+  } @else if (isOnboarding()) {
     <app-onboarding class="w-full h-full"></app-onboarding>
   } @else if (isAuthenticated()) {
     <!-- Mobile Header -->
@@ -171,6 +179,18 @@
                 </div>
              </div>
           }
+        }
+        @case ('admin-dashboard') {
+          <app-admin-dashboard class="h-full block"></app-admin-dashboard>
+        }
+        @case ('admin-users') {
+          <app-admin-users class="h-full block"></app-admin-users>
+        }
+        @case ('admin-logs') {
+          <app-admin-logs class="h-full block"></app-admin-logs>
+        }
+        @case ('admin-prompts') {
+          <app-admin-prompts class="h-full block"></app-admin-prompts>
         }
       }
     </main>

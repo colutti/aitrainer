@@ -46,13 +46,17 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     API_SERVER_PORT: int = 8000
 
-    MAX_SHORT_TERM_MEMORY_MESSAGES: int = 20
+    MAX_SHORT_TERM_MEMORY_MESSAGES: int = 40  # Increased from 20 to sync with compactor window
     MAX_LONG_TERM_MEMORY_MESSAGES: int
     SUMMARY_MAX_TOKEN_LIMIT: int = 200  # Trigger summarization when buffer exceeds this
     ALLOWED_ORIGINS: str | list[str]
     LOG_LEVEL: str = "INFO"
     RATE_LIMIT_LOGIN: str = "5/minute"  # Rate limit for login endpoint
     MAX_PROMPT_LOGS: int = 20  # Number of LLM prompts to keep per user
+
+    # ====== BETTERSTACK INTEGRATION ======
+    BETTERSTACK_API_TOKEN: str = ""
+    BETTERSTACK_SOURCE_ID: str = ""
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod

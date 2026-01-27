@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, Injector, inject } from '@angular/core';
 import {
   HttpEvent,
   HttpInterceptor,
@@ -18,8 +18,16 @@ import { NotificationService } from './notification.service';
  */
 @Injectable()
 export class ErrorInterceptor implements HttpInterceptor {
-  private authService = inject(AuthService);
+  private authService?: AuthService;
   private notificationService = inject(NotificationService);
+  private inj = inject(Injector);
+
+  private getAuthService(): AuthService {
+    if (!this.authService) {
+      this.authService = this.inj.get(AuthService);
+    }
+    return this.authService;
+  }
 
   private static lastSessionExpiredNotification = 0;
   private readonly SESSION_EXPIRED_THROTTLE = 5000; // 5 seconds
@@ -43,7 +51,7 @@ export class ErrorInterceptor implements HttpInterceptor {
           const now = Date.now();
           if (now - ErrorInterceptor.lastSessionExpiredNotification > this.SESSION_EXPIRED_THROTTLE) {
             ErrorInterceptor.lastSessionExpiredNotification = now;
-            this.authService.logout();
+            this.getAuthService().logout();
             this.notificationService.error('Sessão expirada. Faça login novamente.');
           }
         }

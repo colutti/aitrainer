@@ -1,7 +1,7 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { AuthService } from './auth.service';
+import { AUTH_TOKEN_KEY } from './auth.service';
 
 /**
  * HTTP interceptor that attaches JWT token to outgoing requests.
@@ -9,8 +9,6 @@ import { AuthService } from './auth.service';
  */
 @Injectable()
 export class JwtInterceptor implements HttpInterceptor {
-    private authService = inject(AuthService);
-
     /**
      * Intercepts HTTP requests and adds JWT token if available.
      * @param req - The outgoing HTTP request
@@ -18,7 +16,7 @@ export class JwtInterceptor implements HttpInterceptor {
      * @returns Observable of the HTTP event
      */
     intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-        const token = this.authService.getToken();
+        const token = localStorage.getItem(AUTH_TOKEN_KEY);
         if (token) {
             const cloned = req.clone({
                 setHeaders: {

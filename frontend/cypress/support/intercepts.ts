@@ -63,6 +63,7 @@ export const setupCommonIntercepts = () => {
   // Dashboard & Profile
   cy.intercept('GET', '**/metabolism/summary*', { body: COMMON_MOCKS.metabolismSummary }).as('getMetabolismSummary');
   cy.intercept('GET', '**/user/profile', { body: COMMON_MOCKS.userProfile }).as('userProfile');
+  cy.intercept('GET', '**/user/me', { body: { email: COMMON_MOCKS.userProfile.email, role: 'user' } }).as('userMe');
   cy.intercept('POST', '**/user/logout', { statusCode: 200 }).as('logout');
   cy.intercept('GET', '**/weight?limit=*', { body: [] }).as('getWeightHistory');
   cy.intercept('GET', '**/weight/stats', { body: COMMON_MOCKS.weightStats }).as('getWeightStats');

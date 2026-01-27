@@ -67,5 +67,18 @@ invite-create:
 invite-list:
 	@cd backend && export PYTHONPATH=. && .venv/bin/python scripts/manage_invites.py list
 
+# Admin Commands
+admin-promote:
+	@echo "Promovendo usuário $(EMAIL) a admin..."
+	@podman-compose exec backend python scripts/promote_admin.py $(EMAIL)
+
+admin-promote-rafael:
+	@echo "Promovendo Rafael Colucci a admin..."
+	@podman-compose exec backend python scripts/promote_admin.py rafacolucci@gmail.com
+
+admin-list:
+	@echo "Listando usuários admin..."
+	@podman-compose exec mongodb mongosh -u admin -p password --authenticationDatabase admin --quiet --eval "use aitrainer; db.users.find({role: 'admin'}, {email: 1, role: 1, _id: 0}).forEach(printjson)"
+
 cypress:
 	podman-compose --profile test run --rm --no-deps cypress run

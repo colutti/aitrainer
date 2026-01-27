@@ -1,8 +1,21 @@
 import { Injectable, signal } from '@angular/core';
 
 /** Available views in the application */
-/** Available views in the application */
-export type View = 'dashboard' | 'chat' | 'user-profile' | 'trainer-settings' | 'memories' | 'workouts' | 'nutrition' | 'metabolism' | 'body-composition' | 'integrations';
+export type View =
+  | 'dashboard'
+  | 'chat'
+  | 'user-profile'
+  | 'trainer-settings'
+  | 'memories'
+  | 'workouts'
+  | 'nutrition'
+  | 'metabolism'
+  | 'body-composition'
+  | 'integrations'
+  | 'admin-dashboard'
+  | 'admin-users'
+  | 'admin-logs'
+  | 'admin-prompts';
 
 /**
  * Service responsible for managing navigation state.
