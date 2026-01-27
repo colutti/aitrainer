@@ -1,8 +1,9 @@
-import { Component, inject, OnInit, AfterViewInit, ChangeDetectorRef, ChangeDetectionStrategy, effect, signal } from "@angular/core";
+import { Component, inject, OnInit, AfterViewInit, ChangeDetectorRef, effect, signal } from "@angular/core";
 import { CommonModule, DatePipe } from "@angular/common";
 import { MetabolismService } from "../../services/metabolism.service";
 import { UserProfileService } from "../../services/user-profile.service";
 import { NutritionService } from "../../services/nutrition.service";
+import { MetabolismResponse } from "../../models/metabolism.model";
 import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import { AppDateFormatPipe } from "../../pipes/date-format.pipe";
 import { AppNumberFormatPipe } from "../../pipes/number-format.pipe";
@@ -16,8 +17,7 @@ import { WidgetTdeeSummaryComponent } from '../widgets/widget-tdee-summary.compo
   standalone: true,
   imports: [CommonModule, AppDateFormatPipe, AppNumberFormatPipe, WidgetMetabolicGaugeComponent, WidgetLineChartComponent, WidgetCaloriesWeightComparisonComponent, WidgetTdeeSummaryComponent],
   templateUrl: './metabolism.component.html',
-  providers: [DatePipe],
-  changeDetection: ChangeDetectionStrategy.Default
+  providers: [DatePipe]
 })
 export class MetabolismComponent implements OnInit, AfterViewInit {
   metabolismService = inject(MetabolismService);
@@ -25,9 +25,10 @@ export class MetabolismComponent implements OnInit, AfterViewInit {
   nutritionService = inject(NutritionService);
   datePipe = inject(DatePipe);
   cdr = inject(ChangeDetectorRef);
-  
-  stats = this.metabolismService.stats;
-  isLoading = this.metabolismService.isLoading;
+
+  // Signal local para ter controle direto sobre os dados (como Dashboard)
+  stats = signal<MetabolismResponse | null>(null);
+  isLoading = signal<boolean>(false);
   profile = this.userProfileService.userProfile;
 
   // --- Weight Trend Chart (Mirrored from Home) ---
@@ -70,22 +71,19 @@ export class MetabolismComponent implements OnInit, AfterViewInit {
       // Efeito para atualizar gráfico quando stats mudam
       effect(() => {
           const s = this.stats();
+          console.log('[Metabolism] Effect disparado, stats:', s);
           if (s && s.weight_trend) {
              this.updateWeightChart(s.weight_trend);
              // Força change detection para widgets filhos com OnPush
              this.cdr.markForCheck();
+             console.log('[Metabolism] Gráfico atualizado');
           }
       });
   }
 
-  ngOnInit() {
-    // Carrega dados de metabolismo (async)
-    this.metabolismService.fetchSummary(3)
-      .then(() => this.cdr.markForCheck())
-      .catch(err => {
-        console.error('Erro ao carregar metabolismo:', err);
-        this.cdr.markForCheck();
-      });
+  async ngOnInit() {
+    // Segue o padrão do Dashboard: signal local + await getSummary()
+    await this.fetchMetabolismData();
 
     // Carrega perfil do usuário
     this.userProfileService.getProfile();
@@ -95,13 +93,24 @@ export class MetabolismComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    // Se os dados ainda não foram carregados, recarrega com delay
-    if (!this.stats()) {
-      setTimeout(() => {
-        this.metabolismService.fetchSummary(3)
-          .then(() => this.cdr.markForCheck())
-          .catch(err => console.error('Erro ao recarregar:', err));
-      }, 500);
+    // Force change detection após view init
+    this.cdr.markForCheck();
+  }
+
+  async fetchMetabolismData() {
+    console.log('[Metabolism] Iniciando fetchMetabolismData');
+    this.isLoading.set(true);
+    try {
+      const data = await this.metabolismService.getSummary(3);
+      console.log('[Metabolism] Dados recebidos:', data);
+      this.stats.set(data);
+      console.log('[Metabolism] Signal stats atualizado:', this.stats());
+    } catch (error) {
+      console.error('[Metabolism] Erro ao carregar metabolismo:', error);
+      this.stats.set(null);
+    } finally {
+      this.isLoading.set(false);
+      console.log('[Metabolism] Loading finalizado, isLoading:', this.isLoading());
     }
   }
   
@@ -186,9 +195,17 @@ export class MetabolismComponent implements OnInit, AfterViewInit {
 
   getMetabolicBalanceProgress(): number {
     const s = this.stats();
-    if (!s || !s.energy_balance) return 50; 
+    if (!s || !s.energy_balance) return 50;
     const balance = s.energy_balance;
     const progress = ((balance + 500) / 1000) * 100;
     return Math.min(100, Math.max(0, progress));
+  }
+
+  logStats(): string {
+    const s = this.stats();
+    console.log('[Metabolism Template] stats():', s);
+    console.log('[Metabolism Template] tdee:', s?.tdee);
+    console.log('[Metabolism Template] daily_target:', s?.daily_target);
+    return '';
   }
 }

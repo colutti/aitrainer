@@ -22,12 +22,12 @@ import { CommonModule } from '@angular/common';
       <div class="flex gap-4 mb-2">
         <div class="flex-1">
           <p class="text-[9px] text-text-secondary uppercase font-bold tracking-tighter mb-1">Manutenção</p>
-          <p class="text-xl font-black text-white whitespace-nowrap">{{ tdee | number:'1.0-0' }} <span class="text-[10px] font-medium opacity-40">KCAL</span></p>
+          <p class="text-xl font-black text-white whitespace-nowrap" data-cy="tdee-value">{{ tdee | number:'1.0-0' }} <span class="text-[10px] font-medium opacity-40">KCAL</span></p>
         </div>
         <div class="w-px bg-secondary/30 h-10 self-center"></div>
         <div class="flex-1">
           <p class="text-[9px] text-primary uppercase font-bold tracking-tighter mb-1">Meta: {{ getGoalLabel() }}</p>
-          <p class="text-xl font-black text-primary whitespace-nowrap">{{ targetCalories | number:'1.0-0' }} <span class="text-[10px] font-medium opacity-60">KCAL</span></p>
+          <p class="text-xl font-black text-primary whitespace-nowrap" data-cy="daily-target">{{ targetCalories | number:'1.0-0' }} <span class="text-[10px] font-medium opacity-60">KCAL</span></p>
         </div>
       </div>
     </div>
