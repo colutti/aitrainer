@@ -137,7 +137,7 @@
                             <div class="bg-light-bg/80 hover:bg-light-bg rounded-xl p-3 border border-secondary/50 hover:border-primary/30 shadow-sm transition-all flex items-center gap-4">
                                 <!-- Calories & Date -->
                                 <div class="min-w-[100px] shrink-0">
-                                    <p class="text-[9px] text-text-secondary uppercase font-bold tracking-tight mb-0.5">{{ log.date | date:'HH:mm' }} • {{ log.date | date:'dd MMM' }}</p>
+                                    <p class="text-[9px] text-text-secondary uppercase font-bold tracking-tight mb-0.5">{{ log.date | appDateFormat:'time' }} • {{ log.date | appDateFormat:'shortMonth' }}</p>
                                     <div class="flex items-baseline gap-1">
                                         <span class="text-xl font-black text-white">{{ log.calories }}</span>
                                         <span class="text-[10px] text-text-secondary uppercase font-bold">kcal</span>

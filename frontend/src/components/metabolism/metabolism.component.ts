@@ -4,6 +4,8 @@ import { MetabolismService } from "../../services/metabolism.service";
 import { UserProfileService } from "../../services/user-profile.service";
 import { NutritionService } from "../../services/nutrition.service";
 import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
+import { AppDateFormatPipe } from "../../pipes/date-format.pipe";
+import { AppNumberFormatPipe } from "../../pipes/number-format.pipe";
 import { WidgetMetabolicGaugeComponent } from '../widgets/widget-metabolic-gauge.component';
 import { WidgetLineChartComponent } from '../widgets/widget-line-chart.component';
 import { WidgetCaloriesWeightComparisonComponent } from '../widgets/widget-calories-weight-comparison.component';
@@ -12,7 +14,7 @@ import { WidgetTdeeSummaryComponent } from '../widgets/widget-tdee-summary.compo
 @Component({
   selector: 'app-metabolism',
   standalone: true,
-  imports: [CommonModule, WidgetMetabolicGaugeComponent, WidgetLineChartComponent, WidgetCaloriesWeightComparisonComponent, WidgetTdeeSummaryComponent],
+  imports: [CommonModule, AppDateFormatPipe, AppNumberFormatPipe, WidgetMetabolicGaugeComponent, WidgetLineChartComponent, WidgetCaloriesWeightComparisonComponent, WidgetTdeeSummaryComponent],
   templateUrl: './metabolism.component.html',
 })
 export class MetabolismComponent implements OnInit {

@@ -19,8 +19,8 @@
           >Período Analisado</span
         >
         <span class="text-white font-bold text-sm">
-          {{ stats()?.startDate | date: "dd MMM" }} -
-          {{ stats()?.endDate | date: "dd MMM" }}
+          {{ stats()?.startDate | appDateFormat: "shortMonth" }} -
+          {{ stats()?.endDate | appDateFormat: "shortMonth" }}
         </span>
         <span
           class="text-xs text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full border border-green-400/20"
@@ -139,7 +139,7 @@
         >
           {{ stats()?.end_weight - stats()?.start_weight > 0 ? "+" : ""
           }}{{
-            stats()?.end_weight - stats()?.start_weight | number: "1.1-1"
+            stats()?.end_weight - stats()?.start_weight | appNumberFormat: "weight"
           }}
           kg
         </div>

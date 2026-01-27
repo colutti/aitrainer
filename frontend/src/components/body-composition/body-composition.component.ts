@@ -7,13 +7,16 @@ import { WeightLog, BodyCompositionStats } from '../../models/weight-log.model';
 import { MetabolismResponse } from '../../models/metabolism.model';
 import { ChartConfiguration, ChartData } from 'chart.js';
 import { NumericInputDirective } from '../../directives/numeric-input.directive';
+import { DateInputComponent } from '../shared/date-input/date-input.component';
+import { AppDateFormatPipe } from '../../pipes/date-format.pipe';
+import { AppNumberFormatPipe } from '../../pipes/number-format.pipe';
 import { WidgetBodyEvolutionComponent } from '../widgets/widget-body-evolution.component';
 import { WidgetLineChartComponent } from '../widgets/widget-line-chart.component';
 
 @Component({
   selector: 'app-body-composition',
   standalone: true,
-  imports: [CommonModule, FormsModule, NumericInputDirective, WidgetBodyEvolutionComponent, WidgetLineChartComponent],
+  imports: [CommonModule, FormsModule, NumericInputDirective, DateInputComponent, AppDateFormatPipe, AppNumberFormatPipe, WidgetBodyEvolutionComponent, WidgetLineChartComponent],
   templateUrl: './body-composition.component.html'
 })
 export class BodyCompositionComponent implements OnInit {

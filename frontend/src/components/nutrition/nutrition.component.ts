@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { NutritionService } from '../../services/nutrition.service';
 import { MetabolismService } from '../../services/metabolism.service';
 import { NutritionLog, NutritionStats } from '../../models/nutrition.model';
+import { AppDateFormatPipe } from '../../pipes/date-format.pipe';
 import { SkeletonComponent } from '../skeleton/skeleton.component';
 import { WidgetMacrosTodayComponent } from '../widgets/widget-macros-today.component';
 import { WidgetAdherenceComponent } from '../widgets/widget-adherence.component';
@@ -15,7 +16,7 @@ import { WidgetAverageCaloriesComponent } from '../widgets/nutrition/widget-aver
 @Component({
   selector: 'app-nutrition',
   standalone: true,
-  imports: [CommonModule, SkeletonComponent, WidgetMacrosTodayComponent, WidgetAdherenceComponent, WidgetCaloriesWeightComparisonComponent, WidgetMacroTargetsComponent, WidgetCalorieHistoryComponent, WidgetCalorieVolatilityComponent, WidgetAverageCaloriesComponent],
+  imports: [CommonModule, AppDateFormatPipe, SkeletonComponent, WidgetMacrosTodayComponent, WidgetAdherenceComponent, WidgetCaloriesWeightComparisonComponent, WidgetMacroTargetsComponent, WidgetCalorieHistoryComponent, WidgetCalorieVolatilityComponent, WidgetAverageCaloriesComponent],
   templateUrl: './nutrition.component.html',
 })
 export class NutritionComponent implements OnInit {

@@ -4,6 +4,7 @@ import { WorkoutService } from '../../services/workout.service';
 import { WorkoutDrawerComponent } from './workout-drawer/workout-drawer.component';
 import { Workout } from '../../models/workout.model';
 import { WorkoutStats } from '../../models/stats.model';
+import { AppDateFormatPipe } from '../../pipes/date-format.pipe';
 import { WidgetStreakComponent } from '../widgets/widget-streak.component';
 import { WidgetFrequencyComponent } from '../widgets/widget-frequency.component';
 import { WidgetRecentPrsComponent } from '../widgets/widget-recent-prs.component';
@@ -16,7 +17,7 @@ import { WidgetStrengthRadarComponent } from '../widgets/workouts/widget-strengt
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block h-full w-full' },
   standalone: true,
-  imports: [CommonModule, WorkoutDrawerComponent, WidgetStreakComponent, WidgetFrequencyComponent, WidgetRecentPrsComponent, WidgetVolumeTrendComponent, WidgetStrengthRadarComponent]
+  imports: [CommonModule, AppDateFormatPipe, WorkoutDrawerComponent, WidgetStreakComponent, WidgetFrequencyComponent, WidgetRecentPrsComponent, WidgetVolumeTrendComponent, WidgetStrengthRadarComponent]
 })
 export class WorkoutsComponent implements OnInit {
   private workoutService = inject(WorkoutService);

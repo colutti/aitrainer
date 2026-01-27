@@ -31,6 +31,7 @@ import { WidgetCalorieVolatilityComponent } from '../widgets/nutrition/widget-ca
 import { WidgetWeightHistogramComponent } from '../widgets/body/widget-weight-histogram.component';
 import { WidgetDataQualityComponent } from '../widgets/statistics/widget-data-quality.component';
 import { WidgetAverageCaloriesComponent } from '../widgets/nutrition/widget-average-calories.component';
+import { AppNumberFormatPipe } from '../../pipes/number-format.pipe';
 
 @Component({
   selector: 'app-dashboard',
@@ -38,6 +39,7 @@ import { WidgetAverageCaloriesComponent } from '../widgets/nutrition/widget-aver
   imports: [
     CommonModule,
     MarkdownModule,
+    AppNumberFormatPipe,
     WidgetStreakComponent,
     WidgetFrequencyComponent,
     WidgetRecentPrsComponent,

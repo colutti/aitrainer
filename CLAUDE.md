@@ -151,6 +151,37 @@ Request → API Endpoint → Service Layer → Repository Layer → Database
 - **Routing**: Centralized `NavigationService`
 - **State**: Angular signals for reactivity
 
+### Frontend Date and Number Formatting
+
+**Locale:** Portuguese (Brazil) pt-BR globally configured
+
+**Date Formatting:**
+- **Custom Pipe:** `appDateFormat` with 8 preset formats
+- **Input Component:** `<app-date-input>` with ng-bootstrap datepicker
+- **Format:** dd/MM/yyyy (e.g., "27/01/2026")
+- **Storage:** Always use ISO format internally (YYYY-MM-DD)
+
+**Number Formatting:**
+- **Custom Pipe:** `appNumberFormat` with 5 preset formats
+- **Input Component:** `<app-number-input>` with built-in `appNumericInput` directive
+- **Decimal Separator:** Period (.) for display, accepts both . and , in inputs
+- **Storage:** Always store as number, not string
+
+**Rules:**
+- ✅ ALWAYS use `appDateFormat` pipe, never `| date` directly
+- ✅ ALWAYS use `appNumberFormat` pipe, never `| number` directly
+- ✅ ALWAYS use `<app-date-input>` for new date fields
+- ✅ ALWAYS use `<app-number-input>` for new numeric fields
+- ❌ NEVER use HTML5 `type="date"` directly
+- ❌ NEVER create custom date/number formatting functions
+- ❌ NEVER mix formatters (use pipes, not toLocaleDateString)
+
+**Key Files:**
+- Pipes: `src/pipes/date-format.pipe.ts`, `src/pipes/number-format.pipe.ts`
+- Components: `src/components/shared/date-input/`, `src/components/shared/number-input/`
+- Directive: `src/directives/numeric-input.directive.ts`
+- Documentation: `frontend/docs/FORMATTING.md`
+
 ### AI Agent System
 
 **LangGraph Agent Flow:**

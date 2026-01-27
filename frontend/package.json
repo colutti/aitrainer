@@ -22,6 +22,8 @@
     "@angular/forms": "^21.0.1",
     "@angular/platform-browser": "^21.0.0",
     "@angular/platform-browser-dynamic": "^21.0.8",
+    "@ng-bootstrap/ng-bootstrap": "^20.0.0",
+    "@popperjs/core": "^2.11.8",
     "chart.js": "^4.5.1",
     "clipboard": "^2.0.11",
     "emoji-toolkit": "^10.0.0",

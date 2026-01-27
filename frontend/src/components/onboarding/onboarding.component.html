@@ -127,42 +127,38 @@
             </div>
 
             <div class="form-group">
-              <label for="age">Idade</label>
-              <input
-                type="number"
-                id="age"
-                [value]="formData().age"
-                (input)="updateFormData('age', +$any($event.target).value)"
-                min="18"
-                max="100"
-              />
+              <app-number-input
+                label="Idade"
+                [ngModel]="formData().age"
+                (ngModelChange)="updateFormData('age', $event)"
+                [min]="18"
+                [max]="100">
+              </app-number-input>
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label for="weight">Peso (kg)</label>
-              <input
-                type="number"
-                id="weight"
-                [value]="formData().weight"
-                (input)="updateFormData('weight', +$any($event.target).value)"
-                min="30"
-                max="500"
-                step="0.1"
-              />
+              <app-number-input
+                label="Peso"
+                unit="kg"
+                [ngModel]="formData().weight"
+                (ngModelChange)="updateFormData('weight', $event)"
+                [min]="30"
+                [max]="500"
+                [step]="0.1">
+              </app-number-input>
             </div>
 
             <div class="form-group">
-              <label for="height">Altura (cm)</label>
-              <input
-                type="number"
-                id="height"
-                [value]="formData().height"
-                (input)="updateFormData('height', +$any($event.target).value)"
-                min="100"
-                max="250"
-              />
+              <app-number-input
+                label="Altura"
+                unit="cm"
+                [ngModel]="formData().height"
+                (ngModelChange)="updateFormData('height', $event)"
+                [min]="100"
+                [max]="250">
+              </app-number-input>
             </div>
           </div>
 

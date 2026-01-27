@@ -2,13 +2,14 @@ import { Component, EventEmitter, OnInit, Output, inject, signal, ChangeDetector
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HevyService } from '../../../services/hevy.service';
+import { AppDateFormatPipe } from '../../../pipes/date-format.pipe';
 
 type ViewState = 'loading' | 'setup' | 'connected' | 'confirm_disconnect';
 
 @Component({
   selector: 'app-hevy-config',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppDateFormatPipe],
   templateUrl: './hevy-config.component.html'
 })
 export class HevyConfigComponent implements OnInit {

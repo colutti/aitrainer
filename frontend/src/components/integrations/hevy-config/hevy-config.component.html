@@ -145,7 +145,7 @@
             <span *ngIf="workoutCount() > 0"
               >{{ workoutCount() }} treinos no Hevy</span
             >
-            <span *ngIf="lastSync()">Sync: {{ lastSync() | date:'dd MMM, HH:mm' }}</span>
+            <span *ngIf="lastSync()">Sync: {{ lastSync() | appDateFormat:'datetime' }}</span>
           </div>
         </div>
 

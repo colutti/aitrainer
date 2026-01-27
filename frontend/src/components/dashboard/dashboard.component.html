@@ -111,7 +111,7 @@
                     <span class="text-[8px] text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20 font-bold uppercase tracking-tighter">{{ metabolismStats()?.confidence || 'Calculado' }}</span>
                 </div>
                 <div slot="footer-value" class="text-sm font-bold" [ngClass]="getWeightVariation() < 0 ? 'text-green-400' : 'text-red-400'">
-                    {{ getWeightVariation() > 0 ? '+' : '' }}{{ getWeightVariation() | number:'1.1-1' }} kg
+                    {{ getWeightVariation() > 0 ? '+' : '' }}{{ getWeightVariation() | appNumberFormat:'weight' }} kg
                 </div>
             </app-widget-line-chart>
 

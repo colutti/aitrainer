@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { OnboardingService, OnboardingData } from '../../services/onboarding.service';
 import { AuthService } from '../../services/auth.service';
 import { NavigationService } from '../../services/navigation.service';
+import { NumberInputComponent } from '../shared/number-input/number-input.component';
 
 type Step = 1 | 2 | 3;
 
@@ -24,7 +25,7 @@ interface FormData {
   templateUrl: './onboarding.component.html',
   styleUrls: ['./onboarding.component.css'],
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NumberInputComponent],
 })
 export class OnboardingComponent implements OnInit {
   private onboardingService = inject(OnboardingService);

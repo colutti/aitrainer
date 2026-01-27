@@ -1,11 +1,12 @@
 import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Workout } from '../../../models/workout.model';
+import { AppDateFormatPipe } from '../../../pipes/date-format.pipe';
 
 @Component({
   selector: 'app-workout-drawer',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, AppDateFormatPipe],
   templateUrl: './workout-drawer.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' }
