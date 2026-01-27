@@ -1,5 +1,5 @@
-import { Component, inject, OnInit, effect, signal } from "@angular/core";
-import { CommonModule } from "@angular/common";
+import { Component, inject, OnInit, AfterViewInit, effect, signal } from "@angular/core";
+import { CommonModule, DatePipe } from "@angular/common";
 import { MetabolismService } from "../../services/metabolism.service";
 import { UserProfileService } from "../../services/user-profile.service";
 import { NutritionService } from "../../services/nutrition.service";
@@ -16,11 +16,13 @@ import { WidgetTdeeSummaryComponent } from '../widgets/widget-tdee-summary.compo
   standalone: true,
   imports: [CommonModule, AppDateFormatPipe, AppNumberFormatPipe, WidgetMetabolicGaugeComponent, WidgetLineChartComponent, WidgetCaloriesWeightComparisonComponent, WidgetTdeeSummaryComponent],
   templateUrl: './metabolism.component.html',
+  providers: [DatePipe]
 })
-export class MetabolismComponent implements OnInit {
+export class MetabolismComponent implements OnInit, AfterViewInit {
   metabolismService = inject(MetabolismService);
   userProfileService = inject(UserProfileService);
   nutritionService = inject(NutritionService);
+  datePipe = inject(DatePipe);
   
   stats = this.metabolismService.stats;
   isLoading = this.metabolismService.isLoading;
@@ -63,6 +65,7 @@ export class MetabolismComponent implements OnInit {
   };
 
   constructor() {
+      // Efeito para atualizar gráfico quando stats mudam
       effect(() => {
           const s = this.stats();
           if (s) {
@@ -74,9 +77,26 @@ export class MetabolismComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.metabolismService.fetchSummary(3);
+    // Carrega dados de metabolismo (async)
+    this.metabolismService.fetchSummary(3).catch(err =>
+      console.error('Erro ao carregar metabolismo:', err)
+    );
+
+    // Carrega perfil do usuário
     this.userProfileService.getProfile();
+
+    // Carrega estatísticas de nutrição
     this.nutritionService.getStats().subscribe();
+  }
+
+  ngAfterViewInit() {
+    // Force change detection para garantir que dados apareçam após renderização inicial
+    // Se os dados ainda não foram carregados, recarrega
+    if (!this.stats()) {
+      this.metabolismService.fetchSummary(3).catch(err =>
+        console.error('Erro ao recarregar metabolismo:', err)
+      );
+    }
   }
   
 
@@ -148,7 +168,7 @@ export class MetabolismComponent implements OnInit {
   }
 
   updateWeightChart(trend: any[]) {
-     const labels = trend.map(t => new Date(t.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }));
+     const labels = trend.map(t => this.datePipe.transform(new Date(t.date), 'dd MMM'));
      this.weightChartData = {
        labels,
        datasets: [
