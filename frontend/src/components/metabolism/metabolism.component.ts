@@ -71,12 +71,10 @@ export class MetabolismComponent implements OnInit, AfterViewInit {
       // Efeito para atualizar gráfico quando stats mudam
       effect(() => {
           const s = this.stats();
-          console.log('[Metabolism] Effect disparado, stats:', s);
           if (s && s.weight_trend) {
              this.updateWeightChart(s.weight_trend);
              // Força change detection para widgets filhos com OnPush
              this.cdr.markForCheck();
-             console.log('[Metabolism] Gráfico atualizado');
           }
       });
   }
@@ -98,19 +96,15 @@ export class MetabolismComponent implements OnInit, AfterViewInit {
   }
 
   async fetchMetabolismData() {
-    console.log('[Metabolism] Iniciando fetchMetabolismData');
     this.isLoading.set(true);
     try {
       const data = await this.metabolismService.getSummary(3);
-      console.log('[Metabolism] Dados recebidos:', data);
       this.stats.set(data);
-      console.log('[Metabolism] Signal stats atualizado:', this.stats());
     } catch (error) {
-      console.error('[Metabolism] Erro ao carregar metabolismo:', error);
+      console.error('Erro ao carregar metabolismo:', error);
       this.stats.set(null);
     } finally {
       this.isLoading.set(false);
-      console.log('[Metabolism] Loading finalizado, isLoading:', this.isLoading());
     }
   }
   
@@ -199,13 +193,5 @@ export class MetabolismComponent implements OnInit, AfterViewInit {
     const balance = s.energy_balance;
     const progress = ((balance + 500) / 1000) * 100;
     return Math.min(100, Math.max(0, progress));
-  }
-
-  logStats(): string {
-    const s = this.stats();
-    console.log('[Metabolism Template] stats():', s);
-    console.log('[Metabolism Template] tdee:', s?.tdee);
-    console.log('[Metabolism Template] daily_target:', s?.daily_target);
-    return '';
   }
 }
