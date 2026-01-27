@@ -120,8 +120,7 @@
                 title="Seu Gasto Energético"
                 [tdee]="metabolismStats()?.tdee || 0"
                 [targetCalories]="metabolismStats()?.daily_target || 0"
-                [goalType]="metabolismStats()?.status"
-                [energyBalance]="metabolismStats()?.energy_balance || 0">
+                [goalType]="metabolismStats()?.goal_type">
             </app-widget-tdee-summary>
 
             <!-- Row 2 -->
