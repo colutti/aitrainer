@@ -7,7 +7,7 @@ import { signal, NO_ERRORS_SCHEMA } from '@angular/core';
 import { HttpTestHelper } from '../../test-utils/helpers/http-helpers';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { Chart, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, BarElement, LineController, BarController, DoughnutController, ArcElement } from 'chart.js';
 
 // Register all Chart.js components needed by widgets
@@ -368,11 +368,14 @@ describe('NutritionComponent', () => {
     it('should handle deletion errors', async () => {
       const log = NutritionFactory.createBreakfast();
       jest.spyOn(window, 'confirm').mockReturnValueOnce(true);
-      (mockNutritionService.deleteLog as jest.Mock).mockRejectedValueOnce(
-        new Error('Delete failed')
+      (mockNutritionService.deleteLog as jest.Mock).mockReturnValueOnce(
+        throwError(() => new Error('Delete failed'))
       );
 
-      await expect(component.deleteLog(log)).rejects.toThrow('Delete failed');
+      component.deleteLog(new Event('click'), log);
+      await fixture.whenStable();
+
+      expect(component.deletingId()).toBe(null);
     });
 
     it('should prevent deleting while already deleting', async () => {
@@ -460,8 +463,8 @@ describe('NutritionComponent', () => {
 
   describe('Error Handling', () => {
     it('should handle load logs error', async () => {
-      (mockNutritionService.getLogs as jest.Mock).mockRejectedValueOnce(
-        new Error('Network error')
+      (mockNutritionService.getLogs as jest.Mock).mockReturnValueOnce(
+        throwError(() => new Error('Network error'))
       );
 
       // fixture.detectChanges(); // Avoid chart.js rendering issues in tests
@@ -471,8 +474,8 @@ describe('NutritionComponent', () => {
     });
 
     it('should handle load stats error', async () => {
-      (mockNutritionService.getStats as jest.Mock).mockRejectedValueOnce(
-        new Error('Stats error')
+      (mockNutritionService.getStats as jest.Mock).mockReturnValueOnce(
+        throwError(() => new Error('Stats error'))
       );
 
       // fixture.detectChanges(); // Avoid chart.js rendering issues in tests

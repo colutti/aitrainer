@@ -22,7 +22,7 @@ describe('DateInputComponent', () => {
   });
 
   it('should emit value on change', () => {
-    spyOn(component.ngModelChange, 'emit');
+    jest.spyOn(component.ngModelChange, 'emit');
     component.onValueChange('2026-01-27');
     expect(component.ngModelChange.emit).toHaveBeenCalledWith('2026-01-27');
   });

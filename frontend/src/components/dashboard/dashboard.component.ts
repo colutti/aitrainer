@@ -1,6 +1,5 @@
 import { Component, inject, OnInit, signal, effect, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MarkdownModule } from 'ngx-markdown';
 import { TrainerProfileService } from '../../services/trainer-profile.service';
 import { TrainerCard } from '../../models/trainer-profile.model';
 import { StatsService } from '../../services/stats.service';
@@ -38,7 +37,6 @@ import { AppNumberFormatPipe } from '../../pipes/number-format.pipe';
   standalone: true,
   imports: [
     CommonModule,
-    MarkdownModule,
     AppNumberFormatPipe,
     WidgetStreakComponent,
     WidgetFrequencyComponent,

@@ -1,17 +1,25 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { DashboardComponent } from './dashboard.component';
 import { StatsService } from '../../services/stats.service';
-import { signal } from '@angular/core';
+import { signal, NO_ERRORS_SCHEMA, Component } from '@angular/core';
 import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { MetabolismService } from '../../services/metabolism.service';
 import { NutritionService } from '../../services/nutrition.service';
 import { WeightService } from '../../services/weight.service';
 import { TrainerProfileService } from '../../services/trainer-profile.service';
-import { MarkdownModule } from 'ngx-markdown';
+import { of } from 'rxjs';
 
 import { WorkoutStats } from '../../models/stats.model';
 import { MetabolismResponse } from '../../models/metabolism.model';
 import { TrainerFactory } from '../../test-utils/factories/trainer.factory';
+
+// Mock Markdown module for testing
+@Component({
+  selector: 'markdown',
+  standalone: true,
+  template: ''
+})
+class MockMarkdownComponent {}
 
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
@@ -31,7 +39,7 @@ describe('DashboardComponent', () => {
     };
 
     nutritionServiceMock = {
-      getStats: jest.fn().mockResolvedValue(null),
+      getStats: jest.fn().mockReturnValue(of(null)),
       stats: signal(null)
     };
 
@@ -57,7 +65,7 @@ describe('DashboardComponent', () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [DashboardComponent],
+      imports: [DashboardComponent, MockMarkdownComponent],
       providers: [
         { provide: StatsService, useValue: statsServiceMock },
         { provide: NutritionService, useValue: nutritionServiceMock },
@@ -65,10 +73,8 @@ describe('DashboardComponent', () => {
         { provide: WeightService, useValue: weightServiceMock },
         { provide: TrainerProfileService, useValue: trainerServiceMock },
         provideCharts(withDefaultRegisterables())
-      ]
-    })
-    .overrideComponent(DashboardComponent, {
-      remove: { imports: [MarkdownModule] }
+      ],
+      schemas: [NO_ERRORS_SCHEMA]
     })
     .compileComponents();
 

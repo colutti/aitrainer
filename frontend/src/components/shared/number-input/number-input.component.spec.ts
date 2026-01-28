@@ -22,13 +22,13 @@ describe('NumberInputComponent', () => {
   });
 
   it('should emit value on change', () => {
-    spyOn(component.ngModelChange, 'emit');
+    jest.spyOn(component.ngModelChange, 'emit');
     component.onValueChange(72.5);
     expect(component.ngModelChange.emit).toHaveBeenCalledWith(72.5);
   });
 
   it('should handle null value', () => {
-    spyOn(component.ngModelChange, 'emit');
+    jest.spyOn(component.ngModelChange, 'emit');
     component.onValueChange(null);
     expect(component.ngModelChange.emit).toHaveBeenCalledWith(null);
   });
