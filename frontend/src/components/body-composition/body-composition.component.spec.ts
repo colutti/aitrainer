@@ -43,18 +43,11 @@ describe('BodyCompositionComponent', () => {
       markForCheck: jest.fn()
     };
 
-    mockNgZone = {
-      run: jest.fn((callback: () => any) => callback()),
-      runOutsideAngular: jest.fn((callback: () => any) => callback())
-    };
-
     await TestBed.configureTestingModule({
       imports: [BodyCompositionComponent, FormsModule],
       providers: [
         { provide: WeightService, useValue: mockWeightService },
-        { provide: MetabolismService, useValue: mockMetabolismService },
-        { provide: ChangeDetectorRef, useValue: mockChangeDetectorRef },
-        { provide: NgZone, useValue: mockNgZone }
+        { provide: MetabolismService, useValue: mockMetabolismService }
       ]
     }).compileComponents();
 
@@ -68,6 +61,7 @@ describe('BodyCompositionComponent', () => {
     });
 
     it('should load data on ngOnInit', async () => {
+      fixture.detectChanges();
       fixture.detectChanges();
       await fixture.whenStable();
 
