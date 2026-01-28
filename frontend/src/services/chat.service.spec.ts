@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { ChatService } from './chat.service';
 import { AuthService } from './auth.service';
@@ -10,6 +10,7 @@ import { MessageFactory } from '../test-utils/factories/message.factory';
 describe('ChatService', () => {
   let service: ChatService;
   let authService: AuthService;
+  let httpMock: HttpTestingController;
   let mockAuthService: Partial<AuthService>;
 
   beforeEach(() => {
@@ -29,6 +30,11 @@ describe('ChatService', () => {
 
     service = TestBed.inject(ChatService);
     authService = TestBed.inject(AuthService);
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
   });
 
   describe('Initialization', () => {
@@ -85,14 +91,11 @@ describe('ChatService', () => {
         }
       ];
 
-      // Mock fetch
-      const mockResponse = {
-        ok: true,
-        json: jest.fn().mockResolvedValue(historyData)
-      };
-      global.fetch = jest.fn().mockResolvedValue(mockResponse);
+      const promise = service.loadHistory();
+      const req = httpMock.expectOne(req => req.url.includes('/message/history'));
+      req.flush(historyData);
 
-      await service.loadHistory();
+      await promise;
 
       const messages = service.messages();
       expect(messages.length).toBeGreaterThan(1);
@@ -101,13 +104,11 @@ describe('ChatService', () => {
     });
 
     it('should handle empty history', async () => {
-      const mockResponse = {
-        ok: true,
-        json: jest.fn().mockResolvedValue([])
-      };
-      global.fetch = jest.fn().mockResolvedValue(mockResponse);
+      const promise = service.loadHistory();
+      const req = httpMock.expectOne(req => req.url.includes('/message/history'));
+      req.flush([]);
 
-      await service.loadHistory();
+      await promise;
 
       const messages = service.messages();
       expect(messages.length).toBe(1); // Only welcome message
@@ -115,15 +116,11 @@ describe('ChatService', () => {
     });
 
     it('should handle API error', async () => {
-      const mockResponse = {
-        ok: false,
-        statusText: 'Not Found'
-      };
-      global.fetch = jest.fn().mockResolvedValue(mockResponse);
+      const promise = service.loadHistory();
+      const req = httpMock.expectOne(req => req.url.includes('/message/history'));
+      req.error(new ErrorEvent('Network error'));
 
-      const initialMessageCount = service.messages().length;
-
-      await service.loadHistory();
+      await promise;
 
       // Should keep at least the welcome message or reset
       expect(service.messages().length).toBeGreaterThanOrEqual(1);
@@ -148,13 +145,11 @@ describe('ChatService', () => {
         }
       ];
 
-      const mockResponse = {
-        ok: true,
-        json: jest.fn().mockResolvedValue(historyData)
-      };
-      global.fetch = jest.fn().mockResolvedValue(mockResponse);
+      const promise = service.loadHistory();
+      const req = httpMock.expectOne(req => req.url.includes('/message/history'));
+      req.flush(historyData);
 
-      await service.loadHistory();
+      await promise;
 
       const messages = service.messages().filter(m => m.text.match(/First|Second|Third/));
       expect(messages[0].text).toBe('First');
@@ -171,13 +166,11 @@ describe('ChatService', () => {
         }
       ];
 
-      const mockResponse = {
-        ok: true,
-        json: jest.fn().mockResolvedValue(historyData)
-      };
-      global.fetch = jest.fn().mockResolvedValue(mockResponse);
+      const promise = service.loadHistory();
+      const req = httpMock.expectOne(req => req.url.includes('/message/history'));
+      req.flush(historyData);
 
-      await service.loadHistory();
+      await promise;
 
       const messages = service.messages();
       expect(messages.some(m => m.sender === 'ai' && m.text === 'Trainer response')).toBe(true);
@@ -373,6 +366,10 @@ describe('ChatService', () => {
 
       global.fetch = jest.fn().mockResolvedValue(mockResponse);
 
+      // Mock Date.now() to return incrementing values
+      let dateNowValue = 1000000;
+      jest.spyOn(Date, 'now').mockImplementation(() => dateNowValue++);
+
       const initialCount = service.messages().length;
 
       await service.sendMessage('Message 1');
@@ -386,6 +383,8 @@ describe('ChatService', () => {
       expect(msg1Id).not.toEqual(msg2Id);
       expect(aiMsg1Id).not.toEqual(aiMsg2Id);
       expect(msg1Id).not.toEqual(aiMsg1Id);
+
+      jest.restoreAllMocks();
     });
   });
 });

@@ -44,7 +44,7 @@ describe('NumericInputDirective', () => {
   describe('Numeric Input Acceptance', () => {
     it('should allow digits', () => {
       const event = new KeyboardEvent('keydown', { key: '5' });
-      spyOn(event, 'preventDefault');
+      jest.spyOn(event, 'preventDefault');
 
       inputElement.dispatchEvent(event);
 
@@ -54,7 +54,7 @@ describe('NumericInputDirective', () => {
     it('should allow all digits 0-9', () => {
       for (let i = 0; i <= 9; i++) {
         const event = new KeyboardEvent('keydown', { key: String(i) });
-        spyOn(event, 'preventDefault');
+        jest.spyOn(event, 'preventDefault');
 
         inputElement.dispatchEvent(event);
 
@@ -72,7 +72,7 @@ describe('NumericInputDirective', () => {
     controlKeys.forEach(key => {
       it(`should allow ${key} key`, () => {
         const event = new KeyboardEvent('keydown', { key });
-        spyOn(event, 'preventDefault');
+        jest.spyOn(event, 'preventDefault');
 
         inputElement.dispatchEvent(event);
 
@@ -84,7 +84,7 @@ describe('NumericInputDirective', () => {
   describe('Keyboard Shortcuts', () => {
     it('should allow Ctrl+A (select all)', () => {
       const event = new KeyboardEvent('keydown', { key: 'a', ctrlKey: true });
-      spyOn(event, 'preventDefault');
+      jest.spyOn(event, 'preventDefault');
 
       inputElement.dispatchEvent(event);
 
@@ -93,7 +93,7 @@ describe('NumericInputDirective', () => {
 
     it('should allow Ctrl+C (copy)', () => {
       const event = new KeyboardEvent('keydown', { key: 'c', ctrlKey: true });
-      spyOn(event, 'preventDefault');
+      jest.spyOn(event, 'preventDefault');
 
       inputElement.dispatchEvent(event);
 
@@ -102,7 +102,7 @@ describe('NumericInputDirective', () => {
 
     it('should allow Ctrl+V (paste)', () => {
       const event = new KeyboardEvent('keydown', { key: 'v', ctrlKey: true });
-      spyOn(event, 'preventDefault');
+      jest.spyOn(event, 'preventDefault');
 
       inputElement.dispatchEvent(event);
 
@@ -111,7 +111,7 @@ describe('NumericInputDirective', () => {
 
     it('should allow Ctrl+X (cut)', () => {
       const event = new KeyboardEvent('keydown', { key: 'x', ctrlKey: true });
-      spyOn(event, 'preventDefault');
+      jest.spyOn(event, 'preventDefault');
 
       inputElement.dispatchEvent(event);
 
@@ -120,7 +120,7 @@ describe('NumericInputDirective', () => {
 
     it('should allow Ctrl+Z (undo)', () => {
       const event = new KeyboardEvent('keydown', { key: 'z', ctrlKey: true });
-      spyOn(event, 'preventDefault');
+      jest.spyOn(event, 'preventDefault');
 
       inputElement.dispatchEvent(event);
 
@@ -129,7 +129,7 @@ describe('NumericInputDirective', () => {
 
     it('should allow Meta+A on Mac', () => {
       const event = new KeyboardEvent('keydown', { key: 'a', metaKey: true });
-      spyOn(event, 'preventDefault');
+      jest.spyOn(event, 'preventDefault');
 
       inputElement.dispatchEvent(event);
 
@@ -142,7 +142,7 @@ describe('NumericInputDirective', () => {
       inputElement.value = '10';
 
       const event = new KeyboardEvent('keydown', { key: '.' });
-      spyOn(event, 'preventDefault');
+      jest.spyOn(event, 'preventDefault');
 
       inputElement.dispatchEvent(event);
 
@@ -153,7 +153,7 @@ describe('NumericInputDirective', () => {
       inputElement.value = '10';
 
       const event = new KeyboardEvent('keydown', { key: ',' });
-      spyOn(event, 'preventDefault');
+      jest.spyOn(event, 'preventDefault');
 
       inputElement.dispatchEvent(event);
 
@@ -164,7 +164,7 @@ describe('NumericInputDirective', () => {
       inputElement.value = '10.5';
 
       const event = new KeyboardEvent('keydown', { key: '.' });
-      spyOn(event, 'preventDefault');
+      jest.spyOn(event, 'preventDefault');
 
       inputElement.dispatchEvent(event);
 
@@ -175,7 +175,7 @@ describe('NumericInputDirective', () => {
       inputElement.value = '10,5';
 
       const event = new KeyboardEvent('keydown', { key: ',' });
-      spyOn(event, 'preventDefault');
+      jest.spyOn(event, 'preventDefault');
 
       inputElement.dispatchEvent(event);
 
@@ -186,7 +186,7 @@ describe('NumericInputDirective', () => {
       inputElement.value = '10,5';
 
       const event = new KeyboardEvent('keydown', { key: '.' });
-      spyOn(event, 'preventDefault');
+      jest.spyOn(event, 'preventDefault');
 
       inputElement.dispatchEvent(event);
 
@@ -197,7 +197,7 @@ describe('NumericInputDirective', () => {
       inputElement.value = '10.5';
 
       const event = new KeyboardEvent('keydown', { key: ',' });
-      spyOn(event, 'preventDefault');
+      jest.spyOn(event, 'preventDefault');
 
       inputElement.dispatchEvent(event);
 
@@ -211,7 +211,7 @@ describe('NumericInputDirective', () => {
     invalidChars.forEach(char => {
       it(`should prevent ${char} key`, () => {
         const event = new KeyboardEvent('keydown', { key: char });
-        spyOn(event, 'preventDefault');
+        jest.spyOn(event, 'preventDefault');
 
         inputElement.dispatchEvent(event);
 
@@ -223,7 +223,7 @@ describe('NumericInputDirective', () => {
   describe('Minus Sign (Negative Numbers)', () => {
     it('should prevent minus sign', () => {
       const event = new KeyboardEvent('keydown', { key: '-' });
-      spyOn(event, 'preventDefault');
+      jest.spyOn(event, 'preventDefault');
 
       inputElement.dispatchEvent(event);
 
@@ -232,7 +232,7 @@ describe('NumericInputDirective', () => {
 
     it('should prevent plus sign', () => {
       const event = new KeyboardEvent('keydown', { key: '+' });
-      spyOn(event, 'preventDefault');
+      jest.spyOn(event, 'preventDefault');
 
       inputElement.dispatchEvent(event);
 
@@ -263,7 +263,7 @@ describe('NumericInputDirective', () => {
 
       // Try to add comma again (should be prevented by keydown)
       const keyEvent = new KeyboardEvent('keydown', { key: ',' });
-      spyOn(keyEvent, 'preventDefault');
+      jest.spyOn(keyEvent, 'preventDefault');
       inputElement.dispatchEvent(keyEvent);
 
       expect(keyEvent.preventDefault).toHaveBeenCalled();
@@ -272,7 +272,7 @@ describe('NumericInputDirective', () => {
     it('should re-dispatch input event after conversion', () => {
       inputElement.value = '10,5';
 
-      const inputSpy = spyOn(inputElement, 'dispatchEvent').and.callThrough();
+      const inputSpy = jest.spyOn(inputElement, 'dispatchEvent').and.callThrough();
 
       const inputEvent = new Event('input', { bubbles: true });
       inputElement.dispatchEvent(inputEvent);
@@ -319,7 +319,7 @@ describe('NumericInputDirective', () => {
       inputElement.value = '';
 
       const event = new KeyboardEvent('keydown', { key: ',' });
-      spyOn(event, 'preventDefault');
+      jest.spyOn(event, 'preventDefault');
 
       inputElement.dispatchEvent(event);
 
@@ -344,7 +344,7 @@ describe('NumericInputDirective', () => {
 
       digits.forEach(digit => {
         const event = new KeyboardEvent('keydown', { key: digit });
-        spyOn(event, 'preventDefault');
+        jest.spyOn(event, 'preventDefault');
 
         inputElement.dispatchEvent(event);
 
@@ -356,12 +356,12 @@ describe('NumericInputDirective', () => {
       inputElement.value = '123';
 
       let event = new KeyboardEvent('keydown', { key: 'Backspace' });
-      spyOn(event, 'preventDefault');
+      jest.spyOn(event, 'preventDefault');
       inputElement.dispatchEvent(event);
       expect(event.preventDefault).not.toHaveBeenCalled();
 
       event = new KeyboardEvent('keydown', { key: '4' });
-      spyOn(event, 'preventDefault');
+      jest.spyOn(event, 'preventDefault');
       inputElement.dispatchEvent(event);
       expect(event.preventDefault).not.toHaveBeenCalled();
     });
@@ -370,7 +370,7 @@ describe('NumericInputDirective', () => {
       inputElement.value = '12.5';
 
       const deleteEvent = new KeyboardEvent('keydown', { key: 'Delete' });
-      spyOn(deleteEvent, 'preventDefault');
+      jest.spyOn(deleteEvent, 'preventDefault');
       inputElement.dispatchEvent(deleteEvent);
       expect(deleteEvent.preventDefault).not.toHaveBeenCalled();
     });

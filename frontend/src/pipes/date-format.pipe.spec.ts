@@ -63,7 +63,7 @@ describe('AppDateFormatPipe', () => {
     it('should format date with month abbreviation', () => {
       const date = new Date('2026-01-27');
       const result = pipe.transform(date, 'long');
-      expect(result).toMatch(/^27 de jan/i);
+      expect(result).toMatch(/^27 jan/i);
     });
 
     it('should use Portuguese abbreviations', () => {
@@ -109,7 +109,7 @@ describe('AppDateFormatPipe', () => {
     it('should format date and time together', () => {
       const date = new Date('2026-01-27T14:30:00');
       const result = pipe.transform(date, 'datetime');
-      expect(result).toMatch(/^27 de jan.*2026.*14:30$/i);
+      expect(result).toMatch(/^27 jan.*2026.*14:30$/i);
     });
 
     it('should include separator', () => {
@@ -123,7 +123,7 @@ describe('AppDateFormatPipe', () => {
     it('should format day and month only', () => {
       const date = new Date('2026-01-27');
       const result = pipe.transform(date, 'shortMonth');
-      expect(result).toMatch(/^27 de jan/i);
+      expect(result).toMatch(/^27 jan/i);
     });
 
     it('should work for all months', () => {

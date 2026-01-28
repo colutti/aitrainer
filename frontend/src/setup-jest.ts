@@ -13,6 +13,11 @@ import {
   BrowserDynamicTestingModule,
   platformBrowserDynamicTesting,
 } from '@angular/platform-browser-dynamic/testing';
+import { registerLocaleData } from '@angular/common';
+import ptBr from '@angular/common/locales/pt';
+
+// Register Portuguese (Brazil) locale data for pipes
+registerLocaleData(ptBr);
 
 TestBed.initTestEnvironment(
   BrowserDynamicTestingModule,

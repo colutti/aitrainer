@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { WidgetMacroTargetsComponent } from './widget-macro-targets.component';
+import { WidgetMacroTargetsComponent } from '../widget-macro-targets.component';
 import { SimpleChange } from '@angular/core';
 
 describe('WidgetMacroTargetsComponent', () => {

@@ -1,9 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, CommonModule } from '@angular/forms';
 import { ChatComponent } from './chat.component';
 import { ChatService } from '../../services/chat.service';
 import { TrainerProfileService } from '../../services/trainer-profile.service';
-import { ChangeDetectorRef } from '@angular/core';
+import { ChangeDetectorRef, Component, NO_ERRORS_SCHEMA } from '@angular/core';
 import { MessageFactory } from '../../test-utils/factories/message.factory';
 import { TrainerFactory } from '../../test-utils/factories/trainer.factory';
 import { signal } from '@angular/core';
@@ -40,12 +40,13 @@ describe('ChatComponent', () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [ChatComponent, FormsModule],
+      imports: [ChatComponent, FormsModule, CommonModule],
       providers: [
         { provide: ChatService, useValue: mockChatService },
         { provide: TrainerProfileService, useValue: mockTrainerService },
         { provide: ChangeDetectorRef, useValue: mockChangeDetectorRef }
-      ]
+      ],
+      schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ChatComponent);

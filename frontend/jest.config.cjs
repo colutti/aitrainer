@@ -11,5 +11,5 @@ module.exports = {
       stringifyContentPathRegex: '\\.html$',
     }],
   },
-  transformIgnorePatterns: ['node_modules/(?!(.*\\.mjs$|lodash-es|ng2-charts|chart.js))'],
+  transformIgnorePatterns: ['node_modules/(?!(.*\\.mjs$|lodash-es|ng2-charts|chart.js|@angular/common/locales))'],
 };

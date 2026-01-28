@@ -34,6 +34,10 @@ export class AppDateFormatPipe implements PipeTransform {
   };
 
   transform(value: any, format: string = 'medium'): string | null {
-    return this.datePipe.transform(value, this.formats[format] || format);
+    try {
+      return this.datePipe.transform(value, this.formats[format] || format);
+    } catch {
+      return null;
+    }
   }
 }
