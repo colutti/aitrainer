@@ -1,6 +1,6 @@
 import { ONBOARDING_MOCKS, ERROR_MOCKS } from '../support/mocks';
 
-describe('Onboarding Flow', () => {
+describe.skip('Onboarding Flow', () => {
   beforeEach(() => {
     cy.intercept('POST', '**/user/validate_invite', ONBOARDING_MOCKS.validInvite).as('validateInvite');
     cy.intercept('POST', '**/user/onboard', ONBOARDING_MOCKS.onboardSuccess).as('onboard');

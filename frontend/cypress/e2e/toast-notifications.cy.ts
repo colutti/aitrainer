@@ -1,4 +1,4 @@
-describe('Toast Notifications', () => {
+Toast-notifications|describe('Toast Notifications', () => {
     beforeEach(() => {
         // 100% Mocked Login
         cy.mockLogin({

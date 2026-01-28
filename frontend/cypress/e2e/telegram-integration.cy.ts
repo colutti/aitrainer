@@ -1,4 +1,4 @@
-describe('Telegram Integration', () => {
+Telegram-integration|describe('Telegram Integration', () => {
   const setupTest = (linked: boolean = false) => {
     cy.mockLogin({
       intercepts: {

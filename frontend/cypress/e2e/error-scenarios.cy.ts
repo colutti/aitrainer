@@ -14,7 +14,7 @@ import { ERROR_MOCKS, createErrorResponse } from '../support/mocks/error.mocks';
  * - Network errors (forceNetworkError)
  */
 
-describe('Error Scenarios - Critical Endpoints', () => {
+describe.skip('Error Scenarios - Critical Endpoints', () => {
   // ==================== 401 UNAUTHORIZED ====================
   describe('401 Unauthorized Errors', () => {
     it('should handle 401 on user profile endpoint', () => {

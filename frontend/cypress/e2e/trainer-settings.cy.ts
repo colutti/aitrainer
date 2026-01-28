@@ -1,4 +1,4 @@
-describe('Trainer Settings Flow', () => {
+Trainer-settings|describe('Trainer Settings Flow', () => {
   beforeEach(() => {
     // 100% Mocked Login
     cy.mockLogin({

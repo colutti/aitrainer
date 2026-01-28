@@ -46,19 +46,24 @@ describe('Admin Users Management', () => {
 
     it('should view user details in a modal', () => {
         cy.wait('@getUsers');
-        
+
         cy.contains('tr', 'user1@test.com')
             .find('button').contains('Ver')
             .click();
-            
+
         cy.wait('@getUserDetails');
-        
+
         // Check for modal presence
         cy.contains('h2', 'Detalhes do Usuário').should('be.visible');
         cy.get('pre').should('include.text', 'user1@test.com');
-        
-        // Close modal
-        cy.get('button').find('svg').first().click({ force: true });
+
+        // Close modal - find the button with X icon within the modal header
+        cy.contains('h2', 'Detalhes do Usuário')
+            .parent()
+            .find('button svg')
+            .parent()
+            .click();
+
         cy.contains('h2', 'Detalhes do Usuário').should('not.exist');
     });
 

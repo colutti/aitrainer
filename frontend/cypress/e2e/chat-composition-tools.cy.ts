@@ -1,8 +1,16 @@
 describe('AI Body Composition Tools', () => {
   beforeEach(() => {
-    // 100% Mocked Login
-    cy.mockLogin();
-    
+    // Setup mocks with message history
+    cy.mockLogin({
+      intercepts: {
+        '**/message/history*': {
+          statusCode: 200,
+          body: [],
+          alias: 'chatHistory'
+        }
+      }
+    });
+
     // Navigate to chat
     cy.get('app-sidebar').contains('Chat').click();
     cy.get('app-chat', { timeout: 10000 }).should('be.visible');

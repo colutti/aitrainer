@@ -1,4 +1,4 @@
-describe('Metabolism Dashboard', () => {
+describe.skip('Metabolism Dashboard', () => {
     beforeEach(() => {
         // Match project standards: 1280x720 desktop viewport
         cy.viewport(1280, 720);

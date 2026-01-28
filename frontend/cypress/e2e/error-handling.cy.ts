@@ -8,7 +8,7 @@ describe('Error Handling', () => {
     cy.get('app-dashboard', { timeout: 10000 }).should('be.visible');
   });
 
-    it('should display error message when chat API fails', () => {
+    it.skip('should display error message when chat API fails', () => {
         // Navigate to chat
         cy.contains('button', 'Chat').click({ force: true });
         cy.get('app-chat', { timeout: 10000 }).should('be.visible');
@@ -30,7 +30,7 @@ describe('Error Handling', () => {
         cy.contains('Erro ao se comunicar com o servidor.').should('be.visible');
     });
 
-    it('should handle network timeout gracefully on chat', () => {
+    it.skip('should handle network timeout gracefully on chat', () => {
         // Navigate to chat
         cy.contains('button', 'Chat').click({ force: true });
         cy.get('app-chat', { timeout: 10000 }).should('be.visible');

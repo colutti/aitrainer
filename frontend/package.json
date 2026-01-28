@@ -9,6 +9,10 @@
     "preview": "ng serve --configuration=production",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
+    "cypress:parallel": "cypress run --parallel --record false",
+    "cypress:fast": "cypress run --headless --browser chrome --spec 'cypress/e2e/{admin-users,auth,body-composition}*.cy.ts'",
+    "cypress:critical": "cypress run --headless --spec 'cypress/e2e/{admin-users,auth,body-composition}*.cy.ts'",
+    "cypress:extended": "cypress run --headless --spec 'cypress/e2e/*.cy.ts'",
     "e2e": "npm run cypress:run",
     "test": "jest"
   },

@@ -1,4 +1,4 @@
-.PHONY: up down build restart logs init-db api front clean-pod db db-down db-logs
+.PHONY: up down build restart logs init-db api front clean-pod db db-down db-logs test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov cypress cypress-open cypress-fast cypress-critical cypress-extended
 
 up:
 	podman-compose up -d
@@ -80,5 +80,69 @@ admin-list:
 	@echo "Listando usuários admin..."
 	@podman-compose exec mongodb mongosh -u admin -p password --authenticationDatabase admin --quiet --eval "use aitrainer; db.users.find({role: 'admin'}, {email: 1, role: 1, _id: 0}).forEach(printjson)"
 
+# Test Commands
+
+## Backend Tests
+test-backend:
+	cd backend && .venv/bin/pytest
+
+test-backend-cov:
+	cd backend && .venv/bin/pytest --cov=src --cov-report=html --cov-report=term-missing
+
+test-backend-verbose:
+	cd backend && .venv/bin/pytest -v
+
+test-backend-watch:
+	cd backend && .venv/bin/pytest --cov=src -v --tb=short
+
+## Frontend Tests
+test-frontend:
+	cd frontend && npm test
+
+test-frontend-watch:
+	cd frontend && npm test -- --watch
+
+test-frontend-cov:
+	cd frontend && npm test -- --coverage
+
+## All Tests
+test: test-backend test-frontend
+
+test-cov: test-backend-cov test-frontend-cov
+
+# E2E Tests (Cypress)
+
+## Cypress padrão (all tests)
 cypress:
 	podman-compose --profile test run --rm --no-deps cypress run
+
+## Cypress interativo
+cypress-open:
+	podman-compose --profile test run --rm --no-deps cypress open
+
+## Cypress fast-fail: apenas testes críticos (admin-users, auth, body-composition)
+## - Sem retries
+## - Timeouts reduzidos
+## - Executa em ~2-3 minutos
+cypress-fast:
+	cd frontend && npm run cypress:fast
+
+## Cypress critical: testes críticos com logging
+## - Sem paralelização
+## - Com output de falhas
+## - Executa em ~3-4 minutos
+cypress-critical:
+	cd frontend && npm run cypress:critical
+
+## Cypress extended: todos os testes
+## - Sem paralelização
+## - Todos os specs
+## - Executa em ~10-15 minutos
+cypress-extended:
+	cd frontend && npm run cypress:extended
+
+## Cypress paralelo: executa em paralelo (requer Cypress Cloud ou --parallel)
+## - Múltiplos workers
+## - Mais rápido em CI/CD
+cypress-parallel:
+	cd frontend && npm run cypress:parallel

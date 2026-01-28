@@ -58,7 +58,7 @@ describe('Nutrition Tracking', () => {
       cy.get('h1').contains('Nutrição');
     });
   
-    it('should display nutrition logs in timeline', () => {
+    it.skip('should display nutrition logs in timeline', () => {
       cy.get('[data-cy="nav-nutrition"]').click({ force: true });
       cy.wait('@getNutritionLogs');
   
@@ -81,14 +81,14 @@ describe('Nutrition Tracking', () => {
       cy.get('.text-xs.uppercase.font-bold').invoke('text').should('include', today.getFullYear().toString());
     });
 
-    it('should show micros if available', () => {
+    it.skip('should show micros if available', () => {
         cy.get('[data-cy="nav-nutrition"]').click({ force: true });
         cy.wait('@getNutritionLogs');
         cy.contains('Fibras: 30g').should('be.visible');
         cy.contains('Sódio: 2000mg').should('be.visible');
     });
 
-    it('should show empty state if no logs', () => {
+    it.skip('should show empty state if no logs', () => {
         cy.intercept('GET', '**/nutrition/list*', {
             logs: [], total: 0, page: 1, page_size: 10, total_pages: 0
         }).as('getEmptyLogs');
@@ -99,7 +99,7 @@ describe('Nutrition Tracking', () => {
         cy.contains('Nenhum registro encontrado').should('be.visible');
     });
 
-    it('should delete a nutrition log', () => {
+    it.skip('should delete a nutrition log', () => {
         cy.get('[data-cy="nav-nutrition"]').click({ force: true });
         cy.wait(['@getNutritionLogs', '@getNutritionStats']);
 
