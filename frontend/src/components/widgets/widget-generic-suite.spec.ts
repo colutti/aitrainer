@@ -32,7 +32,7 @@ describe('WidgetAdherenceComponent', () => {
     component.weeklyAdherence = [true, false, true, true, false, true, true];
     fixture.detectChanges();
     const days = fixture.nativeElement.querySelectorAll('[data-test="day"]');
-    expect(days.length).toBeGreaterThanOrEqual(0);
+    expect(days.length).toBe(7);
   });
 
   it('should show active/inactive states', () => {
@@ -144,7 +144,8 @@ describe('WidgetStreakComponent', () => {
     component.streakWeeks = 25;
     fixture.detectChanges();
     const number = fixture.nativeElement.querySelector('[data-test="streak-number"]');
-    if (number) expect(number.textContent).toContain('25');
+    expect(number).toBeTruthy();
+    expect(number.textContent).toContain('25');
   });
 
   it('should handle zero streak', () => {
@@ -185,7 +186,7 @@ describe('WidgetRecentPrsComponent', () => {
     ];
     fixture.detectChanges();
     const items = fixture.nativeElement.querySelectorAll('[data-test="pr-item"]');
-    expect(items.length).toBeGreaterThanOrEqual(0);
+    expect(items.length).toBeGreaterThanOrEqual(1);
   });
 
   it('should format dates', () => {
@@ -236,7 +237,7 @@ describe('WidgetTdeeSummaryComponent', () => {
     component.targetCalories = 2200;
     fixture.detectChanges();
     const values = fixture.nativeElement.querySelectorAll('[data-test="value"]');
-    expect(values.length).toBeGreaterThanOrEqual(0);
+    expect(values.length).toBeGreaterThanOrEqual(2);
   });
 
   it('should map goal labels', () => {
@@ -246,36 +247,5 @@ describe('WidgetTdeeSummaryComponent', () => {
   });
 });
 
-// ==================== WIDGET LINE CHART (GENERIC) ====================
-describe('WidgetLineChartComponent', () => {
-  let component: any;
-  let fixture: ComponentFixture<any>;
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [] // Would need to import actual line chart component
-    }).compileComponents();
-
-    // Skip detailed tests as it's a generic wrapper
-  });
-
-  it('should be generic chart wrapper', () => {
-    expect(true).toBe(true);
-  });
-});
-
-// ==================== WIDGET CALORIES-WEIGHT COMPARISON ====================
-describe('WidgetCaloriesWeightComparisonComponent', () => {
-  let component: any;
-  let fixture: ComponentFixture<any>;
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [] // Would need actual component
-    }).compileComponents();
-  });
-
-  it('should correlate calories and weight', () => {
-    expect(true).toBe(true);
-  });
-});
+// Note: WidgetLineChartComponent and WidgetCaloriesWeightComparisonComponent
+// are skipped - they require full component imports which would be tested separately

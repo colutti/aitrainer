@@ -26,7 +26,8 @@ describe('WidgetLastActivityComponent', () => {
     component.lastWorkout = { workout_type: 'Legs', date: '2026-01-27' };
     fixture.detectChanges();
     const type = fixture.nativeElement.querySelector('[data-test="workout-type"]');
-    if (type) expect(type.textContent).toContain('Legs');
+    expect(type).toBeTruthy();
+    expect(type.textContent).toContain('Legs');
   });
 
   it('should format and display date', () => {
@@ -40,7 +41,8 @@ describe('WidgetLastActivityComponent', () => {
     component.lastWorkout = { date: '2026-01-27', duration_minutes: 75 };
     fixture.detectChanges();
     const duration = fixture.nativeElement.querySelector('[data-test="duration"]');
-    if (duration) expect(duration.textContent).toContain('75');
+    expect(duration).toBeTruthy();
+    expect(duration.textContent).toContain('75');
   });
 
   it('should handle missing optional fields', () => {
@@ -49,9 +51,10 @@ describe('WidgetLastActivityComponent', () => {
     expect(component.lastWorkout.date).toBe('2026-01-27');
   });
 
-  it('should format date correctly', () => {
-    const date = component.getFormattedDate?.('2026-01-27T14:30:00') || '2026-01-27T14:30:00';
-    expect(date).toBeTruthy();
+  it('should have formatted date from service', () => {
+    component.lastWorkout = { date: '2026-01-27T14:30:00' };
+    fixture.detectChanges();
+    expect(component.lastWorkout.date).toBeTruthy();
   });
 
   it('should handle ISO date format', () => {

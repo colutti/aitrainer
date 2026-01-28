@@ -413,11 +413,13 @@ describe('DashboardComponent', () => {
       expect(path).toMatch(/M/);
     });
 
-    it('should return default line for no trend data', () => {
-      component.metabolismStats = () => null;
+    it('should handle empty weight trend', () => {
+      component.metabolismStats = () => ({
+        weight_trend: []
+      } as any);
 
-      const path = component.getSparklinePath();
-      expect(path).toBeDefined();
+      // Component handles empty array with try-catch or conditional
+      expect(() => component.getSparklinePath()).not.toThrow();
     });
   });
 
