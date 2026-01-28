@@ -7,6 +7,8 @@ import { ChangeDetectorRef, Component, NO_ERRORS_SCHEMA } from '@angular/core';
 import { MessageFactory } from '../../test-utils/factories/message.factory';
 import { TrainerFactory } from '../../test-utils/factories/trainer.factory';
 import { signal } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 describe('ChatComponent', () => {
   let component: ChatComponent;
@@ -40,11 +42,13 @@ describe('ChatComponent', () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [ChatComponent, FormsModule, CommonModule],
+      imports: [ChatComponent],
       providers: [
         { provide: ChatService, useValue: mockChatService },
         { provide: TrainerProfileService, useValue: mockTrainerService },
-        { provide: ChangeDetectorRef, useValue: mockChangeDetectorRef }
+        { provide: ChangeDetectorRef, useValue: mockChangeDetectorRef },
+        provideHttpClient(),
+        provideHttpClientTesting()
       ],
       schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();

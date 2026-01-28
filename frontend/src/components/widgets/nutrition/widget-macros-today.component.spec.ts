@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { WidgetMacrosTodayComponent } from './widget-macros-today.component';
+import { WidgetMacrosTodayComponent } from '../widget-macros-today.component';
 import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { SimpleChange } from '@angular/core';
 

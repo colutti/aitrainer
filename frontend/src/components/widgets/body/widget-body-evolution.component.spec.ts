@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { WidgetBodyEvolutionComponent } from './widget-body-evolution.component';
+import { WidgetBodyEvolutionComponent } from '../widget-body-evolution.component';
 
 describe('WidgetBodyEvolutionComponent', () => {
   let component: WidgetBodyEvolutionComponent;
