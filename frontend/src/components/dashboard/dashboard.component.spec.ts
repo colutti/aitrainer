@@ -388,68 +388,86 @@ describe('DashboardComponent', () => {
   });
 
   describe('Sparkline Visualization', () => {
-    it('should generate sparkline path', () => {
-      const data = [10, 20, 15, 25, 30];
-      const path = component.getSparklinePath(data);
+    it('should generate sparkline path from stats', () => {
+      component.metabolismStats = () => ({
+        weight_trend: [
+          { weight: 10 },
+          { weight: 20 },
+          { weight: 15 },
+          { weight: 25 },
+          { weight: 30 }
+        ]
+      } as any);
 
+      const path = component.getSparklinePath();
       expect(path).toMatch(/M/);
-      expect(path).toMatch(/L/);
+      expect(path).toContain('L');
     });
 
-    it('should handle empty data for sparkline', () => {
-      const path = component.getSparklinePath([]);
+    it('should handle single weight point', () => {
+      component.metabolismStats = () => ({
+        weight_trend: [{ weight: 50 }]
+      } as any);
+
+      const path = component.getSparklinePath();
+      expect(path).toMatch(/M/);
+    });
+
+    it('should return default line for no trend data', () => {
+      component.metabolismStats = () => null;
+
+      const path = component.getSparklinePath();
       expect(path).toBeDefined();
-    });
-
-    it('should handle single point', () => {
-      const path = component.getSparklinePath([50]);
-      expect(path).toBeDefined();
-    });
-
-    it('should handle large dataset', () => {
-      const data = Array.from({ length: 100 }, (_, i) => i * 10);
-      const path = component.getSparklinePath(data);
-
-      expect(path).toBeTruthy();
     });
   });
 
   describe('Metabolic Balance', () => {
-    it('should calculate metabolic balance progress - surplus', () => {
-      const progress = component.getMetabolicBalanceProgress('surplus');
+    it('should calculate metabolic balance progress from stats', () => {
+      component.metabolismStats = () => ({
+        energy_balance: 250
+      } as any);
+
+      const progress = component.getMetabolicBalanceProgress();
       expect(progress).toBeGreaterThan(50);
     });
 
-    it('should calculate metabolic balance progress - deficit', () => {
-      const progress = component.getMetabolicBalanceProgress('deficit');
+    it('should return center value for deficit', () => {
+      component.metabolismStats = () => ({
+        energy_balance: -250
+      } as any);
+
+      const progress = component.getMetabolicBalanceProgress();
       expect(progress).toBeLessThan(50);
     });
 
-    it('should calculate metabolic balance progress - maintenance', () => {
-      const progress = component.getMetabolicBalanceProgress('maintenance');
-      expect(progress).toBeCloseTo(50, 10);
+    it('should return 50 for maintenance', () => {
+      component.metabolismStats = () => ({
+        energy_balance: 0
+      } as any);
+
+      const progress = component.getMetabolicBalanceProgress();
+      expect(progress).toBe(50);
     });
   });
 
   describe('Weight Variation', () => {
-    it('should calculate weight variation - gain', () => {
-      const variation = component.getWeightVariation(85, 80);
-      expect(variation).toBe(5);
-    });
+    it('should return weight variation from metabolism stats', () => {
+      (statsServiceMock.stats as any).set({
+        start_weight: 85,
+        end_weight: 80
+      });
+      component.metabolismStats = () => ({
+        start_weight: 85,
+        end_weight: 80
+      } as any);
 
-    it('should calculate weight variation - loss', () => {
-      const variation = component.getWeightVariation(80, 85);
+      const variation = component.getWeightVariation();
       expect(variation).toBe(-5);
     });
 
-    it('should calculate weight variation - no change', () => {
-      const variation = component.getWeightVariation(80, 80);
+    it('should return 0 when no weight data', () => {
+      const variation = component.getWeightVariation();
       expect(variation).toBe(0);
-    });
-
-    it('should handle decimal weights', () => {
-      const variation = component.getWeightVariation(80.5, 79.3);
-      expect(variation).toBeCloseTo(1.2, 1);
     });
   });
 

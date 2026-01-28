@@ -36,7 +36,7 @@ describe('WidgetAverageCaloriesComponent', () => {
     fixture.detectChanges();
 
     const values = fixture.nativeElement.querySelectorAll('[data-test="average-value"]');
-    expect(values.length).toBeGreaterThanOrEqual(0);
+    expect(values.length).toBe(2);
   });
 
   it('should format large numbers', () => {
@@ -61,7 +61,8 @@ describe('WidgetAverageCaloriesComponent', () => {
     const label7 = fixture.nativeElement.querySelector('[data-test="label-7days"]');
     const label14 = fixture.nativeElement.querySelector('[data-test="label-14days"]');
 
-    expect(label7 || label14).toBeTruthy();
+    expect(label7).toBeTruthy();
+    expect(label14).toBeTruthy();
   });
 
   it('should be pure component', () => {

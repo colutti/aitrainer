@@ -35,17 +35,20 @@ describe('WidgetMacroTargetsComponent', () => {
 
   it('should calculate protein percentage', () => {
     const percentage = component.getPercent(150, 160);
-    expect(percentage).toBeCloseTo(93.75, 1);
+    // 150/160 * 100 = 93.75, rounded = 94
+    expect(percentage).toBe(94);
   });
 
   it('should calculate carbs percentage', () => {
     const percentage = component.getPercent(250, 270);
-    expect(percentage).toBeCloseTo(92.6, 1);
+    // 250/270 * 100 = 92.59..., rounded = 93
+    expect(percentage).toBe(93);
   });
 
   it('should calculate fat percentage', () => {
     const percentage = component.getPercent(70, 75);
-    expect(percentage).toBeCloseTo(93.33, 1);
+    // 70/75 * 100 = 93.33..., rounded = 93
+    expect(percentage).toBe(93);
   });
 
   it('should handle zero target', () => {
@@ -79,7 +82,7 @@ describe('WidgetMacroTargetsComponent', () => {
     fixture.detectChanges();
 
     const bars = fixture.nativeElement.querySelectorAll('[data-test="progress-bar"]');
-    expect(bars.length).toBeGreaterThanOrEqual(0);
+    expect(bars.length).toBe(3);
   });
 
   it('should update on input changes', () => {
@@ -98,13 +101,13 @@ describe('WidgetMacroTargetsComponent', () => {
     fixture.detectChanges();
 
     const percentage = fixture.nativeElement.querySelector('[data-test="protein-percent"]');
-    if (percentage) {
-      expect(percentage.textContent).toContain('%');
-    }
+    expect(percentage).toBeTruthy();
+    expect(percentage.textContent).toContain('%');
   });
 
   it('should be pure component without services', () => {
-    expect(component.avgProtein !== undefined || component.targetProtein !== undefined).toBe(true);
+    expect(component).toBeTruthy();
+    expect(component.getPercent).toBeDefined();
   });
 
   it('should handle large values', () => {
@@ -114,6 +117,7 @@ describe('WidgetMacroTargetsComponent', () => {
 
   it('should handle small decimal values', () => {
     const percentage = component.getPercent(0.5, 1);
-    expect(percentage).toBeCloseTo(50, 1);
+    // 0.5/1 * 100 = 50, rounded = 50
+    expect(percentage).toBe(50);
   });
 });
