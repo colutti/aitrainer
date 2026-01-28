@@ -159,7 +159,7 @@ describe('MemoryService', () => {
 
       const promise = service.getMemories();
       const req = httpMock.expectOne(req => req.url.includes('/memory/list'));
-      req.flush(mockMemoryListResponse);
+      req.flush({ ...mockMemoryListResponse, total_pages: 3 });
       await promise;
     });
 
@@ -193,14 +193,14 @@ describe('MemoryService', () => {
       // Page 1 -> 2
       let promise = service.nextPage();
       let req = httpMock.expectOne(req => req.url.includes('/memory/list'));
-      req.flush({ ...mockMemoryListResponse, page: 2 });
+      req.flush({ ...mockMemoryListResponse, page: 2, total_pages: 3 });
       await promise;
       expect(service.currentPage()).toBe(2);
 
       // Page 2 -> 3
       promise = service.nextPage();
       req = httpMock.expectOne(req => req.url.includes('/memory/list'));
-      req.flush({ ...mockMemoryListResponse, page: 3 });
+      req.flush({ ...mockMemoryListResponse, page: 3, total_pages: 3 });
       await promise;
       expect(service.currentPage()).toBe(3);
     });
@@ -215,7 +215,8 @@ describe('MemoryService', () => {
       const req = httpMock.expectOne(req => req.url.includes('/memory/list'));
       req.flush({
         ...mockMemoryListResponse,
-        page: 2
+        page: 2,
+        total_pages: 3
       });
       await promise;
     });
@@ -251,14 +252,14 @@ describe('MemoryService', () => {
       // Page 3 -> 2
       let promise = service.previousPage();
       let req = httpMock.expectOne(req => req.url.includes('/memory/list'));
-      req.flush({ ...mockMemoryListResponse, page: 2 });
+      req.flush({ ...mockMemoryListResponse, page: 2, total_pages: 3 });
       await promise;
       expect(service.currentPage()).toBe(2);
 
       // Page 2 -> 1
       promise = service.previousPage();
       req = httpMock.expectOne(req => req.url.includes('/memory/list'));
-      req.flush({ ...mockMemoryListResponse, page: 1 });
+      req.flush({ ...mockMemoryListResponse, page: 1, total_pages: 3 });
       await promise;
       expect(service.currentPage()).toBe(1);
     });
