@@ -1,28 +1,14 @@
-export interface Workout {
-  id: string;
-  date: string;
-  type: string;
-  exercises: Exercise[];
-  duration_minutes: number;
-  notes?: string;
-}
-
-export interface Exercise {
-  name: string;
-  sets: number;
-  reps: number;
-  weight?: number;
-}
+import { Workout, Exercise } from '../../models/workout.model';
 
 export class WorkoutFactory {
   static create(overrides?: Partial<Workout>): Workout {
     return {
       id: 'workout_' + Date.now(),
       date: new Date().toISOString().split('T')[0],
-      type: 'Peito',
+      workout_type: 'Peito',
       exercises: [
-        { name: 'Supino Reto', sets: 4, reps: 8, weight: 100 },
-        { name: 'Crucifixo', sets: 3, reps: 10, weight: 20 }
+        { name: 'Supino Reto', sets: 4, reps_per_set: [8, 8, 8, 8], weights_per_set: [100, 100, 100, 100] },
+        { name: 'Crucifixo', sets: 3, reps_per_set: [10, 10, 10], weights_per_set: [20, 20, 20] }
       ],
       duration_minutes: 45,
       ...overrides
@@ -36,7 +22,7 @@ export class WorkoutFactory {
       baseDate.setDate(baseDate.getDate() - i);
       return this.create({
         id: `workout_${i}`,
-        type: type || types[i % types.length],
+        workout_type: type || types[i % types.length],
         date: baseDate.toISOString().split('T')[0]
       });
     });
@@ -44,22 +30,22 @@ export class WorkoutFactory {
 
   static createChest(): Workout {
     return this.create({
-      type: 'Peito',
+      workout_type: 'Peito',
       exercises: [
-        { name: 'Supino Reto', sets: 4, reps: 8, weight: 100 },
-        { name: 'Supino Inclinado', sets: 4, reps: 10, weight: 80 },
-        { name: 'Crucifixo', sets: 3, reps: 12, weight: 20 }
+        { name: 'Supino Reto', sets: 4, reps_per_set: [8, 8, 8, 8], weights_per_set: [100, 100, 100, 100] },
+        { name: 'Supino Inclinado', sets: 4, reps_per_set: [10, 10, 10, 10], weights_per_set: [80, 80, 80, 80] },
+        { name: 'Crucifixo', sets: 3, reps_per_set: [12, 12, 12], weights_per_set: [20, 20, 20] }
       ]
     });
   }
 
   static createBack(): Workout {
     return this.create({
-      type: 'Costas',
+      workout_type: 'Costas',
       exercises: [
-        { name: 'Barra Fixa', sets: 4, reps: 8 },
-        { name: 'Remada com Barra', sets: 4, reps: 10, weight: 80 },
-        { name: 'Remada Machine', sets: 3, reps: 12, weight: 120 }
+        { name: 'Barra Fixa', sets: 4, reps_per_set: [8, 8, 8, 8], weights_per_set: [0, 0, 0, 0] },
+        { name: 'Remada com Barra', sets: 4, reps_per_set: [10, 10, 10, 10], weights_per_set: [80, 80, 80, 80] },
+        { name: 'Remada Machine', sets: 3, reps_per_set: [12, 12, 12], weights_per_set: [120, 120, 120] }
       ]
     });
   }
