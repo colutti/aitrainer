@@ -56,9 +56,10 @@ describe('WidgetMacroTargetsComponent', () => {
     expect(percentage).toBe(0);
   });
 
-  it('should handle exceeding target', () => {
+  it('should cap exceeding target at 100', () => {
     const percentage = component.getPercent(200, 160);
-    expect(percentage).toBeGreaterThan(100);
+    // 200/160 * 100 = 125, but capped at 100 by Math.min
+    expect(percentage).toBe(100);
   });
 
   it('should accept stability score', () => {
