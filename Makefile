@@ -1,4 +1,4 @@
-.PHONY: up down build restart logs init-db api front clean-pod db db-down db-logs test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov cypress cypress-open cypress-fast cypress-critical cypress-extended
+.PHONY: up down build restart logs init-db api front clean-pod db db-down db-logs test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov cypress cypress-open cypress-fast cypress-critical cypress-extended cypress-parallel ci-test ci-fast
 
 up:
 	podman-compose up -d
@@ -146,3 +146,20 @@ cypress-extended:
 ## - Mais rápido em CI/CD
 cypress-parallel:
 	cd frontend && npm run cypress:parallel
+
+# CI/CD Validation Commands
+
+## CI Fast: Gate rápido para PRs
+## - Backend: testes unitários + linter
+## - Frontend: unit tests + jest
+## - Cypress: apenas testes críticos (14 testes em ~10 segundos)
+## - Total: ~30 segundos
+ci-fast: test-backend test-frontend cypress-fast
+	@echo "✅ CI Fast Gate Passed!"
+
+## CI Full: Tudo que a CI/CD roda no GitHub Actions
+## - Backend: unit tests + benchmarks + linter
+## - Frontend: unit tests + build + cypress extended
+## - Total: ~5-10 minutos
+ci-test: test-backend test-frontend cypress-extended
+	@echo "✅ CI Full Test Suite Passed!"
