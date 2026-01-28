@@ -47,7 +47,7 @@ export class UserProfileService {
       );
       this.userProfile.update(currentProfile => {
         if (!currentProfile) {
-          return { ...profile, email: '' };
+          return profile as UserProfile;
         }
         return { ...currentProfile, ...profile };
       });
