@@ -126,7 +126,7 @@ class TestAITrainerBrainSync(unittest.TestCase):
             weight=60,
             height=165,
             goal="Fat loss",
-            goal_type="loss",
+            goal_type="lose",
             weekly_rate=0.5,
         )
         trainer_profile = TrainerProfile(user_email=user_email, trainer_type="luna")
