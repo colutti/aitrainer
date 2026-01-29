@@ -6,11 +6,13 @@ Tests cover message history retrieval and AI message processing with streaming.
 from unittest.mock import MagicMock, patch, AsyncMock
 from fastapi.testclient import TestClient
 import pytest
+from datetime import datetime
 
 from src.api.main import app
 from src.services.auth import verify_token
 from src.core.deps import get_ai_trainer_brain
 from src.api.models.sender import Sender
+from src.api.models.chat_history import ChatHistory
 
 
 client = TestClient(app)
@@ -25,29 +27,22 @@ def mock_user_email():
 @pytest.fixture
 def sample_chat_messages():
     """Sample chat history with various message types."""
-    from src.api.models.message import Message
     return [
-        {
-            "id": "msg_1",
-            "user_email": "test@example.com",
-            "sender": Sender.USER,
-            "content": "What's my workout routine?",
-            "timestamp": "2024-01-29T10:00:00Z"
-        },
-        {
-            "id": "msg_2",
-            "user_email": "test@example.com",
-            "sender": Sender.TRAINER,
-            "content": "Your routine consists of...",
-            "timestamp": "2024-01-29T10:05:00Z"
-        },
-        {
-            "id": "msg_3",
-            "user_email": "test@example.com",
-            "sender": Sender.SYSTEM,
-            "content": "[Internal logging]",
-            "timestamp": "2024-01-29T10:06:00Z"
-        }
+        ChatHistory(
+            text="What's my workout routine?",
+            sender=Sender.STUDENT,
+            timestamp="2024-01-29T10:00:00Z"
+        ),
+        ChatHistory(
+            text="Your routine consists of...",
+            sender=Sender.TRAINER,
+            timestamp="2024-01-29T10:05:00Z"
+        ),
+        ChatHistory(
+            text="[Internal logging]",
+            sender=Sender.SYSTEM,
+            timestamp="2024-01-29T10:06:00Z"
+        )
     ]
 
 
@@ -103,7 +98,7 @@ def test_get_history_unauthorized():
     """Test chat history retrieval without authentication."""
     response = client.get("/message/history")
 
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 # Test: GET /message/history - Only System Messages (All Filtered)
@@ -112,13 +107,11 @@ def test_get_history_only_system_messages():
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_brain = MagicMock()
     mock_brain.get_chat_history.return_value = [
-        {
-            "id": "msg_1",
-            "user_email": "test@example.com",
-            "sender": Sender.SYSTEM,
-            "content": "[Internal]",
-            "timestamp": "2024-01-29T10:00:00Z"
-        }
+        ChatHistory(
+            text="[Internal]",
+            sender=Sender.SYSTEM,
+            timestamp="2024-01-29T10:00:00Z"
+        )
     ]
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
@@ -195,6 +188,9 @@ def test_message_ai_user_not_found():
 def test_message_ai_empty_message():
     """Test sending empty message."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
+    mock_brain = MagicMock()
+    mock_brain.send_message_ai.return_value = (x for x in ["Response"])
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
     payload = {
         "user_message": ""
@@ -221,7 +217,7 @@ def test_message_ai_unauthorized():
 
     response = client.post("/message/message", json=payload)
 
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 # Test: POST /message/message - Long Message

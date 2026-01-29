@@ -6,30 +6,78 @@ Tests cover dashboard stats retrieval and aggregated workout metrics.
 from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
 import pytest
+from datetime import datetime
 
 from src.api.main import app
 from src.services.auth import verify_token
 from src.core.deps import get_mongo_database
-from src.api.models.workout_stats import WorkoutStats
+from src.api.models.workout_stats import WorkoutStats, VolumeStat, PersonalRecord
 
 
 client = TestClient(app)
+
+
+def create_workout_stats(
+    total_workouts=42,
+    current_streak_weeks=8,
+    weekly_frequency=None,
+    weekly_volume=None,
+    recent_prs=None,
+):
+    """Helper function to create valid WorkoutStats for testing."""
+    if weekly_frequency is None:
+        weekly_frequency = [True, True, False, True, True, False, True]
+    if weekly_volume is None:
+        weekly_volume = [
+            VolumeStat(category="Perna", volume=5000.0),
+            VolumeStat(category="Costas", volume=4200.0),
+        ]
+    if recent_prs is None:
+        recent_prs = [
+            PersonalRecord(
+                exercise_name="Supino",
+                weight=120.0,
+                reps=8,
+                date=datetime.now(),
+                workout_id="w_001"
+            )
+        ]
+
+    return WorkoutStats(
+        current_streak_weeks=current_streak_weeks,
+        weekly_frequency=weekly_frequency,
+        weekly_volume=weekly_volume,
+        recent_prs=recent_prs,
+        total_workouts=total_workouts,
+        last_workout=None,
+        volume_trend=[4800, 5100, 5200, 5000, 5300, 4900, 5100, 5200],
+        strength_radar={"Perna": 0.95, "Costas": 0.88}
+    )
 
 
 # Fixtures
 @pytest.fixture
 def sample_workout_stats():
     return WorkoutStats(
+        current_streak_weeks=8,
+        weekly_frequency=[True, True, False, True, True, False, True],
+        weekly_volume=[
+            VolumeStat(category="Perna", volume=5000.0),
+            VolumeStat(category="Costas", volume=4200.0),
+        ],
+        recent_prs=[
+            PersonalRecord(
+                exercise_name="Supino",
+                weight=120.0,
+                reps=8,
+                date=datetime.now(),
+                workout_id="w_001"
+            )
+        ],
         total_workouts=42,
-        total_duration_minutes=2520,
-        total_exercises=156,
-        average_workout_duration=60,
-        most_frequent_type="strength",
-        workouts_this_week=5,
-        total_sets=420,
-        total_reps=5040,
-        avg_sets_per_workout=10,
-        avg_reps_per_workout=120
+        last_workout=None,
+        volume_trend=[4800, 5100, 5200, 5000, 5300, 4900, 5100, 5200],
+        strength_radar={"Perna": 0.95, "Costas": 0.88}
     )
 
 
@@ -42,16 +90,15 @@ def test_get_dashboard_stats_success(sample_workout_stats):
     app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     response = client.get(
-        "/stats/stats",
+        "/workout/stats",
         headers={"Authorization": "Bearer test_token"}
     )
 
     assert response.status_code == 200
     data = response.json()
     assert data["total_workouts"] == 42
-    assert data["average_workout_duration"] == 60
-    assert data["most_frequent_type"] == "strength"
-    assert data["workouts_this_week"] == 5
+    assert data["current_streak_weeks"] == 8
+    assert len(data["weekly_frequency"]) == 7
 
     mock_db.get_workout_stats.assert_called_once_with("test@example.com")
 
@@ -63,29 +110,17 @@ def test_get_dashboard_stats_no_data():
     """Test stats for new user with no workout data."""
     app.dependency_overrides[verify_token] = lambda: "newuser@example.com"
     mock_db = MagicMock()
-    mock_db.get_workout_stats.return_value = WorkoutStats(
-        total_workouts=0,
-        total_duration_minutes=0,
-        total_exercises=0,
-        average_workout_duration=0,
-        most_frequent_type=None,
-        workouts_this_week=0,
-        total_sets=0,
-        total_reps=0,
-        avg_sets_per_workout=0,
-        avg_reps_per_workout=0
-    )
+    mock_db.get_workout_stats.return_value = create_workout_stats(total_workouts=0)
     app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     response = client.get(
-        "/stats/stats",
+        "/workout/stats",
         headers={"Authorization": "Bearer test_token"}
     )
 
     assert response.status_code == 200
     data = response.json()
     assert data["total_workouts"] == 0
-    assert data["workouts_this_week"] == 0
 
     app.dependency_overrides = {}
 
@@ -93,8 +128,8 @@ def test_get_dashboard_stats_no_data():
 # Test: GET /stats/stats - Unauthorized
 def test_get_dashboard_stats_unauthorized():
     """Test stats retrieval without authentication."""
-    response = client.get("/stats/stats")
-    assert response.status_code == 403
+    response = client.get("/workout/stats")
+    assert response.status_code == 401
 
 
 # Test: GET /stats/stats - Database Error
@@ -106,7 +141,7 @@ def test_get_dashboard_stats_database_error():
     app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     response = client.get(
-        "/stats/stats",
+        "/workout/stats",
         headers={"Authorization": "Bearer test_token"}
     )
 
@@ -122,63 +157,42 @@ def test_get_dashboard_stats_large_numbers():
     """Test stats with high workout volume."""
     app.dependency_overrides[verify_token] = lambda: "veteran@example.com"
     mock_db = MagicMock()
-    mock_db.get_workout_stats.return_value = WorkoutStats(
-        total_workouts=500,
-        total_duration_minutes=50000,
-        total_exercises=5000,
-        average_workout_duration=100,
-        most_frequent_type="strength",
-        workouts_this_week=7,
-        total_sets=10000,
-        total_reps=150000,
-        avg_sets_per_workout=20,
-        avg_reps_per_workout=300
-    )
+    mock_db.get_workout_stats.return_value = create_workout_stats(total_workouts=500)
     app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     response = client.get(
-        "/stats/stats",
+        "/workout/stats",
         headers={"Authorization": "Bearer test_token"}
     )
 
     assert response.status_code == 200
     data = response.json()
     assert data["total_workouts"] == 500
-    assert data["total_reps"] == 150000
 
     app.dependency_overrides = {}
 
 
 # Test: GET /stats/stats - Various Trainer Types
 def test_get_dashboard_stats_various_types():
-    """Test stats with different most frequent workout types."""
+    """Test stats with different current streak weeks."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_db = MagicMock()
 
-    types = ["strength", "cardio", "flexibility", "mixed"]
-    for workout_type in types:
-        mock_db.get_workout_stats.return_value = WorkoutStats(
-            total_workouts=30,
-            total_duration_minutes=1800,
-            total_exercises=100,
-            average_workout_duration=60,
-            most_frequent_type=workout_type,
-            workouts_this_week=3,
-            total_sets=200,
-            total_reps=3000,
-            avg_sets_per_workout=6,
-            avg_reps_per_workout=100
+    streaks = [1, 4, 8, 12]
+    for streak in streaks:
+        mock_db.get_workout_stats.return_value = create_workout_stats(
+            current_streak_weeks=streak
         )
         app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
         response = client.get(
-            "/stats/stats",
+            "/workout/stats",
             headers={"Authorization": "Bearer test_token"}
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["most_frequent_type"] == workout_type
+        assert data["current_streak_weeks"] == streak
 
     app.dependency_overrides = {}
 
@@ -189,24 +203,13 @@ def test_get_dashboard_stats_consistency():
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_db = MagicMock()
 
-    stats = WorkoutStats(
-        total_workouts=42,
-        total_duration_minutes=2520,
-        total_exercises=156,
-        average_workout_duration=60,
-        most_frequent_type="strength",
-        workouts_this_week=5,
-        total_sets=420,
-        total_reps=5040,
-        avg_sets_per_workout=10,
-        avg_reps_per_workout=120
-    )
+    stats = create_workout_stats(total_workouts=42)
     mock_db.get_workout_stats.return_value = stats
     app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     # First request
     response1 = client.get(
-        "/stats/stats",
+        "/workout/stats",
         headers={"Authorization": "Bearer test_token"}
     )
     assert response1.status_code == 200
@@ -214,7 +217,7 @@ def test_get_dashboard_stats_consistency():
 
     # Second request
     response2 = client.get(
-        "/stats/stats",
+        "/workout/stats",
         headers={"Authorization": "Bearer test_token"}
     )
     assert response2.status_code == 200
@@ -232,22 +235,11 @@ def test_get_dashboard_stats_schema():
     """Test that response matches WorkoutStats schema."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_db = MagicMock()
-    mock_db.get_workout_stats.return_value = WorkoutStats(
-        total_workouts=42,
-        total_duration_minutes=2520,
-        total_exercises=156,
-        average_workout_duration=60,
-        most_frequent_type="strength",
-        workouts_this_week=5,
-        total_sets=420,
-        total_reps=5040,
-        avg_sets_per_workout=10,
-        avg_reps_per_workout=120
-    )
+    mock_db.get_workout_stats.return_value = create_workout_stats(total_workouts=42)
     app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     response = client.get(
-        "/stats/stats",
+        "/workout/stats",
         headers={"Authorization": "Bearer test_token"}
     )
 
@@ -256,16 +248,11 @@ def test_get_dashboard_stats_schema():
 
     # Verify all required fields are present
     required_fields = [
-        "total_workouts",
-        "total_duration_minutes",
-        "total_exercises",
-        "average_workout_duration",
-        "most_frequent_type",
-        "workouts_this_week",
-        "total_sets",
-        "total_reps",
-        "avg_sets_per_workout",
-        "avg_reps_per_workout"
+        "current_streak_weeks",
+        "weekly_frequency",
+        "weekly_volume",
+        "recent_prs",
+        "total_workouts"
     ]
 
     for field in required_fields:
@@ -276,30 +263,19 @@ def test_get_dashboard_stats_schema():
 
 # Test: GET /stats/stats - Null Fields Handling
 def test_get_dashboard_stats_null_fields():
-    """Test stats when some optional fields are null."""
+    """Test stats when optional fields are null."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_db = MagicMock()
-    mock_db.get_workout_stats.return_value = WorkoutStats(
-        total_workouts=5,
-        total_duration_minutes=300,
-        total_exercises=15,
-        average_workout_duration=60,
-        most_frequent_type=None,  # No frequent type
-        workouts_this_week=2,
-        total_sets=30,
-        total_reps=450,
-        avg_sets_per_workout=6,
-        avg_reps_per_workout=90
-    )
+    mock_db.get_workout_stats.return_value = create_workout_stats(total_workouts=5)
     app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     response = client.get(
-        "/stats/stats",
+        "/workout/stats",
         headers={"Authorization": "Bearer test_token"}
     )
 
     assert response.status_code == 200
     data = response.json()
-    assert data["most_frequent_type"] is None
+    assert data["last_workout"] is None
 
     app.dependency_overrides = {}

@@ -82,7 +82,9 @@ def test_list_workouts_pagination():
     mock_db = MagicMock()
 
     logs = [{"_id": f"w_{i}", "user_email": "test@example.com",
-             "date": str(date.today() - timedelta(days=i))}
+             "date": str(date.today() - timedelta(days=i)),
+             "workout_type": "strength",
+             "exercises": [{"name": "Supino", "sets": 3, "reps_per_set": [8, 8, 8]}]}
             for i in range(10)]
     mock_db.get_workouts_paginated.return_value = (logs, 25)
     app.dependency_overrides[get_mongo_database] = lambda: mock_db
@@ -124,7 +126,7 @@ def test_list_workouts_filter_by_type():
 def test_list_workouts_unauthorized():
     """Test workout list without authentication."""
     response = client.get("/workout/list")
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 # Test: GET /workout/list - Database Error
@@ -192,7 +194,7 @@ def test_get_workout_types_empty():
 def test_get_workout_types_unauthorized():
     """Test workout types without authentication."""
     response = client.get("/workout/types")
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 # Test: GET /workout/types - Database Error
@@ -278,7 +280,7 @@ def test_delete_workout_unauthorized_owner():
 def test_delete_workout_unauthorized():
     """Test deletion without authentication."""
     response = client.delete("/workout/workout_001")
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 # Test: DELETE /workout/{workout_id} - Database Error

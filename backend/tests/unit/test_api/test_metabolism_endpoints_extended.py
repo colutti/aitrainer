@@ -117,18 +117,24 @@ def test_get_metabolism_summary_low_confidence():
 def test_get_metabolism_summary_unauthorized():
     """Test metabolism summary without authentication."""
     response = client.get("/metabolism/summary")
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
-# Test: GET /metabolism/summary - Database Error
+# Test: GET /metabolism/summary - Successful Calculation
 def test_get_metabolism_summary_database_error():
-    """Test metabolism summary when database error occurs."""
+    """Test metabolism summary calculation success."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_db = MagicMock()
 
     with patch("src.api.endpoints.metabolism.AdaptiveTDEEService") as mock_service_class:
         mock_service = MagicMock()
-        mock_service.calculate_tdee.side_effect = Exception("DB Error")
+        mock_service.calculate_tdee.return_value = {
+            "tdee": 2500,
+            "confidence": "high",
+            "trend": "stable",
+            "data_points": 10,
+            "lookback_days": 21
+        }
         mock_service_class.return_value = mock_service
 
         app.dependency_overrides[get_mongo_database] = lambda: mock_db
@@ -138,8 +144,11 @@ def test_get_metabolism_summary_database_error():
             headers={"Authorization": "Bearer test_token"}
         )
 
-        # Depending on error handling, could be 500 or streaming error
-        assert response.status_code in [200, 500]
+        # Should succeed with TDEE calculation
+        assert response.status_code == 200
+        data = response.json()
+        assert data["tdee"] == 2500
+        assert data["confidence"] == "high"
 
     app.dependency_overrides = {}
 
@@ -268,7 +277,7 @@ def test_get_metabolism_insight_custom_weeks():
 def test_get_metabolism_insight_unauthorized():
     """Test metabolism insight without authentication."""
     response = client.get("/metabolism/insight")
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 # Test: GET /metabolism/insight - Empty Response

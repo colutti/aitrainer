@@ -91,7 +91,7 @@ def test_update_trainer_profile_unauthorized():
         json=update_payload
     )
 
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 # Test: PUT /trainer/update_trainer_profile - Invalid Trainer Type
@@ -165,7 +165,7 @@ def test_get_trainer_profile_unauthorized():
     """Test retrieving trainer profile without authentication."""
     response = client.get("/trainer/trainer_profile")
 
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 # Test: GET /trainer/available_trainers - Success Case
@@ -198,7 +198,7 @@ def test_get_available_trainers_unauthorized():
     """Test retrieving available trainers without authentication."""
     response = client.get("/trainer/available_trainers")
 
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 # Test: GET /trainer/available_trainers - Empty List

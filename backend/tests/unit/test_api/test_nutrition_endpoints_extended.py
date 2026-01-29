@@ -27,31 +27,44 @@ def sample_nutrition_log():
     return {
         "_id": "nut_001",
         "user_email": "test@example.com",
-        "date": "2024-01-29",
+        "date": "2024-01-29T00:00:00",
         "calories": 2000,
-        "protein": 150,
-        "carbs": 250,
-        "fat": 70,
+        "protein_grams": 150.0,
+        "carbs_grams": 250.0,
+        "fat_grams": 70.0,
         "notes": "Good day"
     }
 
 
 @pytest.fixture
 def sample_nutrition_stats():
+    from datetime import datetime
+    from src.api.models.nutrition_stats import DailyMacros
+
     return NutritionStats(
         today=NutritionWithId(
             id="nut_today",
             user_email="test@example.com",
-            date="2024-01-29",
+            date=datetime.fromisoformat("2024-01-29T00:00:00"),
             calories=2100,
-            protein=155,
-            carbs=260,
-            fat=75,
+            protein_grams=155.0,
+            carbs_grams=260.0,
+            fat_grams=75.0,
             notes="Today"
         ),
-        weekly_average=2050,
-        monthly_average=2000,
-        goal=2200
+        weekly_adherence=[True, True, True, False, True, False, True],
+        last_7_days=[
+            DailyMacros(
+                date=datetime.fromisoformat("2024-01-29T00:00:00"),
+                calories=2100,
+                protein=155.0,
+                carbs=260.0,
+                fat=75.0
+            )
+        ],
+        avg_daily_calories=2050.0,
+        avg_protein=150.0,
+        total_logs=15
     )
 
 
@@ -86,7 +99,8 @@ def test_list_nutrition_multiple_pages():
 
     logs = [
         {"_id": f"nut_{i}", "user_email": "test@example.com",
-         "date": str(date.today() - timedelta(days=i)), "calories": 2000}
+         "date": str(date.today() - timedelta(days=i)), "calories": 2000,
+         "protein_grams": 150.0, "carbs_grams": 250.0, "fat_grams": 70.0}
         for i in range(10)
     ]
     mock_db.get_nutrition_paginated.return_value = (logs, 25)
@@ -131,7 +145,7 @@ def test_list_nutrition_filter_by_days():
 def test_list_nutrition_unauthorized():
     """Test nutrition list without authentication."""
     response = client.get("/nutrition/list")
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 # Test: GET /nutrition/list - Database Error
@@ -168,9 +182,9 @@ def test_get_nutrition_stats_success(sample_nutrition_stats):
 
     assert response.status_code == 200
     data = response.json()
-    assert data["weekly_average"] == 2050
-    assert data["monthly_average"] == 2000
-    assert data["goal"] == 2200
+    assert data["avg_daily_calories"] == 2050.0
+    assert "last_7_days" in data
+    assert data["avg_protein"] == 150.0
 
     app.dependency_overrides = {}
 
@@ -179,7 +193,7 @@ def test_get_nutrition_stats_success(sample_nutrition_stats):
 def test_get_nutrition_stats_unauthorized():
     """Test nutrition stats without authentication."""
     response = client.get("/nutrition/stats")
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 # Test: GET /nutrition/today - Success Case
@@ -187,11 +201,22 @@ def test_get_today_nutrition_success(sample_nutrition_log):
     """Test retrieving today's nutrition log."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_db = MagicMock()
+    from datetime import datetime
+    from src.api.models.nutrition_stats import DailyMacros
+
     mock_db.get_nutrition_stats.return_value = NutritionStats(
         today=NutritionWithId(**sample_nutrition_log),
-        weekly_average=2000,
-        monthly_average=2000,
-        goal=2200
+        weekly_adherence=[True, True, True, False, True, False, True],
+        last_7_days=[DailyMacros(
+            date=datetime.fromisoformat("2024-01-29T00:00:00"),
+            calories=2100,
+            protein=155.0,
+            carbs=260.0,
+            fat=75.0
+        )],
+        avg_daily_calories=2000.0,
+        avg_protein=150.0,
+        total_logs=15
     )
     app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
@@ -214,9 +239,11 @@ def test_get_today_nutrition_no_data():
     mock_db = MagicMock()
     mock_db.get_nutrition_stats.return_value = NutritionStats(
         today=None,
-        weekly_average=None,
-        monthly_average=None,
-        goal=None
+        weekly_adherence=[False] * 7,
+        last_7_days=[],
+        avg_daily_calories=0.0,
+        avg_protein=0.0,
+        total_logs=0
     )
     app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
@@ -240,7 +267,7 @@ async def test_import_myfitnesspal_success():
     app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     with patch("src.api.endpoints.nutrition.import_nutrition_from_csv") as mock_import:
-        mock_import.return_value = ImportResult(created=5, updated=0, errors=0)
+        mock_import.return_value = ImportResult(created=5, updated=0, errors=0, total_days=5)
 
         # Create a CSV file content
         csv_content = b"Date,Calories,Protein,Carbs,Fat\n2024-01-29,2000,150,250,70"
@@ -286,7 +313,7 @@ async def test_import_myfitnesspal_unauthorized():
         "/nutrition/import/myfitnesspal",
         files={"file": ("test.csv", BytesIO(b"data"), "text/csv")}
     )
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 # Test: DELETE /nutrition/{log_id} - Success Case
@@ -353,7 +380,7 @@ def test_delete_nutrition_unauthorized_owner():
 def test_delete_nutrition_unauthorized():
     """Test deletion without authentication."""
     response = client.delete("/nutrition/nut_001")
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 # Test: GET /nutrition/list - Invalid Page Parameters

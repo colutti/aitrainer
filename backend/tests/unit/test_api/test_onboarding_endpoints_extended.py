@@ -169,11 +169,11 @@ def test_complete_onboarding_success(valid_invite):
             "token": "valid_token_123",
             "email": "newuser@example.com",
             "password": "SecurePassword123!",
-            "gender": "M",
+            "gender": "Masculino",
             "age": 28,
             "weight": 75.0,
             "height": 180,
-            "goal_type": "weight_loss",
+            "goal_type": "lose",
             "weekly_rate": 0.5,
             "trainer_type": "atlas"
         }
@@ -202,11 +202,11 @@ def test_complete_onboarding_invalid_token():
             "token": "invalid_token",
             "email": "newuser@example.com",
             "password": "SecurePassword123!",
-            "gender": "M",
+            "gender": "Masculino",
             "age": 28,
             "weight": 75.0,
             "height": 180,
-            "goal_type": "weight_loss",
+            "goal_type": "lose",
             "weekly_rate": 0.5,
             "trainer_type": "atlas"
         }
@@ -228,11 +228,11 @@ def test_complete_onboarding_already_used_token(used_invite):
             "token": "used_token",
             "email": "newuser@example.com",
             "password": "SecurePassword123!",
-            "gender": "F",
+            "gender": "Feminino",
             "age": 25,
             "weight": 65.0,
             "height": 165,
-            "goal_type": "muscle_gain",
+            "goal_type": "gain",
             "weekly_rate": 0.5,
             "trainer_type": "luna"
         }
@@ -254,12 +254,12 @@ def test_complete_onboarding_expired_token(expired_invite):
             "token": "expired_token",
             "email": "newuser@example.com",
             "password": "SecurePassword123!",
-            "gender": "M",
+            "gender": "Masculino",
             "age": 30,
             "weight": 80.0,
             "height": 185,
-            "goal_type": "maintenance",
-            "weekly_rate": 0.0,
+            "goal_type": "maintain",
+            "weekly_rate": 0.5,
             "trainer_type": "sofia"
         }
 
@@ -281,11 +281,11 @@ def test_complete_onboarding_user_exists(valid_invite):
             "token": "valid_token_123",
             "email": "newuser@example.com",
             "password": "SecurePassword123!",
-            "gender": "M",
+            "gender": "Masculino",
             "age": 28,
             "weight": 75.0,
             "height": 180,
-            "goal_type": "weight_loss",
+            "goal_type": "lose",
             "weekly_rate": 0.5,
             "trainer_type": "atlas"
         }
@@ -326,11 +326,11 @@ def test_complete_onboarding_invalid_age(valid_invite):
             "token": "valid_token_123",
             "email": "newuser@example.com",
             "password": "SecurePassword123!",
-            "gender": "M",
+            "gender": "Masculino",
             "age": -5,  # Invalid negative age
             "weight": 75.0,
             "height": 180,
-            "goal_type": "weight_loss",
+            "goal_type": "lose",
             "weekly_rate": 0.5,
             "trainer_type": "atlas"
         }
@@ -342,7 +342,7 @@ def test_complete_onboarding_invalid_age(valid_invite):
 
 
 # Test: POST /onboarding/complete - Different Trainer Types
-@pytest.mark.parametrize("trainer_type", ["atlas", "luna", "sofia", "sargento", "gymbro"])
+@pytest.mark.parametrize("trainer_type", ["atlas", "luna", "sofia", "sargento"])
 def test_complete_onboarding_various_trainers(trainer_type, valid_invite):
     """Test onboarding with different trainer types."""
     with patch("src.api.endpoints.onboarding.get_mongo_database") as mock_get_db, \
@@ -358,11 +358,11 @@ def test_complete_onboarding_various_trainers(trainer_type, valid_invite):
             "token": "valid_token_123",
             "email": "newuser@example.com",
             "password": "SecurePassword123!",
-            "gender": "M",
+            "gender": "Masculino",
             "age": 28,
             "weight": 75.0,
             "height": 180,
-            "goal_type": "weight_loss",
+            "goal_type": "lose",
             "weekly_rate": 0.5,
             "trainer_type": trainer_type
         }

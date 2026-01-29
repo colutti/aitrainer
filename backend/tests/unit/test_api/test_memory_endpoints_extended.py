@@ -137,7 +137,7 @@ def test_list_memories_empty():
 def test_list_memories_unauthorized():
     """Test memory list without authentication."""
     response = client.get("/memory/list")
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 # Test: GET /memory/list - Database Error
@@ -263,7 +263,7 @@ def test_delete_memory_unauthorized_owner():
 def test_delete_memory_unauthorized():
     """Test deletion without authentication."""
     response = client.delete("/memory/mem_001")
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 # Test: DELETE /memory/{memory_id} - Database Error

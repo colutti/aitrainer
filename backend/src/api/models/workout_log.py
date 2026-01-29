@@ -4,7 +4,7 @@ Pydantic models for workout logging.
 
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, ConfigDict
 
 
 class ExerciseLog(BaseModel):
@@ -71,7 +71,9 @@ class WorkoutLog(BaseModel):
 class WorkoutWithId(WorkoutLog):
     """Workout log with MongoDB ID for API responses."""
 
-    id: str = Field(..., description="ID do treino no MongoDB")
+    id: str = Field(..., alias="_id", description="ID do treino no MongoDB")
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class WorkoutListResponse(BaseModel):

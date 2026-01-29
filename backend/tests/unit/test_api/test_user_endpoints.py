@@ -33,11 +33,11 @@ def sample_user_profile():
     return UserProfile(
         email="test@example.com",
         password_hash="hashed_password",
-        gender="M",
+        gender="Masculino",
         age=30,
         weight=75.0,
         height=180,
-        goal_type="weight_loss",
+        goal_type="lose",
         weekly_rate=0.5,
         goal=None,
         target_weight=70.0,
@@ -169,7 +169,7 @@ def test_get_current_user_unauthorized():
     """Test accessing /me without authentication token."""
     response = client.get("/user/me")
 
-    assert response.status_code == 403  # Forbidden - no token
+    assert response.status_code == 401  # Unauthorized - no token
 
 
 # Test: POST /update_profile - Success Case
@@ -182,8 +182,12 @@ def test_update_profile_success(sample_user_profile):
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
     update_payload = {
+        "gender": "Masculino",
         "age": 31,
         "weight": 74.0,
+        "height": 180,
+        "goal_type": "lose",
+        "weekly_rate": 0.5,
         "notes": "Updated note"
     }
 
@@ -213,8 +217,10 @@ def test_update_profile_creates_new():
     update_payload = {
         "age": 25,
         "weight": 70.0,
-        "gender": "F",
-        "height": 165
+        "gender": "Feminino",
+        "height": 165,
+        "goal_type": "maintain",
+        "weekly_rate": 0.5
     }
 
     response = client.post(
@@ -256,7 +262,7 @@ def test_logout_unauthorized():
     """Test logout without authentication token."""
     response = client.post("/user/logout")
 
-    assert response.status_code == 403  # Forbidden - no token
+    assert response.status_code == 401  # Unauthorized - no token
 
 
 # Test: GET /profile - Unauthorized (No Token)
@@ -264,7 +270,7 @@ def test_get_profile_unauthorized():
     """Test profile retrieval without authentication token."""
     response = client.get("/user/profile")
 
-    assert response.status_code == 403  # Forbidden - no token
+    assert response.status_code == 401  # Unauthorized - no token
 
 
 # Test: POST /update_profile - Invalid Request Data

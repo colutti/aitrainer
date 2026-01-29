@@ -132,7 +132,7 @@ def test_log_weight_unauthorized():
     }
 
     response = client.post("/weight", json=payload)
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 # Test: DELETE /weight/{date_str} - Success
@@ -285,7 +285,7 @@ def test_get_body_composition_stats_no_data():
 def test_get_body_composition_stats_unauthorized():
     """Test stats without authentication."""
     response = client.get("/weight/stats")
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 # Test: POST /weight/import/zepp-life - Success
@@ -297,7 +297,7 @@ async def test_import_zepp_life_success():
     app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     with patch("src.api.endpoints.weight.import_zepp_life_data") as mock_import:
-        mock_import.return_value = ImportResult(created=10, updated=2, errors=0)
+        mock_import.return_value = ImportResult(created=10, updated=2, errors=0, total_days=30)
 
         csv_content = b"Date,Weight,BodyFat\n2024-01-29,75.5,22.0"
 
@@ -342,14 +342,14 @@ async def test_import_zepp_life_unauthorized():
         "/weight/import/zepp-life",
         files={"file": ("zepp.csv", BytesIO(b"data"), "text/csv")}
     )
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 # Test: GET /weight - Unauthorized
 def test_get_weight_logs_unauthorized():
     """Test weight logs retrieval without authentication."""
     response = client.get("/weight")
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 # Test: POST /weight - Missing Required Fields

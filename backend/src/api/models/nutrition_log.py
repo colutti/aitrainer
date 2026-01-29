@@ -4,7 +4,7 @@ Pydantic models for nutrition logging.
 
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class NutritionLog(BaseModel):
@@ -48,4 +48,6 @@ class NutritionLog(BaseModel):
 class NutritionWithId(NutritionLog):
     """Nutrition log with MongoDB ID for API responses."""
 
-    id: str = Field(..., description="ID do log no MongoDB")
+    id: str = Field(..., alias="_id", description="ID do log no MongoDB")
+
+    model_config = ConfigDict(populate_by_name=True)
