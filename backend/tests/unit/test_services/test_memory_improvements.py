@@ -559,12 +559,7 @@ class TestEdgeCases:
         mock_db.get_chat_history.return_value = messages
 
         # Run compaction
-        import asyncio
-
-        async def run_test():
-            await compactor.compact_history("test@example.com", active_window_size=40)
-
-        asyncio.run(run_test())
+        compactor.compact_history("test@example.com", active_window_size=40)
 
         # Should not attempt to summarize (40 <= 40)
         assert mock_llm.stream_simple.call_count == 0

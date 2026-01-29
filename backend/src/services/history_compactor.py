@@ -11,127 +11,139 @@ class HistoryCompactor:
         self.db = database
         self.llm_client = llm_client
 
-    async def compact_history(self, user_email: str, active_window_size: int = 40, log_callback=None):  # Default matches config.MAX_SHORT_TERM_MEMORY_MESSAGES
+    def compact_history(self, user_email: str, active_window_size: int = 40, log_callback=None):  # Default matches config.MAX_SHORT_TERM_MEMORY_MESSAGES
         """
+        Synchronous wrapper for history compaction.
         Identifies old messages outside the active window, summarizes them,
         and updates the user's long-term summary.
+
+        This method can be safely called from FastAPI background tasks.
         """
-        logger.info("Running History Compaction for user: %s", user_email)
+        import asyncio
 
-        # 1. Fetch User Profile
-        profile = self.db.get_user_profile(user_email)
-        if not profile:
-            logger.warning("User profile not found for compaction: %s", user_email)
-            return
+        async def _compact_history_async():
+            """Internal async function that performs the actual compaction."""
+            logger.info("Running History Compaction for user: %s", user_email)
 
-        # 2. Fetch ALL History (Abstracted via LangChain storage)
-        # We fetch a larger limit to ensure we capture enough history to compact
-        # Assuming database.get_chat_history returns a list of ChatHistory objects
-        # sorted by timestamp ASC (oldest first).
-        all_messages = self.db.get_chat_history(user_email, limit=1000)
+            # 1. Fetch User Profile
+            profile = self.db.get_user_profile(user_email)
+            if not profile:
+                logger.warning("User profile not found for compaction: %s", user_email)
+                return
 
-        if not all_messages:
-            logger.debug("No history to compact.")
-            return
+            # 2. Fetch ALL History (Abstracted via LangChain storage)
+            # We fetch a larger limit to ensure we capture enough history to compact
+            # Assuming database.get_chat_history returns a list of ChatHistory objects
+            # sorted by timestamp ASC (oldest first).
+            all_messages = self.db.get_chat_history(user_email, limit=1000)
 
-        total_msgs = len(all_messages)
-        if total_msgs <= active_window_size:
-            logger.debug(
-                "History size (%d) within active window (%d). Skipping.",
-                total_msgs,
-                active_window_size,
-            )
-            return
+            if not all_messages:
+                logger.debug("No history to compact.")
+                return
 
-        # 3. Identify Candidates for Compaction
-        # We want to compact everything OLDER than the active window.
-        # Candidates = messages[0 : total - window]
-        compaction_limit_index = total_msgs - active_window_size
-        candidate_messages = all_messages[:compaction_limit_index]
+            total_msgs = len(all_messages)
+            if total_msgs <= active_window_size:
+                logger.debug(
+                    "History size (%d) within active window (%d). Skipping.",
+                    total_msgs,
+                    active_window_size,
+                )
+                return
 
-        # 4. Filter out already compacted messages based on timestamp
-        last_ts_str = profile.last_compaction_timestamp
-        last_ts = datetime.min
-        if last_ts_str:
+            # 3. Identify Candidates for Compaction
+            # We want to compact everything OLDER than the active window.
+            # Candidates = messages[0 : total - window]
+            compaction_limit_index = total_msgs - active_window_size
+            candidate_messages = all_messages[:compaction_limit_index]
+
+            # 4. Filter out already compacted messages based on timestamp
+            last_ts_str = profile.last_compaction_timestamp
+            last_ts = datetime.min
+            if last_ts_str:
+                try:
+                    last_ts = datetime.fromisoformat(last_ts_str)
+                except ValueError:
+                    pass
+
+            new_lines_to_summarize = []
+            new_last_ts_str = last_ts_str
+
+            for msg in candidate_messages:
+                msg_ts_str = msg.timestamp
+                try:
+                    msg_ts = datetime.fromisoformat(msg_ts_str)
+                except (ValueError, TypeError):
+                    # If no timestamp, treat as very old or skip?
+                    # Let's include if it has content.
+                    msg_ts = datetime.min
+
+                if msg_ts > last_ts:
+                    # This is a new message that needs compaction
+                    if msg.sender == "student":
+                        sender_label = "Aluno"
+                    elif msg.sender == "trainer":
+                        sender_label = "Treinador"
+                    else:
+                        sender_label = "Sistema"
+
+                    line = f"[{msg_ts.strftime('%d/%m %H:%M')}] {sender_label}: {msg.text}"
+                    new_lines_to_summarize.append(line)
+                    new_last_ts_str = msg_ts_str
+
+            if not new_lines_to_summarize:
+                logger.debug("No NEW messages to summarize found.")
+                return
+
+            logger.info("Compacting %d new messages...", len(new_lines_to_summarize))
+
+            # 5. Generate Summary
+            current_summary = profile.long_term_summary or ""
+            new_lines_text = "\n".join(new_lines_to_summarize)
+
+            prompt = PromptTemplate.from_template(SUMMARY_UPDATE_PROMPT)
+            response_text = ""
             try:
-                last_ts = datetime.fromisoformat(last_ts_str)
-            except ValueError:
-                pass
+                # Use async for to collect chunks from the LLM stream
+                async for chunk in self.llm_client.stream_simple(
+                    prompt_template=prompt,
+                    input_data={
+                        "current_summary": current_summary,
+                        "new_lines": new_lines_text,
+                    },
+                    user_email=user_email,
+                    log_callback=log_callback,
+                ):
+                    response_text += chunk
+            except Exception as e:
+                logger.error("LLM Error during compaction: %s", e)
+                return
 
-        new_lines_to_summarize = []
-        new_last_ts_str = last_ts_str
+            if not response_text.strip():
+                logger.warning("Empty summary generated. Aborting update.")
+                return
 
-        for msg in candidate_messages:
-            msg_ts_str = msg.timestamp
-            try:
-                msg_ts = datetime.fromisoformat(msg_ts_str)
-            except (ValueError, TypeError):
-                # If no timestamp, treat as very old or skip?
-                # Let's include if it has content.
-                msg_ts = datetime.min
-
-            if msg_ts > last_ts:
-                # This is a new message that needs compaction
-                if msg.sender == "student":
-                    sender_label = "Aluno"
-                elif msg.sender == "trainer":
-                    sender_label = "Treinador"
-                else:
-                    sender_label = "Sistema"
-
-                line = f"[{msg_ts.strftime('%d/%m %H:%M')}] {sender_label}: {msg.text}"
-                new_lines_to_summarize.append(line)
-                new_last_ts_str = msg_ts_str
-
-        if not new_lines_to_summarize:
-            logger.debug("No NEW messages to summarize found.")
-            return
-
-        logger.info("Compacting %d new messages...", len(new_lines_to_summarize))
-
-        # 5. Generate Summary
-        current_summary = profile.long_term_summary or ""
-        new_lines_text = "\n".join(new_lines_to_summarize)
-
-        prompt = PromptTemplate.from_template(SUMMARY_UPDATE_PROMPT)
-        # Since we just want a string back, use simple invoke
-        # We can use the simple_invoke method if it exists, or stream and join
-
-        # LLMClient abstraction might need a direct generation method.
-        # Using stream_simple for now and joining.
-        response_text = ""
-        try:
-            generator = self.llm_client.stream_simple(
-                prompt_template=prompt,
-                input_data={
-                    "current_summary": current_summary,
-                    "new_lines": new_lines_text,
+            # 6. Atomic Update
+            # Update profile with new summary and new timestamp using partial update
+            # to prevent overwriting concurrent changes (e.g. Hevy settings)
+            success = self.db.update_user_profile_fields(
+                user_email,
+                {
+                    "long_term_summary": response_text.strip(),
+                    "last_compaction_timestamp": new_last_ts_str,
                 },
-                user_email=user_email,
-                log_callback=log_callback,
             )
-            async for chunk in generator:
-                response_text += chunk
-        except Exception as e:
-            logger.error("LLM Error during compaction: %s", e)
-            return
 
-        if not response_text.strip():
-            logger.warning("Empty summary generated. Aborting update.")
-            return
+            if success:
+                logger.info("Compaction complete. Summary updated atomically.")
+            else:
+                logger.warning("Compaction complete but no fields were updated.")
 
-        # 6. Atomic Update
-        # Update profile with new summary and new timestamp using partial update
-        # to prevent overwriting concurrent changes (e.g. Hevy settings)
-        success = self.db.update_user_profile_fields(
-            user_email,
-            {
-                "long_term_summary": response_text.strip(),
-                "last_compaction_timestamp": new_last_ts_str,
-            },
-        )
-
-        if success:
-            logger.info("Compaction complete. Summary updated atomically.")
-        else:
-            logger.warning("Compaction complete but no fields were updated.")
+        # Execute the async function synchronously
+        try:
+            return asyncio.run(_compact_history_async())
+        except RuntimeError:
+            # Fallback for when an event loop is already running
+            import nest_asyncio  # type: ignore
+            nest_asyncio.apply()
+            loop = asyncio.get_event_loop()
+            return loop.run_until_complete(_compact_history_async())

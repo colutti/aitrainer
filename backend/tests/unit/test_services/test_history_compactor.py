@@ -27,8 +27,7 @@ def mock_llm_client():
     return client
 
 
-@pytest.mark.asyncio
-async def test_history_compactor_skips_short_history(mock_db, mock_llm_client):
+def test_history_compactor_skips_short_history(mock_db, mock_llm_client):
     """Should not compact if history is within window."""
     compactor = HistoryCompactor(mock_db, mock_llm_client)
 
@@ -48,15 +47,14 @@ async def test_history_compactor_skips_short_history(mock_db, mock_llm_client):
     # Mock Short History (10 msgs)
     mock_db.get_chat_history.return_value = [MagicMock() for _ in range(10)]
 
-    await compactor.compact_history("test@test.com", active_window_size=20)
+    compactor.compact_history("test@test.com", active_window_size=20)
 
     # Assertions
     mock_llm_client.stream_simple.assert_not_called()
     mock_db.update_user_profile_fields.assert_not_called()
 
 
-@pytest.mark.asyncio
-async def test_history_compactor_summarizes_old_messages(mock_db, mock_llm_client):
+def test_history_compactor_summarizes_old_messages(mock_db, mock_llm_client):
     """Should compact messages older than window."""
     compactor = HistoryCompactor(mock_db, mock_llm_client)
 
@@ -87,7 +85,7 @@ async def test_history_compactor_summarizes_old_messages(mock_db, mock_llm_clien
     mock_db.get_chat_history.return_value = messages
 
     # Run
-    await compactor.compact_history("test@test.com", active_window_size=10)
+    compactor.compact_history("test@test.com", active_window_size=10)
 
     # Assertions
     mock_llm_client.stream_simple.assert_called_once()
@@ -101,8 +99,7 @@ async def test_history_compactor_summarizes_old_messages(mock_db, mock_llm_clien
     assert updated_fields["last_compaction_timestamp"] == expected_ts
 
 
-@pytest.mark.asyncio
-async def test_history_compactor_idempotency(mock_db, mock_llm_client):
+def test_history_compactor_idempotency(mock_db, mock_llm_client):
     """Should ignore messages already compacted (based on timestamp)."""
     compactor = HistoryCompactor(mock_db, mock_llm_client)
 
@@ -134,7 +131,7 @@ async def test_history_compactor_idempotency(mock_db, mock_llm_client):
     mock_db.get_chat_history.return_value = messages
 
     # Run with same window
-    await compactor.compact_history("test@test.com", active_window_size=10)
+    compactor.compact_history("test@test.com", active_window_size=10)
 
     # Since all "old" messages (0-19) are <= last_compaction_timestamp,
     # NO NEW lines to summarize.
