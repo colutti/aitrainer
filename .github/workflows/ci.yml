@@ -11,19 +11,43 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
         cache: 'pip'
-        
+
     - name: Install Dependencies
       run: |
         cd backend
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        
+
+    - name: Create .env for CI
+      run: |
+        cd backend
+        cat > .env << EOF
+        SECRET_KEY=test-secret-key-ci-$(date +%s)
+        API_SERVER_PORT=8000
+        MAX_SHORT_TERM_MEMORY_MESSAGES=40
+        MAX_LONG_TERM_MEMORY_MESSAGES=20
+        ALLOWED_ORIGINS=http://localhost:3000
+        DB_NAME=aitrainer_test
+        MONGO_URI=mongodb://localhost:27017/aitrainer_test
+        QDRANT_HOST=localhost
+        QDRANT_PORT=6333
+        QDRANT_COLLECTION_NAME=aitrainer_test
+        QDRANT_API_KEY=
+        AI_PROVIDER=gemini
+        LLM_MODEL_NAME=gemini-2.0-flash-001
+        EMBEDDER_MODEL_NAME=text-embedding-004
+        GEMINI_API_KEY=test-key
+        LLM_TEMPERATURE=0.7
+        LOG_LEVEL=INFO
+        RUNNING_IN_CONTAINER=false
+        EOF
+
     - name: Run Tests (Unit)
       run: |
         cd backend
@@ -85,6 +109,26 @@ jobs:
         cd frontend
         npm ci
 
+    - name: Build Frontend
+      run: |
+        cd frontend
+        npm run build
+
+    - name: Start Frontend Server
+      run: |
+        cd frontend
+        npm run dev &
+        sleep 3
+        # Retry logic to wait for server
+        for i in {1..30}; do
+          if curl -s http://localhost:3000 > /dev/null 2>&1; then
+            echo "Server is ready!"
+            break
+          fi
+          echo "Waiting for server... (attempt $i/30)"
+          sleep 1
+        done
+
     - name: Run Cypress Fast (10s - Critical Path Only)
       run: |
         cd frontend
@@ -114,6 +158,26 @@ jobs:
       run: |
         cd frontend
         npm ci
+
+    - name: Build Frontend
+      run: |
+        cd frontend
+        npm run build
+
+    - name: Start Frontend Server
+      run: |
+        cd frontend
+        npm run dev &
+        sleep 3
+        # Retry logic to wait for server
+        for i in {1..30}; do
+          if curl -s http://localhost:3000 > /dev/null 2>&1; then
+            echo "Server is ready!"
+            break
+          fi
+          echo "Waiting for server... (attempt $i/30)"
+          sleep 1
+        done
 
     - name: Run Cypress Extended (Parallel - Worker ${{ matrix.container }}/3)
       run: |

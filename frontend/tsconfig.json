@@ -40,6 +40,7 @@
     "jest.config.cjs",
     "dist",
     ".angular",
-    "**/*.spec.ts"
+    "**/*.spec.ts",
+    "src/test-utils"
   ]
 }
