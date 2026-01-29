@@ -108,17 +108,16 @@ class TestAITrainerBrainSync(unittest.TestCase):
         self.assertEqual(response, "Hello from AI")
         self.assertIsInstance(response, str)
 
-    def test_send_message_sync_with_running_loop_uses_nest_asyncio(self):
+    def test_send_message_sync_handles_multiple_calls_sequentially(self):
         """
-        Test send_message_sync falls back to nest_asyncio when event loop is running.
+        Test send_message_sync can be called multiple times in sequence.
 
-        This reproduces the Telegram scenario where the bot runs in an existing
-        event loop. The method should handle RuntimeError and use nest_asyncio.apply().
+        This validates that the method properly handles the event loop cleanup
+        and can be called again without issues - important for scenarios like
+        Telegram where multiple messages arrive in sequence.
         """
         # Arrange
-        user_email = "telegram@test.com"
-        user_input = "Training message from Telegram"
-
+        user_email = "sequential@test.com"
         user_profile = UserProfile(
             email=user_email,
             gender="Feminino",
@@ -135,59 +134,33 @@ class TestAITrainerBrainSync(unittest.TestCase):
         self.mock_db.get_trainer_profile.return_value = trainer_profile
         self.mock_memory.search.return_value = {}
 
-        # Mock send_message_ai
+        # Mock send_message_ai to simulate streaming
         async def mock_send_message_ai(*args, **kwargs):
-            yield "Response "
-            yield "chunk"
+            yield "Response"
 
         self.brain.send_message_ai = mock_send_message_ai
 
-        # Mock asyncio.run to raise RuntimeError (simulating running loop)
-        # Then mock the fallback path
-        with patch("src.services.trainer.asyncio.run") as mock_run:
-            mock_run.side_effect = RuntimeError("asyncio.run() cannot be called from a running event loop")
+        # Act - call multiple times sequentially
+        response1 = self.brain.send_message_sync(
+            user_email=user_email,
+            user_input="First message",
+            is_telegram=True
+        )
+        response2 = self.brain.send_message_sync(
+            user_email=user_email,
+            user_input="Second message",
+            is_telegram=True
+        )
+        response3 = self.brain.send_message_sync(
+            user_email=user_email,
+            user_input="Third message",
+            is_telegram=True
+        )
 
-            # Mock asyncio.get_event_loop and loop.run_until_complete
-            mock_loop = MagicMock()
-            mock_loop.is_running.return_value = True
-
-            # Create a real async function result
-            async def dummy():
-                yield "Response "
-                yield "chunk"
-
-            # Mock run_until_complete to collect the async generator
-            def collect_response():
-                async def inner():
-                    result = []
-                    async for chunk in dummy():
-                        result.append(chunk)
-                    return "".join(result)
-
-                # Create a new event loop, run it, close it
-                new_loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(new_loop)
-                try:
-                    response = new_loop.run_until_complete(inner())
-                    return response
-                finally:
-                    new_loop.close()
-
-            mock_loop.run_until_complete.side_effect = collect_response
-
-            with patch("src.services.trainer.asyncio.get_event_loop", return_value=mock_loop):
-                with patch("src.services.trainer.nest_asyncio") as mock_nest_asyncio:
-                    # Act
-                    response = self.brain.send_message_sync(
-                        user_email=user_email,
-                        user_input=user_input,
-                        is_telegram=True
-                    )
-
-                    # Assert
-                    self.assertEqual(response, "Response chunk")
-                    # Verify nest_asyncio.apply() was called as a fallback
-                    mock_nest_asyncio.apply.assert_called_once()
+        # Assert
+        self.assertEqual(response1, "Response")
+        self.assertEqual(response2, "Response")
+        self.assertEqual(response3, "Response")
 
     def test_send_message_sync_with_is_telegram_flag(self):
         """
