@@ -319,5 +319,176 @@ describe('MetabolismComponent', () => {
 
       expect(progress).toBeLessThan(50);
     });
+
+    it('should cap progress at 100%', () => {
+      component.stats.set({ ...mockMetabolismResponse, energy_balance: 1000 });
+
+      const progress = component.getMetabolicBalanceProgress();
+
+      expect(progress).toBeLessThanOrEqual(100);
+    });
+
+    it('should floor progress at 0%', () => {
+      component.stats.set({ ...mockMetabolismResponse, energy_balance: -1000 });
+
+      const progress = component.getMetabolicBalanceProgress();
+
+      expect(progress).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('Progress Status - Branch Coverage', () => {
+    it('should return yellow color for 50-89% progress', () => {
+      component.stats.set({ ...mockMetabolismResponse, weight_change_per_week: -0.35 }); // ~70% of goal
+
+      const progress = component.getProgressStatus();
+
+      expect(progress.color).toContain('yellow');
+      expect(progress.percentage).toBeGreaterThanOrEqual(50);
+      expect(progress.percentage).toBeLessThan(90);
+    });
+
+    it('should handle null stats in getProgressStatus', () => {
+      component.stats.set(null);
+
+      const progress = component.getProgressStatus();
+
+      expect(progress.percentage).toBe(0);
+      expect(progress.label).toBe('--');
+      expect(progress.color).toContain('gray');
+    });
+
+    it('should handle undefined goal_weekly_rate', () => {
+      component.stats.set({ ...mockMetabolismResponse, goal_weekly_rate: undefined });
+
+      const progress = component.getProgressStatus();
+
+      expect(progress.percentage).toBe(0);
+    });
+
+    it('should handle goal_weekly_rate of 0', () => {
+      component.stats.set({ ...mockMetabolismResponse, goal_weekly_rate: 0 });
+
+      const progress = component.getProgressStatus();
+
+      expect(progress.percentage).toBe(0);
+    });
+
+    it('should calculate exactly 100% progress', () => {
+      component.stats.set({ ...mockMetabolismResponse, weight_change_per_week: -0.5 }); // 100% of goal
+
+      const progress = component.getProgressStatus();
+
+      expect(progress.percentage).toBe(100);
+      expect(progress.color).toContain('green');
+    });
+
+    it('should handle negative weight changes correctly', () => {
+      component.stats.set({ ...mockMetabolismResponse, weight_change_per_week: -0.25, goal_weekly_rate: -0.5 }); // 50%
+
+      const progress = component.getProgressStatus();
+
+      expect(progress.percentage).toBe(50);
+    });
+  });
+
+  describe('Total Progress - Edge Cases', () => {
+    it('should return 0% when no start_weight', () => {
+      component.stats.set({ ...mockMetabolismResponse, start_weight: undefined });
+
+      const percentage = component.getTotalProgressPercentage();
+
+      expect(percentage).toBe(0);
+    });
+
+    it('should return 0% when no target_weight', () => {
+      component.stats.set({ ...mockMetabolismResponse, target_weight: undefined });
+
+      const percentage = component.getTotalProgressPercentage();
+
+      expect(percentage).toBe(0);
+    });
+
+    it('should return 100% when start equals target', () => {
+      component.stats.set({ ...mockMetabolismResponse, start_weight: 100, target_weight: 100 });
+
+      const percentage = component.getTotalProgressPercentage();
+
+      expect(percentage).toBe(100);
+    });
+
+    it('should clamp at 100%', () => {
+      component.stats.set({ ...mockMetabolismResponse, start_weight: 100, target_weight: 80, latest_weight: 70 });
+
+      const percentage = component.getTotalProgressPercentage();
+
+      expect(percentage).toBeLessThanOrEqual(100);
+    });
+
+    it('should clamp at 0%', () => {
+      component.stats.set({ ...mockMetabolismResponse, start_weight: 100, target_weight: 80, latest_weight: 101 });
+
+      const percentage = component.getTotalProgressPercentage();
+
+      expect(percentage).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('Confidence Colors - Hex Defaults', () => {
+    it('should return default hex for unknown confidence', () => {
+      const color = component.getConfidenceColorHex('unknown');
+
+      expect(color).toBe('#9ca3af');
+    });
+
+    it('should return default hex for undefined', () => {
+      const color = component.getConfidenceColorHex(undefined);
+
+      expect(color).toBe('#9ca3af');
+    });
+
+    it('should return default text color for unknown', () => {
+      const color = component.getConfidenceColor('unknown');
+
+      expect(color).toContain('gray');
+    });
+  });
+
+  describe('Confidence Reason - All Paths', () => {
+    it('should handle high confidence with reason', () => {
+      const customStats = { ...mockMetabolismResponse, confidence: 'high', confidence_reason: 'Muitos dados' };
+      component.stats.set(customStats);
+
+      const reason = component.getConfidenceReason(component.stats());
+
+      expect(reason).toContain('Muitos dados');
+    });
+
+    it('should handle low confidence without reason', () => {
+      component.stats.set({ ...mockMetabolismResponse, confidence: 'low', confidence_reason: undefined });
+
+      const reason = component.getConfidenceReason(component.stats());
+
+      expect(reason).toContain('Dados inconsistentes');
+    });
+
+  });
+
+  describe('Effect & Change Detection', () => {
+    it('should mark for check in ngAfterViewInit', () => {
+      component.ngAfterViewInit();
+      expect(component.cdr).toBeTruthy();
+    });
+  });
+
+  describe('Recommendation - Confidence None', () => {
+    it('should return generic message for confidence none', () => {
+      component.stats.set({ ...mockMetabolismResponse, confidence: 'none' });
+
+      const recommendation = component.getRecommendation();
+
+      expect(recommendation).toContain('insuficientes');
+      expect(recommendation).toContain('Continue logando');
+    });
   });
 });

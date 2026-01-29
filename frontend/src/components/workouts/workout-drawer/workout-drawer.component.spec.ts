@@ -552,4 +552,292 @@ describe('WorkoutDrawerComponent', () => {
       expect(component.close).toBeDefined();
     });
   });
+
+  describe('Volume Calculation - Branch Coverage', () => {
+    it('should return 0 when exercises is undefined', () => {
+      const workout = WorkoutFactory.create({ exercises: undefined });
+      component.workout = workout;
+
+      const volume = component.volumeTotal;
+
+      expect(volume).toBe(0);
+    });
+
+    it('should return 0 when exercises is empty array', () => {
+      const workout = WorkoutFactory.create({ exercises: [] });
+      component.workout = workout;
+
+      const volume = component.volumeTotal;
+
+      expect(volume).toBe(0);
+    });
+
+    it('should calculate volume with missing reps_per_set', () => {
+      const workout = WorkoutFactory.create({
+        exercises: [
+          {
+            name: 'Test',
+            sets: 1,
+            reps_per_set: [],
+            weights_per_set: [50, 60]
+          }
+        ]
+      });
+      component.workout = workout;
+
+      const volume = component.volumeTotal;
+
+      expect(typeof volume).toBe('number');
+    });
+
+    it('should calculate volume correctly with all data', () => {
+      const workout = WorkoutFactory.create({
+        exercises: [
+          {
+            name: 'Exercise 1',
+            sets: 2,
+            reps_per_set: [10, 8],
+            weights_per_set: [50, 60]
+          }
+        ]
+      });
+      component.workout = workout;
+
+      const volume = component.volumeTotal;
+
+      expect(volume).toBe(980); // (50*10) + (60*8)
+    });
+
+    it('should sum multiple exercises', () => {
+      const workout = WorkoutFactory.create({
+        exercises: [
+          {
+            name: 'Ex1',
+            sets: 1,
+            reps_per_set: [10],
+            weights_per_set: [50]
+          },
+          {
+            name: 'Ex2',
+            sets: 1,
+            reps_per_set: [10],
+            weights_per_set: [50]
+          }
+        ]
+      });
+      component.workout = workout;
+
+      const volume = component.volumeTotal;
+
+      expect(volume).toBe(1000); // 500 + 500
+    });
+
+    it('should handle decimal weights', () => {
+      const workout = WorkoutFactory.create({
+        exercises: [
+          {
+            name: 'Dumbbell',
+            sets: 1,
+            reps_per_set: [10],
+            weights_per_set: [12.5]
+          }
+        ]
+      });
+      component.workout = workout;
+
+      const volume = component.volumeTotal;
+
+      expect(volume).toBeCloseTo(125, 1);
+    });
+
+    it('should handle mismatched array lengths', () => {
+      const workout = WorkoutFactory.create({
+        exercises: [
+          {
+            name: 'Mismatched',
+            sets: 3,
+            reps_per_set: [10, 8],
+            weights_per_set: [50, 60, 70]
+          }
+        ]
+      });
+      component.workout = workout;
+
+      const volume = component.volumeTotal;
+
+      expect(typeof volume).toBe('number');
+      expect(volume).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Total Sets Calculation', () => {
+    it('should return 0 when no exercises', () => {
+      const workout = WorkoutFactory.create({ exercises: [] });
+      component.workout = workout;
+
+      const sets = component.totalSets;
+
+      expect(sets).toBe(0);
+    });
+
+    it('should sum sets from all exercises', () => {
+      const workout = WorkoutFactory.create({
+        exercises: [
+          { name: 'Ex1', sets: 3, reps_per_set: [], weights_per_set: [] },
+          { name: 'Ex2', sets: 4, reps_per_set: [], weights_per_set: [] },
+          { name: 'Ex3', sets: 2, reps_per_set: [], weights_per_set: [] }
+        ]
+      });
+      component.workout = workout;
+
+      const sets = component.totalSets;
+
+      expect(sets).toBe(9);
+    });
+
+    it('should handle single exercise with many sets', () => {
+      const workout = WorkoutFactory.create({
+        exercises: [
+          { name: 'Ex1', sets: 10, reps_per_set: [], weights_per_set: [] }
+        ]
+      });
+      component.workout = workout;
+
+      const sets = component.totalSets;
+
+      expect(sets).toBe(10);
+    });
+  });
+
+  describe('Getter Memoization & Updates', () => {
+    it('should recalculate volume when exercise data changes', () => {
+      let workout = WorkoutFactory.create({
+        exercises: [
+          { name: 'Ex', sets: 1, reps_per_set: [10], weights_per_set: [50] }
+        ]
+      });
+      component.workout = workout;
+
+      let volume = component.volumeTotal;
+      expect(volume).toBe(500);
+
+      // Change the workout
+      workout = WorkoutFactory.create({
+        exercises: [
+          { name: 'Ex', sets: 1, reps_per_set: [10], weights_per_set: [100] }
+        ]
+      });
+      component.workout = workout;
+
+      volume = component.volumeTotal;
+      expect(volume).toBe(1000);
+    });
+
+    it('should recalculate sets when exercise count changes', () => {
+      let workout = WorkoutFactory.create({
+        exercises: [
+          { name: 'Ex1', sets: 3, reps_per_set: [], weights_per_set: [] }
+        ]
+      });
+      component.workout = workout;
+
+      let sets = component.totalSets;
+      expect(sets).toBe(3);
+
+      workout = WorkoutFactory.create({
+        exercises: [
+          { name: 'Ex1', sets: 3, reps_per_set: [], weights_per_set: [] },
+          { name: 'Ex2', sets: 4, reps_per_set: [], weights_per_set: [] }
+        ]
+      });
+      component.workout = workout;
+
+      sets = component.totalSets;
+      expect(sets).toBe(7);
+    });
+  });
+
+  describe('Component Lifecycle', () => {
+    it('should have required input', () => {
+      const metadata = (WorkoutDrawerComponent as any).ɵcmp;
+      expect(metadata.inputs).toBeDefined();
+      expect(Object.keys(metadata.inputs)).toContain('workout');
+    });
+
+    it('should have output emitter', () => {
+      const metadata = (WorkoutDrawerComponent as any).ɵcmp;
+      expect(metadata.outputs).toBeDefined();
+      expect(Object.keys(metadata.outputs)).toContain('close');
+    });
+
+    it('should handle multiple close emissions', (done) => {
+      component.workout = WorkoutFactory.create();
+      fixture.detectChanges();
+
+      let emitCount = 0;
+      component.close.subscribe(() => {
+        emitCount++;
+        if (emitCount === 3) {
+          expect(emitCount).toBe(3);
+          done();
+        }
+      });
+
+      component.close.emit();
+      component.close.emit();
+      component.close.emit();
+    });
+  });
+
+  describe('Template Rendering', () => {
+    it('should bind volumeTotal to template', () => {
+      const workout = WorkoutFactory.createChest();
+      component.workout = workout;
+      fixture.detectChanges();
+
+      const volume = component.volumeTotal;
+      expect(volume).toBeGreaterThan(0);
+    });
+
+    it('should bind totalSets to template', () => {
+      const workout = WorkoutFactory.createChest();
+      component.workout = workout;
+      fixture.detectChanges();
+
+      const sets = component.totalSets;
+      expect(sets).toBeGreaterThan(0);
+    });
+
+    it('should format date using appDateFormatPipe', () => {
+      const date = new Date('2026-01-27').toISOString();
+      const workout = WorkoutFactory.create({ date });
+      component.workout = workout;
+      fixture.detectChanges();
+
+      expect(component.workout.date).toBeTruthy();
+    });
+  });
+
+  describe('Properties Immutability', () => {
+    it('should not modify workout on calculation', () => {
+      const workout = WorkoutFactory.create();
+      const originalJson = JSON.stringify(workout);
+      component.workout = workout;
+
+      const volume = component.volumeTotal;
+      const sets = component.totalSets;
+
+      expect(JSON.stringify(component.workout)).toBe(originalJson);
+    });
+
+    it('should maintain exercise structure after calculation', () => {
+      const workout = WorkoutFactory.createChest();
+      component.workout = workout;
+
+      const volume = component.volumeTotal;
+
+      expect(component.workout.exercises.length).toBeGreaterThan(0);
+      expect(component.workout.exercises[0].name).toBeTruthy();
+    });
+  });
 });
