@@ -1,4 +1,4 @@
-Mobile-navigation|describe('Mobile Navigation', () => {
+describe('Mobile Navigation', () => {
     beforeEach(() => {
         // 100% Mocked Login with user profile intercept for navigation tests
         cy.mockLogin({

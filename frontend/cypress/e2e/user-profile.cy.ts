@@ -1,4 +1,4 @@
-User-profile|describe('User Profile Flow', () => {
+describe('User Profile Flow', () => {
   beforeEach(() => {
     // 100% Mocked Login
     cy.mockLogin({

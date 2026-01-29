@@ -1,4 +1,4 @@
-Zepp-life-import|describe('Zepp Life Import - E2E', () => {
+describe('Zepp Life Import - E2E', () => {
     beforeEach(() => {
         cy.mockLogin();
         // Mock Hevy/Telegram endpoints to prevent 404s if any

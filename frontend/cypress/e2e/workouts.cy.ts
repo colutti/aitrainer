@@ -1,4 +1,4 @@
-Workouts|describe('Workout History & Drawer', () => {
+describe('Workout History & Drawer', () => {
   const mockWorkouts = {
     workouts: [
       {

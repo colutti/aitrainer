@@ -1,4 +1,4 @@
-Hevy-integration|describe('Hevy Integration - Unit E2E Tests', () => {
+describe('Hevy Integration - Unit E2E Tests', () => {
     // Dynamic State container to simulate backend state changes
     const state = {
         hevyConnected: false,

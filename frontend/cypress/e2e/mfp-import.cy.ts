@@ -1,4 +1,4 @@
-Mfp-import|describe('MyFitnessPal Import - E2E', () => {
+describe('MyFitnessPal Import - E2E', () => {
     beforeEach(() => {
         // mockLogin now handles the default integration checks via setupCommonIntercepts
         cy.mockLogin();
