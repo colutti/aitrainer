@@ -45,10 +45,7 @@ describe('DashboardComponent', () => {
 
     metabolismServiceMock = {
       getSummary: jest.fn().mockResolvedValue(null),
-      stats: signal(null),
-      isInsightLoading: signal(false),
-      insightText: signal(''),
-      generateInsight: jest.fn().mockResolvedValue('New insight')
+      stats: signal(null)
     };
 
     trainerServiceMock = {
@@ -256,29 +253,7 @@ describe('DashboardComponent', () => {
     });
   });
 
-  describe('Insights & Regeneration', () => {
-    it('should display AI insight', () => {
-      fixture.detectChanges();
 
-      const insight = fixture.nativeElement.querySelector('[data-test="insight"]');
-      if (insight) {
-        expect(insight).toBeTruthy();
-      }
-    });
-
-    it('should show regenerate button', () => {
-      fixture.detectChanges();
-
-      const button = fixture.nativeElement.querySelector('[data-test="regenerate-insight"]');
-      if (button) {
-        expect(button).toBeTruthy();
-      }
-    });
-
-    it('should have component defined', () => {
-      expect(component).toBeTruthy();
-    });
-  });
 
   describe('Sections Display', () => {
     it('should render dashboard content', () => {

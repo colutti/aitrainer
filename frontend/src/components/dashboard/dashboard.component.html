@@ -7,87 +7,8 @@
 
   <div class="space-y-8 p-1">
     
-    <!-- AI Insight (HERO) -->
-    <div class="mb-4" *ngIf="metabolismStats()?.confidence !== 'none'">
-      <div
-        class="bg-light-bg rounded-2xl border border-primary/30 p-[1px] shadow-2xl relative overflow-hidden group"
-      >
-        <!-- Animated shine effect -->
-        <div
-          class="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none z-10"
-        ></div>
-
-        <div
-          class="bg-dark-bg/50 backdrop-blur-sm rounded-2xl p-7 md:p-10 flex flex-col md:flex-row gap-10 md:gap-12 relative z-0 h-full"
-        >
-          <!-- Trainer Avatar & Pulse -->
-          <div class="flex-shrink-0 flex justify-center md:block">
-            <div class="relative w-28 h-28 md:w-40 md:h-40">
-              <div
-                class="absolute inset-0 bg-primary/30 rounded-full blur-xl animate-pulse"
-              ></div>
-              <img
-                [src]="currentTrainer()?.avatar_url || 'assets/trainer-ai.png'"
-                onerror="
-                  this.src =
-                    'https://api.dicebear.com/7.x/bottts/svg?seed=Atlas'
-                "
-                alt="Trainer"
-                class="w-full h-full rounded-full border-2 border-primary/50 relative z-10 bg-dark-bg object-cover"
-              />
-              <div
-                class="absolute -bottom-2 -right-2 bg-dark-bg px-3 py-1 rounded-full border border-primary/30 text-[10px] font-bold text-primary uppercase shadow-lg z-20"
-              >
-                AI Coach
-              </div>
-            </div>
-          </div>
-
-          <!-- Insight Text -->
-          <div class="flex-1">
-            <div class="flex items-center gap-3 mb-4">
-              <span class="animate-pulse text-primary">●</span>
-              <h2
-                class="text-xs font-bold text-text-secondary uppercase tracking-widest"
-                data-cy="trainer-analysis-header"
-              >
-                Análise de Hoje
-              </h2>
-            </div>
-
-            <div
-              *ngIf="metabolismService.isInsightLoading() && !metabolismService.insightText()"
-              class="space-y-3 opacity-50 animate-pulse"
-            >
-              <div class="h-4 bg-secondary/30 rounded w-3/4"></div>
-              <div class="h-4 bg-secondary/30 rounded w-1/2"></div>
-            </div>
-
-            <markdown
-              [data]="metabolismService.insightText()"
-              class="prose prose-invert prose-p:text-text-primary prose-p:leading-relaxed prose-p:font-light text-base md:text-lg max-w-none prose-strong:font-bold prose-strong:text-primary [&_*]:no-underline"
-            >
-            </markdown>
-
-            <!-- Botão Regenerar -->
-            <div class="mt-4 flex justify-end">
-              <button
-                (click)="regenerateInsight()"
-                [disabled]="metabolismService.isInsightLoading()"
-                class="text-xs text-text-secondary hover:text-primary transition-colors duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
-                <span>{{ metabolismService.isInsightLoading() ? 'Gerando...' : 'Regenerar análise' }}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- ==================== CORPO SECTION ==================== -->
+
     <ng-container *ngIf="!isLoading()">
         <app-section-header
             title="Composição Corporal"

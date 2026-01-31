@@ -500,12 +500,7 @@ export class DashboardComponent implements OnInit {
        }
     });
 
-    effect(() => {
-        const s = this.metabolismStats();
-        if (s && s.confidence && s.confidence !== 'none') {
-           untracked(() => { this.metabolismService.generateInsight(3); });
-        }
-    });
+
     
     // Auto-load trainer on init (simulated by empty dependency effect or explicit call in OnInit, but we want reactivity to profile change if possible)
     // Actually we can just load it once.
@@ -549,10 +544,7 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  regenerateInsight() {
-    // Force=true invalida o cache e regenera o insight
-    this.metabolismService.generateInsight(3, true);
-  }
+
 
   getSparklinePath(): string {
     const s = this.metabolismStats();

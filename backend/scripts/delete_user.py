@@ -34,7 +34,6 @@ def count_and_delete_mongo(db, collection_name, query, dry_run=False):
         "workout_logs",
         "nutrition_logs",
         "weight_logs",
-        "ai_insight_cache",
     ]:
         # These collections use 'user_email' or 'email' depending on the model.
         # Based on inspection:
@@ -44,7 +43,6 @@ def count_and_delete_mongo(db, collection_name, query, dry_run=False):
         # workout_logs: user_email
         # nutrition_logs: user_email
         # weight_logs: user_email
-        # ai_insight_cache: user_email
 
         # Verification logic
         has_email = "email" in query
@@ -124,7 +122,6 @@ def main():
         ("weight_logs", {"user_email": email}),
         ("invites", {"email": email}),
         ("message_store", {"SessionId": email}),
-        ("ai_insight_cache", {"user_email": email}),
         ("token_blocklist", {"sub": email}),
     ]
 
