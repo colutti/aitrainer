@@ -396,9 +396,9 @@ class HevyService:
                         if "title" in ex:
                             del ex["title"]
 
-                # folder_id is allowed in POST
-                if routine.folder_id is not None:
-                    routine_data["folder_id"] = routine.folder_id
+                # CRITICAL: Hevy API requires folder_id field (null = default folder)
+                # Always include it, even if None
+                routine_data["folder_id"] = routine.folder_id
 
                 import json
                 payload = {"routine": routine_data}

@@ -118,23 +118,47 @@ def create_create_hevy_routine_tool(hevy_service, database, user_email: str):
         title: str,
         exercises: list[dict],
         notes: str | None = None,
-        folder_id: int | None = None,
     ) -> str:
         """
         Cria uma nova rotina no Hevy.
 
-        Argumento `exercises` deve ser uma lista de dicionários:
+        Args:
+            title: Título da rotina (obrigatório)
+            exercises: Lista de exercícios (obrigatório, mínimo 1)
+            notes: Notas da rotina (opcional)
+
+        Estrutura de exercises:
         [
           {
-            "exercise_template_id": "0EB695C9",
-            "notes": "Foco em cadência",
-            "sets": [{"type": "normal", "weight_kg": 100, "reps": 10}]
+            "exercise_template_id": "ABC123",  # Obrigatório - use search_hevy_exercises
+            "notes": "💪 Foco em forma, controle na descida",  # Opcional - instruções específicas
+            "rest_seconds": 90,  # Opcional - tempo de descanso (60, 90, 120, 180 comum)
+            "superset_id": 1,  # Opcional - mesmo ID = superset
+            "sets": [
+              {"type": "warmup", "weight_kg": 40, "reps": 12},
+              {"type": "normal", "weight_kg": 80, "rep_range": {"start": 8, "end": 12}},
+              {"type": "dropset", "weight_kg": 60, "reps": 15},
+              {"type": "failure", "weight_kg": 70, "reps": 10}
+            ]
           }
         ]
 
+        Campos suportados em sets:
+        - type: "normal" | "warmup" | "dropset" | "failure"
+        - weight_kg: float (peso em kg)
+        - reps: int (reps fixas) OU rep_range: {"start": int, "end": int}
+        - duration_seconds: int (para exercícios cronometrados)
+        - distance_meters: float (para cardio)
+
+        Dicas:
+        - Use emojis nas notas para melhor UX (💪, 🔥, 🔗)
+        - Use rep_range para flexibilidade (ex: 8-12 reps)
+        - Use superset_id para ligar exercícios (mesmo ID = superset)
+        - Use rest_seconds para tempos de descanso específicos
+
         IMPORTANTE:
-        1. Use `search_hevy_exercises` primeiro para obter os IDs reais.
-        2. `exercises` NÃO PODE estar vazio.
+        1. Use `search_hevy_exercises` primeiro para obter IDs válidos
+        2. exercises NÃO PODE estar vazio
         """
         # Debug logging
         logger.info(
@@ -154,13 +178,8 @@ def create_create_hevy_routine_tool(hevy_service, database, user_email: str):
             return "Integração desativada."
 
         try:
-            # Validate and clean folder_id
+            # Always use default folder (folder_id = None)
             clean_folder_id = None
-            if folder_id is not None:
-                try:
-                    clean_folder_id = int(folder_id)
-                except (ValueError, TypeError):
-                    clean_folder_id = None
 
             routine_exercises = []
             for ex in exercises:
@@ -209,17 +228,27 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
         Atualiza uma rotina existente no Hevy.
 
         Args:
-            routine_title: Título da rotina a ser atualizada (ex: "Pull Workout", "Treino A")
-            new_title: Novo título para a rotina (opcional, se quiser renomear)
-            exercises: Lista COMPLETA de exercícios que a rotina deve ter (opcional). 
-                       Cada exercício deve ser um objeto com 'exercise_template_id'.
-                       IMPORTANTE: Ao fornecer esta lista, ela substituirá INTEIRAMENTE a lista atual de exercícios.
+            routine_title: Título da rotina a atualizar (use list_hevy_routines)
+            new_title: Novo título (opcional)
+            exercises: Lista COMPLETA de exercícios (opcional - substitui tudo)
             notes: Notas atualizadas (opcional)
 
         IMPORTANTE:
-        1. Use o título que aparece em `list_hevy_routines`.
-        2. Se alterar exercícios, use `search_hevy_exercises` para validar os IDs dos novos exercícios.
-        3. Para manter os exercícios existentes, você DEVE incluí-los na lista enviada.
+        1. Use o título exato de list_hevy_routines
+        2. exercises substitui TODA a lista - inclua exercícios existentes se quiser mantê-los
+        3. Suporta os mesmos campos de create_hevy_routine:
+           - exercise.notes, rest_seconds, superset_id
+           - set.type (warmup/normal/dropset/failure)
+           - rep_range para flexibilidade
+        4. Use search_hevy_exercises para validar IDs de novos exercícios
+
+        Exemplos de uso:
+        - Adicionar exercício: inclua todos os antigos + o novo
+        - Remover exercício: inclua só os que quer manter
+        - Mudar ordem: reordene a lista
+        - Adicionar superset: adicione superset_id aos exercícios
+        - Mudar reps fixas para range: use rep_range ao invés de reps
+        - Atualizar notas: passe notes com novo texto
         """
         if not routine_title:
             return "Título da rotina é obrigatório para atualização."
@@ -287,7 +316,7 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
 
             if new_title:
                 current.title = new_title
-            if notes:
+            if notes is not None:
                 current.notes = notes
             if exercises:
                 logger.info(f"Assigning {len(exercises)} new exercises to routine '{target_routine.title}'")
