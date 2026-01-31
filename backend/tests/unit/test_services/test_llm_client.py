@@ -61,6 +61,32 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
             
         self.assertEqual(results, ["res"])
 
+    async def test_stream_simple_with_logging(self):
+        """Test simple streaming with log_callback."""
+        client = LLMClient()
+        client._llm = MagicMock()
+
+        # Mock the chain behavior
+        prompt = MagicMock()
+        prompt.format.return_value = "formatted prompt"
+        
+        async def mock_stream(*args, **kwargs):
+            yield "res"
+            
+        prompt.__or__.return_value.__or__.return_value.astream = mock_stream
+
+        log_callback = MagicMock()
+        user_email = "test@test.com"
+
+        results = []
+        async for chunk in client.stream_simple(
+            prompt, {}, user_email=user_email, log_callback=log_callback
+        ):
+            results.append(chunk)
+            
+        self.assertEqual(results, ["res"])
+        log_callback.assert_called_once_with(user_email, {"prompt": "formatted prompt", "type": "simple"})
+
     @patch("src.services.llm_client.create_agent")
     async def test_stream_with_tools_success(self, mock_create_agent):
         """Test streaming with tool support."""

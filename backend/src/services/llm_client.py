@@ -88,6 +88,14 @@ class LLMClient:
             # Format initial messages
             messages = list(prompt_template.format_messages(**input_data))
 
+            # V3: Log Prompt if callback provided
+            if log_callback and user_email:
+                try:
+                    prompt_str = prompt_template.format(**input_data)
+                    log_callback(user_email, {"prompt": prompt_str, "type": "with_tools"})
+                except Exception as log_err:
+                    logger.warning("Failed to log prompt in stream_with_tools: %s", log_err)
+
             # Create the ReAct agent
             agent: CompiledStateGraph = create_agent(self._llm, tools)
 
@@ -125,7 +133,11 @@ class LLMClient:
             yield f"Error processing request: {str(e)}"
 
     async def stream_simple(
-        self, prompt_template, input_data: dict
+        self,
+        prompt_template,
+        input_data: dict,
+        user_email: str | None = None,
+        log_callback=None,
     ) -> Generator[str, None, None]:
         """
         Simple streaming without tools.
@@ -133,15 +145,27 @@ class LLMClient:
         Args:
             prompt_template: The LangChain prompt template to use.
             input_data: Dictionary with input variables for the template.
+            user_email: Optional user email for logging.
+            log_callback: Optional callback for logging the prompt.
 
         Yields:
             Individual chunks of the LLM response content.
         """
         logger.info(
-            "Invoking LLM (simple) for input: %s", input_data.get("user_message")
+            "Invoking LLM (simple) for user: %s, input keys: %s",
+            user_email,
+            list(input_data.keys()),
         )
 
         try:
+            # V3: Log Prompt if callback provided
+            if log_callback and user_email:
+                try:
+                    prompt_str = prompt_template.format(**input_data)
+                    log_callback(user_email, {"prompt": prompt_str, "type": "simple"})
+                except Exception as log_err:
+                    logger.warning("Failed to log prompt in stream_simple: %s", log_err)
+
             chain = prompt_template | self._llm | StrOutputParser()
             async for chunk in chain.astream(input_data):
                 yield chunk
