@@ -12,6 +12,7 @@ services:
       - ./backend/.env
     environment:
       - MONGO_URI=mongodb://aitrainer:aitrainerpass@mongo:27017/aitrainerdb?authSource=admin
+      - DB_NAME=aitrainerdb
       - QDRANT_HOST=qdrant
       - RUNNING_IN_CONTAINER=true
       - RATE_LIMIT_LOGIN=100/minute

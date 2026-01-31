@@ -91,7 +91,9 @@ export class NutritionComponent implements OnInit {
 
   deleteLog(event: Event, log: NutritionLog) {
     event.stopPropagation();
+    console.log('Attempting to delete log:', log.id);
     if (confirm('Tem certeza que deseja excluir este registro nutricional?')) {
+      console.log('User confirmed deletion');
       this.deletingId.set(log.id);
       this.nutritionService.deleteLog(log.id).subscribe({
         next: () => {

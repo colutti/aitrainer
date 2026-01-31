@@ -66,7 +66,12 @@ class LLMClient:
         )
 
     async def stream_with_tools(
-        self, prompt_template, input_data: dict, tools: list
+        self,
+        prompt_template,
+        input_data: dict,
+        tools: list,
+        user_email: str | None = None,
+        log_callback=None,
     ) -> Generator[str | dict, None, None]:
         """
         Invokes the LLM with tool support using LangGraph's ReAct agent.

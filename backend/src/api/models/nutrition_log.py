@@ -4,7 +4,8 @@ Pydantic models for nutrition logging.
 
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_serializer
+
 
 
 class NutritionLog(BaseModel):
@@ -51,3 +52,25 @@ class NutritionWithId(NutritionLog):
     id: str = Field(..., alias="_id", description="ID do log no MongoDB")
 
     model_config = ConfigDict(populate_by_name=True)
+
+    @model_serializer
+    def ser_model(self) -> dict:
+        """Custom serializer to ensure _id is exposed as id."""
+        data = {
+            "user_email": self.user_email,
+            "date": self.date,
+            "calories": self.calories,
+            "protein_grams": self.protein_grams,
+            "carbs_grams": self.carbs_grams,
+            "fat_grams": self.fat_grams,
+            "fiber_grams": self.fiber_grams,
+            "sugar_grams": self.sugar_grams,
+            "sodium_mg": self.sodium_mg,
+            "cholesterol_mg": self.cholesterol_mg,
+            "source": self.source,
+            "notes": self.notes,
+            "id": self.id,  # Use field name, not alias
+        }
+        return data
+
+

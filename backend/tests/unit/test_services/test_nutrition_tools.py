@@ -67,6 +67,34 @@ class TestNutritionTools:
         assert "atualizado com sucesso" in result
         assert "ID: existing_id_456" in result
 
+    def test_save_daily_nutrition_dirty_input(self, mock_db):
+        """Test saving nutrition log with dirty input strings (units, commas)."""
+        # Setup
+        mock_db.save_nutrition_log.return_value = ("new_id_123", True)
+        tool = create_save_nutrition_tool(mock_db, "user@test.com")
+
+        # Execute
+        result = tool.invoke(
+            {
+                "calories": "2000 kcal",
+                "protein_grams": "150,5 g", 
+                "carbs_grams": "200g",
+                "fat_grams": "60",
+                "date": "2024-01-01",
+            }
+        )
+
+        # Verify
+        mock_db.save_nutrition_log.assert_called_once()
+        args = mock_db.save_nutrition_log.call_args[0][0]
+        assert isinstance(args, NutritionLog)
+        assert args.calories == 2000
+        assert args.protein_grams == 150.5
+        assert args.carbs_grams == 200.0
+        assert args.fat_grams == 60.0
+        assert "criado com sucesso" in result
+
+
     def test_save_daily_nutrition_error_handling(self, mock_db):
         """Test error handling during save."""
         mock_db.save_nutrition_log.side_effect = Exception("DB Error")
