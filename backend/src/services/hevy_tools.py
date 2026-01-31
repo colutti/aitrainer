@@ -230,25 +230,13 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
         Args:
             routine_title: Título da rotina a atualizar (use list_hevy_routines)
             new_title: Novo título (opcional)
-            exercises: Lista COMPLETA de exercícios (opcional - substitui tudo)
-            notes: Notas atualizadas (opcional)
+            exercises: Lista COMPLETA de exercícios (opcional). Use para mudar a estrutura, ordem, reps ou adicionar notas específicas de cada exercício.
+            notes: Descrição GERAL da rotina (opcional). NÃO use para descrever exercícios individuais.
 
-        IMPORTANTE:
-        1. Use o título exato de list_hevy_routines
-        2. exercises substitui TODA a lista - inclua exercícios existentes se quiser mantê-los
-        3. Suporta os mesmos campos de create_hevy_routine:
-           - exercise.notes, rest_seconds, superset_id
-           - set.type (warmup/normal/dropset/failure)
-           - rep_range para flexibilidade
-        4. Use search_hevy_exercises para validar IDs de novos exercícios
-
-        Exemplos de uso:
-        - Adicionar exercício: inclua todos os antigos + o novo
-        - Remover exercício: inclua só os que quer manter
-        - Mudar ordem: reordene a lista
-        - Adicionar superset: adicione superset_id aos exercícios
-        - Mudar reps fixas para range: use rep_range ao invés de reps
-        - Atualizar notas: passe notes com novo texto
+        IMPORTANTE: 
+        - Para mudar QUALQUER coisa nos exercícios (reps, ordem, incluir notas de execução), você DEVE enviar a lista `exercises` completa.
+        - O campo `notes` aqui é apenas para a descrição que aparece no topo da rotina no Hevy.
+        - `exercises` substitui toda a lista atual. Mantenha os exercícios existentes se quiser apenas adicionar um novo.
         """
         if not routine_title:
             return "Título da rotina é obrigatório para atualização."
@@ -317,6 +305,9 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
             if new_title:
                 current.title = new_title
             if notes is not None:
+                # Heurística: se as notas parecem uma lista de exercícios e exercises está vazio, avisar a IA
+                if not exercises and any(x in notes for x in [" 1)", " 1.", " - ", " — "]) and len(notes) > 50:
+                    return "ERRO: Você forneceu uma lista de exercícios no campo 'notes'. Para atualizar os exercícios (ordem, reps, notas de execução), você DEVE enviar a lista no parâmetro 'exercises'. O campo 'notes' é apenas para a descrição geral da rotina."
                 current.notes = notes
             if exercises:
                 logger.info(f"Assigning {len(exercises)} new exercises to routine '{target_routine.title}'")
@@ -336,7 +327,10 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
 
             result = await hevy_service.update_routine(profile.hevy_api_key, routine_id, current)
             if result:
-                return f"✅ Rotina '{result.title}' atualizada com sucesso!"
+                msg = f"✅ Rotina '{result.title}' atualizada com sucesso!"
+                if notes and not exercises:
+                    msg += " (Nota: Apenas a descrição geral foi alterada. Se pretendia mudar a estrutura do treino, envie a lista de 'exercises')."
+                return msg
             return "Falha ao enviar atualização para o Hevy. Verifique os dados dos exercícios."
         except Exception as e:
             logger.error(f"Error in update_hevy_routine: {e}", exc_info=True)
