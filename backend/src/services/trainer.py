@@ -133,6 +133,10 @@ class AITrainerBrain:
             )
         else:
             input_data["long_term_summary_section"] = ""
+        
+        # Add current_date if not present (for tests)
+        if "current_date" not in input_data:
+            input_data["current_date"] = datetime.now().strftime("%Y-%m-%d")
 
         # 2. Recent History & Memories (Already placeholders in settings.PROMPT_TEMPLATE)
         # We ensure they are treated as values, not template parts.
@@ -615,6 +619,7 @@ class AITrainerBrain:
             "chat_history_summary": chat_history_summary, # Kept for logging/compatibility or if template still uses it (we removed it)
             "chat_history": formatted_history_msgs,       # Passed to MessagesPlaceholder
             "user_message": user_input,
+            "current_date": datetime.now().strftime("%Y-%m-%d"),  # Add current date for date calculations
         }
 
         prompt_template = self._get_prompt_template(input_data, is_telegram=is_telegram)

@@ -84,16 +84,16 @@ admin-list:
 
 ## Backend Tests
 test-backend:
-	cd backend && .venv/bin/pytest
+	podman-compose exec backend pytest
 
 test-backend-cov:
-	cd backend && .venv/bin/pytest --cov=src --cov-report=html --cov-report=term-missing
+	podman-compose exec backend pytest --cov=src --cov-report=html --cov-report=term-missing
 
 test-backend-verbose:
-	cd backend && .venv/bin/pytest -v
+	podman-compose exec backend pytest -v
 
 test-backend-watch:
-	cd backend && .venv/bin/pytest --cov=src -v --tb=short
+	podman-compose exec backend pytest --cov=src -v --tb=short
 
 ## Frontend Tests
 test-frontend:
@@ -163,3 +163,4 @@ ci-fast: test-backend test-frontend cypress-fast
 ## - Total: ~5-10 minutos
 ci-test: test-backend test-frontend cypress-extended
 	@echo "✅ CI Full Test Suite Passed!"
+

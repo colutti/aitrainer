@@ -66,12 +66,7 @@ class LLMClient:
         )
 
     async def stream_with_tools(
-        self,
-        prompt_template,
-        input_data: dict,
-        tools: list,
-        user_email: str | None = None,
-        log_callback=None,
+        self, prompt_template, input_data: dict, tools: list
     ) -> Generator[str | dict, None, None]:
         """
         Invokes the LLM with tool support using LangGraph's ReAct agent.
@@ -87,33 +82,6 @@ class LLMClient:
         try:
             # Format initial messages
             messages = list(prompt_template.format_messages(**input_data))
-
-            # Log complete prompt - split into lines to avoid Render truncation
-            logger.debug(
-                "========== FULL_PROMPT START (total messages: %d) ==========",
-                len(messages),
-            )
-            prompt_data_for_log = []
-            for idx, msg in enumerate(messages, 1):
-                msg_content = str(msg.content).replace("\n", " ")
-                logger.debug(
-                    "PROMPT_MSG[%d/%d][%s]: %s",
-                    idx,
-                    len(messages),
-                    msg.__class__.__name__,
-                    msg_content,
-                )
-                prompt_data_for_log.append(
-                    {"role": msg.__class__.__name__, "content": msg.content}
-                )
-            logger.debug("========== FULL_PROMPT END ==========")
-
-            # Async Log to DB if callback provided
-            if log_callback and user_email:
-                log_callback(
-                    user_email,
-                    {"type": "with_tools", "input": input_data, "messages": prompt_data_for_log},
-                )
 
             # Create the ReAct agent
             agent: CompiledStateGraph = create_agent(self._llm, tools)
@@ -152,11 +120,7 @@ class LLMClient:
             yield f"Error processing request: {str(e)}"
 
     async def stream_simple(
-        self,
-        prompt_template,
-        input_data: dict,
-        user_email: str | None = None,
-        log_callback=None,
+        self, prompt_template, input_data: dict
     ) -> Generator[str, None, None]:
         """
         Simple streaming without tools.
@@ -164,8 +128,6 @@ class LLMClient:
         Args:
             prompt_template: The LangChain prompt template to use.
             input_data: Dictionary with input variables for the template.
-            user_email: Optional user email for logging.
-            log_callback: Optional async callback for logging.
 
         Yields:
             Individual chunks of the LLM response content.
@@ -175,19 +137,6 @@ class LLMClient:
         )
 
         try:
-            # Log complete prompt data in single line - NO TRUNCATION
-            formatted_data = {
-                k: str(v).replace("\n", " ") for k, v in input_data.items()
-            }
-            logger.debug("FULL_PROMPT_DATA: %s", formatted_data)
-
-            # Async Log to DB if callback provided
-            if log_callback and user_email:
-                log_callback(
-                    user_email,
-                    {"type": "simple", "input": input_data},
-                )
-
             chain = prompt_template | self._llm | StrOutputParser()
             async for chunk in chain.astream(input_data):
                 yield chunk
