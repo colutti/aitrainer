@@ -305,9 +305,6 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
             if new_title:
                 current.title = new_title
             if notes is not None:
-                # Heurística: se as notas parecem uma lista de exercícios e exercises está vazio, avisar a IA
-                if not exercises and any(x in notes for x in [" 1)", " 1.", " - ", " — "]) and len(notes) > 50:
-                    return "ERRO: Você forneceu uma lista de exercícios no campo 'notes'. Para atualizar os exercícios (ordem, reps, notas de execução), você DEVE enviar a lista no parâmetro 'exercises'. O campo 'notes' é apenas para a descrição geral da rotina."
                 current.notes = notes
             if exercises:
                 logger.info(f"Assigning {len(exercises)} new exercises to routine '{target_routine.title}'")
