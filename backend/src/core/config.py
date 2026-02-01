@@ -103,6 +103,8 @@ class Settings(BaseSettings):
     TELEGRAM_WEBHOOK_SECRET: str = ""
 
     def get_mem0_config(self):
+        from src.prompts.mem0_prompt import MEM0_FACT_EXTRACTION_PROMPT
+
         llm_config = {
             "provider": self.AI_PROVIDER,
             "config": {
@@ -185,6 +187,8 @@ class Settings(BaseSettings):
             },
             "llm": llm_config,
             "embedder": embedder_config,
+            "custom_prompt": MEM0_FACT_EXTRACTION_PROMPT,
+            "version": "v1.1",
         }
 
     # MONGO_URI previously computed field removed, now a direct variable
