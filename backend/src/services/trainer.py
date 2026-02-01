@@ -14,6 +14,7 @@ from src.core.config import settings
 from src.services.database import MongoDatabase
 from src.services.llm_client import LLMClient
 from src.services.history_compactor import HistoryCompactor
+from src.services.tool_registry import should_store_memory
 from src.services.workout_tools import (
     create_save_workout_tool,
     create_get_workouts_tool,
@@ -731,6 +732,7 @@ class AITrainerBrain:
         log_callback = self._get_log_callback(background_tasks)
 
         full_response = []
+        tools_called: list[str] = []
         async for chunk in self._llm_client.stream_with_tools(
             prompt_template=prompt_template,
             input_data=input_data,
@@ -739,15 +741,20 @@ class AITrainerBrain:
             log_callback=log_callback,
         ):
             # Check for System Feedback (Dict)
-            if isinstance(chunk, dict) and chunk.get("type") == "tool_result":
-                tool_name = chunk.get("tool_name")
-                content = chunk.get("content")
-                # Create a concise log for the system
-                log_msg = (
-                    f"✅ Tool '{tool_name}' executed. Result: {str(content)[:200]}"
-                )
-                self._add_system_message_to_history(user_email, log_msg)
-                continue
+            if isinstance(chunk, dict):
+                if chunk.get("type") == "tool_result":
+                    tool_name = chunk.get("tool_name")
+                    content = chunk.get("content")
+                    # Create a concise log for the system
+                    log_msg = (
+                        f"✅ Tool '{tool_name}' executed. Result: {str(content)[:200]}"
+                    )
+                    self._add_system_message_to_history(user_email, log_msg)
+                    continue
+                elif chunk.get("type") == "tools_summary":
+                    # Capture tools called for memory decision
+                    tools_called = chunk.get("tools_called", [])
+                    continue
 
             # It's a string chunk (AI Response)
             if isinstance(chunk, str):
@@ -772,16 +779,26 @@ class AITrainerBrain:
                 current_trainer_type,
             )
 
-            # We removed the restriction 'if not write_tool_was_called' because mixed messages
-            # (e.g. "updated goal AND have allergy") were causing critical facts (allergy) to be lost.
-            # Mem0 handles deduplication reasonably well, or we can refine later. Priority is capturing facts.
-            background_tasks.add_task(
-                _add_to_mem0_background,
-                memory=self._memory,
-                user_email=user_email,
-                user_input=user_input,
-                response_text=final_response,
-            )
+            # Store memory to Mem0 only if meaningful content (not just data retrieval)
+            if should_store_memory(tools_called):
+                background_tasks.add_task(
+                    _add_to_mem0_background,
+                    memory=self._memory,
+                    user_email=user_email,
+                    user_input=user_input,
+                    response_text=final_response,
+                )
+                logger.info(
+                    "Scheduled Mem0 storage for user: %s (tools: %s)",
+                    user_email,
+                    tools_called,
+                )
+            else:
+                logger.info(
+                    "Skipped Mem0 storage for user: %s (ephemeral tools only: %s)",
+                    user_email,
+                    tools_called,
+                )
 
             # V3: Schedule History Compaction
             background_tasks.add_task(
