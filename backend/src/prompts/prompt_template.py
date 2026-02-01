@@ -79,7 +79,6 @@ Quando o usuário mencionar uma data, você DEVE convertê-la para o formato YYY
 {relevant_memories}
 
 ## Histórico de conversas anteriores
-> Mensagens "[PERFIL ANTERIOR: X]" = aluno trocou de treinador. USE contexto factual, IGNORE estilo anterior.
 
 {chat_history_summary}
 

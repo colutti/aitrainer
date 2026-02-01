@@ -399,6 +399,24 @@ class AITrainerBrain:
         self._database.add_to_history(system_msg, user_email)
         logger.debug("Saved SYSTEM message to history: %s", content)
 
+    def _sort_messages_by_timestamp(self, messages: list) -> list:
+        """
+        Sorts LangChain messages by their timestamp in ascending order (oldest first).
+        Messages without timestamps are placed at the end.
+
+        Args:
+            messages: List of LangChain BaseMessage objects.
+
+        Returns:
+            Sorted list of messages.
+        """
+        def get_timestamp(msg) -> str:
+            if hasattr(msg, "additional_kwargs") and msg.additional_kwargs:
+                return msg.additional_kwargs.get("timestamp", "9999-99-99T99:99:99")
+            return "9999-99-99T99:99:99"  # Messages without timestamp go to end
+
+        return sorted(messages, key=get_timestamp)
+
     def _format_memory_messages(
         self,
         messages: list,
@@ -414,6 +432,9 @@ class AITrainerBrain:
         """
         if not messages:
             return "Nenhuma mensagem anterior."
+
+        # Sort messages chronologically
+        messages = self._sort_messages_by_timestamp(messages)
 
         formatted = []
         for msg in messages:
@@ -474,13 +495,30 @@ class AITrainerBrain:
         if not messages:
             return []
 
+        # Sort messages chronologically
+        messages = self._sort_messages_by_timestamp(messages)
+
         formatted_msgs: list[BaseMessage] = []
         for msg in messages:
+            # Extract timestamp prefix
+            timestamp_prefix = ""
+            if hasattr(msg, "additional_kwargs") and msg.additional_kwargs:
+                ts = msg.additional_kwargs.get("timestamp", "")
+                if ts:
+                    try:
+                        dt = datetime.fromisoformat(ts)
+                        timestamp_prefix = f"[{dt.strftime('%d/%m %H:%M')}] "
+                    except (ValueError, TypeError):
+                        pass
+
             # Clean message content - single line
             raw_content = msg.content if msg.content else ""
             if not isinstance(raw_content, str):
                 raw_content = str(raw_content)
             content = " ".join(raw_content.split())
+            
+            # Incorporate timestamp into content for LLM visibility
+            content = f"{timestamp_prefix}{content}"
 
             # Check message type
             is_system = hasattr(msg, "type") and msg.type == "system"
