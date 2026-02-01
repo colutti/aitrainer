@@ -8,7 +8,7 @@ import { CommonModule } from '@angular/common';
   template: `
     <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 flex flex-col justify-between min-h-[90px] h-full">
       <div class="flex justify-between items-start mb-3">
-        <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Fase Metabólica</p>
+        <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider cursor-help" title="Média diária no período selecionado">Balanço Energético Estimado</p>
         <span class="text-[9px] font-bold uppercase px-2 py-0.5 rounded border" [ngClass]="{
             'text-red-400 border-red-400/20 bg-red-400/5': status === 'surplus',
             'text-blue-400 border-blue-400/20 bg-blue-400/5': status === 'deficit',

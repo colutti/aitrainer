@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, AfterViewInit, ChangeDetectorRef, effect, signal } from "@angular/core";
-import { CommonModule, DatePipe } from "@angular/common";
+import { CommonModule, DatePipe, NgFor } from "@angular/common";
 import { MetabolismService } from "../../services/metabolism.service";
 import { UserProfileService } from "../../services/user-profile.service";
 import { NutritionService } from "../../services/nutrition.service";
@@ -11,11 +11,23 @@ import { WidgetMetabolicGaugeComponent } from '../widgets/widget-metabolic-gauge
 import { WidgetLineChartComponent } from '../widgets/widget-line-chart.component';
 import { WidgetCaloriesWeightComparisonComponent } from '../widgets/widget-calories-weight-comparison.component';
 import { WidgetTdeeSummaryComponent } from '../widgets/widget-tdee-summary.component';
+import { WidgetConfidenceComponent } from '../widgets/statistics/widget-confidence.component';
+import { WidgetConsistencyScoreComponent } from '../widgets/statistics/widget-consistency-score.component';
 
 @Component({
   selector: 'app-metabolism',
   standalone: true,
-  imports: [CommonModule, AppDateFormatPipe, AppNumberFormatPipe, WidgetMetabolicGaugeComponent, WidgetLineChartComponent, WidgetCaloriesWeightComparisonComponent, WidgetTdeeSummaryComponent],
+  imports: [
+    CommonModule,
+    NgFor,  
+    AppNumberFormatPipe, 
+    WidgetMetabolicGaugeComponent, 
+    WidgetLineChartComponent, 
+    WidgetCaloriesWeightComparisonComponent, 
+    WidgetTdeeSummaryComponent,
+    WidgetConfidenceComponent,
+    WidgetConsistencyScoreComponent
+  ],
   templateUrl: './metabolism.component.html',
   providers: [DatePipe]
 })
@@ -29,7 +41,9 @@ export class MetabolismComponent implements OnInit, AfterViewInit {
   // Signal local para ter controle direto sobre os dados (como Dashboard)
   stats = signal<MetabolismResponse | null>(null);
   isLoading = signal<boolean>(false);
+  weeks = signal<number>(3); // Default 3 weeks
   profile = this.userProfileService.userProfile;
+  periods = [2, 4, 8, 12];
 
   // --- Weight Trend Chart (Mirrored from Home) ---
   public weightChartOptions: ChartConfiguration['options'] = {
@@ -98,7 +112,7 @@ export class MetabolismComponent implements OnInit, AfterViewInit {
   async fetchMetabolismData() {
     this.isLoading.set(true);
     try {
-      const data = await this.metabolismService.getSummary(3);
+      const data = await this.metabolismService.getSummary(this.weeks());
       this.stats.set(data);
     } catch (error) {
       console.error('Erro ao carregar metabolismo:', error);
@@ -106,6 +120,11 @@ export class MetabolismComponent implements OnInit, AfterViewInit {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  setPeriod(weeks: number) {
+      this.weeks.set(weeks);
+      this.fetchMetabolismData();
   }
   
 
@@ -137,24 +156,7 @@ export class MetabolismComponent implements OnInit, AfterViewInit {
     return { percentage, label, color };
   }
   
-  getConfidenceColor(level: string): string {
-    switch(level) {
-        case 'high': return 'text-green-400';
-        case 'medium': return 'text-yellow-400';
-        case 'low': return 'text-red-400';
-        default: return 'text-gray-400';
-    }
-  }
-
-  getConfidenceColorHex(level: string | undefined): string {
-      switch(level) {
-          case 'high': return '#4ade80';
-          case 'medium': return '#facc15';
-          case 'low': return '#f87171';
-          default: return '#9ca3af';
-      }
-  }
-
+  // Display helpers (most logic moved to widgets)
   getConfidenceReason(s: any): string {
       if (!s) return 'Dados carregando...';
       if (s.confidence === 'low') {

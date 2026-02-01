@@ -27,7 +27,7 @@ describe('WidgetWeightHistogramComponent', () => {
     expect(component.consistency.length).toBe(1);
   });
 
-  it('should display last 7 days', () => {
+  it('should display all provided days', () => {
     const data = Array.from({ length: 30 }, (_, i) => ({
       date: `2026-01-${i + 1}`,
       weight: Math.random() > 0.5,
@@ -37,7 +37,7 @@ describe('WidgetWeightHistogramComponent', () => {
     component.ngOnChanges({
       consistency: new SimpleChange(undefined, data, true)
     });
-    expect(component.chartData.labels?.length).toBeLessThanOrEqual(7);
+    expect(component.chartData.labels?.length).toBe(30);
   });
 
   it('should have stacked bar chart', () => {

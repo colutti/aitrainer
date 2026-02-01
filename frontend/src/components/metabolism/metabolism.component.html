@@ -11,23 +11,16 @@
   <ng-container *ngIf="!isLoading()">
     <!-- Date Range Header -->
     <div class="flex items-center justify-between mb-6">
-      <div
-        class="flex items-center gap-3 bg-light-bg px-4 py-2 rounded-full border border-white/10"
-      >
-        <span
-          class="text-xs font-bold text-text-secondary uppercase tracking-widest hidden md:inline"
-          >Período Analisado</span
-        >
-        <span class="text-white font-bold text-sm">
-          {{ stats()?.startDate | appDateFormat: "shortMonth" }} -
-          {{ stats()?.endDate | appDateFormat: "shortMonth" }}
-        </span>
-        <span
-          class="text-xs text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full border border-green-400/20"
-          data-cy="logs-count"
-        >
-          {{ stats()?.logs_count }} dias
-        </span>
+      <div class="flex items-center gap-2 bg-light-bg px-2 py-1 rounded-full border border-white/10">
+          <button 
+              *ngFor="let w of periods" 
+              (click)="setPeriod(w)"
+              [attr.data-cy]="'period-btn-' + w"
+              class="px-3 py-1 rounded-full text-xs font-bold transition-all"
+              [ngClass]="weeks() === w ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-text-secondary hover:text-white'"
+          >
+              {{ w }} semanas
+          </button>
       </div>
 
       <div
@@ -57,61 +50,19 @@
       </app-widget-metabolic-gauge>
 
       <!-- TDEE Confidence -->
-      <div
-        class="lg:col-span-1 bg-light-bg rounded-2xl border border-secondary p-4 flex flex-col justify-between shadow-lg hover:border-primary/50 transition-colors h-full"
+      <app-widget-confidence
+        class="lg:col-span-1"
+        [confidence]="stats()?.confidence || 'none'"
+        [reason]="getConfidenceReason(stats())"
       >
-        <div class="flex justify-between items-center mb-2">
-          <h3
-            class="text-text-secondary text-[10px] font-bold uppercase tracking-wider"
-          >
-            Confiança
-          </h3>
-          <div
-            class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border"
-            [ngClass]="getConfidenceColor(stats()?.confidence)"
-          >
-            {{ stats()?.confidence || "N/A" }}
-          </div>
-        </div>
-        <div class="flex flex-col items-center justify-center flex-1 py-1">
-          <div class="relative w-24 h-12 overflow-hidden mb-1">
-            <div
-              class="absolute w-24 h-24 rounded-full border-[8px] border-secondary/30 border-t-2 border-l-2 -rotate-45"
-            ></div>
-            <div
-              class="absolute w-24 h-24 rounded-full border-[8px] border-transparent border-t-[var(--color-gauge)] border-r-[var(--color-gauge)] -rotate-45 transition-all duration-1000"
-              [style.--color-gauge]="getConfidenceColorHex(stats()?.confidence)"
-              [style.clip-path]="
-                stats()?.confidence === 'high'
-                  ? 'inset(0 0 50% 0)'
-                  : stats()?.confidence === 'medium'
-                    ? 'inset(0 25% 50% 0)'
-                    : 'inset(0 70% 50% 0)'
-              "
-            ></div>
-          </div>
-        </div>
-        <p class="text-[9px] text-text-secondary leading-tight text-center">
-          {{ getConfidenceReason(stats()) }}
-        </p>
-      </div>
+      </app-widget-confidence>
 
       <!-- Quick Consistency Stat -->
-      <div
-        class="lg:col-span-1 bg-light-bg rounded-2xl border border-secondary p-4 flex flex-col justify-center items-center shadow-lg hover:border-primary/50 transition-colors h-full"
+      <app-widget-consistency-score
+        class="lg:col-span-1"
+        [score]="stats()?.consistency_score || 0"
       >
-        <p
-          class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-2 w-full text-left"
-        >
-          Consistência
-        </p>
-        <div class="text-3xl font-black text-primary">
-          {{ stats()?.consistency_score }}%
-        </div>
-        <p class="text-[9px] text-text-secondary uppercase font-bold mt-1">
-          Dados Confiáveis
-        </p>
-      </div>
+      </app-widget-consistency-score>
     </div>
 
     <!-- Row 2: Trend Charts (2x2) -->
@@ -152,7 +103,7 @@
         [startDate]="stats()?.startDate"
         [endDate]="stats()?.endDate"
         [weightTrend]="stats()?.weight_trend || []"
-        [calorieHistory]="nutritionService.stats()?.last_14_days || []"
+        [calorieHistory]="stats()?.calorie_trend || []"
       >
       </app-widget-calories-weight-comparison>
     </div>

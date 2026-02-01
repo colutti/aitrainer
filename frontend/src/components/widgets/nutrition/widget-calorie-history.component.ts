@@ -15,7 +15,7 @@ interface CalorieDay {
   template: `
     <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors flex flex-col h-60">
       <div class="flex justify-between items-center mb-4">
-        <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Histórico de Calorias (14 dias)</p>
+        <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Calorias vs Meta ({{ calorieHistory.length }} dias)</p>
         <span class="text-[8px] text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20 font-bold uppercase tracking-tighter">Kcal / Dia</span>
       </div>
       <div class="flex-1 w-full min-h-0 relative">
@@ -27,6 +27,7 @@ interface CalorieDay {
 })
 export class WidgetCalorieHistoryComponent implements OnChanges {
   @Input() calorieHistory: CalorieDay[] = [];
+  @Input() targetCalories: number | undefined;
 
   public chartOptions: ChartConfiguration['options'] = {
     responsive: true,
@@ -63,14 +64,19 @@ export class WidgetCalorieHistoryComponent implements OnChanges {
     }
   };
 
-  public chartData: ChartData<'bar'> = {
+  public chartData: ChartData<'bar' | 'line'> = {
     labels: [],
-    datasets: [{
-      data: [],
-      backgroundColor: '#10b981',
-      borderRadius: 4,
-      barThickness: 12
-    }]
+    datasets: [
+      {
+        data: [],
+        type: 'bar',
+        order: 2,
+        backgroundColor: '#10b981',
+        borderRadius: 4,
+        barThickness: 'flex',
+        maxBarThickness: 12
+      }
+    ]
   };
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -82,12 +88,32 @@ export class WidgetCalorieHistoryComponent implements OnChanges {
   private updateChart(): void {
     this.chartData = {
       labels: this.calorieHistory.map(d => new Date(d.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })),
-      datasets: [{
-        data: this.calorieHistory.map(d => d.calories),
-        backgroundColor: '#10b981',
-        borderRadius: 4,
-        barThickness: 12
-      }]
+      datasets: [
+        {
+          data: this.calorieHistory.map(d => d.calories),
+          type: 'bar',
+          label: 'Calorias',
+          order: 2,
+          backgroundColor: this.calorieHistory.map(d => d.calories === 0 ? 'transparent' : '#10b981'), // Hide 0s vs highlight? Maybe handled by gap. 
+          // If 0, meaningful gap?
+          borderRadius: 4,
+          barThickness: 'flex', 
+          maxBarThickness: 20
+        },
+        // Target Line
+        {
+           data: this.targetCalories ? Array(this.calorieHistory.length).fill(this.targetCalories) : [],
+           type: 'line',
+           label: 'Meta',
+           order: 1,
+           borderColor: '#facc15', // Yellow
+           borderWidth: 2,
+           borderDash: [5, 5],
+           pointRadius: 0,
+           fill: false,
+           tension: 0
+        }
+      ]
     };
   }
 }

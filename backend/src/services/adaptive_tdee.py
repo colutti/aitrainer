@@ -367,6 +367,20 @@ class AdaptiveTDEEService:
                 }
                 for i in range(27, -1, -1)
             ],
+            "calorie_trend": [
+                {
+                    "date": (period_start + timedelta(days=i)).isoformat(),
+                    "calories": next(
+                        (
+                            log.calories
+                            for log in relevant_nutrition
+                            if log.date.date() == (period_start + timedelta(days=i))
+                        ),
+                        0,
+                    ),
+                }
+                for i in range((period_end - period_start).days + 1)
+            ],
         }
 
         if comp_changes:

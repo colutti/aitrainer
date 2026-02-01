@@ -184,7 +184,6 @@ describe('DashboardComponent', () => {
       fixture.detectChanges();
 
       expect(component.weightChartData.labels?.length).toBeGreaterThanOrEqual(0);
-      expect(component.consistencyChartData).toBeDefined();
     });
 
     it('should display metabolism summary', () => {

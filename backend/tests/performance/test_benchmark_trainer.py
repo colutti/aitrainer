@@ -31,7 +31,7 @@ def trainer_brain():
     mock_window_memory = MagicMock()
     mock_window_memory.load_memory_variables.return_value = {
         "chat_history": [
-            MagicMock(content="Hello", type="human"),
+            MagicMock(content="Hello", type="human", additional_kwargs={}),
             MagicMock(content="Hi there", type="ai", additional_kwargs={"trainer_type": "atlas"})
         ]
     }

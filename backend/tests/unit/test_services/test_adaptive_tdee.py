@@ -587,3 +587,39 @@ def test_composition_uses_real_weights_not_regression(service, mock_db):
     # Not regression weights which could be different
     expected_fat_change = (76.85 * 0.2424) - (76.8 * 0.2473)  # ≈ -0.36 kg
     assert abs(result["fat_change_kg"] - expected_fat_change) < 0.1
+
+
+def test_tdee_returns_calorie_trend(service, mock_db):
+    """Verify calorie_trend is returned in the response."""
+    today = date.today()
+    start_date = today - timedelta(days=20)
+    
+    weights = [
+        WeightLog(
+            user_email="test@test.com",
+            date=start_date + timedelta(days=i),
+            weight_kg=70.0,
+        )
+        for i in range(21)
+    ]
+    nutrition = [
+        NutritionLog(
+            user_email="test@test.com",
+            date=start_date + timedelta(days=i),
+            calories=2500,
+            protein_grams=150,
+            carbs_grams=250,
+            fat_grams=80,
+        )
+        for i in range(21)
+    ]
+
+    mock_db.get_weight_logs_by_date_range.return_value = weights
+    mock_db.get_nutrition_logs_by_date_range.return_value = nutrition
+
+    result = service.calculate_tdee("test@test.com", lookback_weeks=3)
+
+    assert "calorie_trend" in result
+    assert len(result["calorie_trend"]) == 21
+    assert result["calorie_trend"][0]["calories"] == 2500
+    assert result["calorie_trend"][0]["date"] == start_date.isoformat()

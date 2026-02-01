@@ -38,6 +38,7 @@ export interface MetabolismResponse {
   consistency_score?: number;
   macro_targets?: MacroTargets;
   stability_score?: number;
+  calorie_trend?: { date: string, calories: number }[];
 }
 
 export interface MacroTargets {

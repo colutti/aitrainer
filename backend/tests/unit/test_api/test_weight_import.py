@@ -45,6 +45,7 @@ def test_import_zepp_life_endpoint():
 def test_import_zepp_life_invalid_file():
     """Test uploading a non-CSV file."""
     app.dependency_overrides[verify_token] = lambda: "test@test.com"
+    app.dependency_overrides[get_mongo_database] = lambda: MagicMock()
 
     files = {"file": ("test.txt", "some content", "text/plain")}
     response = client.post("/weight/import/zepp-life", files=files)

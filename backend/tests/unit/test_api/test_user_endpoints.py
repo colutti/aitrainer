@@ -277,6 +277,7 @@ def test_get_profile_unauthorized():
 def test_update_profile_invalid_data():
     """Test profile update with invalid data structure."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: MagicMock()
 
     # Missing required fields in malformed request
     update_payload = {

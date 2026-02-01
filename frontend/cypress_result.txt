@@ -1,0 +1,69 @@
+
+DevTools listening on ws://127.0.0.1:41517/devtools/browser/cfbef60f-0c1c-477a-974d-b9aaab25efe6
+
+================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:        15.9.0                                                                         │
+  │ Browser:        Electron 138 (headless)                                                        │
+  │ Node Version:   v25.4.0 (/usr/bin/node)                                                        │
+  │ Specs:          1 found (metabolism.cy.ts)                                                     │
+  │ Searched:       cypress/e2e/metabolism.cy.ts                                                   │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  metabolism.cy.ts                                                                (1 of 1)
+
+
+  Metabolism Dashboard
+    1) should display the metabolism dashboard components
+
+
+  0 passing (11s)
+  1 failing
+
+  1) Metabolism Dashboard
+       should display the metabolism dashboard components:
+     AssertionError: Timed out retrying after 10000ms: Expected to find element: `app-widget-confidence`, but never found it.
+      at Context.eval (webpack://ai-personal-trainer-chat/./cypress/e2e/metabolism.cy.ts:63:60)
+
+
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        1                                                                                │
+  │ Passing:      0                                                                                │
+  │ Failing:      1                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  1                                                                                │
+  │ Video:        false                                                                            │
+  │ Duration:     11 seconds                                                                       │
+  │ Spec Ran:     metabolism.cy.ts                                                                 │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Screenshots)
+
+  -  /home/colutti/projects/personal/frontend/cypress/screenshots/metabolism.cy.ts/Me     (1280x720)
+     tabolism Dashboard -- should display the metabolism dashboard components (failed               
+     ).png                                                                                          
+
+
+================================================================================
+
+  (Run Finished)
+
+
+       Spec                                              Tests  Passing  Failing  Pending  Skipped  
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ ✖  metabolism.cy.ts                         00:11        1        -        1        -        - │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    ✖  1 of 1 failed (100%)                     00:11        1        -        1        -        -  
+

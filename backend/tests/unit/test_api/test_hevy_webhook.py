@@ -37,9 +37,10 @@ class TestHevyWebhook:
 
     def test_webhook_success_flow(self, mock_brain):
         """Webhook should return 200 OK immediately and queue a background task."""
-        from src.core.deps import get_ai_trainer_brain
+        from src.core.deps import get_ai_trainer_brain, get_hevy_service
 
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+        app.dependency_overrides[get_hevy_service] = lambda: MagicMock()
 
         with patch("fastapi.BackgroundTasks.add_task") as mock_add_task:
             response = client.post(
@@ -56,10 +57,11 @@ class TestHevyWebhook:
 
     def test_webhook_invalid_token_returns_404(self, mock_brain):
         """Webhook with invalid token should return 404."""
-        from src.core.deps import get_ai_trainer_brain
+        from src.core.deps import get_ai_trainer_brain, get_hevy_service
 
         mock_brain._database.users.find_by_webhook_token.return_value = None
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+        app.dependency_overrides[get_hevy_service] = lambda: MagicMock()
 
         response = client.post(
             "/integrations/hevy/webhook/invalid_token",
@@ -71,9 +73,10 @@ class TestHevyWebhook:
 
     def test_webhook_invalid_auth_returns_401(self, mock_brain):
         """Webhook with wrong secret should return 401."""
-        from src.core.deps import get_ai_trainer_brain
+        from src.core.deps import get_ai_trainer_brain, get_hevy_service
 
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+        app.dependency_overrides[get_hevy_service] = lambda: MagicMock()
 
         response = client.post(
             "/integrations/hevy/webhook/valid_token",
@@ -86,9 +89,10 @@ class TestHevyWebhook:
 
     def test_webhook_missing_workout_id_returns_400(self, mock_brain):
         """Webhook without workoutId should return 400."""
-        from src.core.deps import get_ai_trainer_brain
+        from src.core.deps import get_ai_trainer_brain, get_hevy_service
 
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+        app.dependency_overrides[get_hevy_service] = lambda: MagicMock()
 
         response = client.post(
             "/integrations/hevy/webhook/valid_token",

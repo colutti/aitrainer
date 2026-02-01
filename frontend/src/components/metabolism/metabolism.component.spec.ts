@@ -113,6 +113,16 @@ describe('MetabolismComponent', () => {
       expect(component.stats()).toBeNull();
       expect(component.isLoading()).toBe(false);
     });
+
+    it('should update period and refetch data', () => {
+      // Mock fetchMetabolismData to avoid actual call/state complexity in this specific test or just spy
+      const fetchSpy = jest.spyOn(component, 'fetchMetabolismData');
+      
+      component.setPeriod(8);
+      
+      expect(component.weeks()).toBe(8);
+      expect(fetchSpy).toHaveBeenCalled();
+    });
   });
 
   describe('Recommendations', () => {
@@ -214,29 +224,6 @@ describe('MetabolismComponent', () => {
     });
   });
 
-  describe('Confidence Colors', () => {
-    it('should return green for high confidence', () => {
-      expect(component.getConfidenceColor('high')).toContain('green');
-    });
-
-    it('should return yellow for medium confidence', () => {
-      expect(component.getConfidenceColor('medium')).toContain('yellow');
-    });
-
-    it('should return red for low confidence', () => {
-      expect(component.getConfidenceColor('low')).toContain('red');
-    });
-
-    it('should return gray for unknown confidence', () => {
-      expect(component.getConfidenceColor('unknown')).toContain('gray');
-    });
-
-    it('should return hex color correctly', () => {
-      expect(component.getConfidenceColorHex('high')).toBe('#4ade80');
-      expect(component.getConfidenceColorHex('medium')).toBe('#facc15');
-      expect(component.getConfidenceColorHex('low')).toBe('#f87171');
-    });
-  });
 
   describe('Confidence Reasoning', () => {
     it('should provide reason for low confidence', () => {
@@ -434,25 +421,6 @@ describe('MetabolismComponent', () => {
     });
   });
 
-  describe('Confidence Colors - Hex Defaults', () => {
-    it('should return default hex for unknown confidence', () => {
-      const color = component.getConfidenceColorHex('unknown');
-
-      expect(color).toBe('#9ca3af');
-    });
-
-    it('should return default hex for undefined', () => {
-      const color = component.getConfidenceColorHex(undefined);
-
-      expect(color).toBe('#9ca3af');
-    });
-
-    it('should return default text color for unknown', () => {
-      const color = component.getConfidenceColor('unknown');
-
-      expect(color).toContain('gray');
-    });
-  });
 
   describe('Confidence Reason - All Paths', () => {
     it('should handle high confidence with reason', () => {

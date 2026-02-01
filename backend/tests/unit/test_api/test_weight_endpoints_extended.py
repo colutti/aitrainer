@@ -356,6 +356,8 @@ def test_get_weight_logs_unauthorized():
 def test_log_weight_missing_fields():
     """Test weight logging with missing required fields."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: MagicMock()
+    app.dependency_overrides[get_mongo_database] = lambda: MagicMock()
 
     payload = {
         # Missing date and weight_kg

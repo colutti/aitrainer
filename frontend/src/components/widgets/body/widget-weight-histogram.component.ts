@@ -16,7 +16,7 @@ interface ConsistencyData {
   template: `
     <div class="bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg hover:border-primary/50 transition-colors duration-300 h-60">
       <div class="flex justify-between items-center mb-4">
-        <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Histograma de Registro de Peso (30 dias)</p>
+        <p class="text-text-secondary text-[10px] font-bold uppercase tracking-wider">Consistência de Registros ({{ consistency.length }} dias)</p>
         <div class="flex gap-2">
           <span class="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
           <span class="w-1.5 h-1.5 rounded-full bg-[#3b82f6]"></span>
@@ -50,7 +50,10 @@ export class WidgetWeightHistogramComponent implements OnChanges {
         borderWidth: 1,
         padding: 8,
         callbacks: {
-          label: (context) => ` ${context.dataset.label}: ${context.parsed.y > 0 ? 'OK' : 'Pendente'}`
+          label: (context) => {
+            const status = context.parsed.y > 0 ? 'Registrado ✅' : 'Pendente ❌';
+            return ` ${context.dataset.label}: ${status}`;
+          }
         }
       }
     },
@@ -94,23 +97,25 @@ export class WidgetWeightHistogramComponent implements OnChanges {
   }
 
   private updateChart(): void {
-    const last7 = this.consistency.slice(-7);
+    const data = this.consistency;
     this.chartData = {
-      labels: last7.map(c => new Date(c.date).toLocaleDateString('pt-BR', { weekday: 'short' })),
+      labels: data.map(c => new Date(c.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })),
       datasets: [
         {
           label: 'Nutrição',
-          data: last7.map(c => c.nutrition ? 1 : 0),
+          data: data.map(c => c.nutrition ? 1 : 0),
           backgroundColor: '#10b981',
           borderRadius: 4,
-          barThickness: 8
+          barThickness: 'flex',
+          maxBarThickness: 12
         },
         {
           label: 'Peso',
-          data: last7.map(c => c.weight ? 1 : 0),
+          data: data.map(c => c.weight ? 1 : 0),
           backgroundColor: '#3b82f6',
           borderRadius: 4,
-          barThickness: 8
+          barThickness: 'flex',
+          maxBarThickness: 12
         }
       ]
     };

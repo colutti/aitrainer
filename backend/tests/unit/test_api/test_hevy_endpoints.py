@@ -215,6 +215,7 @@ class TestHevyCount:
         mock_brain.get_user_profile.return_value = profile
 
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+        app.dependency_overrides[get_hevy_service] = lambda: MagicMock()
 
         response = client.get(
             "/integrations/hevy/count",
@@ -265,6 +266,7 @@ class TestHevyImport:
         mock_brain.get_user_profile.return_value = profile
 
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+        app.dependency_overrides[get_hevy_service] = lambda: MagicMock()
 
         response = client.post(
             "/integrations/hevy/import",
@@ -408,7 +410,9 @@ class TestHevyWebhook:
         mock_db.users.find_by_webhook_token.return_value = None
 
         mock_brain._database = mock_db
+        mock_brain._database = mock_db
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+        app.dependency_overrides[get_hevy_service] = lambda: MagicMock()
 
         response = client.post(
             "/integrations/hevy/webhook/invalid_token",
@@ -434,7 +438,9 @@ class TestHevyWebhook:
         mock_db.users.find_by_webhook_token.return_value = profile
 
         mock_brain._database = mock_db
+        mock_brain._database = mock_db
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+        app.dependency_overrides[get_hevy_service] = lambda: MagicMock()
 
         response = client.post(
             "/integrations/hevy/webhook/token123",
@@ -461,7 +467,9 @@ class TestHevyWebhook:
         mock_db.users.find_by_webhook_token.return_value = profile
 
         mock_brain._database = mock_db
+        mock_brain._database = mock_db
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+        app.dependency_overrides[get_hevy_service] = lambda: MagicMock()
 
         response = client.post(
             "/integrations/hevy/webhook/token123",

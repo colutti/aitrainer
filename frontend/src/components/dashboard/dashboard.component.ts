@@ -381,60 +381,6 @@ export class DashboardComponent implements OnInit {
     }]
   };
 
-  // --- Consistency Chart ---
-  public consistencyChartOptions: ChartConfiguration['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { 
-        display: true,
-        position: 'bottom',
-        labels: { color: '#a1a1aa', boxWidth: 10, font: { size: 10, family: 'Inter' } }
-      },
-      tooltip: {
-        backgroundColor: '#18181b',
-        titleColor: '#fff',
-        bodyColor: '#a1a1aa',
-        borderColor: '#3f3f46',
-        borderWidth: 1,
-        padding: 8,
-        callbacks: {
-          label: (context) => ` ${context.dataset.label}: ${context.parsed.y > 0 ? 'OK' : 'Pendente'}`
-        }
-      }
-    },
-    scales: {
-      x: {
-        ticks: { color: '#a1a1aa', font: { family: 'Inter', size: 9 } },
-        grid: { display: false }
-      },
-      y: {
-        max: 2,
-        ticks: { display: false },
-        grid: { display: false }
-      }
-    }
-  };
-  public consistencyChartType: ChartType = 'bar';
-  public consistencyChartData: ChartData<'bar'> = {
-    labels: [],
-    datasets: [
-      {
-        label: 'Nutrição',
-        data: [],
-        backgroundColor: '#3b82f6',
-        borderRadius: 2,
-        stack: 'stack0'
-      },
-      {
-        label: 'Peso',
-        data: [],
-        backgroundColor: '#10b981',
-        borderRadius: 2,
-        stack: 'stack0'
-      }
-    ]
-  };
 
   constructor() {
     effect(() => {
@@ -467,7 +413,6 @@ export class DashboardComponent implements OnInit {
       const m = this.metabolismStats();
       if (m) {
         if (m.weight_trend) this.updateWeightChart(m.weight_trend);
-        if (m.consistency) this.updateConsistencyChart(m.consistency);
       }
     });
 
@@ -581,36 +526,6 @@ export class DashboardComponent implements OnInit {
     const s = this.metabolismStats();
     if (!s || s.start_weight === undefined || s.end_weight === undefined) return 0;
     return s.end_weight - s.start_weight;
-  }
-
-  getConsistencyStatus() {
-    const s = this.metabolismStats();
-    if (!s || !s.consistency) return [];
-    // Show last 7 days of consistency
-    return s.consistency.slice(-7);
-  }
-
-  updateConsistencyChart(consistency: { date: string, weight: boolean, nutrition: boolean }[]) {
-    const last7 = consistency.slice(-7);
-    this.consistencyChartData = {
-      labels: last7.map(c => new Date(c.date).toLocaleDateString('pt-BR', { weekday: 'short' })),
-      datasets: [
-        {
-          label: 'Nutrição',
-          data: last7.map(c => c.nutrition ? 1 : 0),
-          backgroundColor: '#3b82f6',
-          borderRadius: 2,
-          stack: 'stack0'
-        },
-        {
-          label: 'Peso',
-          data: last7.map(c => c.weight ? 1 : 0),
-          backgroundColor: '#10b981',
-          borderRadius: 2,
-          stack: 'stack0'
-        }
-      ]
-    };
   }
 
   updateWeightChart(trend: { date: string, weight: number, trend?: number }[]) {
