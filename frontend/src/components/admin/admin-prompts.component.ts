@@ -85,12 +85,25 @@ import { AdminService } from '../../services/admin.service';
                   </div>
                 }
 
-                <!-- Fallback para prompts sem conteúdo reconhecido -->
-                @else {
-                  <div class="text-sm text-zinc-500 italic">
-                    Estrutura de prompt não reconhecida. Ver detalhes no console.
+                <!-- Renderizar para prompts tipo V3 (String renderizada) -->
+                @if (promptDetails()?.prompt?.prompt) {
+                  <div class="mt-4">
+                    <div class="text-xs text-zinc-500 mb-2 uppercase tracking-wider font-semibold">Prompt Renderizado Final:</div>
+                    <div class="bg-zinc-800 rounded p-4 border border-zinc-700">
+                      <div class="text-sm text-zinc-200 whitespace-pre-wrap font-mono break-all leading-relaxed">
+                        {{ promptDetails().prompt.prompt }}
+                      </div>
+                    </div>
                   </div>
                 }
+
+                <!-- Fallback para prompts sem conteúdo reconhecido -->
+                @else if (!promptDetails()?.prompt?.messages && !promptDetails()?.prompt?.input) {
+                  <div class="text-sm text-zinc-500 italic p-4 bg-zinc-800/50 rounded border border-dashed border-zinc-700">
+                     Este prompt parece estar vazio ou em um formato incompatível.
+                  </div>
+                }
+
               </div>
             }
           </div>

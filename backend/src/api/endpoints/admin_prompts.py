@@ -99,10 +99,17 @@ def list_prompts(
                     p["prompt"]["messages_count"] = 0
                     p["prompt"]["messages_preview"] = "Sem conteúdo"
 
-            # Fallback para outros tipos
+            # Fallback para prompts V3 que tem apenas o campo 'prompt' (string renderizada)
+            elif "prompt" in p["prompt"]:
+                prompt_str = p["prompt"]["prompt"]
+                p["prompt"]["messages_count"] = 1
+                p["prompt"]["messages_preview"] = prompt_str[:200] + "..." if len(prompt_str) > 200 else prompt_str
+
+            # Fallback para outros tipos ou estrutura desconhecida
             else:
+                p["prompt"] = p.get("prompt") or {}
                 p["prompt"]["messages_count"] = 0
-                p["prompt"]["messages_preview"] = f"Tipo: {prompt_type}"
+                p["prompt"]["messages_preview"] = "Estrutura não reconhecida"
 
     total = db.prompts.collection.count_documents(query)
 
