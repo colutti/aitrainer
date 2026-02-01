@@ -78,11 +78,15 @@ class LLMClient:
 
         Yields:
             str: Content chunks during streaming
+            dict: Tool results with type="tool_result"
+            dict: Final summary with type="tools_summary"
         """
         logger.info(
             "Invoking LLM with tools (LangGraph) for input: %s",
             input_data.get("user_message"),
         )
+
+        tools_called: list[str] = []
 
         try:
             # Format initial messages
@@ -108,6 +112,7 @@ class LLMClient:
                 # V3: Intercept Tool Outputs (System Feedback)
                 if isinstance(event, ToolMessage):
                     logger.debug("Intercepted ToolMessage: %s", event.name)
+                    tools_called.append(event.name)
                     yield {
                         "type": "tool_result",
                         "content": event.content,
@@ -131,6 +136,9 @@ class LLMClient:
         except Exception as e:
             logger.error("Error in stream_with_tools: %s", e)
             yield f"Error processing request: {str(e)}"
+        finally:
+            # Yield tools summary at the end to allow caller to make decisions
+            yield {"type": "tools_summary", "tools_called": tools_called}
 
     async def stream_simple(
         self,

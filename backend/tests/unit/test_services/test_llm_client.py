@@ -110,7 +110,12 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
         async for chunk in client.stream_with_tools(prompt, {}, []):
             results.append(chunk)
 
-        self.assertEqual(results, ["Hello"])
+        # Should contain the message and the tools_summary at the end
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0], "Hello")
+        self.assertIsInstance(results[1], dict)
+        self.assertEqual(results[1].get("type"), "tools_summary")
+        self.assertEqual(results[1].get("tools_called"), [])
 
     @patch("src.services.llm_client.create_agent")
     async def test_stream_with_tools_error(self, mock_create_agent):
