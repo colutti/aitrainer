@@ -6,20 +6,20 @@ import { ChangeDetectorRef } from '@angular/core';
 describe('TelegramConfigComponent', () => {
   let component: TelegramConfigComponent;
   let fixture: ComponentFixture<TelegramConfigComponent>;
-  let mockTelegramService: jasmine.SpyObj<TelegramService>;
-  let mockChangeDetectorRef: jasmine.SpyObj<ChangeDetectorRef>;
+  let mockTelegramService: any;
+  let mockChangeDetectorRef: any;
 
   beforeEach(async () => {
-    mockTelegramService = jasmine.createSpyObj('TelegramService', [
-      'getStatus',
-      'generateCode',
-      'unlink',
-      'updateNotifications',
-    ]);
+    mockTelegramService = {
+      getStatus: jest.fn(),
+      generateCode: jest.fn(),
+      unlink: jest.fn(),
+      updateNotifications: jest.fn(),
+    };
 
-    mockChangeDetectorRef = jasmine.createSpyObj('ChangeDetectorRef', [
-      'detectChanges',
-    ]);
+    mockChangeDetectorRef = {
+      detectChanges: jest.fn(),
+    };
 
     await TestBed.configureTestingModule({
       imports: [TelegramConfigComponent],
@@ -49,9 +49,7 @@ describe('TelegramConfigComponent', () => {
     });
 
     it('should set savingNotifications to true while updating', async () => {
-      mockTelegramService.updateNotifications.and.returnValue(
-        Promise.resolve()
-      );
+      mockTelegramService.updateNotifications.mockResolvedValue(undefined);
 
       component.notifyOnWorkout.set(false);
       const promise = component.onNotificationChange();
@@ -67,9 +65,7 @@ describe('TelegramConfigComponent', () => {
     });
 
     it('should call telegramService.updateNotifications with correct payload', async () => {
-      mockTelegramService.updateNotifications.and.returnValue(
-        Promise.resolve()
-      );
+      mockTelegramService.updateNotifications.mockResolvedValue(undefined);
 
       component.notifyOnWorkout.set(false);
       component.notifyOnNutrition.set(true);
@@ -85,9 +81,7 @@ describe('TelegramConfigComponent', () => {
     });
 
     it('should display success message on successful update', async () => {
-      mockTelegramService.updateNotifications.and.returnValue(
-        Promise.resolve()
-      );
+      mockTelegramService.updateNotifications.mockResolvedValue(undefined);
 
       expect(component.successMessage()).toBe('');
 
@@ -97,25 +91,22 @@ describe('TelegramConfigComponent', () => {
     });
 
     it('should clear success message after 3 seconds', async () => {
-      mockTelegramService.updateNotifications.and.returnValue(
-        Promise.resolve()
-      );
-
-      jasmine.clock().install();
+      jest.useFakeTimers();
+      mockTelegramService.updateNotifications.mockResolvedValue(undefined);
 
       await component.onNotificationChange();
       expect(component.successMessage()).not.toBe('');
 
-      jasmine.clock().tick(3001);
+      jest.advanceTimersByTime(3001);
 
       expect(component.successMessage()).toBe('');
 
-      jasmine.clock().uninstall();
+      jest.useRealTimers();
     });
 
     it('should display error message on failure', async () => {
-      mockTelegramService.updateNotifications.and.returnValue(
-        Promise.reject(new Error('API Error'))
+      mockTelegramService.updateNotifications.mockRejectedValue(
+        new Error('API Error')
       );
 
       expect(component.errorMessage()).toBe('');
@@ -127,9 +118,7 @@ describe('TelegramConfigComponent', () => {
 
     it('should clear error message when starting new update', async () => {
       component.errorMessage.set('Previous error');
-      mockTelegramService.updateNotifications.and.returnValue(
-        Promise.resolve()
-      );
+      mockTelegramService.updateNotifications.mockResolvedValue(undefined);
 
       await component.onNotificationChange();
 
@@ -153,6 +142,76 @@ describe('TelegramConfigComponent', () => {
 
     it('should have savingNotifications default to false', () => {
       expect(component.savingNotifications()).toBe(false);
+    });
+  });
+
+  describe('Load Status with Notification Preferences', () => {
+    it('should load notification preferences when Telegram is linked', async () => {
+      mockTelegramService.getStatus.mockResolvedValue({
+        linked: true,
+        telegram_username: '@testuser',
+        linked_at: '2026-01-25T10:00:00Z',
+        telegram_notify_on_workout: false,
+        telegram_notify_on_nutrition: true,
+        telegram_notify_on_weight: false,
+      });
+
+      await component.loadStatus();
+
+      expect(component.notifyOnWorkout()).toBe(false);
+      expect(component.notifyOnNutrition()).toBe(true);
+      expect(component.notifyOnWeight()).toBe(false);
+    });
+
+    it('should persist notification preferences after component reload', async () => {
+      // First load - user has disabled workout notifications
+      mockTelegramService.getStatus.mockResolvedValue({
+        linked: true,
+        telegram_username: '@testuser',
+        linked_at: '2026-01-25T10:00:00Z',
+        telegram_notify_on_workout: false,
+        telegram_notify_on_nutrition: false,
+        telegram_notify_on_weight: false,
+      });
+
+      await component.loadStatus();
+
+      // Verify preferences loaded correctly
+      expect(component.notifyOnWorkout()).toBe(false);
+
+      // Simulate component reload (e.g., user refreshes page)
+      // Reset mock call count
+      mockTelegramService.getStatus.mockClear();
+      mockTelegramService.getStatus.mockResolvedValue({
+        linked: true,
+        telegram_username: '@testuser',
+        linked_at: '2026-01-25T10:00:00Z',
+        telegram_notify_on_workout: false,
+        telegram_notify_on_nutrition: false,
+        telegram_notify_on_weight: false,
+      });
+
+      component.ngOnInit();
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Should still be false after reload
+      expect(component.notifyOnWorkout()).toBe(false);
+    });
+
+    it('should use default preferences when response has no notification settings', async () => {
+      // Older API response without notification fields
+      mockTelegramService.getStatus.mockResolvedValue({
+        linked: true,
+        telegram_username: '@testuser',
+        linked_at: '2026-01-25T10:00:00Z',
+      });
+
+      await component.loadStatus();
+
+      // Should fall back to defaults
+      expect(component.notifyOnWorkout()).toBe(true);
+      expect(component.notifyOnNutrition()).toBe(false);
+      expect(component.notifyOnWeight()).toBe(false);
     });
   });
 });

@@ -50,6 +50,12 @@ export class TelegramConfigComponent implements OnInit {
       if (status.linked) {
         this.telegramUsername.set(status.telegram_username || null);
         this.linkedAt.set(status.linked_at || null);
+
+        // Load notification preferences from backend
+        this.notifyOnWorkout.set(status.telegram_notify_on_workout ?? true);
+        this.notifyOnNutrition.set(status.telegram_notify_on_nutrition ?? false);
+        this.notifyOnWeight.set(status.telegram_notify_on_weight ?? false);
+
         this.viewState.set('connected');
       } else {
         this.viewState.set('disconnected');

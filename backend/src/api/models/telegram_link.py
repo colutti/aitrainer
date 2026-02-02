@@ -29,6 +29,9 @@ class TelegramStatus(BaseModel):
     linked: bool
     telegram_username: Optional[str] = None
     linked_at: Optional[datetime] = None
+    telegram_notify_on_workout: bool = True
+    telegram_notify_on_nutrition: bool = False
+    telegram_notify_on_weight: bool = False
 
 
 class LinkingCodeResponse(BaseModel):

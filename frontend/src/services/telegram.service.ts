@@ -7,6 +7,9 @@ export interface TelegramStatus {
   linked: boolean;
   telegram_username?: string;
   linked_at?: string;
+  telegram_notify_on_workout?: boolean;
+  telegram_notify_on_nutrition?: boolean;
+  telegram_notify_on_weight?: boolean;
 }
 
 export interface LinkingCode {
