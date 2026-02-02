@@ -137,3 +137,128 @@ def test_history_compactor_idempotency(mock_db, mock_llm_client):
     # NO NEW lines to summarize.
     mock_llm_client.stream_simple.assert_not_called()
     mock_db.update_user_profile_fields.assert_not_called()
+
+
+def test_preprocess_filters_non_student_messages(mock_db, mock_llm_client):
+    """Should keep only student messages."""
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    messages = [
+        ChatHistory(
+            sender=Sender.TRAINER,
+            text="list_hevy_routines executado → 3 rotinas",
+            timestamp="2026-01-31T10:00:00",
+        ),
+        ChatHistory(
+            sender=Sender.SYSTEM,
+            text="Ação executada: update_hevy_routine",
+            timestamp="2026-01-31T10:01:00",
+        ),
+        ChatHistory(
+            sender=Sender.STUDENT,
+            text="Vou fazer Push 2x por semana",
+            timestamp="2026-01-31T10:02:00",
+        ),
+    ]
+
+    filtered = compactor._preprocess_messages(messages)
+
+    assert len(filtered) == 1
+    assert filtered[0].sender == Sender.STUDENT
+    assert "Push 2x" in filtered[0].text
+
+
+def test_preprocess_filters_greetings(mock_db, mock_llm_client):
+    """Should filter trivial greetings even from student."""
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    messages = [
+        ChatHistory(
+            sender=Sender.STUDENT,
+            text="oi",
+            timestamp="2026-01-31T10:00:00",
+        ),
+        ChatHistory(
+            sender=Sender.STUDENT,
+            text="Olá!",
+            timestamp="2026-01-31T10:01:00",
+        ),
+        ChatHistory(
+            sender=Sender.STUDENT,
+            text="blz",
+            timestamp="2026-01-31T10:02:00",
+        ),
+        ChatHistory(
+            sender=Sender.STUDENT,
+            text="ok",
+            timestamp="2026-01-31T10:03:00",
+        ),
+        ChatHistory(
+            sender=Sender.STUDENT,
+            text="Quero treinar Push 2x por semana",
+            timestamp="2026-01-31T10:04:00",
+        ),
+    ]
+
+    filtered = compactor._preprocess_messages(messages)
+
+    assert len(filtered) == 1
+    assert "Push 2x" in filtered[0].text
+
+
+def test_preprocess_filters_short_messages(mock_db, mock_llm_client):
+    """Should filter messages shorter than 10 chars."""
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    messages = [
+        ChatHistory(
+            sender=Sender.STUDENT,
+            text="sim",
+            timestamp="2026-01-31T10:00:00",
+        ),
+        ChatHistory(
+            sender=Sender.STUDENT,
+            text="não",
+            timestamp="2026-01-31T10:01:00",
+        ),
+        ChatHistory(
+            sender=Sender.STUDENT,
+            text="Prefiro treinar de manhã",
+            timestamp="2026-01-31T10:02:00",
+        ),
+    ]
+
+    filtered = compactor._preprocess_messages(messages)
+
+    assert len(filtered) == 1
+    assert "manhã" in filtered[0].text
+
+
+def test_preprocess_keeps_relevant_student_messages(mock_db, mock_llm_client):
+    """Should keep relevant student messages with decisions/preferences."""
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    messages = [
+        ChatHistory(
+            sender=Sender.STUDENT,
+            text="Tenho uma lesão no joelho esquerdo",
+            timestamp="2026-01-31T10:00:00",
+        ),
+        ChatHistory(
+            sender=Sender.STUDENT,
+            text="Minha meta é perder 5kg em 3 meses",
+            timestamp="2026-01-31T10:01:00",
+        ),
+        ChatHistory(
+            sender=Sender.STUDENT,
+            text="Prefiro treinar com máquinas, não gosto de barra",
+            timestamp="2026-01-31T10:02:00",
+        ),
+    ]
+
+    filtered = compactor._preprocess_messages(messages)
+
+    assert len(filtered) == 3
+    assert any("lesão" in m.text for m in filtered)
+    assert any("meta" in m.text for m in filtered)
+    assert any("máquinas" in m.text for m in filtered)
