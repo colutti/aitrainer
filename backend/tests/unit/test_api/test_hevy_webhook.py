@@ -134,3 +134,37 @@ async def test_process_webhook_async_logic():
     mock_service.fetch_workout_by_id.assert_called_with("api_key_123", "workout-456")
     mock_service.transform_to_workout_log.assert_called_once()
     mock_service.workout_repository.save_log.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_process_webhook_async_retry_logic():
+    """Verifies that the background task retries on fetch failure."""
+    from src.api.endpoints.hevy import process_webhook_async
+
+    # Mocks
+    mock_service = AsyncMock()
+    # Mock to fail twice then succeed
+    mock_service.fetch_workout_by_id.side_effect = [
+        None,
+        None,
+        {"id": "workout-456", "title": "Chest Day"},
+    ]
+    mock_service.transform_to_workout_log = MagicMock()
+    mock_service.workout_repository.save_log = MagicMock()
+
+    # Patch asyncio.sleep to not wait in tests
+    with patch("asyncio.sleep", AsyncMock()) as mock_sleep:
+        await process_webhook_async(
+            user_email="test@example.com",
+            api_key="api_key_123",
+            workout_id="workout-456",
+            hevy_service=mock_service,
+        )
+
+        # Verify it was called 3 times
+        assert mock_service.fetch_workout_by_id.call_count == 3
+        # Verify sleep was called twice
+        assert mock_sleep.call_count == 2
+        # Verify eventual success
+        mock_service.transform_to_workout_log.assert_called_once()
+        mock_service.workout_repository.save_log.assert_called_once()

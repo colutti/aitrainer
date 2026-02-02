@@ -156,12 +156,29 @@ async def process_webhook_async(
     from src.core.logs import logger
 
     logger.info(f"[Webhook BG] Processing workout {workout_id} for {user_email}")
+    
+    if not api_key:
+        logger.error(f"[Webhook BG] Missing Hevy API key for user {user_email}. Cannot fetch workout details.")
+        return
 
     try:
-        # 1. Fetch from Hevy
-        hevy_workout = await hevy_service.fetch_workout_by_id(api_key, workout_id)
+        # 1. Fetch from Hevy with retry (handle potential race conditions)
+        max_retries = 3
+        retry_delay = 5  # seconds
+        hevy_workout = None
+
+        for attempt in range(max_retries):
+            if attempt > 0:
+                import asyncio
+                logger.info(f"[Webhook BG] Retrying workout fetch in {retry_delay}s (Attempt {attempt + 1}/{max_retries})")
+                await asyncio.sleep(retry_delay)
+
+            hevy_workout = await hevy_service.fetch_workout_by_id(api_key, workout_id)
+            if hevy_workout:
+                break
+
         if not hevy_workout:
-            logger.error(f"[Webhook BG] Workout {workout_id} not found in Hevy")
+            logger.error(f"[Webhook BG] Workout {workout_id} not found in Hevy after {max_retries} attempts")
             return
 
         # 2. Transform
@@ -279,6 +296,8 @@ async def receive_hevy_webhook(
     Responds immediately and processes in background.
     """
     from src.core.logs import logger
+
+    logger.info(f"[Webhook] Received webhook from Hevy. Payload: {body.model_dump()}")
 
     # 1. Find user by token
     user_profile = brain._database.users.find_by_webhook_token(user_token)

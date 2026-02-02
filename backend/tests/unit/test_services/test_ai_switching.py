@@ -22,8 +22,8 @@ class TestAIProviderSwitching(unittest.TestCase):
             {
                 "AI_PROVIDER": "gemini",
                 "GEMINI_API_KEY": "test_key",
-                "LLM_MODEL_NAME": "test_llm",
-                "EMBEDDER_MODEL_NAME": "test_embed",
+                "GEMINI_LLM_MODEL": "test_llm",
+                "GEMINI_EMBEDDER_MODEL": "test_embed",
                 "SECRET_KEY": "test",
                 "API_SERVER_PORT": "8000",
                 "MAX_SHORT_TERM_MEMORY_MESSAGES": "10",

@@ -1,5 +1,4 @@
 from datetime import datetime, timezone, timedelta
-import logging
 from typing import Optional
 import httpx
 from src.api.models.workout_log import WorkoutLog, ExerciseLog
@@ -11,7 +10,8 @@ from src.api.models.routine import (
 )
 from src.repositories.workout_repository import WorkoutRepository
 
-logger = logging.getLogger(__name__)
+from src.core.logs import logger
+
 
 
 class HevyService:
@@ -104,8 +104,12 @@ class HevyService:
                 if response.status_code == 200:
                     # Hevy API returns {"workout": {...}}
                     return response.json().get("workout")
-                logger.warning(
-                    f"Hevy API workout fetch returned {response.status_code} for {workout_id}"
+                
+                # Log detailed error for debugging
+                logger.error(
+                    f"Hevy API workout fetch failed for {workout_id}. "
+                    f"Status: {response.status_code}, "
+                    f"Body: {response.text}"
                 )
                 return None
             except Exception as e:

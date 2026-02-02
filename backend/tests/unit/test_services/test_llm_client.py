@@ -9,7 +9,7 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
     def test_factory_gemini(self, mock_settings):
         """Test creating Gemini client via factory."""
         mock_settings.AI_PROVIDER = "gemini"
-        mock_settings.LLM_MODEL_NAME = "gemini-1.5-flash"
+        mock_settings.GEMINI_LLM_MODEL = "gemini-1.5-flash"
         mock_settings.GEMINI_API_KEY = "test_key"
         mock_settings.LLM_TEMPERATURE = 0.7
 
@@ -34,7 +34,7 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
     def test_factory_openai(self, mock_settings):
         """Test creating OpenAI client via factory."""
         mock_settings.AI_PROVIDER = "openai"
-        mock_settings.OPENAI_MODEL_NAME = "gpt-4"
+        mock_settings.OPENAI_LLM_MODEL = "gpt-4"
         mock_settings.OPENAI_API_KEY = "sk-test"
         mock_settings.LLM_TEMPERATURE = 0.7
 

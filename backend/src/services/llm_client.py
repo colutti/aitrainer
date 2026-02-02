@@ -49,19 +49,19 @@ class LLMClient:
 
         if settings.AI_PROVIDER == "openai":
             logger.info(
-                "Creating OpenAIClient with model: %s", settings.OPENAI_MODEL_NAME
+                "Creating OpenAIClient with model: %s", settings.OPENAI_LLM_MODEL
             )
             return OpenAIClient(
                 api_key=settings.OPENAI_API_KEY,
-                model=settings.OPENAI_MODEL_NAME,
+                model=settings.OPENAI_LLM_MODEL,
                 temperature=settings.LLM_TEMPERATURE,
             )
 
         # Default: Gemini
-        logger.info("Creating GeminiClient with model: %s", settings.LLM_MODEL_NAME)
+        logger.info("Creating GeminiClient with model: %s", settings.GEMINI_LLM_MODEL)
         return GeminiClient(
             api_key=settings.GEMINI_API_KEY,
-            model=settings.LLM_MODEL_NAME,
+            model=settings.GEMINI_LLM_MODEL,
             temperature=settings.LLM_TEMPERATURE,
         )
 

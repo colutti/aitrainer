@@ -73,8 +73,8 @@ class Settings(BaseSettings):
 
     # ====== GEMINI STUFF ========
     GEMINI_API_KEY: str = ""
-    LLM_MODEL_NAME: str = "gemini-1.5-flash"
-    EMBEDDER_MODEL_NAME: str = "text-embedding-004"
+    GEMINI_LLM_MODEL: str = "gemini-1.5-flash"
+    GEMINI_EMBEDDER_MODEL: str = "text-embedding-004"
     LLM_TEMPERATURE: float = 0.4
     EMBEDDING_MODEL_DIMS: int = 768
     PROMPT_TEMPLATE: str = PROMPT_TEMPLATE
@@ -86,7 +86,8 @@ class Settings(BaseSettings):
 
     # ====== OPENAI STUFF ======
     OPENAI_API_KEY: str = ""
-    OPENAI_MODEL_NAME: str = "gpt-5-mini"
+    OPENAI_LLM_MODEL: str = "gpt-4o"
+    OPENAI_EMBEDDER_MODEL: str = "text-embedding-3-small"
 
     # ====== MONGO STUFF ======
     DB_NAME: str
@@ -121,13 +122,13 @@ class Settings(BaseSettings):
         if self.AI_PROVIDER == "gemini":
             llm_config["config"].update(
                 {
-                    "model": self.LLM_MODEL_NAME,
+                    "model": self.GEMINI_LLM_MODEL,
                     "api_key": self.GEMINI_API_KEY,
                 }
             )
             embedder_config["config"].update(
                 {
-                    "model": self.EMBEDDER_MODEL_NAME,
+                    "model": self.GEMINI_EMBEDDER_MODEL,
                     "api_key": self.GEMINI_API_KEY,
                 }
             )
@@ -149,13 +150,13 @@ class Settings(BaseSettings):
             # Use 768 dims for compatibility with existing Qdrant collection
             llm_config["config"].update(
                 {
-                    "model": self.OPENAI_MODEL_NAME,
+                    "model": self.OPENAI_LLM_MODEL,
                     "api_key": self.OPENAI_API_KEY,
                 }
             )
             embedder_config["config"].update(
                 {
-                    "model": "text-embedding-3-small",
+                    "model": self.OPENAI_EMBEDDER_MODEL,
                     "api_key": self.OPENAI_API_KEY,
                     "embedding_dims": embedding_dims,  # 768 to match Qdrant
                 }
