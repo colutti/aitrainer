@@ -5,6 +5,7 @@ Tests for AI Trainer streaming and error handling in src/services/trainer.py
 import pytest
 from unittest.mock import MagicMock, patch
 from src.services.trainer import AITrainerBrain
+from langchain_core.messages import HumanMessage
 
 
 @pytest.fixture
@@ -117,7 +118,7 @@ def test_normalize_mem0_results_list_response(mock_deps):
     # Mock result list
     results = [{"memory": "Fact 1", "created_at": "2024-01-01"}]
 
-    facts = trainer._normalize_mem0_results(results, "test_source")
+    facts = trainer.memory_manager._normalize_mem0_results(results, "test_source")
     assert len(facts) == 1
     assert facts[0]["text"] == "Fact 1"
     assert facts[0]["source"] == "test_source"
@@ -131,8 +132,11 @@ def test_format_memory_messages_unknown_type(mock_deps):
 
     class UnknownMessage:
         content = "Unknown content"
+        type = "unknown"
 
     msg = UnknownMessage()
-    result = trainer._format_memory_messages([msg], "atlas")
+    result = trainer._format_history_as_messages([msg], "atlas")
 
-    assert "> Unknown content" in result
+    assert len(result) == 1
+    assert isinstance(result[0], HumanMessage)
+    assert "Unknown content" in result[0].content

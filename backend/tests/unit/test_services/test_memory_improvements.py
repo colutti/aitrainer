@@ -9,15 +9,15 @@ Tests cover:
 5. Long-term summary repositioning
 6. Diagnostic logging
 """
-import pytest
-from unittest.mock import Mock, MagicMock, patch, call
+from unittest.mock import Mock, patch
 from datetime import datetime
 
 from src.services.trainer import AITrainerBrain
 from src.services.history_compactor import HistoryCompactor
+from src.services.memory_manager import MemoryManager
+from src.services.prompt_builder import PromptBuilder
 from src.core.config import settings
 from src.api.models.user_profile import UserProfile
-from src.api.models.trainer_profile import TrainerProfile
 from src.api.models.sender import Sender
 from src.prompts.summary_update_prompt import SUMMARY_UPDATE_PROMPT
 from src.prompts.prompt_template import PROMPT_TEMPLATE
@@ -78,13 +78,11 @@ class TestMem0SearchLimits:
 
     def test_retrieve_critical_facts_limit_is_10(self):
         """Verify _retrieve_critical_facts uses limit=10."""
-        mock_database = Mock()
-        mock_llm_client = Mock()
         mock_memory = Mock()
         mock_memory.search.return_value = {"results": []}
 
-        trainer = AITrainerBrain(mock_database, mock_llm_client, mock_memory)
-        trainer._retrieve_critical_facts("user123")
+        memory_manager = MemoryManager(mock_memory)
+        memory_manager._retrieve_critical_facts("user123")
 
         mock_memory.search.assert_called_once()
         call_args = mock_memory.search.call_args
@@ -92,13 +90,11 @@ class TestMem0SearchLimits:
 
     def test_retrieve_semantic_memories_limit_is_10(self):
         """Verify _retrieve_semantic_memories uses limit=10."""
-        mock_database = Mock()
-        mock_llm_client = Mock()
         mock_memory = Mock()
         mock_memory.search.return_value = {"results": []}
 
-        trainer = AITrainerBrain(mock_database, mock_llm_client, mock_memory)
-        trainer._retrieve_semantic_memories("user123", "test query")
+        memory_manager = MemoryManager(mock_memory)
+        memory_manager._retrieve_semantic_memories("user123", "test query")
 
         mock_memory.search.assert_called_once()
         call_args = mock_memory.search.call_args
@@ -106,22 +102,16 @@ class TestMem0SearchLimits:
 
     def test_retrieve_recent_memories_limit_is_10(self):
         """Verify _retrieve_recent_memories uses limit=10."""
-        mock_database = Mock()
-        mock_llm_client = Mock()
         mock_memory = Mock()
         mock_memory.get_all.return_value = {"results": []}
 
-        trainer = AITrainerBrain(mock_database, mock_llm_client, mock_memory)
-        trainer._retrieve_recent_memories("user123")
+        memory_manager = MemoryManager(mock_memory)
+        memory_manager._retrieve_recent_memories("user123")
 
         mock_memory.get_all.assert_called_once()
         call_args = mock_memory.get_all.call_args
         assert call_args.kwargs["limit"] == 10
 
-    def test_hybrid_search_can_return_up_to_30_memories(self):
-        """Verify hybrid search can return up to 30 unique memories (10 per type)."""
-        mock_database = Mock()
-        mock_llm_client = Mock()
         mock_memory = Mock()
 
         # Mock 10 unique memories per type (30 total)
@@ -146,8 +136,8 @@ class TestMem0SearchLimits:
         mock_memory.search.side_effect = mock_search
         mock_memory.get_all.return_value = {"results": recent_memories}
 
-        trainer = AITrainerBrain(mock_database, mock_llm_client, mock_memory)
-        result = trainer._retrieve_hybrid_memories("test query", "user123")
+        memory_manager = MemoryManager(mock_memory)
+        result = memory_manager.retrieve_hybrid_memories("test query", "user123")
 
         assert len(result["critical"]) == 10
         assert len(result["semantic"]) == 10
@@ -155,8 +145,6 @@ class TestMem0SearchLimits:
 
     def test_deduplication_works_across_sources(self):
         """Verify deduplication removes duplicates across critical/semantic/recent."""
-        mock_database = Mock()
-        mock_llm_client = Mock()
         mock_memory = Mock()
 
         # Same memory appears in all three sources
@@ -165,8 +153,8 @@ class TestMem0SearchLimits:
         mock_memory.search.return_value = {"results": [duplicate_memory]}
         mock_memory.get_all.return_value = {"results": [duplicate_memory]}
 
-        trainer = AITrainerBrain(mock_database, mock_llm_client, mock_memory)
-        result = trainer._retrieve_hybrid_memories("test query", "user123")
+        memory_manager = MemoryManager(mock_memory)
+        result = memory_manager.retrieve_hybrid_memories("test query", "user123")
 
         # Should only appear once (in critical, highest priority)
         assert len(result["critical"]) == 1
@@ -183,13 +171,11 @@ class TestExpandedCriticalKeywords:
 
     def test_critical_keywords_include_original_terms(self):
         """Verify original keywords are still present."""
-        mock_database = Mock()
-        mock_llm_client = Mock()
         mock_memory = Mock()
         mock_memory.search.return_value = {"results": []}
 
-        trainer = AITrainerBrain(mock_database, mock_llm_client, mock_memory)
-        trainer._retrieve_critical_facts("user123")
+        memory_manager = MemoryManager(mock_memory)
+        memory_manager._retrieve_critical_facts("user123")
 
         call_args = mock_memory.search.call_args
         query = call_args.kwargs["query"]
@@ -206,13 +192,11 @@ class TestExpandedCriticalKeywords:
 
     def test_critical_keywords_include_new_terms(self):
         """Verify new keywords are added."""
-        mock_database = Mock()
-        mock_llm_client = Mock()
         mock_memory = Mock()
         mock_memory.search.return_value = {"results": []}
 
-        trainer = AITrainerBrain(mock_database, mock_llm_client, mock_memory)
-        trainer._retrieve_critical_facts("user123")
+        memory_manager = MemoryManager(mock_memory)
+        memory_manager._retrieve_critical_facts("user123")
 
         call_args = mock_memory.search.call_args
         query = call_args.kwargs["query"]
@@ -291,16 +275,12 @@ class TestSummaryRepositioning:
         assert summary_idx > 0, "Summary placeholder not found"
         assert profile_idx < summary_idx, "User profile should appear before summary"
 
-    @patch("src.services.trainer.settings")
+    @patch("src.services.prompt_builder.settings")
     def test_summary_injected_correctly_in_prompt(self, mock_settings):
         """Verify summary is injected with correct formatting."""
         mock_settings.PROMPT_TEMPLATE = PROMPT_TEMPLATE
 
-        mock_database = Mock()
-        mock_llm_client = Mock()
-        mock_memory = Mock()
-
-        trainer = AITrainerBrain(mock_database, mock_llm_client, mock_memory)
+        prompt_builder = PromptBuilder()
 
         # Create profile with summary
         user_profile = create_test_user_profile(
@@ -316,25 +296,21 @@ class TestSummaryRepositioning:
             "user_message": "Test",
         }
 
-        prompt_template = trainer._get_prompt_template(input_data, is_telegram=False)
+        prompt_template = prompt_builder.get_prompt_template(input_data, is_telegram=False)
 
         # Format the prompt
         formatted = prompt_template.format(**input_data)
 
         # Verify summary is included with correct formatting
-        assert "📜 [RESUMO DE LONGO PRAZO]" in formatted
+        assert "[HISTÓRICO]" in formatted
         assert "User has been training for 3 months" in formatted
 
-    @patch("src.services.trainer.settings")
+    @patch("src.services.prompt_builder.settings")
     def test_empty_summary_handled_gracefully(self, mock_settings):
         """Verify empty summary doesn't break prompt."""
         mock_settings.PROMPT_TEMPLATE = PROMPT_TEMPLATE
 
-        mock_database = Mock()
-        mock_llm_client = Mock()
-        mock_memory = Mock()
-
-        trainer = AITrainerBrain(mock_database, mock_llm_client, mock_memory)
+        prompt_builder = PromptBuilder()
 
         # Create profile without summary
         user_profile = create_test_user_profile(long_term_summary=None)
@@ -348,7 +324,7 @@ class TestSummaryRepositioning:
             "user_message": "Test",
         }
 
-        prompt_template = trainer._get_prompt_template(input_data, is_telegram=False)
+        prompt_template = prompt_builder.get_prompt_template(input_data, is_telegram=False)
 
         # Should not crash
         formatted = prompt_template.format(**input_data)
@@ -387,8 +363,8 @@ class TestDiagnosticLogging:
 
         trainer = AITrainerBrain(mock_database, mock_llm_client, mock_memory)
 
-        # Call _retrieve_hybrid_memories directly (simpler than full send_message_ai)
-        result = trainer._retrieve_hybrid_memories("test query", "user@test.com")
+        # Call retrieve_hybrid_memories directly
+        result = trainer.memory_manager.retrieve_hybrid_memories("test query", "user@test.com")
 
         # Now manually trigger the logging logic like send_message_ai does
         summary_length = len(user_profile.long_term_summary) if user_profile.long_term_summary else 0
@@ -436,14 +412,12 @@ class TestEdgeCases:
 
     def test_zero_memories_retrieved(self):
         """Verify system handles zero memories gracefully."""
-        mock_database = Mock()
-        mock_llm_client = Mock()
         mock_memory = Mock()
         mock_memory.search.return_value = {"results": []}
         mock_memory.get_all.return_value = {"results": []}
 
-        trainer = AITrainerBrain(mock_database, mock_llm_client, mock_memory)
-        result = trainer._retrieve_hybrid_memories("test", "user123")
+        memory_manager = MemoryManager(mock_memory)
+        result = memory_manager.retrieve_hybrid_memories("test", "user123")
 
         assert len(result["critical"]) == 0
         assert len(result["semantic"]) == 0
@@ -451,8 +425,6 @@ class TestEdgeCases:
 
     def test_exactly_10_memories_per_type(self):
         """Verify system handles exactly 10 memories per type."""
-        mock_database = Mock()
-        mock_llm_client = Mock()
         mock_memory = Mock()
 
         critical_memories = [
@@ -472,8 +444,8 @@ class TestEdgeCases:
         ]
         mock_memory.get_all.return_value = {"results": recent_memories}
 
-        trainer = AITrainerBrain(mock_database, mock_llm_client, mock_memory)
-        result = trainer._retrieve_hybrid_memories("test", "user123")
+        memory_manager = MemoryManager(mock_memory)
+        result = memory_manager.retrieve_hybrid_memories("test", "user123")
 
         assert len(result["critical"]) == 10
         assert len(result["semantic"]) == 10
@@ -481,8 +453,6 @@ class TestEdgeCases:
 
     def test_more_than_10_memories_available(self):
         """Verify system limits to 10 even if more are available."""
-        mock_database = Mock()
-        mock_llm_client = Mock()
         mock_memory = Mock()
 
         # Mem0 should enforce the limit, but test our expectations
@@ -493,8 +463,8 @@ class TestEdgeCases:
         mock_memory.search.return_value = {"results": fifteen_memories}
         mock_memory.get_all.return_value = {"results": fifteen_memories}
 
-        trainer = AITrainerBrain(mock_database, mock_llm_client, mock_memory)
-        result = trainer._retrieve_hybrid_memories("test", "user123")
+        memory_manager = MemoryManager(mock_memory)
+        result = memory_manager.retrieve_hybrid_memories("test", "user123")
 
         # If Mem0 respects limit, we get 10 per type
         # If not, we get 15 (but we asked for 10)
@@ -503,13 +473,10 @@ class TestEdgeCases:
         assert len(result["semantic"]) <= 15
         assert len(result["recent"]) <= 15
 
-    def test_very_long_summary(self):
+    @patch("src.services.prompt_builder.settings")
+    def test_very_long_summary(self, mock_settings):
         """Verify system handles very long summaries."""
-        mock_database = Mock()
-        mock_llm_client = Mock()
-        mock_memory = Mock()
-
-        trainer = AITrainerBrain(mock_database, mock_llm_client, mock_memory)
+        prompt_builder = PromptBuilder()
 
         # Create 10KB summary
         long_summary = "A" * 10000
@@ -523,16 +490,15 @@ class TestEdgeCases:
             "relevant_memories": "Test memories",
             "chat_history": [],
             "user_message": "Test",
-            "long_term_summary_section": f"\n\n📜 [RESUMO DE LONGO PRAZO]:\n{long_summary}",
+            "long_term_summary_section": f"\n\n[HISTÓRICO]:\n{long_summary}",
         }
 
-        with patch("src.services.trainer.settings") as mock_settings:
-            mock_settings.PROMPT_TEMPLATE = PROMPT_TEMPLATE
-            prompt_template = trainer._get_prompt_template(input_data, is_telegram=False)
+        mock_settings.PROMPT_TEMPLATE = PROMPT_TEMPLATE
+        prompt_template = prompt_builder.get_prompt_template(input_data, is_telegram=False)
 
-            # Should not crash
-            formatted = prompt_template.format(**input_data)
-            assert len(formatted) > 10000
+        # Should not crash
+        formatted = prompt_template.format(**input_data)
+        assert len(formatted) > 10000
 
     def test_window_at_exact_boundary(self):
         """Verify compactor handles exactly 40 messages correctly."""

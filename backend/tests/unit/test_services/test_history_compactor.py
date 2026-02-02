@@ -91,7 +91,7 @@ def test_history_compactor_summarizes_old_messages(mock_db, mock_llm_client):
     mock_db.get_chat_history.return_value = messages
 
     # Run
-    compactor.compact_history("test@test.com", active_window_size=10)
+    compactor.compact_history("test@test.com", active_window_size=10, compaction_threshold=20)
 
     # Assertions
     mock_llm_client.stream_simple.assert_called_once()
@@ -137,7 +137,7 @@ def test_history_compactor_idempotency(mock_db, mock_llm_client):
     mock_db.get_chat_history.return_value = messages
 
     # Run with same window
-    compactor.compact_history("test@test.com", active_window_size=10)
+    compactor.compact_history("test@test.com", active_window_size=10, compaction_threshold=20)
 
     # Since all "old" messages (0-19) are <= last_compaction_timestamp,
     # NO NEW lines to summarize.
@@ -322,7 +322,7 @@ def test_compact_history_uses_preprocessing(mock_db, mock_llm_client):
     mock_db.get_chat_history.return_value = messages
 
     # Run compaction
-    compactor.compact_history("test@test.com", active_window_size=10)
+    compactor.compact_history("test@test.com", active_window_size=10, compaction_threshold=30)
 
     # Verify LLM was called
     mock_llm_client.stream_simple.assert_called_once()

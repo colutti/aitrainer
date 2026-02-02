@@ -68,7 +68,7 @@ class HistoryCompactor:
 
         return filtered
 
-    def compact_history(self, user_email: str, active_window_size: int = 20, log_callback=None, compaction_threshold: int = 30):  # Default matches config.MAX_SHORT_TERM_MEMORY_MESSAGES
+    def compact_history(self, user_email: str, active_window_size: int = 40, log_callback=None, compaction_threshold: int = 60):  # Default matches config.MAX_SHORT_TERM_MEMORY_MESSAGES
         """
         Synchronous wrapper for history compaction.
         Identifies old messages outside the active window, summarizes them,
