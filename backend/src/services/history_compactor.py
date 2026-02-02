@@ -1,8 +1,9 @@
+import json
 from datetime import datetime
 from src.core.logs import logger
 from src.services.database import MongoDatabase
 from src.services.llm_client import LLMClient
-from src.prompts.summary_update_prompt import SUMMARY_UPDATE_PROMPT
+from src.prompts.summary_prompts import SUMMARY_UPDATE_PROMPT
 from langchain_core.prompts import PromptTemplate
 
 
@@ -11,13 +12,19 @@ class HistoryCompactor:
         self.db = database
         self.llm_client = llm_client
 
-    def compact_history(self, user_email: str, active_window_size: int = 40, log_callback=None):  # Default matches config.MAX_SHORT_TERM_MEMORY_MESSAGES
+    def compact_history(self, user_email: str, active_window_size: int = 20, log_callback=None, compaction_threshold: int = 30):  # Default matches config.MAX_SHORT_TERM_MEMORY_MESSAGES
         """
         Synchronous wrapper for history compaction.
         Identifies old messages outside the active window, summarizes them,
         and updates the user's long-term summary.
 
         This method can be safely called from FastAPI background tasks.
+
+        Args:
+            user_email: User email
+            active_window_size: Number of recent messages to keep (default 20)
+            log_callback: Optional callback for logging
+            compaction_threshold: Only compact if buffer >= threshold (default 30)
         """
         import asyncio
 
@@ -42,6 +49,17 @@ class HistoryCompactor:
                 return
 
             total_msgs = len(all_messages)
+
+            # BATCH: Only compact if buffer >= compaction_threshold
+            # This reduces LLM calls (from every message to every 30+ messages)
+            if total_msgs < compaction_threshold:
+                logger.debug(
+                    "History size (%d) below compaction threshold (%d). Skipping.",
+                    total_msgs,
+                    compaction_threshold,
+                )
+                return
+
             if total_msgs <= active_window_size:
                 logger.debug(
                     "History size (%d) within active window (%d). Skipping.",
@@ -122,19 +140,38 @@ class HistoryCompactor:
                 logger.warning("Empty summary generated. Aborting update.")
                 return
 
-            # 6. Atomic Update
-            # Update profile with new summary and new timestamp using partial update
-            # to prevent overwriting concurrent changes (e.g. Hevy settings)
+            # 6. Validate JSON Structure and Critical Categories
+            try:
+                summary_dict = json.loads(response_text.strip())
+            except json.JSONDecodeError:
+                logger.error("LLM returned invalid JSON: %s", response_text[:100])
+                return
+
+            # Validate critical categories exist
+            critical_categories = ["health", "restrictions"]
+            for cat in critical_categories:
+                if cat not in summary_dict or not summary_dict.get(cat):
+                    logger.warning(
+                        "⚠️  Category '%s' missing or empty in compacted summary for %s",
+                        cat,
+                        user_email,
+                    )
+
+            # 7. Atomic Update
+            # Store JSON as string in long_term_summary field
             success = self.db.update_user_profile_fields(
                 user_email,
                 {
-                    "long_term_summary": response_text.strip(),
+                    "long_term_summary": json.dumps(summary_dict, ensure_ascii=False, indent=2),
                     "last_compaction_timestamp": new_last_ts_str,
                 },
             )
 
             if success:
-                logger.info("Compaction complete. Summary updated atomically.")
+                logger.info(
+                    "Compaction complete. Summary updated atomically. Categories: %s",
+                    list(summary_dict.keys()),
+                )
             else:
                 logger.warning("Compaction complete but no fields were updated.")
 

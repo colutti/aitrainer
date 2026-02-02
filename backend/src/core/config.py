@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     API_SERVER_PORT: int = 8000
 
-    MAX_SHORT_TERM_MEMORY_MESSAGES: int = 40  # Increased from 20 to sync with compactor window
+    MAX_SHORT_TERM_MEMORY_MESSAGES: int = 20  # Reduced for token efficiency, with lazy expansion
     MAX_LONG_TERM_MEMORY_MESSAGES: int
     SUMMARY_MAX_TOKEN_LIMIT: int = 200  # Trigger summarization when buffer exceeds this
     ALLOWED_ORIGINS: str | list[str]
