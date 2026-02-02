@@ -130,6 +130,13 @@ class HistoryCompactor:
             compaction_limit_index = total_msgs - active_window_size
             candidate_messages = all_messages[:compaction_limit_index]
 
+            # 3.5 PRE-PROCESS: Filter to keep only relevant student messages
+            candidate_messages = self._preprocess_messages(candidate_messages)
+
+            if not candidate_messages:
+                logger.debug("No relevant student messages to compact after preprocessing.")
+                return
+
             # 4. Filter out already compacted messages based on timestamp
             last_ts_str = profile.last_compaction_timestamp
             last_ts = datetime.min

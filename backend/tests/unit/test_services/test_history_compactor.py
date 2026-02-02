@@ -56,6 +56,11 @@ def test_history_compactor_skips_short_history(mock_db, mock_llm_client):
 
 def test_history_compactor_summarizes_old_messages(mock_db, mock_llm_client):
     """Should compact messages older than window."""
+    # Mock LLM to return valid JSON
+    async def async_gen(*args, **kwargs):
+        yield '{"preferences": []}'
+    mock_llm_client.stream_simple = MagicMock(side_effect=async_gen)
+
     compactor = HistoryCompactor(mock_db, mock_llm_client)
 
     # Mock Profile
@@ -72,13 +77,13 @@ def test_history_compactor_summarizes_old_messages(mock_db, mock_llm_client):
     mock_db.get_user_profile.return_value = profile
 
     # Mock Long History (30 msgs), Window (10) -> Compact 20
-    # Create fake messages with timestamps
+    # Create fake messages with timestamps (with meaningful text >= 10 chars)
     base_ts = datetime(2026, 1, 1, 10, 0)
     messages = []
     for i in range(30):
         ts = base_ts + timedelta(minutes=i)
         msg = ChatHistory(
-            sender=Sender.STUDENT, text=f"Msg {i}", timestamp=ts.isoformat()
+            sender=Sender.STUDENT, text=f"This is message number {i}", timestamp=ts.isoformat()
         )
         messages.append(msg)
 
@@ -93,7 +98,7 @@ def test_history_compactor_summarizes_old_messages(mock_db, mock_llm_client):
 
     # Check if fields were updated correctly
     updated_fields = mock_db.update_user_profile_fields.call_args[0][1]
-    assert updated_fields["long_term_summary"] == "Updated Summary Content"
+    assert "preferences" in updated_fields["long_term_summary"]
     # The last compacted message should be index 19 (since 20-29 are active window)
     expected_ts = messages[19].timestamp
     assert updated_fields["last_compaction_timestamp"] == expected_ts
@@ -120,12 +125,12 @@ def test_history_compactor_idempotency(mock_db, mock_llm_client):
     )
     mock_db.get_user_profile.return_value = profile
 
-    # Same history as before
+    # Same history as before (with meaningful text)
     messages = []
     for i in range(30):
         ts = base_ts + timedelta(minutes=i)
         msg = ChatHistory(
-            sender=Sender.STUDENT, text=f"Msg {i}", timestamp=ts.isoformat()
+            sender=Sender.STUDENT, text=f"This is message number {i}", timestamp=ts.isoformat()
         )
         messages.append(msg)
     mock_db.get_chat_history.return_value = messages
@@ -262,3 +267,71 @@ def test_preprocess_keeps_relevant_student_messages(mock_db, mock_llm_client):
     assert any("lesão" in m.text for m in filtered)
     assert any("meta" in m.text for m in filtered)
     assert any("máquinas" in m.text for m in filtered)
+
+
+def test_compact_history_uses_preprocessing(mock_db, mock_llm_client):
+    """Should preprocess messages before compaction, filtering trainer messages."""
+    # Mock LLM to return valid JSON
+    async def async_gen(*args, **kwargs):
+        yield '{"preferences": ["[31/01] Push 2x/semana"]}'
+    mock_llm_client.stream_simple = MagicMock(side_effect=async_gen)
+
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    profile = UserProfile(
+        email="test@test.com",
+        goal="test",
+        gender="Masculino",
+        age=30,
+        weight=70.0,
+        height=175,
+        goal_type="maintain",
+        weekly_rate=0.5,
+    )
+    mock_db.get_user_profile.return_value = profile
+
+    # 40 messages: mix of student, trainer, system
+    base_ts = datetime(2026, 1, 31, 10, 0)
+    messages = []
+    for i in range(40):
+        ts = base_ts + timedelta(minutes=i)
+        if i % 3 == 0:
+            # Student message with content
+            msg = ChatHistory(
+                sender=Sender.STUDENT,
+                text=f"Prefiro treinar assim {i}",
+                timestamp=ts.isoformat(),
+            )
+        elif i % 3 == 1:
+            # Trainer message (should be filtered)
+            msg = ChatHistory(
+                sender=Sender.TRAINER,
+                text=f"list_hevy_routines executado → {i} rotinas",
+                timestamp=ts.isoformat(),
+            )
+        else:
+            # System message (should be filtered)
+            msg = ChatHistory(
+                sender=Sender.SYSTEM,
+                text=f"Ação executada: tool_{i}",
+                timestamp=ts.isoformat(),
+            )
+        messages.append(msg)
+
+    mock_db.get_chat_history.return_value = messages
+
+    # Run compaction
+    compactor.compact_history("test@test.com", active_window_size=10)
+
+    # Verify LLM was called
+    mock_llm_client.stream_simple.assert_called_once()
+
+    # Get the input_data passed to LLM
+    call_kwargs = mock_llm_client.stream_simple.call_args[1]
+    new_lines = call_kwargs["input_data"]["new_lines"]
+
+    # Should NOT contain trainer/system messages
+    assert "executado" not in new_lines
+    assert "Ação executada" not in new_lines
+    # Should contain student messages
+    assert "Prefiro treinar" in new_lines
