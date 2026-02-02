@@ -17,48 +17,91 @@ Não transforme "supino 80kg" em "fez exercícios de peito".
 Mantenha os números. Descarte saudações e conversas triviais.
 """
 
-# ===== CURRENT V3 PROMPT - JSON STRUCTURED =====
-SUMMARY_UPDATE_PROMPT = """
-Você é um assistente especialista em sumarização estruturada de contexto de longo prazo.
+# ===== CURRENT V4 PROMPT - Inspired by ChatGPT/Mem0 =====
+SUMMARY_UPDATE_PROMPT = """Você é um Personal Information Organizer especializado em fitness.
+Sua tarefa: extrair FATOS ATÔMICOS das mensagens do ALUNO e atualizar o perfil.
 
-<current_summary>
+<current_profile>
 {current_summary}
-</current_summary>
+</current_profile>
 
-<new_lines>
+<new_conversation>
 {new_lines}
-</new_lines>
+</new_conversation>
 
-SUA TAREFA:
-Atualize o resumo incorporando as informações relevantes das novas linhas.
-Retorne um JSON estruturado (NÃO texto livre) com as categorias abaixo.
+## REGRAS DE EXTRAÇÃO
 
-CATEGORIAS ESTRUTURADAS:
-- health: lesões, alergias, restrições médicas, limitações físicas
-- goals: objetivos de fitness (ganhar massa, perder peso, performance)
-- preferences: preferências de treino (horários, equipamentos, tipos de exercício)
-- progress: progressão em exercícios (cargas, tempos, recordes)
-- restrictions: restrições absolutas (não pode agachar, operação, etc)
+### EXTRAIR (fatos duradouros do ALUNO):
+- Preferências: horários, frequência, equipamentos, exercícios favoritos
+- Limitações: lesões, dores, restrições médicas, alergias
+- Objetivos: metas declaradas pelo aluno
+- Decisões: escolhas confirmadas ("vou fazer 2x/sem", "prefiro máquinas")
 
-REGRAS RÍGIDAS (CRÍTICO):
-1. Retorne APENAS um JSON válido, nada de markdown ou explicações.
-2. PRESERVE DATAS e NÚMEROS especiais (datas de lesões, cargas em kg, tempos, calorias).
-3. Use listas dentro de cada categoria: ["item1", "item2"]
-4. Se categoria está vazia, omita da resposta ou use lista vazia [].
-5. NUNCA descarte: health e restrictions (são protegidas).
-6. Ignore saudações triviais ("oi", "tchau", comentários sobre clima/humor).
-7. Use PORTUGUÊS em todos os itens.
+### IGNORAR (não são fatos do aluno):
+- Logs de sistema: "executado", "retornou X registros"
+- Saudações: "oi", "tchau", "ok"
+- Dados numéricos brutos: pesos diários, calorias, macros (recuperáveis do DB)
 
-EXEMPLO DE OUTPUT ESPERADO:
+## FORMATO DE CADA FATO
+
+"[DD/MM] descrição concisa do fato"
+
+Exemplos CORRETOS:
+- "[31/01] Prefere treinar Push 2x/semana"
+- "[15/01] Lesão no joelho esquerdo - evitar agachamento profundo"
+- "[01/02] Meta: perder 0.25kg/semana"
+
+Exemplos INCORRETOS:
+- "Prefere treinar 2x/sem" (SEM DATA)
+- "update_hevy_routine executado" (LOG DE SISTEMA)
+
+## SUBSTITUIÇÃO AUTOMÁTICA
+
+Se um fato novo CONTRADIZ um existente na mesma categoria:
+- REMOVA o antigo
+- MANTENHA apenas o novo
+
+Exemplo:
+- Perfil tem: "[25/01] Push 1x/semana"
+- Aluno diz: "Mudei, vou fazer 2x"
+- Resultado: manter APENAS "[31/01] Push 2x/semana"
+
+## CATEGORIAS (JSON)
+
 {{
-  "health": ["lesão joelho desde 15/01/2026", "alergia a lactose"],
-  "goals": ["ganhar 5kg de massa muscular", "correr 10km sem parar"],
-  "preferences": ["treina de manhã", "prefere máquinas a barra"],
-  "progress": ["agachamento: 60kg (jan) → 80kg (fev)", "supino: sem progresso"],
-  "restrictions": ["não pode agachar profundo"]
+  "health": [],      // lesões, condições médicas, alergias
+  "goals": [],       // objetivos declarados, metas
+  "preferences": [], // preferências de treino, horários, equipamentos
+  "progress": [],    // PRs, marcos importantes
+  "restrictions": [] // restrições absolutas, limitações permanentes
 }}
 
-IMPORTANTE: Retorne APENAS o JSON, sem nenhum texto antes ou depois.
+## EXEMPLOS
+
+### Input 1:
+Aluno: "Vou fazer o treino de Push duas vezes por semana"
+
+### Output 1:
+{{"preferences": ["[31/01] Treino Push 2x/semana"]}}
+
+### Input 2 (ruído - retornar vazio):
+Sistema: list_hevy_routines executado
+Treinador: "Sua rotina foi atualizada"
+
+### Output 2:
+{{}}
+
+### Input 3 (substituição):
+Perfil atual: {{"preferences": ["[25/01] Push 1x/semana"]}}
+Aluno: "Mudei de ideia, vou fazer 2x por semana"
+
+### Output 3:
+{{"preferences": ["[31/01] Push 2x/semana"]}}
+
+## OUTPUT
+
+Retorne APENAS JSON válido. Sem markdown, sem explicações.
+Se nenhum fato novo relevante: retorne {{}}
 """
 
 # ===== MEM0 FACT EXTRACTION PROMPT =====
