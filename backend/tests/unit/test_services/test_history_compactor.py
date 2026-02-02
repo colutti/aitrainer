@@ -1,5 +1,6 @@
 
 import pytest
+import json
 from unittest.mock import MagicMock
 from datetime import datetime, timedelta
 from src.services.history_compactor import HistoryCompactor
@@ -335,3 +336,90 @@ def test_compact_history_uses_preprocessing(mock_db, mock_llm_client):
     assert "Ação executada" not in new_lines
     # Should contain student messages
     assert "Prefiro treinar" in new_lines
+
+
+def test_compaction_produces_clean_json_output(mock_db, mock_llm_client):
+    """
+    E2E test: Given mixed messages, compaction should:
+    1. Filter to student messages only
+    2. Call LLM with clean input
+    3. Store valid JSON with dated facts
+    """
+    # Mock LLM to return realistic output
+    async def async_gen(*args, **kwargs):
+        yield json.dumps({
+            "health": [],
+            "goals": ["[31/01] Meta: perder 0.25kg/semana"],
+            "preferences": ["[31/01] Treino Push 2x/semana", "[31/01] Prefere máquinas"],
+            "progress": [],
+            "restrictions": []
+        }, ensure_ascii=False)
+    mock_llm_client.stream_simple = MagicMock(side_effect=async_gen)
+
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    profile = UserProfile(
+        email="test@test.com",
+        goal="perder peso",
+        gender="Masculino",
+        age=45,
+        weight=75.0,
+        height=175,
+        goal_type="lose",
+        weekly_rate=0.25,
+    )
+    mock_db.get_user_profile.return_value = profile
+
+    # Create realistic mixed messages
+    base_ts = datetime(2026, 1, 31, 10, 0)
+    messages = [
+        # Student: greeting (should be filtered)
+        ChatHistory(sender=Sender.STUDENT, text="oi", timestamp=(base_ts + timedelta(minutes=0)).isoformat()),
+        # Trainer: tool log (should be filtered)
+        ChatHistory(sender=Sender.TRAINER, text="list_hevy_routines executado → 3 rotinas", timestamp=(base_ts + timedelta(minutes=1)).isoformat()),
+        # Student: decision (should be kept)
+        ChatHistory(sender=Sender.STUDENT, text="Vou fazer o treino de Push 2x por semana", timestamp=(base_ts + timedelta(minutes=2)).isoformat()),
+        # System: tool log (should be filtered)
+        ChatHistory(sender=Sender.SYSTEM, text="update_hevy_routine executado → Rotina atualizada", timestamp=(base_ts + timedelta(minutes=3)).isoformat()),
+        # Student: preference (should be kept)
+        ChatHistory(sender=Sender.STUDENT, text="Prefiro usar máquinas, não gosto de barra", timestamp=(base_ts + timedelta(minutes=4)).isoformat()),
+        # Trainer: response (should be filtered)
+        ChatHistory(sender=Sender.TRAINER, text="Perfeito, vou ajustar sua rotina!", timestamp=(base_ts + timedelta(minutes=5)).isoformat()),
+    ]
+
+    # Add more messages to reach threshold (40 total)
+    for i in range(34):
+        ts = base_ts + timedelta(minutes=10 + i)
+        messages.append(
+            ChatHistory(sender=Sender.STUDENT, text=f"Mensagem de contexto numero {i}", timestamp=ts.isoformat())
+        )
+
+    mock_db.get_chat_history.return_value = messages
+
+    # Run compaction
+    compactor.compact_history("test@test.com", active_window_size=10, compaction_threshold=30)
+
+    # Verify LLM was called with filtered input
+    call_kwargs = mock_llm_client.stream_simple.call_args[1]
+    new_lines = call_kwargs["input_data"]["new_lines"]
+
+    # Should NOT contain system/trainer noise
+    assert "executado" not in new_lines
+    assert "list_hevy_routines" not in new_lines
+    assert "update_hevy_routine" not in new_lines
+
+    # Should contain student decisions
+    assert "Push 2x" in new_lines
+    assert "máquinas" in new_lines
+
+    # Verify database was updated with valid JSON
+    mock_db.update_user_profile_fields.assert_called_once()
+    update_call = mock_db.update_user_profile_fields.call_args[0]
+    stored_summary = update_call[1]["long_term_summary"]
+
+    # Should be valid JSON
+    summary_dict = json.loads(stored_summary)
+
+    # Should have dated facts
+    assert any("[31/01]" in fact for fact in summary_dict.get("preferences", []))
+    assert any("[31/01]" in fact for fact in summary_dict.get("goals", []))
