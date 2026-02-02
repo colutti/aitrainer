@@ -136,3 +136,41 @@ class TelegramBotService:
             await self.bot.send_message(
                 chat_id=chat_id, text="❌ Erro ao processar mensagem. Tente novamente."
             )
+
+    async def send_notification(self, user_email: str, message: str) -> bool:
+        """
+        Envia notificação proativa para um usuário vinculado ao Telegram.
+
+        Args:
+            user_email: Email do usuário destinatário
+            message: Mensagem a enviar (pode conter markdown)
+
+        Returns:
+            True se enviado com sucesso, False caso contrário
+        """
+        try:
+            # 1. Buscar vinculação
+            link = self.repository.get_link_by_email(user_email)
+            if not link:
+                logger.warning(f"[Telegram Notification] No link found for {user_email}")
+                return False
+
+            # 2. Formatar mensagem (converte markdown para Telegram)
+            formatted_text, parse_mode = safe_telegram_send(message)
+
+            # 3. Enviar
+            await self.bot.send_message(
+                chat_id=link.chat_id,
+                text=formatted_text,
+                parse_mode=parse_mode
+            )
+
+            logger.info(f"[Telegram Notification] Sent to {user_email} (chat_id={link.chat_id})")
+            return True
+
+        except TelegramError as e:
+            logger.error(f"[Telegram Notification] Telegram API error: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"[Telegram Notification] Unexpected error: {e}")
+            return False

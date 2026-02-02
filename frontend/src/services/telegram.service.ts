@@ -14,6 +14,12 @@ export interface LinkingCode {
   expires_in_seconds: number;
 }
 
+export interface TelegramNotificationSettings {
+  telegram_notify_on_workout?: boolean;
+  telegram_notify_on_nutrition?: boolean;
+  telegram_notify_on_weight?: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TelegramService {
   private http = inject(HttpClient);
@@ -34,6 +40,13 @@ export class TelegramService {
   async unlink(): Promise<void> {
     await firstValueFrom(
       this.http.post(`${this.baseUrl}/unlink`, {})
+    );
+  }
+
+  async updateNotifications(settings: TelegramNotificationSettings): Promise<void> {
+    const userUrl = `${environment.apiUrl}/user`;
+    await firstValueFrom(
+      this.http.post(`${userUrl}/telegram-notifications`, settings)
     );
   }
 }

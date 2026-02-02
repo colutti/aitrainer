@@ -15,6 +15,7 @@ from src.core.limiter import limiter, RATE_LIMITING_ENABLED
 from src.api.models.auth import LoginRequest
 from src.api.models.user_profile import UserProfile, UserProfileInput
 from src.services.trainer import AITrainerBrain
+from pydantic import BaseModel
 
 router = APIRouter()
 
@@ -141,6 +142,48 @@ def update_profile(
 
     logger.info("User profile updated for email: %s", user_email)
     return JSONResponse(content={"message": "Profile updated successfully"})
+
+
+class TelegramNotificationSettings(BaseModel):
+    """Telegram notification configuration settings."""
+    telegram_notify_on_workout: bool | None = None
+    telegram_notify_on_nutrition: bool | None = None
+    telegram_notify_on_weight: bool | None = None
+
+
+@router.post("/telegram-notifications")
+def update_telegram_notifications(
+    settings_data: TelegramNotificationSettings,
+    user_email: CurrentUser,
+    brain: AITrainerBrainDep,
+) -> JSONResponse:
+    """
+    Updates the user's Telegram notification preferences.
+
+    Args:
+        settings_data: The notification settings to update.
+        user_email: The authenticated user's email.
+        brain: The AI trainer brain dependency.
+
+    Returns:
+        JSONResponse: A response indicating the settings were updated successfully.
+
+    Raises:
+        HTTPException: If the user profile is not found (404).
+    """
+    existing_profile = brain.get_user_profile(user_email)
+
+    if not existing_profile:
+        logger.warning("Attempted to update notifications for non-existent user: %s", user_email)
+        raise HTTPException(status_code=404, detail="User profile not found")
+
+    # Update only the fields that were provided (not None)
+    update_data = settings_data.model_dump(exclude_unset=True)
+    updated_profile = existing_profile.model_copy(update=update_data)
+    brain.save_user_profile(updated_profile)
+
+    logger.info("Telegram notification settings updated for user: %s", user_email)
+    return JSONResponse(content={"message": "Notification settings updated successfully"})
 
 
 @router.post("/logout")

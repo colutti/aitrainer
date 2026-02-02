@@ -294,3 +294,138 @@ def test_update_profile_invalid_data():
     assert response.status_code in [200, 422]
 
     app.dependency_overrides = {}
+
+
+# Test: POST /telegram-notifications - Success Case
+def test_update_telegram_notifications_success(sample_user_profile):
+    """Test successful update of Telegram notification settings."""
+    app.dependency_overrides[verify_token] = lambda: "test@example.com"
+    mock_brain = MagicMock()
+    mock_brain.get_user_profile.return_value = sample_user_profile
+    mock_brain.save_user_profile.return_value = None
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+    update_payload = {
+        "telegram_notify_on_workout": True,
+        "telegram_notify_on_nutrition": False,
+        "telegram_notify_on_weight": False,
+    }
+
+    response = client.post(
+        "/user/telegram-notifications",
+        json=update_payload,
+        headers={"Authorization": "Bearer test_token"}
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "Notification settings updated successfully" in data["message"]
+    mock_brain.save_user_profile.assert_called_once()
+
+    app.dependency_overrides = {}
+
+
+# Test: POST /telegram-notifications - Partial Update
+def test_update_telegram_notifications_partial(sample_user_profile):
+    """Test partial update of only one notification setting."""
+    app.dependency_overrides[verify_token] = lambda: "test@example.com"
+    mock_brain = MagicMock()
+    mock_brain.get_user_profile.return_value = sample_user_profile
+    mock_brain.save_user_profile.return_value = None
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+    # Only update one field
+    update_payload = {
+        "telegram_notify_on_workout": False,
+    }
+
+    response = client.post(
+        "/user/telegram-notifications",
+        json=update_payload,
+        headers={"Authorization": "Bearer test_token"}
+    )
+
+    assert response.status_code == 200
+    mock_brain.save_user_profile.assert_called_once()
+
+    # Verify that model_copy was called with the update data
+    call_args = mock_brain.save_user_profile.call_args[0][0]
+    assert call_args.telegram_notify_on_workout == False
+
+    app.dependency_overrides = {}
+
+
+# Test: POST /telegram-notifications - User Not Found
+def test_update_telegram_notifications_user_not_found():
+    """Test update fails when user profile does not exist."""
+    app.dependency_overrides[verify_token] = lambda: "nonexistent@example.com"
+    mock_brain = MagicMock()
+    mock_brain.get_user_profile.return_value = None  # No profile found
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+    update_payload = {
+        "telegram_notify_on_workout": True,
+    }
+
+    response = client.post(
+        "/user/telegram-notifications",
+        json=update_payload,
+        headers={"Authorization": "Bearer test_token"}
+    )
+
+    assert response.status_code == 404
+    data = response.json()
+    assert "User profile not found" in data["detail"]
+    mock_brain.save_user_profile.assert_not_called()
+
+    app.dependency_overrides = {}
+
+
+# Test: POST /telegram-notifications - All Fields Update
+def test_update_telegram_notifications_all_fields(sample_user_profile):
+    """Test updating all notification fields at once."""
+    app.dependency_overrides[verify_token] = lambda: "test@example.com"
+    mock_brain = MagicMock()
+    mock_brain.get_user_profile.return_value = sample_user_profile
+    mock_brain.save_user_profile.return_value = None
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+    update_payload = {
+        "telegram_notify_on_workout": False,
+        "telegram_notify_on_nutrition": True,
+        "telegram_notify_on_weight": True,
+    }
+
+    response = client.post(
+        "/user/telegram-notifications",
+        json=update_payload,
+        headers={"Authorization": "Bearer test_token"}
+    )
+
+    assert response.status_code == 200
+    mock_brain.save_user_profile.assert_called_once()
+
+    # Verify all fields were set correctly
+    call_args = mock_brain.save_user_profile.call_args[0][0]
+    assert call_args.telegram_notify_on_workout == False
+    assert call_args.telegram_notify_on_nutrition == True
+    assert call_args.telegram_notify_on_weight == True
+
+    app.dependency_overrides = {}
+
+
+# Test: POST /telegram-notifications - Unauthorized (No Token)
+def test_update_telegram_notifications_unauthorized():
+    """Test endpoint requires authentication."""
+    update_payload = {
+        "telegram_notify_on_workout": True,
+    }
+
+    response = client.post(
+        "/user/telegram-notifications",
+        json=update_payload
+    )
+
+    assert response.status_code == 401
+
+    app.dependency_overrides = {}

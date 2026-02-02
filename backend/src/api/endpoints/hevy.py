@@ -154,6 +154,7 @@ async def process_webhook_async(
     Fetches workout, transforms and saves.
     """
     from src.core.logs import logger
+    from src.core.deps import get_ai_trainer_brain, get_telegram_service
 
     logger.info(f"[Webhook BG] Processing workout {workout_id} for {user_email}")
     
@@ -192,6 +193,55 @@ async def process_webhook_async(
         logger.info(
             f"[Webhook BG] Successfully synced workout {workout_id} for {user_email}"
         )
+
+        # === NOVA LÓGICA: Notificação Telegram ===
+        try:
+            brain = get_ai_trainer_brain()
+            profile = brain.get_user_profile(user_email)
+
+            # Verificar elegibilidade
+            if not profile:
+                logger.warning(f"[Webhook BG] No profile found for {user_email}")
+                return
+
+            # Verificar se Telegram está vinculado e habilitado
+            telegram_repo = brain._database.db["telegram_links"]
+            telegram_link = telegram_repo.find_one({"user_email": user_email})
+
+            if not telegram_link:
+                logger.debug(f"[Webhook BG] No Telegram link for {user_email}, skipping notification")
+                return
+
+            if not getattr(profile, "telegram_notify_on_workout", True):
+                logger.debug(f"[Webhook BG] Telegram workout notifications disabled for {user_email}")
+                return
+
+            # Gerar resumo do treino
+            exercises_summary = ", ".join([ex.name for ex in workout_log.exercises[:3]])
+            if len(workout_log.exercises) > 3:
+                exercises_summary += f" (+ {len(workout_log.exercises) - 3} outros)"
+
+            workout_summary = (
+                f"{workout_log.workout_type} em {workout_log.date.strftime('%d/%m/%Y')} - "
+                f"{len(workout_log.exercises)} exercícios: {exercises_summary}"
+            )
+
+            # Gerar análise pela IA
+            logger.info(f"[Webhook BG] Requesting AI analysis for {user_email}")
+            analysis = await brain.analyze_workout_async(user_email, workout_summary)
+
+            # Enviar via Telegram
+            telegram_service = get_telegram_service()
+            success = await telegram_service.send_notification(user_email, analysis)
+
+            if success:
+                logger.info(f"[Webhook BG] Telegram notification sent for workout {workout_id}")
+            else:
+                logger.warning(f"[Webhook BG] Failed to send Telegram notification")
+
+        except Exception as notif_error:
+            # Não propagar erro (treino já foi salvo)
+            logger.error(f"[Webhook BG] Notification error (non-critical): {notif_error}")
 
     except Exception as e:
         logger.error(f"[Webhook BG] Error: {e}")

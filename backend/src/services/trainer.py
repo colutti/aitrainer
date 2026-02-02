@@ -602,6 +602,39 @@ class AITrainerBrain:
                 return loop.run_until_complete(collect_response())
             return loop.run_until_complete(collect_response())
 
+    async def analyze_workout_async(
+        self,
+        user_email: str,
+        workout_summary: str,
+    ) -> str:
+        """
+        Gera análise de treino de forma assíncrona (para webhooks/background tasks).
+
+        Usa o fluxo completo da IA com memória, perfil e personalidade do trainer,
+        mas sem BackgroundTasks (não streama para usuário).
+
+        Args:
+            user_email: Email do usuário
+            workout_summary: Resumo do treino a ser analisado
+
+        Returns:
+            Análise completa da IA como string
+        """
+        # Prompt que simula pergunta do usuário
+        user_input = f"Analisou meu último treino: {workout_summary}. Pode dar uma análise completa?"
+
+        # Coleta resposta sem streaming
+        response_parts = []
+        async for chunk in self.send_message_ai(
+            user_email=user_email,
+            user_input=user_input,
+            background_tasks=None,  # Sem BackgroundTasks (não envia para SSE)
+            is_telegram=False,  # Resposta detalhada (não resumida)
+        ):
+            if isinstance(chunk, str):
+                response_parts.append(chunk)
+
+        return "".join(response_parts)
 
     def get_all_memories(self, user_id: str, limit: int = 50) -> list[dict]:
         """

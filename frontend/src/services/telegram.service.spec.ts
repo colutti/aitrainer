@@ -360,4 +360,125 @@ describe('TelegramService', () => {
       expect(status.linked).toBe(false);
     });
   });
+
+  describe('updateNotifications()', () => {
+    it('should update notification settings', async () => {
+      const settings = {
+        telegram_notify_on_workout: true,
+        telegram_notify_on_nutrition: false,
+        telegram_notify_on_weight: false,
+      };
+
+      const promise = service.updateNotifications(settings);
+
+      const req = httpMock.expectOne(req =>
+        req.url.includes('/user/telegram-notifications')
+      );
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(settings);
+
+      req.flush({ message: 'Notification settings updated successfully' });
+
+      await promise;
+      expect(true).toBe(true);
+    });
+
+    it('should handle partial notification updates', async () => {
+      const settings = {
+        telegram_notify_on_workout: false,
+      };
+
+      const promise = service.updateNotifications(settings);
+
+      const req = httpMock.expectOne(req =>
+        req.url.includes('/user/telegram-notifications')
+      );
+      expect(req.request.body).toEqual(settings);
+
+      req.flush({ message: 'Notification settings updated successfully' });
+
+      await promise;
+      expect(true).toBe(true);
+    });
+
+    it('should handle all notification fields', async () => {
+      const settings = {
+        telegram_notify_on_workout: true,
+        telegram_notify_on_nutrition: true,
+        telegram_notify_on_weight: true,
+      };
+
+      const promise = service.updateNotifications(settings);
+
+      const req = httpMock.expectOne(req =>
+        req.url.includes('/user/telegram-notifications')
+      );
+      expect(req.request.body).toEqual(settings);
+
+      req.flush({ message: 'Notification settings updated successfully' });
+
+      await promise;
+      expect(true).toBe(true);
+    });
+
+    it('should handle update error', async () => {
+      const settings = {
+        telegram_notify_on_workout: true,
+      };
+
+      const promise = service.updateNotifications(settings);
+
+      const req = httpMock.expectOne(req =>
+        req.url.includes('/user/telegram-notifications')
+      );
+      req.flush('Server Error', { status: 500, statusText: 'Internal Server Error' });
+
+      try {
+        await promise;
+        fail('Should have thrown error');
+      } catch (error) {
+        expect(error).toBeDefined();
+      }
+    });
+
+    it('should handle unauthorized error on update', async () => {
+      const settings = {
+        telegram_notify_on_workout: true,
+      };
+
+      const promise = service.updateNotifications(settings);
+
+      const req = httpMock.expectOne(req =>
+        req.url.includes('/user/telegram-notifications')
+      );
+      req.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
+
+      try {
+        await promise;
+        fail('Should have thrown error');
+      } catch (error) {
+        expect(error).toBeDefined();
+      }
+    });
+
+    it('should handle network error on update', async () => {
+      const settings = {
+        telegram_notify_on_workout: true,
+      };
+
+      const promise = service.updateNotifications(settings);
+
+      const req = httpMock.expectOne(req =>
+        req.url.includes('/user/telegram-notifications')
+      );
+      req.error(new ProgressEvent('error'));
+
+      try {
+        await promise;
+        fail('Should have thrown error');
+      } catch (error) {
+        expect(error).toBeDefined();
+      }
+    });
+  });
 });

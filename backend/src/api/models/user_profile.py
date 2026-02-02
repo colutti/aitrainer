@@ -79,6 +79,17 @@ class UserProfile(UserProfileInput):
         None, description="Secret for Authorization header validation"
     )
 
+    # Telegram Notifications
+    telegram_notify_on_workout: bool = Field(
+        True, description="Send Telegram notification when workout is saved"
+    )
+    telegram_notify_on_nutrition: bool = Field(
+        False, description="Send Telegram notification when nutrition is logged (future)"
+    )
+    telegram_notify_on_weight: bool = Field(
+        False, description="Send Telegram notification when weight is logged (future)"
+    )
+
     def _goal_type_label(self) -> str:
         labels = {
             "lose": "Perder peso",

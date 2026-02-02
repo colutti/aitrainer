@@ -31,6 +31,12 @@ export class TelegramConfigComponent implements OnInit {
   linkingCode = signal<string | null>(null);
   generatingCode = signal<boolean>(false);
 
+  // Notification settings
+  notifyOnWorkout = signal<boolean>(true);
+  notifyOnNutrition = signal<boolean>(false);
+  notifyOnWeight = signal<boolean>(false);
+  savingNotifications = signal<boolean>(false);
+
   ngOnInit() {
     this.loadStatus();
   }
@@ -38,7 +44,7 @@ export class TelegramConfigComponent implements OnInit {
   async loadStatus() {
     this.viewState.set('loading');
     this.cdr.detectChanges();
-    
+
     try {
       const status = await this.telegramService.getStatus();
       if (status.linked) {
@@ -52,6 +58,29 @@ export class TelegramConfigComponent implements OnInit {
       console.error('Error loading Telegram status', e);
       this.viewState.set('disconnected');
     } finally {
+      this.cdr.detectChanges();
+    }
+  }
+
+  async onNotificationChange() {
+    this.savingNotifications.set(true);
+    this.errorMessage.set('');
+    this.successMessage.set('');
+    this.cdr.detectChanges();
+
+    try {
+      await this.telegramService.updateNotifications({
+        telegram_notify_on_workout: this.notifyOnWorkout(),
+        telegram_notify_on_nutrition: this.notifyOnNutrition(),
+        telegram_notify_on_weight: this.notifyOnWeight(),
+      });
+      this.successMessage.set('Configurações de notificação salvas!');
+      setTimeout(() => this.successMessage.set(''), 3000);
+    } catch (e) {
+      console.error('Error updating notifications', e);
+      this.errorMessage.set('Erro ao salvar configurações.');
+    } finally {
+      this.savingNotifications.set(false);
       this.cdr.detectChanges();
     }
   }
