@@ -108,8 +108,9 @@ async def migrate_user_summaries(database: MongoDatabase):
     logger.info("Starting summary migration...")
 
     try:
-        # Get all users
-        all_users = database.db.users.find({})
+        # Get all users (access collection via database.database)
+        users_collection = database.database["users"]
+        all_users = users_collection.find({})
         users_list = list(all_users)
         total_users = len(users_list)
 
@@ -139,7 +140,7 @@ async def migrate_user_summaries(database: MongoDatabase):
                 json_str = json.dumps(new_summary, ensure_ascii=False, indent=2)
 
                 # Update in database
-                result = database.db.users.update_one(
+                result = users_collection.update_one(
                     {"email": email},
                     {
                         "$set": {
