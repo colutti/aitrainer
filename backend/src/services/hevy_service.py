@@ -96,24 +96,29 @@ class HevyService:
         """
         async with httpx.AsyncClient() as client:
             try:
+                logger.debug(f"[Hevy] Fetching workout {workout_id} with key ****{api_key[-4:]}")
                 response = await client.get(
                     f"{self.BASE_URL}/workouts/{workout_id}",
                     headers={"api-key": api_key},
                     timeout=10.0,
                 )
+                logger.debug(f"[Hevy] Response status: {response.status_code}")
+
                 if response.status_code == 200:
                     # Hevy API returns {"workout": {...}}
                     return response.json().get("workout")
-                
+
                 # Log detailed error for debugging
                 logger.error(
-                    f"Hevy API workout fetch failed for {workout_id}. "
+                    f"[Hevy] Workout fetch failed for {workout_id}. "
                     f"Status: {response.status_code}, "
                     f"Body: {response.text}"
                 )
                 return None
             except Exception as e:
-                logger.error(f"Failed to fetch workout {workout_id}: {e}")
+                logger.error(f"[Hevy] Exception fetching workout {workout_id}: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
                 return None
 
     def transform_to_workout_log(
