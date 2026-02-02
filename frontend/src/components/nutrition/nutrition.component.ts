@@ -97,6 +97,7 @@ export class NutritionComponent implements OnInit {
       this.deletingId.set(log.id);
       this.nutritionService.deleteLog(log.id).subscribe({
         next: () => {
+          this.currentPage.set(1);
           this.loadData();
           this.deletingId.set(null);
         },

@@ -356,6 +356,17 @@ describe('NutritionComponent', () => {
         expect(deleteButton.disabled).toBe(true);
       }
     });
+
+    it('should reset currentPage to 1 after deletion', async () => {
+      const log = NutritionFactory.createBreakfast();
+      jest.spyOn(window, 'confirm').mockReturnValueOnce(true);
+      component.currentPage.set(2);
+
+      component.deleteLog(new Event('click'), log);
+      await fixture.whenStable();
+
+      expect(component.currentPage()).toBe(1);
+    });
   });
 
   describe('Date Formatting', () => {
