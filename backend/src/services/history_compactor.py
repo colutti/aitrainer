@@ -1,16 +1,72 @@
 import json
+import re
 from datetime import datetime
 from src.core.logs import logger
 from src.services.database import MongoDatabase
 from src.services.llm_client import LLMClient
 from src.prompts.summary_prompts import SUMMARY_UPDATE_PROMPT
 from langchain_core.prompts import PromptTemplate
+from src.api.models.chat_history import ChatHistory
+from src.api.models.sender import Sender
+
+# Padrões de saudações triviais (case insensitive)
+GREETING_PATTERN = re.compile(
+    r"^(oi|olá|ola|tchau|bom dia|boa noite|boa tarde|ok|blz|valeu|obrigado|brigado|vlw|flw)[\s!?.]*$",
+    re.IGNORECASE,
+)
+
+# Tamanho mínimo para mensagem relevante
+MIN_MESSAGE_LENGTH = 10
 
 
 class HistoryCompactor:
     def __init__(self, database: MongoDatabase, llm_client: LLMClient):
         self.db = database
         self.llm_client = llm_client
+
+    def _preprocess_messages(self, messages: list[ChatHistory]) -> list[ChatHistory]:
+        """
+        Filtra mensagens antes de enviar para sumarização.
+
+        Mantém apenas mensagens do ALUNO que contêm fatos relevantes.
+        Remove:
+        - Mensagens de treinador/sistema (padrão Mem0: extrair fatos do usuário)
+        - Saudações triviais (oi, tchau, ok, etc)
+        - Mensagens muito curtas (< 10 chars)
+
+        Args:
+            messages: Lista de ChatHistory para filtrar
+
+        Returns:
+            Lista filtrada contendo apenas mensagens relevantes do aluno
+        """
+        filtered = []
+
+        for msg in messages:
+            # 1. Manter apenas mensagens do aluno
+            if msg.sender != Sender.STUDENT:
+                continue
+
+            text = msg.text.strip()
+
+            # 2. Filtrar saudações triviais
+            if GREETING_PATTERN.match(text):
+                continue
+
+            # 3. Filtrar mensagens muito curtas
+            if len(text) < MIN_MESSAGE_LENGTH:
+                continue
+
+            filtered.append(msg)
+
+        logger.debug(
+            "Preprocessed messages: %d -> %d (filtered %d)",
+            len(messages),
+            len(filtered),
+            len(messages) - len(filtered),
+        )
+
+        return filtered
 
     def compact_history(self, user_email: str, active_window_size: int = 20, log_callback=None, compaction_threshold: int = 30):  # Default matches config.MAX_SHORT_TERM_MEMORY_MESSAGES
         """
