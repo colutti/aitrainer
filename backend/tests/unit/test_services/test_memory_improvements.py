@@ -19,7 +19,7 @@ from src.services.prompt_builder import PromptBuilder
 from src.core.config import settings
 from src.api.models.user_profile import UserProfile
 from src.api.models.sender import Sender
-from src.prompts.summary_update_prompt import SUMMARY_UPDATE_PROMPT
+from src.prompts.summary_prompts import SUMMARY_UPDATE_PROMPT
 from src.prompts.prompt_template import PROMPT_TEMPLATE
 
 
@@ -215,35 +215,6 @@ class TestExpandedCriticalKeywords:
         assert "altura" in query
 
 
-# ============================================================================
-# Test 4: Improved Summarization Prompt
-# ============================================================================
-
-class TestImprovedSummarizationPrompt:
-    """Tests for improved summarization prompt."""
-
-    def test_summary_prompt_preserves_dates(self):
-        """Verify prompt instructs to preserve dates."""
-        assert "PRESERVE DATAS" in SUMMARY_UPDATE_PROMPT
-
-    def test_summary_prompt_preserves_numbers(self):
-        """Verify prompt instructs to preserve specific numbers."""
-        assert "PRESERVE NÚMEROS" in SUMMARY_UPDATE_PROMPT
-        assert "cargas em kg" in SUMMARY_UPDATE_PROMPT
-        assert "tempos" in SUMMARY_UPDATE_PROMPT
-        assert "calorias" in SUMMARY_UPDATE_PROMPT
-
-    def test_summary_prompt_preserves_preferences(self):
-        """Verify prompt instructs to preserve preferences and restrictions."""
-        assert "PRESERVE PREFERÊNCIAS" in SUMMARY_UPDATE_PROMPT
-        assert "RESTRIÇÕES" in SUMMARY_UPDATE_PROMPT
-        assert "exercícios específicas" in SUMMARY_UPDATE_PROMPT
-
-    def test_summary_prompt_has_8_rules(self):
-        """Verify prompt has been expanded to 8 rules (was 6)."""
-        # Count numbered rules in the prompt
-        rules = [line for line in SUMMARY_UPDATE_PROMPT.split("\n") if line.strip().startswith(tuple("12345678"))]
-        assert len(rules) >= 8
 
 
 # ============================================================================

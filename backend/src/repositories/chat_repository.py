@@ -81,7 +81,7 @@ class ChatRepository(BaseRepository):
         )
 
         from langchain_core.prompts import PromptTemplate
-        from src.prompts.summary_prompt import SUMMARY_PROMPT
+        from src.prompts.summary_prompts import SUMMARY_PROMPT
 
         return ConversationSummaryBufferMemory(
             llm=llm,
