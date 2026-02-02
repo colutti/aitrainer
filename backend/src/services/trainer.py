@@ -494,7 +494,7 @@ class AITrainerBrain:
             # It's a string chunk (AI Response)
             if isinstance(chunk, str):
                 full_response.append(chunk)
-            yield chunk
+                yield chunk
 
         final_response = "".join(full_response)
         # Flatten response for single-line logging
@@ -572,15 +572,15 @@ class AITrainerBrain:
 
         async def collect_response():
             response_parts = []
-            # Create a dummy BackgroundTasks for the generator
-            from fastapi import BackgroundTasks
-
-            background_tasks = BackgroundTasks()
+            # Pass None to force sync fallback (line 550-554)
+            # that calls _add_to_mongo_history() directly
+            # This is necessary because BackgroundTasks only execute in HTTP response context,
+            # not in async webhook handlers like Telegram
 
             async for chunk in self.send_message_ai(
                 user_email=user_email,
                 user_input=user_input,
-                background_tasks=background_tasks,
+                background_tasks=None,
                 is_telegram=is_telegram,
             ):
                 if isinstance(chunk, str):
