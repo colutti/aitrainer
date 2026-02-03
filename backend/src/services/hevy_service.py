@@ -105,12 +105,11 @@ class HevyService:
                 logger.debug(f"[Hevy] Response status: {response.status_code}")
 
                 if response.status_code == 200:
-                    # Hevy API returns {"workout": {...}}
+                    # Hevy API returns the workout object directly (not nested under "workout" key)
                     data = response.json()
                     logger.debug(f"[Hevy] Response JSON keys: {list(data.keys())}")
-                    workout = data.get("workout")
-                    logger.debug(f"[Hevy] Extracted workout: {workout is not None}")
-                    return workout
+                    logger.debug(f"[Hevy] Returning workout directly from response")
+                    return data
 
                 # Log detailed error for debugging
                 logger.error(
