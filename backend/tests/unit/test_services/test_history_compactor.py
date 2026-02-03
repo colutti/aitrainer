@@ -423,3 +423,64 @@ def test_compaction_produces_clean_json_output(mock_db, mock_llm_client):
     # Should have dated facts
     assert any("[31/01]" in fact for fact in summary_dict.get("preferences", []))
     assert any("[31/01]" in fact for fact in summary_dict.get("goals", []))
+
+
+def test_event_loop_isolation_background_task(mock_db, mock_llm_client):
+    """
+    Test that compact_history can run from background task without event loop conflicts.
+    This validates the fix for: Task <Task pending...> got Future attached to different loop
+    """
+    import asyncio
+    from concurrent.futures import ThreadPoolExecutor
+
+    # Mock LLM to return valid JSON
+    async def async_gen(*args, **kwargs):
+        yield '{"health": [], "restrictions": [], "preferences": ["[31/01] Treino"]}'
+    mock_llm_client.stream_simple = MagicMock(side_effect=async_gen)
+
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    profile = UserProfile(
+        email="bg-test@test.com",
+        goal="test",
+        gender="Masculino",
+        age=30,
+        weight=70.0,
+        height=175,
+        goal_type="maintain",
+        weekly_rate=0.5,
+    )
+    mock_db.get_user_profile.return_value = profile
+
+    # Create enough messages to trigger compaction
+    base_ts = datetime(2026, 1, 31, 10, 0)
+    messages = []
+    for i in range(60):
+        ts = base_ts + timedelta(minutes=i)
+        msg = ChatHistory(
+            sender=Sender.STUDENT,
+            text=f"Mensagem numero {i} com conteudo relevante para teste",
+            timestamp=ts.isoformat(),
+        )
+        messages.append(msg)
+    mock_db.get_chat_history.return_value = messages
+
+    # Run compaction in a background thread (simulating FastAPI BackgroundTasks)
+    # This should NOT raise "Task attached to different loop" error
+    error_occurred = None
+
+    def run_in_thread():
+        nonlocal error_occurred
+        try:
+            compactor.compact_history("bg-test@test.com", active_window_size=10, compaction_threshold=30)
+        except Exception as e:
+            error_occurred = e
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        executor.submit(run_in_thread).result(timeout=10)
+
+    # Assert no error occurred
+    assert error_occurred is None, f"Background task failed with: {error_occurred}"
+    # Verify compaction actually ran
+    mock_llm_client.stream_simple.assert_called_once()
+    mock_db.update_user_profile_fields.assert_called_once()
