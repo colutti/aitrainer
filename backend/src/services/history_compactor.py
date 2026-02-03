@@ -238,12 +238,20 @@ class HistoryCompactor:
             else:
                 logger.warning("Compaction complete but no fields were updated.")
 
-        # Execute the async function synchronously
+        # Execute the async function with proper event loop handling
+        # This runs in a background thread, so we need a fresh event loop
         try:
-            return asyncio.run(_compact_history_async())
-        except RuntimeError:
-            # Fallback for when an event loop is already running
-            import nest_asyncio  # type: ignore
-            nest_asyncio.apply()
-            loop = asyncio.get_event_loop()
-            return loop.run_until_complete(_compact_history_async())
+            logger.debug("Creating new event loop for history compaction")
+            # Create a new event loop for this thread (safe for background tasks)
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                logger.debug("Running compaction coroutine")
+                result = loop.run_until_complete(_compact_history_async())
+                logger.debug("Compaction coroutine completed successfully")
+                return result
+            finally:
+                loop.close()
+                logger.debug("Event loop closed")
+        except Exception as e:
+            logger.error("Failed to run history compaction: %s", e, exc_info=True)
