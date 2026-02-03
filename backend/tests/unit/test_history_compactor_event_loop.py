@@ -77,29 +77,31 @@ def compactor(mock_database, mock_llm_client):
 class TestEventLoopIsolation:
     """Test event loop isolation in history compaction."""
 
-    def test_compact_history_uses_asyncio_run(self, compactor, mock_database):
+    @pytest.mark.asyncio
+    async def test_compact_history_native_async(self, compactor, mock_database):
         """
-        Test that compact_history properly uses asyncio.run() for event loop isolation.
+        Test that compact_history is now a native async function.
 
-        The critical fix is using asyncio.run() instead of manual asyncio.new_event_loop()
-        which prevents "Future attached to different loop" errors.
+        The critical fix is making compact_history a native async function instead of
+        a sync wrapper around asyncio.run(), which prevents "Future attached to different loop" errors.
 
-        This test verifies the behavior indirectly by ensuring:
-        1. No manual event loop creation happens
+        This test verifies the behavior by ensuring:
+        1. Function can be awaited directly
         2. Execution completes successfully
         3. No event loop related errors occur
         """
         user_email = "test@example.com"
 
-        # This will execute using asyncio.run() internally
+        # This will execute as a native async function
         # If it completes without RuntimeError about event loops, the fix works
-        compactor.compact_history(user_email)
+        await compactor.compact_history(user_email)
 
         # Verify the mock database was called correctly
         mock_database.get_user_profile.assert_called_with(user_email)
         mock_database.get_chat_history.assert_called_with(user_email, limit=1000)
 
-    def test_compact_history_completes_without_event_loop_error(
+    @pytest.mark.asyncio
+    async def test_compact_history_completes_without_event_loop_error(
         self, compactor, mock_database
     ):
         """
@@ -111,14 +113,14 @@ class TestEventLoopIsolation:
 
         # This should complete without raising asyncio errors
         try:
-            compactor.compact_history(user_email)
+            await compactor.compact_history(user_email)
             # If we get here without exception, the test passes
             assert True
         except RuntimeError as e:
             if "attached to a different loop" in str(e):
                 pytest.fail(
                     f"Event loop error detected: {e}. "
-                    "The fix for asyncio.run() may not be working."
+                    "The native async fix may not be working."
                 )
             raise
 
@@ -147,36 +149,39 @@ class TestEventLoopIsolation:
 
         assert result == "Response chunk"
 
-    def test_compact_history_in_background_thread(self, compactor):
+    @pytest.mark.asyncio
+    async def test_compact_history_works_as_background_task(self, compactor):
         """
-        Test that compact_history works when called from a background thread.
+        Test that compact_history works when scheduled as a FastAPI background task.
 
-        This is the actual scenario where the original error occurred.
+        This simulates the actual scenario where it's called via background_tasks.add_task().
+        FastAPI runs async background tasks in the main event loop, which is what we're testing here.
         """
-        import threading
-        import time
+        import asyncio
 
         user_email = "test@example.com"
         result = {"success": False, "error": None}
 
-        def run_in_thread():
+        async def run_as_background_task():
+            """Simulates FastAPI background_tasks.add_task() behavior."""
             try:
-                compactor.compact_history(user_email)
+                await compactor.compact_history(user_email)
                 result["success"] = True
             except Exception as e:
                 result["error"] = str(e)
 
-        thread = threading.Thread(target=run_in_thread, daemon=True)
-        thread.start()
-        thread.join(timeout=10)
+        # Create task in the current event loop (like FastAPI does)
+        task = asyncio.create_task(run_as_background_task())
 
-        if thread.is_alive():
-            pytest.fail("Compaction timed out in background thread")
+        try:
+            await asyncio.wait_for(task, timeout=10)
+        except asyncio.TimeoutError:
+            pytest.fail("Compaction timed out as background task")
 
         if result["error"]:
             if "attached to a different loop" in result["error"]:
                 pytest.fail(
-                    f"Event loop error in background thread: {result['error']}"
+                    f"Event loop error in background task: {result['error']}"
                 )
             pytest.fail(f"Unexpected error: {result['error']}")
 

@@ -28,7 +28,8 @@ def mock_llm_client():
     return client
 
 
-def test_history_compactor_skips_short_history(mock_db, mock_llm_client):
+@pytest.mark.asyncio
+async def test_history_compactor_skips_short_history(mock_db, mock_llm_client):
     """Should not compact if history is within window."""
     compactor = HistoryCompactor(mock_db, mock_llm_client)
 
@@ -48,14 +49,15 @@ def test_history_compactor_skips_short_history(mock_db, mock_llm_client):
     # Mock Short History (10 msgs)
     mock_db.get_chat_history.return_value = [MagicMock() for _ in range(10)]
 
-    compactor.compact_history("test@test.com", active_window_size=20)
+    await compactor.compact_history("test@test.com", active_window_size=20)
 
     # Assertions
     mock_llm_client.stream_simple.assert_not_called()
     mock_db.update_user_profile_fields.assert_not_called()
 
 
-def test_history_compactor_summarizes_old_messages(mock_db, mock_llm_client):
+@pytest.mark.asyncio
+async def test_history_compactor_summarizes_old_messages(mock_db, mock_llm_client):
     """Should compact messages older than window."""
     # Mock LLM to return valid JSON
     async def async_gen(*args, **kwargs):
@@ -91,7 +93,7 @@ def test_history_compactor_summarizes_old_messages(mock_db, mock_llm_client):
     mock_db.get_chat_history.return_value = messages
 
     # Run
-    compactor.compact_history("test@test.com", active_window_size=10, compaction_threshold=20)
+    await compactor.compact_history("test@test.com", active_window_size=10, compaction_threshold=20)
 
     # Assertions
     mock_llm_client.stream_simple.assert_called_once()
@@ -105,7 +107,8 @@ def test_history_compactor_summarizes_old_messages(mock_db, mock_llm_client):
     assert updated_fields["last_compaction_timestamp"] == expected_ts
 
 
-def test_history_compactor_idempotency(mock_db, mock_llm_client):
+@pytest.mark.asyncio
+async def test_history_compactor_idempotency(mock_db, mock_llm_client):
     """Should ignore messages already compacted (based on timestamp)."""
     compactor = HistoryCompactor(mock_db, mock_llm_client)
 
@@ -137,7 +140,7 @@ def test_history_compactor_idempotency(mock_db, mock_llm_client):
     mock_db.get_chat_history.return_value = messages
 
     # Run with same window
-    compactor.compact_history("test@test.com", active_window_size=10, compaction_threshold=20)
+    await compactor.compact_history("test@test.com", active_window_size=10, compaction_threshold=20)
 
     # Since all "old" messages (0-19) are <= last_compaction_timestamp,
     # NO NEW lines to summarize.
@@ -270,7 +273,8 @@ def test_preprocess_keeps_relevant_student_messages(mock_db, mock_llm_client):
     assert any("máquinas" in m.text for m in filtered)
 
 
-def test_compact_history_uses_preprocessing(mock_db, mock_llm_client):
+@pytest.mark.asyncio
+async def test_compact_history_uses_preprocessing(mock_db, mock_llm_client):
     """Should preprocess messages before compaction, filtering trainer messages."""
     # Mock LLM to return valid JSON
     async def async_gen(*args, **kwargs):
@@ -322,7 +326,7 @@ def test_compact_history_uses_preprocessing(mock_db, mock_llm_client):
     mock_db.get_chat_history.return_value = messages
 
     # Run compaction
-    compactor.compact_history("test@test.com", active_window_size=10, compaction_threshold=30)
+    await compactor.compact_history("test@test.com", active_window_size=10, compaction_threshold=30)
 
     # Verify LLM was called
     mock_llm_client.stream_simple.assert_called_once()
@@ -338,7 +342,8 @@ def test_compact_history_uses_preprocessing(mock_db, mock_llm_client):
     assert "Prefiro treinar" in new_lines
 
 
-def test_compaction_produces_clean_json_output(mock_db, mock_llm_client):
+@pytest.mark.asyncio
+async def test_compaction_produces_clean_json_output(mock_db, mock_llm_client):
     """
     E2E test: Given mixed messages, compaction should:
     1. Filter to student messages only
@@ -397,7 +402,7 @@ def test_compaction_produces_clean_json_output(mock_db, mock_llm_client):
     mock_db.get_chat_history.return_value = messages
 
     # Run compaction
-    compactor.compact_history("test@test.com", active_window_size=10, compaction_threshold=30)
+    await compactor.compact_history("test@test.com", active_window_size=10, compaction_threshold=30)
 
     # Verify LLM was called with filtered input
     call_kwargs = mock_llm_client.stream_simple.call_args[1]
@@ -425,14 +430,14 @@ def test_compaction_produces_clean_json_output(mock_db, mock_llm_client):
     assert any("[31/01]" in fact for fact in summary_dict.get("goals", []))
 
 
-def test_event_loop_isolation_background_task(mock_db, mock_llm_client):
+@pytest.mark.asyncio
+async def test_event_loop_isolation_background_task(mock_db, mock_llm_client):
     """
-    Test that compact_history can run from background task without event loop conflicts.
-    This validates the fix for: Task <Task pending...> got Future attached to different loop
-    """
-    import asyncio
-    from concurrent.futures import ThreadPoolExecutor
+    Test that compact_history (now native async) works correctly when awaited.
 
+    Previously this tested ThreadPoolExecutor execution with asyncio.run() wrapper.
+    Now compact_history is a native async function that FastAPI runs directly in its event loop.
+    """
     # Mock LLM to return valid JSON
     async def async_gen(*args, **kwargs):
         yield '{"health": [], "restrictions": [], "preferences": ["[31/01] Treino"]}'
@@ -465,19 +470,13 @@ def test_event_loop_isolation_background_task(mock_db, mock_llm_client):
         messages.append(msg)
     mock_db.get_chat_history.return_value = messages
 
-    # Run compaction in a background thread (simulating FastAPI BackgroundTasks)
+    # Run compaction as native async (like FastAPI does with async background tasks)
     # This should NOT raise "Task attached to different loop" error
     error_occurred = None
-
-    def run_in_thread():
-        nonlocal error_occurred
-        try:
-            compactor.compact_history("bg-test@test.com", active_window_size=10, compaction_threshold=30)
-        except Exception as e:
-            error_occurred = e
-
-    with ThreadPoolExecutor(max_workers=1) as executor:
-        executor.submit(run_in_thread).result(timeout=10)
+    try:
+        await compactor.compact_history("bg-test@test.com", active_window_size=10, compaction_threshold=30)
+    except Exception as e:
+        error_occurred = e
 
     # Assert no error occurred
     assert error_occurred is None, f"Background task failed with: {error_occurred}"

@@ -9,6 +9,7 @@ Tests cover:
 5. Long-term summary repositioning
 6. Diagnostic logging
 """
+import pytest
 from unittest.mock import Mock, patch
 from datetime import datetime
 
@@ -471,7 +472,8 @@ class TestEdgeCases:
         formatted = prompt_template.format(**input_data)
         assert len(formatted) > 10000
 
-    def test_window_at_exact_boundary(self):
+    @pytest.mark.asyncio
+    async def test_window_at_exact_boundary(self):
         """Verify compactor handles exactly 40 messages correctly."""
         mock_db = Mock()
         mock_llm = Mock()
@@ -496,7 +498,7 @@ class TestEdgeCases:
         mock_db.get_chat_history.return_value = messages
 
         # Run compaction
-        compactor.compact_history("test@example.com", active_window_size=40)
+        await compactor.compact_history("test@example.com", active_window_size=40)
 
         # Should not attempt to summarize (40 <= 40)
         assert mock_llm.stream_simple.call_count == 0
