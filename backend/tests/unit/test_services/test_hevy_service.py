@@ -204,7 +204,8 @@ class TestFetchWorkoutById:
             mock_client = AsyncMock()
             mock_response = MagicMock()
             mock_response.status_code = 200
-            mock_response.json.return_value = {"workout": sample_hevy_workout}
+            # Hevy API returns workout directly (not nested)
+            mock_response.json.return_value = sample_hevy_workout
             mock_client.get = AsyncMock(return_value=mock_response)
             mock_client_class.return_value.__aenter__.return_value = mock_client
 

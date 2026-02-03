@@ -184,7 +184,8 @@ class HistoryCompactor:
             prompt = PromptTemplate.from_template(SUMMARY_UPDATE_PROMPT)
             response_text = ""
             try:
-                # Use async for to collect chunks from the LLM stream
+                # Collect chunks from the LLM stream
+                # stream_simple is async generator, so we iterate it within the async context
                 async for chunk in self.llm_client.stream_simple(
                     prompt_template=prompt,
                     input_data={
@@ -194,9 +195,11 @@ class HistoryCompactor:
                     user_email=user_email,
                     log_callback=log_callback,
                 ):
-                    response_text += chunk
+                    if isinstance(chunk, str):
+                        response_text += chunk
             except Exception as e:
                 logger.error("LLM Error during compaction: %s", e)
+                logger.error("Full error details:", exc_info=True)
                 return
 
             if not response_text.strip():
@@ -240,18 +243,12 @@ class HistoryCompactor:
 
         # Execute the async function with proper event loop handling
         # This runs in a background thread, so we need a fresh event loop
+        # Use asyncio.run() instead of manual loop management for better compatibility
+        # with async libraries like LangChain
         try:
-            logger.debug("Creating new event loop for history compaction")
-            # Create a new event loop for this thread (safe for background tasks)
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                logger.debug("Running compaction coroutine")
-                result = loop.run_until_complete(_compact_history_async())
-                logger.debug("Compaction coroutine completed successfully")
-                return result
-            finally:
-                loop.close()
-                logger.debug("Event loop closed")
+            logger.debug("Creating event loop for history compaction using asyncio.run()")
+            result = asyncio.run(_compact_history_async())
+            logger.debug("Compaction coroutine completed successfully")
+            return result
         except Exception as e:
             logger.error("Failed to run history compaction: %s", e, exc_info=True)
