@@ -204,7 +204,15 @@ class HistoryCompactor:
 
         # 6. Validate JSON Structure and Critical Categories
         try:
-            summary_dict = json.loads(response_text.strip())
+            # Remove markdown code blocks if present
+            json_text = response_text.strip()
+            if json_text.startswith("```"):
+                # Extract JSON from markdown code block
+                json_text = json_text.split("```")[1]
+                if json_text.startswith("json"):
+                    json_text = json_text[4:].lstrip()
+
+            summary_dict = json.loads(json_text)
         except json.JSONDecodeError:
             logger.error("LLM returned invalid JSON: %s", response_text[:100])
             return
