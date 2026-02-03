@@ -41,6 +41,7 @@ class MongoDatabase:
             from src.repositories.weight_repository import WeightRepository
             from src.repositories.invite_repository import InviteRepository
             from src.repositories.prompt_repository import PromptRepository
+            from src.repositories.telegram_repository import TelegramRepository
 
             self.users = UserRepository(self.database)
             self.trainers = TrainerRepository(self.database)
@@ -51,6 +52,7 @@ class MongoDatabase:
             self.weight = WeightRepository(self.database)
             self.invites = InviteRepository(self.database)
             self.prompts = PromptRepository(self.database)
+            self.telegram = TelegramRepository(self.database)
 
             logger.info("Successfully connected to MongoDB.")
         except pymongo.errors.ConnectionFailure as e:  # type: ignore

@@ -205,8 +205,7 @@ async def process_webhook_async(
                 return
 
             # Verificar se Telegram está vinculado e habilitado
-            telegram_repo = brain._database.db["telegram_links"]
-            telegram_link = telegram_repo.find_one({"user_email": user_email})
+            telegram_link = brain._database.telegram.get_link_by_email(user_email)
 
             if not telegram_link:
                 logger.debug(f"[Webhook BG] No Telegram link for {user_email}, skipping notification")
