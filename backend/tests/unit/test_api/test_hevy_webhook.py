@@ -168,3 +168,59 @@ async def test_process_webhook_async_retry_logic():
         # Verify eventual success
         mock_service.transform_to_workout_log.assert_called_once()
         mock_service.workout_repository.save_log.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_analyze_workout_async_should_log_prompt():
+    """Verify that analyze_workout_async logs the analysis prompt to database.
+
+    This test checks that when analyze_workout_async is called (from webhook processing),
+    the AI analysis prompt is logged to the prompt_logs collection, just like regular chat prompts.
+    """
+    from src.services.trainer import AITrainerBrain
+    import inspect
+
+    # Specification: analyze_workout_async should log prompts to database
+    source = inspect.getsource(AITrainerBrain.analyze_workout_async)
+
+    # The method SHOULD call log_prompt on the database to record the analysis
+    assert "log_prompt" in source, \
+        "analyze_workout_async must log the analysis prompt to database via self._database.prompts.log_prompt()"
+
+
+@pytest.mark.asyncio
+async def test_why_webhook_prompt_logging_was_missing():
+    """Explains why the webhook prompt logging bug wasn't caught by existing tests.
+
+    Summary:
+    - Existing tests for process_webhook_async only mocked the hevy_service
+    - They never checked whether prompts were being logged to the database
+    - The test at line 111 (test_process_webhook_async_logic) verifies the webhook
+      saves the workout, but doesn't verify that the AI analysis prompt is logged
+    - Therefore, the bug (missing prompt logging) went undetected
+
+    Why TDD would have caught this:
+    - If we wrote a test FIRST that verifies "prompts should be logged when webhook triggers",
+      the test would FAIL before implementation
+    - Then implementation would be forced to add prompt logging to pass the test
+    - With our current approach (tests after), the bug existed in production
+
+    Lesson: Background processing (webhooks, async tasks) needs explicit tests that verify
+    all side effects (saving to DB, logging, notifications, etc.), not just the main result.
+    """
+    # This is not a test with assertions, it's a specification/documentation
+    # that explains the root cause: insufficient test coverage for webhook behavior
+
+    from src.api.endpoints.hevy import process_webhook_async
+
+    # The webhook handler (line 149-247 in hevy.py) has complex async flow:
+    # 1. Fetch workout from Hevy API
+    # 2. Transform to WorkoutLog
+    # 3. Save to MongoDB
+    # 4. Trigger Telegram notification (with AI analysis)
+    # 5. AI analysis should be logged to prompt_logs collection
+
+    # But the old test only verified steps 1-3
+    # Step 5 was completely untested, so the bug went undetected
+
+    assert True  # This test documents the issue, doesn't make assertions

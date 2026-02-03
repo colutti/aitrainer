@@ -634,7 +634,20 @@ class AITrainerBrain:
             if isinstance(chunk, str):
                 response_parts.append(chunk)
 
-        return "".join(response_parts)
+        response = "".join(response_parts)
+
+        # Log prompt to database (same as regular chat prompts)
+        self._database.prompts.log_prompt(
+            user_email=user_email,
+            prompt_data={
+                "source": "webhook_analysis",
+                "user_input": user_input,
+                "response": response,
+                "workout_summary": workout_summary,
+            }
+        )
+
+        return response
 
     def get_all_memories(self, user_id: str, limit: int = 50) -> list[dict]:
         """
