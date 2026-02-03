@@ -350,11 +350,15 @@ class AITrainerBrain:
         # Format memories using MemoryManager
         relevant_memories_str = self.memory_manager.format_memories(hybrid_memories)
 
-        # Log memory retrieval statistics
+        # Log memory retrieval statistics for cost monitoring
         summary_length = len(profile.long_term_summary) if profile.long_term_summary else 0
+        memory_context_chars = len(relevant_memories_str)
+        estimated_tokens = memory_context_chars // 4  # Rough approximation
         logger.info(
-            "Memory retrieval for user %s: critical=%d, semantic=%d, recent=%d, summary_chars=%d",
-            user_email,
+            "🔍 Memory optimization: context=%d chars (~%d tokens), "
+            "critical=%d, semantic=%d, recent=%d, summary=%d chars",
+            memory_context_chars,
+            estimated_tokens,
             len(hybrid_memories["critical"]),
             len(hybrid_memories["semantic"]),
             len(hybrid_memories["recent"]),

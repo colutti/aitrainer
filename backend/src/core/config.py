@@ -99,6 +99,14 @@ class Settings(BaseSettings):
     QDRANT_COLLECTION_NAME: str
     QDRANT_API_KEY: str
 
+    # ====== MEM0 MEMORY OPTIMIZATION ======
+    MEM0_CRITICAL_LIMIT: int = 4  # Reduced from 10 for cost optimization
+    MEM0_SEMANTIC_LIMIT: int = 5  # Reduced from 10 for cost optimization
+    MEM0_RECENT_LIMIT: int = 3  # Reduced from 10 for cost optimization
+    MEM0_SEMANTIC_DEDUP_THRESHOLD: float = 0.85  # Similarity threshold for deduplication
+    MEM0_MAX_CONTEXT_SIZE: int = 1024  # Max bytes for memory context (1KB)
+    MEM0_DATE_THRESHOLD_DAYS: int = 7  # Hide dates for memories < N days old
+
     # ====== TELEGRAM STUFF ======
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_WEBHOOK_SECRET: str = ""

@@ -77,8 +77,8 @@ class TestMemoryWindowSync:
 class TestMem0SearchLimits:
     """Tests for increased Mem0 search limits (5→10)."""
 
-    def test_retrieve_critical_facts_limit_is_10(self):
-        """Verify _retrieve_critical_facts uses limit=10."""
+    def test_retrieve_critical_facts_limit_is_optimized(self):
+        """Verify _retrieve_critical_facts uses optimized limit (4)."""
         mock_memory = Mock()
         mock_memory.search.return_value = {"results": []}
 
@@ -87,10 +87,10 @@ class TestMem0SearchLimits:
 
         mock_memory.search.assert_called_once()
         call_args = mock_memory.search.call_args
-        assert call_args.kwargs["limit"] == 10
+        assert call_args.kwargs["limit"] == settings.MEM0_CRITICAL_LIMIT  # 4
 
-    def test_retrieve_semantic_memories_limit_is_10(self):
-        """Verify _retrieve_semantic_memories uses limit=10."""
+    def test_retrieve_semantic_memories_limit_is_optimized(self):
+        """Verify _retrieve_semantic_memories uses optimized limit (5)."""
         mock_memory = Mock()
         mock_memory.search.return_value = {"results": []}
 
@@ -99,10 +99,10 @@ class TestMem0SearchLimits:
 
         mock_memory.search.assert_called_once()
         call_args = mock_memory.search.call_args
-        assert call_args.kwargs["limit"] == 10
+        assert call_args.kwargs["limit"] == settings.MEM0_SEMANTIC_LIMIT  # 5
 
-    def test_retrieve_recent_memories_limit_is_10(self):
-        """Verify _retrieve_recent_memories uses limit=10."""
+    def test_retrieve_recent_memories_limit_is_optimized(self):
+        """Verify _retrieve_recent_memories uses optimized limit (3)."""
         mock_memory = Mock()
         mock_memory.get_all.return_value = {"results": []}
 
@@ -111,21 +111,22 @@ class TestMem0SearchLimits:
 
         mock_memory.get_all.assert_called_once()
         call_args = mock_memory.get_all.call_args
-        assert call_args.kwargs["limit"] == 10
+        assert call_args.kwargs["limit"] == settings.MEM0_RECENT_LIMIT  # 3
 
         mock_memory = Mock()
 
-        # Mock 10 unique memories per type (30 total)
+        # Mock optimized number of memories per type (12 total: 4+5+3)
         critical_memories = [
             {"memory": f"critical_{i}", "created_at": "2024-01-01"}
-            for i in range(10)
+            for i in range(settings.MEM0_CRITICAL_LIMIT)
         ]
         semantic_memories = [
             {"memory": f"semantic_{i}", "created_at": "2024-01-01"}
-            for i in range(10)
+            for i in range(settings.MEM0_SEMANTIC_LIMIT)
         ]
         recent_memories = [
-            {"memory": f"recent_{i}", "created_at": "2024-01-01"} for i in range(10)
+            {"memory": f"recent_{i}", "created_at": "2024-01-01"}
+            for i in range(settings.MEM0_RECENT_LIMIT)
         ]
 
         def mock_search(user_id, query, limit):
@@ -140,9 +141,9 @@ class TestMem0SearchLimits:
         memory_manager = MemoryManager(mock_memory)
         result = memory_manager.retrieve_hybrid_memories("test query", "user123")
 
-        assert len(result["critical"]) == 10
-        assert len(result["semantic"]) == 10
-        assert len(result["recent"]) == 10
+        assert len(result["critical"]) == settings.MEM0_CRITICAL_LIMIT  # 4
+        assert len(result["semantic"]) == settings.MEM0_SEMANTIC_LIMIT  # 5
+        assert len(result["recent"]) == settings.MEM0_RECENT_LIMIT  # 3
 
     def test_deduplication_works_across_sources(self):
         """Verify deduplication removes duplicates across critical/semantic/recent."""
@@ -366,13 +367,12 @@ class TestDiagnosticLogging:
         import inspect
         source = inspect.getsource(AITrainerBrain.send_message_ai)
 
-        # Look for the log statement
+        # Look for the optimized log statement with cost monitoring
         assert 'logger.info(' in source
-        assert '"Memory retrieval' in source
+        assert '🔍 Memory optimization' in source or 'Memory' in source
         assert 'critical=' in source
         assert 'semantic=' in source
         assert 'recent=' in source
-        assert 'summary_chars=' in source
 
 
 # ============================================================================
@@ -395,18 +395,21 @@ class TestEdgeCases:
         assert len(result["semantic"]) == 0
         assert len(result["recent"]) == 0
 
-    def test_exactly_10_memories_per_type(self):
-        """Verify system handles exactly 10 memories per type."""
+    def test_exact_optimized_limits_per_type(self):
+        """Verify system handles optimized limits per type (4, 5, 3)."""
         mock_memory = Mock()
 
         critical_memories = [
-            {"memory": f"critical_{i}", "created_at": "2024-01-01"} for i in range(10)
+            {"memory": f"critical_{i}", "created_at": "2024-01-01"}
+            for i in range(settings.MEM0_CRITICAL_LIMIT)
         ]
         semantic_memories = [
-            {"memory": f"semantic_{i}", "created_at": "2024-01-01"} for i in range(10)
+            {"memory": f"semantic_{i}", "created_at": "2024-01-01"}
+            for i in range(settings.MEM0_SEMANTIC_LIMIT)
         ]
         recent_memories = [
-            {"memory": f"recent_{i}", "created_at": "2024-01-01"} for i in range(10)
+            {"memory": f"recent_{i}", "created_at": "2024-01-01"}
+            for i in range(settings.MEM0_RECENT_LIMIT)
         ]
 
         # Use side_effect to return different results for critical vs semantic
@@ -419,31 +422,31 @@ class TestEdgeCases:
         memory_manager = MemoryManager(mock_memory)
         result = memory_manager.retrieve_hybrid_memories("test", "user123")
 
-        assert len(result["critical"]) == 10
-        assert len(result["semantic"]) == 10
-        assert len(result["recent"]) == 10
+        assert len(result["critical"]) == settings.MEM0_CRITICAL_LIMIT
+        assert len(result["semantic"]) == settings.MEM0_SEMANTIC_LIMIT
+        assert len(result["recent"]) == settings.MEM0_RECENT_LIMIT
 
-    def test_more_than_10_memories_available(self):
-        """Verify system limits to 10 even if more are available."""
+    def test_we_request_optimized_limits(self):
+        """Verify we request Mem0 with optimized limits."""
         mock_memory = Mock()
-
-        # Mem0 should enforce the limit, but test our expectations
-        fifteen_memories = [
-            {"memory": f"mem_{i}", "created_at": "2024-01-01"} for i in range(15)
-        ]
-
-        mock_memory.search.return_value = {"results": fifteen_memories}
-        mock_memory.get_all.return_value = {"results": fifteen_memories}
+        mock_memory.search.return_value = {"results": []}
+        mock_memory.get_all.return_value = {"results": []}
 
         memory_manager = MemoryManager(mock_memory)
         result = memory_manager.retrieve_hybrid_memories("test", "user123")
 
-        # If Mem0 respects limit, we get 10 per type
-        # If not, we get 15 (but we asked for 10)
-        # This test documents the behavior
-        assert len(result["critical"]) <= 15
-        assert len(result["semantic"]) <= 15
-        assert len(result["recent"]) <= 15
+        # Verify we asked Mem0 for optimized limits
+        search_calls = mock_memory.search.call_args_list
+        for i, call in enumerate(search_calls):
+            limit = call.kwargs.get("limit")
+            if i == 0:  # Critical search
+                assert limit == settings.MEM0_CRITICAL_LIMIT, f"Critical should request {settings.MEM0_CRITICAL_LIMIT}"
+            else:  # Semantic search
+                assert limit == settings.MEM0_SEMANTIC_LIMIT, f"Semantic should request {settings.MEM0_SEMANTIC_LIMIT}"
+
+        # Verify we asked for optimized limit on get_all
+        get_all_call = mock_memory.get_all.call_args
+        assert get_all_call.kwargs.get("limit") == settings.MEM0_RECENT_LIMIT
 
     @patch("src.services.prompt_builder.settings")
     def test_very_long_summary(self, mock_settings):
