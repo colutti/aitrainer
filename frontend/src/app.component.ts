@@ -7,11 +7,10 @@ import { TrainerSettingsComponent } from './components/trainer-settings/trainer-
 import { MemoriesComponent } from './components/memories/memories.component';
 import { WorkoutsComponent } from './components/workouts/workouts.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
+import { BottomNavComponent } from './components/bottom-nav/bottom-nav.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { ToastComponent } from './components/toast/toast.component';
-import { NutritionComponent } from './components/nutrition/nutrition.component';
-import { MetabolismComponent } from './components/metabolism/metabolism.component';
-import { BodyCompositionComponent } from './components/body-composition/body-composition.component';
+import { BodyComponent } from './components/body/body.component';
 import { SkeletonComponent } from './components/skeleton/skeleton.component';
 import { IntegrationsComponent } from './components/integrations/integrations.component';
 import { OnboardingComponent } from './components/onboarding/onboarding.component';
@@ -36,10 +35,9 @@ import { TokenExpirationService } from './services/token-expiration.service';
     TrainerSettingsComponent,
     MemoriesComponent,
     WorkoutsComponent,
-    NutritionComponent,
-    MetabolismComponent,
-    BodyCompositionComponent,
+    BodyComponent,
     SidebarComponent,
+    BottomNavComponent,
     DashboardComponent,
     ToastComponent,
     SkeletonComponent,

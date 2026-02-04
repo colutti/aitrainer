@@ -101,7 +101,7 @@ export class MetabolismComponent implements OnInit, AfterViewInit {
     this.userProfileService.getProfile();
 
     // Carrega estatísticas de nutrição
-    this.nutritionService.getStats().subscribe();
+    this.nutritionService.getStats().catch(() => {});
   }
 
   ngAfterViewInit() {

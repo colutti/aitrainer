@@ -2,15 +2,13 @@ import { Injectable, signal } from '@angular/core';
 
 /** Available views in the application */
 export type View =
-  | 'dashboard'
-  | 'chat'
-  | 'user-profile'
+  | 'home'
+  | 'workouts'
+  | 'coach'
+  | 'body'
+  | 'profile'
   | 'trainer-settings'
   | 'memories'
-  | 'workouts'
-  | 'nutrition'
-  | 'metabolism'
-  | 'body-composition'
   | 'integrations'
   | 'admin-dashboard'
   | 'admin-users'
@@ -26,7 +24,7 @@ export type View =
 })
 export class NavigationService {
   /** Signal containing the currently active view */
-  currentView = signal<View>('dashboard');
+  currentView = signal<View>('home');
 
   /**
    * Navigates to a specified view.

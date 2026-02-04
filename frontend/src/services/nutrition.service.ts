@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../environment';
-import { Observable, tap } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { NutritionLog, NutritionListResponse, NutritionStats } from '../models/nutrition.model';
 
 @Injectable({
@@ -18,7 +18,7 @@ export class NutritionService {
   /**
    * Fetches nutrition logs with pagination.
    */
-  getLogs(page: number = 1, pageSize: number = 10, days?: number): Observable<NutritionListResponse> {
+  async getLogs(page: number = 1, pageSize: number = 10, days?: number): Promise<NutritionListResponse> {
     let params = new HttpParams()
       .set('page', page)
       .set('page_size', pageSize);
@@ -27,30 +27,46 @@ export class NutritionService {
       params = params.set('days', days);
     }
 
-    return this.http.get<NutritionListResponse>(`${this.apiUrl}/list`, { params });
+    return firstValueFrom(this.http.get<NutritionListResponse>(`${this.apiUrl}/list`, { params }));
   }
 
   /**
    * Fetches nutrition stats for the dashboard.
    * Updates the local signal automatically.
    */
-  getStats(): Observable<NutritionStats> {
-    return this.http.get<NutritionStats>(`${this.apiUrl}/stats`).pipe(
-      tap(stats => this.stats.set(stats))
-    );
+  async getStats(): Promise<NutritionStats> {
+    const stats = await firstValueFrom(this.http.get<NutritionStats>(`${this.apiUrl}/stats`));
+    this.stats.set(stats);
+    return stats;
   }
 
   /**
    * Fetches today's nutrition log specifically.
    */
-  getTodayLog(): Observable<NutritionLog | null> {
-    return this.http.get<NutritionLog | null>(`${this.apiUrl}/today`);
+  async getTodayLog(): Promise<NutritionLog | null> {
+    return firstValueFrom(this.http.get<NutritionLog | null>(`${this.apiUrl}/today`));
+  }
+
+  /**
+   * Creates a new nutrition log.
+   */
+  async logNutrition(data: {
+    date: string;
+    source: string;
+    calories: number;
+    protein_grams: number;
+    carbs_grams: number;
+    fat_grams: number;
+    fiber_grams?: number;
+    sodium_mg?: number;
+  }): Promise<NutritionLog> {
+    return firstValueFrom(this.http.post<NutritionLog>(`${this.apiUrl}/log`, data));
   }
 
   /**
    * Deletes a nutrition log.
    */
-  deleteLog(logId: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${logId}`);
+  async deleteLog(logId: string): Promise<any> {
+    return firstValueFrom(this.http.delete(`${this.apiUrl}/${logId}`));
   }
 }

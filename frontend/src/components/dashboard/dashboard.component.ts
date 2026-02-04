@@ -469,7 +469,7 @@ export class DashboardComponent implements OnInit {
 
   async ngOnInit() {
     this.statsService.fetchStats();
-    this.nutritionService.getStats().subscribe();
+    this.nutritionService.getStats().catch(() => {});
     this.fetchMetabolismTrend();
     const compStats = await this.weightService.getBodyCompositionStats();
     if (compStats?.latest) {

@@ -8,7 +8,7 @@
     </div>
     <ul class="space-y-2">
       <li>
-        <button data-cy="nav-dashboard" (click)="navigateTo('dashboard')" [class]="currentView() === 'dashboard' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
+        <button data-cy="nav-dashboard" (click)="navigateTo('home')" [class]="currentView() === 'home' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
           <svg class="h-6 w-6 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
           </svg>
@@ -16,7 +16,7 @@
         </button>
       </li>
       <li>
-        <button data-cy="nav-chat" (click)="navigateTo('chat')" [class]="currentView() === 'chat' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
+        <button data-cy="nav-chat" (click)="navigateTo('coach')" [class]="currentView() === 'coach' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
           <svg class="h-6 w-6 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.76 9.76 0 0 1-2.53-.388m-5.182-3.32a.375.375 0 0 0-.24-.513-2.25 2.25 0 0 1-1.34-3.267c.1-.22.11-.446.033-.66a11.96 11.96 0 0 0-1.87-4.14C.22 5.56 1.83 2.25 5.25 2.25c2.14 0 3.92.83 5.25 2.125.132.127.27.25.403.37.1.09.21.17.32.25A9.753 9.753 0 0 1 12 5.25c4.97 0 9 3.694 9 8.25Z" />
           </svg>
@@ -40,7 +40,7 @@
         </button>
       </li>
       <li>
-        <button data-cy="nav-nutrition" (click)="navigateTo('nutrition')" [class]="currentView() === 'nutrition' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
+        <button data-cy="nav-nutrition" (click)="navigateTo('body')" [class]="currentView() === 'body' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
             <svg class="h-6 w-6 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.663-.658v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 00-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.959.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z" />
             </svg>
@@ -48,7 +48,7 @@
         </button>
       </li>
       <li>
-        <button data-cy="nav-metabolism" (click)="navigateTo('metabolism')" [class]="currentView() === 'metabolism' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
+        <button data-cy="nav-metabolism" (click)="navigateTo('body')" [class]="currentView() === 'body' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
             <svg class="h-6 w-6 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
             </svg>
@@ -56,7 +56,7 @@
         </button>
       </li>
       <li>
-        <button data-cy="nav-body-composition" (click)="navigateTo('body-composition')" [class]="currentView() === 'body-composition' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
+        <button data-cy="nav-body-composition" (click)="navigateTo('body')" [class]="currentView() === 'body' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
             <svg class="h-6 w-6 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0012 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 01-2.031.352 5.988 5.988 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L18.75 4.971zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 01-2.031.352 5.989 5.989 0 01-2.031-.352c-.483-.174-.711-.703-.59-1.202L5.25 4.971z" />
             </svg>
@@ -69,7 +69,7 @@
   <div>
     <ul class="space-y-2">
       <li>
-        <button data-cy="nav-user-profile" (click)="navigateTo('user-profile')" [class]="currentView() === 'user-profile' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
+        <button data-cy="nav-user-profile" (click)="navigateTo('profile')" [class]="currentView() === 'profile' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
           <svg class="h-6 w-6 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
           </svg>

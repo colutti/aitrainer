@@ -47,32 +47,27 @@ export class NutritionComponent implements OnInit {
     this.loadStats();
   }
 
-  loadStats() {
-    this.nutritionService.getStats().subscribe({
-      next: (s) => {
-        this.stats.set(s);
-      },
-      error: (error) => console.error("Failed to load nutrition stats", error)
-    });
+  async loadStats() {
+    try {
+      const s = await this.nutritionService.getStats();
+      this.stats.set(s);
+    } catch (error) {
+      console.error("Failed to load nutrition stats", error);
+    }
   }
 
 
-  loadLogs() {
-    // isLoading handled by loadData or kept for logs specifically? 
-    // Let's keep isLoading for the main list
-    this.nutritionService.getLogs(this.currentPage(), 10, this.daysFilter())
-      .subscribe({
-        next: (response) => {
-          this.logs.set(response.logs);
-          this.totalPages.set(response.total_pages);
-          this.totalLogs.set(response.total);
-          this.isLoading.set(false);
-        },
-        error: (err) => {
-          console.error('Failed to load nutrition logs', err);
-          this.isLoading.set(false);
-        }
-      });
+  async loadLogs() {
+    try {
+      const response = await this.nutritionService.getLogs(this.currentPage(), 10, this.daysFilter());
+      this.logs.set(response.logs);
+      this.totalPages.set(response.total_pages);
+      this.totalLogs.set(response.total);
+      this.isLoading.set(false);
+    } catch (err) {
+      console.error('Failed to load nutrition logs', err);
+      this.isLoading.set(false);
+    }
   }
 
   nextPage() {
@@ -89,23 +84,19 @@ export class NutritionComponent implements OnInit {
     }
   }
 
-  deleteLog(event: Event, log: NutritionLog) {
+  async deleteLog(event: Event, log: NutritionLog) {
     event.stopPropagation();
-    console.log('Attempting to delete log:', log.id);
     if (confirm('Tem certeza que deseja excluir este registro nutricional?')) {
-      console.log('User confirmed deletion');
       this.deletingId.set(log.id);
-      this.nutritionService.deleteLog(log.id).subscribe({
-        next: () => {
-          this.currentPage.set(1);
-          this.loadData();
-          this.deletingId.set(null);
-        },
-        error: (err) => {
-          console.error('Failed to delete nutrition log', err);
-          this.deletingId.set(null);
-        }
-      });
+      try {
+        await this.nutritionService.deleteLog(log.id);
+        this.currentPage.set(1);
+        await this.loadData();
+        this.deletingId.set(null);
+      } catch (err) {
+        console.error('Failed to delete nutrition log', err);
+        this.deletingId.set(null);
+      }
     }
   }
 
