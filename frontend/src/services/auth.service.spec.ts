@@ -1,5 +1,6 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { AuthService } from './auth.service';
+import { TokenExpirationService } from './token-expiration.service';
 import { HttpClient, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { environment } from '../environment';
@@ -7,18 +8,21 @@ import { environment } from '../environment';
 describe('AuthService', () => {
   let service: AuthService;
   let httpMock: HttpTestingController;
+  let tokenService: TokenExpirationService;
 
   beforeEach(() => {
     localStorage.clear();
     TestBed.configureTestingModule({
       providers: [
         AuthService,
+        TokenExpirationService,
         provideHttpClient(),
         provideHttpClientTesting()
       ]
     });
     service = TestBed.inject(AuthService);
     httpMock = TestBed.inject(HttpTestingController);
+    tokenService = TestBed.inject(TokenExpirationService);
   });
 
   afterEach(() => {
@@ -32,19 +36,20 @@ describe('AuthService', () => {
 
   it('should check localStorage on init', async () => {
     localStorage.setItem('jwt_token', 'test_token');
-    
+
     // We must instantiate the service MANUALLY to test the constructor logic
     const http = TestBed.inject(HttpClient);
-    const serviceInstance = new AuthService(http);
-    
+    const tokenExpirationService = TestBed.inject(TokenExpirationService);
+    const serviceInstance = new AuthService(http, tokenExpirationService);
+
     // The constructor calls loadUserInfo, which fires a request
     const req = httpMock.expectOne(`${environment.apiUrl}/user/me`);
     expect(req.request.method).toBe('GET');
     req.flush({ email: 'test@test.com', role: 'user' });
-    
+
     // Wait for promise to resolve since we cannot await the constructor
     await new Promise(resolve => setTimeout(resolve, 0));
-    
+
     expect(serviceInstance.isAuthenticated()).toBe(true);
   });
 
