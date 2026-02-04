@@ -2,6 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../environment';
 import { firstValueFrom } from 'rxjs';
+import { TokenExpirationService } from './token-expiration.service';
 
 
 export interface UserInfo {
@@ -34,7 +35,10 @@ export class AuthService {
   /** Signal indicating whether authentication is being checked on app initialization */
   isCheckingAuth = signal<boolean>(false);
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    private tokenExpirationService: TokenExpirationService
+  ) {
     // Check for a stored JWT token to maintain login state across page refreshes
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
     if (token) {
@@ -57,6 +61,12 @@ export class AuthService {
       this.isAuthenticated.set(true);
       this.userInfo.set(info);
       this.isAdmin.set(info.role === 'admin');
+
+      // Start monitoring token expiration
+      const token = this.getToken();
+      if (token) {
+        this.tokenExpirationService.startMonitoring(token);
+      }
     } catch (error) {
       console.error('Failed to load user info:', error);
       this.isAdmin.set(false);
@@ -83,6 +93,8 @@ export class AuthService {
       );
       if (response && response.token) {
         localStorage.setItem(AUTH_TOKEN_KEY, response.token);
+        // Start monitoring token expiration
+        this.tokenExpirationService.startMonitoring(response.token);
         this.isAuthenticated.set(true);
         await this.loadUserInfo();
         return true;
@@ -107,6 +119,8 @@ export class AuthService {
     } catch (error) {
       console.error('Logout failed on backend:', error);
     } finally {
+      // Stop monitoring token expiration
+      this.tokenExpirationService.stopMonitoring();
       // Clear all authentication state
       this.isAuthenticated.set(false);
       this.isAdmin.set(false);
