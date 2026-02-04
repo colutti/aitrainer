@@ -21,6 +21,7 @@ import { AdminLogsComponent } from './components/admin/admin-logs.component';
 import { AdminPromptsComponent } from './components/admin/admin-prompts.component';
 import { AuthService } from './services/auth.service';
 import { NavigationService } from './services/navigation.service';
+import { TokenExpirationService } from './services/token-expiration.service';
 
 @Component({
   selector: 'app-root',
@@ -54,6 +55,7 @@ import { NavigationService } from './services/navigation.service';
 export class AppComponent {
   authService = inject(AuthService);
   navigationService = inject(NavigationService);
+  tokenExpirationService = inject(TokenExpirationService);
 
   isAuthenticated = this.authService.isAuthenticated;
   isCheckingAuth = this.authService.isCheckingAuth;
@@ -73,6 +75,16 @@ export class AppComponent {
     effect(() => {
       this.currentView(); // Register dependency
       this.isMobileMenuOpen.set(false);
+    });
+
+    // Monitor token expiration and automatically logout
+    effect(() => {
+      const expired = this.tokenExpirationService.tokenExpired();
+
+      if (expired && this.authService.isAuthenticated()) {
+        console.log('Token expirado detectado - fazendo logout automático');
+        this.authService.logout();
+      }
     });
   }
 
