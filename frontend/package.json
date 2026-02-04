@@ -29,6 +29,7 @@
     "chart.js": "^4.5.1",
     "clipboard": "^2.0.11",
     "emoji-toolkit": "^10.0.0",
+    "jwt-decode": "^4.0.0",
     "katex": "^0.16.27",
     "marked": "^17.0.1",
     "mermaid": "^11.12.2",
