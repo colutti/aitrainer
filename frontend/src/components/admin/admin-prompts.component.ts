@@ -137,7 +137,6 @@ export class AdminPromptsComponent implements OnInit {
       const result = await this.adminService.listPrompts(1, 20, this.userFilter || undefined);
       this.prompts.set(result.prompts);
     } catch (err) {
-      console.error('Error loading prompts:', err);
     } finally {
       this.loading.set(false);
     }
@@ -157,7 +156,6 @@ export class AdminPromptsComponent implements OnInit {
         const details = await this.adminService.getPromptDetails(promptId);
         this.promptDetails.set(details);
       } catch (err) {
-        console.error('Error loading prompt details:', err);
       }
     }
   }

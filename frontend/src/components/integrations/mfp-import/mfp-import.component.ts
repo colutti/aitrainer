@@ -55,7 +55,6 @@ export class MfpImportComponent {
         this.importCompleted.emit();
       },
       error: (err) => {
-        console.error('Import error', err);
         this.errorMessage.set(err.error?.detail || 'Falha na importação. Verifique o arquivo.');
         this.viewState.set('setup');
       }

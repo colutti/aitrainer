@@ -113,7 +113,6 @@ export class BodyCompositionComponent implements OnInit, AfterViewInit {
         });
 
     } catch (e) {
-        console.error(e);
         this.ngZone.run(() => {
              this.isLoading.set(false);
              this.cdr.detectChanges();
@@ -146,7 +145,6 @@ export class BodyCompositionComponent implements OnInit, AfterViewInit {
       await this.weightService.deleteWeight(log.date);
       await this.loadData();
     } catch (e) {
-      console.error('Failed to delete entry', e);
     } finally {
       this.isLoading.set(false);
     }
@@ -181,7 +179,6 @@ export class BodyCompositionComponent implements OnInit, AfterViewInit {
       await this.loadData();
 
     } catch (e) {
-      console.error('Failed to save entry', e);
     } finally {
       this.isSavingEntry.set(false);
     }

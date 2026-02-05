@@ -146,7 +146,6 @@ export class AdminDashboardComponent implements OnInit {
       this.overview.set(overviewData);
       this.qualityMetrics.set(metricsData);
     } catch (err: any) {
-      console.error('Error loading admin dashboard:', err);
       this.error.set(err?.error?.detail || 'Falha ao carregar dados');
     } finally {
       this.loading.set(false);

@@ -52,7 +52,6 @@ export class NutritionComponent implements OnInit {
       const s = await this.nutritionService.getStats();
       this.stats.set(s);
     } catch (error) {
-      console.error("Failed to load nutrition stats", error);
     }
   }
 
@@ -65,7 +64,6 @@ export class NutritionComponent implements OnInit {
       this.totalLogs.set(response.total);
       this.isLoading.set(false);
     } catch (err) {
-      console.error('Failed to load nutrition logs', err);
       this.isLoading.set(false);
     }
   }
@@ -94,7 +92,6 @@ export class NutritionComponent implements OnInit {
         await this.loadData();
         this.deletingId.set(null);
       } catch (err) {
-        console.error('Failed to delete nutrition log', err);
         this.deletingId.set(null);
       }
     }

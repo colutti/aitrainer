@@ -26,13 +26,10 @@ export class TrainerSettingsComponent implements OnInit {
   }
 
   async loadTrainers(): Promise<void> {
-    console.warn('DEBUG: calling loadTrainers');
     try {
         const trainers = await this.trainerProfileService.getAvailableTrainers();
-        console.warn('DEBUG: trainers loaded', trainers);
         this.availableTrainers.set(trainers);
     } catch (err) {
-        console.error('DEBUG: Failed to load trainers', err);
         this.notificationService.error('Erro ao carregar treinadores disponíveis.');
     }
   }
@@ -42,7 +39,6 @@ export class TrainerSettingsComponent implements OnInit {
       const p = await this.trainerProfileService.fetchProfile();
       this.profile.set(p);
     } catch (err) {
-      console.error('Error loading profile', err);
     }
   }
 
@@ -58,7 +54,6 @@ export class TrainerSettingsComponent implements OnInit {
       this.profile.set(updated);
       this.notificationService.success('Treinador atualizado com sucesso!');
     } catch (err) {
-      console.error('Failed to save profile', err);
       this.notificationService.error('Erro ao salvar alterações. Tente novamente.');
     } finally {
       this.isSaving.set(false);

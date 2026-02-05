@@ -115,7 +115,6 @@ export class MetabolismComponent implements OnInit, AfterViewInit {
       const data = await this.metabolismService.getSummary(this.weeks());
       this.stats.set(data);
     } catch (error) {
-      console.error('Erro ao carregar metabolismo:', error);
       this.stats.set(null);
     } finally {
       this.isLoading.set(false);

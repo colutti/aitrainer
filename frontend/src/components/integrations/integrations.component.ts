@@ -52,10 +52,8 @@ export class IntegrationsComponent implements OnInit {
   }
 
   async refreshHevyStatus() {
-    console.warn('Integrations: refreshing Hevy status...');
     try {
       const status = await this.hevyService.getStatus();
-      console.warn('Integrations: Status received', status);
       
       let newStatus: 'connected' | 'paused' | 'disconnected' = 'disconnected';
       if (status.hasKey) {
@@ -68,10 +66,8 @@ export class IntegrationsComponent implements OnInit {
         status: newStatus
       });
       
-      console.warn('Integrations: New provider state', this.hevyProvider());
       this.cdr.detectChanges();
     } catch (e) {
-      console.error('Integrations: load error', e);
     }
   }
 
@@ -85,7 +81,6 @@ export class IntegrationsComponent implements OnInit {
       });
       this.cdr.detectChanges();
     } catch (e) {
-      console.error('Error loading Telegram status', e);
     }
   }
 

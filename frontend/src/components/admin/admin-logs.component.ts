@@ -83,7 +83,6 @@ export class AdminLogsComponent implements OnInit {
         this.logs.set(result.data?.map((d: any) => d.message) || []);
       }
     } catch (err: any) {
-      console.error('Error loading logs:', err);
       this.error.set(err?.error?.detail || 'Erro ao carregar logs');
       this.logs.set([]);
     } finally {

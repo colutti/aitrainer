@@ -462,7 +462,6 @@ export class DashboardComponent implements OnInit {
                 this.currentTrainer.set(matched);
             }
         } catch (e) {
-            console.error('Failed to load trainer for dashboard', e);
         }
     });
   }
@@ -483,7 +482,6 @@ export class DashboardComponent implements OnInit {
       const data = await this.metabolismService.getSummary(100);
       this.metabolismStats.set(data);
     } catch (e) {
-      console.error('Failed to fetch dashboard metabolism trend', e);
     } finally {
       this.isMetabolismLoading.set(false);
     }

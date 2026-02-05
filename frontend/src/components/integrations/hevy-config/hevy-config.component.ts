@@ -133,7 +133,6 @@ export class HevyConfigComponent implements OnInit {
       this.webhookAuthHeader.set(config.auth_header || null);
       this.showFullAuth.set(false);
     } catch (error) {
-      console.error('Failed to load webhook config', error);
     }
   }
 

@@ -156,7 +156,6 @@ export class AdminUsersComponent implements OnInit {
       this.users.set(result.users);
       this.totalPages.set(result.total_pages);
     } catch (err) {
-      console.error('Error loading users:', err);
       this.notificationService.error('Erro ao carregar lista de usuários');
     } finally {
       this.loading.set(false);
@@ -179,7 +178,6 @@ export class AdminUsersComponent implements OnInit {
       const details = await this.adminService.getUserDetails(user.email);
       this.selectedUserDetails.set(details);
     } catch (err) {
-      console.error('View user error:', err);
       this.notificationService.error('Erro ao buscar detalhes do usuário');
     }
   }
@@ -200,7 +198,6 @@ export class AdminUsersComponent implements OnInit {
       this.notificationService.success('Usuário deletado com sucesso');
       await this.loadUsers();
     } catch (err: any) {
-      console.error('Delete user error:', err);
       const msg = err?.error?.detail || 'Erro ao deletar usuário';
       this.notificationService.error(msg);
     }

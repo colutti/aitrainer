@@ -61,7 +61,6 @@ export class TelegramConfigComponent implements OnInit {
         this.viewState.set('disconnected');
       }
     } catch (e) {
-      console.error('Error loading Telegram status', e);
       this.viewState.set('disconnected');
     } finally {
       this.cdr.detectChanges();
@@ -83,7 +82,6 @@ export class TelegramConfigComponent implements OnInit {
       this.successMessage.set('Configurações de notificação salvas!');
       setTimeout(() => this.successMessage.set(''), 3000);
     } catch (e) {
-      console.error('Error updating notifications', e);
       this.errorMessage.set('Erro ao salvar configurações.');
     } finally {
       this.savingNotifications.set(false);
@@ -102,7 +100,6 @@ export class TelegramConfigComponent implements OnInit {
       this.linkingCode.set(result.code);
       this.successMessage.set('Código gerado! Válido por 10 minutos.');
     } catch (e) {
-      console.error('Error generating code', e);
       this.errorMessage.set('Erro ao gerar código.');
     } finally {
       this.generatingCode.set(false);
@@ -137,7 +134,6 @@ export class TelegramConfigComponent implements OnInit {
       this.statusChanged.emit();
       this.successMessage.set('Conta desvinculada.');
     } catch (e) {
-      console.error('Error unlinking', e);
       this.errorMessage.set('Erro ao desvincular.');
       this.viewState.set('connected');
     } finally {
