@@ -41,24 +41,22 @@ export class MfpImportComponent {
     }
   }
 
-  uploadFile() {
+  async uploadFile() {
     const file = this.selectedFile();
     if (!file) return;
 
     this.viewState.set('importing');
     this.errorMessage.set('');
 
-    this.importService.uploadMyFitnessPalCSV(file).subscribe({
-      next: (result) => {
-        this.importResult.set(result);
-        this.viewState.set('success');
-        this.importCompleted.emit();
-      },
-      error: (err) => {
-        this.errorMessage.set(err.error?.detail || 'Falha na importação. Verifique o arquivo.');
-        this.viewState.set('setup');
-      }
-    });
+    try {
+      const result = await this.importService.uploadMyFitnessPalCSV(file);
+      this.importResult.set(result);
+      this.viewState.set('success');
+      this.importCompleted.emit();
+    } catch (err: any) {
+      this.errorMessage.set(err.error?.detail || 'Falha na importação. Verifique o arquivo.');
+      this.viewState.set('setup');
+    }
   }
 
   reset() {
