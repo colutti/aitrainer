@@ -19,6 +19,7 @@ import { useConfirmation } from '../../shared/hooks/useConfirmation';
 import { useNotificationStore } from '../../shared/hooks/useNotification';
 import { useSettingsStore } from '../../shared/hooks/useSettings';
 import { UserProfile } from '../../shared/types/settings';
+import { IntegrationsPage } from './components/IntegrationsPage';
 import { cn } from '../../shared/utils/cn';
 
 /**
@@ -27,6 +28,8 @@ import { cn } from '../../shared/utils/cn';
  * Manage user profile, goals, trainer preferences and account security.
  */
 export function SettingsPage() {
+  const [activeTab, setActiveTab] = useState<'profile' | 'trainer' | 'privacy' | 'integrations'>('profile');
+  
   const { 
     profile, 
     trainer, 
@@ -120,33 +123,65 @@ export function SettingsPage() {
         {/* Navigation Sidebar */}
         <div className="md:col-span-1 space-y-2">
           <nav className="space-y-1">
-            <button className="w-full flex items-center justify-between p-3 rounded-xl bg-gradient-start/10 text-gradient-start font-bold">
+            <button 
+              onClick={() => setActiveTab('profile')}
+              className={cn(
+                "w-full flex items-center justify-between p-3 rounded-xl transition-all",
+                activeTab === 'profile' 
+                  ? "bg-gradient-start/10 text-gradient-start font-bold" 
+                  : "text-text-secondary hover:bg-dark-card"
+              )}
+            >
               <div className="flex items-center gap-3">
                 <User size={20} />
                 Perfil Pessoal
               </div>
-              <ChevronRight size={16} />
+              <ChevronRight size={16} className={cn("transition-transform", activeTab === 'profile' && "rotate-90 text-gradient-start")} />
             </button>
-            <button className="w-full flex items-center justify-between p-3 rounded-xl text-text-secondary hover:bg-dark-card transition-colors">
+            <button 
+              onClick={() => setActiveTab('trainer')}
+              className={cn(
+                "w-full flex items-center justify-between p-3 rounded-xl transition-all",
+                activeTab === 'trainer' 
+                  ? "bg-gradient-start/10 text-gradient-start font-bold" 
+                  : "text-text-secondary hover:bg-dark-card"
+              )}
+            >
               <div className="flex items-center gap-3">
                 <Target size={20} />
                 Treinador AI
               </div>
-              <ChevronRight size={16} />
+              <ChevronRight size={16} className={cn("transition-transform", activeTab === 'trainer' && "rotate-90 text-gradient-start")} />
             </button>
-            <button className="w-full flex items-center justify-between p-3 rounded-xl text-text-secondary hover:bg-dark-card transition-colors">
+            <button 
+              onClick={() => setActiveTab('privacy')}
+              className={cn(
+                "w-full flex items-center justify-between p-3 rounded-xl transition-all",
+                activeTab === 'privacy' 
+                  ? "bg-gradient-start/10 text-gradient-start font-bold" 
+                  : "text-text-secondary hover:bg-dark-card"
+              )}
+            >
               <div className="flex items-center gap-3">
                 <Shield size={20} />
                 Privacidade
               </div>
-              <ChevronRight size={16} />
+              <ChevronRight size={16} className={cn("transition-transform", activeTab === 'privacy' && "rotate-90 text-gradient-start")} />
             </button>
-            <button className="w-full flex items-center justify-between p-3 rounded-xl text-text-secondary hover:bg-dark-card transition-colors">
+            <button 
+              onClick={() => setActiveTab('integrations')}
+              className={cn(
+                "w-full flex items-center justify-between p-3 rounded-xl transition-all",
+                activeTab === 'integrations' 
+                  ? "bg-gradient-start/10 text-gradient-start font-bold" 
+                  : "text-text-secondary hover:bg-dark-card"
+              )}
+            >
               <div className="flex items-center gap-3">
                 <Database size={20} />
                 Integrações
               </div>
-              <ChevronRight size={16} />
+              <ChevronRight size={16} className={cn("transition-transform", activeTab === 'integrations' && "rotate-90 text-gradient-start")} />
             </button>
           </nav>
 
@@ -167,73 +202,89 @@ export function SettingsPage() {
         </div>
 
         {/* Content Area */}
-        <div className="md:col-span-2 space-y-10">
-          {profile && (
-            <ProfileForm 
-              profile={profile} 
-              onSave={handleProfileSubmit} 
-              isSaving={isSaving} 
-            />
+        <div className="md:col-span-2 space-y-10 min-h-[500px]">
+          {activeTab === 'profile' && profile && (
+            <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+              <ProfileForm 
+                profile={profile} 
+                onSave={handleProfileSubmit} 
+                isSaving={isSaving} 
+              />
+              
+              {/* Notifications Setting */}
+              <section className="bg-gradient-start/5 border border-gradient-start/20 rounded-2xl p-6 flex items-start gap-4 mt-8">
+                <Bell className="text-gradient-start mt-1 flex-shrink-0" size={20} />
+                <div>
+                  <h3 className="font-bold text-text-primary">Notificações por Email</h3>
+                  <p className="text-sm text-text-secondary mt-1">
+                    Enviaremos resumos semanais de performance e alertas para manter sua consistência. Você pode desativar isso a qualquer momento.
+                  </p>
+                  <Button variant="ghost" className="mt-4 -ml-4 text-xs font-bold text-gradient-start uppercase tracking-widest">
+                    Configurar Alertas
+                  </Button>
+                </div>
+              </section>
+            </div>
           )}
 
-          {/* Trainer Section */}
-          <section className="space-y-6">
-            <div className="flex items-center gap-2 pb-2 border-b border-border">
-              <Dumbbell className="text-gradient-start" size={20} />
-              <h2 className="text-xl font-bold text-text-primary">Personalidade do Treinador</h2>
-            </div>
+          {activeTab === 'trainer' && (
+             <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-6">
+               <div className="flex items-center gap-2 pb-2 border-b border-border">
+                 <Dumbbell className="text-gradient-start" size={20} />
+                 <h2 className="text-xl font-bold text-text-primary">Personalidade do Treinador</h2>
+               </div>
 
-            <div className="grid grid-cols-1 gap-4">
-              {availableTrainers.map((t) => (
-                <div 
-                  key={t.id}
-                  onClick={() => {
-                    void handleTrainerChange(t.id);
-                  }}
-                  className={cn(
-                    "flex items-center gap-4 p-4 rounded-2xl border transition-all cursor-pointer group",
-                    trainer?.trainer_type === t.id 
-                      ? "bg-gradient-start/5 border-gradient-start ring-1 ring-gradient-start shadow-orange-sm" 
-                      : "bg-dark-card border-border hover:border-gradient-start/30"
-                  )}
-                >
-                  <div className={cn(
-                    "w-12 h-12 rounded-full overflow-hidden border-2 flex-shrink-0",
-                    trainer?.trainer_type === t.id ? "border-gradient-start" : "border-border"
-                  )}>
-                    <img src={t.avatar_url} alt={t.name} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-bold text-text-primary">{t.name}</h3>
-                      {trainer?.trainer_type === t.id && (
-                        <span className="text-[10px] font-bold bg-gradient-start text-white px-2 py-0.5 rounded-full uppercase">Ativo</span>
-                      )}
-                    </div>
-                    <p className="text-xs text-text-secondary truncate">{t.description}</p>
-                  </div>
-                  <ChevronRight size={18} className={cn(
-                    "text-text-muted transition-transform",
-                    trainer?.trainer_type === t.id ? "translate-x-1 text-gradient-start" : "group-hover:translate-x-1"
-                  )} />
-                </div>
-              ))}
-            </div>
-          </section>
+               <div className="grid grid-cols-1 gap-4">
+                 {availableTrainers.map((t) => (
+                   <div 
+                     key={t.id}
+                     onClick={() => { void handleTrainerChange(t.id); }}
+                     className={cn(
+                       "flex items-center gap-4 p-4 rounded-2xl border transition-all cursor-pointer group",
+                       trainer?.trainer_type === t.id 
+                         ? "bg-gradient-start/5 border-gradient-start ring-1 ring-gradient-start shadow-orange-sm" 
+                         : "bg-dark-card border-border hover:border-gradient-start/30"
+                     )}
+                   >
+                     <div className={cn(
+                       "w-12 h-12 rounded-full overflow-hidden border-2 flex-shrink-0",
+                       trainer?.trainer_type === t.id ? "border-gradient-start" : "border-border"
+                     )}>
+                       <img src={t.avatar_url} alt={t.name} className="w-full h-full object-cover" />
+                     </div>
+                     <div className="flex-1 min-w-0">
+                       <div className="flex items-center justify-between">
+                         <h3 className="font-bold text-text-primary">{t.name}</h3>
+                         {trainer?.trainer_type === t.id && (
+                           <span className="text-[10px] font-bold bg-gradient-start text-white px-2 py-0.5 rounded-full uppercase">Ativo</span>
+                         )}
+                       </div>
+                       <p className="text-xs text-text-secondary truncate">{t.description}</p>
+                     </div>
+                     <ChevronRight size={18} className={cn(
+                       "text-text-muted transition-transform",
+                       trainer?.trainer_type === t.id ? "translate-x-1 text-gradient-start" : "group-hover:translate-x-1"
+                     )} />
+                   </div>
+                 ))}
+               </div>
+             </div>
+          )}
 
-          {/* Other Settings Placeholder */}
-          <section className="bg-gradient-start/5 border border-gradient-start/20 rounded-2xl p-6 flex items-start gap-4">
-            <Bell className="text-gradient-start mt-1" size={20} />
-            <div>
-              <h3 className="font-bold text-text-primary">Notificações por Email</h3>
-              <p className="text-sm text-text-secondary mt-1">
-                Enviaremos resumos semanais de performance e alertas para manter sua consistência. Você pode desativar isso a qualquer momento.
-              </p>
-              <Button variant="ghost" className="mt-4 -ml-4 text-xs font-bold text-gradient-start uppercase tracking-widest">
-                Configurar Alertas
-              </Button>
+          {activeTab === 'integrations' && (
+             <IntegrationsPage />
+          )}
+
+          {activeTab === 'privacy' && (
+            <div className="animate-in fade-in slide-in-from-right-4 duration-500 flex flex-col items-center justify-center h-64 border border-border border-dashed rounded-2xl bg-dark-card/50">
+               <Shield size={48} className="text-text-muted mb-4 opacity-50" />
+               <h3 className="text-lg font-bold text-text-primary">Privacidade e Dados</h3>
+               <p className="text-text-secondary text-sm max-w-sm text-center mt-2">
+                 Em breve você poderá exportar todos os seus dados ou solicitar a exclusão completa da conta por aqui.
+               </p>
             </div>
-          </section>
+          )}
+
         </div>
       </div>
     </div>
