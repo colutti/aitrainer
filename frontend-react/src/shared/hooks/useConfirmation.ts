@@ -20,6 +20,7 @@ interface ConfirmationActions {
   confirm: (options: string | ConfirmationOptions) => Promise<boolean>;
   accept: () => void;
   cancel: () => void;
+  reset: () => void;
 }
 
 export type ConfirmationStore = ConfirmationState & ConfirmationActions;
@@ -81,6 +82,17 @@ export const useConfirmationStore = create<ConfirmationStore>((set, get) => ({
     if (resolve) {
       resolve(false);
     }
+    set({
+      isOpen: false,
+      options: { message: '' },
+      resolve: null,
+    });
+  },
+
+  /**
+   * Reset the store to initial state
+   */
+  reset: () => {
     set({
       isOpen: false,
       options: { message: '' },

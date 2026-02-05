@@ -1,7 +1,9 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 import { LoginPage } from './features/auth/LoginPage';
+import { BodyPage } from './features/body/BodyPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
+import { NutritionPage } from './features/nutrition/NutritionPage';
 import { WorkoutListPage } from './features/workouts/WorkoutListPage';
 import { AuthGuard } from './shared/components/auth/AuthGuard';
 import { ProtectedRoute } from './shared/components/auth/ProtectedRoute';
@@ -41,8 +43,10 @@ export function AppRoutes() {
         
         {/* Workouts */}
         <Route path="workouts" element={<WorkoutListPage />} />
-        <Route path="nutrition" element={<div className="text-2xl font-bold">Nutrição (Em breve)</div>} />
-        <Route path="body" element={<div className="text-2xl font-bold">Corpo (Em breve)</div>} />
+        {/* Nutrition */}
+        <Route path="nutrition" element={<NutritionPage />} />
+        {/* Body */}
+        <Route path="body" element={<BodyPage />} />
         <Route path="chat" element={<div className="text-2xl font-bold">Chat AI (Em breve)</div>} />
         <Route path="settings" element={<div className="text-2xl font-bold">Configurações (Em breve)</div>} />
 

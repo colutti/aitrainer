@@ -1,11 +1,7 @@
-/**
- * Nutrition data models for the frontend.
- */
-
 export interface NutritionLog {
   id: string;
   user_email: string;
-  date: string; // ISO format
+  date: string;
   calories: number;
   protein_grams: number;
   carbs_grams: number;
@@ -18,7 +14,7 @@ export interface NutritionLog {
   notes?: string;
 }
 
-export interface DayMacros {
+export interface DailyMacros {
   date: string;
   calories: number;
   protein: number;
@@ -29,16 +25,20 @@ export interface DayMacros {
 export interface NutritionStats {
   today: NutritionLog | null;
   weekly_adherence: boolean[];
-  last_7_days: DayMacros[];
+  last_7_days: DailyMacros[];
   avg_daily_calories: number;
   avg_daily_calories_14_days: number;
   avg_protein: number;
   total_logs: number;
   tdee?: number;
   daily_target?: number;
-  macro_targets?: { protein: number, carbs: number, fat: number };
+  macro_targets?: {
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
   stability_score?: number;
-  last_14_days: DayMacros[];
+  last_14_days: DailyMacros[];
 }
 
 export interface NutritionListResponse {
@@ -47,4 +47,15 @@ export interface NutritionListResponse {
   page: number;
   page_size: number;
   total_pages: number;
+}
+
+export interface CreateNutritionLogRequest {
+  date: string;
+  source: string;
+  calories: number;
+  protein_grams: number;
+  carbs_grams: number;
+  fat_grams: number;
+  fiber_grams?: number;
+  sodium_mg?: number;
 }

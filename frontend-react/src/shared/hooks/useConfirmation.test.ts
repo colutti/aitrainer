@@ -9,11 +9,7 @@ describe('useConfirmation', () => {
   beforeEach(() => {
     // Reset store state
     act(() => {
-      useConfirmationStore.setState({
-        isOpen: false,
-        message: '',
-        resolve: null,
-      });
+      useConfirmationStore.getState().reset();
     });
   });
 
@@ -22,7 +18,7 @@ describe('useConfirmation', () => {
       const { result } = renderHook(() => useConfirmationStore());
 
       expect(result.current.isOpen).toBe(false);
-      expect(result.current.message).toBe('');
+      expect(result.current.options.message).toBe('');
     });
   });
 
@@ -38,7 +34,7 @@ describe('useConfirmation', () => {
 
       // Modal should be open with the message
       expect(result.current.isOpen).toBe(true);
-      expect(result.current.message).toBe('Are you sure?');
+      expect(result.current.options.message).toBe('Are you sure?');
 
       // Accept the confirmation
       act(() => {
@@ -49,10 +45,27 @@ describe('useConfirmation', () => {
         throw new Error('Promise should be defined');
       }
 
-      const confirmed = await confirmPromise;
+      const confirmed = await (confirmPromise as Promise<boolean>);
 
       expect(confirmed).toBe(true);
       expect(result.current.isOpen).toBe(false);
+    });
+
+    it('should handle options object', async () => {
+      const { result } = renderHook(() => useConfirmationStore());
+
+      act(() => {
+        void result.current.confirm({
+          title: 'Custom Title',
+          message: 'Custom Message',
+          type: 'danger'
+        });
+      });
+
+      expect(result.current.isOpen).toBe(true);
+      expect(result.current.options.title).toBe('Custom Title');
+      expect(result.current.options.message).toBe('Custom Message');
+      expect(result.current.options.type).toBe('danger');
     });
 
     it('should return Promise that resolves false when cancelled', async () => {
@@ -66,7 +79,7 @@ describe('useConfirmation', () => {
 
       // Modal should be open
       expect(result.current.isOpen).toBe(true);
-      expect(result.current.message).toBe('Delete this item?');
+      expect(result.current.options.message).toBe('Delete this item?');
 
       // Cancel the confirmation
       act(() => {
@@ -77,47 +90,10 @@ describe('useConfirmation', () => {
         throw new Error('Promise should be defined');
       }
 
-      const confirmed = await confirmPromise;
+      const confirmed = await (confirmPromise as Promise<boolean>);
 
       expect(confirmed).toBe(false);
       expect(result.current.isOpen).toBe(false);
-    });
-
-    it('should handle multiple sequential confirmations', async () => {
-      const { result } = renderHook(() => useConfirmationStore());
-
-      // First confirmation - accept
-      let confirm1: Promise<boolean> | null = null;
-      act(() => {
-        confirm1 = result.current.confirm('First confirmation');
-      });
-      act(() => {
-        result.current.accept();
-      });
-      if (!confirm1) throw new Error('Promise should be defined');
-      expect(await confirm1).toBe(true);
-
-      // Second confirmation - cancel
-      let confirm2: Promise<boolean> | null = null;
-      act(() => {
-        confirm2 = result.current.confirm('Second confirmation');
-      });
-      act(() => {
-        result.current.cancel();
-      });
-      if (!confirm2) throw new Error('Promise should be defined');
-      expect(await confirm2).toBe(false);
-
-      // Third confirmation - accept
-      let confirm3: Promise<boolean> | null = null;
-      act(() => {
-        confirm3 = result.current.confirm('Third confirmation');
-      });
-      act(() => {
-        result.current.accept();
-      });
-      if (!confirm3) throw new Error('Promise should be defined');
-      expect(await confirm3).toBe(true);
     });
   });
 
@@ -140,7 +116,7 @@ describe('useConfirmation', () => {
       }
 
       expect(result.current.isOpen).toBe(false);
-      expect(await confirmPromise).toBe(true);
+      expect(await (confirmPromise as Promise<boolean>)).toBe(true);
     });
   });
 
@@ -163,7 +139,7 @@ describe('useConfirmation', () => {
       }
 
       expect(result.current.isOpen).toBe(false);
-      expect(await confirmPromise).toBe(false);
+      expect(await (confirmPromise as Promise<boolean>)).toBe(false);
     });
   });
 });

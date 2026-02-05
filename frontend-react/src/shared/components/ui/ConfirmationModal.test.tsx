@@ -4,12 +4,17 @@ import { describe, expect, it, vi } from 'vitest';
 import { ConfirmationModal } from './ConfirmationModal';
 
 describe('ConfirmationModal', () => {
+  const defaultOptions = {
+    message: 'Are you sure?',
+    type: 'primary' as const
+  };
+
   describe('Rendering', () => {
     it('should not render when isOpen is false', () => {
       render(
         <ConfirmationModal
           isOpen={false}
-          message="Are you sure?"
+          options={defaultOptions}
           onAccept={vi.fn()}
           onCancel={vi.fn()}
         />
@@ -22,7 +27,7 @@ describe('ConfirmationModal', () => {
       render(
         <ConfirmationModal
           isOpen={true}
-          message="Are you sure?"
+          options={defaultOptions}
           onAccept={vi.fn()}
           onCancel={vi.fn()}
         />
@@ -32,16 +37,21 @@ describe('ConfirmationModal', () => {
       expect(screen.getByText('Are you sure?')).toBeInTheDocument();
     });
 
-    it('should render with custom message', () => {
+    it('should render with custom message and title', () => {
       render(
         <ConfirmationModal
           isOpen={true}
-          message="Delete this item permanently?"
+          options={{
+            title: 'Custom Title',
+            message: 'Delete this item permanently?',
+            type: 'danger'
+          }}
           onAccept={vi.fn()}
           onCancel={vi.fn()}
         />
       );
 
+      expect(screen.getByText('Custom Title')).toBeInTheDocument();
       expect(screen.getByText('Delete this item permanently?')).toBeInTheDocument();
     });
   });
@@ -51,7 +61,7 @@ describe('ConfirmationModal', () => {
       render(
         <ConfirmationModal
           isOpen={true}
-          message="Confirm action?"
+          options={defaultOptions}
           onAccept={vi.fn()}
           onCancel={vi.fn()}
         />
@@ -67,7 +77,7 @@ describe('ConfirmationModal', () => {
       render(
         <ConfirmationModal
           isOpen={true}
-          message="Test"
+          options={defaultOptions}
           onAccept={vi.fn()}
           onCancel={onCancel}
         />
@@ -84,7 +94,7 @@ describe('ConfirmationModal', () => {
       render(
         <ConfirmationModal
           isOpen={true}
-          message="Test"
+          options={defaultOptions}
           onAccept={onAccept}
           onCancel={vi.fn()}
         />
@@ -101,7 +111,7 @@ describe('ConfirmationModal', () => {
       render(
         <ConfirmationModal
           isOpen={true}
-          message="Test"
+          options={defaultOptions}
           onAccept={vi.fn()}
           onCancel={vi.fn()}
         />
@@ -116,7 +126,7 @@ describe('ConfirmationModal', () => {
       render(
         <ConfirmationModal
           isOpen={true}
-          message="Test"
+          options={defaultOptions}
           onAccept={vi.fn()}
           onCancel={onCancel}
         />
