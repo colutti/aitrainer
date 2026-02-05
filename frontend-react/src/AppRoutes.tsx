@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 
 import { LoginPage } from './features/auth/LoginPage';
 import { BodyPage } from './features/body/BodyPage';
+import { ChatPage } from './features/chat/ChatPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { NutritionPage } from './features/nutrition/NutritionPage';
 import { WorkoutListPage } from './features/workouts/WorkoutListPage';
@@ -47,7 +48,8 @@ export function AppRoutes() {
         <Route path="nutrition" element={<NutritionPage />} />
         {/* Body */}
         <Route path="body" element={<BodyPage />} />
-        <Route path="chat" element={<div className="text-2xl font-bold">Chat AI (Em breve)</div>} />
+        {/* Chat */}
+        <Route path="chat" element={<ChatPage />} />
         <Route path="settings" element={<div className="text-2xl font-bold">Configurações (Em breve)</div>} />
 
         {/* Admin Routes */}
