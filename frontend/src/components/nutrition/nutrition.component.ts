@@ -105,19 +105,4 @@ export class NutritionComponent implements OnInit {
     return `${percentage}%`;
   }
 
-  getFormattedDate(dateStr: string): string {
-    if (!dateStr) return '';
-    try {
-      const date = new Date(dateStr);
-      // Format: "domingo, 11 de janeiro de 2026"
-      return new Intl.DateTimeFormat('pt-BR', { 
-        weekday: 'long',
-        day: 'numeric', 
-        month: 'long',
-        year: 'numeric'
-      }).format(date);
-    } catch {
-      return dateStr;
-    }
-  }
 }

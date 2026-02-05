@@ -135,18 +135,4 @@ export class WorkoutsComponent implements OnInit {
       return new Date(dateStr).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
   }
   
-  getFormattedDate(dateStr: string): string {
-    if (!dateStr) return '';
-    try {
-        const date = new Date(dateStr);
-        return new Intl.DateTimeFormat('pt-BR', { 
-            day: '2-digit', 
-            month: 'short', 
-            hour: '2-digit', 
-            minute: '2-digit' 
-        }).format(date);
-    } catch {
-        return dateStr;
-    }
-  } 
 }

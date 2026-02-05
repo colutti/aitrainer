@@ -605,22 +605,5 @@ export class DashboardComponent implements OnInit {
 
   protected readonly Array = Array;
   
-  getFormattedDate(dateStr: string): string {
-    if (!dateStr) return '';
-    try {
-        const date = new Date(dateStr);
-        // Using Intl for consistent Portuguese formatting: "09 jan., 12:17"
-        // month: 'short' in pt-BR usually gives 'jan.', 'fev.', etc. or 'jan' depending on browser/implementation.
-        // We will try to match the user request.
-        return new Intl.DateTimeFormat('pt-BR', { 
-            day: '2-digit', 
-            month: 'short', 
-            hour: '2-digit', 
-            minute: '2-digit' 
-        }).format(date);
-    } catch {
-        return dateStr;
-    }
-  }
 }
 
