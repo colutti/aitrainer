@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { LucideAngularModule } from 'lucide-angular';
 import { AuthService } from '../../services/auth.service';
 import { NavigationService, View } from '../../services/navigation.service';
 
@@ -7,7 +8,7 @@ import { NavigationService, View } from '../../services/navigation.service';
   selector: 'app-sidebar',
   templateUrl: './sidebar.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule]
+  imports: [CommonModule, LucideAngularModule]
 })
 export class SidebarComponent {
   authService = inject(AuthService);
