@@ -1,6 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { httpClient } from '../api/http-client';
+import type { WeightLog } from '../types/body';
+
 import { useBodyStore } from './useBody';
 
 // Mock httpClient
@@ -21,7 +23,7 @@ describe('useBodyStore', () => {
     expect(state.isLoading).toBe(false);
   });
 
-  it('should fetch stats successfully', async () => {
+  it('should fetch statistics successfully', async () => {
     const mockStats = {
       latest: { weight_kg: 80, date: '2024-01-01' },
       weight_trend: [],
@@ -40,9 +42,9 @@ describe('useBodyStore', () => {
   });
 
   it('should handle delete log', async () => {
-    const initialLogs = [
-      { date: '2024-01-01', weight_kg: 80 } as any,
-      { date: '2024-01-02', weight_kg: 79 } as any,
+    const initialLogs: WeightLog[] = [
+      { date: '2024-01-01', weight_kg: 80 },
+      { date: '2024-01-02', weight_kg: 79 },
     ];
     
     useBodyStore.setState({ logs: initialLogs });

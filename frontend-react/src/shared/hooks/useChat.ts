@@ -36,8 +36,20 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
   fetchHistory: async () => {
     set({ isLoading: true, error: null });
     try {
-      const messages = await httpClient<ChatMessage[]>('/history');
-      set({ messages: messages ?? [], isLoading: false });
+      const messages = await httpClient<ChatMessage[]>('/message/history');
+      if (messages && messages.length > 0) {
+        set({ messages, isLoading: false });
+      } else {
+        // Welcome message if zero history
+        set({ 
+          messages: [{
+            text: 'Olá! Eu sou seu personal trainer virtual. Como posso te ajudar a atingir seus objetivos hoje?',
+            sender: 'Trainer',
+            timestamp: new Date().toISOString()
+          }], 
+          isLoading: false 
+        });
+      }
     } catch (error) {
       console.error('Error fetching chat history:', error);
       set({ 
@@ -62,7 +74,7 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
 
     try {
       const token = localStorage.getItem(AUTH_TOKEN_KEY);
-      const response = await fetch(`${API_BASE_URL}/message`, {
+      const response = await fetch(`${API_BASE_URL}/message/message`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

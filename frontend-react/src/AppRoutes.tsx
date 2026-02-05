@@ -1,10 +1,18 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 
+import { AdminDashboardPage } from './features/admin/components/AdminDashboardPage';
+import { AdminLayout } from './features/admin/components/AdminLayout';
+import { AdminLogsPage } from './features/admin/components/AdminLogsPage';
+import { AdminPromptsPage } from './features/admin/components/AdminPromptsPage';
+import { AdminUsersPage } from './features/admin/components/AdminUsersPage';
 import { LoginPage } from './features/auth/LoginPage';
 import { BodyPage } from './features/body/BodyPage';
 import { ChatPage } from './features/chat/ChatPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
+import { MemoriesPage } from './features/memories/MemoriesPage';
 import { NutritionPage } from './features/nutrition/NutritionPage';
+import { OnboardingPage } from './features/onboarding/components/OnboardingPage';
+import { SettingsPage } from './features/settings/SettingsPage';
 import { WorkoutListPage } from './features/workouts/WorkoutListPage';
 import { AuthGuard } from './shared/components/auth/AuthGuard';
 import { ProtectedRoute } from './shared/components/auth/ProtectedRoute';
@@ -29,6 +37,14 @@ export function AppRoutes() {
           </AuthGuard>
         }
       />
+      <Route
+        path="/onboarding"
+        element={
+          <AuthGuard>
+            <OnboardingPage />
+          </AuthGuard>
+        }
+      />
 
       {/* Protected Routes - Main Layout */}
       <Route
@@ -50,17 +66,23 @@ export function AppRoutes() {
         <Route path="body" element={<BodyPage />} />
         {/* Chat */}
         <Route path="chat" element={<ChatPage />} />
-        <Route path="settings" element={<div className="text-2xl font-bold">Configurações (Em breve)</div>} />
+        <Route path="memories" element={<MemoriesPage />} />
+        <Route path="settings" element={<SettingsPage />} />
 
         {/* Admin Routes */}
         <Route
           path="admin"
           element={
             <ProtectedRoute requireAdmin>
-              <div className="text-2xl font-bold text-gradient-start">Painel Administrativo (Em breve)</div>
+              <AdminLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<AdminDashboardPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="logs" element={<AdminLogsPage />} />
+          <Route path="prompts" element={<AdminPromptsPage />} />
+        </Route>
       </Route>
 
       {/* Catch-all - Redirect to home */}

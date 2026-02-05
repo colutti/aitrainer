@@ -4,6 +4,7 @@ import {
   Utensils, 
   User, 
   MessageSquare, 
+  Brain,
   Settings, 
   ShieldAlert, 
   LogOut 
@@ -60,6 +61,7 @@ export function Sidebar() {
         <NavItem to="/nutrition" icon={<Utensils size={20} />} label="Nutrição" />
         <NavItem to="/body" icon={<User size={20} />} label="Corpo" />
         <NavItem to="/chat" icon={<MessageSquare size={20} />} label="Chat AI" />
+        <NavItem to="/memories" icon={<Brain size={20} />} label="Memórias" />
         <NavItem to="/settings" icon={<Settings size={20} />} label="Configurações" />
         
         {isAdmin && (
