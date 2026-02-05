@@ -4,20 +4,20 @@ import { httpClient } from '../api/http-client';
 
 const AUTH_TOKEN_KEY = 'auth_token';
 
-interface UserInfo {
+export interface UserInfo {
   email: string;
   name: string;
   is_admin: boolean;
 }
 
-interface AuthState {
+export interface AuthState {
   isAuthenticated: boolean;
   userInfo: UserInfo | null;
   isAdmin: boolean;
   isLoading: boolean;
 }
 
-interface AuthActions {
+export interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   loadUserInfo: () => Promise<void>;
@@ -25,7 +25,7 @@ interface AuthActions {
   init: () => Promise<void>;
 }
 
-type AuthStore = AuthState & AuthActions;
+export type AuthStore = AuthState & AuthActions;
 
 /**
  * Authentication store using Zustand
