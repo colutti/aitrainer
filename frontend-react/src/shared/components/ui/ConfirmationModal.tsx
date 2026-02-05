@@ -1,8 +1,11 @@
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Info } from 'lucide-react';
+
+import { type ConfirmationOptions } from '../../hooks/useConfirmation';
+import { cn } from '../../utils/cn';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
-  message: string;
+  options: ConfirmationOptions;
   onAccept: () => void;
   onCancel: () => void;
 }
@@ -10,22 +13,12 @@ interface ConfirmationModalProps {
 /**
  * Confirmation modal component
  *
- * Displays a modal dialog for confirming destructive actions.
- * Used by the useConfirmation store to show confirmation dialogs.
- *
- * @example
- * ```tsx
- * <ConfirmationModal
- *   isOpen={isOpen}
- *   message="Are you sure you want to delete this item?"
- *   onAccept={handleAccept}
- *   onCancel={handleCancel}
- * />
- * ```
+ * Displays a modal dialog for confirming actions.
+ * Supports multiple variants (danger, primary) and custom content.
  */
 export function ConfirmationModal({
   isOpen,
-  message,
+  options,
   onAccept,
   onCancel,
 }: ConfirmationModalProps) {
@@ -33,8 +26,10 @@ export function ConfirmationModal({
     return null;
   }
 
+  const isDanger = options.type === 'danger';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
       {/* Backdrop */}
       <div
         data-testid="modal-backdrop"
@@ -45,34 +40,50 @@ export function ConfirmationModal({
       {/* Modal */}
       <div
         data-testid="confirmation-modal"
-        className="relative bg-dark-card border border-border rounded-lg p-6 max-w-md w-full shadow-xl animate-in zoom-in-95"
+        className="relative bg-dark-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200"
       >
-        {/* Icon */}
-        <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 rounded-full bg-orange-500/10">
-          <AlertTriangle className="h-6 w-6 text-orange-500" />
+        {/* Icon & Title */}
+        <div className="flex flex-col items-center text-center mb-6">
+          <div className={cn(
+            "w-12 h-12 rounded-full flex items-center justify-center mb-4",
+            isDanger ? "bg-red-500/10 text-red-500" : "bg-gradient-start/10 text-gradient-start"
+          )}>
+            {isDanger ? <AlertTriangle size={24} /> : <Info size={24} />}
+          </div>
+          <h3 className="text-xl font-bold text-text-primary">
+            {options.title ?? 'Confirmar Ação'}
+          </h3>
         </div>
 
         {/* Message */}
-        <p className="text-center text-text-primary mb-6">{message}</p>
+        <p className="text-center text-text-secondary mb-8">
+          {options.message}
+        </p>
 
         {/* Buttons */}
         <div className="flex gap-3">
           <button
             data-testid="confirm-cancel"
             onClick={onCancel}
-            className="flex-1 px-4 py-2 rounded-md bg-dark-bg border border-border text-text-primary hover:bg-dark-bg/80 transition-colors"
+            className="flex-1 h-11 px-4 rounded-xl bg-dark-bg border border-border text-text-primary font-medium hover:bg-white/5 transition-all active:scale-95"
           >
-            Cancelar
+            {options.cancelText ?? 'Cancelar'}
           </button>
           <button
             data-testid="confirm-accept"
             onClick={onAccept}
-            className="flex-1 px-4 py-2 rounded-md bg-gradient-to-r from-gradient-start to-gradient-end text-white font-medium hover:opacity-90 transition-opacity"
+            className={cn(
+              "flex-1 h-11 px-4 rounded-xl text-white font-bold transition-all active:scale-95 shadow-lg",
+              isDanger 
+                ? "bg-red-500 hover:bg-red-600 shadow-red-500/20" 
+                : "bg-gradient-to-r from-gradient-start to-gradient-end hover:opacity-90 shadow-orange"
+            )}
           >
-            Confirmar
+            {options.confirmText ?? 'Confirmar'}
           </button>
         </div>
       </div>
     </div>
   );
 }
+

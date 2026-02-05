@@ -2,23 +2,26 @@
  * Workout data models for the frontend.
  */
 
-export interface Exercise {
+export interface ExerciseLog {
   name: string;
   sets: number;
   reps_per_set: number[];
   weights_per_set: number[];
 }
 
-export interface Workout {
+export interface WorkoutLog {
   id: string;
+  user_email: string;
   date: string;
   workout_type: string | null;
-  exercises: Exercise[];
+  exercises: ExerciseLog[];
   duration_minutes: number | null;
+  source: string | null;
+  external_id: string | null;
 }
 
 export interface WorkoutListResponse {
-  workouts: Workout[];
+  workouts: WorkoutLog[];
   total: number;
   page: number;
   page_size: number;

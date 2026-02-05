@@ -21,12 +21,12 @@ import { ConfirmationModal } from './ConfirmationModal';
  * ```
  */
 export function ConfirmationProvider() {
-  const { isOpen, message, accept, cancel } = useConfirmationStore();
+  const { isOpen, options, accept, cancel } = useConfirmationStore();
 
   return (
     <ConfirmationModal
       isOpen={isOpen}
-      message={message}
+      options={options}
       onAccept={accept}
       onCancel={cancel}
     />

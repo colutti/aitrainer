@@ -1,58 +1,56 @@
 import { create } from 'zustand';
 
+export type ConfirmationType = 'primary' | 'danger';
+
+export interface ConfirmationOptions {
+  title?: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  type?: ConfirmationType;
+}
+
 interface ConfirmationState {
   isOpen: boolean;
-  message: string;
+  options: ConfirmationOptions;
   resolve: ((value: boolean) => void) | null;
 }
 
 interface ConfirmationActions {
-  confirm: (message: string) => Promise<boolean>;
+  confirm: (options: string | ConfirmationOptions) => Promise<boolean>;
   accept: () => void;
   cancel: () => void;
 }
 
-type ConfirmationStore = ConfirmationState & ConfirmationActions;
+export type ConfirmationStore = ConfirmationState & ConfirmationActions;
 
 /**
  * Confirmation dialog store using Zustand
  *
  * Provides a promise-based confirmation dialog for user actions.
  * Use this for destructive actions like delete, logout, etc.
- *
- * @example
- * ```tsx
- * function DeleteButton({ itemId }: { itemId: string }) {
- *   const { confirm } = useConfirmationStore();
- *
- *   const handleDelete = async () => {
- *     const confirmed = await confirm('Are you sure you want to delete this item?');
- *     if (confirmed) {
- *       await deleteItem(itemId);
- *     }
- *   };
- *
- *   return <button onClick={handleDelete}>Delete</button>;
- * }
- * ```
  */
 export const useConfirmationStore = create<ConfirmationStore>((set, get) => ({
   isOpen: false,
-  message: '',
+  options: { message: '' },
   resolve: null,
 
   /**
    * Show confirmation dialog and return a promise
    * Promise resolves to true if user accepts, false if user cancels
    *
-   * @param message - Confirmation message to display
+   * @param options - Confirmation message string or options object
    * @returns Promise that resolves to boolean (true = accept, false = cancel)
    */
-  confirm: (message: string) => {
+  confirm: (options: string | ConfirmationOptions) => {
+    const confirmationOptions = typeof options === 'string' 
+      ? { message: options } 
+      : options;
+
     return new Promise<boolean>((resolve) => {
       set({
         isOpen: true,
-        message,
+        options: confirmationOptions,
         resolve,
       });
     });
@@ -69,7 +67,7 @@ export const useConfirmationStore = create<ConfirmationStore>((set, get) => ({
     }
     set({
       isOpen: false,
-      message: '',
+      options: { message: '' },
       resolve: null,
     });
   },
@@ -85,8 +83,17 @@ export const useConfirmationStore = create<ConfirmationStore>((set, get) => ({
     }
     set({
       isOpen: false,
-      message: '',
+      options: { message: '' },
       resolve: null,
     });
   },
 }));
+
+/**
+ * Hook to use the confirmation store
+ */
+export const useConfirmation = () => {
+  const confirm = useConfirmationStore((state) => state.confirm);
+  return { confirm };
+};
+
