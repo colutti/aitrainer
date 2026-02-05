@@ -2,13 +2,19 @@
 @source "./src";
 
 @theme {
-  --color-primary: #10b981;
-  --color-primary-hover: #059669;
-  --color-secondary: #3f3f46;
-  --color-dark-bg: #121212;
-  --color-light-bg: #1e1e1e;
-  --color-text-primary: #ffffff;
-  --color-text-secondary: #a0a0a0;
+  --color-primary: #FF6B6B;
+  --color-primary-hover: #FF5252;
+  --color-accent: #FF8E53;
+  --color-gradient-start: #FF6B6B;
+  --color-gradient-end: #FF8E53;
+  --color-user-message: #8B5CF6;
+  --color-secondary: #252528;
+  --color-dark-bg: #0A0A0B;
+  --color-light-bg: #151517;
+  --color-text-primary: #FAFAFA;
+  --color-text-secondary: #71717A;
+  --color-success: #4ADE80;
+  --color-error: #F87171;
 }
 
 @keyframes slide-in-fade {
