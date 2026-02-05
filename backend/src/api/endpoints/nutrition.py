@@ -108,6 +108,68 @@ def get_today_nutrition(
         ) from e
 
 
+class CreateNutritionLogRequest(BaseModel):
+    """Request model for creating a nutrition log."""
+    date: str  # ISO format date string
+    source: str = "manual"
+    calories: int
+    protein_grams: float
+    carbs_grams: float
+    fat_grams: float
+    fiber_grams: float | None = None
+    sodium_mg: float | None = None
+
+
+@router.post("/log", response_model=NutritionWithId)
+def create_nutrition_log(
+    user_email: CurrentUser,
+    db: DatabaseDep,
+    log_data: CreateNutritionLogRequest,
+) -> NutritionWithId:
+    """
+    Creates a new nutrition log for the authenticated user.
+    """
+    logger.info("Creating nutrition log for user: %s", user_email)
+    try:
+        from src.api.models.nutrition_log import NutritionLog
+        from datetime import datetime
+
+        # Parse date string to datetime
+        date_obj = datetime.fromisoformat(log_data.date)
+
+        # Create nutrition log with user_email
+        nutrition_log = NutritionLog(
+            user_email=user_email,
+            date=date_obj,
+            calories=log_data.calories,
+            protein_grams=log_data.protein_grams,
+            carbs_grams=log_data.carbs_grams,
+            fat_grams=log_data.fat_grams,
+            fiber_grams=log_data.fiber_grams,
+            sodium_mg=log_data.sodium_mg,
+            source=log_data.source,
+        )
+
+        log_id, _ = db.save_nutrition_log(nutrition_log)
+
+        # Retrieve the saved log to return it
+        saved_log = db.get_nutrition_by_id(log_id)
+        if not saved_log:
+            raise HTTPException(status_code=500, detail="Failed to retrieve saved log")
+
+        # Convert ObjectId to string for Pydantic model
+        if "_id" in saved_log:
+            saved_log["_id"] = str(saved_log["_id"])
+
+        return NutritionWithId(**saved_log)
+    except ValueError as e:
+        logger.warning("Validation error creating nutrition log for %s: %s", user_email, e)
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error("Error creating nutrition log for user %s: %s", user_email, e)
+        raise HTTPException(status_code=500, detail="Failed to create nutrition log") from e
+
+
 @router.post("/import/myfitnesspal", response_model=ImportResult)
 async def import_myfitnesspal(
     user_email: CurrentUser, db: DatabaseDep, file: UploadFile = File(...)
