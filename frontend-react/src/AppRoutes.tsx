@@ -1,9 +1,11 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 import { LoginPage } from './features/auth/LoginPage';
+import { DashboardPage } from './features/dashboard/DashboardPage';
 import { AuthGuard } from './shared/components/auth/AuthGuard';
 import { ProtectedRoute } from './shared/components/auth/ProtectedRoute';
 import { MainLayout } from './shared/components/layout/MainLayout';
+
 
 /**
  * AppRoutes component
@@ -34,7 +36,7 @@ export function AppRoutes() {
         }
       >
         {/* Dashboard / Home */}
-        <Route index element={<div className="text-2xl font-bold">Dashboard (Em breve)</div>} />
+        <Route index element={<DashboardPage />} />
         
         {/* Placeholder routes for features */}
         <Route path="workouts" element={<div className="text-2xl font-bold">Treinos (Em breve)</div>} />

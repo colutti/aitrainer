@@ -1,13 +1,6 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 
-/**
- * Utility for merging tailwind classes safely
- */
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import { cn } from '../../utils/cn';
 
 const buttonVariants = cva(
   'inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gradient-start disabled:opacity-50 disabled:pointer-events-none active:scale-95',
