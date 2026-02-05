@@ -31,77 +31,103 @@ describe('Nutrition Tracking', () => {
     };
   
     beforeEach(() => {
-      // 100% Mocked Login with custom nutrition intercepts and aliases
-      cy.mockLogin({
-        intercepts: {
-          '**/nutrition/list*': { statusCode: 200, body: mockNutritionLogs, alias: 'getNutritionLogs' },
-          '**/nutrition/stats': {
-              statusCode: 200,
-              body: {
-                  today: mockNutritionLogs.logs[0],
-                  weekly_adherence: [true, true, false, false, false, false, false],
-                  last_7_days: [],
-                  avg_daily_calories: 1900,
-                  avg_protein: 145,
-                  total_logs: 2
-              },
-              alias: 'getNutritionStats'
-          },
-          '**/workout/stats': { alias: 'getWorkoutStats' }
-        }
-      });
+        cy.viewport(1280, 720);
+        cy.mockLogin({
+            intercepts: {
+                '**/nutrition/list*': { statusCode: 200, body: mockNutritionLogs, alias: 'getNutritionLogs' },
+                '**/nutrition/stats': {
+                    statusCode: 200,
+                    body: {
+                        today: mockNutritionLogs.logs[0],
+                        weekly_adherence: [true, true, false, false, false, false, false],
+                        last_7_days: [],
+                        avg_daily_calories: 1900,
+                        avg_protein: 145,
+                        total_logs: 2,
+                        last_14_days: []
+                    },
+                    alias: 'getNutritionStats'
+                },
+                '**/weight/stats*': { statusCode: 200, body: { latest: null, weight_trend: [] }, alias: 'getWeightStats' },
+                '**/weight': { statusCode: 200, body: [], alias: 'getWeightHistory' },
+                '**/weight?*': { statusCode: 200, body: [], alias: 'getWeightHistoryQuery' },
+                '**/metabolism/summary*': { 
+                    statusCode: 200, 
+                    body: { 
+                        tdee: 2200, 
+                        daily_target: 2000, 
+                        weight_trend: [], 
+                        consistency: [] 
+                    }, 
+                    alias: 'getMetabolismSummary' 
+                },
+                '**/workout/stats': { statusCode: 200, body: { streak: 0, frequency: [] }, alias: 'getWorkoutStats' }
+            }
+        });
+        
+        cy.on('window:console', (msg) => {
+            console.log('BROWSER_CONSOLE:', msg);
+        });
     });
   
     it('should navigate to nutrition page from sidebar', () => {
-      cy.get('[data-cy="nav-nutrition"]').click({ force: true });
-      // cy.url().should('include', '/nutrition'); // Skipping URL check as we use signal-based nav
-      cy.get('h1').contains('Nutrição');
-    });
-  
-    it.skip('should display nutrition logs in timeline', () => {
-      cy.get('[data-cy="nav-nutrition"]').click({ force: true });
-      cy.wait('@getNutritionLogs');
-  
-      // Check for log cards
-      cy.contains('2000').should('be.visible'); // Calories
-      cy.contains('kcal').should('be.visible');
-      cy.contains('150g').should('be.visible'); // Protein in legend
-      
-      // Verify Date Format (Portuguese)
-      // We expect "domingo, 11 de janeiro de 2026" or similar based on mock date
-      // Mock date is new Date().toISOString()
-      const today = new Date();
-      const month = today.toLocaleString('pt-BR', { month: 'long' });
-      // Regex to match e.g. "domingo, 11 de janeiro de 2026" (case insensitive)
-      // The day might vary, but month should be present
-      cy.get('.text-xs.uppercase.font-bold').invoke('text').should('match', new RegExp(month, 'i'));
-      
-      // Also check specific structure: "day_name, day de month de year"
-      // Simplest check: ensure it contains "de" and the current year
-      cy.get('.text-xs.uppercase.font-bold').invoke('text').should('include', today.getFullYear().toString());
-    });
-
-    it.skip('should show micros if available', () => {
-        cy.get('[data-cy="nav-nutrition"]').click({ force: true });
+        cy.get('[data-cy="nav-body"]').click();
         cy.wait('@getNutritionLogs');
-        cy.contains('Fibras: 30g').should('be.visible');
-        cy.contains('Sódio: 2000mg').should('be.visible');
+        cy.wait('@getNutritionStats');
+        cy.get('[data-cy="body-tab-nutricao"]').should('be.visible').click();
+        cy.get('h3').contains('Novo Registro').should('be.visible');
+    });
+  
+    it('should display nutrition logs in list', () => {
+        cy.get('[data-cy="nav-body"]').click();
+        
+        cy.wait('@getNutritionLogs');
+        cy.wait('@getNutritionStats');
+        
+        // Switch to Nutrition tab
+        cy.get('[data-cy="body-tab-nutricao"]').should('be.visible').click();
+        
+        // Verify tab is active (check for primary color class)
+        cy.get('[data-cy="body-tab-nutricao"]').should('have.class', 'text-primary');
+        
+        // Ensure form is visible (Loading done)
+        cy.get('.animate-spin', { timeout: 10000 }).should('not.exist');
+        cy.get('h3').contains('Novo Registro TESTE').should('be.visible');
+        
+        // Debug: Check if form inputs are rendered
+        cy.get('[data-cy="calories-input"]').should('exist');
+
+        // CHECK DEBUG LENGTH
+        cy.get('[data-cy="debug-logs-len"]', { timeout: 10000 }).should('be.visible').then($el => {
+           cy.log('DEBUG LEN TEXT: ' + $el.text());
+        });
+
+        cy.get('[data-cy="nutrition-log-item"]').should('have.length', 2);
     });
 
-    it.skip('should show empty state if no logs', () => {
+    it('should show empty state if no logs', () => {
         cy.intercept('GET', '**/nutrition/list*', {
-            logs: [], total: 0, page: 1, page_size: 10, total_pages: 0
+            body: { logs: [], total: 0, page: 1, page_size: 10, total_pages: 0 },
+            statusCode: 200
         }).as('getEmptyLogs');
 
-        cy.get('[data-cy="nav-nutrition"]').click({ force: true });
+        cy.get('[data-cy="nav-body"]').click();
+        
         cy.wait('@getEmptyLogs');
-
-        cy.contains('Nenhum registro encontrado').should('be.visible');
+        
+        cy.get('[data-cy="body-tab-nutricao"]').should('be.visible').click();
+        cy.get('.animate-spin', { timeout: 10000 }).should('not.exist');
+        
+        cy.get('[data-cy="nutrition-empty-state"]').should('be.visible');
     });
 
-    it.skip('should delete a nutrition log', () => {
-        cy.get('[data-cy="nav-nutrition"]').click({ force: true });
-        cy.wait(['@getNutritionLogs', '@getNutritionStats']);
+    it('should delete a nutrition log', () => {
+        cy.get('[data-cy="nav-body"]').click();
+        cy.wait('@getNutritionLogs'); 
+        
+        cy.get('[data-cy="body-tab-nutricao"]').should('be.visible').click();
+        
+        cy.get('[data-cy="nutrition-log-item"]').should('have.length', 2);
 
         // Intercept DELETE
         cy.intercept('DELETE', '**/nutrition/1', {
@@ -109,7 +135,7 @@ describe('Nutrition Tracking', () => {
             body: { message: 'Nutrition log deleted successfully' }
         }).as('deleteLog');
 
-        // Mock re-fetch after deletion
+        // Mock re-fetch after deletion (return only 1 item)
         cy.intercept('GET', '**/nutrition/list*', {
             statusCode: 200,
             body: {
@@ -118,18 +144,15 @@ describe('Nutrition Tracking', () => {
             }
         }).as('getLogsAfterDelete');
 
-        // Trigger delete on the first card
-        // Use data-cy for reliable selection
-        cy.get('[data-cy="delete-nutrition-log"]').first().click({ force: true });
-
-        // Confirm browser dialog
         cy.on('window:confirm', () => true);
 
-        cy.wait('@deleteLog');
-        cy.wait(['@getLogsAfterDelete', '@getNutritionStats']);
+        // Click delete
+        cy.get('[data-cy="nutrition-log-item"]').first().find('[data-cy="delete-nutrition-log"]').click({ force: true });
 
-        // Verify it was removed from UI
-        cy.contains('2000').should('not.exist');
-        cy.contains('1800').should('be.visible');
+        cy.wait('@deleteLog');
+        cy.wait('@getLogsAfterDelete');
+
+        cy.get('[data-cy="nutrition-log-item"]').should('have.length', 1);
+        cy.get('[data-cy="nutrition-log-item"]').first().contains(/1[.,]?800/);
     });
-  });
+});

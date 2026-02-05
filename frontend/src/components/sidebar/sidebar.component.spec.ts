@@ -56,16 +56,10 @@ describe('SidebarComponent', () => {
       expect(navigationServiceMock.navigateTo).toHaveBeenCalledWith('workouts');
     });
 
-    it('should navigate to nutrition view', () => {
-      component.navigateTo('nutrition');
+    it('should navigate to body view', () => {
+      component.navigateTo('body');
 
-      expect(navigationServiceMock.navigateTo).toHaveBeenCalledWith('nutrition');
-    });
-
-    it('should navigate to metabolism view', () => {
-      component.navigateTo('metabolism');
-
-      expect(navigationServiceMock.navigateTo).toHaveBeenCalledWith('metabolism');
+      expect(navigationServiceMock.navigateTo).toHaveBeenCalledWith('body');
     });
 
     it('should navigate to memories view', () => {
@@ -95,12 +89,12 @@ describe('SidebarComponent', () => {
     it('should allow multiple navigation calls', () => {
       component.navigateTo('chat');
       component.navigateTo('workouts');
-      component.navigateTo('nutrition');
+      component.navigateTo('body');
 
       expect(navigationServiceMock.navigateTo).toHaveBeenCalledTimes(3);
       expect(navigationServiceMock.navigateTo).toHaveBeenNthCalledWith(1, 'chat');
       expect(navigationServiceMock.navigateTo).toHaveBeenNthCalledWith(2, 'workouts');
-      expect(navigationServiceMock.navigateTo).toHaveBeenNthCalledWith(3, 'nutrition');
+      expect(navigationServiceMock.navigateTo).toHaveBeenNthCalledWith(3, 'body');
     });
   });
 
@@ -133,12 +127,12 @@ describe('SidebarComponent', () => {
       (navigationServiceMock.currentView as any).set('workouts');
       expect(component.currentView()).toBe('workouts');
 
-      (navigationServiceMock.currentView as any).set('memories');
-      expect(component.currentView()).toBe('memories');
+      (navigationServiceMock.currentView as any).set('body');
+      expect(component.currentView()).toBe('body');
     });
 
     it('should maintain view state across multiple operations', () => {
-      (navigationServiceMock.currentView as any).set('nutrition');
+      (navigationServiceMock.currentView as any).set('body');
 
       component.navigateTo('workouts');
       (navigationServiceMock.currentView as any).set('workouts');
@@ -160,10 +154,10 @@ describe('SidebarComponent', () => {
       expect(component.currentView()).toBe('workouts');
     });
 
-    it('should highlight nutrition when active', () => {
-      (navigationServiceMock.currentView as any).set('nutrition');
+    it('should highlight body when active', () => {
+      (navigationServiceMock.currentView as any).set('body');
 
-      expect(component.currentView()).toBe('nutrition');
+      expect(component.currentView()).toBe('body');
     });
 
     it('should only have one active view', () => {

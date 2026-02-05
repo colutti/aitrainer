@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MemoryService } from '../../services/memory.service';
+import { ConfirmationService } from '../../services/confirmation.service';
 import { Memory } from '../../models/memory.model';
 
 /**
@@ -15,6 +16,7 @@ import { Memory } from '../../models/memory.model';
 })
 export class MemoriesComponent implements OnInit {
   private memoryService = inject(MemoryService);
+  private confirmationService = inject(ConfirmationService);
 
   memories = this.memoryService.memories;
   isLoading = this.memoryService.isLoading;
@@ -48,7 +50,13 @@ export class MemoriesComponent implements OnInit {
    * @param memory - The memory to delete
    */
   async deleteMemory(memory: Memory): Promise<void> {
-    const confirmed = confirm('Tem certeza que deseja excluir esta memória?');
+    const confirmed = await this.confirmationService.confirm({
+      title: 'Excluir Memória',
+      message: 'Tem certeza que deseja excluir esta memória?',
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar'
+    });
+    
     if (!confirmed) {
       return;
     }

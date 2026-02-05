@@ -1,71 +1,138 @@
-<nav class="w-64 h-full bg-light-bg p-4 flex flex-col justify-between shadow-lg overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-zinc-600 [&::-webkit-scrollbar-thumb]:rounded-full">
+<nav
+  class="w-64 h-full bg-light-bg p-4 flex flex-col justify-between shadow-lg overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-zinc-600 [&::-webkit-scrollbar-thumb]:rounded-full"
+>
   <div>
     <div class="flex items-center space-x-3 mb-10 p-2">
-       <lucide-icon [name]="'star'" class="h-10 w-10 text-primary"></lucide-icon>
+      <lucide-icon [name]="'star'" class="h-10 w-10 text-primary"></lucide-icon>
       <h2 class="text-2xl font-bold text-text-primary">Fitiq</h2>
     </div>
     <ul class="space-y-2">
       <li>
-        <button data-cy="nav-dashboard" (click)="navigateTo('home')" [class]="currentView() === 'home' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
+        <button
+          data-cy="nav-dashboard"
+          (click)="navigateTo('home')"
+          [class]="
+            currentView() === 'home'
+              ? 'bg-primary text-white'
+              : 'hover:bg-secondary'
+          "
+          class="w-full text-left flex items-center p-3 rounded-lg transition-colors"
+        >
           <lucide-icon [name]="'home'" class="h-6 w-6 mr-3"></lucide-icon>
           <span>Home</span>
         </button>
       </li>
       <li>
-        <button data-cy="nav-chat" (click)="navigateTo('coach')" [class]="currentView() === 'coach' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
-          <lucide-icon [name]="'message-circle'" class="h-6 w-6 mr-3"></lucide-icon>
-          <span>Chat</span>
+        <button
+          data-cy="nav-chat"
+          (click)="navigateTo('coach')"
+          [class]="
+            currentView() === 'coach'
+              ? 'bg-primary text-white'
+              : 'hover:bg-secondary'
+          "
+          class="w-full text-left flex items-center p-3 rounded-lg transition-colors"
+        >
+          <lucide-icon
+            [name]="'message-circle'"
+            class="h-6 w-6 mr-3"
+          ></lucide-icon>
+          <span>Coach</span>
         </button>
       </li>
       <li>
-        <button data-cy="nav-memories" (click)="navigateTo('memories')" [class]="currentView() === 'memories' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
+        <button
+          data-cy="nav-memories"
+          (click)="navigateTo('memories')"
+          [class]="
+            currentView() === 'memories'
+              ? 'bg-primary text-white'
+              : 'hover:bg-secondary'
+          "
+          class="w-full text-left flex items-center p-3 rounded-lg transition-colors"
+        >
           <lucide-icon [name]="'lightbulb'" class="h-6 w-6 mr-3"></lucide-icon>
           <span>Memórias</span>
         </button>
       </li>
       <li>
-        <button data-cy="nav-workouts" (click)="navigateTo('workouts')" [class]="currentView() === 'workouts' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
-          <lucide-icon [name]="'bar-chart-3'" class="h-6 w-6 mr-3"></lucide-icon>
+        <button
+          data-cy="nav-workouts"
+          (click)="navigateTo('workouts')"
+          [class]="
+            currentView() === 'workouts'
+              ? 'bg-primary text-white'
+              : 'hover:bg-secondary'
+          "
+          class="w-full text-left flex items-center p-3 rounded-lg transition-colors"
+        >
+          <lucide-icon
+            [name]="'bar-chart-3'"
+            class="h-6 w-6 mr-3"
+          ></lucide-icon>
           <span>Meus Treinos</span>
         </button>
       </li>
       <li>
-        <button data-cy="nav-nutrition" (click)="navigateTo('body')" [class]="currentView() === 'body' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
-            <lucide-icon [name]="'apple'" class="h-6 w-6 mr-3"></lucide-icon>
-            <span>Nutrição</span>
-        </button>
-      </li>
-      <li>
-        <button data-cy="nav-metabolism" (click)="navigateTo('body')" [class]="currentView() === 'body' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
-            <lucide-icon [name]="'zap'" class="h-6 w-6 mr-3"></lucide-icon>
-            <span>Metabolismo</span>
-        </button>
-      </li>
-      <li>
-        <button data-cy="nav-body-composition" (click)="navigateTo('body')" [class]="currentView() === 'body' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
-            <lucide-icon [name]="'body'" class="h-6 w-6 mr-3"></lucide-icon>
-            <span>Composição</span>
+        <button
+          data-cy="nav-body"
+          (click)="navigateTo('body')"
+          [class]="
+            currentView() === 'body'
+              ? 'bg-primary text-white'
+              : 'hover:bg-secondary'
+          "
+          class="w-full text-left flex items-center p-3 rounded-lg transition-colors"
+        >
+          <lucide-icon [name]="'activity'" class="h-6 w-6 mr-3"></lucide-icon>
+          <span>Corpo</span>
         </button>
       </li>
     </ul>
-
   </div>
   <div>
     <ul class="space-y-2">
       <li>
-        <button data-cy="nav-user-profile" (click)="navigateTo('profile')" [class]="currentView() === 'profile' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
+        <button
+          data-cy="nav-user-profile"
+          (click)="navigateTo('profile')"
+          [class]="
+            currentView() === 'profile'
+              ? 'bg-primary text-white'
+              : 'hover:bg-secondary'
+          "
+          class="w-full text-left flex items-center p-3 rounded-lg transition-colors"
+        >
           <lucide-icon [name]="'user'" class="h-6 w-6 mr-3"></lucide-icon>
           <span>Meu Perfil</span>
         </button>
       </li>
       <li>
-        <button data-cy="nav-trainer-settings" (click)="navigateTo('trainer-settings')" [class]="currentView() === 'trainer-settings' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
+        <button
+          data-cy="nav-trainer-settings"
+          (click)="navigateTo('trainer-settings')"
+          [class]="
+            currentView() === 'trainer-settings'
+              ? 'bg-primary text-white'
+              : 'hover:bg-secondary'
+          "
+          class="w-full text-left flex items-center p-3 rounded-lg transition-colors"
+        >
           <lucide-icon [name]="'settings'" class="h-6 w-6 mr-3"></lucide-icon>
           <span>Ajustes do Trainer</span>
         </button>
       </li>
       <li>
-        <button data-cy="nav-integrations" (click)="navigateTo('integrations')" [class]="currentView() === 'integrations' ? 'bg-primary text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
+        <button
+          data-cy="nav-integrations"
+          (click)="navigateTo('integrations')"
+          [class]="
+            currentView() === 'integrations'
+              ? 'bg-primary text-white'
+              : 'hover:bg-secondary'
+          "
+          class="w-full text-left flex items-center p-3 rounded-lg transition-colors"
+        >
           <lucide-icon [name]="'link'" class="h-6 w-6 mr-3"></lucide-icon>
           <span>Integrações</span>
         </button>
@@ -78,25 +145,61 @@
         <div class="text-xs text-zinc-500 mb-2 px-3 font-semibold">ADMIN</div>
         <ul class="space-y-2">
           <li>
-            <button data-cy="nav-admin-dashboard" (click)="navigateTo('admin-dashboard')" [class]="currentView() === 'admin-dashboard' ? 'bg-yellow-600 text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
+            <button
+              data-cy="nav-admin-dashboard"
+              (click)="navigateTo('admin-dashboard')"
+              [class]="
+                currentView() === 'admin-dashboard'
+                  ? 'bg-yellow-600 text-white'
+                  : 'hover:bg-secondary'
+              "
+              class="w-full text-left flex items-center p-3 rounded-lg transition-colors"
+            >
               <span class="text-xl mr-3">🔧</span>
               <span>Dashboard</span>
             </button>
           </li>
           <li>
-            <button data-cy="nav-admin-users" (click)="navigateTo('admin-users')" [class]="currentView() === 'admin-users' ? 'bg-yellow-600 text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
+            <button
+              data-cy="nav-admin-users"
+              (click)="navigateTo('admin-users')"
+              [class]="
+                currentView() === 'admin-users'
+                  ? 'bg-yellow-600 text-white'
+                  : 'hover:bg-secondary'
+              "
+              class="w-full text-left flex items-center p-3 rounded-lg transition-colors"
+            >
               <span class="text-xl mr-3">👥</span>
               <span>Usuários</span>
             </button>
           </li>
           <li>
-            <button data-cy="nav-admin-logs" (click)="navigateTo('admin-logs')" [class]="currentView() === 'admin-logs' ? 'bg-yellow-600 text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
+            <button
+              data-cy="nav-admin-logs"
+              (click)="navigateTo('admin-logs')"
+              [class]="
+                currentView() === 'admin-logs'
+                  ? 'bg-yellow-600 text-white'
+                  : 'hover:bg-secondary'
+              "
+              class="w-full text-left flex items-center p-3 rounded-lg transition-colors"
+            >
               <span class="text-xl mr-3">📋</span>
               <span>Logs</span>
             </button>
           </li>
           <li>
-            <button data-cy="nav-admin-prompts" (click)="navigateTo('admin-prompts')" [class]="currentView() === 'admin-prompts' ? 'bg-yellow-600 text-white' : 'hover:bg-secondary'" class="w-full text-left flex items-center p-3 rounded-lg transition-colors">
+            <button
+              data-cy="nav-admin-prompts"
+              (click)="navigateTo('admin-prompts')"
+              [class]="
+                currentView() === 'admin-prompts'
+                  ? 'bg-yellow-600 text-white'
+                  : 'hover:bg-secondary'
+              "
+              class="w-full text-left flex items-center p-3 rounded-lg transition-colors"
+            >
               <span class="text-xl mr-3">💬</span>
               <span>Prompts</span>
             </button>
@@ -105,8 +208,11 @@
       </div>
     }
 
-    <hr class="border-secondary my-2">
-    <button (click)="logout()" class="w-full text-left flex items-center p-3 rounded-lg hover:bg-secondary transition-colors text-text-secondary">
+    <hr class="border-secondary my-2" />
+    <button
+      (click)="logout()"
+      class="w-full text-left flex items-center p-3 rounded-lg hover:bg-secondary transition-colors text-text-secondary"
+    >
       <lucide-icon [name]="'log-out'" class="h-6 w-6 mr-3"></lucide-icon>
       <span>Sair</span>
     </button>

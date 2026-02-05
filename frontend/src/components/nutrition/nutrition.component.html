@@ -45,131 +45,132 @@
   </div>
 
   <!-- Insights & Data Grid -->
-  <div
-    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 w-full relative z-10"
-    *ngIf="stats() as s"
-  >
-    <!-- Row 1: Analytics -->
-    <app-widget-calories-weight-comparison
-      class="lg:col-span-2"
-      [startDate]="s.startDate"
-      [endDate]="s.endDate"
-      [weightTrend]="metabolismService.stats()?.weight_trend || []"
-      [calorieHistory]="s.last_14_days || []"
-    >
-    </app-widget-calories-weight-comparison>
-
-    <app-widget-calorie-history
-      class="lg:col-span-2"
-      [calorieHistory]="s.last_14_days || []"
-      [targetCalories]="s.daily_target"
-    >
-    </app-widget-calorie-history>
-
-    <!-- Row 2: Performance & Adherence -->
-    <app-widget-macro-targets
-      class="lg:col-span-2"
-      [avgProtein]="s.avg_protein || 0"
-      [targetProtein]="s.macro_targets.protein"
-      [avgCarbs]="((s.avg_daily_calories || 0) * 0.4) / 4"
-      [targetCarbs]="s.macro_targets.carbs"
-      [avgFat]="((s.avg_daily_calories || 0) * 0.3) / 9"
-      [targetFat]="s.macro_targets.fat"
-      [stabilityScore]="s.stability_score"
-      [startDate]="s.startDate"
-      [endDate]="s.endDate"
-    >
-    </app-widget-macro-targets>
-
-    <app-widget-adherence
-      class="lg:col-span-2"
-      title="Meta Calórica Atingida"
-      [weeklyAdherence]="s.weekly_adherence"
-    ></app-widget-adherence>
-
-    <app-widget-average-calories
-      class="lg:col-span-2"
-      [avg7Days]="s.avg_daily_calories"
-      [avg14Days]="s.avg_daily_calories_14_days"
-    >
-    </app-widget-average-calories>
-
-    <app-widget-calorie-volatility
-      class="lg:col-span-2"
-      [variance]="120"
-    ></app-widget-calorie-volatility>
-
-    <!-- Row 3: Today's Snapshot -->
-    <app-widget-macros-today
-      class="lg:col-span-2"
-      [calories]="s.today?.calories || 0"
-      [protein]="s.today?.protein_grams || 0"
-      [carbs]="s.today?.carbs_grams || 0"
-      [fat]="s.today?.fat_grams || 0"
-    >
-    </app-widget-macros-today>
-
-    <!-- Daily Summary Grid -->
+  @if (stats(); as s) {
     <div
-      class="lg:col-span-2 bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg flex items-center justify-between group h-full"
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 w-full relative z-10"
     >
-      <div class="flex-1">
-        <p
-          class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-3"
-        >
-          Distribuição de Macros Hoje
-        </p>
-        @if (s.today) {
-          <div class="grid grid-cols-3 gap-3">
-            <div
-              class="bg-secondary/10 p-2.5 rounded-xl border border-secondary/20 flex flex-col items-center"
-            >
-              <span
-                class="text-[8px] text-text-secondary font-bold uppercase mb-1"
-                >Proteína</span
-              >
-              <span class="text-base font-black text-white"
-                >{{ s.today.protein_grams
-                }}<span class="text-[10px] font-normal ml-0.5">g</span></span
-              >
-            </div>
-            <div
-              class="bg-secondary/10 p-2.5 rounded-xl border border-secondary/20 flex flex-col items-center"
-            >
-              <span
-                class="text-[8px] text-text-secondary font-bold uppercase mb-1"
-                >Carbos</span
-              >
-              <span class="text-base font-black text-white"
-                >{{ s.today.carbs_grams
-                }}<span class="text-[10px] font-normal ml-0.5">g</span></span
-              >
-            </div>
-            <div
-              class="bg-secondary/10 p-2.5 rounded-xl border border-secondary/20 flex flex-col items-center"
-            >
-              <span
-                class="text-[8px] text-text-secondary font-bold uppercase mb-1"
-                >Gordura</span
-              >
-              <span class="text-base font-black text-white"
-                >{{ s.today.fat_grams
-                }}<span class="text-[10px] font-normal ml-0.5">g</span></span
-              >
-            </div>
-          </div>
-        } @else {
-          <p class="text-xs text-text-secondary italic">
-            Aguardando seu primeiro registro do dia.
-          </p>
-        }
-      </div>
-      <span
-        class="text-3xl ml-6 opacity-10 group-hover:opacity-40 transition-opacity"
-        >🥗</span
+      <!-- Row 1: Analytics -->
+      <app-widget-calories-weight-comparison
+        class="lg:col-span-2"
+        [startDate]="s.startDate || ''"
+        [endDate]="s.endDate || ''"
+        [weightTrend]="metabolismService.stats()?.weight_trend || []"
+        [calorieHistory]="s.last_14_days || []"
       >
+      </app-widget-calories-weight-comparison>
+
+      <app-widget-calorie-history
+        class="lg:col-span-2"
+        [calorieHistory]="s.last_14_days || []"
+        [targetCalories]="s.daily_target"
+      >
+      </app-widget-calorie-history>
+
+      <!-- Row 2: Performance & Adherence -->
+      <app-widget-macro-targets
+        class="lg:col-span-2"
+        [avgProtein]="s.avg_protein || 0"
+        [targetProtein]="s.macro_targets?.protein || 0"
+        [avgCarbs]="((s.avg_daily_calories || 0) * 0.4) / 4"
+        [targetCarbs]="s.macro_targets?.carbs || 0"
+        [avgFat]="((s.avg_daily_calories || 0) * 0.3) / 9"
+        [targetFat]="s.macro_targets?.fat || 0"
+        [stabilityScore]="s.stability_score || 0"
+        [startDate]="s.startDate || ''"
+        [endDate]="s.endDate || ''"
+      >
+      </app-widget-macro-targets>
+
+      <app-widget-adherence
+        class="lg:col-span-2"
+        title="Meta Calórica Atingida"
+        [weeklyAdherence]="s.weekly_adherence"
+      ></app-widget-adherence>
+
+      <app-widget-average-calories
+        class="lg:col-span-2"
+        [avg7Days]="s.avg_daily_calories"
+        [avg14Days]="s.avg_daily_calories_14_days"
+      >
+      </app-widget-average-calories>
+
+      <app-widget-calorie-volatility
+        class="lg:col-span-2"
+        [variance]="120"
+      ></app-widget-calorie-volatility>
+
+      <!-- Row 3: Today's Snapshot -->
+      <app-widget-macros-today
+        class="lg:col-span-2"
+        [calories]="s.today?.calories || 0"
+        [protein]="s.today?.protein_grams || 0"
+        [carbs]="s.today?.carbs_grams || 0"
+        [fat]="s.today?.fat_grams || 0"
+      >
+      </app-widget-macros-today>
+
+      <!-- Daily Summary Grid -->
+      <div
+        class="lg:col-span-2 bg-light-bg p-4 rounded-2xl border border-secondary shadow-lg flex items-center justify-between group h-full"
+      >
+        <div class="flex-1">
+          <p
+            class="text-text-secondary text-[10px] font-bold uppercase tracking-wider mb-3"
+          >
+            Distribuição de Macros Hoje
+          </p>
+          @if (s.today) {
+            <div class="grid grid-cols-3 gap-3">
+              <div
+                class="bg-secondary/10 p-2.5 rounded-xl border border-secondary/20 flex flex-col items-center"
+              >
+                <span
+                  class="text-[8px] text-text-secondary font-bold uppercase mb-1"
+                  >Proteína</span
+                >
+                <span class="text-base font-black text-white"
+                  >{{ s.today.protein_grams
+                  }}<span class="text-[10px] font-normal ml-0.5">g</span></span
+                >
+              </div>
+              <div
+                class="bg-secondary/10 p-2.5 rounded-xl border border-secondary/20 flex flex-col items-center"
+              >
+                <span
+                  class="text-[8px] text-text-secondary font-bold uppercase mb-1"
+                  >Carbos</span
+                >
+                <span class="text-base font-black text-white"
+                  >{{ s.today.carbs_grams
+                  }}<span class="text-[10px] font-normal ml-0.5">g</span></span
+                >
+              </div>
+              <div
+                class="bg-secondary/10 p-2.5 rounded-xl border border-secondary/20 flex flex-col items-center"
+              >
+                <span
+                  class="text-[8px] text-text-secondary font-bold uppercase mb-1"
+                  >Gordura</span
+                >
+                <span class="text-base font-black text-white"
+                  >{{ s.today.fat_grams
+                  }}<span class="text-[10px] font-normal ml-0.5">g</span></span
+                >
+              </div>
+            </div>
+          } @else {
+            <p class="text-xs text-text-secondary italic">
+              Aguardando seu primeiro registro do dia.
+            </p>
+          }
+        </div>
+        <span
+          class="text-3xl ml-6 opacity-10 group-hover:opacity-40 transition-opacity"
+          >🥗</span
+        >
+      </div>
     </div>
-  </div>
+  }
 
   <!-- Content Area -->
   <div class="relative z-10">
@@ -205,7 +206,7 @@
 
         <div class="space-y-3">
           @for (log of logs(); track log.id) {
-            <div class="relative group">
+            <div class="relative group" data-test="log-entry">
               <!-- Timeline Dot -->
               <div
                 class="absolute -left-[1.8rem] md:-left-[2.1rem] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-dark-bg border-[3px] border-primary z-10"
@@ -252,14 +253,13 @@
                     </div>
                     <div
                       class="flex gap-2 text-text-secondary/50"
-                      *ngIf="log.fiber_grams || log.sodium_mg"
                     >
-                      <span *ngIf="log.fiber_grams"
-                        >FB: {{ log.fiber_grams }}g</span
-                      >
-                      <span *ngIf="log.sodium_mg"
-                        >NA: {{ log.sodium_mg }}mg</span
-                      >
+                      @if (log.fiber_grams) {
+                        <span>FB: {{ log.fiber_grams }}g</span>
+                      }
+                      @if (log.sodium_mg) {
+                        <span>NA: {{ log.sodium_mg }}mg</span>
+                      }
                     </div>
                   </div>
                   <div
@@ -297,6 +297,7 @@
                 <!-- Actions -->
                 <div class="shrink-0 relative z-20">
                   <button
+                    [attr.data-test]="'delete-' + log.id"
                     (click)="deleteLog($event, log)"
                     [disabled]="deletingId() === log.id"
                     class="relative z-50 p-2 text-text-secondary hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"

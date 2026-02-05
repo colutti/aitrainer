@@ -22,12 +22,12 @@ import { CommonModule } from '@angular/common';
       <div class="flex gap-4 mb-2">
         <div class="flex-1">
           <p class="text-[9px] text-text-secondary uppercase font-bold tracking-tighter mb-1">Últimos 7 dias</p>
-          <p class="text-xl font-black text-white whitespace-nowrap">{{ avg7Days | number:'1.0-0' }} <span class="text-[10px] font-medium opacity-40">KCAL</span></p>
+          <p class="text-xl font-black text-white whitespace-nowrap" data-test="avg-7-days">{{ avg7Days | number:'1.0-0' }} <span class="text-[10px] font-medium opacity-40">KCAL</span></p>
         </div>
         <div class="w-px bg-secondary/30 h-10 self-center"></div>
         <div class="flex-1">
           <p class="text-[9px] text-text-secondary uppercase font-bold tracking-tighter mb-1">Últimos 14 dias</p>
-          <p class="text-xl font-black text-white whitespace-nowrap">{{ avg14Days | number:'1.0-0' }} <span class="text-[10px] font-medium opacity-40">KCAL</span></p>
+          <p class="text-xl font-black text-white whitespace-nowrap" data-test="avg-14-days">{{ avg14Days | number:'1.0-0' }} <span class="text-[10px] font-medium opacity-40">KCAL</span></p>
         </div>
       </div>
       

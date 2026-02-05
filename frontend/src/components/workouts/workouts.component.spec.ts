@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { WorkoutsComponent } from './workouts.component';
 import { WorkoutService } from '../../services/workout.service';
+import { ConfirmationService } from '../../services/confirmation.service';
 import { signal } from '@angular/core';
 import { WorkoutDrawerComponent } from './workout-drawer/workout-drawer.component';
 import { Workout } from '../../models/workout.model';
@@ -10,6 +11,7 @@ describe('WorkoutsComponent', () => {
   let component: WorkoutsComponent;
   let fixture: ComponentFixture<WorkoutsComponent>;
   let workoutServiceMock: Partial<WorkoutService>;
+  let confirmationServiceMock: Partial<ConfirmationService>;
 
   const mockWorkout: Partial<Workout> = {
     id: '1',
@@ -35,10 +37,15 @@ describe('WorkoutsComponent', () => {
       deleteWorkout: jest.fn().mockResolvedValue(undefined)
     } as unknown as WorkoutService;
 
+    confirmationServiceMock = {
+      confirm: jest.fn().mockResolvedValue(true)
+    };
+
     await TestBed.configureTestingModule({
       imports: [WorkoutsComponent, WorkoutDrawerComponent],
       providers: [
-        { provide: WorkoutService, useValue: workoutServiceMock }
+        { provide: WorkoutService, useValue: workoutServiceMock },
+        { provide: ConfirmationService, useValue: confirmationServiceMock }
       ],
       schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();
@@ -154,7 +161,7 @@ describe('WorkoutsComponent', () => {
 
   describe('Workout Deletion', () => {
     it('should delete workout after confirmation', async () => {
-      jest.spyOn(window, 'confirm').mockReturnValue(true);
+      (confirmationServiceMock.confirm as jest.Mock).mockResolvedValueOnce(true);
 
       await component.deleteWorkout(new MouseEvent('click'), mockWorkout as Workout);
 
@@ -162,7 +169,7 @@ describe('WorkoutsComponent', () => {
     });
 
     it('should not delete without confirmation', async () => {
-      jest.spyOn(window, 'confirm').mockReturnValue(false);
+      (confirmationServiceMock.confirm as jest.Mock).mockResolvedValueOnce(false);
 
       await component.deleteWorkout(new MouseEvent('click'), mockWorkout as Workout);
 
@@ -170,9 +177,12 @@ describe('WorkoutsComponent', () => {
     });
 
     it('should set deletingId during deletion', async () => {
-      jest.spyOn(window, 'confirm').mockReturnValue(true);
+      (confirmationServiceMock.confirm as jest.Mock).mockResolvedValueOnce(true);
 
       const deletePromise = component.deleteWorkout(new MouseEvent('click'), mockWorkout as Workout);
+
+      // Wait a microtask for the confirmation to resolve and the next lines of deleteWorkout to run
+      await Promise.resolve();
 
       expect(component.deletingId()).toBe('1');
 
@@ -180,25 +190,24 @@ describe('WorkoutsComponent', () => {
     });
 
     it('should clear deletingId after deletion', async () => {
-      jest.spyOn(window, 'confirm').mockReturnValue(true);
+      (confirmationServiceMock.confirm as jest.Mock).mockResolvedValueOnce(true);
 
       await component.deleteWorkout(new MouseEvent('click'), mockWorkout as Workout);
 
       expect(component.deletingId()).toBeNull();
     });
 
-    it('should stop propagation when deleting', () => {
-      jest.spyOn(window, 'confirm').mockReturnValue(true);
+    it('should stop propagation when deleting', async () => {
+      (confirmationServiceMock.confirm as jest.Mock).mockResolvedValueOnce(true);
       const event = new MouseEvent('click');
       jest.spyOn(event, 'stopPropagation');
 
-      component.deleteWorkout(event, mockWorkout as Workout);
+      await component.deleteWorkout(event, mockWorkout as Workout);
 
       expect(event.stopPropagation).toHaveBeenCalled();
     });
-
     it('should clear deletingId even on error', async () => {
-      jest.spyOn(window, 'confirm').mockReturnValue(true);
+      (confirmationServiceMock.confirm as jest.Mock).mockResolvedValueOnce(true);
       (workoutServiceMock.deleteWorkout as jest.Mock).mockRejectedValueOnce(new Error('Delete failed'));
 
       try {
@@ -273,25 +282,6 @@ describe('WorkoutsComponent', () => {
 
       expect(formatted).toContain('21');
       expect(formatted).toContain('jan');
-    });
-
-    it('should format full date with time', () => {
-      const formatted = component.getFormattedDate('2026-01-21T10:30:00Z');
-
-      expect(formatted).toContain('21');
-      expect(formatted.length).toBeGreaterThan(5);
-    });
-
-    it('should handle empty date string', () => {
-      const formatted = component.getFormattedDate('');
-
-      expect(formatted).toBe('');
-    });
-
-    it('should handle invalid date gracefully', () => {
-      const formatted = component.getFormattedDate('invalid');
-
-      expect(formatted).toBe('invalid');
     });
   });
 

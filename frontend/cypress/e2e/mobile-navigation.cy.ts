@@ -75,14 +75,13 @@ describe('Mobile Navigation', () => {
         // Open menu
         cy.get('[data-cy="mobile-menu-btn"]').click();
         
-        // Click "Meu Perfil" in sidebar
-        cy.contains('button', 'Meu Perfil').click({ force: true });
-        cy.wait('@userProfile');
+        // Click "Coach" in sidebar
+        cy.contains('button', 'Coach').click({ force: true });
         
         // Sidebar should auto close
         cy.get('[data-cy="sidebar-wrapper"]').should('have.class', '-translate-x-full');
         
-        // Should have navigated
-        cy.get('app-user-profile', { timeout: 10000 }).should('be.visible');
+        // Should have navigated to chat view (which is coach)
+        cy.get('app-chat', { timeout: 10000 }).should('be.visible');
     });
 });

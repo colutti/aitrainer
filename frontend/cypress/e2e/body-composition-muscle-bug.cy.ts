@@ -17,39 +17,34 @@ describe('Body Composition - Manual Entry Bug', () => {
   });
 
   it('should save and display muscle mass value correctly', () => {
-    // Navigate to body composition
-    cy.get('[data-cy="nav-body-composition"]').click();
-    cy.get('app-body-composition', { timeout: 15000 }).should('be.visible');
+    // Navigate to body
+    cy.get('[data-cy="nav-body"]').click();
+    cy.get('[data-cy="body-tab-peso"]').click();
+    cy.get('app-body', { timeout: 15000 }).should('be.visible');
     
-    // Scroll to the form and wait for input to be visible
-    cy.contains('Adicionar Registro Manual').scrollIntoView();
+    // Scroll to the form
+    cy.contains('Novo Registro').scrollIntoView();
     cy.get('[data-cy="weight-input"]', { timeout: 15000 }).should('be.visible');
     
     // Fill the form
-    cy.get('input[type="date"]').clear().type('2026-01-12');
+    // Using data-cy where possible or indices
     cy.get('[data-cy="weight-input"]').clear().type('75.5');
     cy.get('[data-cy="fat-input"]').clear().type('22.0');
+    cy.get('[data-cy="muscle-input"]').clear().type('54.0');
     
-    // Fill muscle (need to find the input - third number input after weight/fat)
-    cy.get('input[type="number"]').eq(2).clear().type('54.0');  // Muscle is 3rd input
-    
-    // Fill water
-    cy.get('input[type="number"]').eq(3).clear().type('52.0');
-
     // Submit
-    cy.contains('button', 'Salvar Registro').click();
+    cy.get('[data-cy="save-weight-btn"]').click();
 
     // Verify the POST was called with correct data
     cy.wait('@saveWeight', { timeout: 20000 }).then((interception) => {
       expect(interception.request.body).to.include({
         weight_kg: 75.5,
         muscle_mass_pct: 54.0,
-        body_fat_pct: 22.0,
-        body_water_pct: 52.0
+        body_fat_pct: 22.0
       });
     });
 
-    // Success message shows inline (not a global toast)
-    cy.contains('Registro salvo com sucesso!', { timeout: 10000 }).should('be.visible');
+    // Success message
+    cy.contains('✓ Salvo!', { timeout: 10000 }).should('be.visible');
   });
 });

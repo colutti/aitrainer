@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { WorkoutService } from '../../services/workout.service';
+import { ConfirmationService } from '../../services/confirmation.service';
 import { WorkoutDrawerComponent } from './workout-drawer/workout-drawer.component';
 import { Workout } from '../../models/workout.model';
 import { WorkoutStats } from '../../models/stats.model';
@@ -21,6 +22,7 @@ import { WidgetStrengthRadarComponent } from '../widgets/workouts/widget-strengt
 })
 export class WorkoutsComponent implements OnInit {
   private workoutService = inject(WorkoutService);
+  private confirmationService = inject(ConfirmationService);
 
   workouts = this.workoutService.workouts;
   isLoading = this.workoutService.isLoading;
@@ -120,7 +122,14 @@ export class WorkoutsComponent implements OnInit {
 
   async deleteWorkout(event: Event, workout: Workout): Promise<void> {
     event.stopPropagation();
-    if (confirm('Tem certeza que deseja excluir este treino?')) {
+    const confirmed = await this.confirmationService.confirm({
+      title: 'Excluir Treino',
+      message: 'Tem certeza que deseja excluir este treino?',
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar'
+    });
+
+    if (confirmed) {
       this.deletingId.set(workout.id);
       try {
         await this.workoutService.deleteWorkout(workout.id);

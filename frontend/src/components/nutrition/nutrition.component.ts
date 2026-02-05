@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ConfirmationService } from '../../services/confirmation.service';
 import { NutritionService } from '../../services/nutrition.service';
 import { MetabolismService } from '../../services/metabolism.service';
 import { NutritionLog, NutritionStats } from '../../models/nutrition.model';
@@ -22,6 +23,7 @@ import { WidgetAverageCaloriesComponent } from '../widgets/nutrition/widget-aver
 export class NutritionComponent implements OnInit {
   private nutritionService = inject(NutritionService);
   public metabolismService = inject(MetabolismService);
+  private confirmationService = inject(ConfirmationService);
 
   logs = signal<NutritionLog[]>([]);
   isLoading = signal(true);
@@ -82,16 +84,22 @@ export class NutritionComponent implements OnInit {
     }
   }
 
-  async deleteLog(event: Event, log: NutritionLog) {
+  async deleteLog(event: Event, log: NutritionLog): Promise<void> {
     event.stopPropagation();
-    if (confirm('Tem certeza que deseja excluir este registro nutricional?')) {
+    const confirmed = await this.confirmationService.confirm({
+      title: 'Excluir Registro',
+      message: 'Tem certeza que deseja excluir este registro nutricional?',
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar'
+    });
+
+    if (confirmed) {
       this.deletingId.set(log.id);
       try {
         await this.nutritionService.deleteLog(log.id);
         this.currentPage.set(1);
         await this.loadData();
-        this.deletingId.set(null);
-      } catch (err) {
+      } finally {
         this.deletingId.set(null);
       }
     }

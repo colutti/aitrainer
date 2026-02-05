@@ -18,6 +18,7 @@ import { AdminDashboardComponent } from './components/admin/admin-dashboard.comp
 import { AdminUsersComponent } from './components/admin/admin-users.component';
 import { AdminLogsComponent } from './components/admin/admin-logs.component';
 import { AdminPromptsComponent } from './components/admin/admin-prompts.component';
+import { ConfirmationModalComponent } from './components/shared/confirmation-modal/confirmation-modal.component';
 import { AuthService } from './services/auth.service';
 import { NavigationService } from './services/navigation.service';
 import { TokenExpirationService } from './services/token-expiration.service';
@@ -46,7 +47,8 @@ import { TokenExpirationService } from './services/token-expiration.service';
     AdminDashboardComponent,
     AdminUsersComponent,
     AdminLogsComponent,
-    AdminPromptsComponent
+    AdminPromptsComponent,
+    ConfirmationModalComponent
   ],
 })
 

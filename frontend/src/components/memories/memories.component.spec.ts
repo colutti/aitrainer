@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MemoriesComponent } from './memories.component';
 import { MemoryService } from '../../services/memory.service';
+import { ConfirmationService } from '../../services/confirmation.service';
 import { Memory } from '../../models/memory.model';
 import { signal } from '@angular/core';
 
@@ -8,6 +9,7 @@ describe('MemoriesComponent', () => {
   let component: MemoriesComponent;
   let fixture: ComponentFixture<MemoriesComponent>;
   let memoryServiceMock: Partial<MemoryService>;
+  let confirmationServiceMock: Partial<ConfirmationService>;
 
   const mockMemory: Memory = {
     id: 'test-1',
@@ -29,10 +31,15 @@ describe('MemoriesComponent', () => {
       deleteMemory: jest.fn().mockResolvedValue(undefined)
     };
 
+    confirmationServiceMock = {
+      confirm: jest.fn().mockResolvedValue(true)
+    };
+
     await TestBed.configureTestingModule({
       imports: [MemoriesComponent],
       providers: [
-        { provide: MemoryService, useValue: memoryServiceMock }
+        { provide: MemoryService, useValue: memoryServiceMock },
+        { provide: ConfirmationService, useValue: confirmationServiceMock }
       ]
     }).compileComponents();
 
@@ -127,7 +134,7 @@ describe('MemoriesComponent', () => {
 
   describe('Delete Memory', () => {
     it('should delete memory after confirmation', async () => {
-      jest.spyOn(window, 'confirm').mockReturnValue(true);
+      (confirmationServiceMock.confirm as jest.Mock).mockResolvedValueOnce(true);
 
       await component.deleteMemory(mockMemory);
 
@@ -135,7 +142,7 @@ describe('MemoriesComponent', () => {
     });
 
     it('should not delete memory when confirmation is cancelled', async () => {
-      jest.spyOn(window, 'confirm').mockReturnValue(false);
+      (confirmationServiceMock.confirm as jest.Mock).mockResolvedValueOnce(false);
 
       await component.deleteMemory(mockMemory);
 
@@ -143,7 +150,7 @@ describe('MemoriesComponent', () => {
     });
 
     it('should set deletingId while deleting', async () => {
-      jest.spyOn(window, 'confirm').mockReturnValue(true);
+      (confirmationServiceMock.confirm as jest.Mock).mockResolvedValueOnce(true);
       (memoryServiceMock.deleteMemory as jest.Mock).mockImplementation(async () => {
         // Simulate async operation
         expect(component.deletingId()).toBe('test-1');
@@ -153,7 +160,7 @@ describe('MemoriesComponent', () => {
     });
 
     it('should clear deletingId after deletion', async () => {
-      jest.spyOn(window, 'confirm').mockReturnValue(true);
+      (confirmationServiceMock.confirm as jest.Mock).mockResolvedValueOnce(true);
 
       await component.deleteMemory(mockMemory);
 
@@ -162,7 +169,7 @@ describe('MemoriesComponent', () => {
 
     it('should show success message after deletion', async () => {
       jest.useFakeTimers();
-      jest.spyOn(window, 'confirm').mockReturnValue(true);
+      (confirmationServiceMock.confirm as jest.Mock).mockResolvedValueOnce(true);
 
       await component.deleteMemory(mockMemory);
 
@@ -175,7 +182,7 @@ describe('MemoriesComponent', () => {
     });
 
     it('should clear deletingId even on error', async () => {
-      jest.spyOn(window, 'confirm').mockReturnValue(true);
+      (confirmationServiceMock.confirm as jest.Mock).mockResolvedValueOnce(true);
       (memoryServiceMock.deleteMemory as jest.Mock).mockRejectedValueOnce(new Error('Delete failed'));
 
       // Component's finally block should still clear deletingId despite error

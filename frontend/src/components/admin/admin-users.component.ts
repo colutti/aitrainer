@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../services/admin.service';
 import { NotificationService } from '../../services/notification.service';
+import { ConfirmationService } from '../../services/confirmation.service';
 
 @Component({
   selector: 'app-admin-users',
@@ -129,6 +130,7 @@ import { NotificationService } from '../../services/notification.service';
 export class AdminUsersComponent implements OnInit {
   adminService = inject(AdminService);
   notificationService = inject(NotificationService);
+  confirmationService = inject(ConfirmationService);
 
   users = signal<any[]>([]);
   totalPages = signal<number>(0);
@@ -188,7 +190,14 @@ export class AdminUsersComponent implements OnInit {
       return;
     }
 
-    if (!window.confirm(`Deseja realmente deletar o usuário ${user.email}? Esta ação removerá permanentemente todos os seus dados e memórias.`)) {
+    const confirmed = await this.confirmationService.confirm({
+      title: 'Deletar Usuário',
+      message: `Deseja realmente deletar o usuário ${user.email}? Esta ação removerá permanentemente todos os seus dados e memórias.`,
+      confirmText: 'Deletar',
+      cancelText: 'Cancelar'
+    });
+
+    if (!confirmed) {
       return;
     }
 

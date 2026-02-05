@@ -29,7 +29,7 @@ describe('NutritionService', () => {
   });
 
   describe('getLogs', () => {
-    it('should call GET /nutrition/list with pagination params', () => {
+    it('should call GET /nutrition/list with pagination params', async () => {
       const mockResponse = {
         logs: [{ calories: 2000, protein_grams: 150 }],
         total: 1,
@@ -37,30 +37,32 @@ describe('NutritionService', () => {
         page_size: 10
       };
 
-      service.getLogs(1, 10).subscribe(res => {
-        expect(res).toEqual(mockResponse);
-      });
-
+      const promise = service.getLogs(1, 10);
       const req = httpMock.expectOne(
         `${environment.apiUrl}/nutrition/list?page=1&page_size=10`
       );
       expect(req.request.method).toBe('GET');
       req.flush(mockResponse);
+
+      const res = await promise;
+      expect(res).toEqual(mockResponse);
     });
 
-    it('should include days param when provided', () => {
-      service.getLogs(1, 10, 7).subscribe();
+    it('should include days param when provided', async () => {
+      const promise = service.getLogs(1, 10, 7);
 
       const req = httpMock.expectOne(
         `${environment.apiUrl}/nutrition/list?page=1&page_size=10&days=7`
       );
       expect(req.request.method).toBe('GET');
       req.flush({ logs: [], total: 0, page: 1, page_size: 10 });
+
+      await promise;
     });
   });
 
   describe('getStats', () => {
-    it('should call GET /nutrition/stats and update signal', () => {
+    it('should call GET /nutrition/stats and update signal', async () => {
       const mockStats = {
         daily_target: 2000,
         current_macros: {
@@ -69,45 +71,49 @@ describe('NutritionService', () => {
           carbs: 200,
           fat: 60
         }
-      };
+      } as any;
 
-      service.getStats().subscribe(res => {
-        expect(res).toEqual(mockStats);
-      });
-
+      const promise = service.getStats();
       const req = httpMock.expectOne(`${environment.apiUrl}/nutrition/stats`);
       expect(req.request.method).toBe('GET');
       req.flush(mockStats);
+
+      const res = await promise;
+      expect(res).toEqual(mockStats);
 
       // Verify signal was updated
       expect(service.stats()).toEqual(mockStats);
     });
 
-    it('should handle error gracefully', () => {
-      service.getStats().subscribe({
-        error: err => expect(err).toBeTruthy()
-      });
-
+    it('should handle error gracefully', async () => {
+      const promise = service.getStats();
       const req = httpMock.expectOne(`${environment.apiUrl}/nutrition/stats`);
       req.flush('Error', { status: 500, statusText: 'Server Error' });
+
+      try {
+        await promise;
+        fail('Should have failed');
+      } catch (err) {
+        expect(err).toBeTruthy();
+      }
     });
   });
 
   describe('getTodayLog', () => {
-    it('should call GET /nutrition/today', () => {
+    it('should call GET /nutrition/today', async () => {
       const mockTodayLog = {
         date: '2026-01-13',
         calories: 1500,
         protein_grams: 100
-      };
+      } as any;
 
-      service.getTodayLog().subscribe(res => {
-        expect(res).toEqual(mockTodayLog);
-      });
-
+      const promise = service.getTodayLog();
       const req = httpMock.expectOne(`${environment.apiUrl}/nutrition/today`);
       expect(req.request.method).toBe('GET');
       req.flush(mockTodayLog);
+
+      const res = await promise;
+      expect(res).toEqual(mockTodayLog);
     });
   });
 });

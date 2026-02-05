@@ -1,4 +1,4 @@
-<div class="h-full overflow-y-auto p-6 bg-dark-bg text-text-primary">
+<div data-test="main-grid" class="h-full overflow-y-auto p-6 bg-dark-bg text-text-primary">
   <h1 class="text-3xl font-bold mb-6 tracking-tight">Dashboard</h1>
   
   <div *ngIf="isLoading()" class="flex justify-center items-center h-64">
@@ -11,6 +11,7 @@
 
     <ng-container *ngIf="!isLoading()">
         <app-section-header
+            data-test="section-composition"
             title="Composição Corporal"
             subtitle="Peso, gordura e massa muscular">
         </app-section-header>
@@ -29,7 +30,8 @@
                 <div slot="header-action" class="flex items-center gap-2">
                     <span *ngIf="metabolismStats()?.expenditure_trend === 'up'" class="text-[8px] text-green-400 font-bold uppercase tracking-tighter">↑ METABOLISMO</span>
                     <span *ngIf="metabolismStats()?.expenditure_trend === 'down'" class="text-[8px] text-red-400 font-bold uppercase tracking-tighter">↓ METABOLISMO</span>
-                    <span class="text-[8px] text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20 font-bold uppercase tracking-tighter">{{ metabolismStats()?.confidence || 'Calculado' }}</span>
+                    <!-- MOVED TO BODY TAB: metabolism confidence -->
+                    <!-- <span class="text-[8px] text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20 font-bold uppercase tracking-tighter">{{ metabolismStats()?.confidence || 'Calculado' }}</span> -->
                 </div>
                 <div slot="footer-value" class="text-sm font-bold" [ngClass]="getWeightVariation() < 0 ? 'text-green-400' : 'text-red-400'">
                     {{ getWeightVariation() > 0 ? '+' : '' }}{{ getWeightVariation() | appNumberFormat:'weight' }} kg
@@ -94,20 +96,22 @@
     <!-- ==================== NUTRIÇÃO SECTION ==================== -->
     <ng-container *ngIf="nutritionStats() as n">
         <app-section-header
+            data-test="section-nutrition"
             title="Alimentação"
             subtitle="Calorias, macros e aderência à dieta">
         </app-section-header>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 w-full">
             <!-- Row 1: Correlation & History Side-by-Side -->
-            <app-widget-calories-weight-comparison
+            <!-- MOVED TO BODY TAB: calories-weight-comparison -->
+            <!-- <app-widget-calories-weight-comparison
                 class="lg:col-span-2"
                 title="Análise de Correlação: Calorias vs Peso"
                 [startDate]="metabolismStats()?.startDate"
                 [endDate]="metabolismStats()?.endDate"
                 [weightTrend]="metabolismStats()?.weight_trend || []"
                 [calorieHistory]="n.last_14_days || []">
-            </app-widget-calories-weight-comparison>
+            </app-widget-calories-weight-comparison> -->
 
             <app-widget-line-chart 
                 class="lg:col-span-2"
@@ -142,17 +146,19 @@
                 [fat]="n.today?.fat_grams || 0">
             </app-widget-macros-today>
 
-            <app-widget-average-calories 
+            <!-- MOVED TO BODY TAB: average-calories -->
+            <!-- <app-widget-average-calories 
                 class="lg:col-span-2" 
                 [avg7Days]="n.avg_daily_calories" 
                 [avg14Days]="n.avg_daily_calories_14_days">
-            </app-widget-average-calories>
+            </app-widget-average-calories> -->
 </div>
     </ng-container>
 
     <!-- ==================== TREINOS SECTION ==================== -->
     <ng-container *ngIf="!isLoading() && stats() as s">
         <app-section-header
+            data-test="section-performance"
             title="Desempenho"
             subtitle="Volume, PRs e frequência">
         </app-section-header>
@@ -183,6 +189,7 @@
 
         <!-- ==================== ESTATÍSTICAS E CONSISTÊNCIA ==================== -->
         <app-section-header
+            data-test="section-quality"
             title="Qualidade dos Dados"
             subtitle="Confiabilidade das suas métricas">
         </app-section-header>
@@ -198,21 +205,24 @@
             @if (nutritionStats(); as n) {
                 <app-widget-adherence title="Meta Calórica Atingida" [weeklyAdherence]="n.weekly_adherence"></app-widget-adherence>
 
-                <app-widget-calorie-volatility [variance]="120"></app-widget-calorie-volatility>
+                <!-- MOVED TO BODY TAB: calorie-volatility -->
+                <!-- <app-widget-calorie-volatility [variance]="120"></app-widget-calorie-volatility> -->
             }
 
             <!-- Weight Log Stats (Wide) -->
-            <app-widget-weight-histogram
+            <!-- MOVED TO BODY TAB: weight-histogram -->
+            <!-- <app-widget-weight-histogram
                 class="lg:col-span-2"
                 [consistency]="metabolismStats()?.consistency || []">
-            </app-widget-weight-histogram>
+            </app-widget-weight-histogram> -->
 
             <!-- Global Confidence Info -->
-            <app-widget-data-quality
+            <!-- MOVED TO BODY TAB: data-quality -->
+            <!-- <app-widget-data-quality
                 class="lg:col-span-2"
                 [consistencyScore]="metabolismStats()?.consistency_score || 0"
                 [weightLogsCount]="metabolismStats()?.weight_logs_count || 0">
-            </app-widget-data-quality>
+            </app-widget-data-quality> -->
         </div>
 
 </div>

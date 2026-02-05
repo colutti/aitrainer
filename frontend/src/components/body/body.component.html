@@ -13,24 +13,28 @@
     <!-- Tabs -->
     <div class="flex gap-2 border-b border-secondary overflow-x-auto">
       <button
+        data-cy="body-tab-estatisticas"
         (click)="switchTab('estatisticas')"
         [class]="'px-4 py-2 font-medium transition-colors border-b-2 whitespace-nowrap ' + (activeTab() === 'estatisticas' ? 'text-primary border-primary' : 'text-text-secondary border-transparent hover:text-text-primary')"
       >
         Estatísticas
       </button>
       <button
+        data-cy="body-tab-peso"
         (click)="switchTab('peso')"
         [class]="'px-4 py-2 font-medium transition-colors border-b-2 whitespace-nowrap ' + (activeTab() === 'peso' ? 'text-primary border-primary' : 'text-text-secondary border-transparent hover:text-text-primary')"
       >
         Peso
       </button>
       <button
+        data-cy="body-tab-nutricao"
         (click)="switchTab('nutricao')"
         [class]="'px-4 py-2 font-medium transition-colors border-b-2 whitespace-nowrap ' + (activeTab() === 'nutricao' ? 'text-primary border-primary' : 'text-text-secondary border-transparent hover:text-text-primary')"
       >
         Nutrição
       </button>
       <button
+        data-cy="body-tab-medidas"
         (click)="switchTab('medidas')"
         [class]="'px-4 py-2 font-medium transition-colors border-b-2 whitespace-nowrap ' + (activeTab() === 'medidas' ? 'text-primary border-primary' : 'text-text-secondary border-transparent hover:text-text-primary')"
       >
@@ -54,12 +58,13 @@
             <h3 class="text-sm font-semibold text-text-primary mb-3">Novo Registro</h3>
             <form (ngSubmit)="saveWeightEntry()" class="grid grid-cols-2 md:grid-cols-3 gap-3">
               <app-date-input [(ngModel)]="entryDate" name="entryDate" label="Data"></app-date-input>
-              <app-number-input [(ngModel)]="entryWeight" name="entryWeight" label="Peso (kg)" required></app-number-input>
+              <app-number-input data-cy="weight-input" [(ngModel)]="entryWeight" name="entryWeight" label="Peso (kg)" required></app-number-input>
               <app-number-input [(ngModel)]="entryFat" name="entryFat" label="Gordura (%)"></app-number-input>
               <app-number-input [(ngModel)]="entryMuscle" name="entryMuscle" label="Músculos (%)"></app-number-input>
               <app-number-input [(ngModel)]="entryWater" name="entryWater" label="Água (%)"></app-number-input>
               <app-number-input [(ngModel)]="entryVisceral" name="entryVisceral" label="Visceral"></app-number-input>
               <button
+                data-cy="save-weight-btn"
                 type="submit"
                 [disabled]="isSavingEntry() || !entryWeight()"
                 class="col-span-full bg-primary hover:bg-primary-hover text-white rounded-lg px-3 py-2 font-medium text-sm disabled:opacity-50 transition-colors"
@@ -74,23 +79,25 @@
 
           <!-- History List -->
           @if (weightHistory().length > 0) {
-            <div class="bg-light-bg border border-secondary rounded-lg p-4">
+            <div data-cy="composition-history" class="bg-light-bg border border-secondary rounded-lg p-4">
               <h3 class="text-sm font-semibold text-text-primary mb-3">Histórico</h3>
               <div class="space-y-2">
                 @for (log of weightHistory(); track log.date) {
-                  <div class="flex items-center justify-between p-2 bg-dark-bg rounded hover:bg-dark-bg/80 transition-colors text-sm">
+                  <div data-cy="history-entry" class="flex items-center justify-between p-2 bg-dark-bg rounded hover:bg-dark-bg/80 transition-colors text-sm">
                     <div>
                       <span class="text-text-primary font-medium">{{ log.date | appDateFormat: 'date' }}</span>
                       <span class="text-text-secondary ml-2">{{ log.weight_kg }} kg</span>
                     </div>
                     <div class="flex gap-2">
                       <button
+                        data-cy="edit-btn"
                         (click)="editWeightEntry(log)"
                         class="px-2 py-1 text-xs bg-primary/20 text-primary rounded hover:bg-primary/30"
                       >
                         Editar
                       </button>
                       <button
+                        data-cy="delete-btn"
                         (click)="deleteWeightEntry(log)"
                         class="px-2 py-1 text-xs bg-error/20 text-error rounded hover:bg-error/30"
                       >
@@ -116,13 +123,13 @@
         <div class="space-y-6">
           <!-- Entry Form -->
           <div class="bg-light-bg border border-secondary rounded-lg p-4">
-            <h3 class="text-sm font-semibold text-text-primary mb-3">Novo Registro</h3>
-            <form (ngSubmit)="saveNutritionEntry()" class="grid grid-cols-2 md:grid-cols-3 gap-3" [ngFormGroup]="false">
+            <h3 class="text-sm font-semibold text-text-primary mb-3">Novo Registro TESTE</h3>
+            <form (ngSubmit)="saveNutritionEntry()" class="grid grid-cols-2 md:grid-cols-3 gap-3">
               <app-date-input [ngModel]="entryNutritionDate()" (ngModelChange)="entryNutritionDate.set($event)" [ngModelOptions]="{standalone: true}" label="Data"></app-date-input>
-              <app-number-input [ngModel]="entryNutritionCalories()" (ngModelChange)="entryNutritionCalories.set($event)" [ngModelOptions]="{standalone: true}" label="Calorias (kcal)" required></app-number-input>
-              <app-number-input [ngModel]="entryNutritionProtein()" (ngModelChange)="entryNutritionProtein.set($event)" [ngModelOptions]="{standalone: true}" label="Proteína (g)"></app-number-input>
-              <app-number-input [ngModel]="entryNutritionCarbs()" (ngModelChange)="entryNutritionCarbs.set($event)" [ngModelOptions]="{standalone: true}" label="Carbos (g)"></app-number-input>
-              <app-number-input [ngModel]="entryNutritionFat()" (ngModelChange)="entryNutritionFat.set($event)" [ngModelOptions]="{standalone: true}" label="Gordura (g)"></app-number-input>
+              <app-number-input data-cy="calories-input" [ngModel]="entryNutritionCalories()" (ngModelChange)="entryNutritionCalories.set($event)" [ngModelOptions]="{standalone: true}" label="Calorias (kcal)" required></app-number-input>
+              <app-number-input data-cy="protein-input" [ngModel]="entryNutritionProtein()" (ngModelChange)="entryNutritionProtein.set($event)" [ngModelOptions]="{standalone: true}" label="Proteína (g)"></app-number-input>
+              <app-number-input data-cy="carbs-input" [ngModel]="entryNutritionCarbs()" (ngModelChange)="entryNutritionCarbs.set($event)" [ngModelOptions]="{standalone: true}" label="Carbos (g)"></app-number-input>
+              <app-number-input data-cy="fat-input-nut" [ngModel]="entryNutritionFat()" (ngModelChange)="entryNutritionFat.set($event)" [ngModelOptions]="{standalone: true}" label="Gordura (g)"></app-number-input>
               <div class="col-span-1">
                 <label class="text-xs font-medium text-text-secondary">Fonte</label>
                 <input
@@ -135,6 +142,7 @@
                 />
               </div>
               <button
+                data-cy="save-nutrition-btn"
                 type="submit"
                 [disabled]="isSavingNutrition() || !entryNutritionCalories()"
                 class="col-span-full bg-primary hover:bg-primary-hover text-white rounded-lg px-3 py-2 font-medium text-sm disabled:opacity-50 transition-colors"
@@ -145,21 +153,23 @@
             @if (showNutritionSuccess()) {
               <div class="mt-2 p-2 bg-success/20 text-success rounded text-xs">✓ Salvo!</div>
             }
+            <div data-cy="debug-logs-len" class="text-red-500 font-bold">LEN: {{ nutritionLogs()?.length }}</div>
           </div>
 
           <!-- Logs List -->
-          @if (nutritionLogs().length > 0) {
+          @if ((nutritionLogs() || []).length > 0) {
             <div class="bg-light-bg border border-secondary rounded-lg p-4">
               <h3 class="text-sm font-semibold text-text-primary mb-3">Registros</h3>
               <div class="space-y-2">
                 @for (log of nutritionLogs(); track log.id) {
-                  <div class="p-3 bg-dark-bg rounded-lg hover:bg-dark-bg/80 transition-colors text-xs">
+                  <div data-cy="nutrition-log-item" class="p-3 bg-dark-bg rounded-lg hover:bg-dark-bg/80 transition-colors text-xs">
                     <div class="flex justify-between items-start mb-1">
                       <div>
                         <span class="text-text-primary font-medium">{{ log.date | appDateFormat: 'date' }}</span>
                         <span class="text-text-secondary ml-2 text-xs">{{ log.source }}</span>
                       </div>
                       <button
+                        data-cy="delete-nutrition-log"
                         (click)="deleteNutritionLog($event, log)"
                         class="px-2 py-0.5 text-xs bg-error/20 text-error rounded hover:bg-error/30"
                       >
@@ -198,7 +208,7 @@
               }
             </div>
           } @else {
-            <div class="bg-light-bg border border-secondary rounded-lg p-6 text-center">
+            <div data-cy="nutrition-empty-state" class="bg-light-bg border border-secondary rounded-lg p-6 text-center">
               <p class="text-text-secondary">Nenhum registro de nutrição encontrado.</p>
             </div>
           }
@@ -254,7 +264,12 @@
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <app-widget-macros-today [stats]="nutritionStats()"></app-widget-macros-today>
             <app-widget-macro-targets [stats]="nutritionStats()"></app-widget-macro-targets>
+            <app-widget-average-calories 
+              [avg7Days]="nutritionStats()?.avg_daily_calories || 0" 
+              [avg14Days]="nutritionStats()?.avg_daily_calories_14_days || 0">
+            </app-widget-average-calories>
             <app-widget-calorie-history></app-widget-calorie-history>
+            <app-widget-calorie-volatility [variance]="120"></app-widget-calorie-volatility>
           </div>
         }
 
@@ -267,6 +282,7 @@
               <div class="flex flex-wrap gap-2">
                 @for (period of metabolismPeriods; track period) {
                   <button
+                    [attr.data-cy]="'period-btn-' + period"
                     (click)="setMetabolismPeriod(period)"
                     [class.bg-primary]="metabolismWeeks() === period"
                     [class.bg-secondary]="metabolismWeeks() !== period"
@@ -282,9 +298,32 @@
 
             <!-- Metabolism Widgets Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <app-widget-tdee-summary [stats]="metabolismStats()"></app-widget-tdee-summary>
-              <app-widget-metabolic-gauge [stats]="metabolismStats()"></app-widget-metabolic-gauge>
-              <app-widget-calories-weight-comparison></app-widget-calories-weight-comparison>
+              <app-widget-tdee-summary 
+                [tdee]="metabolismStats()?.tdee || 0"
+                [targetCalories]="metabolismStats()?.daily_target || 0"
+                [goalType]="metabolismStats()?.goal_type">
+              </app-widget-tdee-summary>
+
+              <app-widget-metabolic-gauge 
+                [status]="metabolismStats()?.status || 'maintenance'" 
+                [energyBalance]="metabolismStats()?.energy_balance || 0">
+              </app-widget-metabolic-gauge>
+
+              <app-widget-calories-weight-comparison
+                [startDate]="metabolismStats()?.startDate"
+                [endDate]="metabolismStats()?.endDate"
+                [weightTrend]="metabolismStats()?.weight_trend || []"
+                [calorieHistory]="nutritionStats()?.last_14_days || []">
+              </app-widget-calories-weight-comparison>
+
+              <app-widget-weight-histogram
+                [consistency]="metabolismStats()?.consistency || []">
+              </app-widget-weight-histogram>
+
+              <app-widget-data-quality 
+                [consistencyScore]="metabolismStats()?.consistency_score || 0"
+                [weightLogsCount]="metabolismStats()?.weight_logs_count || 0">
+              </app-widget-data-quality>
             </div>
 
             <!-- Weight Trend Chart -->

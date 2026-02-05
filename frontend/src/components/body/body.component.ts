@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { WeightService } from '../../services/weight.service';
 import { NutritionService } from '../../services/nutrition.service';
 import { MetabolismService } from '../../services/metabolism.service';
+import { ConfirmationService } from '../../services/confirmation.service';
 import { WeightLog, BodyCompositionStats } from '../../models/weight-log.model';
 import { NutritionLog, NutritionStats } from '../../models/nutrition.model';
 import { MetabolismResponse } from '../../models/metabolism.model';
@@ -20,11 +21,15 @@ import { WidgetLineChartComponent } from '../widgets/widget-line-chart.component
 import { WidgetMacrosTodayComponent } from '../widgets/widget-macros-today.component';
 import { WidgetMacroTargetsComponent } from '../widgets/widget-macro-targets.component';
 import { WidgetCalorieHistoryComponent } from '../widgets/nutrition/widget-calorie-history.component';
+import { WidgetAverageCaloriesComponent } from '../widgets/nutrition/widget-average-calories.component';
+import { WidgetCalorieVolatilityComponent } from '../widgets/nutrition/widget-calorie-volatility.component';
+import { WidgetWeightHistogramComponent } from '../widgets/body/widget-weight-histogram.component';
 
 // Metabolism Tab Widgets
 import { WidgetTdeeSummaryComponent } from '../widgets/widget-tdee-summary.component';
 import { WidgetMetabolicGaugeComponent } from '../widgets/widget-metabolic-gauge.component';
 import { WidgetCaloriesWeightComparisonComponent } from '../widgets/widget-calories-weight-comparison.component';
+import { WidgetDataQualityComponent } from '../widgets/statistics/widget-data-quality.component';
 
 // Shared Input Components
 import { NumberInputComponent } from '../shared/number-input/number-input.component';
@@ -51,6 +56,10 @@ type BodyTab = 'peso' | 'nutricao' | 'medidas' | 'estatisticas';
     WidgetTdeeSummaryComponent,
     WidgetMetabolicGaugeComponent,
     WidgetCaloriesWeightComparisonComponent,
+    WidgetDataQualityComponent,
+    WidgetAverageCaloriesComponent,
+    WidgetCalorieVolatilityComponent,
+    WidgetWeightHistogramComponent,
     // Input Components
     NumberInputComponent,
   ],
@@ -61,6 +70,7 @@ export class BodyComponent implements OnInit, AfterViewInit {
   private weightService = inject(WeightService);
   private nutritionService = inject(NutritionService);
   private metabolismService = inject(MetabolismService);
+  private confirmationService = inject(ConfirmationService);
   private cdr = inject(ChangeDetectorRef);
   private ngZone = inject(NgZone);
   private datePipe = inject(DatePipe);
@@ -241,7 +251,14 @@ export class BodyComponent implements OnInit, AfterViewInit {
   }
 
   async deleteWeightEntry(log: WeightLog) {
-    if (!confirm(`Tem certeza que deseja excluir o registro de ${log.date}?`)) {
+    const confirmed = await this.confirmationService.confirm({
+      title: 'Excluir Registro',
+      message: `Tem certeza que deseja excluir o registro de ${log.date}?`,
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar'
+    });
+
+    if (!confirmed) {
       return;
     }
 
@@ -328,8 +345,9 @@ export class BodyComponent implements OnInit, AfterViewInit {
     try {
       const [stats] = await Promise.all([
         this.nutritionService.getStats(),
-        this.loadNutritionLogs()
       ]);
+      // Load logs sequentially to ensure state update
+      await this.loadNutritionLogs();
 
       this.ngZone.run(() => {
         this.nutritionStats.set(stats || null);
@@ -346,10 +364,19 @@ export class BodyComponent implements OnInit, AfterViewInit {
   private async loadNutritionLogs() {
     try {
       const response = await this.nutritionService.getLogs(this.nutritionCurrentPage(), 10, this.nutritionDaysFilter());
-      this.nutritionLogs.set(response.logs);
-      this.nutritionTotalPages.set(response.total_pages);
+      
+      this.ngZone.run(() => {
+        console.log('ANTIGRAVITY_DEBUG: Updating nutritionLogs', response.logs);
+        this.nutritionLogs.set(response.logs);
+        console.log('ANTIGRAVITY_DEBUG: nutritionLogs set to', this.nutritionLogs());
+        this.nutritionTotalPages.set(response.total_pages);
+        this.cdr.markForCheck();
+      });
     } catch {
-      // Error handling
+      this.ngZone.run(() => {
+        this.nutritionIsLoading.set(false);
+        this.cdr.markForCheck();
+      });
     }
   }
 
@@ -369,7 +396,14 @@ export class BodyComponent implements OnInit, AfterViewInit {
 
   async deleteNutritionLog(event: Event, log: NutritionLog) {
     event.stopPropagation();
-    if (confirm('Tem certeza que deseja excluir este registro nutricional?')) {
+    const confirmed = await this.confirmationService.confirm({
+      title: 'Excluir Registro Nutricional',
+      message: 'Tem certeza que deseja excluir este registro nutricional?',
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar'
+    });
+
+    if (confirmed) {
       try {
         await this.nutritionService.deleteLog(log.id);
         this.nutritionCurrentPage.set(1);

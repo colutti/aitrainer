@@ -19,17 +19,12 @@ import { WidgetAdherenceComponent } from '../widgets/widget-adherence.component'
 import { WidgetMetabolicGaugeComponent } from '../widgets/widget-metabolic-gauge.component';
 import { WidgetBodyEvolutionComponent } from '../widgets/widget-body-evolution.component';
 import { WidgetLineChartComponent } from '../widgets/widget-line-chart.component';
-import { WidgetCaloriesWeightComparisonComponent } from '../widgets/widget-calories-weight-comparison.component';
 import { WidgetMacroTargetsComponent } from '../widgets/widget-macro-targets.component';
 import { WidgetTdeeSummaryComponent } from '../widgets/widget-tdee-summary.component';
 import { SectionHeaderComponent } from '../widgets/shared/section-header.component';
 import { WidgetLastActivityComponent } from '../widgets/workouts/widget-last-activity.component';
 import { WidgetWeeklyDistributionComponent } from '../widgets/workouts/widget-weekly-distribution.component';
 import { WidgetStrengthRadarComponent } from '../widgets/workouts/widget-strength-radar.component';
-import { WidgetCalorieVolatilityComponent } from '../widgets/nutrition/widget-calorie-volatility.component';
-import { WidgetWeightHistogramComponent } from '../widgets/body/widget-weight-histogram.component';
-import { WidgetDataQualityComponent } from '../widgets/statistics/widget-data-quality.component';
-import { WidgetAverageCaloriesComponent } from '../widgets/nutrition/widget-average-calories.component';
 import { AppNumberFormatPipe } from '../../pipes/number-format.pipe';
 
 @Component({
@@ -46,17 +41,12 @@ import { AppNumberFormatPipe } from '../../pipes/number-format.pipe';
     WidgetMetabolicGaugeComponent,
     WidgetBodyEvolutionComponent,
     WidgetLineChartComponent,
-    WidgetCaloriesWeightComparisonComponent,
     WidgetMacroTargetsComponent,
     WidgetTdeeSummaryComponent,
     SectionHeaderComponent,
     WidgetLastActivityComponent,
     WidgetWeeklyDistributionComponent,
-    WidgetStrengthRadarComponent,
-    WidgetCalorieVolatilityComponent,
-    WidgetWeightHistogramComponent,
-    WidgetDataQualityComponent,
-    WidgetAverageCaloriesComponent
+    WidgetStrengthRadarComponent
   ],
   templateUrl: './dashboard.component.html',
 })

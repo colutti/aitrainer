@@ -22,6 +22,17 @@ describe('Average Calories Widget', () => {
           },
           alias: 'getNutritionStats'
         },
+        'GET **/nutrition/list*': {
+          statusCode: 200,
+          body: {
+            logs: [],
+            total: 0,
+            total_pages: 1,
+            page: 1,
+            page_size: 10
+          },
+          alias: 'getNutritionLogs'
+        },
         'GET **/metabolism/summary*': {
           statusCode: 200,
           body: {
@@ -36,54 +47,47 @@ describe('Average Calories Widget', () => {
             energy_balance: 0
           },
           alias: 'getMetabolismSummary'
+        },
+        'GET **/weight/history': {
+          statusCode: 200,
+          body: [],
+          alias: 'getWeightHistory'
+        },
+        'GET **/weight/stats': {
+          statusCode: 200,
+          body: {
+            weight_trend: [],
+            fat_trend: [],
+            muscle_trend: [],
+            latest: null
+          },
+          alias: 'getWeightStats'
         }
       }
     });
   });
 
-  it('should display the average calories widget on the dashboard', () => {
-    // The nutrition stats are loaded automatically by the dashboard component
-    // Give Angular time to render the widget (stats signal updates)
-    cy.wait(1000);
+  it('should display the average calories widget in the Body Statistics tab', () => {
+    // Navigate to Body tab
+    cy.get('[data-cy="nav-body"]').click();
+    
+    // Wait for all critical stats to load to avoid race conditions
+    cy.wait(['@getNutritionStats', '@getMetabolismSummary', '@getWeightStats']);
 
-    // Check for the widget - it should exist in the DOM
-    cy.get('app-widget-average-calories', { timeout: 10000 }).should('exist');
+    // Ensure we are on Statistics tab
+    cy.get('[data-cy="body-tab-estatisticas"]').click();
 
-    // Scroll the widget into view so we can verify its contents
-    cy.get('app-widget-average-calories').scrollIntoView();
+    // Check for the average calories widget
+    // It should rendered because nutritionStats is truthy
+    cy.get('app-widget-average-calories', { timeout: 15000 })
+      .scrollIntoView()
+      .should('be.visible');
 
-    // Verify contents
-    cy.get('app-widget-average-calories').within(() => {
-      cy.contains('Médias de Consumo').should('be.visible');
-      cy.contains('Últimos 7 dias').should('be.visible');
-      // Values may be formatted with locale separator (pt-BR uses '.' as thousands separator)
-      // So 2250.5 → 2.251 or 2251 depending on pipe format
-      cy.contains(/2[,.;]?251/).should('exist');
-      cy.contains('Últimos 14 dias').should('be.visible');
-      cy.contains(/2[,.;]?100/).should('exist');
-    });
-  });
-
-  it('should verify widget renders with correct data structure', () => {
-    // Additional test to verify the widget component receives correct props
-    cy.wait(1000);
-
-    // Check widget renders
-    cy.get('app-widget-average-calories').should('exist');
-
-    // Verify the widget contains expected text labels
-    cy.get('app-widget-average-calories').within(() => {
-      cy.contains('Médias de Consumo').should('exist');
-      cy.contains('Últimos 7 dias').should('exist');
-      cy.contains('Últimos 14 dias').should('exist');
-      cy.contains('KCAL').should('exist');
-    });
-
-    // Scroll widget into view and verify values are visible
-    cy.get('app-widget-average-calories').scrollIntoView();
-    cy.get('app-widget-average-calories').within(() => {
-      cy.contains(/2[,.;]?251/).should('be.visible');
-      cy.contains(/2[,.;]?100/).should('be.visible');
-    });
+    // Verify contents using data-test attributes
+    cy.get('[data-test="avg-7-days"]').should('contain', '2');
+    cy.get('[data-test="avg-7-days"]').should('contain', '251'); // 2250.5 rounded
+    
+    cy.get('[data-test="avg-14-days"]').should('contain', '2');
+    cy.get('[data-test="avg-14-days"]').should('contain', '100'); // 2100.2 rounded
   });
 });

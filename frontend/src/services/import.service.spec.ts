@@ -31,18 +31,11 @@ describe('ImportService', () => {
   });
 
   describe('uploadMyFitnessPalCSV()', () => {
-    it('should upload CSV file successfully', (done) => {
+    it('should upload CSV file successfully', async () => {
       const csvContent = 'Date,Meal Type,Food,Calories,Protein,Carbs,Fat\n2026-01-27,Breakfast,Eggs,150,12,0,5';
       const file = new File([csvContent], 'nutrition.csv', { type: 'text/csv' });
 
-      const observable = service.uploadMyFitnessPalCSV(file);
-
-      const subscription = observable.subscribe(result => {
-        expect(result.success).toBe(true);
-        expect(result.imported).toBe(1);
-        subscription.unsubscribe();
-        done();
-      });
+      const promise = service.uploadMyFitnessPalCSV(file);
 
       const req = httpMock.expectOne(req =>
         req.url.includes('/nutrition/import/myfitnesspal')
@@ -61,9 +54,13 @@ describe('ImportService', () => {
         skipped: 0,
         errors: []
       });
+
+      const result = await promise;
+      expect(result.success).toBe(true);
+      expect(result.imported).toBe(1);
     });
 
-    it('should handle file with multiple entries', (done) => {
+    it('should handle file with multiple entries', async () => {
       const csvContent = `Date,Meal Type,Food,Calories,Protein,Carbs,Fat
 2026-01-25,Breakfast,Eggs,150,12,0,5
 2026-01-25,Lunch,Chicken,400,50,0,15
@@ -73,14 +70,7 @@ describe('ImportService', () => {
 
       const file = new File([csvContent], 'nutrition_multi.csv', { type: 'text/csv' });
 
-      const observable = service.uploadMyFitnessPalCSV(file);
-
-      const subscription = observable.subscribe(result => {
-        expect(result.success).toBe(true);
-        expect(result.imported).toBe(5);
-        subscription.unsubscribe();
-        done();
-      });
+      const promise = service.uploadMyFitnessPalCSV(file);
 
       const req = httpMock.expectOne(req =>
         req.url.includes('/nutrition/import/myfitnesspal')
@@ -92,21 +82,17 @@ describe('ImportService', () => {
         skipped: 0,
         errors: []
       });
+
+      const result = await promise;
+      expect(result.success).toBe(true);
+      expect(result.imported).toBe(5);
     });
 
-    it('should handle file with some skipped entries', (done) => {
+    it('should handle file with some skipped entries', async () => {
       const csvContent = 'Date,Meal Type,Food,Calories,Protein,Carbs,Fat\n2026-01-27,Breakfast,Eggs,150,12,0,5';
       const file = new File([csvContent], 'nutrition.csv', { type: 'text/csv' });
 
-      const observable = service.uploadMyFitnessPalCSV(file);
-
-      const subscription = observable.subscribe(result => {
-        expect(result.success).toBe(true);
-        expect(result.imported).toBe(8);
-        expect(result.skipped).toBe(2);
-        subscription.unsubscribe();
-        done();
-      });
+      const promise = service.uploadMyFitnessPalCSV(file);
 
       const req = httpMock.expectOne(req =>
         req.url.includes('/nutrition/import/myfitnesspal')
@@ -118,21 +104,18 @@ describe('ImportService', () => {
         skipped: 2,
         errors: []
       });
+
+      const result = await promise;
+      expect(result.success).toBe(true);
+      expect(result.imported).toBe(8);
+      expect(result.skipped).toBe(2);
     });
 
-    it('should handle file with some errors', (done) => {
+    it('should handle file with some errors', async () => {
       const csvContent = 'Date,Meal Type,Food,Calories,Protein,Carbs,Fat\n2026-01-27,Breakfast,Eggs,invalid,12,0,5';
       const file = new File([csvContent], 'nutrition.csv', { type: 'text/csv' });
 
-      const observable = service.uploadMyFitnessPalCSV(file);
-
-      const subscription = observable.subscribe(result => {
-        expect(result.success).toBe(true);
-        expect(result.imported).toBe(5);
-        expect(result.errors.length).toBe(1);
-        subscription.unsubscribe();
-        done();
-      });
+      const promise = service.uploadMyFitnessPalCSV(file);
 
       const req = httpMock.expectOne(req =>
         req.url.includes('/nutrition/import/myfitnesspal')
@@ -146,23 +129,16 @@ describe('ImportService', () => {
           { row: 2, error: 'Invalid calories value' }
         ]
       });
+
+      const result = await promise;
+      expect(result.success).toBe(true);
+      expect(result.imported).toBe(5);
+      expect(result.errors.length).toBe(1);
     });
 
-    it('should handle validation error (422)', (done) => {
+    it('should handle validation error (422)', async () => {
       const file = new File(['invalid'], 'invalid.txt', { type: 'text/plain' });
-
-      const observable = service.uploadMyFitnessPalCSV(file);
-
-      const subscription = observable.subscribe(
-        () => {
-          fail('Should have thrown error');
-        },
-        error => {
-          expect(error.status).toBe(422);
-          subscription.unsubscribe();
-          done();
-        }
-      );
+      const promise = service.uploadMyFitnessPalCSV(file);
 
       const req = httpMock.expectOne(req =>
         req.url.includes('/nutrition/import/myfitnesspal')
@@ -172,23 +148,18 @@ describe('ImportService', () => {
         { detail: 'Invalid CSV format' },
         { status: 422, statusText: 'Unprocessable Entity' }
       );
+
+      try {
+        await promise;
+        fail('Should have failed');
+      } catch (error: any) {
+        expect(error.status).toBe(422);
+      }
     });
 
-    it('should handle file too large error', (done) => {
+    it('should handle file too large error', async () => {
       const file = new File(['content'], 'large.csv', { type: 'text/csv' });
-
-      const observable = service.uploadMyFitnessPalCSV(file);
-
-      const subscription = observable.subscribe(
-        () => {
-          fail('Should have thrown error');
-        },
-        error => {
-          expect(error.status).toBe(413);
-          subscription.unsubscribe();
-          done();
-        }
-      );
+      const promise = service.uploadMyFitnessPalCSV(file);
 
       const req = httpMock.expectOne(req =>
         req.url.includes('/nutrition/import/myfitnesspal')
@@ -198,23 +169,18 @@ describe('ImportService', () => {
         { detail: 'File too large' },
         { status: 413, statusText: 'Payload Too Large' }
       );
+
+      try {
+        await promise;
+        fail('Should have failed');
+      } catch (error: any) {
+        expect(error.status).toBe(413);
+      }
     });
 
-    it('should handle server error (500)', (done) => {
+    it('should handle server error (500)', async () => {
       const file = new File(['content'], 'nutrition.csv', { type: 'text/csv' });
-
-      const observable = service.uploadMyFitnessPalCSV(file);
-
-      const subscription = observable.subscribe(
-        () => {
-          fail('Should have thrown error');
-        },
-        error => {
-          expect(error.status).toBe(500);
-          subscription.unsubscribe();
-          done();
-        }
-      );
+      const promise = service.uploadMyFitnessPalCSV(file);
 
       const req = httpMock.expectOne(req =>
         req.url.includes('/nutrition/import/myfitnesspal')
@@ -224,23 +190,18 @@ describe('ImportService', () => {
         { detail: 'Server error during import' },
         { status: 500, statusText: 'Internal Server Error' }
       );
+
+      try {
+        await promise;
+        fail('Should have failed');
+      } catch (error: any) {
+        expect(error.status).toBe(500);
+      }
     });
 
-    it('should handle unauthorized error (401)', (done) => {
+    it('should handle unauthorized error (401)', async () => {
       const file = new File(['content'], 'nutrition.csv', { type: 'text/csv' });
-
-      const observable = service.uploadMyFitnessPalCSV(file);
-
-      const subscription = observable.subscribe(
-        () => {
-          fail('Should have thrown error');
-        },
-        error => {
-          expect(error.status).toBe(401);
-          subscription.unsubscribe();
-          done();
-        }
-      );
+      const promise = service.uploadMyFitnessPalCSV(file);
 
       const req = httpMock.expectOne(req =>
         req.url.includes('/nutrition/import/myfitnesspal')
@@ -250,23 +211,18 @@ describe('ImportService', () => {
         { detail: 'Unauthorized' },
         { status: 401, statusText: 'Unauthorized' }
       );
+
+      try {
+        await promise;
+        fail('Should have failed');
+      } catch (error: any) {
+        expect(error.status).toBe(401);
+      }
     });
 
-    it('should send FormData with correct content-type', (done) => {
+    it('should send FormData with correct content-type', async () => {
       const file = new File(['content'], 'nutrition.csv', { type: 'text/csv' });
-
-      const observable = service.uploadMyFitnessPalCSV(file);
-
-      const subscription = observable.subscribe(
-        result => {
-          expect(result.success).toBe(true);
-          subscription.unsubscribe();
-          done();
-        },
-        error => {
-          fail('Should not error: ' + error);
-        }
-      );
+      const promise = service.uploadMyFitnessPalCSV(file);
 
       const req = httpMock.expectOne(req =>
         req.url.includes('/nutrition/import/myfitnesspal')
@@ -279,106 +235,71 @@ describe('ImportService', () => {
       expect(req.request.body instanceof FormData).toBe(true);
 
       req.flush({ success: true, imported: 1, skipped: 0, errors: [] });
+
+      const result = await promise;
+      expect(result.success).toBe(true);
     });
 
-    it('should handle empty response', (done) => {
+    it('should handle empty response', async () => {
       const file = new File(['content'], 'nutrition.csv', { type: 'text/csv' });
-
-      const observable = service.uploadMyFitnessPalCSV(file);
-
-      const subscription = observable.subscribe(
-        result => {
-          expect(result).toEqual({});
-          subscription.unsubscribe();
-          done();
-        }
-      );
+      const promise = service.uploadMyFitnessPalCSV(file);
 
       const req = httpMock.expectOne(req =>
         req.url.includes('/nutrition/import/myfitnesspal')
       );
 
       req.flush({});
+      const result = await promise;
+      expect(result).toEqual({});
     });
 
-    it('should return observable that can be subscribed multiple times', (done) => {
+    it('should return promise that can be called multiple times', async () => {
       const file = new File(['content'], 'nutrition.csv', { type: 'text/csv' });
 
-      const observable = service.uploadMyFitnessPalCSV(file);
-
-      let completedCount = 0;
-
-      // First subscription
-      observable.subscribe(
-        result => {
-          expect(result.success).toBe(true);
-          completedCount++;
-        }
-      );
-
-      // Second subscription
-      observable.subscribe(
-        result => {
-          expect(result.success).toBe(true);
-          completedCount++;
-
-          if (completedCount === 2) {
-            done();
-          }
-        }
-      );
-
-      // Handle both requests
-      const reqs = httpMock.match(req =>
+      // First call
+      const promise1 = service.uploadMyFitnessPalCSV(file);
+      const req1 = httpMock.expectOne(req =>
         req.url.includes('/nutrition/import/myfitnesspal')
       );
-      expect(reqs.length).toBe(2);
+      req1.flush({ success: true, imported: 1, skipped: 0, errors: [] });
+      const result1 = await promise1;
+      expect(result1.success).toBe(true);
 
-      reqs.forEach(req => {
-        req.flush({ success: true, imported: 1, skipped: 0, errors: [] });
-      });
+      // Second call
+      const promise2 = service.uploadMyFitnessPalCSV(file);
+      const req2 = httpMock.expectOne(req =>
+        req.url.includes('/nutrition/import/myfitnesspal')
+      );
+      req2.flush({ success: true, imported: 1, skipped: 0, errors: [] });
+      const result2 = await promise2;
+      expect(result2.success).toBe(true);
     });
   });
 
   describe('File Types', () => {
-    it('should accept various CSV MIME types', (done) => {
+    it('should accept various CSV MIME types', async () => {
       const mimeTypes = ['text/csv', 'text/plain', 'application/csv'];
 
-      let completed = 0;
+      for (let i = 0; i < mimeTypes.length; i++) {
+        const file = new File(['content'], `file_${i}.csv`, { type: mimeTypes[i] });
 
-      mimeTypes.forEach((mimeType, index) => {
-        const file = new File(['content'], `file_${index}.csv`, { type: mimeType });
-
-        const observable = service.uploadMyFitnessPalCSV(file);
-
-        observable.subscribe(result => {
-          expect(result.success).toBe(true);
-          completed++;
-
-          if (completed === mimeTypes.length) {
-            done();
-          }
-        });
+        const promise = service.uploadMyFitnessPalCSV(file);
 
         const req = httpMock.expectOne(req =>
           req.url.includes('/nutrition/import/myfitnesspal')
         );
 
         req.flush({ success: true, imported: 1, skipped: 0, errors: [] });
-      });
+        const result = await promise;
+        expect(result.success).toBe(true);
+      }
     });
 
-    it('should preserve original filename in FormData', (done) => {
+    it('should preserve original filename in FormData', async () => {
       const filename = 'myfitnesspal_export_2026-01-27.csv';
       const file = new File(['content'], filename, { type: 'text/csv' });
 
-      const observable = service.uploadMyFitnessPalCSV(file);
-
-      const subscription = observable.subscribe(result => {
-        expect(result.success).toBe(true);
-        subscription.unsubscribe();
-        done();
-      });
+      const promise = service.uploadMyFitnessPalCSV(file);
 
       const req = httpMock.expectOne(req =>
         req.url.includes('/nutrition/import/myfitnesspal')
@@ -390,6 +311,7 @@ describe('ImportService', () => {
       expect(uploadedFile.name).toBe(filename);
 
       req.flush({ success: true, imported: 1, skipped: 0, errors: [] });
+      await promise;
     });
   });
 });

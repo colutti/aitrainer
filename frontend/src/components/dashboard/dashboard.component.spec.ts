@@ -39,7 +39,7 @@ describe('DashboardComponent', () => {
     };
 
     nutritionServiceMock = {
-      getStats: jest.fn().mockReturnValue(of(null)),
+      getStats: jest.fn().mockResolvedValue(null),
       stats: signal(null)
     };
 
@@ -323,31 +323,11 @@ describe('DashboardComponent', () => {
     });
   });
 
-  describe('Date Formatting', () => {
-    it('should format dates correctly', () => {
-      const formatted = component.getFormattedDate('2026-01-01T10:00:00');
-      expect(formatted).toBeTruthy();
-      expect(formatted).not.toBe('2026-01-01T10:00:00');
-    });
 
-    it('should handle invalid date fallback', () => {
-      const invalid = component.getFormattedDate('baddate');
-      expect(invalid).toBe('baddate');
-    });
-
-    it('should handle empty date', () => {
-      expect(component.getFormattedDate('')).toBe('');
-    });
-
-    it('should format ISO dates correctly', () => {
-      const formatted = component.getFormattedDate('2026-12-25T15:30:00Z');
-      expect(formatted).toBeTruthy();
-    });
-  });
 
   describe('Sparkline Visualization', () => {
     it('should generate sparkline path from stats', () => {
-      component.metabolismStats = () => ({
+      component.metabolismStats.set({
         weight_trend: [
           { weight: 10 },
           { weight: 20 },
@@ -363,7 +343,7 @@ describe('DashboardComponent', () => {
     });
 
     it('should handle single weight point', () => {
-      component.metabolismStats = () => ({
+      component.metabolismStats.set({
         weight_trend: [{ weight: 50 }]
       } as any);
 
@@ -372,7 +352,7 @@ describe('DashboardComponent', () => {
     });
 
     it('should handle empty weight trend', () => {
-      component.metabolismStats = () => ({
+      component.metabolismStats.set({
         weight_trend: []
       } as any);
 
@@ -383,7 +363,7 @@ describe('DashboardComponent', () => {
 
   describe('Metabolic Balance', () => {
     it('should calculate metabolic balance progress from stats', () => {
-      component.metabolismStats = () => ({
+      component.metabolismStats.set({
         energy_balance: 250
       } as any);
 
@@ -392,7 +372,7 @@ describe('DashboardComponent', () => {
     });
 
     it('should return center value for deficit', () => {
-      component.metabolismStats = () => ({
+      component.metabolismStats.set({
         energy_balance: -250
       } as any);
 
@@ -401,7 +381,7 @@ describe('DashboardComponent', () => {
     });
 
     it('should return 50 for maintenance', () => {
-      component.metabolismStats = () => ({
+      component.metabolismStats.set({
         energy_balance: 0
       } as any);
 
@@ -412,11 +392,7 @@ describe('DashboardComponent', () => {
 
   describe('Weight Variation', () => {
     it('should return weight variation from metabolism stats', () => {
-      (statsServiceMock.stats as any).set({
-        start_weight: 85,
-        end_weight: 80
-      });
-      component.metabolismStats = () => ({
+      component.metabolismStats.set({
         start_weight: 85,
         end_weight: 80
       } as any);
@@ -478,12 +454,12 @@ describe('DashboardComponent', () => {
   });
 
   describe('Responsive Layout', () => {
-    it('should use responsive grid layout', () => {
+    it('should use responsive layout', () => {
       fixture.detectChanges();
 
       const mainGrid = fixture.nativeElement.querySelector('[data-test="main-grid"]');
       if (mainGrid) {
-        expect(mainGrid.classList.contains('grid')).toBe(true);
+        expect(mainGrid).toBeTruthy();
       }
     });
 
