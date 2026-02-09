@@ -59,7 +59,7 @@ class TestAdminPrompts:
         
         app.dependency_overrides[get_mongo_database] = lambda: mock_mongo_db
 
-        response = client.get("/admin/prompts/list?page=1&page_size=10")
+        response = client.get("/admin/prompts?page=1&page_size=10")
 
         assert response.status_code == 200
         data = response.json()
@@ -87,7 +87,7 @@ class TestAdminPrompts:
         
         app.dependency_overrides[get_mongo_database] = lambda: mock_mongo_db
 
-        response = client.get("/admin/prompts/list?user_email=specific@test.com")
+        response = client.get("/admin/prompts?user_id=specific@test.com")
 
         assert response.status_code == 200
         # Verify filter was applied
@@ -107,7 +107,7 @@ class TestAdminPrompts:
         
         app.dependency_overrides[get_mongo_database] = lambda: mock_mongo_db
 
-        response = client.get("/admin/prompts/list")
+        response = client.get("/admin/prompts")
 
         assert response.status_code == 200
         data = response.json()
@@ -126,7 +126,7 @@ class TestAdminPrompts:
         
         app.dependency_overrides[get_mongo_database] = lambda: mock_mongo_db
 
-        response = client.get("/admin/prompts/list?page=1&page_size=10")
+        response = client.get("/admin/prompts?page=1&page_size=10")
 
         assert response.status_code == 200
         data = response.json()
@@ -155,7 +155,7 @@ class TestAdminPrompts:
         
         app.dependency_overrides[get_mongo_database] = lambda: mock_mongo_db
 
-        response = client.get("/admin/prompts/list")
+        response = client.get("/admin/prompts")
 
         assert response.status_code == 200
         # Response should have converted ObjectId to string (or omitted _id)

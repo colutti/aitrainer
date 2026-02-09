@@ -106,9 +106,14 @@ class LLMClient:
             # Stream the agent execution with increased recursion limit
             # Default is 25, but complex tool chains may need more
             config: RunnableConfig = {"recursion_limit": 50}
-            async for event, metadata in agent.astream(
+            async for item in agent.astream(
                 {"messages": messages}, stream_mode="messages", config=config
             ):
+                if isinstance(item, tuple) and len(item) == 2:
+                    event, _ = item
+                else:
+                    event = item
+
                 # V3: Intercept Tool Outputs (System Feedback)
                 if isinstance(event, ToolMessage):
                     logger.debug("Intercepted ToolMessage: %s", event.name)

@@ -1,4 +1,4 @@
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta
 from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
 from src.api.main import app
@@ -124,15 +124,25 @@ def test_get_weight_logs():
     # Arrange
     app.dependency_overrides[verify_token] = mock_get_current_user
     mock_brain = MagicMock()
-    mock_brain._database.get_weight_logs.return_value = [
-        WeightLog(user_email="test@example.com", date=date.today(), weight_kg=75.5),
+    mock_db = MagicMock()
+    
+    logs = [
+        WeightLog(user_email="test@example.com", date=date.today(), weight_kg=75.5).model_dump(),
         WeightLog(
             user_email="test@example.com",
             date=date.today() - timedelta(days=1),
             weight_kg=76.0,
-        ),
+        ).model_dump(),
     ]
+    # Add IDs to match WeightWithId expectation and dict structure for endpoint processing
+    logs[0]["id"] = "id_1"
+    logs[1]["id"] = "id_2"
+    
+    # Mock pagination: returns (logs, total)
+    mock_db.get_weight_paginated.return_value = (logs, 2)
+    
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     # Act
     response = client.get("/weight", headers={"Authorization": "Bearer test_token"})
@@ -140,9 +150,12 @@ def test_get_weight_logs():
     # Assert
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 2
-    assert data[0]["weight_kg"] == 75.5
-    assert data[1]["weight_kg"] == 76.0
+    assert "logs" in data
+    assert len(data["logs"]) == 2
+    assert data["logs"][0]["weight_kg"] == 75.5
+    assert data["logs"][1]["weight_kg"] == 76.0
+    assert data["total"] == 2
+    assert data["page"] == 1
 
     # Clean up
     app.dependency_overrides = {}
@@ -152,20 +165,28 @@ def test_get_weight_logs_with_custom_limit():
     """Test retrieving weight logs with custom limit."""
     app.dependency_overrides[verify_token] = mock_get_current_user
     mock_brain = MagicMock()
-    mock_brain._database.get_weight_logs.return_value = [
-        WeightLog(user_email="test@example.com", date=date.today() - timedelta(days=i), weight_kg=75.5)
-        for i in range(50)
-    ]
+    mock_db = MagicMock()
+    
+    logs = []
+    for i in range(50):
+        log = WeightLog(user_email="test@example.com", date=date.today() - timedelta(days=i), weight_kg=75.5).model_dump()
+        log["id"] = f"id_{i}"
+        logs.append(log)
+    
+    # Mock pagination
+    mock_db.get_weight_paginated.return_value = (logs, 50)
+    
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     # Act - request with custom limit
-    response = client.get("/weight?limit=50", headers={"Authorization": "Bearer test_token"})
+    response = client.get("/weight?page_size=50", headers={"Authorization": "Bearer test_token"})
 
     # Assert
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 50
-    mock_brain._database.get_weight_logs.assert_called_with(user_email="test@example.com", limit=50)
+    assert len(data["logs"]) == 50
+    mock_db.get_weight_paginated.assert_called_with(user_email="test@example.com", page=1, page_size=50)
     app.dependency_overrides = {}
 
 
@@ -173,8 +194,12 @@ def test_get_weight_logs_empty():
     """Test retrieving weight logs when none exist."""
     app.dependency_overrides[verify_token] = mock_get_current_user
     mock_brain = MagicMock()
-    mock_brain._database.get_weight_logs.return_value = []
+    mock_db = MagicMock()
+    
+    mock_db.get_weight_paginated.return_value = ([], 0)
+    
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     # Act
     response = client.get("/weight", headers={"Authorization": "Bearer test_token"})
@@ -182,7 +207,8 @@ def test_get_weight_logs_empty():
     # Assert
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 0
+    assert len(data["logs"]) == 0
+    assert data["total"] == 0
     app.dependency_overrides = {}
 
 

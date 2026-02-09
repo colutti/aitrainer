@@ -108,7 +108,7 @@ class HevyService:
                     # Hevy API returns the workout object directly (not nested under "workout" key)
                     data = response.json()
                     logger.debug(f"[Hevy] Response JSON keys: {list(data.keys())}")
-                    logger.debug(f"[Hevy] Returning workout directly from response")
+                    logger.debug("[Hevy] Returning workout directly from response")
                     return data
 
                 # Log detailed error for debugging

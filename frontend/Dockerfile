@@ -1,28 +1,47 @@
-# Build stage
+# Multi-stage build for React + Vite frontend
+
 FROM docker.io/library/node:22-slim AS build
 
-# ARG permite override: docker build --build-arg BUILD_MODE=production
-ARG BUILD_MODE=development
+# Build argument for API URL (default to Render prod)
+ARG VITE_API_URL=/api
 
 WORKDIR /app
 
+# Copy package files
 COPY package*.json ./
-RUN npm ci --legacy-peer-deps
 
+# Install dependencies
+RUN npm ci --only=production=false
+
+# Copy source code
 COPY . .
 
-# Usa a variável BUILD_MODE para decidir o tipo de build
-RUN npx ng build --configuration ${BUILD_MODE}
+# Set environment variable
+ENV VITE_API_URL=$VITE_API_URL
 
-# Serve stage
-FROM docker.io/library/nginx:alpine
+# Run linting and type checking
+RUN npm run lint
+RUN npm run typecheck
 
-# The build goes to dist/ because of angular.json outputPath settings
+# Build production bundle
+RUN npm run build
+
+
+# Production stage with nginx
+FROM docker.io/library/nginx:alpine AS production
+
+# Copy built assets from build stage
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Add custom nginx config for SPA routing
+# Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# Expose port 80
 EXPOSE 80
 
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
+
+# Start nginx
 CMD ["nginx", "-g", "daemon off;"]

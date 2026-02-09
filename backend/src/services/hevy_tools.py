@@ -371,14 +371,16 @@ def create_replace_hevy_exercise_tool(hevy_service, database, user_email: str):
                     if r.title.lower().strip() == routine_title.lower().strip():
                         target_routine = r
                         break
-                if target_routine: break
+                if target_routine:
+                    break
                 
                 # Fuzzy match second
                 for r in response.routines:
                     if routine_title.lower() in r.title.lower():
                         target_routine = r
                         break
-                if target_routine: break
+                if target_routine:
+                    break
             
             if not target_routine:
                 return f"Rotina '{routine_title}' não encontrada."

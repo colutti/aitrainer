@@ -1,4 +1,3 @@
-import pytest
 from src.trainers.atlas_trainer import AtlasTrainer
 from src.trainers.base_trainer import BaseTrainer
 

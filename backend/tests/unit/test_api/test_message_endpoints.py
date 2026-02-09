@@ -3,10 +3,9 @@ Comprehensive tests for message/chat endpoints.
 Tests cover message history retrieval and AI message processing with streaming.
 """
 
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 import pytest
-from datetime import datetime
 
 from src.api.main import app
 from src.services.auth import verify_token
@@ -68,7 +67,7 @@ def test_get_history_success(sample_chat_messages):
     for msg in data:
         assert msg["sender"] != Sender.SYSTEM
 
-    mock_brain.get_chat_history.assert_called_once_with("test@example.com")
+    mock_brain.get_chat_history.assert_called_once_with("test@example.com", limit=20, offset=0)
 
     app.dependency_overrides = {}
 

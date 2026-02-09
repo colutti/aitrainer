@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import date as DateType
 
 
@@ -27,6 +27,18 @@ class WeightLogInput(BaseModel):
     bmr: int | None = Field(None, ge=500, le=5000, description="Basal Metabolic Rate")
     bmi: float | None = Field(None, ge=10, le=60, description="Body Mass Index")
 
+    # Body Measurements (optional, in cm)
+    neck_cm: float | None = Field(None, ge=20, le=100, description="Neck circumference")
+    chest_cm: float | None = Field(None, ge=40, le=200, description="Chest circumference")
+    waist_cm: float | None = Field(None, ge=40, le=200, description="Waist circumference")
+    hips_cm: float | None = Field(None, ge=40, le=200, description="Hips circumference")
+    bicep_r_cm: float | None = Field(None, ge=10, le=100, description="Right bicep circumference")
+    bicep_l_cm: float | None = Field(None, ge=10, le=100, description="Left bicep circumference")
+    thigh_r_cm: float | None = Field(None, ge=20, le=150, description="Right thigh circumference")
+    thigh_l_cm: float | None = Field(None, ge=20, le=150, description="Left thigh circumference")
+    calf_r_cm: float | None = Field(None, ge=10, le=100, description="Right calf circumference")
+    calf_l_cm: float | None = Field(None, ge=10, le=100, description="Left calf circumference")
+
     # Metadata
     source: str | None = Field(
         "manual", description="Data source: manual, scale_import, chat"
@@ -45,3 +57,12 @@ class WeightLog(WeightLogInput):
     trend_weight: float | None = Field(
         None, description="Calculated trend weight using EMA smoothing"
     )
+
+
+
+class WeightWithId(WeightLog):
+    """Weight log with MongoDB ID for API responses."""
+    
+    id: str = Field(..., alias="_id", description="ID do log no MongoDB")
+
+    model_config = ConfigDict(populate_by_name=True)

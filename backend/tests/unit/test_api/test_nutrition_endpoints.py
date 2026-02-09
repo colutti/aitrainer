@@ -351,7 +351,6 @@ class TestNutritionEndpoints(unittest.TestCase):
         """Test importing CSV with validation error."""
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
         mock_db = MagicMock()
-        from src.services.myfitnesspal_import_service import import_nutrition_from_csv
         from unittest.mock import patch
 
         app.dependency_overrides[get_mongo_database] = lambda: mock_db

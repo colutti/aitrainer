@@ -9,8 +9,6 @@ Uso:
 
 import sys
 import asyncio
-import os
-from datetime import datetime
 from pathlib import Path
 
 # Add backend to path
@@ -25,11 +23,11 @@ if env_file.exists():
 else:
     print(f"⚠️  .env.prod not found at {env_file}")
 
-from src.core.config import settings
-from src.services.database import MongoDatabase
-from src.services.history_compactor import HistoryCompactor
-from src.core.logs import logger
-from src.services.llm_client import LLMClient
+from src.core.config import settings  # noqa: E402
+from src.services.database import MongoDatabase  # noqa: E402
+from src.services.history_compactor import HistoryCompactor  # noqa: E402
+from src.core.logs import logger  # noqa: E402
+from src.services.llm_client import LLMClient  # noqa: E402
 
 
 async def compact_user_retroactively(user_email: str):

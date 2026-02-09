@@ -1,4 +1,3 @@
-import pytest
 from src.trainers.luna_trainer import LunaTrainer
 from src.trainers.base_trainer import BaseTrainer
 

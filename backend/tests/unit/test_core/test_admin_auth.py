@@ -1,7 +1,7 @@
 """Tests for admin authentication and authorization."""
 
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from fastapi import HTTPException
 from src.core.auth import verify_admin, AdminUser
 

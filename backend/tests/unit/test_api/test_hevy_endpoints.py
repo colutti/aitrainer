@@ -1,12 +1,11 @@
 """Tests for Hevy integration endpoints."""
 
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import MagicMock, AsyncMock
 from fastapi.testclient import TestClient
 from src.api.main import app
 from src.services.auth import verify_token
 from src.core.deps import get_hevy_service, get_ai_trainer_brain
-from datetime import datetime
 
 
 @pytest.fixture

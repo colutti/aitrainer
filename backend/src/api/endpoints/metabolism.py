@@ -1,7 +1,5 @@
-from fastapi import APIRouter, Depends, BackgroundTasks
-from fastapi.responses import StreamingResponse
-from src.core.deps import get_ai_trainer_brain, get_mongo_database
-from src.services.trainer import AITrainerBrain
+from fastapi import APIRouter, Depends
+from src.core.deps import get_mongo_database
 from src.services.auth import verify_token
 from src.services.database import MongoDatabase
 from src.services.adaptive_tdee import AdaptiveTDEEService

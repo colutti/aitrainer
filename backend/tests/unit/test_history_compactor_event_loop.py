@@ -7,7 +7,7 @@ This tests the asyncio.run() fix instead of manual loop management.
 
 import asyncio
 import pytest
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
+from unittest.mock import Mock, AsyncMock
 from src.services.history_compactor import HistoryCompactor
 from src.services.llm_client import LLMClient
 from src.api.models.chat_history import ChatHistory
@@ -132,7 +132,6 @@ class TestEventLoopIsolation:
         This validates that the LLM client works when called from within asyncio.run().
         """
         from langchain_core.prompts import PromptTemplate
-        from langchain_core.output_parsers import StrOutputParser
 
         # Create a mock async generator that simulates LLM streaming
         async def mock_astream(data):
@@ -140,7 +139,7 @@ class TestEventLoopIsolation:
             yield "chunk"
 
         # Create the prompt template
-        prompt = PromptTemplate.from_template("Test: {input}")
+        _ = PromptTemplate.from_template("Test: {input}")
 
         # This is what actually happens inside stream_simple
         result = ""
@@ -157,7 +156,6 @@ class TestEventLoopIsolation:
         This simulates the actual scenario where it's called via background_tasks.add_task().
         FastAPI runs async background tasks in the main event loop, which is what we're testing here.
         """
-        import asyncio
 
         user_email = "test@example.com"
         result = {"success": False, "error": None}

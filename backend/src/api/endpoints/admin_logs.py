@@ -4,7 +4,6 @@ Requires admin role for access.
 """
 
 import os
-from typing import Annotated
 from fastapi import APIRouter, Query, HTTPException
 from src.core.auth import AdminUser
 from src.core.config import settings
@@ -49,7 +48,7 @@ def get_application_logs(
         # Filtrar por level se especificado
         if level:
             level_upper = level.upper()
-            lines = [l for l in lines if f"[{level_upper}]" in l]
+            lines = [line for line in lines if f"[{level_upper}]" in line]
 
         # Pegar últimas N linhas
         result_lines = lines[-limit:] if len(lines) > limit else lines

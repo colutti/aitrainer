@@ -21,13 +21,16 @@ class WorkoutRepository(BaseRepository):
         )
         return str(result.inserted_id)
 
-    def get_logs(self, user_email: str, limit: int = 50) -> list[WorkoutLog]:
+    def get_logs(self, user_email: str, limit: int = 50) -> list[WorkoutWithId]:
         cursor = (
             self.collection.find({"user_email": user_email})
             .sort("date", pymongo.DESCENDING)
             .limit(limit)
         )
-        workouts = [WorkoutLog(**doc) for doc in cursor]
+        workouts = []
+        for doc in cursor:
+            workouts.append(WorkoutWithId(**doc))
+            
         self.logger.debug(
             "Retrieved %d workout logs for user: %s", len(workouts), user_email
         )
@@ -68,10 +71,7 @@ class WorkoutRepository(BaseRepository):
             .limit(page_size)
         )
 
-        workouts = []
-        for doc in cursor:
-            doc["id"] = str(doc.pop("_id"))
-            workouts.append(doc)
+        workouts = list(cursor)
 
         self.logger.debug(
             "Retrieved %d/%d workout logs for user: %s (page %d)",
@@ -162,6 +162,13 @@ class WorkoutRepository(BaseRepository):
             return weeks_data.get((y, w), 0) >= 3
 
         check_year, check_week = current_year, current_week
+
+        # If current week hasn't met criteria yet, but it's the CURRENT week,
+        # we skip it and start counting from the previous week.
+        # This prevents the streak from resetting on Monday morning.
+        if not met_criteria(check_year, check_week):
+            prev_week_date = datetime.fromisocalendar(check_year, check_week, 1) - timedelta(days=7)
+            check_year, check_week, _ = prev_week_date.isocalendar()
 
         while met_criteria(check_year, check_week):
             streak += 1
@@ -299,13 +306,16 @@ class WorkoutRepository(BaseRepository):
             for ex in w.get("exercises", []):
                 name = ex.get("name", "")
                 cat = next((k for k, v in categories.items() if any(term.lower() in name.lower() for term in v)), "Outros")
-                if cat == "Outros": continue
+                if cat == "Outros":
+                    continue
                 
                 weights = ex.get("weights_per_set", [])
-                if not weights: continue
+                if not weights:
+                    continue
                 # We skip bodyweight exercises (0 weight) for strength radar
                 valid_weights = [w for w in weights if w > 0]
-                if not valid_weights: continue
+                if not valid_weights:
+                    continue
                 
                 max_w = max(valid_weights)
                 peak_strength[cat] = max(peak_strength.get(cat, 0), max_w)

@@ -2,7 +2,7 @@
 
 import pytest
 import bcrypt
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from src.repositories.user_repository import UserRepository
 from src.api.models.user_profile import UserProfile
 

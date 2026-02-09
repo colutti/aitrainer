@@ -6,9 +6,8 @@ which is used by the Telegram bot. It tests the fallback behavior with
 nest_asyncio when an event loop is already running.
 """
 
-import asyncio
 import unittest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
 
 from src.api.models.user_profile import UserProfile
 from src.api.models.trainer_profile import TrainerProfile

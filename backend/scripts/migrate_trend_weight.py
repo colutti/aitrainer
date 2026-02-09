@@ -62,7 +62,7 @@ def migrate():
         print(f" Done ({user_logs_count} logs).")
         total_users += 1
 
-    print(f"\nMigration complete!")
+    print("\nMigration complete!")
     print(f"Processed {total_users} users and {total_logs} weight logs.")
 
 if __name__ == "__main__":

@@ -10,7 +10,7 @@ import pytest
 from src.api.main import app
 from src.services.auth import verify_token
 from src.core.deps import get_ai_trainer_brain
-from src.api.models.trainer_profile import TrainerProfile, TrainerProfileInput
+from src.api.models.trainer_profile import TrainerProfile
 
 
 client = TestClient(app)

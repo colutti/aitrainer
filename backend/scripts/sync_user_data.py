@@ -2,8 +2,7 @@
 import argparse
 import sys
 import os
-import time
-from typing import List, Any, Optional
+from typing import Optional
 from pymongo import MongoClient
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
@@ -94,7 +93,8 @@ def sync_qdrant(
     src_client: QdrantClient, 
     dest_client: QdrantClient, 
     user_email: str, 
-    collection_name: str
+    src_collection: str,
+    dest_collection: str
 ):
     """
     Syncs Qdrant points for a user.
@@ -103,7 +103,7 @@ def sync_qdrant(
         print("⚠️  No Source Qdrant configured. Skipping Vector Sync.")
         return
 
-    print(f"\n🔄 Syncing Qdrant collection: {collection_name}...")
+    print(f"\n🔄 Syncing Qdrant: {src_collection} -> {dest_collection}...")
 
     # 1. Delete existing points for user in Destination
     # Filter: payload.user_id == user_email
@@ -117,8 +117,8 @@ def sync_qdrant(
     )
     
     try:
-        dest_client.delete_points(
-            collection_name=collection_name,
+        dest_client.delete(
+            collection_name=dest_collection,
             points_selector=models.FilterSelector(filter=user_filter)
         )
         print("   Deleted existing local points.")
@@ -131,16 +131,16 @@ def sync_qdrant(
     
     # Check if source collection exists
     try:
-        src_client.get_collection(collection_name)
+        src_client.get_collection(src_collection)
     except Exception:
-        print(f"❌ Source Qdrant collection '{collection_name}' does not exist.")
+        print(f"❌ Source Qdrant collection '{src_collection}' does not exist.")
         return
 
     # Ensure dest collection exists (create if needed - basic copy)
     try:
-        dest_client.get_collection(collection_name)
+        dest_client.get_collection(dest_collection)
     except Exception:
-        print(f"   Destination collection '{collection_name}' missing. Creating...")
+        print(f"   Destination collection '{dest_collection}' missing. Creating...")
         # Get config from source to replicate? 
         # For simplicity, we assume the app has created it or we rely on default settings.
         # But correct way is to use settings params.
@@ -153,7 +153,7 @@ def sync_qdrant(
     print("   Fetching points from Source...")
     while True:
         batch, next_offset = src_client.scroll(
-            collection_name=collection_name,
+            collection_name=src_collection,
             scroll_filter=user_filter,
             limit=100,
             offset=next_offset,
@@ -183,7 +183,7 @@ def sync_qdrant(
     
     # 3. Upsert to Destination
     dest_client.upsert(
-        collection_name=collection_name,
+        collection_name=dest_collection,
         points=upsert_points
     )
     print(f"✅ Qdrant Sync Complete: {len(points)} points transferred.")
@@ -195,11 +195,15 @@ def main():
     parser.add_argument("--source-uri", required=True, help="Source MongoDB URI (PROD)")
     parser.add_argument("--prod-qdrant-url", help="Source Qdrant URL (PROD)")
     parser.add_argument("--prod-qdrant-key", help="Source Qdrant API Key (PROD)")
+    parser.add_argument("--src-collection", help="Source Qdrant collection name")
+    parser.add_argument("--dest-collection", help="Destination Qdrant collection name (local)")
     
     args = parser.parse_args()
     
     local_uri = settings.MONGO_URI
     db_name = settings.DB_NAME
+    src_collection = args.src_collection or settings.QDRANT_COLLECTION_NAME
+    dest_collection = args.dest_collection or settings.QDRANT_COLLECTION_NAME
     
     # Safety Check
     confirm_execution("SYNC PROD DATA -> LOCAL", {
@@ -261,7 +265,8 @@ def main():
             src_qdrant, 
             dest_qdrant, 
             args.email, 
-            settings.QDRANT_COLLECTION_NAME
+            src_collection,
+            dest_collection
         )
     else:
         print("\n⏭️  Skipping Qdrant Sync (No PROD URL provided).")

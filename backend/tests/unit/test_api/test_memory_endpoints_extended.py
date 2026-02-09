@@ -3,7 +3,7 @@ Comprehensive tests for memory management endpoints.
 Tests cover memory listing, deletion, and pagination operations.
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 import pytest
 from datetime import datetime, timedelta
@@ -11,7 +11,6 @@ from datetime import datetime, timedelta
 from src.api.main import app
 from src.services.auth import verify_token
 from src.core.deps import get_ai_trainer_brain, get_qdrant_client
-from src.api.models.memory_item import MemoryItem, MemoryListResponse
 
 
 client = TestClient(app)

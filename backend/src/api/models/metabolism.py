@@ -1,15 +1,6 @@
 from pydantic import BaseModel, Field
 
 
-class WeightTrendPoint(BaseModel):
-    """
-    Represents a single point in the weight history.
-    """
-
-    date: str
-    weight: float
-    trend: float | None = None
-
 
 class WeightTrendPoint(BaseModel):
     """

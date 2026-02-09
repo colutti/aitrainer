@@ -1,4 +1,4 @@
-.PHONY: up down build restart logs init-db api front clean-pod db db-down db-logs test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov cypress cypress-open cypress-fast cypress-critical cypress-extended cypress-parallel ci-test ci-fast
+.PHONY: up down build restart logs init-db api front clean-pod db db-down db-logs test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov e2e e2e-ui e2e-report ci-test ci-fast
 
 up:
 	podman-compose up -d
@@ -110,57 +110,31 @@ test: test-backend test-frontend
 
 test-cov: test-backend-cov test-frontend-cov
 
-# E2E Tests (Cypress)
+# E2E Tests (Playwright)
 
-## Cypress padrão (all tests)
-cypress:
-	podman-compose --profile test run --rm --no-deps cypress run
+## Playwright (headless)
+e2e:
+	cd frontend && npx playwright test
 
-## Cypress interativo
-cypress-open:
-	podman-compose --profile test run --rm --no-deps cypress open
+## Playwright UI
+e2e-ui:
+	cd frontend && npx playwright test --ui
 
-## Cypress fast-fail: apenas testes críticos (admin-users, auth, body-composition)
-## - Sem retries
-## - Timeouts reduzidos
-## - Executa em ~2-3 minutos
-cypress-fast:
-	cd frontend && npm run cypress:fast
-
-## Cypress critical: testes críticos com logging
-## - Sem paralelização
-## - Com output de falhas
-## - Executa em ~3-4 minutos
-cypress-critical:
-	cd frontend && npm run cypress:critical
-
-## Cypress extended: todos os testes
-## - Sem paralelização
-## - Todos os specs
-## - Executa em ~10-15 minutos
-cypress-extended:
-	cd frontend && npm run cypress:extended
-
-## Cypress paralelo: executa em paralelo (requer Cypress Cloud ou --parallel)
-## - Múltiplos workers
-## - Mais rápido em CI/CD
-cypress-parallel:
-	cd frontend && npm run cypress:parallel
+## Playwright Report
+e2e-report:
+	cd frontend && npx playwright show-report
 
 # CI/CD Validation Commands
 
 ## CI Fast: Gate rápido para PRs
 ## - Backend: testes unitários + linter
-## - Frontend: unit tests + jest
-## - Cypress: apenas testes críticos (14 testes em ~10 segundos)
-## - Total: ~30 segundos
-ci-fast: test-backend test-frontend cypress-fast
+## - Frontend: unit tests + vitest
+## - Playwright: omitido para fast check
+ci-fast: test-backend test-frontend
 	@echo "✅ CI Fast Gate Passed!"
 
 ## CI Full: Tudo que a CI/CD roda no GitHub Actions
 ## - Backend: unit tests + benchmarks + linter
-## - Frontend: unit tests + build + cypress extended
-## - Total: ~5-10 minutos
-ci-test: test-backend test-frontend cypress-extended
+## - Frontend: unit tests + build + playwright
+ci-test: test-backend test-frontend e2e
 	@echo "✅ CI Full Test Suite Passed!"
-

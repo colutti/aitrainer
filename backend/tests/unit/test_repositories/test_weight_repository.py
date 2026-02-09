@@ -1,7 +1,7 @@
 """Tests for weight repository (weight log management)."""
 
 import pytest
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from unittest.mock import MagicMock
 from src.repositories.weight_repository import WeightRepository
 from src.api.models.weight_log import WeightLog

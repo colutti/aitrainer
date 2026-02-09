@@ -167,9 +167,9 @@ class AdaptiveTDEEService:
 
         if len(weight_logs) < 2 or len(nutrition_logs) < self.MIN_DATA_DAYS:
             logger.info(
-                "Insufficient data for TDEE calculation for user %s", user_email
+                "Insufficient data for TDEE calculation for user %s. Using fallback.", user_email
             )
-            return self._insufficient_data_response()
+            return self._calculate_fallback_tdee(user_email, weight_logs, nutrition_logs)
 
         # Capture actual latest weight BEFORE any filtering (Bug Fix #1)
         weight_logs.sort(key=lambda x: x.date)
@@ -193,7 +193,8 @@ class AdaptiveTDEEService:
         days_elapsed = (weight_logs[-1].date - weight_logs[0].date).days
 
         if days_elapsed < self.MIN_DATA_DAYS:
-            return self._insufficient_data_response()
+            logger.info("Data range too short after filtering for user %s. Using fallback.", user_email)
+            return self._calculate_fallback_tdee(user_email, weight_logs_raw, nutrition_logs)
 
         # Theoretical weight change based on the trend
         # We use the predicted values from the regression line for start/end points
@@ -216,7 +217,8 @@ class AdaptiveTDEEService:
         ]
 
         if not relevant_nutrition:
-            return self._insufficient_data_response()
+            logger.info("No nutrition logs in the weight period for user %s. Using fallback.", user_email)
+            return self._calculate_fallback_tdee(user_email, weight_logs, nutrition_logs)
 
         total_calories = sum(log_item.calories for log_item in relevant_nutrition)
         
@@ -630,3 +632,80 @@ class AdaptiveTDEEService:
         )
 
         return int(round((stable_days / len(last_7_logs)) * 100))
+
+    def _calculate_fallback_tdee(self, user_email: str, weight_logs: List[WeightLog], nutrition_logs: List[NutritionLog]) -> dict:
+        """
+        Provides a safe TDEE estimate when adaptive data is missing or unstable.
+        """
+        profile = self.db.get_user_profile(user_email)
+        
+        # Latest weight (raw)
+        latest_weight = 70.0 # Extreme fallback
+        if weight_logs:
+            sorted_raw = sorted(weight_logs, key=lambda x: x.date)
+            latest_weight = sorted_raw[-1].weight_kg
+        
+        # 1. BMR from Scale (Preferred)
+        scale_bmr = next((log.bmr for log in reversed(weight_logs) if log.bmr), None)
+        
+        # 2. BMR from Profile (Fallback)
+        calculated_bmr = 0.0
+        if profile and profile.height and profile.age:
+            try:
+                age = profile.age
+                if profile.gender == 'Feminino' or profile.gender == 'female':
+                    calculated_bmr = (10 * latest_weight) + (6.25 * profile.height) - (5 * age) - 161
+                else:
+                    calculated_bmr = (10 * latest_weight) + (6.25 * profile.height) - (5 * age) + 5
+            except Exception:
+                pass
+        
+        base_bmr = scale_bmr or calculated_bmr or (latest_weight * 22) or 1500
+        
+        # 3. Activity Factor (Default to 1.35)
+        tdee_estimate = base_bmr * 1.35
+        
+        # 4. Consistency & Target
+        days_covered = 7 # Default window for consistency
+        if weight_logs and len(weight_logs) >= 2:
+             days_covered = (weight_logs[-1].date - weight_logs[0].date).days
+        
+        adherence_rate = len(nutrition_logs) / (days_covered + 1) if days_covered > 0 else 0
+        
+        daily_target = int(round(tdee_estimate))
+        goal_type = "maintain"
+        goal_rate = 0.0
+        if profile:
+            goal_type = profile.goal_type
+            goal_rate = profile.weekly_rate or 0.0
+            adjustment = 0
+            if goal_type == "lose":
+                adjustment = -1 * abs(goal_rate) * 1100
+            elif goal_type == "gain":
+                adjustment = abs(goal_rate) * 1100
+            daily_target = int(round(tdee_estimate + adjustment))
+            daily_target = max(1000, daily_target)
+
+        return {
+            "tdee": int(round(tdee_estimate)),
+            "confidence": "none",
+            "confidence_reason": "Utilizando estimativa baseada em seu metabolismo basal (BMR) devido a histórico de dados insuficiente ou instável.",
+            "avg_calories": int(round(sum(n.calories for n in nutrition_logs)/len(nutrition_logs))) if nutrition_logs else 0,
+            "weight_change_per_week": 0.0,
+            "energy_balance": 0.0,
+            "status": "maintenance",
+            "is_stable": True,
+            "logs_count": len(nutrition_logs),
+            "nutrition_logs_count": len(nutrition_logs),
+            "startDate": weight_logs[0].date.isoformat() if weight_logs else date.today().isoformat(),
+            "endDate": weight_logs[-1].date.isoformat() if weight_logs else date.today().isoformat(),
+            "latest_weight": latest_weight,
+            "daily_target": daily_target,
+            "goal_weekly_rate": goal_rate,
+            "goal_type": goal_type,
+            "consistency_score": int(round(adherence_rate * 100)),
+            "macro_targets": self._calculate_macro_targets(daily_target, latest_weight),
+            "weight_trend": [],
+            "consistency": [],
+            "calorie_trend": []
+        }

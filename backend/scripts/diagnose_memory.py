@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src.core.deps import get_mongo_database, get_mem0_client, get_qdrant_client
 from src.core.config import settings
-from datetime import datetime, timedelta
+from datetime import datetime
 import argparse
 
 
@@ -47,22 +47,22 @@ def diagnose_user_memory(user_email: str):
 
         if profile.long_term_summary:
             summary_len = len(profile.long_term_summary)
-            print(f"\n📜 RESUMO DE LONGO PRAZO:")
+            print("\n📜 RESUMO DE LONGO PRAZO:")
             print(f"   Tamanho: {summary_len} caracteres")
             if profile.last_compaction_timestamp:
                 last_comp = datetime.fromisoformat(profile.last_compaction_timestamp)
                 age = datetime.now() - last_comp
                 print(f"   Última compactação: {last_comp.strftime('%d/%m/%Y %H:%M')} ({age.days} dias atrás)")
-            print(f"\n   Conteúdo (primeiros 300 chars):")
+            print("\n   Conteúdo (primeiros 300 chars):")
             print(f"   {profile.long_term_summary[:300]}...")
         else:
-            print(f"\n⚠️  Nenhum resumo de longo prazo encontrado")
+            print("\n⚠️  Nenhum resumo de longo prazo encontrado")
     else:
         print(f"❌ Perfil não encontrado para {user_email}")
         return
 
     # 2. MongoDB Chat History
-    print(f"\n\n💬 HISTÓRICO DE CHAT (MongoDB)")
+    print("\n\n💬 HISTÓRICO DE CHAT (MongoDB)")
     print("-" * 70)
     all_history = database.get_chat_history(user_email, limit=1000)
     total_msgs = len(all_history)
@@ -93,18 +93,18 @@ def diagnose_user_memory(user_email: str):
             old_msgs = total_msgs - settings.MAX_SHORT_TERM_MEMORY_MESSAGES
             print(f"\n⚠️  {old_msgs} mensagens antigas FORA da janela ativa")
             if not profile.long_term_summary or not profile.last_compaction_timestamp:
-                print(f"   ⚠️  AVISO: Essas mensagens não foram compactadas ainda!")
+                print("   ⚠️  AVISO: Essas mensagens não foram compactadas ainda!")
             else:
                 last_comp = datetime.fromisoformat(profile.last_compaction_timestamp)
                 oldest_msg = datetime.fromisoformat(all_history[0].timestamp)
                 if oldest_msg > last_comp:
-                    print(f"   ⚠️  AVISO: Há mensagens antigas não compactadas!")
+                    print("   ⚠️  AVISO: Há mensagens antigas não compactadas!")
 
     else:
         print("⚠️  Nenhuma mensagem encontrada")
 
     # 3. Mem0 Memories (Qdrant)
-    print(f"\n\n💾 MEMÓRIAS MEM0 (Qdrant)")
+    print("\n\n💾 MEMÓRIAS MEM0 (Qdrant)")
     print("-" * 70)
     try:
         from qdrant_client import models as qdrant_models
@@ -126,7 +126,7 @@ def diagnose_user_memory(user_email: str):
         print(f"Total de memórias armazenadas: {total_memories}")
 
         # Search examples
-        print(f"\n🔍 BUSCA HÍBRIDA (exemplo com query='treino'):")
+        print("\n🔍 BUSCA HÍBRIDA (exemplo com query='treino'):")
 
         # Critical
         critical_keywords = (
@@ -148,7 +148,7 @@ def diagnose_user_memory(user_email: str):
         recent_results = recent.get("results", []) if isinstance(recent, dict) else recent
         print(f"   - Recentes: {len(recent_results)} (limit=10)")
 
-        print(f"\n📜 Amostra de memórias recentes:")
+        print("\n📜 Amostra de memórias recentes:")
         for i, mem in enumerate(recent_results[:5], start=1):
             mem_text = mem.get("memory", "")
             created = mem.get("created_at", "")
@@ -156,7 +156,7 @@ def diagnose_user_memory(user_email: str):
                 try:
                     created_dt = datetime.fromisoformat(created.replace("Z", "+00:00"))
                     created_str = created_dt.strftime("%d/%m/%Y")
-                except:
+                except Exception:
                     created_str = created
             else:
                 created_str = "?"
@@ -168,7 +168,7 @@ def diagnose_user_memory(user_email: str):
 
     # 4. Summary
     print(f"\n\n{'='*70}")
-    print(f"📊 RESUMO DO DIAGNÓSTICO")
+    print("📊 RESUMO DO DIAGNÓSTICO")
     print(f"{'='*70}")
 
     status = []
@@ -227,7 +227,7 @@ Examples:
     args = parser.parse_args()
 
     if args.list_users:
-        database = get_mongo_database()
+        _ = get_mongo_database()
         from pymongo import MongoClient
 
         client = MongoClient(settings.MONGO_URI)

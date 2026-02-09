@@ -20,17 +20,37 @@ class ChatRepository(BaseRepository):
             database, "chat_history"
         )  # Collection name might vary but MongoDBChatMessageHistory handles it
 
-    def get_history(self, user_id: str, limit: int = 20) -> list[ChatHistory]:
+    def get_history(self, user_id: str, limit: int = 20, offset: int = 0) -> list[ChatHistory]:
         self.logger.debug(
-            "Retrieving chat history for session: %s (limit: %d)", user_id, limit
+            "Retrieving chat history for session: %s (limit: %d, offset: %d)",
+            user_id,
+            limit,
+            offset,
         )
+        # Fetch enough messages to cover the offset from the end
+        fetch_size = limit + offset
         history = MongoDBChatMessageHistory(
             connection_string=settings.MONGO_URI,
             session_id=user_id,
             database_name=settings.DB_NAME,
-            history_size=limit,
+            history_size=fetch_size,
         )
-        return ChatHistory.from_mongodb_chat_message_history(history)
+        messages = ChatHistory.from_mongodb_chat_message_history(history)
+
+        # Apply pagination logic manually since we are fetching from the end (Newest)
+        # Messages are sorted Oldest -> Newest [Msg1, Msg2, ... MsgN]
+        # We want to skip the last 'offset' messages and take 'limit' before that.
+
+        if offset > 0:
+            # Drop the last 'offset' messages (the most recent ones that we already showed)
+            messages = messages[:-offset]
+
+        # Take the last 'limit' messages from the remainder
+        # Ensure we don't take more than available
+        if messages:
+            messages = messages[-limit:]
+
+        return messages
 
     def add_message(
         self,
@@ -44,7 +64,6 @@ class ChatRepository(BaseRepository):
             connection_string=settings.MONGO_URI,
             session_id=session_id,
             database_name=settings.DB_NAME,
-            history_size=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
         )
 
         additional_kwargs = {"timestamp": now}

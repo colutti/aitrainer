@@ -3,7 +3,6 @@
 import pytest
 from unittest.mock import MagicMock, patch
 import importlib
-import sys
 
 
 class TestRateLimiterConfiguration:
@@ -17,7 +16,9 @@ class TestRateLimiterConfiguration:
     def test_limiter_is_slowapi_instance(self):
         """Test that limiter is a slowapi Limiter instance."""
         try:
-            from slowapi import Limiter
+            import slowapi
+            # Check if slowapi is installed
+            assert slowapi is not None
             from src.core.limiter import limiter
             # Should be a Limiter instance or a fallback
             assert hasattr(limiter, 'limit') or hasattr(limiter, '__call__')
@@ -27,7 +28,7 @@ class TestRateLimiterConfiguration:
 
     def test_limiter_has_key_function(self):
         """Test that limiter has a key function configured."""
-        from src.core.limiter import limiter, get_remote_address
+        from src.core.limiter import get_remote_address
 
         # get_remote_address should be the key function
         assert callable(get_remote_address)
@@ -60,6 +61,7 @@ class TestRateLimiterConfiguration:
         """Test limiter behavior when slowapi is available."""
         try:
             import slowapi
+            assert slowapi is not None
             from src.core.limiter import limiter
 
             # If slowapi is installed, limiter should be active
@@ -114,7 +116,6 @@ class TestRateLimiterConfiguration:
     def test_limiter_configuration_no_errors_on_import(self):
         """Test that limiter module imports without errors."""
         # Re-import to catch any import-time errors
-        import importlib
         from src.core import limiter as limiter_module
 
         importlib.reload(limiter_module)
@@ -189,7 +190,6 @@ class TestLimiterRobustness:
 
     def test_limiter_survives_reload(self):
         """Test that limiter can survive module reload."""
-        import importlib
         from src.core import limiter as limiter_module
 
         limiter1 = limiter_module.limiter
@@ -202,7 +202,7 @@ class TestLimiterRobustness:
 
     def test_limiter_thread_safety(self):
         """Test limiter configuration is thread-safe."""
-        from src.core.limiter import limiter, get_remote_address
+        from src.core.limiter import get_remote_address
         import threading
 
         results = []

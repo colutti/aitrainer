@@ -3,7 +3,7 @@
 import pytest
 import tempfile
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from fastapi.testclient import TestClient
 from src.api.main import app
 from src.core.auth import verify_admin

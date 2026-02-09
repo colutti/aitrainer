@@ -102,3 +102,31 @@ class WeightRepository(BaseRepository):
             logs.append(WeightLog(**doc))
 
         return logs
+
+    def get_paginated(
+        self,
+        user_email: str,
+        page: int = 1,
+        page_size: int = 10,
+    ) -> tuple[list[dict], int]:
+        query = {"user_email": user_email}
+
+        total = self.collection.count_documents(query)
+        skip = (page - 1) * page_size
+
+        cursor = (
+            self.collection.find(query)
+            .sort("date", pymongo.DESCENDING)
+            .skip(skip)
+            .limit(page_size)
+        )
+
+        logs = []
+        for doc in cursor:
+            if isinstance(doc.get("date"), datetime):
+                doc["date"] = doc["date"].date()
+            if "_id" in doc:
+                doc["id"] = str(doc.pop("_id"))
+            logs.append(doc)
+
+        return logs, total

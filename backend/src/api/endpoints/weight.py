@@ -1,13 +1,16 @@
-from typing import Annotated
 from datetime import date
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
-from src.services.auth import verify_token
-from src.core.deps import get_ai_trainer_brain, get_mongo_database
-from src.services.trainer import AITrainerBrain
-from src.services.database import MongoDatabase
-from src.api.models.weight_log import WeightLog, WeightLogInput
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from pydantic import BaseModel
+
 from src.api.models.import_result import ImportResult
+from src.api.models.weight_log import WeightLog, WeightLogInput, WeightWithId
+from src.core.deps import get_ai_trainer_brain, get_mongo_database
+from src.services.database import MongoDatabase
+from src.services.trainer import AITrainerBrain
 from src.services.zepp_life_import_service import import_zepp_life_data
+from src.services.auth import verify_token
 from src.core.logs import logger
 
 router = APIRouter()
@@ -81,14 +84,48 @@ def delete_weight_log(date_str: str, user_email: CurrentUser, brain: AITrainerBr
     return {"message": "Weight log deleted successfully", "deleted": True}
 
 
-@router.get("")
+class WeightListResponse(BaseModel):
+    """Paginated response for weight list API."""
+
+    logs: list[WeightWithId]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
+@router.get("", response_model=WeightListResponse)
 def get_weight_logs(
-    user_email: CurrentUser, brain: AITrainerBrainDep, limit: int = 30
-) -> list[WeightLog]:
+    user_email: CurrentUser,
+    db: DatabaseDep,
+    page: int = Query(default=1, ge=1, description="Page number (1-indexed)"),
+    page_size: int = Query(default=30, ge=1, le=100, description="Items per page"),
+) -> WeightListResponse:
     """
-    Retrieves recent weight logs for the user.
+    Retrieves paginated weight logs for the user.
     """
-    return brain._database.get_weight_logs(user_email=user_email, limit=limit)
+    raw_logs, total = db.get_weight_paginated(
+        user_email=user_email, page=page, page_size=page_size
+    )
+
+    logs_out = []
+    for log in raw_logs:
+        # Pydantic v2: if populate_by_name=True, we can pass 'id' or '_id'.
+        # Repository returns 'id' (string) and removes '_id'.
+        # However, to be extra safe against alias confusion:
+        if "id" in log:
+            log["_id"] = log.pop("id")
+        logs_out.append(WeightWithId(**log))
+
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+
+    return WeightListResponse(
+        logs=logs_out,
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
+    )
 
 
 @router.get("/stats")

@@ -17,7 +17,7 @@ MongoDBDep = Annotated[MongoDatabase, Depends(get_mongo_database)]
 AITrainerBrainDep = Annotated[AITrainerBrain, Depends(get_ai_trainer_brain)]
 
 
-@router.get("/list")
+@router.get("/")
 def list_users(
     admin_email: AdminUser,
     db: MongoDBDep,
@@ -67,7 +67,7 @@ def list_users(
     }
 
 
-@router.get("/{email}/details")
+@router.get("/{email}")
 def get_user_details(
     email: str,
     admin_email: AdminUser,

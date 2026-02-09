@@ -1,12 +1,12 @@
 """Tests for workout repository (workout log management)."""
 
 import pytest
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 from unittest.mock import MagicMock
 from bson import ObjectId
 from src.repositories.workout_repository import WorkoutRepository
-from src.api.models.workout_log import WorkoutLog, WorkoutWithId
-from src.api.models.workout_stats import WorkoutStats, PersonalRecord, VolumeStat
+from src.api.models.workout_log import WorkoutLog
+from src.api.models.workout_stats import WorkoutStats
 
 
 @pytest.fixture

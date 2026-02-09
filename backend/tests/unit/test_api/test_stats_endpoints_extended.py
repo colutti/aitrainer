@@ -3,7 +3,7 @@ Comprehensive tests for workout statistics endpoints.
 Tests cover dashboard stats retrieval and aggregated workout metrics.
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 import pytest
 from datetime import datetime

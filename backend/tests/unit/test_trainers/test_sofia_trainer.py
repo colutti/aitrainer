@@ -1,4 +1,3 @@
-import pytest
 from src.trainers.sofia_trainer import SofiaTrainer
 from src.trainers.base_trainer import BaseTrainer
 

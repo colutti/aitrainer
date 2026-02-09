@@ -1,7 +1,7 @@
 """Tests for base repository (common MongoDB operations)."""
 
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from src.repositories.base import BaseRepository
 
 
@@ -33,12 +33,12 @@ class TestBaseRepositoryInitialization:
         """Test initialization with different collection names."""
         for collection_name in ["users", "chat_history", "workouts", "weights"]:
             mock_db.reset_mock()
-            repo = BaseRepository(mock_db, collection_name)
+            _ = BaseRepository(mock_db, collection_name)
             mock_db.__getitem__.assert_called_once_with(collection_name)
 
     def test_init_with_special_characters_collection_name(self, mock_db):
         """Test initialization with special characters in collection name."""
-        repo = BaseRepository(mock_db, "user_profiles_v2")
+        _ = BaseRepository(mock_db, "user_profiles_v2")
         mock_db.__getitem__.assert_called_once_with("user_profiles_v2")
 
     def test_init_assigns_logger(self, mock_db):
@@ -91,30 +91,30 @@ class TestBaseRepositoryEdgeCases:
 
     def test_empty_collection_name(self, mock_db):
         """Test initialization with empty collection name."""
-        repo = BaseRepository(mock_db, "")
+        _ = BaseRepository(mock_db, "")
         mock_db.__getitem__.assert_called_once_with("")
 
     def test_very_long_collection_name(self, mock_db):
         """Test initialization with very long collection name."""
         long_name = "a" * 256
-        repo = BaseRepository(mock_db, long_name)
+        _ = BaseRepository(mock_db, long_name)
         mock_db.__getitem__.assert_called_once_with(long_name)
 
     def test_collection_name_with_dots(self, mock_db):
         """Test initialization with collection name containing dots."""
-        repo = BaseRepository(mock_db, "db.collection.nested")
+        _ = BaseRepository(mock_db, "db.collection.nested")
         mock_db.__getitem__.assert_called_once_with("db.collection.nested")
 
     def test_collection_name_with_unicode(self, mock_db):
         """Test initialization with unicode characters in collection name."""
-        repo = BaseRepository(mock_db, "usuários_collection")
+        _ = BaseRepository(mock_db, "usuários_collection")
         mock_db.__getitem__.assert_called_once_with("usuários_collection")
 
     def test_multiple_repos_same_database(self, mock_db):
         """Test creating multiple repository instances from same database."""
-        repo1 = BaseRepository(mock_db, "collection1")
+        _ = BaseRepository(mock_db, "collection1")
         mock_db.reset_mock()
-        repo2 = BaseRepository(mock_db, "collection2")
+        _ = BaseRepository(mock_db, "collection2")
 
         # Each should have called __getitem__ once
         assert mock_db.__getitem__.call_count == 1
@@ -122,8 +122,8 @@ class TestBaseRepositoryEdgeCases:
 
     def test_multiple_repos_same_collection(self, mock_db):
         """Test creating multiple repository instances with same collection."""
-        repo1 = BaseRepository(mock_db, "same_collection")
-        repo2 = BaseRepository(mock_db, "same_collection")
+        _ = BaseRepository(mock_db, "same_collection")
+        _ = BaseRepository(mock_db, "same_collection")
 
         # Both should reference same collection
         assert mock_db.__getitem__.call_count == 2
@@ -151,7 +151,7 @@ class TestBaseRepositoryEdgeCases:
         collection = mock_db.__getitem__.return_value
         collection.find.return_value.limit.return_value = []
 
-        result = base_repo.collection.find({})
+        _ = base_repo.collection.find({})
         collection.find.assert_called_once_with({})
 
 

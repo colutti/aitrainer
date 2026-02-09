@@ -30,8 +30,15 @@ services:
       context: ./frontend
       args:
         BUILD_MODE: ${BUILD_MODE:-development}
+      target: build
     ports:
-      - "3000:80"
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_PROXY_TARGET=http://backend:8000
+    command: npm run dev -- --host
     depends_on:
       - backend
     networks:
@@ -74,20 +81,6 @@ services:
       - "6334:6334"
     volumes:
       - qdrant_data:/qdrant/storage
-    networks:
-      - aitrainer-network
-
-  cypress:
-    image: docker.io/cypress/included:13.13.0
-    profiles:
-      - test
-    depends_on:
-      - frontend
-    environment:
-      - CYPRESS_baseUrl=http://frontend:80
-    volumes:
-      - ./frontend:/app
-    working_dir: /app
     networks:
       - aitrainer-network
 

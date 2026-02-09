@@ -16,11 +16,11 @@ router = APIRouter(prefix="/admin/prompts", tags=["admin"])
 MongoDBDep = Annotated[MongoDatabase, Depends(get_mongo_database)]
 
 
-@router.get("/list")
+@router.get("/")
 def list_prompts(
     admin_email: AdminUser,
     db: MongoDBDep,
-    user_email: str | None = None,
+    user_id: str | None = Query(None, alias="user_id"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=50)
 ) -> dict:
@@ -30,86 +30,67 @@ def list_prompts(
     Args:
         admin_email: Email do admin (verificado por dependency)
         db: MongoDB database instance
-        user_email: Filtrar por email do usuário (opcional)
+        user_id: Filtrar por email do usuário (opcional)
         page: Número da página
         page_size: Quantidade de prompts por página
 
     Returns:
         dict: Contém prompts, total, page e total_pages
     """
-    logger.info(f"Admin {admin_email} listing prompts (page={page}, user={user_email})")
+    logger.info(f"Admin {admin_email} listing prompts (page={page}, user={user_id})")
 
     query = {}
-    if user_email:
-        query = {"user_email": user_email}
+    if user_id:
+        query = {"user_email": user_id}
 
     skip = (page - 1) * page_size
 
     # Buscar prompts
-    prompts = list(db.prompts.collection.find(query)
-        .sort("timestamp", -1)
-        .skip(skip)
-        .limit(page_size))
+    prompts_cursor = db.prompts.collection.find(query).sort("timestamp", -1).skip(skip).limit(page_size)
+    prompts = list(prompts_cursor)
 
-    # Truncar conteúdo longo para economizar bandwidth
+    # Truncar conteúdo longo e achatar campos para o frontend
     for p in prompts:
         # Converter ObjectId para string
         if "_id" in p:
+            p["id"] = str(p["_id"])
             p["_id"] = str(p["_id"])
 
-        if "prompt" in p:
-            prompt_type = p["prompt"].get("type", "")
+        # Campos que o frontend espera no nível superior
+        p["model"] = "unknown"
+        p["tokens_input"] = 0
+        p["tokens_output"] = 0
+        p["duration_ms"] = 0
+        p["status"] = "success"
+        p["prompt_name"] = "N/A"
 
-            # Para prompts "with_tools" - tem campo messages
-            if "messages" in p["prompt"]:
-                messages = p["prompt"]["messages"]
-                if messages and len(messages) > 0:
-                    p["prompt"]["messages_count"] = len(messages)
-                    # Preview da primeira mensagem
-                    first_msg = messages[0]
-                    if isinstance(first_msg, dict) and "content" in first_msg:
-                        content = first_msg.get("content", "")
-                        p["prompt"]["messages_preview"] = content[:200] + "..." if len(content) > 200 else content
-                    # Remover array completo para economizar bandwidth
-                    p["prompt"]["messages"] = []
-                else:
-                    p["prompt"]["messages_count"] = 0
-                    p["prompt"]["messages_preview"] = ""
+        if "prompt" in p and isinstance(p["prompt"], dict):
+            prompt_data = p["prompt"]
+            
+            # Tentar extrair metadados se existirem (podem ter sido adicionados recentemente)
+            p["model"] = prompt_data.get("model", p["model"])
+            p["tokens_input"] = prompt_data.get("tokens_input", p["tokens_input"])
+            p["tokens_output"] = prompt_data.get("tokens_output", p["tokens_output"])
+            p["duration_ms"] = prompt_data.get("duration_ms", p["duration_ms"])
+            p["status"] = prompt_data.get("status", p["status"])
+            p["prompt_name"] = prompt_data.get("prompt_name", p["prompt_name"])
 
-            # Para prompts "simple" - tem campo input
-            elif "input" in p["prompt"]:
-                input_data = p["prompt"]["input"]
-
-                # Verificar se tem new_lines
-                if "new_lines" in input_data and input_data["new_lines"]:
-                    new_lines = input_data["new_lines"]
-                    # Contar "mensagens" no new_lines (separadas por linhas de timestamp)
-                    lines_count = new_lines.count("[") if "[" in new_lines else 1
-                    p["prompt"]["messages_count"] = lines_count
-                    p["prompt"]["messages_preview"] = new_lines[:200] + "..." if len(new_lines) > 200 else new_lines
-
-                # Ou se tem user_prompt_content
-                elif "user_prompt_content" in input_data and input_data["user_prompt_content"]:
-                    content = input_data["user_prompt_content"]
-                    p["prompt"]["messages_count"] = 1  # Considera como 1 mensagem do usuário
-                    p["prompt"]["messages_preview"] = content[:200] + "..." if len(content) > 200 else content
-
-                # Sem conteúdo útil
-                else:
-                    p["prompt"]["messages_count"] = 0
-                    p["prompt"]["messages_preview"] = "Sem conteúdo"
-
-            # Fallback para prompts V3 que tem apenas o campo 'prompt' (string renderizada)
-            elif "prompt" in p["prompt"]:
-                prompt_str = p["prompt"]["prompt"]
-                p["prompt"]["messages_count"] = 1
-                p["prompt"]["messages_preview"] = prompt_str[:200] + "..." if len(prompt_str) > 200 else prompt_str
-
-            # Fallback para outros tipos ou estrutura desconhecida
+            # Preview logic
+            if "messages" in prompt_data:
+                messages = prompt_data["messages"]
+                p["messages_count"] = len(messages) if isinstance(messages, list) else 0
+                p["messages_preview"] = str(messages[0].get("content", ""))[:200] + "..." if messages and isinstance(messages, list) and isinstance(messages[0], dict) else ""
+            elif "input" in prompt_data:
+                input_val = prompt_data.get("input", "")
+                p["messages_count"] = 1
+                p["messages_preview"] = str(input_val)[:200] + "..."
+            elif "prompt" in prompt_data:
+                prompt_str = prompt_data.get("prompt", "")
+                p["messages_count"] = 1
+                p["messages_preview"] = str(prompt_str)[:200] + "..."
             else:
-                p["prompt"] = p.get("prompt") or {}
-                p["prompt"]["messages_count"] = 0
-                p["prompt"]["messages_preview"] = "Estrutura não reconhecida"
+                p["messages_count"] = 0
+                p["messages_preview"] = "Estrutura não reconhecida"
 
     total = db.prompts.collection.count_documents(query)
 

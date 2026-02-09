@@ -7,7 +7,6 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 from fastapi import BackgroundTasks
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from mem0 import Memory  # type: ignore
 
 from src.core.config import settings
@@ -106,18 +105,25 @@ class AITrainerBrain:
 
         return callback
 
-    def get_chat_history(self, session_id: str) -> list[ChatHistory]:
+    def get_chat_history(self, session_id: str, limit: int = 20, offset: int = 0) -> list[ChatHistory]:
         """
         Retrieves the chat history for a given session ID.
 
         Args:
             session_id (str): The session ID.
+            limit (int): Number of messages to retrieve.
+            offset (int): Number of messages to skip from the end (most recent).
 
         Returns:
             list[ChatHistory]: A list of chat messages.
         """
-        logger.debug("Attempting to retrieve chat history for session: %s", session_id)
-        return self._database.get_chat_history(session_id)
+        logger.debug(
+            "Attempting to retrieve chat history for session: %s (limit: %d, offset: %d)",
+            session_id,
+            limit,
+            offset,
+        )
+        return self._database.get_chat_history(session_id, limit, offset)
 
     def get_user_profile(self, email: str) -> UserProfile | None:
         """

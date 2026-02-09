@@ -211,7 +211,6 @@ async def test_why_webhook_prompt_logging_was_missing():
     # This is not a test with assertions, it's a specification/documentation
     # that explains the root cause: insufficient test coverage for webhook behavior
 
-    from src.api.endpoints.hevy import process_webhook_async
 
     # The webhook handler (line 149-247 in hevy.py) has complex async flow:
     # 1. Fetch workout from Hevy API

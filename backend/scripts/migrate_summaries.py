@@ -17,10 +17,7 @@ from datetime import datetime
 sys.path.insert(0, "/home/colutti/projects/personal/backend")
 
 from src.services.database import MongoDatabase
-from src.services.llm_client import LLMClient
-from src.core.config import settings
 from src.core.logs import logger
-from mem0 import Memory
 
 
 def convert_text_summary_to_json(text_summary: str) -> dict:
@@ -161,7 +158,7 @@ async def migrate_user_summaries(database: MongoDatabase):
                 logger.error(f"❌ Error migrating user {email}: {e}")
                 errors += 1
 
-        logger.info(f"\nMigration complete:")
+        logger.info("\nMigration complete:")
         logger.info(f"  ✅ Migrated: {migrated}")
         logger.info(f"  ⏭️  Skipped: {skipped}")
         logger.info(f"  ❌ Errors: {errors}")

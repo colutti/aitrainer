@@ -20,7 +20,6 @@ from src.services.prompt_builder import PromptBuilder
 from src.core.config import settings
 from src.api.models.user_profile import UserProfile
 from src.api.models.sender import Sender
-from src.prompts.summary_prompts import SUMMARY_UPDATE_PROMPT
 from src.prompts.prompt_template import PROMPT_TEMPLATE
 
 
@@ -433,7 +432,7 @@ class TestEdgeCases:
         mock_memory.get_all.return_value = {"results": []}
 
         memory_manager = MemoryManager(mock_memory)
-        result = memory_manager.retrieve_hybrid_memories("test", "user123")
+        _ = memory_manager.retrieve_hybrid_memories("test", "user123")
 
         # Verify we asked Mem0 for optimized limits
         search_calls = mock_memory.search.call_args_list

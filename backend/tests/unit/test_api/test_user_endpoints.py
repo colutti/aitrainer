@@ -8,10 +8,9 @@ from fastapi.testclient import TestClient
 import pytest
 
 from src.api.main import app
-from src.services.auth import verify_token, oauth2_scheme
+from src.services.auth import verify_token
 from src.core.deps import get_ai_trainer_brain
-from src.api.models.user_profile import UserProfile, UserProfileInput
-from src.core.config import settings
+from src.api.models.user_profile import UserProfile
 
 
 client = TestClient(app)
@@ -350,7 +349,7 @@ def test_update_telegram_notifications_partial(sample_user_profile):
 
     # Verify that model_copy was called with the update data
     call_args = mock_brain.save_user_profile.call_args[0][0]
-    assert call_args.telegram_notify_on_workout == False
+    assert not call_args.telegram_notify_on_workout
 
     app.dependency_overrides = {}
 
@@ -407,9 +406,9 @@ def test_update_telegram_notifications_all_fields(sample_user_profile):
 
     # Verify all fields were set correctly
     call_args = mock_brain.save_user_profile.call_args[0][0]
-    assert call_args.telegram_notify_on_workout == False
-    assert call_args.telegram_notify_on_nutrition == True
-    assert call_args.telegram_notify_on_weight == True
+    assert not call_args.telegram_notify_on_workout
+    assert call_args.telegram_notify_on_nutrition
+    assert call_args.telegram_notify_on_weight
 
     app.dependency_overrides = {}
 

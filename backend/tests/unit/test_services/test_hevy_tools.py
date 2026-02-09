@@ -1,7 +1,7 @@
 """Tests for Hevy tools (LangChain tools for AI agent)."""
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from src.services.hevy_tools import (
     create_search_hevy_exercises_tool,
     create_create_hevy_routine_tool,

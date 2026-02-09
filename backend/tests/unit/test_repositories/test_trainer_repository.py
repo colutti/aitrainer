@@ -1,7 +1,7 @@
 """Tests for trainer repository (trainer profile management)."""
 
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from src.repositories.trainer_repository import TrainerRepository
 from src.api.models.trainer_profile import TrainerProfile
 
@@ -35,7 +35,7 @@ class TestTrainerRepositoryInitialization:
 
     def test_trainer_repository_collection_name(self, mock_db):
         """Test that TrainerRepository uses correct collection name."""
-        repo = TrainerRepository(mock_db)
+        _ = TrainerRepository(mock_db)
         mock_db.__getitem__.assert_called_once_with("trainer_profiles")
 
     def test_trainer_repository_inherits_from_base(self, trainer_repo):

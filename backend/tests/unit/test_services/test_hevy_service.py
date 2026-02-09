@@ -1,11 +1,8 @@
 """Tests for HevyService."""
 
 import pytest
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 from src.services.hevy_service import HevyService
-from src.api.models.workout_log import WorkoutLog, ExerciseLog
-from src.api.models.routine import HevyRoutine, RoutineListResponse
 
 
 @pytest.fixture
@@ -381,7 +378,7 @@ class TestImportWorkouts:
             ]
             mock_workout_repository.collection.delete_one = MagicMock()
 
-            result = await hevy_service.import_workouts(
+            _ = await hevy_service.import_workouts(
                 user_email="user@test.com",
                 api_key="api_key",
                 mode="overwrite",
@@ -407,7 +404,7 @@ class TestImportWorkouts:
             mock_workout_repository.collection.find_one.return_value = None
             mock_workout_repository.collection.find.return_value = []
 
-            result = await hevy_service.import_workouts(
+            _ = await hevy_service.import_workouts(
                 user_email="user@test.com",
                 api_key="api_key",
             )

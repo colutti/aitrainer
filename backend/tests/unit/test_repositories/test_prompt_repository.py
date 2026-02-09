@@ -1,5 +1,4 @@
 import unittest
-from datetime import datetime, timezone
 from unittest.mock import MagicMock
 from src.repositories.prompt_repository import PromptRepository
 

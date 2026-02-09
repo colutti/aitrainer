@@ -1,4 +1,3 @@
-import pytest
 from src.trainers.sargento_trainer import SargentoTrainer
 from src.trainers.base_trainer import BaseTrainer
 

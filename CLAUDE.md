@@ -8,10 +8,11 @@ AI Personal Trainer - Full-stack web application for AI-powered fitness coaching
 
 **Tech Stack:**
 - Backend: FastAPI + Python 3.12 + MongoDB + Qdrant (vector DB)
-- Frontend: Angular 21 (standalone components) + TailwindCSS
+- Frontend: React 19 + TypeScript + Vite 6 + TailwindCSS v4
 - AI/LLM: LangChain + LangGraph + Mem0 (memory management)
 - AI Providers: Google Gemini (primary), OpenAI, Ollama (local)
 - Container: Docker/Podman + podman-compose
+- Testing: Pytest (Backend), Vitest (Frontend), Playwright (E2E)
 
 ## Development Commands
 
@@ -65,12 +66,11 @@ npm run dev
 # Build production
 npm run build
 
-# Run tests (Jest)
+# Run unit tests (Vitest)
 npm test
 
-# E2E tests (Cypress)
-npm run cypress:run
-make cypress  # Using podman
+# Run e2e tests (Playwright)
+npx playwright test
 ```
 
 ### User Management
@@ -145,42 +145,31 @@ Request → API Endpoint → Service Layer → Repository Layer → Database
 
 ### Frontend Architecture
 
-- **Standalone Components**: Angular 21 modern architecture (no NgModules)
-- **Services**: HTTP client wrappers in `src/services/`
-- **Models**: TypeScript interfaces in `src/models/`
-- **Routing**: Centralized `NavigationService`
-- **State**: Angular signals for reactivity
+- **Framework**: React 19 with Vite 6
+- **Architecture**: Feature-based folder structure (`src/features/`)
+- **State Management**: Zustand for global stores (`useAuth`, `useChat`, etc.)
+- **Styling**: TailwindCSS v4 with CSS variables theme
+- **Routing**: React Router v7
+- **Forms**: React Hook Form + Zod validation
+- **API**: Centralized `httpClient` + specialized API modules per feature
 
-### Frontend Date and Number Formatting
+### Frontend File Structure
 
-**Locale:** Portuguese (Brazil) pt-BR globally configured
-
-**Date Formatting:**
-- **Custom Pipe:** `appDateFormat` with 8 preset formats
-- **Input Component:** `<app-date-input>` with ng-bootstrap datepicker
-- **Format:** dd/MM/yyyy (e.g., "27/01/2026")
-- **Storage:** Always use ISO format internally (YYYY-MM-DD)
-
-**Number Formatting:**
-- **Custom Pipe:** `appNumberFormat` with 5 preset formats
-- **Input Component:** `<app-number-input>` with built-in `appNumericInput` directive
-- **Decimal Separator:** Period (.) for display, accepts both . and , in inputs
-- **Storage:** Always store as number, not string
-
-**Rules:**
-- ✅ ALWAYS use `appDateFormat` pipe, never `| date` directly
-- ✅ ALWAYS use `appNumberFormat` pipe, never `| number` directly
-- ✅ ALWAYS use `<app-date-input>` for new date fields
-- ✅ ALWAYS use `<app-number-input>` for new numeric fields
-- ❌ NEVER use HTML5 `type="date"` directly
-- ❌ NEVER create custom date/number formatting functions
-- ❌ NEVER mix formatters (use pipes, not toLocaleDateString)
-
-**Key Files:**
-- Pipes: `src/pipes/date-format.pipe.ts`, `src/pipes/number-format.pipe.ts`
-- Components: `src/components/shared/date-input/`, `src/components/shared/number-input/`
-- Directive: `src/directives/numeric-input.directive.ts`
-- Documentation: `frontend/docs/FORMATTING.md`
+```
+src/
+  features/         # Feature-based modules (Auth, Chat, Body, etc.)
+    auth/
+      components/
+      api/
+    dashboard/
+  shared/           # Shared utilities, components, hooks
+    components/ui/  # Reusable UI components (Button, Input, Card)
+    hooks/          # Global hooks (useTheme, useMediaQuery)
+    utils/          # Helper functions (date formatting, calculations)
+    types/          # TypeScript interfaces
+  App.tsx           # App entry point
+  AppRoutes.tsx     # Route definitions
+```
 
 ### AI Agent System
 
@@ -219,12 +208,12 @@ AI_PROVIDER=gemini  # or "openai" or "ollama"
 
 # Gemini (Primary)
 GEMINI_API_KEY=your-key
-LLM_MODEL_NAME=gemini-1.5-flash
-EMBEDDER_MODEL_NAME=text-embedding-004
+GEMINI_LLM_MODEL=gemini-1.5-flash
+GEMINI_EMBEDDER_MODEL=text-embedding-004
 
 # OpenAI (Alternative)
 OPENAI_API_KEY=your-key
-OPENAI_MODEL_NAME=gpt-5-mini
+OPENAI_LLM_MODEL=gpt-4o-mini
 
 # Ollama (Local)
 OLLAMA_BASE_URL=http://localhost:11434
@@ -239,12 +228,6 @@ QDRANT_HOST=http://qdrant
 QDRANT_PORT=6333
 QDRANT_COLLECTION_NAME=personal_trainer_memory
 ```
-
-### Configuration Priority
-
-From `backend/src/core/config.py`:
-- **Container mode** (`RUNNING_IN_CONTAINER=true`): Docker env vars override .env
-- **Local scripts**: .env file overrides shell env vars (safer for scripts)
 
 ### Switching AI Providers
 
@@ -268,19 +251,12 @@ pytest --cov=src               # Coverage report
 pytest -k "test_function"      # Specific test
 ```
 
-**Test structure:** `backend/tests/`
-- Unit tests for services, repositories
-- Performance benchmarks
-
-**Pytest configuration:** `backend/pytest.ini` (filters deprecation warnings)
-
 ### Frontend Tests
 
 ```bash
 cd frontend
-npm test                        # Jest unit tests
-npm run cypress:open            # Cypress interactive
-npm run cypress:run             # Cypress headless
+npm test                        # Vitest unit tests
+npx playwright test             # E2E tests
 ```
 
 ## API Structure
@@ -321,54 +297,3 @@ npm run cypress:run             # Cypress headless
 - Collection per user: `{collection_name}_{user_id}`
 - Stores semantic embeddings of memories
 - 768-dimensional vectors (all providers)
-
-## Code Style & Conventions
-
-### Backend
-
-- **Python 3.12** features encouraged
-- **Type hints** required for function signatures
-- **Async/await** for I/O operations
-- **Pydantic models** for data validation
-- **Repository pattern** for DB access (never direct MongoDB in endpoints)
-- **Dependency injection** via FastAPI `Depends()`
-
-### Frontend
-
-- **TypeScript strict mode** enabled
-- **Standalone components** (no NgModules)
-- **Signals** for reactive state
-- **Services** for HTTP calls (no direct HTTP in components)
-- **TailwindCSS** for styling (no custom CSS unless necessary)
-
-## Important Notes
-
-1. **Multi-Provider LLM Support:**
-   - All AI code should work with any provider (gemini/openai/ollama)
-   - Use `settings.AI_PROVIDER` to detect current provider
-   - Provider-specific code only in `config.py`
-
-2. **Memory System:**
-   - Mem0 handles both short-term (recent messages) and long-term (semantic) memory
-   - Automatic summarization when token limit exceeded
-   - Trainers have context-aware memory through Qdrant
-
-3. **Trainer System:**
-   - Each trainer has unique personality in prompts (`backend/src/prompts/`)
-   - All trainers share same tool set
-   - Registry pattern for easy trainer addition
-
-4. **Container vs Local:**
-   - Development: Can run backend/frontend locally OR in containers
-   - Production: Always containerized (multi-stage Docker builds)
-   - Scripts: Use local venv for user management
-
-5. **Testing Philosophy:**
-   - Backend: Unit tests + performance benchmarks
-   - Frontend: Jest for components, Cypress for E2E
-   - CI/CD: GitHub Actions runs all tests on push
-
-6. **Widget Consistency:**
-   - Dashboard widgets should maintain consistent heights
-   - Nutrition tab uses specific scale configurations
-   - Workouts/Metabolism tabs mirror these dimensions

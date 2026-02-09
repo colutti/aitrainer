@@ -2,10 +2,7 @@
 Unit tests for tool_registry module.
 """
 
-import pytest
 from src.services.tool_registry import (
-    ToolMemoryType,
-    TOOL_REGISTRY,
     is_tool_ephemeral,
     should_store_memory,
 )

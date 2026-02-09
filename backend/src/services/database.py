@@ -13,7 +13,7 @@ from src.api.models.trainer_profile import TrainerProfile
 from src.api.models.user_profile import UserProfile
 from src.api.models.chat_history import ChatHistory
 from src.api.models.weight_log import WeightLog
-from src.api.models.workout_log import WorkoutLog
+from src.api.models.workout_log import WorkoutLog, WorkoutWithId
 from src.core.logs import logger
 from src.api.models.workout_stats import WorkoutStats
 
@@ -100,8 +100,8 @@ class MongoDatabase:
     def ensure_blocklist_indexes(self) -> None:
         return self.tokens.ensure_indexes()
 
-    def get_chat_history(self, user_id: str, limit: int = 20) -> list[ChatHistory]:
-        return self.chat.get_history(user_id, limit)
+    def get_chat_history(self, user_id: str, limit: int = 20, offset: int = 0) -> list[ChatHistory]:
+        return self.chat.get_history(user_id, limit, offset)
 
     def add_to_history(
         self,
@@ -149,7 +149,7 @@ class MongoDatabase:
     def save_workout_log(self, workout: WorkoutLog) -> str:
         return self.workouts_repo.save_log(workout)
 
-    def get_workout_logs(self, user_email: str, limit: int = 50) -> list[WorkoutLog]:
+    def get_workout_logs(self, user_email: str, limit: int = 50) -> list[WorkoutWithId]:
         return self.workouts_repo.get_logs(user_email, limit)
 
     def get_workouts_paginated(
@@ -233,3 +233,11 @@ class MongoDatabase:
         self, user_email: str, start_date: date, end_date: date
     ) -> list[WeightLog]:
         return self.weight.get_logs_by_date_range(user_email, start_date, end_date)
+
+    def get_weight_paginated(
+        self,
+        user_email: str,
+        page: int = 1,
+        page_size: int = 10,
+    ) -> tuple[list[dict], int]:
+        return self.weight.get_paginated(user_email, page, page_size)

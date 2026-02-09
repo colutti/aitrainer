@@ -3,7 +3,7 @@ Comprehensive tests for workout endpoints.
 Tests cover listing, filtering, type retrieval, and deletion operations.
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 import pytest
 from datetime import date, timedelta
@@ -11,7 +11,6 @@ from datetime import date, timedelta
 from src.api.main import app
 from src.services.auth import verify_token
 from src.core.deps import get_mongo_database
-from src.api.models.workout_log import WorkoutWithId
 
 
 client = TestClient(app)

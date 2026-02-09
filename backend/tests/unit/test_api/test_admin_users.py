@@ -52,7 +52,7 @@ class TestAdminUsers:
         
         app.dependency_overrides[get_mongo_database] = lambda: mock_mongo_db
 
-        response = client.get("/admin/users/list?page=1&page_size=10")
+        response = client.get("/admin/users?page=1&page_size=10")
 
         assert response.status_code == 200
         data = response.json()
@@ -74,7 +74,7 @@ class TestAdminUsers:
         
         app.dependency_overrides[get_mongo_database] = lambda: mock_mongo_db
 
-        response = client.get("/admin/users/list?search=test")
+        response = client.get("/admin/users?search=test")
 
         assert response.status_code == 200
         data = response.json()
@@ -92,7 +92,7 @@ class TestAdminUsers:
         
         app.dependency_overrides[get_mongo_database] = lambda: mock_mongo_db
 
-        response = client.get("/admin/users/list")
+        response = client.get("/admin/users")
 
         assert response.status_code == 200
         data = response.json()
@@ -117,7 +117,7 @@ class TestAdminUsers:
         
         app.dependency_overrides[get_mongo_database] = lambda: mock_mongo_db
 
-        response = client.get("/admin/users/user@test.com/details")
+        response = client.get("/admin/users/user@test.com")
 
         assert response.status_code == 200
         data = response.json()
@@ -132,7 +132,7 @@ class TestAdminUsers:
         
         app.dependency_overrides[get_mongo_database] = lambda: mock_mongo_db
 
-        response = client.get("/admin/users/nonexistent@test.com/details")
+        response = client.get("/admin/users/nonexistent@test.com")
 
         assert response.status_code == 404
         app.dependency_overrides = {}

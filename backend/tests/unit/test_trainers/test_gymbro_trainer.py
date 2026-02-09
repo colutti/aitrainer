@@ -1,4 +1,3 @@
-import pytest
 from src.trainers.gymbro_trainer import GymBroTrainer
 from src.trainers.base_trainer import BaseTrainer
 

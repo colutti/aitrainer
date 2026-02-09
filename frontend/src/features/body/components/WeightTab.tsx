@@ -1,0 +1,186 @@
+import { 
+  Scale
+} from 'lucide-react';
+import { useState } from 'react';
+
+import { Button } from '../../../shared/components/ui/Button';
+import { DataList } from '../../../shared/components/ui/DataList';
+import { Input } from '../../../shared/components/ui/Input';
+import type { WeightLog } from '../../../shared/types/body';
+import { useWeightTab } from '../hooks/useWeightTab';
+
+import { WeightLogCard } from './WeightLogCard';
+import { WeightLogDrawer } from './WeightLogDrawer';
+
+export function WeightTab() {
+  const [viewLog, setViewLog] = useState<WeightLog | null>(null);
+
+  const {
+    history,
+    isLoading,
+    isSaving,
+    register,
+    handleSubmit,
+    errors,
+    deleteEntry,
+    editEntry,
+    page,
+    totalPages,
+    changePage
+  } = useWeightTab();
+
+  if (isLoading && history.length === 0) {
+    return (
+      <div className="space-y-8 animate-pulse">
+        <div className="h-64 bg-dark-card rounded-2xl" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8 w-full">
+      {/* Entry Form - Full Width at Top */}
+      <section className="bg-dark-card border border-border rounded-2xl p-6 shadow-sm">
+        <div className="flex items-center gap-2 pb-4 mb-4 border-b border-border">
+          <Scale className="text-gradient-start" size={24} />
+          <h2 className="text-xl font-bold text-text-primary">Registrar Peso</h2>
+        </div>
+
+        <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Input 
+              label="Data" 
+              type="date" 
+              error={errors.date?.message}
+              {...register('date')}
+            />
+            <Input 
+              id="weight_kg"
+              label="Peso (kg)" 
+              type="number" 
+              step="0.1" 
+              placeholder="Ex: 75.5" 
+              error={errors.weight_kg?.message}
+              {...register('weight_kg', { valueAsNumber: true })}
+            />
+            <Input 
+              id="body_fat_pct"
+              label="Gordura Corporal (%)" 
+              type="number" 
+              step="0.1" 
+              placeholder="Ex: 15.5"
+              error={errors.body_fat_pct?.message}
+              {...register('body_fat_pct', { valueAsNumber: true })}
+            />
+            <Input 
+              id="muscle_mass_pct"
+              label="Massa Muscular (%)" 
+              type="number" 
+              step="0.1" 
+              placeholder="Ex: 40.2"
+              error={errors.muscle_mass_pct?.message}
+              {...register('muscle_mass_pct', { valueAsNumber: true })}
+            />
+            <Input 
+              label="Água Corporal (%)" 
+              type="number" 
+              step="0.1" 
+              placeholder="Ex: 55.5"
+              error={errors.body_water_pct?.message}
+              {...register('body_water_pct', { valueAsNumber: true })}
+            />
+            <Input 
+              label="Massa Óssea (kg)" 
+              type="number" 
+              step="0.1" 
+              placeholder="Ex: 3.5"
+              error={errors.bone_mass_kg?.message}
+              {...register('bone_mass_kg', { valueAsNumber: true })}
+            />
+            <Input 
+              label="Gordura Visceral" 
+              type="number" 
+              step="0.1" 
+              placeholder="Ex: 5"
+              error={errors.visceral_fat?.message}
+              {...register('visceral_fat', { valueAsNumber: true })}
+            />
+            <Input 
+              label="TMB (kcal)" 
+              type="number" 
+              step="0.1"
+              placeholder="Ex: 1850"
+              error={errors.bmr?.message}
+              {...register('bmr', { valueAsNumber: true })}
+            />
+            <div className="md:col-span-2 lg:col-span-4">
+              <Input 
+                id="notes"
+                label="Observações" 
+                type="text" 
+                placeholder="Ex: Pesagem após acordar, em jejum."
+                error={errors.notes?.message}
+                {...register('notes')}
+              />
+            </div>
+          </div>
+
+          {/* Measurements Section */}
+          <div className="pt-6 border-t border-border">
+            <h3 className="text-sm font-bold text-text-secondary uppercase tracking-wider mb-4">Medidas Corporais (cm)</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+              <Input label="Pescoço" type="number" step="0.1" placeholder="Ex: 38" error={errors.neck_cm?.message} {...register('neck_cm', { valueAsNumber: true })} />
+              <Input label="Peito" type="number" step="0.1" placeholder="Ex: 100" error={errors.chest_cm?.message} {...register('chest_cm', { valueAsNumber: true })} />
+              <Input id="waist_cm" label="Cintura" type="number" step="0.1" placeholder="Ex: 85" error={errors.waist_cm?.message} {...register('waist_cm', { valueAsNumber: true })} />
+              <Input label="Quadril" type="number" step="0.1" placeholder="Ex: 95" error={errors.hips_cm?.message} {...register('hips_cm', { valueAsNumber: true })} />
+              <Input label="Bíceps (D)" type="number" step="0.1" placeholder="Ex: 35" error={errors.bicep_r_cm?.message} {...register('bicep_r_cm', { valueAsNumber: true })} />
+              <Input label="Bíceps (E)" type="number" step="0.1" placeholder="Ex: 35" error={errors.bicep_l_cm?.message} {...register('bicep_l_cm', { valueAsNumber: true })} />
+              <Input label="Coxa (D)" type="number" step="0.1" placeholder="Ex: 55" error={errors.thigh_r_cm?.message} {...register('thigh_r_cm', { valueAsNumber: true })} />
+              <Input label="Coxa (E)" type="number" step="0.1" placeholder="Ex: 55" error={errors.thigh_l_cm?.message} {...register('thigh_l_cm', { valueAsNumber: true })} />
+              <Input label="Pant. (D)" type="number" step="0.1" placeholder="Ex: 38" error={errors.calf_r_cm?.message} {...register('calf_r_cm', { valueAsNumber: true })} />
+              <Input label="Pant. (E)" type="number" step="0.1" placeholder="Ex: 38" error={errors.calf_l_cm?.message} {...register('calf_l_cm', { valueAsNumber: true })} />
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+             <Button variant="primary" type="submit" isLoading={isSaving} className="shadow-orange w-full md:w-auto md:px-12">
+              Salvar Registro
+            </Button>
+          </div>
+        </form>
+      </section>
+
+      <DataList
+        title="Histórico Recente"
+        data={history}
+        isLoading={isLoading}
+        renderItem={(log) => (
+          <WeightLogCard 
+            log={log} 
+            onDelete={(date) => { void deleteEntry(date); }} 
+            onEdit={editEntry} 
+            onClick={setViewLog}
+          />
+        )}
+        keyExtractor={(item) => item.id ?? item.date}
+        layout="list"
+        emptyState={{
+          title: "Nenhum registro encontrado.",
+          description: "Seus registros de peso aparecerão aqui."
+        }}
+        pagination={{
+            currentPage: page,
+            totalPages: totalPages,
+            onPageChange: (newPage) => { changePage(newPage); }
+        }}
+      />
+
+      {/* Details Drawer */}
+      <WeightLogDrawer 
+        log={viewLog} 
+        isOpen={!!viewLog} 
+        onClose={() => { setViewLog(null); }} 
+      />
+    </div>
+  );
+}

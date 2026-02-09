@@ -2,7 +2,7 @@
 
 import pytest
 from datetime import datetime
-from unittest.mock import MagicMock, patch, Mock
+from unittest.mock import MagicMock, patch
 from src.repositories.chat_repository import ChatRepository
 from src.api.models.chat_history import ChatHistory
 from src.api.models.sender import Sender
@@ -51,7 +51,7 @@ class TestChatRepositoryGetHistory:
         mock_mongo_history.return_value = mock_mongo_instance
         mock_chat_history_class.from_mongodb_chat_message_history.return_value = []
 
-        result = chat_repo.get_history("user_123")
+        _ = chat_repo.get_history("user_123")
 
         mock_mongo_history.assert_called_once()
         mock_chat_history_class.from_mongodb_chat_message_history.assert_called_once_with(mock_mongo_instance)
@@ -64,7 +64,7 @@ class TestChatRepositoryGetHistory:
         mock_mongo_history.return_value = mock_mongo_instance
         mock_chat_history_class.from_mongodb_chat_message_history.return_value = []
 
-        result = chat_repo.get_history("user_123", limit=50)
+        _ = chat_repo.get_history("user_123", limit=50)
 
         # Verify MongoDBChatMessageHistory was initialized with correct history_size
         call_kwargs = mock_mongo_history.call_args[1]
@@ -321,7 +321,7 @@ class TestChatRepositoryInitialization:
 
     def test_chat_repository_collection_name(self, mock_db):
         """Test that ChatRepository uses correct collection name."""
-        repo = ChatRepository(mock_db)
+        _ = ChatRepository(mock_db)
         mock_db.__getitem__.assert_called_once_with("chat_history")
 
     def test_chat_repository_with_mock_database(self, mock_db):

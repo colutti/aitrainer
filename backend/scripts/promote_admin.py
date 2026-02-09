@@ -58,14 +58,14 @@ def promote_admin(email: str):
 
         if not user:
             print(f"❌ Usuário {email} não encontrado")
-            print(f"   Certifique-se que o usuário está registrado no sistema")
+            print("   Certifique-se que o usuário está registrado no sistema")
             sys.exit(1)
 
         # Verificar se já é admin
         current_role = user.get("role", "user")
         if current_role == "admin":
             print(f"ℹ️  Usuário {email} já é admin")
-            print(f"   Nenhuma ação necessária")
+            print("   Nenhuma ação necessária")
             return
 
         # Promover a admin
@@ -84,14 +84,14 @@ def promote_admin(email: str):
             print(f"   ✓ Role verificado: {verified_role}")
 
             if verified_role != "admin":
-                print(f"   ⚠️  AVISO: Role não está correto após atualização!")
+                print("   ⚠️  AVISO: Role não está correto após atualização!")
         else:
             print(f"❌ Falha ao promover {email}")
-            print(f"   Nenhum documento foi modificado")
+            print("   Nenhum documento foi modificado")
             sys.exit(1)
 
     except Exception as e:
-        print(f"❌ Erro ao conectar ou atualizar banco de dados:")
+        print("❌ Erro ao conectar ou atualizar banco de dados:")
         print(f"   {type(e).__name__}: {e}")
         sys.exit(1)
     finally:

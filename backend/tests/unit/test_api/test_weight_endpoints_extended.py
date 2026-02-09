@@ -4,7 +4,7 @@ Expands existing coverage with additional test cases for better code coverage.
 Tests cover logging, stats, imports, and deletion operations.
 """
 
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
 import pytest
 from datetime import date, timedelta
@@ -13,7 +13,7 @@ from io import BytesIO
 from src.api.main import app
 from src.services.auth import verify_token
 from src.core.deps import get_ai_trainer_brain, get_mongo_database
-from src.api.models.weight_log import WeightLog, WeightLogInput
+from src.api.models.weight_log import WeightLog
 from src.api.models.import_result import ImportResult
 
 
@@ -199,8 +199,17 @@ def test_get_weight_logs_success(sample_weight_logs):
     """Test retrieving weight logs."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_brain = MagicMock()
-    mock_brain._database.get_weight_logs.return_value = sample_weight_logs
+    mock_db = MagicMock()
+    logs = []
+    for i, log in enumerate(sample_weight_logs):
+        log_dict = log.model_dump()
+        log_dict["id"] = f"id_{i}"
+        logs.append(log_dict)
+        
+    mock_db.get_weight_paginated.return_value = (logs, len(logs))
+    
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     response = client.get(
         "/weight",
@@ -209,8 +218,9 @@ def test_get_weight_logs_success(sample_weight_logs):
 
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, list)
-    assert len(data) == 5
+    assert isinstance(data["logs"], list)
+    assert len(data["logs"]) == 5
+    assert data["total"] == 5
 
     app.dependency_overrides = {}
 
@@ -220,18 +230,21 @@ def test_get_weight_logs_custom_limit():
     """Test retrieving weight logs with custom limit."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_brain = MagicMock()
-    mock_brain._database.get_weight_logs.return_value = []
+    mock_db = MagicMock()
+    mock_db.get_weight_paginated.return_value = ([], 0)
+    
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     response = client.get(
-        "/weight?limit=50",
+        "/weight?page_size=50",
         headers={"Authorization": "Bearer test_token"}
     )
 
     assert response.status_code == 200
-    mock_brain._database.get_weight_logs.assert_called_once()
-    call_kwargs = mock_brain._database.get_weight_logs.call_args[1]
-    assert call_kwargs["limit"] == 50
+    mock_db.get_weight_paginated.assert_called_once()
+    call_kwargs = mock_db.get_weight_paginated.call_args[1]
+    assert call_kwargs["page_size"] == 50
 
     app.dependency_overrides = {}
 

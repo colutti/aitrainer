@@ -112,7 +112,7 @@ def create_save_nutrition_tool(database, user_email: str):
         """
         try:
             # DEBUG LOGGING requested by user
-            logger.info(f"TOOL CALL: save_daily_nutrition")
+            logger.info("TOOL CALL: save_daily_nutrition")
             logger.info(f"RAW INPUTS - Cals: {calories}, P: {protein_grams}, C: {carbs_grams}, F: {fat_grams}, Date: {date}")
 
             # Parse and clean inputs

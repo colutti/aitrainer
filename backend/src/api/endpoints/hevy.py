@@ -236,7 +236,7 @@ async def process_webhook_async(
             if success:
                 logger.info(f"[Webhook BG] Telegram notification sent for workout {workout_id}")
             else:
-                logger.warning(f"[Webhook BG] Failed to send Telegram notification")
+                logger.warning("[Webhook BG] Failed to send Telegram notification")
 
         except Exception as notif_error:
             # Não propagar erro (treino já foi salvo)

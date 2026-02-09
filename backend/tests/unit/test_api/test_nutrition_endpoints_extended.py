@@ -4,7 +4,7 @@ Expands existing coverage with additional test cases for better code coverage.
 Tests cover listing, statistics, imports, and deletion operations.
 """
 
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
 import pytest
 from datetime import date, timedelta

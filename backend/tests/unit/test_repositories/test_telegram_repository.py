@@ -2,7 +2,6 @@
 
 import pytest
 import string
-from datetime import datetime, timezone
 from unittest.mock import MagicMock
 from src.repositories.telegram_repository import TelegramRepository
 

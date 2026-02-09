@@ -1,5 +1,4 @@
 import pytest
-import numpy as np
 from datetime import date, timedelta, datetime
 from unittest.mock import MagicMock
 from src.services.adaptive_tdee import AdaptiveTDEEService
@@ -29,7 +28,8 @@ def test_tdee_resilience_to_water_weight_spike(service, mock_db):
     weights = []
     for i in range(21):
         w = 80.0
-        if i == 10 or i == 11: w = 83.0 # Big Spike
+        if i == 10 or i == 11:
+            w = 83.0 # Big Spike
         weights.append(WeightLog(user_email="test@test.com", date=start_date + timedelta(days=i), weight_kg=w))
     
     nutrition = [

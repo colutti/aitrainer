@@ -12,6 +12,7 @@ PROMPT_TEMPLATE = """
 ## Ferramentas
 ✅ SALVE: treino, nutrição, composição corporal
 ❌ NÃO SALVE: descanso, água, humor, sono
+❌ NÃO use prefixos de data/hora (ex: [10:00]). O sistema adiciona isso automaticamente.
 
 ### Ferramentas Disponíveis
 - `save_daily_nutrition`: calories, protein_grams, carbs_grams, fat_grams, date

@@ -9,7 +9,6 @@ import pytest
 from datetime import datetime, timezone, timedelta
 
 from src.api.main import app
-from src.core.deps import get_mongo_database
 
 
 client = TestClient(app)
@@ -80,7 +79,7 @@ def test_validate_invite_token_not_found():
         )
 
         assert response.status_code == 404
-        data = response.json()
+        _ = response.json()
         assert "detail" in response.json()
 
 

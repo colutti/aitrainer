@@ -9,7 +9,7 @@ Validates:
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock
 from datetime import datetime, timedelta
 from src.services.memory_manager import MemoryManager
 from src.core.config import settings
@@ -195,7 +195,7 @@ class TestMemoryIntegration:
             ]
         }
 
-        result = memory_manager.retrieve_hybrid_memories("test query", "user123")
+        _ = memory_manager.retrieve_hybrid_memories("test query", "user123")
 
         # Verify that search was called with optimized limits
         search_calls = mock_memory.search.call_args_list

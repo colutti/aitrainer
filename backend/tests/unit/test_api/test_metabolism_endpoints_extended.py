@@ -9,7 +9,7 @@ import pytest
 
 from src.api.main import app
 from src.services.auth import verify_token
-from src.core.deps import get_ai_trainer_brain, get_mongo_database
+from src.core.deps import get_mongo_database
 
 
 client = TestClient(app)
