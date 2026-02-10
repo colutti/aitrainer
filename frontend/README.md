@@ -1,6 +1,6 @@
-# AI Trainer - Frontend React
+# Fit IQ - Frontend React
 
-Modern React 19 + Vite 7 + TypeScript single-page application for AI Trainer fitness platform.
+Modern React 19 + Vite 7 + TypeScript single-page application for Fit IQ fitness platform.
 
 ## 🚀 Tech Stack
 
