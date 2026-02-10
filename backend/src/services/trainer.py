@@ -341,7 +341,9 @@ class AITrainerBrain:
         """
         logger.info("Generating workout stream for user: %s", user_email)
 
+        import asyncio
         # Parallelize: profile retrieval + memory retrieval (using shared executor)
+        # We use wrap_future + await to avoid blocking the event loop
         future_user = self._executor.submit(self._get_or_create_user_profile, user_email)
         future_trainer = self._executor.submit(
             self._get_or_create_trainer_profile, user_email
@@ -349,9 +351,10 @@ class AITrainerBrain:
         future_memories = self._executor.submit(
             self.memory_manager.retrieve_hybrid_memories, user_input, user_email
         )
-        profile = future_user.result()
-        trainer_profile_obj = future_trainer.result()
-        hybrid_memories = future_memories.result()
+        
+        profile = await asyncio.wrap_future(future_user)
+        trainer_profile_obj = await asyncio.wrap_future(future_trainer)
+        hybrid_memories = await asyncio.wrap_future(future_memories)
 
         # Format memories using MemoryManager
         relevant_memories_str = self.memory_manager.format_memories(hybrid_memories)
