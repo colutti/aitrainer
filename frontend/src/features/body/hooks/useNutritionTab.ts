@@ -133,7 +133,12 @@ export function useNutritionTab() {
   };
 
   const editEntry = (log: NutritionLog) => {
-    setValue('date', log.date);
+    // Format date to YYYY-MM-DD for HTML date input
+    const dateStr = log.date instanceof Date
+      ? log.date.toISOString().split('T')[0]
+      : new Date(log.date).toISOString().split('T')[0];
+
+    setValue('date', dateStr);
     setValue('calories', log.calories);
     setValue('protein_grams', log.protein_grams);
     setValue('carbs_grams', log.carbs_grams);

@@ -64,6 +64,39 @@ test.describe('Login Flow', () => {
     await expect(page.getByTestId('toast').first()).toBeVisible();
   });
 
+  test('should show error toast on server error (500)', async ({ page }) => {
+    await page.goto('/login');
+
+    await page.route('**/api/user/login', async (route) => {
+      await route.fulfill({ status: 500, body: JSON.stringify({ detail: 'Internal Server Error' }) });
+    });
+
+    await page.getByLabel('Endereço de Email').fill('test@example.com');
+    await page.getByLabel('Senha').fill('password123');
+    await page.getByRole('button', { name: /Entrar na Plataforma/i }).click();
+
+    // Should show error toast
+    await expect(page.getByTestId('toast').first()).toBeVisible();
+  });
+
+  test('should not submit with empty email', async ({ page }) => {
+    await page.goto('/login');
+
+    // Only fill password, leave email empty
+    await page.getByLabel('Senha').fill('password123');
+    await page.getByRole('button', { name: /Entrar na Plataforma/i }).click();
+
+    // Should show email validation error
+    await expect(page.getByText(/Email inválido/i).or(page.getByText(/obrigatório/i))).toBeVisible();
+  });
+
+  test('should display password as type password', async ({ page }) => {
+    await page.goto('/login');
+
+    const passwordInput = page.getByLabel('Senha');
+    await expect(passwordInput).toHaveAttribute('type', 'password');
+  });
+
   test('should validate required fields and formats', async ({ page }) => {
     await page.goto('/login');
 

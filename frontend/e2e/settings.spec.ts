@@ -105,9 +105,128 @@ test.describe('Settings Feature', () => {
 
     await page.getByRole('link', { name: 'Integrações' }).click();
     await page.waitForURL('/settings/integrations');
-    
+
     await expect(page.getByText('Hevy')).toBeVisible();
     await expect(page.getByText('Telegram Bot')).toBeVisible();
     await expect(page.getByText('test_user')).toBeVisible();
+  });
+
+  test('should load all profile fields with mock values', async ({ page }) => {
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+
+    // Verify fields have expected values from the mock
+    await expect(page.getByLabel('Idade')).toHaveValue('25');
+    await expect(page.getByLabel('Peso (kg)')).toHaveValue('70');
+    await expect(page.getByLabel('Altura (cm)')).toHaveValue('175');
+  });
+
+  test('should have email field disabled', async ({ page }) => {
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+
+    const emailInput = page.getByLabel('Email');
+    await expect(emailInput).toBeDisabled();
+  });
+
+  test('should validate age minimum', async ({ page }) => {
+    await page.route('**/api/user/update_profile', async (route) => {
+      await route.fulfill({ status: 200, body: JSON.stringify({ success: true }) });
+    });
+
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+
+    await page.getByLabel('Idade').fill('0');
+    await page.getByRole('button', { name: 'Salvar Alterações' }).click();
+
+    await expect(page.getByText('Idade inválida')).toBeVisible();
+  });
+
+  test('should validate weight minimum', async ({ page }) => {
+    await page.route('**/api/user/update_profile', async (route) => {
+      await route.fulfill({ status: 200, body: JSON.stringify({ success: true }) });
+    });
+
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+
+    await page.getByLabel('Peso (kg)').fill('0');
+    await page.getByRole('button', { name: 'Salvar Alterações' }).click();
+
+    await expect(page.getByText('Peso inválido')).toBeVisible();
+  });
+
+  test('should validate height minimum', async ({ page }) => {
+    await page.route('**/api/user/update_profile', async (route) => {
+      await route.fulfill({ status: 200, body: JSON.stringify({ success: true }) });
+    });
+
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+
+    await page.getByLabel('Altura (cm)').fill('0');
+    await page.getByRole('button', { name: 'Salvar Alterações' }).click();
+
+    await expect(page.getByText('Altura inválida')).toBeVisible();
+  });
+
+  test('should handle profile update API error', async ({ page }) => {
+    await page.route('**/api/user/update_profile', async (route) => {
+      await route.fulfill({ status: 500, body: JSON.stringify({ detail: 'Internal Server Error' }) });
+    });
+
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+
+    await page.getByLabel('Idade').fill('30');
+    await page.getByRole('button', { name: 'Salvar Alterações' }).click();
+
+    await expect(page.getByText('Erro ao atualizar perfil').first()).toBeVisible();
+  });
+
+  test('should display all available trainers', async ({ page }) => {
+    await page.route('**/api/trainer/available_trainers', async (route) => {
+      await route.fulfill({ status: 200, body: JSON.stringify([
+        { trainer_id: 'atlas', name: 'Atlas', short_description: 'Powerlifting' },
+        { trainer_id: 'luna', name: 'Luna', short_description: 'Yoga' },
+        { trainer_id: 'sofia', name: 'Sofia', short_description: 'Funcional' },
+        { trainer_id: 'sargento', name: 'Sargento', short_description: 'Military' },
+      ]) });
+    });
+    await page.route('**/api/trainer/trainer_profile', async (route) => {
+      await route.fulfill({ status: 200, body: JSON.stringify({ trainer_type: 'atlas' }) });
+    });
+
+    await page.goto('/settings/trainer');
+    await page.waitForLoadState('networkidle');
+
+    await expect(page.getByText('Atlas')).toBeVisible();
+    await expect(page.getByText('Luna')).toBeVisible();
+    await expect(page.getByText('Sofia')).toBeVisible();
+    await expect(page.getByText('Sargento')).toBeVisible();
+  });
+
+  test('should handle trainer update API error', async ({ page }) => {
+    await page.route('**/api/trainer/available_trainers', async (route) => {
+      await route.fulfill({ status: 200, body: JSON.stringify([
+        { trainer_id: 'atlas', name: 'Atlas', short_description: 'Powerlifting' },
+        { trainer_id: 'luna', name: 'Luna', short_description: 'Yoga' },
+      ]) });
+    });
+    await page.route('**/api/trainer/trainer_profile', async (route) => {
+      await route.fulfill({ status: 200, body: JSON.stringify({ trainer_type: 'atlas' }) });
+    });
+    await page.route('**/api/trainer/update_trainer_profile', async (route) => {
+      await route.fulfill({ status: 500, body: JSON.stringify({ detail: 'Internal Server Error' }) });
+    });
+
+    await page.goto('/settings/trainer');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByText('Luna').click();
+    await page.getByRole('button', { name: 'Atualizar Treinador' }).click();
+
+    await expect(page.getByText('Erro ao atualizar treinador').first()).toBeVisible();
   });
 });

@@ -62,6 +62,40 @@ test.describe('Navigation', () => {
       await expect(page).toHaveURL('/settings/profile');
     });
 
+    test('should redirect non-admin from /admin/users to home', async ({ page }) => {
+      // Default user is role: 'user' from beforeEach
+      await page.goto('/admin/users');
+      await page.waitForLoadState('networkidle');
+
+      // Non-admin should be redirected to /
+      await expect(page).toHaveURL('/');
+    });
+
+    test('should allow admin access to /admin/users', async ({ page }) => {
+      // Override to return admin role
+      await page.route('**/api/user/me', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ email: 'admin@example.com', role: 'admin', name: 'Admin' }),
+        });
+      });
+
+      // Mock admin users endpoint
+      await page.route(/\/api\/admin\/users\//, async (route) => {
+        await route.fulfill({
+          status: 200,
+          body: JSON.stringify({ users: [], total: 0, page: 1, page_size: 20, total_pages: 0 }),
+        });
+      });
+
+      await page.goto('/admin/users');
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(700); // debounce
+
+      await expect(page.getByRole('heading', { name: 'Gestão de Usuários' })).toBeVisible();
+    });
+
     test('should use browser back button correctly', async ({ page }) => {
       await page.goto('/');
       await page.goto('/chat');

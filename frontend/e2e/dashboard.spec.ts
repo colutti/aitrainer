@@ -60,4 +60,21 @@ test.describe('Dashboard', () => {
     const content = await page.content();
     expect(content.length).toBeGreaterThan(0);
   });
+
+  test('should handle dashboard API error gracefully', async ({ page }) => {
+    // Override dashboard mock to return error
+    await page.route('**/api/dashboard/**', async (route) => {
+      await route.fulfill({ status: 500, body: JSON.stringify({ detail: 'Internal Server Error' }) });
+    });
+
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    // Page should load without crash - any heading or content should be present
+    const content = await page.content();
+    expect(content.length).toBeGreaterThan(100);
+
+    // Should not have unhandled error overlay
+    await expect(page.getByText('Internal Server Error')).not.toBeVisible();
+  });
 });

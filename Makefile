@@ -138,3 +138,56 @@ ci-fast: test-backend test-frontend
 ## - Frontend: unit tests + build + playwright
 ci-test: test-backend test-frontend e2e
 	@echo "✅ CI Full Test Suite Passed!"
+
+# Render Deployment Commands
+
+.PHONY: render-deploy render-deploy-backend render-deploy-frontend render-deploy-all render-logs render-list render-status
+
+## Deploy backend (com espera até conclusão)
+render-deploy-backend:
+	@./scripts/render-deploy.sh backend
+
+## Deploy frontend (com espera até conclusão)
+render-deploy-frontend:
+	@./scripts/render-deploy.sh frontend
+
+## Deploy ambos backend e frontend (com espera até conclusão)
+render-deploy-all: render-deploy-backend render-deploy-frontend
+
+## Deploy com limpeza de cache (rebuild completo)
+render-deploy-clean:
+	@./scripts/render-deploy.sh all --clear-cache
+
+## Alias: render-deploy = render-deploy-all
+render-deploy:
+	@$(MAKE) render-deploy-all
+
+## List all Render services
+render-list:
+	@echo "🔍 Listando serviços no Render..."
+	@render services list --output json | jq -r '.[] | "\(.service.name) - \(.service.id) - \(.service.type)"'
+
+## Stream logs backend em tempo real
+render-logs-backend:
+	@./scripts/render-deploy.sh stream-logs-backend
+
+## Stream logs frontend em tempo real
+render-logs-frontend:
+	@./scripts/render-deploy.sh stream-logs-frontend
+
+## Alias: stream logs de ambos os serviços
+render-logs:
+	@echo "🔀 Para logs de um serviço específico, use:"
+	@echo "  make render-logs-backend    # Backend em tempo real"
+	@echo "  make render-logs-frontend   # Frontend em tempo real"
+
+## View deployment status
+render-status:
+	@render deploys list
+
+## Ver últimos logs (não streaming)
+render-logs-recent-backend:
+	@render logs --resources srv-d5f2utqli9vc73dak390 --limit 50 --output text
+
+render-logs-recent-frontend:
+	@render logs --resources srv-d5f3e8u3jp1c73bkjbf0 --limit 50 --output text
