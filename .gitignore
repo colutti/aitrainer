@@ -79,3 +79,6 @@ frontend/playwright/.cache/
 screenshots/
 artifacts/
 artifacts/superpowers/
+
+# Git Worktrees
+.worktrees/
