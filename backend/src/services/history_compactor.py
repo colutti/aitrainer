@@ -82,19 +82,19 @@ class HistoryCompactor:
             log_callback: Optional callback for logging
             compaction_threshold: Only compact if buffer >= threshold (default 30)
         """
+        import asyncio
         logger.info("Running History Compaction for user: %s", user_email)
 
         # 1. Fetch User Profile
-        profile = self.db.get_user_profile(user_email)
+        profile = await asyncio.to_thread(self.db.get_user_profile, user_email)
         if not profile:
             logger.warning("User profile not found for compaction: %s", user_email)
             return
 
         # 2. Fetch ALL History (Abstracted via LangChain storage)
         # We fetch a larger limit to ensure we capture enough history to compact
-        # Assuming database.get_chat_history returns a list of ChatHistory objects
-        # sorted by timestamp ASC (oldest first).
-        all_messages = self.db.get_chat_history(user_email, limit=1000)
+        # We use to_thread to avoid blocking the event loop with large DB fetch
+        all_messages = await asyncio.to_thread(self.db.get_chat_history, user_email, limit=1000)
 
         if not all_messages:
             logger.debug("No history to compact.")

@@ -68,7 +68,15 @@ async def message_ai(
             user_input=message.user_message,
             background_tasks=background_tasks,
         )
-        return StreamingResponse(response_generator, media_type="text/plain")
+        return StreamingResponse(
+            response_generator, 
+            media_type="text/event-stream",
+            headers={
+                "X-Accel-Buffering": "no",
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+            }
+        )
     except ValueError as e:
         logger.error("Error processing message for user %s: %s", user_email, e)
         raise HTTPException(status_code=404, detail=str(e)) from e

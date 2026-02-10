@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { httpClient } from '../api/http-client';
+import { httpClient, API_BASE_URL } from '../api/http-client';
 import type { ChatMessage } from '../types/chat';
 
 interface ChatState {
@@ -21,7 +21,6 @@ interface ChatActions {
 
 type ChatStore = ChatState & ChatActions;
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api';
 const AUTH_TOKEN_KEY = 'auth_token';
 
 /**

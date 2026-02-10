@@ -342,19 +342,17 @@ class AITrainerBrain:
         logger.info("Generating workout stream for user: %s", user_email)
 
         import asyncio
-        # Parallelize: profile retrieval + memory retrieval (using shared executor)
+        # Parallelize: profile retrieval (using shared executor)
         # We use wrap_future + await to avoid blocking the event loop
         future_user = self._executor.submit(self._get_or_create_user_profile, user_email)
         future_trainer = self._executor.submit(
             self._get_or_create_trainer_profile, user_email
         )
-        future_memories = self._executor.submit(
-            self.memory_manager.retrieve_hybrid_memories, user_input, user_email
-        )
         
+        # Memory retrieval is now async
         profile = await asyncio.wrap_future(future_user)
         trainer_profile_obj = await asyncio.wrap_future(future_trainer)
-        hybrid_memories = await asyncio.wrap_future(future_memories)
+        hybrid_memories = await self.memory_manager.retrieve_hybrid_memories(user_input, user_email)
 
         # Format memories using MemoryManager
         relevant_memories_str = self.memory_manager.format_memories(hybrid_memories)
@@ -384,7 +382,8 @@ class AITrainerBrain:
         )
 
         # Load memory variables (includes summary + recent messages if buffer exceeded)
-        memory_vars = conversation_memory.load_memory_variables({})
+        # We use to_thread because this hits MongoDB synchronously via LangChain
+        memory_vars = await asyncio.to_thread(conversation_memory.load_memory_variables, {})
         chat_history_messages = memory_vars.get("chat_history", [])
 
         # Format structured history

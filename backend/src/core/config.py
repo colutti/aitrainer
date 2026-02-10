@@ -92,6 +92,13 @@ class Settings(BaseSettings):
     # ====== MONGO STUFF ======
     DB_NAME: str
     MONGO_URI: str
+    
+    @field_validator("MONGO_URI", mode="before")
+    @classmethod
+    def strip_quotes(cls, v: str) -> str:
+        if isinstance(v, str):
+            return v.strip('\"')
+        return v
 
     # ====== QDRANT AND MEM0 STUFF ======
     QDRANT_HOST: str

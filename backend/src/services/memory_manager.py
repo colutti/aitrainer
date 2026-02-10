@@ -173,7 +173,7 @@ class MemoryManager:
         except Exception:
             return []
 
-    def retrieve_hybrid_memories(self, user_input: str, user_id: str) -> dict:
+    async def retrieve_hybrid_memories(self, user_input: str, user_id: str) -> dict:
         """
         Retrieves memories using Hybrid Search (Critical + Semantic + Recent).
         Uses parallel execution to reduce latency.
@@ -184,17 +184,13 @@ class MemoryManager:
         """
         logger.debug("Retrieving HYBRID memories for user: %s", user_id)
 
-        # Parallel searches to reduce TTFT
-        with ThreadPoolExecutor(max_workers=3) as executor:
-            future_critical = executor.submit(self._retrieve_critical_facts, user_id)
-            future_semantic = executor.submit(
-                self._retrieve_semantic_memories, user_id, user_input
-            )
-            future_recent = executor.submit(self._retrieve_recent_memories, user_id)
-
-            critical = future_critical.result()
-            semantic = future_semantic.result()
-            recent = future_recent.result()
+        # Parallel searches using asyncio.gather to reduce TTFT
+        import asyncio
+        critical, semantic, recent = await asyncio.gather(
+            asyncio.to_thread(self._retrieve_critical_facts, user_id),
+            asyncio.to_thread(self._retrieve_semantic_memories, user_id, user_input),
+            asyncio.to_thread(self._retrieve_recent_memories, user_id),
+        )
 
         # Apply semantic deduplication first (within each category)
         critical = self._deduplicate_semantically(

@@ -25,7 +25,7 @@ class LLMClient:
     Children only implement __init__ to create the specific LLM object.
     """
 
-    _llm: BaseChatModel
+    _initialized = False
 
     @classmethod
     def from_config(cls) -> "LLMClient":
@@ -36,11 +36,13 @@ class LLMClient:
         from src.core.config import settings
 
         if settings.AI_PROVIDER == "ollama":
-            logger.info(
-                "Creating OllamaClient with model: %s at %s",
-                settings.OLLAMA_LLM_MODEL,
-                settings.OLLAMA_BASE_URL,
-            )
+            if not cls._initialized:
+                logger.info(
+                    "Creating OllamaClient with model: %s at %s",
+                    settings.OLLAMA_LLM_MODEL,
+                    settings.OLLAMA_BASE_URL,
+                )
+                cls._initialized = True
             return OllamaClient(
                 base_url=settings.OLLAMA_BASE_URL,
                 model=settings.OLLAMA_LLM_MODEL,
@@ -48,9 +50,11 @@ class LLMClient:
             )
 
         if settings.AI_PROVIDER == "openai":
-            logger.info(
-                "Creating OpenAIClient with model: %s", settings.OPENAI_LLM_MODEL
-            )
+            if not cls._initialized:
+                logger.info(
+                    "Creating OpenAIClient with model: %s", settings.OPENAI_LLM_MODEL
+                )
+                cls._initialized = True
             return OpenAIClient(
                 api_key=settings.OPENAI_API_KEY,
                 model=settings.OPENAI_LLM_MODEL,
@@ -58,7 +62,9 @@ class LLMClient:
             )
 
         # Default: Gemini
-        logger.info("Creating GeminiClient with model: %s", settings.GEMINI_LLM_MODEL)
+        if not cls._initialized:
+            logger.info("Creating GeminiClient with model: %s", settings.GEMINI_LLM_MODEL)
+            cls._initialized = True
         return GeminiClient(
             api_key=settings.GEMINI_API_KEY,
             model=settings.GEMINI_LLM_MODEL,

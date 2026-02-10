@@ -65,12 +65,18 @@ if RATE_LIMITING_ENABLED and limiter:
 
 
 # CORS middleware for frontend-backend integration
-logger.info(f"Allowed Origins: {settings.ALLOWED_ORIGINS}")
-logger.info(f"Mongo URI: {settings.MONGO_URI.split('@')[-1]}")  # Mask password
+cors_origins = settings.ALLOWED_ORIGINS
+allow_credentials = True
+
+if "*" in cors_origins or cors_origins == ["*"]:
+    logger.warning("CORS: Allowing all origins ('*'). Note: Credentials will be disabled as per CORS spec when using wildcard.")
+    cors_origins = ["*"]
+    allow_credentials = False
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_origins=cors_origins,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )

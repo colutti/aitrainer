@@ -3,7 +3,7 @@
  * Automatically handles authentication, error responses, and JSON parsing
  */
 
-const API_BASE_URL =
+export const API_BASE_URL =
   (import.meta.env.VITE_API_URL as string | undefined) ??
   (import.meta.env.PROD ? 'https://aitrainer-backend.onrender.com' : '/api');
 const AUTH_TOKEN_KEY = 'auth_token';
