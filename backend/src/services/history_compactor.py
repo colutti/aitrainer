@@ -156,9 +156,9 @@ class HistoryCompactor:
 
             if msg_ts > last_ts:
                 # This is a new message that needs compaction
-                if msg.sender == "student":
+                if msg.sender == Sender.STUDENT:
                     sender_label = "Aluno"
-                elif msg.sender == "trainer":
+                elif msg.sender == Sender.TRAINER:
                     sender_label = "Treinador"
                 else:
                     sender_label = "Sistema"

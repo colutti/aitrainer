@@ -76,6 +76,7 @@ class AITrainerBrain:
         self.compactor = HistoryCompactor(database, llm_client)
         self.memory_manager = MemoryManager(memory)
         self.prompt_builder = PromptBuilder()
+        self._executor = ThreadPoolExecutor(max_workers=10)
 
     def _log_prompt_in_background(
         self,
@@ -340,18 +341,17 @@ class AITrainerBrain:
         """
         logger.info("Generating workout stream for user: %s", user_email)
 
-        # Parallelize: profile retrieval + memory retrieval (3 parallel threads)
-        with ThreadPoolExecutor(max_workers=3) as executor:
-            future_user = executor.submit(self._get_or_create_user_profile, user_email)
-            future_trainer = executor.submit(
-                self._get_or_create_trainer_profile, user_email
-            )
-            future_memories = executor.submit(
-                self.memory_manager.retrieve_hybrid_memories, user_input, user_email
-            )
-            profile = future_user.result()
-            trainer_profile_obj = future_trainer.result()
-            hybrid_memories = future_memories.result()
+        # Parallelize: profile retrieval + memory retrieval (using shared executor)
+        future_user = self._executor.submit(self._get_or_create_user_profile, user_email)
+        future_trainer = self._executor.submit(
+            self._get_or_create_trainer_profile, user_email
+        )
+        future_memories = self._executor.submit(
+            self.memory_manager.retrieve_hybrid_memories, user_input, user_email
+        )
+        profile = future_user.result()
+        trainer_profile_obj = future_trainer.result()
+        hybrid_memories = future_memories.result()
 
         # Format memories using MemoryManager
         relevant_memories_str = self.memory_manager.format_memories(hybrid_memories)

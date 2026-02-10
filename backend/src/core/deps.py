@@ -59,6 +59,7 @@ def get_mongo_database() -> MongoDatabase:
     return MongoDatabase()
 
 
+@functools.lru_cache()
 def get_ai_trainer_brain() -> AITrainerBrain:
     """
     Returns an AI trainer brain.
@@ -71,6 +72,7 @@ def get_ai_trainer_brain() -> AITrainerBrain:
     )
 
 
+@functools.lru_cache()
 def get_hevy_service() -> HevyService:
     """
     Returns a Hevy service instance.

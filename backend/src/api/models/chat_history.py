@@ -74,7 +74,11 @@ class ChatHistory(BaseModel):
         chat_history = []
         for msg in history.messages:
             if msg.type == "human":
-                sender = Sender.STUDENT
+                # Retroactive fix: Some system messages were saved as HumanMessage
+                if msg.content.startswith("✅ Tool"):
+                    sender = Sender.SYSTEM
+                else:
+                    sender = Sender.STUDENT
             elif msg.type == "system":
                 sender = Sender.SYSTEM
             else:

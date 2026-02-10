@@ -21,13 +21,12 @@ export function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Initial data fetch on mount
   useEffect(() => {
     void fetchHistory();
     void fetchTrainer();
-    if (availableTrainers.length === 0) {
-      void fetchAvailableTrainers();
-    }
-  }, [fetchHistory, fetchTrainer, fetchAvailableTrainers, availableTrainers.length]);
+    void fetchAvailableTrainers();
+  }, [fetchHistory, fetchTrainer, fetchAvailableTrainers]);
 
   // Find current trainer details
   const currentTrainer = useMemo(() => {

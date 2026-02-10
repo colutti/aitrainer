@@ -1,6 +1,6 @@
 from datetime import datetime
 from langchain_mongodb.chat_message_histories import MongoDBChatMessageHistory
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.language_models import BaseChatModel
 from langchain_classic.memory import (
     ConversationSummaryBufferMemory,
@@ -73,6 +73,12 @@ class ChatRepository(BaseRepository):
         if chat_history.sender == Sender.TRAINER:
             chat_history_mongo.add_message(
                 AIMessage(
+                    content=chat_history.text, additional_kwargs=additional_kwargs
+                )
+            )
+        elif chat_history.sender == Sender.SYSTEM:
+            chat_history_mongo.add_message(
+                SystemMessage(
                     content=chat_history.text, additional_kwargs=additional_kwargs
                 )
             )
