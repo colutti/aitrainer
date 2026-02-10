@@ -53,9 +53,13 @@ export async function httpClient<T = unknown>(
       headers,
     });
 
-    // Handle 401 Unauthorized - clear token and throw
+    // Handle 401 Unauthorized - sync Zustand store and clear token
     if (response.status === 401) {
-      localStorage.removeItem(AUTH_TOKEN_KEY);
+      // Synchronize Zustand store state (also removes localStorage token)
+      // Use dynamic import to avoid circular dependency: useAuth -> http-client -> useAuth
+      const { useAuthStore } = await import('../hooks/useAuth');
+      useAuthStore.getState().logout();
+
       const error = (await response.json().catch(() => ({
         detail: 'Unauthorized',
       }))) as ErrorResponse;

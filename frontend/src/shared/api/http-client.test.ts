@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
 import { httpClient } from './http-client';
+import { useAuthStore } from '../hooks/useAuth';
 
 describe('httpClient', () => {
   const mockLocalStorage = {
@@ -60,6 +61,19 @@ describe('httpClient', () => {
 
     await expect(httpClient('/test')).rejects.toThrow('Expired');
     expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('auth_token');
+  });
+
+  it('should call logout on auth store when receiving 401', async () => {
+    const logoutSpy = vi.spyOn(useAuthStore.getState(), 'logout');
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({ detail: 'Unauthorized' }),
+    } as Response);
+
+    await expect(httpClient('/test')).rejects.toThrow('Unauthorized');
+    expect(logoutSpy).toHaveBeenCalled();
+    logoutSpy.mockRestore();
   });
 
   it('should handle 401 with JSON parse error', async () => {

@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom';
 
+import { useInactivityLogout } from '../../hooks/useInactivityLogout';
 import { ConfirmationProvider } from '../ui/ConfirmationProvider';
 import { ToastContainer } from '../ui/ToastContainer';
 
@@ -8,15 +9,18 @@ import { Sidebar } from './Sidebar';
 
 /**
  * MainLayout component
- * 
+ *
  * Provides the core shell for the application, including:
  * - Desktop Sidebar
  * - Mobile Bottom Navigation
  * - Global notification system (Toasts)
  * - Global confirmation modals
+ * - Automatic logout on inactivity
  * - Main content area via Router <Outlet />
  */
 export function MainLayout() {
+  useInactivityLogout();
+
   return (
     <div className="min-h-screen bg-dark-bg text-text-primary flex">
       {/* Platform Utilities */}
