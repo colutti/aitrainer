@@ -134,9 +134,7 @@ export function useNutritionTab() {
 
   const editEntry = (log: NutritionLog) => {
     // Format date to YYYY-MM-DD for HTML date input
-    const dateStr = log.date instanceof Date
-      ? log.date.toISOString().split('T')[0]
-      : new Date(log.date).toISOString().split('T')[0];
+    const dateStr = new Date(log.date).toISOString().split('T')[0] ?? '';
 
     setValue('date', dateStr);
     setValue('calories', log.calories);
