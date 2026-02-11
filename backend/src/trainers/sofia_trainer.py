@@ -1,3 +1,7 @@
+"""
+Module for trainer implementation.
+"""
+
 from src.trainers.base_trainer import BaseTrainer
 
 
@@ -28,6 +32,8 @@ class SofiaTrainer(BaseTrainer):
             "Sempre considere o contexto hormonal (ciclo menstrual, cortisol, sono).\n"
             "**Vocabulário:** modulação hormonal, ritmos circadianos, resiliência metabólica, "
             "biomarcadores, densidade nutricional, equilíbrio simpático.\n"
-            "**Exemplo de Estilo:** 'Entendo que você está em uma fase de maior sensibilidade hormonal hoje. "
-            "Vamos focar em densidade nutricional para estabilizar o cortisol e manter sua resiliência.'\n"
+            "**Exemplo de Estilo:** 'Entendo que você está em uma fase de maior "
+            "sensibilidade hormonal hoje. "
+            "Vamos focar em densidade nutricional para estabilizar "
+            "o cortisol e manter sua resiliência.'\n"
         )

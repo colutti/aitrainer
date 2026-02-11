@@ -11,6 +11,7 @@ from src.core.deps import get_mongo_database
 from src.core.logs import logger
 from src.api.models.workout_log import WorkoutListResponse, WorkoutWithId
 from src.services.database import MongoDatabase
+from src.utils.pagination import calculate_total_pages
 
 router = APIRouter()
 
@@ -28,6 +29,7 @@ def list_workouts(
         default=None, description="Filter by workout type"
     ),
 ) -> WorkoutListResponse:
+    # pylint: disable=duplicate-code
     """
     Retrieves paginated workout logs for the authenticated user.
 
@@ -52,7 +54,7 @@ def list_workouts(
         )
 
         workouts = [WorkoutWithId(**w) for w in raw_workouts]
-        total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+        total_pages = calculate_total_pages(total, page_size)
 
         logger.info(
             "Returning %d workouts for user: %s (page %d/%d)",
@@ -89,9 +91,7 @@ def get_types(user_email: CurrentUser, db: DatabaseDep) -> list[str]:
 
 
 @router.delete("/{workout_id}")
-def delete_workout(
-    workout_id: str, user_email: CurrentUser, db: DatabaseDep
-) -> dict:
+def delete_workout(workout_id: str, user_email: CurrentUser, db: DatabaseDep) -> dict:
     """
     Deletes a specific workout log for the authenticated user.
     """
@@ -118,9 +118,13 @@ def delete_workout(
 
         deleted = db.delete_workout_log(workout_id)
         if not deleted:
-            raise HTTPException(status_code=404, detail="Workout not found for deletion")
+            raise HTTPException(
+                status_code=404, detail="Workout not found for deletion"
+            )
 
-        logger.info("Workout %s deleted successfully by user %s", workout_id, user_email)
+        logger.info(
+            "Workout %s deleted successfully by user %s", workout_id, user_email
+        )
         return {"message": "Workout deleted successfully"}
     except HTTPException:
         raise

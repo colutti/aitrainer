@@ -3,7 +3,6 @@ Pydantic models for nutrition statistics.
 """
 
 from datetime import datetime
-from typing import Optional
 from pydantic import BaseModel, Field
 
 from src.api.models.nutrition_log import NutritionWithId
@@ -22,8 +21,8 @@ class DailyMacros(BaseModel):
 class NutritionStats(BaseModel):
     """Aggregated nutrition statistics for the dashboard."""
 
-    today: Optional[NutritionWithId] = Field(
-        None, description="Log nutricional de hoje, se existir"
+    today: NutritionWithId | None = Field(
+        default=None, description="Log nutricional de hoje, se existir"
     )
 
     weekly_adherence: list[bool] = Field(
@@ -40,7 +39,7 @@ class NutritionStats(BaseModel):
     )
 
     avg_daily_calories_14_days: float = Field(
-        0.0, description="Média de calorias diárias nos últimos 14 dias"
+        default=0.0, description="Média de calorias diárias nos últimos 14 dias"
     )
 
     avg_protein: float = Field(
@@ -49,12 +48,12 @@ class NutritionStats(BaseModel):
 
     total_logs: int = Field(..., description="Total de dias registrados no histórico")
 
-    tdee: Optional[int] = Field(None, description="TDEE calculado adaptativamente")
-    daily_target: Optional[int] = Field(
-        None, description="Meta calórica diária baseada no TDEE e objetivo"
+    tdee: int | None = Field(default=None, description="TDEE calculado adaptativamente")
+    daily_target: int | None = Field(
+        default=None, description="Meta calórica diária baseada no TDEE e objetivo"
     )
-    macro_targets: Optional[dict] = Field(None, description="Metas de macros")
-    stability_score: Optional[int] = Field(None, description="Score de estabilidade")
+    macro_targets: dict | None = Field(default=None, description="Metas de macros")
+    stability_score: int | None = Field(default=None, description="Score de estabilidade")
     last_14_days: list[DailyMacros] = Field(
         default_factory=list, description="Lista de macros dos últimos 14 dias"
     )

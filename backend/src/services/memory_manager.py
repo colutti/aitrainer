@@ -1,15 +1,9 @@
 """
 Memory management service for hybrid memory retrieval and formatting.
-
-Extracts memory-related operations from AITrainerBrain for better modularity:
-- Hybrid memory retrieval (critical, semantic, recent)
-- Memory deduplication (exact + semantic)
-- Memory formatting for prompt injection
-- Cost optimization through reduced limits and smart formatting
 """
 
+import asyncio
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 from src.core.logs import logger
 from src.core.config import settings
@@ -48,7 +42,7 @@ class MemoryManager:
             return ""
 
     def _normalize_mem0_results(self, results, source: str) -> list[dict]:
-        """Normalize Mem0 search results to standard format, extracting embeddings if available."""
+        """Normalize Mem0 search results to standard format."""
         normalized = []
         data = results.get("results", []) if isinstance(results, dict) else results
         for mem in data:
@@ -75,7 +69,7 @@ class MemoryManager:
             if norm1 == 0 or norm2 == 0:
                 return 0.0
             return float(np.dot(arr1, arr2) / (norm1 * norm2))
-        except Exception as e:
+        except (ValueError, TypeError) as e:
             logger.warning("Error computing cosine similarity: %s", e)
             return 0.0
 
@@ -84,14 +78,6 @@ class MemoryManager:
     ) -> list[dict]:
         """
         Remove semantically similar memories, keeping only the most recent.
-        Falls back to exact string matching if embeddings unavailable.
-
-        Args:
-            memories: List of memory dicts (with optional 'embedding' field)
-            threshold: Similarity threshold (0.0-1.0) for considering duplicates
-
-        Returns:
-            Deduplicated list of memories
         """
         if not memories:
             return []
@@ -139,8 +125,6 @@ class MemoryManager:
     def _retrieve_critical_facts(self, user_id: str) -> list[dict]:
         """
         Explicit search for critical facts (health, injuries, goals) with priority.
-        Ensures 'alergia', 'lesão', etc. are recovered even if semantic search fails.
-        Uses optimized limit from settings.
         """
         critical_keywords = (
             "alergia lesão dor objetivo meta restrição médico cirurgia "
@@ -150,42 +134,36 @@ class MemoryManager:
         results = self._memory.search(
             user_id=user_id,
             query=critical_keywords,
-            limit=settings.MEM0_CRITICAL_LIMIT,  # Optimized limit
+            limit=settings.MEM0_CRITICAL_LIMIT,
         )
         return self._normalize_mem0_results(results, source="critical")
 
     def _retrieve_semantic_memories(
-        self, user_id: str, query: str, limit: int = None
+        self, user_id: str, query: str, limit: int | None = None
     ) -> list[dict]:
-        """Retrieve semantic context based on current user input. Uses optimized limit."""
+        """Retrieve semantic context based on current user input."""
         if limit is None:
-            limit = settings.MEM0_SEMANTIC_LIMIT  # Optimized limit
+            limit = settings.MEM0_SEMANTIC_LIMIT
         results = self._memory.search(user_id=user_id, query=query, limit=limit)
         return self._normalize_mem0_results(results, source="semantic")
 
-    def _retrieve_recent_memories(self, user_id: str, limit: int = None) -> list[dict]:
-        """Retrieve recently-added memories (short-term temporal context). Uses optimized limit."""
+    def _retrieve_recent_memories(self, user_id: str, limit: int | None = None) -> list[dict]:
+        """Retrieve recently-added memories."""
         if limit is None:
-            limit = settings.MEM0_RECENT_LIMIT  # Optimized limit
+            limit = settings.MEM0_RECENT_LIMIT
         try:
             results = self._memory.get_all(user_id=user_id, limit=limit)
             return self._normalize_mem0_results(results, source="recent")
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             return []
 
     async def retrieve_hybrid_memories(self, user_input: str, user_id: str) -> dict:
         """
         Retrieves memories using Hybrid Search (Critical + Semantic + Recent).
-        Uses parallel execution to reduce latency.
-        Applies both exact and semantic deduplication for cost optimization.
-
-        Returns:
-            dict: Structured dictionary with critical, semantic, and recent memories.
         """
         logger.debug("Retrieving HYBRID memories for user: %s", user_id)
 
         # Parallel searches using asyncio.gather to reduce TTFT
-        import asyncio
         critical, semantic, recent = await asyncio.gather(
             asyncio.to_thread(self._retrieve_critical_facts, user_id),
             asyncio.to_thread(self._retrieve_semantic_memories, user_id, user_input),
@@ -233,13 +211,6 @@ class MemoryManager:
     def format_memories(self, hybrid_memories: dict) -> str:
         """
         Format hybrid memories into compact prompt-ready string with optimized size.
-        Respects max context size limit and uses compact date formatting.
-
-        Args:
-            hybrid_memories: dict with 'critical', 'semantic', 'recent' keys
-
-        Returns:
-            str: Formatted memory string for prompt injection (max 1KB by default)
         """
         memory_sections = []
         total_size = 0
@@ -261,10 +232,7 @@ class MemoryManager:
                 text = mem["text"]
 
                 # Compact format: "- Text [dd/mm]" or "- Text" if recent
-                if dt:
-                    line = f"- {text} [{dt}]"
-                else:
-                    line = f"- {text}"
+                line = f"- {text} [{dt}]" if dt else f"- {text}"
 
                 # Check size limit
                 line_size = len(line) + 1  # +1 for newline
@@ -285,9 +253,8 @@ class MemoryManager:
         # Log memory stats for monitoring
         if memory_sections:
             logger.info(
-                "Memory formatted: %d bytes, ~%d tokens. Critical: %d, Semantic: %d, Recent: %d",
+                "Memory formatted: %d bytes. C: %d, S: %d, R: %d",
                 total_size,
-                total_size // 4,  # Rough approximation (1 token ≈ 4 chars)
                 len(hybrid_memories.get("critical", [])),
                 len(hybrid_memories.get("semantic", [])),
                 len(hybrid_memories.get("recent", [])),

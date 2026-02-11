@@ -1,3 +1,7 @@
+"""
+Service to interact with Hevy API.
+"""
+
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 import httpx
@@ -9,9 +13,9 @@ from src.api.models.routine import (
     ExerciseTemplateListResponse,
 )
 from src.repositories.workout_repository import WorkoutRepository
-
 from src.core.logs import logger
 
+# pylint: disable=too-many-locals,broad-exception-caught,no-else-continue,too-many-nested-blocks,too-many-branches,too-many-statements,too-many-return-statements,import-outside-toplevel
 
 
 class HevyService:
@@ -43,7 +47,7 @@ class HevyService:
                 )
                 return response.status_code == 200
             except httpx.RequestError as e:
-                logger.error(f"Hevy API validation failed: {e}")
+                logger.error("Hevy API validation failed: %s", e)
                 return False
 
     async def get_workout_count(self, api_key: str) -> int:
@@ -62,7 +66,7 @@ class HevyService:
                     return data.get("workout_count", 0)
                 return 0
             except Exception as e:
-                logger.error(f"Failed to get workout count: {e}")
+                logger.error("Failed to get workout count: %s", e)
                 return 0
 
     async def fetch_workouts(
@@ -81,10 +85,10 @@ class HevyService:
                 )
                 if response.status_code == 200:
                     return response.json().get("workouts", [])
-                logger.warning(f"Hevy API returned {response.status_code}")
+                logger.warning("Hevy API returned %s", response.status_code)
                 return []
             except Exception as e:
-                logger.error(f"Failed to fetch workouts page {page}: {e}")
+                logger.error("Failed to fetch workouts page %d: %s", page, e)
                 return []
 
     async def fetch_workout_by_id(
@@ -96,31 +100,37 @@ class HevyService:
         """
         async with httpx.AsyncClient() as client:
             try:
-                logger.debug(f"[Hevy] Fetching workout {workout_id} with key ****{api_key[-4:]}")
+                logger.debug(
+                    "[Hevy] Fetching workout %s with key ****%s",
+                    workout_id,
+                    api_key[-4:],
+                )
                 response = await client.get(
                     f"{self.BASE_URL}/workouts/{workout_id}",
                     headers={"api-key": api_key},
                     timeout=10.0,
                 )
-                logger.debug(f"[Hevy] Response status: {response.status_code}")
+                logger.debug("[Hevy] Response status: %s", response.status_code)
 
                 if response.status_code == 200:
-                    # Hevy API returns the workout object directly (not nested under "workout" key)
+                    # Hevy API returns the workout object directly
                     data = response.json()
-                    logger.debug(f"[Hevy] Response JSON keys: {list(data.keys())}")
+                    logger.debug("[Hevy] Response JSON keys: %s", list(data.keys()))
                     logger.debug("[Hevy] Returning workout directly from response")
                     return data
 
                 # Log detailed error for debugging
                 logger.error(
-                    f"[Hevy] Workout fetch failed for {workout_id}. "
-                    f"Status: {response.status_code}, "
-                    f"Body: {response.text}"
+                    "[Hevy] Workout fetch failed for %s. Status: %s, Body: %s",
+                    workout_id,
+                    response.status_code,
+                    response.text,
                 )
                 return None
             except Exception as e:
-                logger.error(f"[Hevy] Exception fetching workout {workout_id}: {e}")
+                logger.error("[Hevy] Exception fetching workout %s: %s", workout_id, e)
                 import traceback
+
                 logger.error(traceback.format_exc())
                 return None
 
@@ -173,7 +183,7 @@ class HevyService:
 
             if not exercises:
                 logger.warning(
-                    f"Hevy workout {hevy_workout.get('id')} has no valid exercises"
+                    "Hevy workout %s has no valid exercises", hevy_workout.get("id")
                 )
                 return None
 
@@ -191,7 +201,7 @@ class HevyService:
                 external_id=hevy_workout.get("id"),
             )
         except Exception as e:
-            logger.error(f"Error transforming workout {hevy_workout.get('id')}: {e}")
+            logger.error("Error transforming workout %s: %s", hevy_workout.get("id"), e)
             return None
 
     async def import_workouts(
@@ -217,7 +227,7 @@ class HevyService:
             from_date = from_date.replace(tzinfo=timezone.utc)
 
         logger.info(
-            f"Starting Hevy import for {user_email}, mode={mode}, from={from_date}"
+            "Starting Hevy import for %s, mode=%s, from=%s", user_email, mode, from_date
         )
 
         while has_more:
@@ -227,15 +237,11 @@ class HevyService:
 
             for hevy_workout in workouts_batch:
                 try:
-                    # Check date filter (Hevy returns newest first usually, but we should check)
+                    # Check date filter
                     start_time_str = hevy_workout["start_time"].replace("Z", "+00:00")
                     workout_date = datetime.fromisoformat(start_time_str)
 
                     if from_date and workout_date < from_date:
-                        # If workouts are ordered by date desc, we could stop here?
-                        # API doc says "Get a paginated list of workouts".
-                        # It doesn't explicitly guarantee order, but usually it's desc.
-                        # Let's just skip for now to be safe.
                         continue
 
                     # Transform
@@ -256,8 +262,7 @@ class HevyService:
                     )
 
                     if not exists:
-                        # 2. Daily deduplication (One Workout Per Day Policy)
-                        # We use UTC date to catch both midnight entries and regular ones on the same day.
+                        # 2. Daily deduplication
                         day_start = workout_date.replace(
                             hour=0, minute=0, second=0, microsecond=0
                         )
@@ -275,7 +280,8 @@ class HevyService:
                         if existing_on_day:
                             if mode == "skip_duplicates":
                                 logger.debug(
-                                    f"Workout on day {day_start.date()} already exists, skipping"
+                                    "Workout on day %s already exists, skipping",
+                                    day_start.date(),
                                 )
                                 skipped_count += 1
                                 continue
@@ -285,13 +291,16 @@ class HevyService:
                                         {"_id": doc["_id"]}
                                     )
                                 logger.info(
-                                    f"Overwriting {len(existing_on_day)} existing workouts on {day_start.date()}"
+                                    "Overwriting %d existing workouts on %s",
+                                    len(existing_on_day),
+                                    day_start.date(),
                                 )
 
                     elif exists:
                         if mode == "skip_duplicates":
                             logger.debug(
-                                f"Workout with external_id {hevy_workout.get('id')} already exists, skipping"
+                                "Workout with external_id %s already exists, skipping",
+                                hevy_workout.get("id"),
                             )
                             skipped_count += 1
                             continue
@@ -300,7 +309,8 @@ class HevyService:
                                 {"_id": exists["_id"]}
                             )
                             logger.info(
-                                f"Overwriting workout with external_id {hevy_workout.get('id')}"
+                                "Overwriting workout with external_id %s",
+                                hevy_workout.get("id"),
                             )
 
                     # Save
@@ -308,18 +318,17 @@ class HevyService:
                     imported_count += 1
 
                 except Exception as e:
-                    logger.error(f"Error importing specific workout: {e}")
+                    logger.error("Error importing specific workout: %s", e)
                     failed_count += 1
 
             # Pagination check
-            # We don't have total count in fetch response (wrapper), but we can check if batch < page_size
             if len(workouts_batch) < page_size:
                 has_more = False
             else:
                 page += 1
 
             # Safegaurd loop
-            if page > 100:  # Limit to 1000 workouts for this batch to prevent timeouts
+            if page > 100:
                 logger.warning("Hit page limit safeguard")
                 break
 
@@ -334,10 +343,11 @@ class HevyService:
     ) -> Optional[RoutineListResponse]:
         """
         Fetches a paginated list of routines from Hevy.
-        Max pageSize is 10.
         """
         page_size = min(page_size, 10)
-        logger.info(f"Fetching routines from Hevy (page={page}, page_size={page_size})")
+        logger.info(
+            "Fetching routines from Hevy (page=%d, page_size=%d)", page, page_size
+        )
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.get(
@@ -348,13 +358,19 @@ class HevyService:
                 )
                 if response.status_code == 200:
                     data = response.json()
-                    logger.info(f"Hevy API returned {len(data.get('routines', []))} routines")
+                    logger.info(
+                        "Hevy API returned %d routines", len(data.get("routines", []))
+                    )
                     return RoutineListResponse(**data)
-                
-                logger.error(f"Hevy API routines error: {response.status_code} - Body: {response.text}")
+
+                logger.error(
+                    "Hevy API routines error: %d - Body: %s",
+                    response.status_code,
+                    response.text,
+                )
                 return None
             except Exception as e:
-                logger.error(f"Failed to fetch routines: {e}")
+                logger.error("Failed to fetch routines: %s", e)
                 return None
 
     async def get_routine_by_id(
@@ -375,14 +391,18 @@ class HevyService:
                     routine_data = data.get("routine")
                     if isinstance(routine_data, list) and routine_data:
                         routine_data = routine_data[0]
-                    
+
                     if isinstance(routine_data, dict):
                         return HevyRoutine(**routine_data)
-                
-                logger.error(f"Hevy API get routine error: {response.status_code} - Body: {response.text}")
+
+                logger.error(
+                    "Hevy API get routine error: %d - Body: %s",
+                    response.status_code,
+                    response.text,
+                )
                 return None
             except Exception as e:
-                logger.error(f"Failed to fetch routine {routine_id}: {e}")
+                logger.error("Failed to fetch routine %s: %s", routine_id, e)
                 return None
 
     async def create_routine(
@@ -390,33 +410,28 @@ class HevyService:
     ) -> tuple[Optional[HevyRoutine], Optional[str]]:
         """
         Creates a new routine in Hevy.
-        Returns: (routine, error_message) - routine is None on failure, error_message contains details
         """
         async with httpx.AsyncClient() as client:
             try:
-                # Prepare payload: Hevy API is strict about fields
-                # Use exclude_none=True (Hevy rejects many null fields)
                 routine_data = routine.model_dump(
                     exclude={"id", "created_at", "updated_at"},
                     exclude_none=True,
                 )
-                
-                # Exclude exercise-metadata (forbidden in POST/PUT)
+
                 if "exercises" in routine_data:
                     for ex in routine_data["exercises"]:
-                        # Always remove title even if not None
                         if "title" in ex:
                             del ex["title"]
 
-                # CRITICAL: Hevy API requires folder_id field (null = default folder)
-                # Always include it, even if None
                 routine_data["folder_id"] = routine.folder_id
 
                 import json
+
                 payload = {"routine": routine_data}
 
                 logger.info(
-                    f"[create_routine] Sending payload:\n{json.dumps(payload, indent=2, default=str)}"
+                    "[create_routine] Sending payload:\n%s",
+                    json.dumps(payload, indent=2, default=str),
                 )
 
                 response = await client.post(
@@ -426,7 +441,9 @@ class HevyService:
                     timeout=20.0,
                 )
 
-                logger.info(f"[create_routine] Response status: {response.status_code}")
+                logger.info(
+                    "[create_routine] Response status: %s", response.status_code
+                )
 
                 if response.status_code in [200, 201]:
                     response_json = response.json()
@@ -443,10 +460,13 @@ class HevyService:
 
                     return None, f"Unexpected response format: {type(routine_resp)}"
 
-                # Parse error response
                 error_body = response.text
-                logger.error(f"[create_routine] Error: {response.status_code} - Body: {error_body}")
-                
+                logger.error(
+                    "[create_routine] Error: %s - Body: %s",
+                    response.status_code,
+                    error_body,
+                )
+
                 try:
                     error_json = response.json()
                     if "routine-limit-exceeded" in str(error_json):
@@ -458,7 +478,7 @@ class HevyService:
 
                 return None, f"API Error ({response.status_code}): {error_body}"
             except Exception as e:
-                logger.error(f"Failed to create routine: {e}", exc_info=True)
+                logger.error("Failed to create routine: %s", e, exc_info=True)
                 return None, str(e)
 
     async def update_routine(
@@ -469,28 +489,27 @@ class HevyService:
         """
         async with httpx.AsyncClient() as client:
             try:
-                # Prepare payload: Hevy API is strict about fields
-                # Use exclude_none=True (Hevy rejects many null fields)
                 routine_data = routine.model_dump(
                     exclude={"id", "created_at", "updated_at"},
                     exclude_none=True,
                 )
-                
-                # Exclude exercise-metadata (forbidden in PUT)
+
                 if "exercises" in routine_data:
                     for ex in routine_data["exercises"]:
                         if "title" in ex:
                             del ex["title"]
-                
-                # IMPORTANT: 'folder_id' is NOT allowed in PUT payload
+
                 if "folder_id" in routine_data:
                     del routine_data["folder_id"]
-                
+
                 import json
+
                 payload = {"routine": routine_data}
 
                 logger.info(
-                    f"[update_routine] Sending payload for routine {routine_id}:\n{json.dumps(payload, indent=2, default=str)}"
+                    "[update_routine] Sending payload for routine %s:\n%s",
+                    routine_id,
+                    json.dumps(payload, indent=2, default=str),
                 )
 
                 response = await client.put(
@@ -499,26 +518,30 @@ class HevyService:
                     json=payload,
                     timeout=20.0,
                 )
-                
-                logger.info(f"[update_routine] Status: {response.status_code}")
-                
+
+                logger.info("[update_routine] Status: %d", response.status_code)
+
                 if response.status_code == 200:
                     data = response.json()
                     routine_data = data.get("routine")
                     if isinstance(routine_data, list) and routine_data:
                         routine_data = routine_data[0]
-                    
+
                     if isinstance(routine_data, dict):
                         return HevyRoutine(**routine_data)
-                
+
                 # Detailed error logging
                 error_body = response.text
                 logger.error(
-                    f"Hevy routine update failed: {response.status_code} - Body: {error_body}"
+                    "Hevy routine update failed: %d - Body: %s",
+                    response.status_code,
+                    error_body,
                 )
                 return None
             except Exception as e:
-                logger.error(f"Failed to update routine {routine_id}: {e}", exc_info=True)
+                logger.error(
+                    "Failed to update routine %s: %s", routine_id, e, exc_info=True
+                )
                 return None
 
     async def get_exercise_templates(
@@ -538,11 +561,11 @@ class HevyService:
                 if response.status_code == 200:
                     return ExerciseTemplateListResponse(**response.json())
                 logger.warning(
-                    f"Hevy API exercise templates returned {response.status_code}"
+                    "Hevy API exercise templates returned %d", response.status_code
                 )
                 return None
             except Exception as e:
-                logger.error(f"Failed to fetch exercise templates: {e}")
+                logger.error("Failed to fetch exercise templates: %s", e)
                 return None
 
     async def get_all_exercise_templates(
@@ -550,7 +573,6 @@ class HevyService:
     ) -> list[HevyExerciseTemplate]:
         """
         Fetches ALL exercise templates by iterating through all pages.
-        Includes in-memory caching to avoid hitting the API too hard/timeouts.
         """
         import time
 
@@ -561,7 +583,7 @@ class HevyService:
             ts, templates = self._exercises_cache[api_key]
             if now - ts < self.CACHE_DURATION:
                 logger.debug(
-                    f"Returning {len(templates)} exercise templates from memory cache"
+                    "Returning %d exercise templates from memory cache", len(templates)
                 )
                 return templates
 
@@ -587,7 +609,7 @@ class HevyService:
 
             return all_templates
         except Exception as e:
-            logger.error(f"Error in get_all_exercise_templates: {e}")
+            logger.error("Error in get_all_exercise_templates: %s", e)
             # Try to return expired cache if we have it
             if api_key in self._exercises_cache:
                 _, templates = self._exercises_cache[api_key]

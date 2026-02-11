@@ -38,6 +38,7 @@ def validate_invite_token(
         410: Token expired
         409: Token already used
     """
+    # pylint: disable=no-member
     db = get_mongo_database()
     invite_repo = db.invites
 
@@ -84,6 +85,7 @@ def complete_onboarding(request: OnboardingCompleteRequest):
     Raises:
         HTTPException: If token is invalid, expired, or already used.
     """
+    # pylint: disable=no-member
     db = get_mongo_database()
     invite_repo = db.invites
 
@@ -121,23 +123,17 @@ def complete_onboarding(request: OnboardingCompleteRequest):
     user_profile = UserProfile(
         email=email,
         password_hash=password_hash,
+        role="user",
         gender=request.gender,
         age=request.age,
         weight=request.weight,
         height=request.height,
         goal_type=request.goal_type,
         weekly_rate=request.weekly_rate,
-        # Mandatory fields for Mypy
+        # Mandatory fields for Mypy/Pyright
+        # Optional/Default fields
         goal=None,
         target_weight=None,
-        notes=None,
-        long_term_summary=None,
-        last_compaction_timestamp=None,
-        hevy_api_key=None,
-        hevy_enabled=False,
-        hevy_last_sync=None,
-        hevy_webhook_token=None,
-        hevy_webhook_secret=None,
     )
 
     # Create trainer profile

@@ -1,3 +1,7 @@
+"""
+This module contains the repository for user profiles.
+"""
+
 from pymongo.database import Database
 import bcrypt
 from src.api.models.user_profile import UserProfile
@@ -5,14 +9,20 @@ from src.repositories.base import BaseRepository
 
 
 class UserRepository(BaseRepository):
+    """
+    Repository for managing user profiles and authentication in MongoDB.
+    """
+
     def __init__(self, database: Database):
         super().__init__(database, "users")
 
     def save_profile(self, profile: UserProfile) -> None:
+        """
+        Saves or updates a user profile.
+        """
         # Exclude None values to prevent overwriting existing password_hash
-        # This is critical for security: we never want to accidentally clear a password
         data = profile.model_dump(exclude_none=True)
-        
+
         result = self.collection.update_one(
             {"email": profile.email}, {"$set": data}, upsert=True
         )
@@ -29,7 +39,6 @@ class UserRepository(BaseRepository):
     def update_profile_fields(self, email: str, fields: dict) -> bool:
         """
         Partially updates a user profile with specific fields.
-        This is safer than save_profile for concurrent operations.
         """
         result = self.collection.update_one({"email": email}, {"$set": fields})
         if result.modified_count > 0:
@@ -38,6 +47,9 @@ class UserRepository(BaseRepository):
         return False
 
     def get_profile(self, email: str) -> UserProfile | None:
+        """
+        Retrieves a user profile by email.
+        """
         user_data = self.collection.find_one({"email": email})
         if not user_data:
             self.logger.info("User profile not found for email: %s", email)
@@ -46,6 +58,9 @@ class UserRepository(BaseRepository):
         return UserProfile(**user_data)
 
     def validate_credentials(self, email: str, password: str) -> bool:
+        """
+        Validates user credentials by checking the hashed password.
+        """
         user = self.collection.find_one({"email": email})
         if not user:
             self.logger.debug("Login attempt for non-existent user: %s", email)
@@ -69,13 +84,6 @@ class UserRepository(BaseRepository):
     def find_by_webhook_token(self, token: str) -> UserProfile | None:
         """
         Finds a user by their Hevy webhook token.
-        Ensures a sparse index exists on the token field.
-
-        Args:
-            token: The unique webhook token.
-
-        Returns:
-            UserProfile if found, None otherwise.
         """
         # Ensure index exists (idempotent)
         self.collection.create_index("hevy_webhook_token", sparse=True)

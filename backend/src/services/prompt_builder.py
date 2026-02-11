@@ -8,15 +8,18 @@ Extracts prompt template construction from AITrainerBrain for better modularity:
 """
 
 from datetime import datetime
+from typing import Any
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from src.core.config import settings
 from src.core.logs import logger
+
 
 
 class PromptBuilder:
     """Builds and constructs chat prompt templates with defensive injection."""
 
     @staticmethod
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def build_input_data(
         profile,
         trainer_profile_summary: str,
@@ -25,7 +28,7 @@ class PromptBuilder:
         chat_history_summary: str,
         formatted_history_msgs,
         user_input: str,
-        current_date: str = None,
+        current_date: str | None = None,
     ) -> dict:
         """
         Constructs the input data dictionary for prompt template injection.
@@ -108,7 +111,7 @@ class PromptBuilder:
             )
 
         # 5. Build messages with MessagesPlaceholder for history
-        messages = [("system", system_content)]
+        messages: list[Any] = [("system", system_content)]
         messages.append(MessagesPlaceholder(variable_name="chat_history"))
         messages.append(("human", "{user_message}"))
 

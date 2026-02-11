@@ -22,22 +22,14 @@ def list_prompts(
     db: MongoDBDep,
     user_id: str | None = Query(None, alias="user_id"),
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=50)
+    page_size: int = Query(20, ge=1, le=50),
 ) -> dict:
     """
     Lista prompts logados (collection: prompt_logs).
-
-    Args:
-        admin_email: Email do admin (verificado por dependency)
-        db: MongoDB database instance
-        user_id: Filtrar por email do usuário (opcional)
-        page: Número da página
-        page_size: Quantidade de prompts por página
-
-    Returns:
-        dict: Contém prompts, total, page e total_pages
     """
-    logger.info(f"Admin {admin_email} listing prompts (page={page}, user={user_id})")
+    logger.info(
+        "Admin %s listing prompts (page=%s, user=%s)", admin_email, page, user_id
+    )
 
     query = {}
     if user_id:
@@ -46,7 +38,12 @@ def list_prompts(
     skip = (page - 1) * page_size
 
     # Buscar prompts
-    prompts_cursor = db.prompts.collection.find(query).sort("timestamp", -1).skip(skip).limit(page_size)
+    prompts_cursor = (
+        db.prompts.collection.find(query)
+        .sort("timestamp", -1)
+        .skip(skip)
+        .limit(page_size)
+    )
     prompts = list(prompts_cursor)
 
     # Truncar conteúdo longo e achatar campos para o frontend
@@ -66,8 +63,8 @@ def list_prompts(
 
         if "prompt" in p and isinstance(p["prompt"], dict):
             prompt_data = p["prompt"]
-            
-            # Tentar extrair metadados se existirem (podem ter sido adicionados recentemente)
+
+            # Tentar extrair metadados se existirem
             p["model"] = prompt_data.get("model", p["model"])
             p["tokens_input"] = prompt_data.get("tokens_input", p["tokens_input"])
             p["tokens_output"] = prompt_data.get("tokens_output", p["tokens_output"])
@@ -76,21 +73,7 @@ def list_prompts(
             p["prompt_name"] = prompt_data.get("prompt_name", p["prompt_name"])
 
             # Preview logic
-            if "messages" in prompt_data:
-                messages = prompt_data["messages"]
-                p["messages_count"] = len(messages) if isinstance(messages, list) else 0
-                p["messages_preview"] = str(messages[0].get("content", ""))[:200] + "..." if messages and isinstance(messages, list) and isinstance(messages[0], dict) else ""
-            elif "input" in prompt_data:
-                input_val = prompt_data.get("input", "")
-                p["messages_count"] = 1
-                p["messages_preview"] = str(input_val)[:200] + "..."
-            elif "prompt" in prompt_data:
-                prompt_str = prompt_data.get("prompt", "")
-                p["messages_count"] = 1
-                p["messages_preview"] = str(prompt_str)[:200] + "..."
-            else:
-                p["messages_count"] = 0
-                p["messages_preview"] = "Estrutura não reconhecida"
+            _process_prompt_preview(p, prompt_data)
 
     total = db.prompts.collection.count_documents(query)
 
@@ -98,38 +81,49 @@ def list_prompts(
         "prompts": prompts,
         "total": total,
         "page": page,
-        "total_pages": (total + page_size - 1) // page_size
+        "total_pages": (total + page_size - 1) // page_size,
     }
 
 
+def _process_prompt_preview(p: dict, prompt_data: dict):
+    """Helper to process prompt preview logic."""
+    if "messages" in prompt_data:
+        messages = prompt_data["messages"]
+        p["messages_count"] = len(messages) if isinstance(messages, list) else 0
+        p["messages_preview"] = (
+            str(messages[0].get("content", ""))[:200] + "..."
+            if messages
+            and isinstance(messages, list)
+            and isinstance(messages[0], dict)
+            else ""
+        )
+    elif "input" in prompt_data:
+        input_val = prompt_data.get("input", "")
+        p["messages_count"] = 1
+        p["messages_preview"] = str(input_val)[:200] + "..."
+    elif "prompt" in prompt_data:
+        prompt_str = prompt_data.get("prompt", "")
+        p["messages_count"] = 1
+        p["messages_preview"] = str(prompt_str)[:200] + "..."
+    else:
+        p["messages_count"] = 0
+        p["messages_preview"] = "Estrutura não reconhecida"
+
+
 @router.get("/{prompt_id}")
-def get_prompt_details(
-    prompt_id: str,
-    admin_email: AdminUser,
-    db: MongoDBDep
-) -> dict:
+def get_prompt_details(prompt_id: str, admin_email: AdminUser, db: MongoDBDep) -> dict:
     """
     Retorna prompt completo sem truncamento.
-
-    Args:
-        prompt_id: ID do prompt (ObjectId como string)
-        admin_email: Email do admin (verificado por dependency)
-        db: MongoDB database instance
-
-    Returns:
-        dict: Prompt completo
-
-    Raises:
-        HTTPException: 400 se ID inválido
-        HTTPException: 404 se prompt não encontrado
     """
-    logger.info(f"Admin {admin_email} viewing prompt {prompt_id}")
+    logger.info("Admin %s viewing prompt %s", admin_email, prompt_id)
 
     try:
         prompt = db.prompts.collection.find_one({"_id": ObjectId(prompt_id)})
-    except Exception as e:
-        logger.error(f"Invalid ObjectId: {prompt_id}")
-        raise HTTPException(status_code=400, detail=f"Invalid prompt ID: {str(e)}")
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.error("Invalid ObjectId: %s", prompt_id)
+        raise HTTPException(
+            status_code=400, detail=f"Invalid prompt ID: {str(e)}"
+        ) from e
 
     if not prompt:
         raise HTTPException(status_code=404, detail="Prompt not found")

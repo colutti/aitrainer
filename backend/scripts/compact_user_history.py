@@ -23,7 +23,6 @@ if env_file.exists():
 else:
     print(f"⚠️  .env.prod not found at {env_file}")
 
-from src.core.config import settings  # noqa: E402
 from src.services.database import MongoDatabase  # noqa: E402
 from src.services.history_compactor import HistoryCompactor  # noqa: E402
 from src.core.logs import logger  # noqa: E402
@@ -38,7 +37,7 @@ async def compact_user_retroactively(user_email: str):
     try:
         # Initialize dependencies
         db = MongoDatabase()
-        llm_client = LLMClient.from_config(settings)
+        llm_client = LLMClient.from_config()
         compactor = HistoryCompactor(db, llm_client)
 
         # Get user profile
@@ -48,7 +47,7 @@ async def compact_user_retroactively(user_email: str):
             return False
 
         # Get ALL messages
-        all_messages = db.get_chat_history(user_email, limit=None)  # No limit
+        all_messages = db.get_chat_history(user_email, limit=1000)  # Large limit instead of None
         total_msgs = len(all_messages)
         logger.info("Found %d total messages for user: %s", total_msgs, user_email)
 
@@ -66,12 +65,17 @@ async def compact_user_retroactively(user_email: str):
 
         # Get updated profile
         updated_profile = db.get_user_profile(user_email)
-        summary_len = len(updated_profile.long_term_summary) if updated_profile.long_term_summary else 0
+        summary_len = 0
+        summary_preview = "EMPTY"
+        
+        if updated_profile and updated_profile.long_term_summary:
+            summary_len = len(updated_profile.long_term_summary)
+            summary_preview = updated_profile.long_term_summary[:200]
 
         logger.info("✅ Retroactive compaction complete!")
         logger.info("   Total messages processed: %d", total_msgs)
         logger.info("   Summary size: %d chars", summary_len)
-        logger.info("   Summary preview: %s", updated_profile.long_term_summary[:200] if updated_profile.long_term_summary else "EMPTY")
+        logger.info("   Summary preview: %s", summary_preview)
 
         return True
 

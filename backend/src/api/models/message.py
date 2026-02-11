@@ -1,3 +1,7 @@
+"""
+This module contains the models for chat message requests.
+"""
+
 from pydantic import BaseModel
 
 

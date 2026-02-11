@@ -28,25 +28,19 @@ def mock_database():
     # Mock chat history with student messages
     history = [
         ChatHistory(
-            id="1",
             sender=Sender.STUDENT,
             text="I want to start a new workout routine",
             timestamp="2026-02-01T10:00:00",
-            trainer_id="",
         ),
         ChatHistory(
-            id="2",
             sender=Sender.TRAINER,
             text="Great! Let's design one for you.",
             timestamp="2026-02-01T10:01:00",
-            trainer_id="",
         ),
         ChatHistory(
-            id="3",
             sender=Sender.STUDENT,
             text="I prefer lifting weights over cardio",
             timestamp="2026-02-01T10:02:00",
-            trainer_id="",
         ),
     ]
     db.get_chat_history = Mock(return_value=history)
@@ -220,18 +214,14 @@ class TestHistoryCompactorPreprocessing:
         """Test that greeting messages are filtered out."""
         messages = [
             ChatHistory(
-                id="1",
                 sender=Sender.STUDENT,
                 text="Oi",
                 timestamp="2026-02-01T10:00:00",
-                trainer_id="",
             ),
             ChatHistory(
-                id="2",
                 sender=Sender.STUDENT,
                 text="I want to add weight",
                 timestamp="2026-02-01T10:01:00",
-                trainer_id="",
             ),
         ]
 
@@ -243,18 +233,14 @@ class TestHistoryCompactorPreprocessing:
         """Test that messages shorter than MIN_MESSAGE_LENGTH are filtered."""
         messages = [
             ChatHistory(
-                id="1",
                 sender=Sender.STUDENT,
                 text="ok",
                 timestamp="2026-02-01T10:00:00",
-                trainer_id="",
             ),
             ChatHistory(
-                id="2",
                 sender=Sender.STUDENT,
                 text="I want to increase my strength significantly",
                 timestamp="2026-02-01T10:01:00",
-                trainer_id="",
             ),
         ]
 
@@ -266,18 +252,14 @@ class TestHistoryCompactorPreprocessing:
         """Test that trainer messages are filtered out."""
         messages = [
             ChatHistory(
-                id="1",
                 sender=Sender.TRAINER,
                 text="This is a long trainer message with important info",
                 timestamp="2026-02-01T10:00:00",
-                trainer_id="",
             ),
             ChatHistory(
-                id="2",
                 sender=Sender.STUDENT,
                 text="I want to improve my cardio fitness level",
                 timestamp="2026-02-01T10:01:00",
-                trainer_id="",
             ),
         ]
 

@@ -13,6 +13,7 @@ from src.core.deps import get_ai_trainer_brain, get_qdrant_client
 from src.core.logs import logger
 from src.api.models.memory_item import MemoryItem, MemoryListResponse
 from src.services.trainer import AITrainerBrain
+from src.utils.pagination import calculate_total_pages
 
 router = APIRouter()
 
@@ -29,6 +30,7 @@ def list_memories(
     page: int = Query(default=1, ge=1, description="Page number (1-indexed)"),
     page_size: int = Query(default=10, ge=1, le=50, description="Items per page"),
 ) -> MemoryListResponse:
+    # pylint: disable=duplicate-code
     """
     Retrieves paginated memories for the authenticated user.
 
@@ -65,7 +67,7 @@ def list_memories(
             for mem in raw_memories
         ]
 
-        total_pages = (total + page_size - 1) // page_size if total > 0 else 0
+        total_pages = calculate_total_pages(total, page_size)
 
         logger.info(
             "Returning %d memories for user: %s (page %d/%d)",

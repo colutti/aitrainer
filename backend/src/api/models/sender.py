@@ -1,3 +1,7 @@
+"""
+This module contains the Sender enum for chat messages.
+"""
+
 from enum import Enum
 
 

@@ -1,6 +1,7 @@
 """
 Rate limiter configuration for the API.
 """
+
 from typing import Any
 
 limiter: Any

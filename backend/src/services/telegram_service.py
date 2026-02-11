@@ -24,6 +24,7 @@ class TelegramBotService:
 
     async def handle_update(self, update_data: dict) -> None:
         """Process incoming Telegram update."""
+        # pylint: disable=no-member
         update = Update.de_json(update_data, self.bot)
 
         if not update.message or not update.effective_chat:
@@ -73,7 +74,10 @@ class TelegramBotService:
         if user_email:
             await self.bot.send_message(
                 chat_id=chat_id,
-                text="✅ Conta vinculada com sucesso!\n\nAgora você pode conversar com a IA diretamente aqui.",
+                text=(
+                    "✅ Conta vinculada com sucesso!\n\n"
+                    "Agora você pode conversar com a IA diretamente aqui."
+                ),
             )
         else:
             await self.bot.send_message(
@@ -131,7 +135,7 @@ class TelegramBotService:
             # Delete processing message
             await processing_msg.delete()
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Error processing Telegram message: %s", e)
             await self.bot.send_message(
                 chat_id=chat_id, text="❌ Erro ao processar mensagem. Tente novamente."
@@ -140,19 +144,14 @@ class TelegramBotService:
     async def send_notification(self, user_email: str, message: str) -> bool:
         """
         Envia notificação proativa para um usuário vinculado ao Telegram.
-
-        Args:
-            user_email: Email do usuário destinatário
-            message: Mensagem a enviar (pode conter markdown)
-
-        Returns:
-            True se enviado com sucesso, False caso contrário
         """
         try:
             # 1. Buscar vinculação
             link = self.repository.get_link_by_email(user_email)
             if not link:
-                logger.warning(f"[Telegram Notification] No link found for {user_email}")
+                logger.warning(
+                    "[Telegram Notification] No link found for %s", user_email
+                )
                 return False
 
             # 2. Formatar mensagem (converte markdown para Telegram)
@@ -160,17 +159,19 @@ class TelegramBotService:
 
             # 3. Enviar
             await self.bot.send_message(
-                chat_id=link.chat_id,
-                text=formatted_text,
-                parse_mode=parse_mode
+                chat_id=link.chat_id, text=formatted_text, parse_mode=parse_mode
             )
 
-            logger.info(f"[Telegram Notification] Sent to {user_email} (chat_id={link.chat_id})")
+            logger.info(
+                "[Telegram Notification] Sent to %s (chat_id=%s)",
+                user_email,
+                link.chat_id,
+            )
             return True
 
         except TelegramError as e:
-            logger.error(f"[Telegram Notification] Telegram API error: {e}")
+            logger.error("[Telegram Notification] Telegram API error: %s", e)
             return False
-        except Exception as e:
-            logger.error(f"[Telegram Notification] Unexpected error: {e}")
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.error("[Telegram Notification] Unexpected error: %s", e)
             return False

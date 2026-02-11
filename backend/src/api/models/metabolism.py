@@ -1,5 +1,8 @@
-from pydantic import BaseModel, Field
+"""
+This module contains the models for metabolism and TDEE calculation responses.
+"""
 
+from pydantic import BaseModel, Field
 
 
 class WeightTrendPoint(BaseModel):
@@ -80,8 +83,12 @@ class MetabolismResponse(BaseModel):
     end_muscle_pct: float | None = Field(None)
     scale_bmr: int | None = Field(None)
 
-    macro_targets: MacroTargets | None = Field(None, description="Calculated macro targets")
-    stability_score: int | None = Field(None, description="Calorie stability score (0-100)")
+    macro_targets: MacroTargets | None = Field(
+        None, description="Calculated macro targets"
+    )
+    stability_score: int | None = Field(
+        None, description="Calorie stability score (0-100)"
+    )
 
     # New Trend Fields
     weight_trend: list[WeightTrendPoint] | None = Field(

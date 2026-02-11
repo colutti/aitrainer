@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+
 import { useAuthStore } from './useAuth';
 
 const INACTIVITY_TIMEOUT_MS = 50 * 60 * 1000; // 50 minutes
@@ -28,7 +29,7 @@ export function useInactivityLogout(timeoutMs: number = INACTIVITY_TIMEOUT_MS): 
   const logout = useAuthStore((state) => state.logout);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastActivityRef = useRef<number>(Date.now());
+  const lastActivityRef = useRef<number>(0);
 
   const handleLogout = useCallback(() => {
     logout();

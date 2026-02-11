@@ -79,12 +79,12 @@ def import_scale_data(user_email: str, csv_path: str, dry_run: bool = False):
             log = WeightLog(
                 user_email=user_email,
                 date=log_date,
-                **{k: v for k, v in data.items() if k != "date"},
                 source="scale_import_script",
+                **data,  # type: ignore
             )
 
             status = "preview"
-            if not dry_run:
+            if not dry_run and db:
                 doc_id, is_new = db.save_weight_log(log)
                 if is_new:
                     created += 1

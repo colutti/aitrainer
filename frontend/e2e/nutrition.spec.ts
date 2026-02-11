@@ -207,7 +207,7 @@ test.describe('Nutrition Feature', () => {
     await page.route(/\/api\/nutrition(\/list|\/log)?(\?|$)/, async (route) => {
       if (route.request().method() === 'GET') {
         const url = route.request().url();
-        const pageMatch = url.match(/page=(\d+)/);
+        const pageMatch = /page=(\d+)/.exec(url);
         const currentPage = pageMatch ? parseInt(pageMatch[1]) : 1;
 
         await route.fulfill({

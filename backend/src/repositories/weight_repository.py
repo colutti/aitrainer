@@ -1,3 +1,7 @@
+"""
+This module contains the repository for weight logs.
+"""
+
 from datetime import datetime, date
 import pymongo
 from pymongo.database import Database
@@ -7,10 +11,17 @@ from src.repositories.base import BaseRepository
 
 
 class WeightRepository(BaseRepository):
+    """
+    Repository for managing weight and body composition logs in MongoDB.
+    """
+
     def __init__(self, database: Database):
         super().__init__(database, "weight_logs")
 
     def ensure_indexes(self) -> None:
+        """
+        Ensures unique indexes for weight logs (one per day per user).
+        """
         self.collection.create_index(
             [("user_email", pymongo.ASCENDING), ("date", pymongo.ASCENDING)],
             unique=True,
@@ -19,6 +30,10 @@ class WeightRepository(BaseRepository):
         self.logger.info("Weight logs unique daily index ensured.")
 
     def save_log(self, log: WeightLog) -> tuple[str, bool]:
+        """
+        Saves or updates a weight log.
+        """
+        # pylint: disable=duplicate-code
         log_datetime = datetime(log.date.year, log.date.month, log.date.day)
 
         data = log.model_dump()
@@ -49,6 +64,9 @@ class WeightRepository(BaseRepository):
         return doc_id, is_new
 
     def delete_log(self, user_email: str, log_date: date) -> bool:
+        """
+        Deletes a weight log for a specific date.
+        """
         query_date = datetime(log_date.year, log_date.month, log_date.day)
 
         result = self.collection.delete_one(
@@ -67,6 +85,9 @@ class WeightRepository(BaseRepository):
         return False
 
     def get_logs(self, user_email: str, limit: int = 30) -> list[WeightLog]:
+        """
+        Retrieves the most recent weight logs for a user.
+        """
         cursor = (
             self.collection.find({"user_email": user_email})
             .sort("date", pymongo.DESCENDING)
@@ -86,6 +107,9 @@ class WeightRepository(BaseRepository):
     def get_logs_by_date_range(
         self, user_email: str, start_date: date, end_date: date
     ) -> list[WeightLog]:
+        """
+        Retrieves weight logs within a specific date range.
+        """
         start = datetime(start_date.year, start_date.month, start_date.day, 0, 0, 0)
         end = datetime(end_date.year, end_date.month, end_date.day, 23, 59, 59)
 
@@ -109,6 +133,9 @@ class WeightRepository(BaseRepository):
         page: int = 1,
         page_size: int = 10,
     ) -> tuple[list[dict], int]:
+        """
+        Retrieves paginated weight logs.
+        """
         query = {"user_email": user_email}
 
         total = self.collection.count_documents(query)

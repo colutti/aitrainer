@@ -1,14 +1,22 @@
+"""
+This module contains the models for Hevy routines and exercise templates.
+"""
+
 from typing import List, Optional
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 
 class HevyRepRange(BaseModel):
+    """Range of repetitions for a set."""
+
     model_config = ConfigDict(extra="ignore")
     start: Optional[int] = None
     end: Optional[int] = None
 
 
 class HevySet(BaseModel):
+    """A single set within an exercise."""
+
     model_config = ConfigDict(extra="ignore")
     type: str = Field(..., description="e.g., normal, warmup, dropset, failure")
     weight_kg: Optional[float] = None
@@ -20,6 +28,7 @@ class HevySet(BaseModel):
     @field_validator("type", mode="before")
     @classmethod
     def normalize_type(cls, v: str) -> str:
+        """Normalizes the set type string."""
         if isinstance(v, str):
             v = v.lower().strip()
             if v == "warm_up":
@@ -30,6 +39,8 @@ class HevySet(BaseModel):
 
 
 class HevyRoutineExercise(BaseModel):
+    """An exercise entry within a Hevy routine."""
+
     model_config = ConfigDict(extra="ignore")
     exercise_template_id: str
     superset_id: Optional[int] = None
@@ -40,6 +51,8 @@ class HevyRoutineExercise(BaseModel):
 
 
 class HevyRoutine(BaseModel):
+    """A complete Hevy workout routine."""
+
     model_config = ConfigDict(extra="ignore")
     id: Optional[str] = None
     title: str
@@ -51,6 +64,8 @@ class HevyRoutine(BaseModel):
 
 
 class RoutineListResponse(BaseModel):
+    """Paginated list of Hevy routines."""
+
     model_config = ConfigDict(extra="ignore")
     page: int
     page_count: int
@@ -58,6 +73,8 @@ class RoutineListResponse(BaseModel):
 
 
 class HevyExerciseTemplate(BaseModel):
+    """Template for a specific exercise in Hevy."""
+
     id: str
     title: str
     type: str
@@ -67,6 +84,8 @@ class HevyExerciseTemplate(BaseModel):
 
 
 class ExerciseTemplateListResponse(BaseModel):
+    """Paginated list of Hevy exercise templates."""
+
     page: int
     page_count: int
     exercise_templates: List[HevyExerciseTemplate]

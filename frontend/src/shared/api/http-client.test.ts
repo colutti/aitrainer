@@ -1,7 +1,8 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
-import { httpClient } from './http-client';
 import { useAuthStore } from '../hooks/useAuth';
+
+import { httpClient } from './http-client';
 
 describe('httpClient', () => {
   const mockLocalStorage = {

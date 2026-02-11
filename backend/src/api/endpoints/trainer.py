@@ -1,3 +1,7 @@
+"""
+API endpoints for managing trainer profiles.
+"""
+
 from fastapi import APIRouter, Depends
 from src.api.models.trainer_profile import TrainerProfileInput, TrainerProfile
 from src.services.trainer import AITrainerBrain
@@ -38,7 +42,7 @@ async def get_trainer_profile(
 
 
 @router.get("/available_trainers")
-async def get_available_trainers(user_email: str = Depends(verify_token)):
+async def get_available_trainers(_user_email: str = Depends(verify_token)):
     """
     Returns a list of all available trainer cards for the frontend.
     """

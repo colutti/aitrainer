@@ -1,4 +1,9 @@
-from datetime import datetime, timedelta
+"""
+This module contains the repository for nutrition logs.
+"""
+
+from datetime import datetime, timedelta, date as py_date
+from typing import Any
 import pymongo
 from bson import ObjectId
 from pymongo.database import Database
@@ -9,10 +14,17 @@ from src.repositories.base import BaseRepository
 
 
 class NutritionRepository(BaseRepository):
+    """
+    Repository for managing nutrition logs in MongoDB.
+    """
+
     def __init__(self, database: Database):
         super().__init__(database, "nutrition_logs")
 
     def ensure_indexes(self) -> None:
+        """
+        Ensures unique indexes for nutrition logs (one per day per user).
+        """
         self.collection.create_index(
             [("user_email", pymongo.ASCENDING), ("date", pymongo.ASCENDING)],
             unique=True,
@@ -21,7 +33,14 @@ class NutritionRepository(BaseRepository):
         self.logger.info("Nutrition logs unique daily index ensured.")
 
     def save_log(self, log: NutritionLog) -> tuple[str, bool]:
-        log_date = log.date.replace(hour=0, minute=0, second=0, microsecond=0)
+        """
+        Saves or updates a nutrition log.
+        """
+        log_date = log.date
+        if isinstance(log_date, py_date) and not isinstance(log_date, datetime):
+            log_date = datetime.combine(log_date, datetime.min.time())
+
+        log_date = log_date.replace(hour=0, minute=0, second=0, microsecond=0)
         log.date = log_date
 
         result = self.collection.update_one(
@@ -49,6 +68,9 @@ class NutritionRepository(BaseRepository):
         return doc_id, is_new
 
     def get_logs(self, user_email: str, limit: int = 30) -> list[NutritionLog]:
+        """
+        Retrieves the most recent nutrition logs for a user.
+        """
         cursor = (
             self.collection.find({"user_email": user_email})
             .sort("date", pymongo.DESCENDING)
@@ -57,7 +79,9 @@ class NutritionRepository(BaseRepository):
         return [NutritionLog(**doc) for doc in cursor]
 
     def delete_log(self, log_id: str) -> bool:
-        """Deletes a nutrition log by its ID."""
+        """
+        Deletes a nutrition log by its ID.
+        """
         result = self.collection.delete_one({"_id": ObjectId(log_id)})
         deleted = result.deleted_count > 0
         if deleted:
@@ -67,12 +91,17 @@ class NutritionRepository(BaseRepository):
         return deleted
 
     def get_log_by_id(self, log_id: str) -> dict | None:
-        """Retrieves a single nutrition log by its ID."""
+        """
+        Retrieves a single nutrition log by its ID.
+        """
         return self.collection.find_one({"_id": ObjectId(log_id)})
 
     def get_logs_by_date_range(
         self, user_email: str, start_date: datetime, end_date: datetime
     ) -> list[NutritionLog]:
+        """
+        Retrieves nutrition logs within a specific date range.
+        """
         start = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
         end = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
 
@@ -89,20 +118,16 @@ class NutritionRepository(BaseRepository):
         page_size: int = 10,
         days: int | None = None,
     ) -> tuple[list[dict], int]:
-        from typing import Any
+        """
+        Retrieves paginated nutrition logs.
+        """
         query: dict[str, Any] = {"user_email": user_email}
         if days:
             start_date = datetime.now() - timedelta(days=days)
             query["date"] = {"$gte": start_date}
 
-        total = self.collection.count_documents(query)
-        skip = (page - 1) * page_size
-
-        cursor = (
-            self.collection.find(query)
-            .sort("date", pymongo.DESCENDING)
-            .skip(skip)
-            .limit(page_size)
+        cursor, total = self.get_paginated_cursor(
+            query=query, page=page, page_size=page_size
         )
 
         logs = []
@@ -112,7 +137,11 @@ class NutritionRepository(BaseRepository):
 
         return logs, total
 
+    # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     def get_stats(self, user_email: str, tdee_service=None) -> NutritionStats:
+        """
+        Calculates and retrieves comprehensive nutrition statistics for a user.
+        """
         now = datetime.now()
         start_date = now - timedelta(days=30)
 
@@ -135,14 +164,14 @@ class NutritionRepository(BaseRepository):
 
         last_14_days_stats = []
         for i in range(14):
-            d = (now - timedelta(days=i)).replace(
+            date_item = (now - timedelta(days=i)).replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
-            log = next((log_item for log_item in logs if log_item["date"] == d), None)
+            log = next((log_item for log_item in logs if log_item["date"] == date_item), None)
             if log:
                 last_14_days_stats.append(
                     DailyMacros(
-                        date=d,
+                        date=date_item,
                         calories=log["calories"],
                         protein=log["protein_grams"],
                         carbs=log["carbs_grams"],
@@ -151,7 +180,7 @@ class NutritionRepository(BaseRepository):
                 )
             else:
                 last_14_days_stats.append(
-                    DailyMacros(date=d, calories=0, protein=0, carbs=0, fat=0)
+                    DailyMacros(date=date_item, calories=0, protein=0, carbs=0, fat=0)
                 )
         last_14_days_stats.sort(key=lambda x: x.date)
 
@@ -215,7 +244,7 @@ class NutritionRepository(BaseRepository):
                 target_val = period_stats.get("daily_target")
                 macro_targets = period_stats.get("macro_targets")
                 stability_score = period_stats.get("stability_score")
-            except Exception as e:
+            except Exception as e: # pylint: disable=broad-exception-caught
                 self.logger.warning(
                     "Failed to calculate Adaptive TDEE for stats: %s", e
                 )

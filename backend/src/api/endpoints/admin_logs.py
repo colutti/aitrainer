@@ -4,6 +4,7 @@ Requires admin role for access.
 """
 
 import os
+import httpx
 from fastapi import APIRouter, Query, HTTPException
 from src.core.auth import AdminUser
 from src.core.config import settings
@@ -16,20 +17,15 @@ router = APIRouter(prefix="/admin/logs", tags=["admin"])
 def get_application_logs(
     admin_email: AdminUser,
     limit: int = Query(100, ge=1, le=1000),
-    level: str | None = None
+    level: str | None = None,
 ) -> dict:
     """
     Lê últimas N linhas do api.log local.
-
-    Args:
-        admin_email: Email do admin (verificado por dependency)
-        limit: Número de linhas a retornar
-        level: Filtrar por nível de log (INFO, WARNING, ERROR, etc.)
-
-    Returns:
-        dict: Contém logs, source e total
     """
-    logger.info(f"Admin {admin_email} requesting application logs (limit={limit}, level={level})")
+    logger.info(
+        "Admin %s requesting application logs (limit=%s, level=%s)",
+        admin_email, limit, level,
+    )
 
     log_file = "api.log"
 
@@ -38,11 +34,11 @@ def get_application_logs(
             "logs": [],
             "source": "local",
             "total": 0,
-            "message": "Log file not found"
+            "message": "Log file not found",
         }
 
     try:
-        with open(log_file, 'r', encoding='utf-8') as f:
+        with open(log_file, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
         # Filtrar por level se especificado
@@ -57,55 +53,43 @@ def get_application_logs(
             "logs": result_lines,
             "source": "local",
             "total": len(result_lines),
-            "total_available": len(lines)
+            "total_available": len(lines),
         }
 
-    except Exception as e:
-        logger.error(f"Error reading log file: {e}")
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.error("Error reading log file: %s", e)
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to read log file: {str(e)}"
-        )
+            status_code=500, detail=f"Failed to read log file: {str(e)}"
+        ) from e
 
 
 @router.get("/betterstack")
 async def get_betterstack_logs(
     admin_email: AdminUser,
     limit: int = Query(100, ge=50, le=1000),
-    query: str | None = None
+    query: str | None = None,
 ) -> dict:
     """
     Busca logs do BetterStack via API.
-
-    Args:
-        admin_email: Email do admin (verificado por dependency)
-        limit: Número de logs a retornar
-        query: Query string para filtrar logs (opcional)
-
-    Returns:
-        dict: Resposta da API do BetterStack
-
-    Raises:
-        HTTPException: 503 se BetterStack não configurado
-        HTTPException: 500 se erro na API do BetterStack
     """
-    logger.info(f"Admin {admin_email} requesting BetterStack logs (limit={limit})")
+    logger.info("Admin %s requesting BetterStack logs (limit=%s)", admin_email, limit)
 
     if not settings.BETTERSTACK_API_TOKEN or not settings.BETTERSTACK_SOURCE_ID:
         raise HTTPException(
             status_code=503,
-            detail="BetterStack integration not configured. Set BETTERSTACK_API_TOKEN and BETTERSTACK_SOURCE_ID."
+            detail=(
+                "BetterStack integration not configured. "
+                "Set BETTERSTACK_API_TOKEN and BETTERSTACK_SOURCE_ID."
+            ),
         )
 
     try:
-        import httpx
-
         url = "https://telemetry.betterstack.com/api/v2/query/live-tail"
         headers = {"Authorization": f"Bearer {settings.BETTERSTACK_API_TOKEN}"}
         params = {
             "sources": settings.BETTERSTACK_SOURCE_ID,
             "limit": limit,
-            "order": "newest_first"
+            "order": "newest_first",
         }
 
         if query:
@@ -117,20 +101,20 @@ async def get_betterstack_logs(
             return response.json()
 
     except httpx.HTTPStatusError as e:
-        logger.error(f"BetterStack API error: {e.response.status_code} - {e.response.text}")
+        logger.error(
+            "BetterStack API error: %d - %s", e.response.status_code, e.response.text
+        )
         raise HTTPException(
             status_code=e.response.status_code,
-            detail=f"BetterStack API error: {e.response.text}"
-        )
+            detail=f"BetterStack API error: {e.response.text}",
+        ) from e
     except httpx.RequestError as e:
-        logger.error(f"BetterStack request error: {e}")
+        logger.error("BetterStack request error: %s", e)
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to connect to BetterStack: {str(e)}"
-        )
-    except Exception as e:
-        logger.error(f"Unexpected error fetching BetterStack logs: {e}")
+            status_code=500, detail=f"Failed to connect to BetterStack: {str(e)}"
+        ) from e
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.error("Unexpected error fetching BetterStack logs: %s", e)
         raise HTTPException(
-            status_code=500,
-            detail=f"Unexpected error: {str(e)}"
-        )
+            status_code=500, detail=f"Unexpected error: {str(e)}"
+        ) from e

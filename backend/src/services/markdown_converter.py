@@ -53,6 +53,7 @@ def safe_telegram_send(text: str) -> tuple[str, Optional[str]]:
     try:
         converted = convert_to_telegram_markdown(text)
         return converted, "MarkdownV2"
+    # pylint: disable=broad-exception-caught
     except Exception:
         # Fallback to plain text
         return text, None

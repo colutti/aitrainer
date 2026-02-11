@@ -2,19 +2,21 @@
 API endpoints for nutrition management.
 """
 
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, HTTPException, File, UploadFile
+from pydantic import BaseModel
 
 from src.services.auth import verify_token
 from src.core.deps import get_mongo_database
 from src.core.logs import logger
-from src.api.models.nutrition_log import NutritionWithId
+from src.api.models.nutrition_log import NutritionLog, NutritionWithId
 from src.api.models.nutrition_stats import NutritionStats
 from src.services.database import MongoDatabase
 from src.api.models.import_result import ImportResult
 from src.services.myfitnesspal_import_service import import_nutrition_from_csv
-from pydantic import BaseModel
+from src.services.import_utils import read_csv_file
 
 router = APIRouter()
 
@@ -68,7 +70,7 @@ def list_nutrition(
             page_size=page_size,
             total_pages=total_pages,
         )
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("Error listing nutrition logs for user %s: %s", user_email, e)
         raise HTTPException(
             status_code=500, detail="Failed to retrieve nutrition logs"
@@ -83,7 +85,7 @@ def get_nutrition_stats(user_email: CurrentUser, db: DatabaseDep) -> NutritionSt
     logger.info("Fetching nutrition stats for user: %s", user_email)
     try:
         return db.get_nutrition_stats(user_email)
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("Error fetching nutrition stats for user %s: %s", user_email, e)
         raise HTTPException(
             status_code=500, detail="Failed to retrieve nutrition stats"
@@ -99,9 +101,9 @@ def get_today_nutrition(
     """
     logger.info("Fetching today's nutrition for user: %s", user_email)
     try:
-        stats = db.get_nutrition_stats(user_email)
-        return stats.today
-    except Exception as e:
+        stats_obj = db.get_nutrition_stats(user_email)
+        return stats_obj.today
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("Error fetching today's nutrition for user %s: %s", user_email, e)
         raise HTTPException(
             status_code=500, detail="Failed to retrieve today's nutrition"
@@ -110,6 +112,7 @@ def get_today_nutrition(
 
 class CreateNutritionLogRequest(BaseModel):
     """Request model for creating a nutrition log."""
+
     date: str  # ISO format date string
     source: str = "manual"
     calories: int
@@ -131,9 +134,6 @@ def create_nutrition_log(
     """
     logger.info("Creating nutrition log for user: %s", user_email)
     try:
-        from src.api.models.nutrition_log import NutritionLog
-        from datetime import datetime
-
         # Parse date string to datetime
         date_obj = datetime.fromisoformat(log_data.date)
 
@@ -146,8 +146,11 @@ def create_nutrition_log(
             carbs_grams=log_data.carbs_grams,
             fat_grams=log_data.fat_grams,
             fiber_grams=log_data.fiber_grams,
+            sugar_grams=None,
             sodium_mg=log_data.sodium_mg,
+            cholesterol_mg=None,
             source=log_data.source,
+            notes=None,
         )
 
         log_id, _ = db.save_nutrition_log(nutrition_log)
@@ -163,30 +166,29 @@ def create_nutrition_log(
 
         return NutritionWithId(**saved_log)
     except ValueError as e:
-        logger.warning("Validation error creating nutrition log for %s: %s", user_email, e)
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
+        logger.warning(
+            "Validation error creating nutrition log for %s: %s", user_email, e
+        )
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("Error creating nutrition log for user %s: %s", user_email, e)
-        raise HTTPException(status_code=500, detail="Failed to create nutrition log") from e
+        raise HTTPException(
+            status_code=500, detail="Failed to create nutrition log"
+        ) from e
 
 
 @router.post("/import/myfitnesspal", response_model=ImportResult)
 async def import_myfitnesspal(
     user_email: CurrentUser, db: DatabaseDep, file: UploadFile = File(...)
 ) -> ImportResult:
+    # pylint: disable=duplicate-code
     """
     Import nutrition data from MyFitnessPal CSV export.
-    Expects a CSV file with Portuguese headers.
     """
     logger.info("Importing MyFitnessPal data for user: %s", user_email)
-
-    if not file.filename or not file.filename.endswith(".csv"):
-        raise HTTPException(status_code=400, detail="O arquivo deve ser um CSV.")
+    csv_content = await read_csv_file(file)
 
     try:
-        content = await file.read()
-        csv_content = content.decode("utf-8")
-
         result = import_nutrition_from_csv(user_email, csv_content, db)
 
         logger.info(
@@ -200,16 +202,14 @@ async def import_myfitnesspal(
 
     except ValueError as e:
         logger.warning("Validation error importing CSV for %s: %s", user_email, e)
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("Error importing CSV for user %s: %s", user_email, e)
         raise HTTPException(status_code=500, detail="Falha ao importar dados.") from e
 
 
 @router.delete("/{log_id}")
-def delete_nutrition(
-    log_id: str, user_email: CurrentUser, db: DatabaseDep
-) -> dict:
+def delete_nutrition(log_id: str, user_email: CurrentUser, db: DatabaseDep) -> dict:
     """
     Deletes a specific nutrition log for the authenticated user.
     """
@@ -236,14 +236,20 @@ def delete_nutrition(
 
         deleted = db.delete_nutrition_log(log_id)
         if not deleted:
-            raise HTTPException(status_code=404, detail="Nutrition log not found for deletion")
+            raise HTTPException(
+                status_code=404, detail="Nutrition log not found for deletion"
+            )
 
-        logger.info("Nutrition log %s deleted successfully by user %s", log_id, user_email)
+        logger.info(
+            "Nutrition log %s deleted successfully by user %s", log_id, user_email
+        )
         return {"message": "Nutrition log deleted successfully"}
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error(
             "Failed to delete nutrition log %s for user %s: %s", log_id, user_email, e
         )
-        raise HTTPException(status_code=500, detail="Failed to delete nutrition log") from e
+        raise HTTPException(
+            status_code=500, detail="Failed to delete nutrition log"
+        ) from e

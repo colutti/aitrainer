@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useInactivityLogout } from './useInactivityLogout';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
 import { useAuthStore } from './useAuth';
+import { useInactivityLogout } from './useInactivityLogout';
 
 describe('useInactivityLogout', () => {
   beforeEach(() => {

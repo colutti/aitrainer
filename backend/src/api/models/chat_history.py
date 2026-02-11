@@ -1,6 +1,10 @@
+"""
+This module contains the models for chat history entries.
+"""
+
+from datetime import datetime, MINYEAR
 from pydantic import BaseModel
 from src.api.models.sender import Sender
-from datetime import datetime, MINYEAR
 
 
 class ChatHistory(BaseModel):
@@ -21,14 +25,14 @@ class ChatHistory(BaseModel):
         False  # Track if this message has been included in long-term summary
     )
 
-    def _get_clean_text(self) -> str:
+    def get_clean_text(self) -> str:
         """
         Returns the chat message text, removing control characters and
         formatting the text to be readable on a single line.
         """
         return " ".join(self.text.split())
 
-    def _get_formatted_timestamp(self) -> str:
+    def get_formatted_timestamp(self) -> str:
         """
         Returns the timestamp formatted as DD/MM/YYYY HH:MM.
         Falls back to the raw timestamp if parsing fails.
@@ -39,7 +43,7 @@ class ChatHistory(BaseModel):
         except (ValueError, TypeError):
             return self.timestamp
 
-    def _get_sender_label(self) -> str:
+    def get_sender_label(self) -> str:
         """
         Returns a readable sender label with emoji.
         """
@@ -54,8 +58,8 @@ class ChatHistory(BaseModel):
         Returns a readable representation of the chat message.
         """
         return (
-            f"**{self._get_sender_label()}** ({self._get_formatted_timestamp()}):\n"
-            f"> {self._get_clean_text()}"
+            f"**{self.get_sender_label()}** ({self.get_formatted_timestamp()}):\n"
+            f"> {self.get_clean_text()}"
         )
 
     @staticmethod
@@ -155,9 +159,10 @@ class ChatHistory(BaseModel):
             else:
                 # Previous trainer: neutralize
                 trainer_name = msg.trainer_type or "Desconhecido"
-                clean_text = msg._get_clean_text()
+                clean_text = msg.get_clean_text()
                 formatted.append(
-                    f"**🏋️ Treinador [PERFIL ANTERIOR: {trainer_name}]** ({msg._get_formatted_timestamp()}):\n"
+                    f"**🏋️ Treinador [PERFIL ANTERIOR: {trainer_name}]** "
+                    f"({msg.get_formatted_timestamp()}):\n"
                     f"> [Contexto] {clean_text}"
                 )
 

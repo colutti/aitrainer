@@ -28,7 +28,7 @@ test.describe('Admin Users Feature', () => {
 
     // Mock users list - URL format is /api/admin/users/?page=1&page_size=20
     await page.route(/\/api\/admin\/users\//, async (route) => {
-      if (route.request().method() === 'GET' && !route.request().url().match(/\/users\/[^?/]+$/)) {
+      if (route.request().method() === 'GET' && !(/\/users\/[^?/]+$/.exec(route.request().url()))) {
         await route.fulfill({ status: 200, body: JSON.stringify(mockUsersResponse) });
       }
     });
@@ -157,7 +157,7 @@ test.describe('Admin Users Feature', () => {
     await page.route(/\/api\/admin\/users\//, async (route) => {
       if (route.request().method() === 'GET') {
         const url = route.request().url();
-        const pageMatch = url.match(/page=(\d+)/);
+        const pageMatch = /page=(\d+)/.exec(url);
         const currentPage = pageMatch ? parseInt(pageMatch[1]) : 1;
 
         await route.fulfill({

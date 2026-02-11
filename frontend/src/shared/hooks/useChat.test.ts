@@ -7,6 +7,7 @@ import { useChatStore } from './useChat';
 // Mock httpClient
 vi.mock('../api/http-client', () => ({
   httpClient: vi.fn(),
+  API_BASE_URL: 'http://localhost/api',
 }));
 
 // Mock fetch globally

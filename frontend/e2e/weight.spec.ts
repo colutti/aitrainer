@@ -80,7 +80,10 @@ test.describe('Weight Tracking Feature', () => {
   });
 
   test('should edit an existing weight entry', async ({ page }) => {
-    // Click edit button (assume it has title "Editar registro")
+    // Hover over the card to make edit button visible
+    await page.locator('.group').first().hover();
+    
+    // Click edit button
     await page.getByTitle('Editar registro').click();
 
     // Verify fields are populated
@@ -91,15 +94,18 @@ test.describe('Weight Tracking Feature', () => {
     // Edit and save
     await page.getByLabel('Peso (kg)').fill('81');
 
-    // Mock PUT request to any ID (e.g. log-1)
+    // Mock POST request to any ID (e.g. log-1)
     await page.route(/\/api\/weight(\/.*)?/, async (route) => {
-      await route.fulfill({ status: 200, body: JSON.stringify({ ...mockLog, id: 'log-1', weight_kg: 81 }) });
+      if (route.request().method() === 'POST') {
+        const payload = JSON.parse(route.request().postData() || '{}');
+        await route.fulfill({ status: 200, body: JSON.stringify({ ...payload, id: 'log-1', weight_kg: 81 }) });
+      }
     });
 
     await page.getByRole('button', { name: 'Salvar Registro' }).click();
     
     // Check for success message
-    await expect(page.getByText('Registro de peso').first()).toBeVisible();
+    await expect(page.getByText('Registro de peso salvo!').first()).toBeVisible();
   });
 
   test('should delete a weight entry', async ({ page }) => {
@@ -110,6 +116,8 @@ test.describe('Weight Tracking Feature', () => {
       }
     });
 
+    // Hover over the card to make delete button visible
+    await page.locator('.group').first().hover();
     await page.getByTitle('Excluir registro').click();
     await expect(page.getByText('Registro removido').first()).toBeVisible();
   });

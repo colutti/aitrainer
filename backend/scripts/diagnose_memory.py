@@ -106,10 +106,9 @@ def diagnose_user_memory(user_email: str):
     # 3. Mem0 Memories (Qdrant)
     print("\n\n💾 MEMÓRIAS MEM0 (Qdrant)")
     print("-" * 70)
+    total_memories = 0
     try:
         from qdrant_client import models as qdrant_models
-
-        # Count memories for user
         user_filter = qdrant_models.Filter(
             must=[
                 qdrant_models.FieldCondition(
@@ -122,7 +121,8 @@ def diagnose_user_memory(user_email: str):
             collection_name=settings.QDRANT_COLLECTION_NAME,
             count_filter=user_filter,
         )
-        total_memories = count_result.count
+        if count_result:
+            total_memories = count_result.count
         print(f"Total de memórias armazenadas: {total_memories}")
 
         # Search examples

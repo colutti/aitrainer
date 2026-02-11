@@ -11,7 +11,7 @@ from typing import Optional, Any
 
 class SaveDailyNutritionInput(BaseModel):
     """Input schema for save_daily_nutrition tool."""
-    
+
     calories: int = Field(description="Calorias totais (kcal)")
     protein_grams: float = Field(description="Proteínas totais (g)")
     carbs_grams: float = Field(description="Carboidratos totais (g)")
@@ -19,32 +19,44 @@ class SaveDailyNutritionInput(BaseModel):
     fiber_grams: Optional[float] = Field(default=None, description="Fibras totais (g)")
     sugar_grams: Optional[float] = Field(default=None, description="Açúcar total (g)")
     sodium_mg: Optional[float] = Field(default=None, description="Sódio total (mg)")
-    cholesterol_mg: Optional[float] = Field(default=None, description="Colesterol total (mg)")
-    date: Optional[str] = Field(default=None, description="Data no formato ISO (YYYY-MM-DD). Se omitido, usa hoje")
+    cholesterol_mg: Optional[float] = Field(
+        default=None, description="Colesterol total (mg)"
+    )
+    date: Optional[str] = Field(
+        default=None,
+        description="Data no formato ISO (YYYY-MM-DD). Se omitido, usa hoje",
+    )
 
-    @field_validator('calories', mode='before')
+    @field_validator("calories", mode="before")
     @classmethod
     def clean_calories(cls, v: Any) -> int:
         """Clean calories input (remove units, convert to int)."""
         if isinstance(v, str):
-            clean = v.lower().replace('kcal', '').replace('cal', '').strip()
-            clean = clean.replace(',', '.')
+            clean = v.lower().replace("kcal", "").replace("cal", "").strip()
+            clean = clean.replace(",", ".")
             return int(float(clean))
         return int(v)
 
-    @field_validator('protein_grams', 'carbs_grams', 'fat_grams', 'fiber_grams', 
-                     'sugar_grams', 'sodium_mg', 'cholesterol_mg', mode='before')
+    @field_validator(
+        "protein_grams",
+        "carbs_grams",
+        "fat_grams",
+        "fiber_grams",
+        "sugar_grams",
+        "sodium_mg",
+        "cholesterol_mg",
+        mode="before",
+    )
     @classmethod
     def clean_numeric(cls, v: Any) -> Optional[float]:
         """Clean numeric input (remove units, convert commas to dots)."""
         if v is None:
             return None
         if isinstance(v, str):
-            clean = v.lower().replace('g', '').replace('mg', '').strip()
-            clean = clean.replace(',', '.')
+            clean = v.lower().replace("g", "").replace("mg", "").strip()
+            clean = clean.replace(",", ".")
             return float(clean)
         return float(v)
-
 
 
 def create_save_nutrition_tool(database, user_email: str):
@@ -68,9 +80,15 @@ def create_save_nutrition_tool(database, user_email: str):
             return float(value)
         if isinstance(value, str):
             # Remove common units and whitespace
-            clean = value.lower().replace('g', '').replace('mg', '').replace('kcal', '').strip()
+            clean = (
+                value.lower()
+                .replace("g", "")
+                .replace("mg", "")
+                .replace("kcal", "")
+                .strip()
+            )
             # Handle comma as decimal separator if present
-            clean = clean.replace(',', '.')
+            clean = clean.replace(",", ".")
             try:
                 return float(clean)
             except ValueError:
@@ -113,15 +131,28 @@ def create_save_nutrition_tool(database, user_email: str):
         try:
             # DEBUG LOGGING requested by user
             logger.info("TOOL CALL: save_daily_nutrition")
-            logger.info(f"RAW INPUTS - Cals: {calories}, P: {protein_grams}, C: {carbs_grams}, F: {fat_grams}, Date: {date}")
+            logger.info(
+                "RAW INPUTS - Cals: %s, P: %s, C: %s, F: %s, Date: %s",
+                calories,
+                protein_grams,
+                carbs_grams,
+                fat_grams,
+                date,
+            )
 
             # Parse and clean inputs
             cal_val = parse_numeric(calories)
             prot_val = parse_numeric(protein_grams)
             carb_val = parse_numeric(carbs_grams)
             fat_val = parse_numeric(fat_grams)
-            
-            logger.info(f"PARSED VALUES - Cals: {cal_val}, P: {prot_val}, C: {carb_val}, F: {fat_val}")
+
+            logger.info(
+                "PARSED VALUES - Cals: %s, P: %s, C: %s, F: %s",
+                cal_val,
+                prot_val,
+                carb_val,
+                fat_val,
+            )
 
             fib_val = parse_numeric(fiber_grams)
             sug_val = parse_numeric(sugar_grams)
@@ -129,7 +160,12 @@ def create_save_nutrition_tool(database, user_email: str):
             chol_val = parse_numeric(cholesterol_mg)
 
             # Validate required fields after parsing
-            if cal_val is None or prot_val is None or carb_val is None or fat_val is None:
+            if (
+                cal_val is None
+                or prot_val is None
+                or carb_val is None
+                or fat_val is None
+            ):
                 return "Erro: Valores numéricos inválidos para calorias ou macros."
 
             if date:
@@ -139,7 +175,7 @@ def create_save_nutrition_tool(database, user_email: str):
                     try:
                         log_date = datetime.strptime(date, "%Y-%m-%d")
                     except ValueError:
-                         # Try with slash
+                        # Try with slash
                         try:
                             log_date = datetime.strptime(date, "%d/%m/%Y")
                         except ValueError:

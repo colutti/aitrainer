@@ -34,6 +34,7 @@ def promote_admin(email: str):
     # Obter credenciais MongoDB
     mongo_uri = os.getenv("MONGO_URI")
     db_name = os.getenv("DB_NAME", "aitrainer")
+    client = None
 
     if not mongo_uri:
         print("❌ MONGO_URI não configurado")
@@ -80,7 +81,7 @@ def promote_admin(email: str):
 
             # Verificação
             updated_user = db.users.find_one({"email": email})
-            verified_role = updated_user.get("role")
+            verified_role = updated_user.get("role") if updated_user else None
             print(f"   ✓ Role verificado: {verified_role}")
 
             if verified_role != "admin":
@@ -95,7 +96,7 @@ def promote_admin(email: str):
         print(f"   {type(e).__name__}: {e}")
         sys.exit(1)
     finally:
-        if 'client' in locals():
+        if 'client' in locals() and client:
             client.close()
             print("🔌 Conexão fechada")
 

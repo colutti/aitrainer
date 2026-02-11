@@ -5,13 +5,14 @@ Requires admin role for access.
 
 from typing import Annotated
 from fastapi import APIRouter, Query, HTTPException, Depends
+from qdrant_client import QdrantClient
+
 from src.core.auth import AdminUser
 from src.core.deps import get_mongo_database, get_ai_trainer_brain, get_qdrant_client
 from src.services.database import MongoDatabase
 from src.services.trainer import AITrainerBrain
 from src.core.config import settings
 from src.core.logs import logger
-from qdrant_client import QdrantClient
 
 router = APIRouter(prefix="/admin/memory", tags=["admin"])
 
@@ -25,21 +26,12 @@ def get_user_messages(
     user_email: str,
     admin_email: AdminUser,
     db: MongoDBDep,
-    limit: int = Query(50, ge=1, le=200)
+    limit: int = Query(50, ge=1, le=200),
 ) -> dict:
     """
     Lista mensagens de chat de um usuário.
-
-    Args:
-        user_email: Email do usuário
-        admin_email: Email do admin (verificado por dependency)
-        db: MongoDB database instance
-        limit: Número de mensagens a retornar
-
-    Returns:
-        dict: Contém messages e total
     """
-    logger.info(f"Admin {admin_email} viewing messages for user {user_email}")
+    logger.info("Admin %s viewing messages for user %s", admin_email, user_email)
 
     # Verificar se usuário existe
     user = db.users.get_profile(user_email)
@@ -52,10 +44,11 @@ def get_user_messages(
     return {
         "messages": [msg.model_dump() for msg in history],
         "total": len(history),
-        "user_email": user_email
+        "user_email": user_email,
     }
 
 
+# pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
 @router.get("/{user_email}/memories")
 def get_user_memories(
     user_email: str,
@@ -63,23 +56,15 @@ def get_user_memories(
     db: MongoDBDep,
     qdrant: QdrantClientDep,
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=50)
+    page_size: int = Query(20, ge=1, le=50),
 ) -> dict:
     """
     Lista memórias Qdrant de um usuário.
-
-    Args:
-        user_email: Email do usuário
-        admin_email: Email do admin (verificado por dependency)
-        db: MongoDB database instance
-        qdrant: Qdrant client
-        page: Número da página
-        page_size: Quantidade de memórias por página
-
-    Returns:
-        dict: Contém memories, total, page e total_pages
     """
-    logger.info(f"Admin {admin_email} viewing memories for user {user_email} (page={page})")
+    logger.info(
+        "Admin %s viewing memories for user %s (page=%s)",
+        admin_email, user_email, page
+    )
 
     # Verificar se usuário existe
     user = db.users.get_profile(user_email)
@@ -100,7 +85,7 @@ def get_user_memories(
                 "total": 0,
                 "page": page,
                 "total_pages": 0,
-                "message": f"No memories found for user {user_email}"
+                "message": f"No memories found for user {user_email}",
             }
 
         # Scroll através das memórias (Qdrant não tem paginação direta)
@@ -112,38 +97,39 @@ def get_user_memories(
             limit=page_size,
             offset=offset,
             with_payload=True,
-            with_vectors=False
+            with_vectors=False,
         )
 
-        points, next_offset = scroll_result
+        points, _ = scroll_result
 
         # Formatar memórias
         memories = []
         for point in points:
+            payload = point.payload or {}
             memory = {
                 "id": str(point.id),
-                "memory": point.payload.get("memory", ""),
-                "created_at": point.payload.get("created_at"),
-                "updated_at": point.payload.get("updated_at"),
-                "user_id": point.payload.get("user_id")
+                "memory": payload.get("memory", ""),
+                "created_at": payload.get("created_at"),
+                "updated_at": payload.get("updated_at"),
+                "user_id": payload.get("user_id"),
             }
             memories.append(memory)
 
         # Contar total (aproximado via collection info)
         collection_info = qdrant.get_collection(collection_name)
-        total = collection_info.points_count
+        total = collection_info.points_count or 0
+        total_pages = (total + page_size - 1) // page_size if total > 0 else 0
 
         return {
             "memories": memories,
             "total": total,
             "page": page,
-            "total_pages": (total + page_size - 1) // page_size,
-            "user_email": user_email
+            "total_pages": total_pages,
+            "user_email": user_email,
         }
 
-    except Exception as e:
-        logger.error(f"Error fetching memories for {user_email}: {e}")
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.error("Error fetching memories for %s: %s", user_email, e)
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to fetch memories: {str(e)}"
-        )
+            status_code=500, detail=f"Failed to fetch memories: {str(e)}"
+        ) from e

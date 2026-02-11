@@ -1,3 +1,7 @@
+"""
+Hevy integration tools for AI trainer.
+"""
+# pylint: disable=too-many-locals,broad-exception-caught,too-many-return-statements,too-many-branches,too-many-statements,line-too-long,missing-function-docstring
 from langchain_core.tools import tool
 from src.core.logs import logger
 from src.api.models.routine import HevyRoutine, HevyRoutineExercise
@@ -17,13 +21,17 @@ def create_list_hevy_routines_tool(hevy_service, database, user_email: str):
         try:
             # Hevy API limits pageSize to 10
             safe_page_size = min(page_size, 10)
-            response = await hevy_service.get_routines(profile.hevy_api_key, page, safe_page_size)
+            response = await hevy_service.get_routines(
+                profile.hevy_api_key, page, safe_page_size
+            )
 
             if not response or not response.routines:
                 logger.info("[list_hevy_routines] No routines found")
                 return "Nenhuma rotina encontrada no Hevy."
 
-            logger.info(f"[list_hevy_routines] Found {len(response.routines)} routines")
+            logger.info(
+                "[list_hevy_routines] Found %d routines", len(response.routines)
+            )
             result = f"Encontrei {len(response.routines)} rotinas (Página {response.page}/{response.page_count}):\n\n"
             for i, r in enumerate(response.routines, 1):
                 result += f"{i}. **{r.title}**\n"
@@ -43,7 +51,7 @@ def create_list_hevy_routines_tool(hevy_service, database, user_email: str):
 
             return result
         except Exception as e:
-            logger.error(f"[list_hevy_routines] Error: {e}")
+            logger.error("[list_hevy_routines] Error: %s", e)
             return f"Erro ao buscar rotinas: {str(e)}"
 
     return list_hevy_routines
@@ -62,7 +70,9 @@ def create_search_hevy_exercises_tool(hevy_service, database, user_email: str):
             return "Integração desativada."
 
         # Fetch ALL exercise templates to avoid missing data from first page only
-        all_templates = await hevy_service.get_all_exercise_templates(profile.hevy_api_key)
+        all_templates = await hevy_service.get_all_exercise_templates(
+            profile.hevy_api_key
+        )
 
         if not all_templates:
             return "Nenhum exercício encontrado no catálogo do Hevy."
@@ -162,11 +172,13 @@ def create_create_hevy_routine_tool(hevy_service, database, user_email: str):
         """
         # Debug logging
         logger.info(
-            f"[create_hevy_routine] Called with: title='{title}', exercises count={len(exercises) if exercises else 0}"
+            "[create_hevy_routine] Called with: title='%s', exercises count=%d",
+            title,
+            len(exercises) if exercises else 0,
         )
         if exercises:
             for i, ex in enumerate(exercises[:3]):  # Log first 3
-                logger.info(f"[create_hevy_routine] Exercise {i}: {ex}")
+                logger.info("[create_hevy_routine] Exercise %d: %s", i, ex)
 
         if not title:
             return "O título da rotina é obrigatório."
@@ -199,7 +211,9 @@ def create_create_hevy_routine_tool(hevy_service, database, user_email: str):
                 exercises=routine_exercises,
             )
 
-            result, error = await hevy_service.create_routine(profile.hevy_api_key, routine)
+            result, error = await hevy_service.create_routine(
+                profile.hevy_api_key, routine
+            )
 
             if result:
                 return f"✅ Rotina '{result.title}' criada com sucesso! ID: {result.id}"
@@ -210,7 +224,7 @@ def create_create_hevy_routine_tool(hevy_service, database, user_email: str):
 
             return f"❌ Falha ao criar rotina: {error}"
         except Exception as e:
-            logger.error(f"Error in create_hevy_routine tool: {e}", exc_info=True)
+            logger.error("Error in create_hevy_routine tool: %s", e, exc_info=True)
             return f"Erro ao criar rotina: {str(e)}"
 
     return create_hevy_routine
@@ -233,7 +247,7 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
             exercises: Lista COMPLETA de exercícios (opcional). Use para mudar a estrutura, ordem, reps ou adicionar notas específicas de cada exercício.
             notes: Descrição GERAL da rotina (opcional). NÃO use para descrever exercícios individuais.
 
-        IMPORTANTE: 
+        IMPORTANTE:
         - Para mudar QUALQUER coisa nos exercícios (reps, ordem, incluir notas de execução), você DEVE enviar a lista `exercises` completa.
         - O campo `notes` aqui é apenas para a descrição que aparece no topo da rotina no Hevy.
         - `exercises` substitui toda a lista atual. Mantenha os exercícios existentes se quiser apenas adicionar um novo.
@@ -246,9 +260,14 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
             return "Integração desativada."
 
         logger.info(
-            f"update_hevy_routine called by {user_email}: "
-            f"routine_title='{routine_title}', new_title='{new_title}', "
-            f"notes='{notes}', exercises_count={len(exercises) if exercises else 'None'}"
+            "update_hevy_routine called by %s: "
+            "routine_title='%s', new_title='%s', "
+            "notes='%s', exercises_count=%s",
+            user_email,
+            routine_title,
+            new_title,
+            notes,
+            len(exercises) if exercises else "None",
         )
 
         try:
@@ -256,7 +275,7 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
             # Vamos tentar encontrar nas primeiras 5 páginas (50 rotinas)
             all_routines = []
             for p in range(1, 6):
-                logger.info(f"Fetching routines from Hevy (page={p}, page_size=10)")
+                logger.info("Fetching routines from Hevy (page=%d, page_size=10)", p)
                 response = await hevy_service.get_routines(
                     profile.hevy_api_key, page=p, page_size=10
                 )
@@ -268,15 +287,27 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
                     break
 
             if not all_routines:
-                key_masked = f"{profile.hevy_api_key[:4]}..." if profile.hevy_api_key else "MISSING"
-                logger.warning(f"No routines returned for user {user_email} (Key starts with: {key_masked})")
+                key_masked = (
+                    f"{profile.hevy_api_key[:4]}..."
+                    if profile.hevy_api_key
+                    else "MISSING"
+                )
+                logger.warning(
+                    "No routines returned for user %s (Key starts with: %s)",
+                    user_email,
+                    key_masked,
+                )
                 return "Nenhuma rotina encontrada na sua conta do Hevy. Certifique-se de que você criou rotinas no aplicativo Hevy antes de tentar atualizá-las."
 
             # Procurar rotina por título (case-insensitive match)
             target_routine = None
             routine_title_lower = routine_title.lower().strip()
-            
-            logger.info(f"Searching for routine '{routine_title}' among {len(all_routines)} routines")
+
+            logger.info(
+                "Searching for routine '%s' among %d routines",
+                routine_title,
+                len(all_routines),
+            )
 
             for r in all_routines:
                 if r.title.lower().strip() == routine_title_lower:
@@ -295,10 +326,14 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
                 return f"Rotina '{routine_title}' não encontrada. Rotinas disponíveis: {', '.join(available_titles)}. Use o nome exato que aparece no Hevy."
 
             routine_id = target_routine.id
-            logger.info(f"Found routine '{target_routine.title}' with ID {routine_id}")
+            logger.info(
+                "Found routine '%s' with ID %s", target_routine.title, routine_id
+            )
 
             # Fetch current to preserve fields not being updated
-            current = await hevy_service.get_routine_by_id(profile.hevy_api_key, routine_id)
+            current = await hevy_service.get_routine_by_id(
+                profile.hevy_api_key, routine_id
+            )
             if not current:
                 return f"Detalhes da rotina '{routine_title}' não puderam ser recuperados do Hevy."
 
@@ -307,22 +342,30 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
             if notes is not None:
                 current.notes = notes
             if exercises:
-                logger.info(f"Assigning {len(exercises)} new exercises to routine '{target_routine.title}'")
+                logger.info(
+                    "Assigning %d new exercises to routine '%s'",
+                    len(exercises),
+                    target_routine.title,
+                )
                 new_exercises = []
                 for ex in exercises:
                     if not ex.get("exercise_template_id"):
                         return "Cada exercício atualizado deve ter um `exercise_template_id`."
                     if not ex.get("sets"):
                         ex["sets"] = [{"type": "normal", "weight_kg": 0, "reps": 10}]
-                    
+
                     exercise_obj = HevyRoutineExercise(**ex)
-                    logger.debug(f"Adding exercise: {exercise_obj.exercise_template_id}")
+                    logger.debug(
+                        "Adding exercise: %s", exercise_obj.exercise_template_id
+                    )
                     new_exercises.append(exercise_obj)
                 current.exercises = new_exercises
             else:
                 logger.info("No exercise updates provided in this tool call.")
 
-            result = await hevy_service.update_routine(profile.hevy_api_key, routine_id, current)
+            result = await hevy_service.update_routine(
+                profile.hevy_api_key, routine_id, current
+            )
             if result:
                 msg = f"✅ Rotina '{result.title}' atualizada com sucesso!"
                 if notes and not exercises:
@@ -330,22 +373,23 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
                 return msg
             return "Falha ao enviar atualização para o Hevy. Verifique os dados dos exercícios."
         except Exception as e:
-            logger.error(f"Error in update_hevy_routine: {e}", exc_info=True)
+            logger.error("Error in update_hevy_routine: %s", e, exc_info=True)
             return f"Erro técnico na atualização: {str(e)}"
 
     return update_hevy_routine
 
 
 def create_replace_hevy_exercise_tool(hevy_service, database, user_email: str):
+    """
+    Creates a tool to replace an exercise in a Hevy routine.
+    """
     @tool
     async def replace_hevy_exercise(
-        routine_title: str,
-        old_exercise_name_or_id: str,
-        new_exercise_id: str
+        routine_title: str, old_exercise_name_or_id: str, new_exercise_id: str
     ) -> str:
         """
         Substitui um exercício por outro em uma rotina do Hevy, mantendo as séries e cargas existentes.
-        
+
         Args:
             routine_title: Título da rotina (ex: "Pull", "Legs").
             old_exercise_name_or_id: Nome (fuzzy match) ou ID do exercício antigo a ser removido.
@@ -355,17 +399,24 @@ def create_replace_hevy_exercise_tool(hevy_service, database, user_email: str):
         if not profile or not profile.hevy_enabled or not profile.hevy_api_key:
             return "Integração desativada."
 
-        logger.info(f"replace_hevy_exercise: {routine_title} | {old_exercise_name_or_id} -> {new_exercise_id}")
+        logger.info(
+            "replace_hevy_exercise: %s | %s -> %s",
+            routine_title,
+            old_exercise_name_or_id,
+            new_exercise_id,
+        )
 
         try:
             # 1. Buscar a rotina
             target_routine = None
             # Tentar buscar nas primeiras páginas
             for p in range(1, 6):
-                response = await hevy_service.get_routines(profile.hevy_api_key, page=p, page_size=10)
+                response = await hevy_service.get_routines(
+                    profile.hevy_api_key, page=p, page_size=10
+                )
                 if not response or not response.routines:
                     break
-                
+
                 # Exact match first
                 for r in response.routines:
                     if r.title.lower().strip() == routine_title.lower().strip():
@@ -373,7 +424,7 @@ def create_replace_hevy_exercise_tool(hevy_service, database, user_email: str):
                         break
                 if target_routine:
                     break
-                
+
                 # Fuzzy match second
                 for r in response.routines:
                     if routine_title.lower() in r.title.lower():
@@ -381,33 +432,40 @@ def create_replace_hevy_exercise_tool(hevy_service, database, user_email: str):
                         break
                 if target_routine:
                     break
-            
+
             if not target_routine:
                 return f"Rotina '{routine_title}' não encontrada."
 
             # 2. Fetch full routine details
-            current = await hevy_service.get_routine_by_id(profile.hevy_api_key, target_routine.id)
+            current = await hevy_service.get_routine_by_id(
+                profile.hevy_api_key, target_routine.id
+            )
             if not current:
                 return "Falha ao recuperar detalhes da rotina."
 
             # 3. Find and Swap Exercise
             found = False
             exercises_list = current.exercises
-            
+
             target_old = old_exercise_name_or_id.lower().strip()
-            
+
             for ex in exercises_list:
                 # Check by ID
-                if ex.exercise_template_id and ex.exercise_template_id.lower() == target_old:
+                if (
+                    ex.exercise_template_id
+                    and ex.exercise_template_id.lower() == target_old
+                ):
                     ex.exercise_template_id = new_exercise_id
                     found = True
                     break
-                
+
                 # Check by Title (need to match title from GET response)
-                if ex.title and (target_old in ex.title.lower() or ex.title.lower() in target_old):
-                   ex.exercise_template_id = new_exercise_id
-                   found = True
-                   break
+                if ex.title and (
+                    target_old in ex.title.lower() or ex.title.lower() in target_old
+                ):
+                    ex.exercise_template_id = new_exercise_id
+                    found = True
+                    break
 
             if not found:
                 current_names = [e.title for e in exercises_list if e.title]
@@ -416,16 +474,17 @@ def create_replace_hevy_exercise_tool(hevy_service, database, user_email: str):
             # 4. Clean Payload (Implicit via Pydantic + HevyService)
             # HevyRoutine Pydantic model ignores extras (index, etc)
             # HevyService.update_routine now strictly excludes forbidden fields.
-            
-            result = await hevy_service.update_routine(profile.hevy_api_key, target_routine.id, current)
+
+            result = await hevy_service.update_routine(
+                profile.hevy_api_key, target_routine.id, current
+            )
             if result:
-                 return f"✅ Substituição realizada com sucesso! '{old_exercise_name_or_id}' -> Novo ID {new_exercise_id}."
-            
+                return f"✅ Substituição realizada com sucesso! '{old_exercise_name_or_id}' -> Novo ID {new_exercise_id}."
+
             return "Erro ao atualizar no Hevy (API retornou falha na validação)."
 
         except Exception as e:
-            logger.error(f"Error in replace_hevy_exercise: {e}", exc_info=True)
+            logger.error("Error in replace_hevy_exercise: %s", e, exc_info=True)
             return f"Erro técnico: {str(e)}"
 
     return replace_hevy_exercise
-

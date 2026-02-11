@@ -1,3 +1,7 @@
+"""
+Module for trainer implementation.
+"""
+
 from .base_trainer import BaseTrainer
 from .atlas_trainer import AtlasTrainer
 from .luna_trainer import LunaTrainer

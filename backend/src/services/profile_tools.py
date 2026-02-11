@@ -16,10 +16,7 @@ def create_get_user_goal_tool(database: MongoDatabase, user_email: str):
     def get_user_goal() -> str:
         """
         Consulta o objetivo atual do aluno (perder peso, ganhar massa, manter peso).
-        Use sempre que precisar saber qual é o foco atual do aluno antes de dar recomendações.
-
-        Returns:
-            Descrição do objetivo atual e taxa semanal configurada.
+        Use para saber o foco atual antes de dar recomendações.
         """
         try:
             profile = database.get_user_profile(user_email)
@@ -29,7 +26,7 @@ def create_get_user_goal_tool(database: MongoDatabase, user_email: str):
             summary = profile.get_profile_summary()
             return f"Este é o objetivo atual do aluno:\n\n{summary}"
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to get user goal for %s: %s", user_email, e)
             return "Erro ao buscar objetivo do aluno."
 
@@ -45,15 +42,8 @@ def create_update_user_goal_tool(database: MongoDatabase, user_email: str):
     def update_user_goal(goal_type: str, weekly_rate: float | None = None) -> str:
         """
         Atualiza o tipo de objetivo e a taxa semanal de mudança de peso do perfil do aluno.
-        Use quando o aluno disser explicitamente que quer mudar o foco (ex: "agora quero secar", "quero ganhar massa").
-
-        Args:
-            goal_type (str): Tipo de objetivo: 'lose' (perder peso), 'gain' (ganhar massa), ou 'maintain' (manter peso).
-            weekly_rate (float, opcional): Taxa de mudança semanal em kg (0.2 a 1.0).
-                                         Obrigatório se o objetivo for 'lose' ou 'gain'.
-
-        Returns:
-            Confirmação da atualização.
+        'goal_type': 'lose', 'gain', ou 'maintain'.
+        'weekly_rate': taxa semanal em kg (obrigatório para lose/gain).
         """
         try:
             if goal_type not in ["lose", "gain", "maintain"]:
@@ -62,7 +52,10 @@ def create_update_user_goal_tool(database: MongoDatabase, user_email: str):
             if goal_type in ["lose", "gain"] and (
                 weekly_rate is None or weekly_rate <= 0
             ):
-                return "Erro: weekly_rate (taxa semanal) é obrigatório e deve ser positivo para objetivos de perda ou ganho."
+                return (
+                    "Erro: weekly_rate (taxa semanal) é obrigatório e deve ser "
+                    "positivo para objetivos de perda ou ganho."
+                )
 
             profile = database.get_user_profile(user_email)
             if not profile:
@@ -95,7 +88,7 @@ def create_update_user_goal_tool(database: MongoDatabase, user_email: str):
                 f"Perfil atualizado com sucesso! Agora você está {action}{rate_info}."
             )
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to update user goal for %s: %s", user_email, e)
             return f"Erro ao atualizar perfil: {str(e)}"
 

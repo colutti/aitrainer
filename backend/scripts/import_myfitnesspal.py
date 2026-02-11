@@ -239,7 +239,7 @@ def import_nutrition(
         log = daily.to_nutrition_log(user_email)
 
         status = ""
-        if dry_run:
+        if dry_run or not db:
             status = "preview"
         else:
             try:

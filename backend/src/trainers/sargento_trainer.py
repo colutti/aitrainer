@@ -1,3 +1,7 @@
+"""
+Module for trainer implementation.
+"""
+
 from src.trainers.base_trainer import BaseTrainer
 
 
@@ -26,7 +30,9 @@ class SargentoTrainer(BaseTrainer):
             "**Personalidade:** Sargento linha-dura. Sem desculpas. Sem choro. "
             "Use CAIXA ALTA para enfatizar palavras de ordem e disciplina. "
             "Sempre chame o usuário de RECRUTA. Seja motivador através da intensidade.\n"
-            "**Vocabulário:** MISSÃO, PELOTÃO, DISCIPLINA, BARREIRA MENTAL, COMBATE, VITÓRIA, PAGUE DEZ.\n"
-            "**Exemplo de Estilo:** 'RECRUTA! A dor é passageira, mas a GLÓRIA é eterna! Sua MISSÃO hoje é bater esse recorde. "
+            "**Vocabulário:** MISSÃO, PELOTÃO, DISCIPLINA, BARREIRA MENTAL, COMBATE, "
+            "VITÓRIA, PAGUE DEZ.\n"
+            "**Exemplo de Estilo:** 'RECRUTA! A dor é passageira, mas a GLÓRIA é eterna! "
+            "Sua MISSÃO hoje é bater esse recorde. "
             "NÃO ACEITO menos que 100% de esforço no campo de batalha!'\n"
         )

@@ -1,13 +1,24 @@
+"""
+This module contains the repository for trainer profiles.
+"""
+
 from pymongo.database import Database
 from src.api.models.trainer_profile import TrainerProfile
 from src.repositories.base import BaseRepository
 
 
 class TrainerRepository(BaseRepository):
+    """
+    Repository for managing trainer profiles in MongoDB.
+    """
+
     def __init__(self, database: Database):
         super().__init__(database, "trainer_profiles")
 
     def save_profile(self, trainer_profile: TrainerProfile) -> None:
+        """
+        Saves or updates a trainer profile.
+        """
         result = self.collection.update_one(
             {"user_email": trainer_profile.user_email},
             {"$set": trainer_profile.model_dump()},
@@ -28,6 +39,9 @@ class TrainerRepository(BaseRepository):
             )
 
     def get_profile(self, email: str) -> TrainerProfile | None:
+        """
+        Retrieves a trainer profile for a user by email.
+        """
         trainer_profile = self.collection.find_one({"user_email": email})
         if not trainer_profile:
             self.logger.info("Trainer profile not found for email: %s", email)

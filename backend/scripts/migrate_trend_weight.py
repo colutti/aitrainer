@@ -26,7 +26,7 @@ def migrate():
         print(f"Failed to connect to MongoDB: {e}")
         sys.exit(1)
 
-    tdee_service = AdaptiveTDEEService(None)  # db=None is fine for calculate_ema_trend
+    tdee_service = AdaptiveTDEEService(None)  # type: ignore
 
     users = db.users.find({}, {"email": 1})
     total_users = 0

@@ -11,8 +11,7 @@ from src.services.database import MongoDatabase
 
 
 def verify_admin(
-    email: str = Depends(verify_token),
-    db: MongoDatabase = Depends(get_mongo_database)
+    email: str = Depends(verify_token), db: MongoDatabase = Depends(get_mongo_database)
 ) -> str:
     """
     Verifica se o usuário autenticado é admin.
@@ -33,15 +32,13 @@ def verify_admin(
 
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
     # Verifica se é admin
     if user.role != "admin":
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required"
         )
 
     return email

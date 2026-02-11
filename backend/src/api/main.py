@@ -2,21 +2,16 @@
 This module contains the main FastAPI application.
 """
 
+import os
 import warnings
+from typing import Any
 
-# Suppress known deprecation warnings from libraries (LangChain, websockets, uvicorn)
-warnings.filterwarnings("ignore", message=".*migrating_memory.*")
-warnings.filterwarnings("ignore", message=".*websockets.legacy.*")
-warnings.filterwarnings("ignore", message=".*WebSocketServerProtocol.*")
+import uvicorn
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-from fastapi import FastAPI, Request  # noqa: E402
-from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
-from fastapi.responses import JSONResponse  # noqa: E402
-import uvicorn  # noqa: E402
-import os  # noqa: E402
-
-
-from src.api.endpoints import (  # noqa: E402
+from src.api.endpoints import (
     user,
     message,
     trainer,
@@ -36,14 +31,22 @@ from src.api.endpoints import (  # noqa: E402
     admin_analytics,
     dashboard,
 )
-from src.core.config import settings  # noqa: E402
-from src.core.deps import get_mongo_database, get_mem0_client  # noqa: E402
-from src.core.logs import logger  # noqa: E402
-from src.core.limiter import limiter, RATE_LIMITING_ENABLED  # noqa: E402
+from src.core.config import settings
+from src.core.deps import get_mongo_database, get_mem0_client
+from src.core.logs import logger
+from src.core.limiter import limiter, RATE_LIMITING_ENABLED
+
+# Suppress known deprecation warnings from libraries
+warnings.filterwarnings("ignore", message=".*migrating_memory.*")
+warnings.filterwarnings("ignore", message=".*websockets.legacy.*")
+warnings.filterwarnings("ignore", message=".*WebSocketServerProtocol.*")
 
 app = FastAPI(
     title="AI Personal Trainer API",
-    description="Backend API for the AI Personal Trainer application, featuring AI chat, workout tracking, nutrition logging, and more.",
+    description=(
+        "Backend API for the AI Personal Trainer application, "
+        "featuring AI chat, workout tracking, nutrition logging, and more."
+    ),
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -57,7 +60,8 @@ if RATE_LIMITING_ENABLED and limiter:
     app.state.limiter = limiter
 
     @app.exception_handler(RateLimitExceeded)
-    async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    async def rate_limit_handler(_request: Request, _exc: RateLimitExceeded):
+        """Handler for rate limit exceeded errors."""
         return JSONResponse(
             status_code=429,
             content={"detail": "Rate limit exceeded. Please try again later."},
@@ -66,17 +70,20 @@ if RATE_LIMITING_ENABLED and limiter:
 
 # CORS middleware for frontend-backend integration
 cors_origins = settings.ALLOWED_ORIGINS
-allow_credentials = True
+allow_credentials_ = True
 
 if "*" in cors_origins or cors_origins == ["*"]:
-    logger.warning("CORS: Allowing all origins ('*'). Note: Credentials will be disabled as per CORS spec when using wildcard.")
+    logger.warning(
+        "CORS: Allowing all origins ('*'). "
+        "Credentials will be disabled as per CORS spec when using wildcard."
+    )
     cors_origins = ["*"]
-    allow_credentials = False
+    allow_credentials_ = False
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
-    allow_credentials=allow_credentials,
+    allow_credentials=allow_credentials_,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -107,15 +114,7 @@ app.include_router(admin_analytics.router, tags=["admin"])
 def health_check() -> JSONResponse:
     """
     Health check endpoint to verify service status.
-
-    Checks:
-    - MongoDB connection
-    - Mem0 client availability
-
-    Returns:
-        JSONResponse: Status of the application and its dependencies.
     """
-    from typing import Any
     health_status: dict[str, Any] = {"status": "healthy", "services": {}}
 
     # Check MongoDB
@@ -123,7 +122,7 @@ def health_check() -> JSONResponse:
         db = get_mongo_database()
         db.client.admin.command("ping")
         health_status["services"]["mongodb"] = "healthy"
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("MongoDB health check failed: %s", e)
         health_status["status"] = "unhealthy"
         health_status["services"]["mongodb"] = f"unhealthy: {str(e)}"
@@ -137,7 +136,7 @@ def health_check() -> JSONResponse:
         else:
             health_status["services"]["mem0"] = "unhealthy: client is None"
             health_status["status"] = "unhealthy"
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("Mem0 health check failed: %s", e)
         health_status["status"] = "unhealthy"
         health_status["services"]["mem0"] = f"unhealthy: {str(e)}"
@@ -148,13 +147,13 @@ def health_check() -> JSONResponse:
 
 if __name__ == "__main__":
     # PORT is injected by Render in production (default 10000)
-    port = int(os.environ.get("PORT", settings.API_SERVER_PORT))
+    port_env = int(os.environ.get("PORT", settings.API_SERVER_PORT))
     # RENDER env var is automatically defined on Render
-    is_production = os.environ.get("RENDER", "false").lower() == "true"
+    is_prod = os.environ.get("RENDER", "false").lower() == "true"
 
     uvicorn.run(
         "src.api.main:app",
         host="0.0.0.0",
-        port=port,
-        reload=not is_production,  # reload only locally
+        port=port_env,
+        reload=not is_prod,  # reload only locally
     )

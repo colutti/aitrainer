@@ -1,3 +1,7 @@
+"""
+This module contains the model for data import results.
+"""
+
 from pydantic import BaseModel
 
 

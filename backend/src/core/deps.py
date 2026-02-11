@@ -11,6 +11,8 @@ from src.services.database import MongoDatabase
 from src.services.llm_client import LLMClient
 from src.services.trainer import AITrainerBrain
 from src.services.hevy_service import HevyService
+from src.repositories.telegram_repository import TelegramRepository
+from src.services.telegram_service import TelegramBotService
 
 
 @functools.lru_cache()
@@ -27,6 +29,7 @@ def get_qdrant_client() -> QdrantClient:
     """
     Returns a Qdrant client for direct memory access with pagination.
     """
+    # pylint: disable=no-member
     if settings.QDRANT_HOST.startswith("http"):
         # If host contains protocol, it's a URL (like Qdrant Cloud)
         url = settings.QDRANT_HOST
@@ -81,22 +84,18 @@ def get_hevy_service() -> HevyService:
     return HevyService(workout_repository=database.workouts_repo)
 
 
-def get_telegram_repository():
+def get_telegram_repository() -> TelegramRepository:
     """
     Returns a Telegram repository instance.
     """
-    from src.repositories.telegram_repository import TelegramRepository
-
     database = get_mongo_database()
     return TelegramRepository(database.database)
 
 
-def get_telegram_service():
+def get_telegram_service() -> TelegramBotService:
     """
     Returns a Telegram bot service instance.
     """
-    from src.services.telegram_service import TelegramBotService
-
     if not settings.TELEGRAM_BOT_TOKEN:
         raise ValueError("TELEGRAM_BOT_TOKEN not configured")
 

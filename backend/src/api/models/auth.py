@@ -1,3 +1,7 @@
+"""
+This module contains the models for authentication requests.
+"""
+
 from pydantic import BaseModel
 
 

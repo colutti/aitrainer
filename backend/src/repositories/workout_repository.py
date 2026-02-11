@@ -1,4 +1,9 @@
+"""
+This module contains the repository for workout logs.
+"""
+
 from datetime import datetime, timedelta
+from typing import Any
 import pymongo
 from bson import ObjectId
 from pymongo.database import Database
@@ -9,10 +14,17 @@ from src.repositories.base import BaseRepository
 
 
 class WorkoutRepository(BaseRepository):
+    """
+    Repository for managing workout logs in MongoDB.
+    """
+
     def __init__(self, database: Database):
         super().__init__(database, "workout_logs")
 
     def save_log(self, workout: WorkoutLog) -> str:
+        """
+        Saves a workout log to the database.
+        """
         result = self.collection.insert_one(workout.model_dump())
         self.logger.info(
             "Workout log saved for user %s with %d exercises",
@@ -22,6 +34,9 @@ class WorkoutRepository(BaseRepository):
         return str(result.inserted_id)
 
     def get_logs(self, user_email: str, limit: int = 50) -> list[WorkoutWithId]:
+        """
+        Retrieves the most recent workout logs for a user.
+        """
         cursor = (
             self.collection.find({"user_email": user_email})
             .sort("date", pymongo.DESCENDING)
@@ -30,14 +45,16 @@ class WorkoutRepository(BaseRepository):
         workouts = []
         for doc in cursor:
             workouts.append(WorkoutWithId(**doc))
-            
+
         self.logger.debug(
             "Retrieved %d workout logs for user: %s", len(workouts), user_email
         )
         return workouts
 
     def delete_log(self, workout_id: str) -> bool:
-        """Deletes a workout log by its ID."""
+        """
+        Deletes a workout log by its ID.
+        """
         result = self.collection.delete_one({"_id": ObjectId(workout_id)})
         deleted = result.deleted_count > 0
         if deleted:
@@ -47,7 +64,9 @@ class WorkoutRepository(BaseRepository):
         return deleted
 
     def get_log_by_id(self, workout_id: str) -> dict | None:
-        """Retrieves a single workout log by its ID."""
+        """
+        Retrieves a single workout log by its ID.
+        """
         return self.collection.find_one({"_id": ObjectId(workout_id)})
 
     def get_paginated(
@@ -57,18 +76,15 @@ class WorkoutRepository(BaseRepository):
         page_size: int = 10,
         workout_type: str | None = None,
     ) -> tuple[list[dict], int]:
-        query = {"user_email": user_email}
+        """
+        Retrieves paginated workout logs for a user.
+        """
+        query: dict[str, Any] = {"user_email": user_email}
         if workout_type:
             query["workout_type"] = workout_type
 
-        total = self.collection.count_documents(query)
-
-        skip = (page - 1) * page_size
-        cursor = (
-            self.collection.find(query)
-            .sort("date", pymongo.DESCENDING)
-            .skip(skip)
-            .limit(page_size)
+        cursor, total = self.get_paginated_cursor(
+            query=query, page=page, page_size=page_size
         )
 
         workouts = list(cursor)
@@ -83,10 +99,16 @@ class WorkoutRepository(BaseRepository):
         return workouts, total
 
     def get_types(self, user_email: str) -> list[str]:
+        """
+        Retrieves all unique workout types for a user.
+        """
         types = self.collection.distinct("workout_type", {"user_email": user_email})
         return sorted([t for t in types if t])
 
     def get_stats(self, user_email: str) -> WorkoutStats:
+        """
+        Calculates and retrieves comprehensive workout statistics for a user.
+        """
         # 1. Get all workouts (projection for speed)
         cursor = self.collection.find(
             {"user_email": user_email},
@@ -110,24 +132,16 @@ class WorkoutRepository(BaseRepository):
                 last_workout=None,
             )
 
-        # 2. Total Workouts
+        # 2. Basic Metrics
         total_workouts = len(all_workouts)
-
-        # 3. Last Workout
         last_workout_doc = all_workouts[0]
         last_workout_doc["id"] = str(last_workout_doc.pop("_id"))
         last_workout = WorkoutWithId(**last_workout_doc)
 
-        # 4. Streak
+        # 3. Calculated Metrics
         current_streak = self._calculate_weekly_streak(all_workouts)
-
-        # 5. Weekly Metrics
         freq, volume = self._calculate_weekly_metrics(all_workouts)
-
-        # 6. Recent PRs
         prs = self._calculate_recent_prs(all_workouts)
-
-        # 7. Volume Trend & Strength Radar
         vol_trend = self._calculate_volume_trend(all_workouts)
         strength_radar = self._calculate_strength_radar(all_workouts)
 
@@ -142,7 +156,9 @@ class WorkoutRepository(BaseRepository):
             strength_radar=strength_radar,
         )
 
+    # pylint: disable=too-many-locals
     def _calculate_weekly_streak(self, workouts: list[dict]) -> int:
+        """Calculates the number of consecutive weeks with at least 3 workouts."""
         if not workouts:
             return 0
 
@@ -165,9 +181,10 @@ class WorkoutRepository(BaseRepository):
 
         # If current week hasn't met criteria yet, but it's the CURRENT week,
         # we skip it and start counting from the previous week.
-        # This prevents the streak from resetting on Monday morning.
         if not met_criteria(check_year, check_week):
-            prev_week_date = datetime.fromisocalendar(check_year, check_week, 1) - timedelta(days=7)
+            prev_week_date = datetime.fromisocalendar(
+                check_year, check_week, 1
+            ) - timedelta(days=7)
             check_year, check_week, _ = prev_week_date.isocalendar()
 
         while met_criteria(check_year, check_week):
@@ -179,9 +196,11 @@ class WorkoutRepository(BaseRepository):
 
         return streak
 
+    # pylint: disable=too-many-locals
     def _calculate_weekly_metrics(
         self, workouts: list[dict]
     ) -> tuple[list[bool], list[VolumeStat]]:
+        """Calculates frequency and volume for the current week."""
         now = datetime.now()
         start_of_week = now - timedelta(days=now.weekday())
         start_of_week = start_of_week.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -214,15 +233,16 @@ class WorkoutRepository(BaseRepository):
         volume_stats.sort(key=lambda x: x.volume, reverse=True)
         return freq, volume_stats
 
+    # pylint: disable=too-many-locals
     def _calculate_recent_prs(
         self, workouts: list[dict], limit: int = 3
     ) -> list[PersonalRecord]:
-        from typing import Any
+        """Identifies recent personal records."""
         max_weights: dict[str, dict[str, Any]] = {}
 
         for w in reversed(workouts):
             w_id = str(w.get("_id"))
-            date = w["date"]
+            dt = w["date"]
             exercises = w.get("exercises", [])
 
             for ex in exercises:
@@ -250,7 +270,7 @@ class WorkoutRepository(BaseRepository):
                         max_weights[name] = {
                             "weight": session_max,
                             "reps": session_max_reps,
-                            "date": date,
+                            "date": dt,
                             "workout_id": w_id,
                         }
 
@@ -267,12 +287,12 @@ class WorkoutRepository(BaseRepository):
 
         prs_list.sort(key=lambda x: x.date, reverse=True)
         return prs_list[:limit]
+
     def _calculate_volume_trend(self, workouts: list[dict]) -> list[float]:
         """Calculates weekly volume total for the last 8 weeks."""
-        from datetime import datetime
         now = datetime.now()
         weeks: list[float] = [0.0] * 8
-        
+
         for w in workouts:
             age_days = (now - w["date"]).days
             week_idx = age_days // 7
@@ -284,48 +304,62 @@ class WorkoutRepository(BaseRepository):
                     for i, r in enumerate(reps_list):
                         vol += r * (weights_list[i] if i < len(weights_list) else 0.0)
                 weeks[week_idx] += vol
-        
+
         # Return reversed to show chronological order in chart
         return [round(v, 1) for v in reversed(weeks)]
 
+    # pylint: disable=too-many-locals
     def _calculate_strength_radar(self, workouts: list[dict]) -> dict[str, float]:
         """Calculates current vs peak strength ratio (0-1.0) for major muscle groups."""
         categories = {
             "Push": ["Supino", "Peito", "Ombro", "Tríceps", "Militar", "Bench"],
-            "Pull": ["Costas", "Remada", "Puxada", "Bíceps", "Levantamento Terra", "Deadlift", "Row"],
-            "Legs": ["Agachamento", "Leg Press", "Extensora", "Flexora", "Pernas", "Panturrilha", "Squat"]
+            "Pull": [
+                "Costas", "Remada", "Puxada", "Bíceps", "Levantamento Terra",
+                "Deadlift", "Row",
+            ],
+            "Legs": [
+                "Agachamento", "Leg Press", "Extensora", "Flexora", "Pernas",
+                "Panturrilha", "Squat",
+            ],
         }
-        
+
         peak_strength: dict[str, float] = {}
         current_strength: dict[str, float] = {}
-        
+
         # Sort by date to find latest
         sorted_workouts = sorted(workouts, key=lambda x: x["date"])
-        
+
         for w in sorted_workouts:
             for ex in w.get("exercises", []):
                 name = ex.get("name", "")
-                cat = next((k for k, v in categories.items() if any(term.lower() in name.lower() for term in v)), "Outros")
+                cat = next(
+                    (
+                        k
+                        for k, v in categories.items()
+                        if any(term.lower() in name.lower() for term in v)
+                    ),
+                    "Outros",
+                )
                 if cat == "Outros":
                     continue
-                
+
                 weights = ex.get("weights_per_set", [])
                 if not weights:
                     continue
                 # We skip bodyweight exercises (0 weight) for strength radar
-                valid_weights = [w for w in weights if w > 0]
+                valid_weights = [weight for weight in weights if weight > 0]
                 if not valid_weights:
                     continue
-                
+
                 max_w = max(valid_weights)
                 peak_strength[cat] = max(peak_strength.get(cat, 0), max_w)
-                current_strength[cat] = max_w # Latest session max
-                
+                current_strength[cat] = max_w  # Latest session max
+
         # Return ratio of current / peak (0 to 1.0)
         result = {}
         for cat in categories:
             peak = peak_strength.get(cat, 0)
             curr = current_strength.get(cat, 0)
             result[cat] = round(curr / peak if peak > 0 else 0, 2)
-            
+
         return result

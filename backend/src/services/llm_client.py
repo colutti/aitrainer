@@ -3,8 +3,7 @@ LLM Client abstraction layer for AI trainer.
 Provides a unified interface for different LLM providers (Gemini, Ollama, OpenAI).
 """
 
-from typing import Generator
-from langchain_core.language_models.chat_models import BaseChatModel
+from typing import AsyncGenerator, Any
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import AIMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
@@ -16,7 +15,7 @@ import warnings
 # Suppress Pydantic V1/LangSmith warning as we cannot easily upgrade right now
 warnings.filterwarnings("ignore", message=".*Core Pydantic V1 functionality.*")
 
-from src.core.logs import logger  # noqa: E402
+from src.core.logs import logger  # noqa: E402  pylint: disable=wrong-import-position
 
 
 class LLMClient:
@@ -26,6 +25,7 @@ class LLMClient:
     """
 
     _initialized = False
+    _llm: Any = None
 
     @classmethod
     def from_config(cls) -> "LLMClient":
@@ -33,7 +33,7 @@ class LLMClient:
         Factory method that returns the correct LLM client based on settings.AI_PROVIDER.
         Priority: ollama > openai > gemini (default)
         """
-        from src.core.config import settings
+        from src.core.config import settings  # pylint: disable=import-outside-toplevel
 
         if settings.AI_PROVIDER == "ollama":
             if not cls._initialized:
@@ -63,7 +63,9 @@ class LLMClient:
 
         # Default: Gemini
         if not cls._initialized:
-            logger.info("Creating GeminiClient with model: %s", settings.GEMINI_LLM_MODEL)
+            logger.info(
+                "Creating GeminiClient with model: %s", settings.GEMINI_LLM_MODEL
+            )
             cls._initialized = True
         return GeminiClient(
             api_key=settings.GEMINI_API_KEY,
@@ -78,7 +80,9 @@ class LLMClient:
         tools: list,
         user_email: str | None = None,
         log_callback=None,
-    ) -> Generator[str | dict, None, None]:
+    ) -> AsyncGenerator[str | dict, None]:
+        # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals,too-many-branches
+
         """
         Invokes the LLM with tool support using LangGraph's ReAct agent.
 
@@ -102,9 +106,13 @@ class LLMClient:
             if log_callback and user_email:
                 try:
                     prompt_str = prompt_template.format(**input_data)
-                    log_callback(user_email, {"prompt": prompt_str, "type": "with_tools"})
-                except Exception as log_err:
-                    logger.warning("Failed to log prompt in stream_with_tools: %s", log_err)
+                    log_callback(
+                        user_email, {"prompt": prompt_str, "type": "with_tools"}
+                    )
+                except Exception as log_err:  # pylint: disable=broad-exception-caught
+                    logger.warning(
+                        "Failed to log prompt in stream_with_tools: %s", log_err
+                    )
 
             # Create the ReAct agent
             agent: CompiledStateGraph = create_agent(self._llm, tools)
@@ -122,12 +130,13 @@ class LLMClient:
 
                 # V3: Intercept Tool Outputs (System Feedback)
                 if isinstance(event, ToolMessage):
-                    logger.debug("Intercepted ToolMessage: %s", event.name)
-                    tools_called.append(event.name)
+                    tool_name = str(event.name) if event.name else "unknown"
+                    logger.debug("Intercepted ToolMessage: %s", tool_name)
+                    tools_called.append(tool_name)
                     yield {
                         "type": "tool_result",
                         "content": event.content,
-                        "tool_name": event.name,
+                        "tool_name": tool_name,
                         "tool_call_id": event.tool_call_id,
                     }
                     continue
@@ -144,7 +153,7 @@ class LLMClient:
                             elif isinstance(block, dict) and "text" in block:
                                 yield block["text"]
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Error in stream_with_tools: %s", e)
             yield f"Error processing request: {str(e)}"
         finally:
@@ -157,7 +166,7 @@ class LLMClient:
         input_data: dict,
         user_email: str | None = None,
         log_callback=None,
-    ) -> Generator[str, None, None]:
+    ) -> AsyncGenerator[str, None]:
         """
         Simple streaming without tools.
 
@@ -182,13 +191,13 @@ class LLMClient:
                 try:
                     prompt_str = prompt_template.format(**input_data)
                     log_callback(user_email, {"prompt": prompt_str, "type": "simple"})
-                except Exception as log_err:
+                except Exception as log_err:  # pylint: disable=broad-exception-caught
                     logger.warning("Failed to log prompt in stream_simple: %s", log_err)
 
             chain = prompt_template | self._llm | StrOutputParser()
             async for chunk in chain.astream(input_data):
                 yield chunk
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Error in stream_simple: %s", e)
             yield f"Error processing request: {str(e)}"
 
@@ -208,7 +217,7 @@ class GeminiClient(LLMClient):
             model: Model name (e.g., 'gemini-1.5-flash').
             temperature: Sampling temperature.
         """
-        from langchain_google_genai import ChatGoogleGenerativeAI
+        from langchain_google_genai import ChatGoogleGenerativeAI  # pylint: disable=import-outside-toplevel
 
         self._llm = ChatGoogleGenerativeAI(
             model=model,
@@ -222,7 +231,7 @@ class OllamaClient(LLMClient):
 
     def __init__(self, base_url: str, model: str, temperature: float):
         """Initialize Ollama client."""
-        from langchain_ollama import ChatOllama
+        from langchain_ollama import ChatOllama  # pylint: disable=import-outside-toplevel
 
         self._llm = ChatOllama(
             model=model,
@@ -236,8 +245,8 @@ class OpenAIClient(LLMClient):
 
     def __init__(self, api_key: str, model: str, temperature: float):
         """Initialize OpenAI client."""
-        from langchain_openai import ChatOpenAI
-        from pydantic import SecretStr
+        from langchain_openai import ChatOpenAI  # pylint: disable=import-outside-toplevel
+        from pydantic import SecretStr  # pylint: disable=import-outside-toplevel
 
         self._llm = ChatOpenAI(
             model=model,

@@ -2,10 +2,8 @@
 Pydantic models for nutrition logging.
 """
 
-from datetime import datetime
-from typing import Optional
+from datetime import datetime, date as py_date
 from pydantic import BaseModel, Field, ConfigDict, model_serializer
-
 
 
 class NutritionLog(BaseModel):
@@ -28,7 +26,7 @@ class NutritionLog(BaseModel):
     """
 
     user_email: str = Field(..., description="Email do usuário")
-    date: datetime = Field(default_factory=datetime.now, description="Data do registro")
+    date: datetime | py_date = Field(default_factory=datetime.now, description="Data do registro")
 
     # Main macros
     calories: int = Field(..., ge=0, description="Calorias totais")
@@ -37,19 +35,19 @@ class NutritionLog(BaseModel):
     fat_grams: float = Field(..., ge=0, description="Gorduras (g)")
 
     # Micros (Optional)
-    fiber_grams: Optional[float] = Field(None, ge=0, description="Fibras (g)")
-    sugar_grams: Optional[float] = Field(None, ge=0, description="Açúcar (g)")
-    sodium_mg: Optional[float] = Field(None, ge=0, description="Sódio (mg)")
-    cholesterol_mg: Optional[float] = Field(None, ge=0, description="Colesterol (mg)")
+    fiber_grams: float | None = Field(default=None, ge=0, description="Fibras (g)")
+    sugar_grams: float | None = Field(default=None, ge=0, description="Açúcar (g)")
+    sodium_mg: float | None = Field(default=None, ge=0, description="Sódio (mg)")
+    cholesterol_mg: float | None = Field(default=None, ge=0, description="Colesterol (mg)")
 
     source: str = Field(default="chat", description="Origem dos dados")
-    notes: Optional[str] = Field(None, description="Notas opcionais")
+    notes: str | None = Field(default=None, description="Notas opcionais")
 
 
 class NutritionWithId(NutritionLog):
     """Nutrition log with MongoDB ID for API responses."""
 
-    id: str = Field(..., alias="_id", description="ID do log no MongoDB")
+    id: str = Field(..., validation_alias="_id", description="ID do log no MongoDB")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -72,5 +70,3 @@ class NutritionWithId(NutritionLog):
             "id": self.id,  # Use field name, not alias
         }
         return data
-
-

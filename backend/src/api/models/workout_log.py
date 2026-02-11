@@ -2,10 +2,11 @@
 Pydantic models for workout logging.
 """
 
-from datetime import datetime
+from datetime import datetime, date as py_date
+from typing import Annotated, Any
+
 from bson import ObjectId
 from pydantic import BaseModel, Field, model_validator, ConfigDict, BeforeValidator
-from typing import Optional, Annotated
 
 
 class ExerciseLog(BaseModel):
@@ -53,23 +54,24 @@ class WorkoutLog(BaseModel):
     """
 
     user_email: str = Field(..., description="Email do usuário")
-    date: datetime = Field(default_factory=datetime.now, description="Data do treino")
-    workout_type: Optional[str] = Field(
+    date: datetime | py_date = Field(default_factory=datetime.now, description="Data do treino")
+    workout_type: str | None = Field(
         default=None, description="Tipo de treino (Legs, Upper, Push, etc.)"
     )
     exercises: list[ExerciseLog] = Field(..., description="Lista de exercícios")
-    duration_minutes: Optional[int] = Field(
+    duration_minutes: int | None = Field(
         default=None, ge=1, description="Duração em minutos"
     )
-    source: Optional[str] = Field(
+    source: str | None = Field(
         default=None, description="Fonte do dado (ex: hevy, manual)"
     )
-    external_id: Optional[str] = Field(
+    external_id: str | None = Field(
         default=None, description="ID externo do treino (ex: Hevy Workout ID)"
     )
 
 
-def validate_object_id(v: any) -> str:
+def validate_object_id(v: Any) -> str:
+    """Valida e converte ObjectId para string."""
     if isinstance(v, ObjectId):
         return str(v)
     return str(v)

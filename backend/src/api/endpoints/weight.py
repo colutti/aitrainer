@@ -1,3 +1,7 @@
+"""
+This module contains the API endpoints for weight-related data.
+"""
+
 from datetime import date
 from typing import Annotated
 
@@ -7,11 +11,13 @@ from pydantic import BaseModel
 from src.api.models.import_result import ImportResult
 from src.api.models.weight_log import WeightLog, WeightLogInput, WeightWithId
 from src.core.deps import get_ai_trainer_brain, get_mongo_database
+from src.core.logs import logger
+from src.services.adaptive_tdee import AdaptiveTDEEService
+from src.services.auth import verify_token
 from src.services.database import MongoDatabase
+from src.services.import_utils import read_csv_file
 from src.services.trainer import AITrainerBrain
 from src.services.zepp_life_import_service import import_zepp_life_data
-from src.services.auth import verify_token
-from src.core.logs import logger
 
 router = APIRouter()
 
@@ -24,15 +30,13 @@ DatabaseDep = Annotated[MongoDatabase, Depends(get_mongo_database)]
 def log_weight(
     log_input: WeightLogInput,
     user_email: CurrentUser,
-    brain: AITrainerBrainDep,
     db: DatabaseDep,
+    _brain: AITrainerBrainDep,
 ) -> dict:
     """
     Logs a weight entry for the user.
     If an entry exists for the same date, it updates it.
     """
-    from src.services.adaptive_tdee import AdaptiveTDEEService
-
     tdee_service = AdaptiveTDEEService(db)
 
     # 1. Get previous log to continue the EMA trend
@@ -51,7 +55,9 @@ def log_weight(
     new_trend = tdee_service.calculate_ema_trend(log_input.weight_kg, prev_trend)
 
     # 3. Create full WeightLog
-    log = WeightLog(user_email=user_email, trend_weight=new_trend, **log_input.model_dump())
+    log = WeightLog(
+        user_email=user_email, trend_weight=new_trend, **log_input.model_dump()
+    )
 
     doc_id, is_new = db.weight.save_log(log)
 
@@ -74,9 +80,7 @@ def delete_weight_log(date_str: str, user_email: CurrentUser, brain: AITrainerBr
     except ValueError:
         return {"error": "Invalid date format. Use YYYY-MM-DD"}
 
-    success = brain._database.delete_weight_log(
-        user_email=user_email, log_date=log_date
-    )
+    success = brain.database.delete_weight_log(user_email=user_email, log_date=log_date)
 
     if not success:
         return {"message": "Log not found or could not be deleted", "deleted": False}
@@ -136,7 +140,7 @@ def get_body_composition_stats(
     Returns latest body composition and trends for dashboard.
     """
     # Get last 30 logs for trends
-    logs = brain._database.get_weight_logs(user_email, limit=30)
+    logs = brain.database.get_weight_logs(user_email, limit=30)
 
     if not logs:
         return {"latest": None, "weight_trend": [], "fat_trend": [], "muscle_trend": []}
@@ -171,18 +175,14 @@ def get_body_composition_stats(
 async def import_zepp_life(
     user_email: CurrentUser, db: DatabaseDep, file: UploadFile = File(...)
 ) -> ImportResult:
+    # pylint: disable=duplicate-code
     """
     Import weight/body composition data from Zepp Life CSV export.
     """
     logger.info("Importing Zepp Life data for user: %s", user_email)
-
-    if not file.filename or not file.filename.endswith(".csv"):
-        raise HTTPException(status_code=400, detail="O arquivo deve ser um CSV.")
+    csv_content = await read_csv_file(file)
 
     try:
-        content = await file.read()
-        csv_content = content.decode("utf-8")
-
         result = import_zepp_life_data(user_email, csv_content, db)
 
         logger.info(
@@ -198,7 +198,7 @@ async def import_zepp_life(
         logger.warning(
             "Validation error importing Zepp Life CSV for %s: %s", user_email, e
         )
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error("Error importing Zepp Life CSV for user %s: %s", user_email, e)
         raise HTTPException(status_code=500, detail="Falha ao importar dados.") from e

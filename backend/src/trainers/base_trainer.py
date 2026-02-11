@@ -1,3 +1,7 @@
+"""
+This module contains the abstract base trainer class.
+"""
+
 from abc import ABC, abstractmethod
 from typing import List
 
@@ -36,4 +40,3 @@ class BaseTrainer(ABC):
         """
         Returns the prompt section defining this trainer's personality.
         """
-        pass

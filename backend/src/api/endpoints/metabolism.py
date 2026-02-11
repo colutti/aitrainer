@@ -1,3 +1,7 @@
+"""
+This module contains the API endpoints for metabolism-related data.
+"""
+
 from fastapi import APIRouter, Depends
 from src.core.deps import get_mongo_database
 from src.services.auth import verify_token
@@ -19,6 +23,3 @@ async def get_metabolism_summary(
     tdee_service = AdaptiveTDEEService(db)
     stats = tdee_service.calculate_tdee(user_email, lookback_weeks=weeks)
     return stats
-
-
-

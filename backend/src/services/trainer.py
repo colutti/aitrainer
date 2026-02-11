@@ -78,6 +78,11 @@ class AITrainerBrain:
         self.prompt_builder = PromptBuilder()
         self._executor = ThreadPoolExecutor(max_workers=10)
 
+    @property
+    def database(self) -> MongoDatabase:
+        """Returns the database instance."""
+        return self._database
+
     def _log_prompt_in_background(
         self,
         user_email: str,
@@ -88,7 +93,9 @@ class AITrainerBrain:
         Helper to log prompts to DB in background if tasks available, or sync if not.
         """
         if background_tasks:
-            background_tasks.add_task(self._database.log_prompt, user_email, prompt_data)
+            background_tasks.add_task(
+                self._database.log_prompt, user_email, prompt_data
+            )
         else:
             try:
                 # Fallback for sync callers or when BackgroundTasks not provided
@@ -106,7 +113,9 @@ class AITrainerBrain:
 
         return callback
 
-    def get_chat_history(self, session_id: str, limit: int = 20, offset: int = 0) -> list[ChatHistory]:
+    def get_chat_history(
+        self, session_id: str, limit: int = 20, offset: int = 0
+    ) -> list[ChatHistory]:
         """
         Retrieves the chat history for a given session ID.
 
@@ -160,23 +169,17 @@ class AITrainerBrain:
             profile = UserProfile(
                 email=user_email,
                 password_hash=None,
+                role="user",
                 gender="Masculino",
                 age=30,
                 weight=70.0,
                 height=175,
                 goal="Melhorar condicionamento",
                 goal_type="maintain",
-                # Mandatory fields for Mypy
+                # Mandatory fields for Mypy/Pyright
                 target_weight=None,
                 weekly_rate=0.5,
                 notes=None,
-                long_term_summary=None,
-                last_compaction_timestamp=None,
-                hevy_api_key=None,
-                hevy_enabled=False,
-                hevy_last_sync=None,
-                hevy_webhook_token=None,
-                hevy_webhook_secret=None,
             )
             self.save_user_profile(profile)
         return profile
@@ -250,6 +253,7 @@ class AITrainerBrain:
         Returns:
             Sorted list of messages.
         """
+
         def get_timestamp(msg) -> str:
             if hasattr(msg, "additional_kwargs") and msg.additional_kwargs:
                 return msg.additional_kwargs.get("timestamp", "9999-99-99T99:99:99")
@@ -291,7 +295,7 @@ class AITrainerBrain:
             if not isinstance(raw_content, str):
                 raw_content = str(raw_content)
             content = " ".join(raw_content.split())
-            
+
             # Incorporate timestamp into content for LLM visibility
             content = f"{timestamp_prefix}{content}"
 
@@ -308,7 +312,9 @@ class AITrainerBrain:
 
             elif isinstance(msg, AIMessage):
                 # Pass AI messages as-is, preserving trainer_type in metadata if needed
-                formatted_msgs.append(AIMessage(content=content, additional_kwargs=msg.additional_kwargs))
+                formatted_msgs.append(
+                    AIMessage(content=content, additional_kwargs=msg.additional_kwargs)
+                )
             else:
                 # Fallback for unknown message types
                 formatted_msgs.append(HumanMessage(content=content))
@@ -342,23 +348,30 @@ class AITrainerBrain:
         logger.info("Generating workout stream for user: %s", user_email)
 
         import asyncio
+
         # Parallelize: profile retrieval (using shared executor)
         # We use wrap_future + await to avoid blocking the event loop
-        future_user = self._executor.submit(self._get_or_create_user_profile, user_email)
+        future_user = self._executor.submit(
+            self._get_or_create_user_profile, user_email
+        )
         future_trainer = self._executor.submit(
             self._get_or_create_trainer_profile, user_email
         )
-        
+
         # Memory retrieval is now async
         profile = await asyncio.wrap_future(future_user)
         trainer_profile_obj = await asyncio.wrap_future(future_trainer)
-        hybrid_memories = await self.memory_manager.retrieve_hybrid_memories(user_input, user_email)
+        hybrid_memories = await self.memory_manager.retrieve_hybrid_memories(
+            user_input, user_email
+        )
 
         # Format memories using MemoryManager
         relevant_memories_str = self.memory_manager.format_memories(hybrid_memories)
 
         # Log memory retrieval statistics for cost monitoring
-        summary_length = len(profile.long_term_summary) if profile.long_term_summary else 0
+        summary_length = (
+            len(profile.long_term_summary) if profile.long_term_summary else 0
+        )
         memory_context_chars = len(relevant_memories_str)
         estimated_tokens = memory_context_chars // 4  # Rough approximation
         logger.info(
@@ -383,7 +396,9 @@ class AITrainerBrain:
 
         # Load memory variables (includes summary + recent messages if buffer exceeded)
         # We use to_thread because this hits MongoDB synchronously via LangChain
-        memory_vars = await asyncio.to_thread(conversation_memory.load_memory_variables, {})
+        memory_vars = await asyncio.to_thread(
+            conversation_memory.load_memory_variables, {}
+        )
         chat_history_messages = memory_vars.get("chat_history", [])
 
         # Format structured history
@@ -408,7 +423,9 @@ class AITrainerBrain:
         )
 
         # Get prompt template using PromptBuilder
-        prompt_template = self.prompt_builder.get_prompt_template(input_data, is_telegram=is_telegram)
+        prompt_template = self.prompt_builder.get_prompt_template(
+            input_data, is_telegram=is_telegram
+        )
 
         # Create workout tracking tools with injected dependencies
         save_workout_tool = create_save_workout_tool(self._database, user_email)
@@ -607,9 +624,10 @@ class AITrainerBrain:
             # Fallback if loop is already running (e.g. in some specific test environments)
             loop = asyncio.get_event_loop()
             if loop.is_running():
-                # This is tricky in sync code. 
+                # This is tricky in sync code.
                 # But pytest benchmarks usually don't run their own loop during the call.
-                import nest_asyncio # type: ignore
+                import nest_asyncio  # type: ignore # pylint: disable=import-error,import-outside-toplevel
+
                 nest_asyncio.apply()
                 return loop.run_until_complete(collect_response())
             return loop.run_until_complete(collect_response())
@@ -656,7 +674,7 @@ class AITrainerBrain:
                 "user_input": user_input,
                 "response": response,
                 "workout_summary": workout_summary,
-            }
+            },
         )
 
         return response
@@ -682,11 +700,16 @@ class AITrainerBrain:
                 logger.debug("Mem0 response keys: %s", result.keys())
                 logger.debug("Mem0 full response: %s", result)
 
-            memories = (
-                result
-                if isinstance(result, list)
-                else result.get("memories", result.get("results", []))
-            )
+            if isinstance(result, list):
+                raw_memories = result
+            elif isinstance(result, dict):
+                raw_memories = result.get("memories", result.get("results", []))
+            else:
+                raw_memories = []
+                
+            # Ensure it's a list of dicts for Pyright
+            memories: list[dict] = [m for m in raw_memories if isinstance(m, dict)]
+            
             logger.info(
                 "Retrieved %d memories from Mem0 for user: %s", len(memories), user_id
             )
@@ -735,7 +758,7 @@ class AITrainerBrain:
         """
         try:
             return self._memory.get(memory_id)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to get memory %s: %s", memory_id, e)
             return None
 
@@ -760,6 +783,7 @@ class AITrainerBrain:
         Returns:
             tuple: (list of memories, total count)
         """
+        # pylint: disable=import-outside-toplevel,too-many-arguments,too-many-locals
         from qdrant_client import models as qdrant_models
 
         logger.info(

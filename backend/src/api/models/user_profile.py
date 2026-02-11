@@ -1,5 +1,8 @@
+"""
+This module contains the models for user profiles and preferences.
+"""
+
 from datetime import datetime
-from typing import Optional
 from pydantic import BaseModel, Field, model_validator
 
 
@@ -18,34 +21,35 @@ class UserProfileInput(BaseModel):
     height: int = Field(
         ..., ge=100, le=250, description="Height in cm between 100 and 250"
     )
-    goal: Optional[str] = Field(None, description="User's goal (legacy)")
+    goal: str | None = Field(default=None, description="User's goal (legacy)")
     goal_type: str = Field(
         ...,
         pattern="^(lose|gain|maintain)$",
         description="Type of goal: lose, gain, or maintain",
     )
     target_weight: float | None = Field(
-        None, ge=30.0, le=500.0, description="Target weight in kg (optional)"
+        default=None, ge=30.0, le=500.0, description="Target weight in kg (optional)"
     )
     weekly_rate: float = Field(
-        0.5, ge=0.0, le=2.0, description="Desired weekly weight change rate in kg"
+        default=0.5, ge=0.0, le=2.0, description="Desired weekly weight change rate in kg"
     )
-    notes: Optional[str] = Field(
-        None, max_length=1000, description="User observations/notes"
+    notes: str | None = Field(
+        default=None, max_length=1000, description="User observations/notes"
     )
 
     # New V3 Field: Stores compacted history context
     long_term_summary: str | None = Field(
-        None, description="Stores compacted history context"
+        default=None, description="Stores compacted history context"
     )
 
     # New V3 Field: Tracks the timestamp of the last message included in the summary
     last_compaction_timestamp: str | None = Field(
-        None, description="ISO timestamp of the last summarized message"
+        default=None, description="ISO timestamp of the last summarized message"
     )
 
     @model_validator(mode="after")
     def validate_weekly_rate(self) -> "UserProfileInput":
+        """Validates that weekly rate is set if goal is to lose or gain weight."""
         if self.goal_type in ("lose", "gain") and (
             self.weekly_rate is None or self.weekly_rate <= 0
         ):
@@ -61,33 +65,34 @@ class UserProfile(UserProfileInput):
     """
 
     email: str = Field(..., description="User's email")
-    password_hash: Optional[str] = Field(
-        None, description="Hashed password for authentication"
+    password_hash: str | None = Field(
+        default=None, description="Hashed password for authentication"
     )
-    role: str = Field("user", description="User role: user or admin")
+    role: str = Field(default="user", description="User role: user or admin")
 
     # Hevy Integration
-    hevy_api_key: Optional[str] = Field(None, description="Hevy API key, encrypted")
-    hevy_enabled: bool = Field(False, description="Integration enabled/disabled toggle")
-    hevy_last_sync: Optional[datetime] = Field(
-        None, description="Last successful sync timestamp"
+    hevy_api_key: str | None = Field(default=None, description="Hevy API key, encrypted")
+    hevy_enabled: bool = Field(default=False, description="Integration enabled/disabled toggle")
+    hevy_last_sync: datetime | None = Field(
+        default=None, description="Last successful sync timestamp"
     )
-    hevy_webhook_token: Optional[str] = Field(
-        None, description="Unique token for webhook URL path"
+    hevy_webhook_token: str | None = Field(
+        default=None, description="Unique token for webhook URL path"
     )
-    hevy_webhook_secret: Optional[str] = Field(
-        None, description="Secret for Authorization header validation"
+    hevy_webhook_secret: str | None = Field(
+        default=None, description="Secret for Authorization header validation"
     )
 
     # Telegram Notifications
     telegram_notify_on_workout: bool = Field(
-        True, description="Send Telegram notification when workout is saved"
+        default=True, description="Send Telegram notification when workout is saved"
     )
     telegram_notify_on_nutrition: bool = Field(
-        False, description="Send Telegram notification when nutrition is logged (future)"
+        default=False,
+        description="Send Telegram notification when nutrition is logged (future)",
     )
     telegram_notify_on_weight: bool = Field(
-        False, description="Send Telegram notification when weight is logged (future)"
+        default=False, description="Send Telegram notification when weight is logged (future)"
     )
 
     def _goal_type_label(self) -> str:

@@ -64,11 +64,11 @@ def verify_token(token: str = Depends(oauth2_scheme)) -> str:
 
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-        email: str = payload.get("sub")
+        email = payload.get("sub")
         if email is None:
             logger.warning("Token payload missing 'sub' claim (email).")
             raise credentials_exception
-        return email
+        return str(email)
 
     except jwt.InvalidTokenError as exception:
         logger.warning("Invalid JWT token provided: %s", exception)

@@ -178,7 +178,8 @@ class TestMemoryIntegration:
         mock_memory = Mock()
         return MemoryManager(mock_memory)
 
-    def test_retrieve_hybrid_with_reduced_limits(self, memory_manager):
+    @pytest.mark.asyncio
+    async def test_retrieve_hybrid_with_reduced_limits(self, memory_manager):
         """Test that hybrid retrieval uses optimized limits."""
         # Mock the Mem0 search results
         mock_memory = memory_manager._memory
@@ -195,7 +196,7 @@ class TestMemoryIntegration:
             ]
         }
 
-        _ = memory_manager.retrieve_hybrid_memories("test query", "user123")
+        _ = await memory_manager.retrieve_hybrid_memories("test query", "user123")
 
         # Verify that search was called with optimized limits
         search_calls = mock_memory.search.call_args_list

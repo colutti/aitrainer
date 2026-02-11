@@ -60,8 +60,9 @@ def create_invite(args, db):
     if repo.has_active_invite(email):
         print(f"⚠️  Warning: Active invite already exists for {email}")
         existing = repo.get_by_email(email)
-        print(f"   Token: {existing.token}")
-        print(f"   Expires: {existing.expires_at}")
+        if existing:
+            print(f"   Token: {existing.token}")
+            print(f"   Expires: {existing.expires_at}")
 
         overwrite = input("Create new invite anyway? (y/N): ")
         if overwrite.lower() != "y":
@@ -155,7 +156,8 @@ def get_invite(args, db):
 
     if invite.used:
         print("   Status: ❌ Used")
-        print(f"   Used At: {invite.used_at.strftime('%Y-%m-%d %H:%M:%S UTC')}")
+        if invite.used_at:
+            print(f"   Used At: {invite.used_at.strftime('%Y-%m-%d %H:%M:%S UTC')}")
     elif invite.expires_at < now:
         print("   Status: ⏰ Expired")
     else:

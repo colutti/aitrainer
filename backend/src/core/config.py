@@ -1,4 +1,11 @@
-from pydantic import ValidationError, field_validator
+"""
+This module contains the configuration settings for the application.
+"""
+
+import logging
+import os
+
+from pydantic import ValidationError, field_validator, Field
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -7,14 +14,20 @@ from pydantic_settings import (
 
 from src.core.logs import logger
 from src.prompts.prompt_template import PROMPT_TEMPLATE
+from src.prompts.mem0_prompt import MEM0_FACT_EXTRACTION_PROMPT
 
 
 class Settings(BaseSettings):
+    """
+    Settings class for the application, using pydantic-settings.
+    """
+
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore", frozen=True
     )
 
     @classmethod
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def settings_customise_sources(
         cls,
         settings_cls: type[BaseSettings],
@@ -25,17 +38,7 @@ class Settings(BaseSettings):
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         """
         Customizes configuration source priority.
-
-        If running in a container (RUNNING_IN_CONTAINER=true):
-            Prioritize Docker environment variables (env_settings) over .env file.
-            Order: Init > Env > DotEnv
-
-        If running locally (scripts):
-            Prioritize .env file over shell environment variables to prevent accidents.
-            Order: Init > DotEnv > Env
         """
-        import os
-
         if os.getenv("RUNNING_IN_CONTAINER") == "true":
             return init_settings, env_settings, dotenv_settings, file_secret_settings
 
@@ -43,16 +46,16 @@ class Settings(BaseSettings):
         return init_settings, dotenv_settings, env_settings, file_secret_settings
 
     # ====== API CONFIGURATION ======
-    SECRET_KEY: str
+    SECRET_KEY: str = Field(default="dummy_secret_key")
     API_SERVER_PORT: int = 8000
 
-    MAX_SHORT_TERM_MEMORY_MESSAGES: int = 20  # Reduced for token efficiency, with lazy expansion
-    MAX_LONG_TERM_MEMORY_MESSAGES: int
-    SUMMARY_MAX_TOKEN_LIMIT: int = 200  # Trigger summarization when buffer exceeds this
-    ALLOWED_ORIGINS: str | list[str]
+    MAX_SHORT_TERM_MEMORY_MESSAGES: int = 20
+    MAX_LONG_TERM_MEMORY_MESSAGES: int = Field(default=50)
+    SUMMARY_MAX_TOKEN_LIMIT: int = 200
+    ALLOWED_ORIGINS: str | list[str] = Field(default="*")
     LOG_LEVEL: str = "INFO"
-    RATE_LIMIT_LOGIN: str = "5/minute"  # Rate limit for login endpoint
-    MAX_PROMPT_LOGS: int = 20  # Number of LLM prompts to keep per user
+    RATE_LIMIT_LOGIN: str = "5/minute"
+    MAX_PROMPT_LOGS: int = 20
 
     # ====== BETTERSTACK INTEGRATION ======
     BETTERSTACK_API_TOKEN: str = ""
@@ -62,14 +65,14 @@ class Settings(BaseSettings):
     @classmethod
     def assemble_cors_origins(cls, v: str | list[str]) -> list[str]:
         """
-        Validates and parses ALLOWED_ORIGINS. Supports both JSON lists and comma-separated strings.
+        Validates and parses ALLOWED_ORIGINS.
         """
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]
         return v  # type: ignore
 
     # ====== AI PROVIDER SELECTION ======
-    AI_PROVIDER: str = "gemini"  # Options: "ollama", "openai", "gemini"
+    AI_PROVIDER: str = "gemini"
 
     # ====== GEMINI STUFF ========
     GEMINI_API_KEY: str = ""
@@ -90,37 +93,40 @@ class Settings(BaseSettings):
     OPENAI_EMBEDDER_MODEL: str = "text-embedding-3-small"
 
     # ====== MONGO STUFF ======
-    DB_NAME: str
-    MONGO_URI: str
-    
+    DB_NAME: str = Field(default="aitrainer")
+    MONGO_URI: str = Field(default="mongodb://localhost:27017")
+
     @field_validator("MONGO_URI", mode="before")
     @classmethod
     def strip_quotes(cls, v: str) -> str:
+        """Strips quotes from the MONGO_URI string."""
         if isinstance(v, str):
-            return v.strip('\"')
+            return v.strip('"')
         return v
 
     # ====== QDRANT AND MEM0 STUFF ======
-    QDRANT_HOST: str
-    QDRANT_PORT: int
-    QDRANT_COLLECTION_NAME: str
-    QDRANT_API_KEY: str
+    # pylint: disable=no-member
+    QDRANT_HOST: str = Field(default="localhost")
+    QDRANT_PORT: int = Field(default=6333)
+    QDRANT_COLLECTION_NAME: str = Field(default="aitrainer_memories")
+    QDRANT_API_KEY: str = Field(default="local_dummy_key")
 
     # ====== MEM0 MEMORY OPTIMIZATION ======
-    MEM0_CRITICAL_LIMIT: int = 4  # Reduced from 10 for cost optimization
-    MEM0_SEMANTIC_LIMIT: int = 5  # Reduced from 10 for cost optimization
-    MEM0_RECENT_LIMIT: int = 3  # Reduced from 10 for cost optimization
-    MEM0_SEMANTIC_DEDUP_THRESHOLD: float = 0.85  # Similarity threshold for deduplication
-    MEM0_MAX_CONTEXT_SIZE: int = 1024  # Max bytes for memory context (1KB)
-    MEM0_DATE_THRESHOLD_DAYS: int = 7  # Hide dates for memories < N days old
+    MEM0_CRITICAL_LIMIT: int = 4
+    MEM0_SEMANTIC_LIMIT: int = 5
+    MEM0_RECENT_LIMIT: int = 3
+    MEM0_SEMANTIC_DEDUP_THRESHOLD: float = 0.85
+    MEM0_MAX_CONTEXT_SIZE: int = 1024
+    MEM0_DATE_THRESHOLD_DAYS: int = 7
 
     # ====== TELEGRAM STUFF ======
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_WEBHOOK_SECRET: str = ""
 
-    def get_mem0_config(self):
-        from src.prompts.mem0_prompt import MEM0_FACT_EXTRACTION_PROMPT
-
+    def get_mem0_config(self) -> dict:
+        """
+        Generates the configuration dictionary for Mem0.
+        """
         llm_config = {
             "provider": self.AI_PROVIDER,
             "config": {
@@ -130,9 +136,7 @@ class Settings(BaseSettings):
         }
 
         embedder_config = {"provider": self.AI_PROVIDER, "config": {}}
-
-        # Set embedding dimensions based on provider
-        embedding_dims = self.EMBEDDING_MODEL_DIMS  # Default: 768
+        embedding_dims = self.EMBEDDING_MODEL_DIMS
 
         if self.AI_PROVIDER == "gemini":
             llm_config["config"].update(
@@ -162,7 +166,6 @@ class Settings(BaseSettings):
                 }
             )
         elif self.AI_PROVIDER == "openai":
-            # Use 768 dims for compatibility with existing Qdrant collection
             llm_config["config"].update(
                 {
                     "model": self.OPENAI_LLM_MODEL,
@@ -173,7 +176,7 @@ class Settings(BaseSettings):
                 {
                     "model": self.OPENAI_EMBEDDER_MODEL,
                     "api_key": self.OPENAI_API_KEY,
-                    "embedding_dims": embedding_dims,  # 768 to match Qdrant
+                    "embedding_dims": embedding_dims,
                 }
             )
 
@@ -186,8 +189,6 @@ class Settings(BaseSettings):
         }
 
         if self.QDRANT_HOST.startswith("http"):
-            # If the host contains protocol, treat it as a URL
-            # If port is not already in the URL, append it
             if str(self.QDRANT_PORT) not in self.QDRANT_HOST:
                 qdrant_config["url"] = f"{self.QDRANT_HOST}:{self.QDRANT_PORT}"
             else:
@@ -207,21 +208,11 @@ class Settings(BaseSettings):
             "version": "v1.1",
         }
 
-    # MONGO_URI previously computed field removed, now a direct variable
-
 
 # Instanciação segura
 try:
     settings = Settings()  # type: ignore
-    # Sincroniza o nível de log definitivo a partir do que foi carregado no Settings
-    import logging
-
     logger.setLevel(getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO))
-except ValidationError as e:
-    from src.core.logs import logger
-
+except ValidationError as validation_error:
     logger.critical("CRITICAL ERROR: Missing environment variables in .env file!")
-    logger.critical(e)
-    # During tests, we might want to suppress exit or raise error
-    # sys.exit(1)
-    pass
+    logger.critical(validation_error)

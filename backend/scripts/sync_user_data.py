@@ -30,7 +30,7 @@ def get_mongo_client(uri: str) -> MongoClient:
         sys.exit(1)
 
 
-def get_qdrant_client_from_args(url: str, api_key: Optional[str]) -> QdrantClient:
+def get_qdrant_client_from_args(url: str, api_key: Optional[str]) -> QdrantClient | None:
     try:
         if not url:
             return None
@@ -261,13 +261,16 @@ def main():
         else:
             dest_qdrant = QdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT)
         
-        sync_qdrant(
-            src_qdrant, 
-            dest_qdrant, 
-            args.email, 
-            src_collection,
-            dest_collection
-        )
+        if src_qdrant:
+            sync_qdrant(
+                src_qdrant, 
+                dest_qdrant, 
+                args.email, 
+                src_collection,
+                dest_collection
+            )
+        else:
+            print("⚠️ Skipping Qdrant sync: Could not initialize source client.")
     else:
         print("\n⏭️  Skipping Qdrant Sync (No PROD URL provided).")
 

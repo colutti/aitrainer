@@ -8,7 +8,7 @@ from urllib.parse import urlparse  # noqa: E402
 from src.core.config import settings  # noqa: E402
 
 
-def confirm_execution(script_name: str, additional_info: dict = None):
+def confirm_execution(script_name: str, additional_info: dict | None = None):
     """
     Displays a safety check banner and waits for user confirmation.
     """

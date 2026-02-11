@@ -1,5 +1,10 @@
+"""
+This module provides services for importing nutrition data from MyFitnessPal CSV files.
+"""
+
 import csv
 import io
+import logging
 from datetime import datetime
 from typing import Optional
 from dataclasses import dataclass, field
@@ -16,7 +21,7 @@ COLUMN_MAPPING = {
     "Calorias": "calories",
     "Gorduras (g)": "fat",
     "Colesterol": "cholesterol",
-    "Sódio (mg)": "sodium",
+    "S Sodium (mg)": "sodium",
     "Carboidratos (g)": "carbs",
     "Fibra": "fiber",
     "Açucar": "sugar",
@@ -33,6 +38,7 @@ REQUIRED_COLUMNS = [
 
 
 @dataclass
+# pylint: disable=too-many-instance-attributes
 class DailyNutrition:
     """Aggregated daily nutrition from multiple meals."""
 
@@ -103,11 +109,13 @@ def parse_csv_content(file_content: str) -> dict[str, DailyNutrition]:
     headers = reader.fieldnames or []
     missing = [col for col in REQUIRED_COLUMNS if col not in headers]
     if missing:
-        raise ValueError(
-            f"Colunas obrigatórias ausentes: {', '.join(missing)}. Verifique se o CSV é do MyFitnessPal em português."
+        error_msg = (
+            f"Colunas obrigatórias ausentes: {', '.join(missing)}. "
+            "Verifique se o CSV é do MyFitnessPal em português."
         )
+        raise ValueError(error_msg)
 
-    for row_num, row in enumerate(reader, start=2):  # Start at 2 (header is 1)
+    for _, row in enumerate(reader, start=2):  # Start at 2 (header is 1)
         try:
             # Normalize column names
             normalized = {}
@@ -123,8 +131,7 @@ def parse_csv_content(file_content: str) -> dict[str, DailyNutrition]:
             try:
                 date_obj = datetime.strptime(date_str, "%Y-%m-%d")
             except ValueError:
-                # Try explicit skip of malformed dates silently to avoid log spam,
-                # or we could log/track errors if needed.
+                # Try explicit skip of malformed dates silently to avoid log spam
                 continue
 
             # Get or create daily aggregation
@@ -134,8 +141,8 @@ def parse_csv_content(file_content: str) -> dict[str, DailyNutrition]:
             meal_name = normalized.get("meal", "Refeição")
             daily_data[date_str].add_meal(meal_name, normalized)
 
-        except Exception:
-            # Skip rows with errors
+        except (ValueError, TypeError):
+            # Skip rows with data type errors
             continue
 
     return daily_data
@@ -161,7 +168,7 @@ def import_nutrition_from_csv(
         # Re-raise validation errors
         raise e
     except Exception as e:
-        raise ValueError(f"Erro ao processar CSV: {str(e)}")
+        raise ValueError(f"Erro ao processar CSV: {str(e)}") from e
 
     if not daily_data:
         return ImportResult(created=0, updated=0, errors=0, total_days=0)
@@ -183,7 +190,8 @@ def import_nutrition_from_csv(
                 created += 1
             else:
                 updated += 1
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logging.error("Failed to save nutrition log for %s: %s", date_str, e)
             errors += 1
             error_messages.append(f"Erro em {date_str}: {str(e)}")
 

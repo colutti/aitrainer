@@ -1,3 +1,7 @@
+"""
+This module contains the models for trainer profiles.
+"""
+
 from pydantic import BaseModel, Field
 from src.trainers.registry import TrainerRegistry
 
@@ -11,6 +15,12 @@ class TrainerProfileInput(BaseModel):
         ...,
         description="The ID of the selected trainer (e.g., 'atlas', 'luna', 'sargento', 'sofia').",
     )
+    preferred_language: str | None = Field(
+        default="pt-BR", description="Preferred language for the trainer"
+    )
+    personality_level: str | None = Field(
+        default="balanced", description="Personality intensity level"
+    )
 
 
 class TrainerProfile(TrainerProfileInput):
@@ -23,7 +33,7 @@ class TrainerProfile(TrainerProfileInput):
     def get_trainer_profile_summary(self) -> str:
         """
         Generates a summary of the trainer's profile for use in prompts.
-        Fetches the specific trainer implementation from the registry and returns its prompt section.
+        Fetches the specific trainer implementation from the registry.
 
         Returns:
             str: Formatted summary of the trainer's profile.

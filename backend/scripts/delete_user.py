@@ -139,6 +139,12 @@ def main():
         # Handle dict response (results vs direct list)
         if isinstance(memories, dict):
             memories = memories.get("results", []) or memories.get("memories", [])
+            
+        # Ensure memories is a list of dicts for Pyright
+        if not isinstance(memories, list):
+            memories = []
+        
+        memories = [m for m in memories if isinstance(m, dict)]
 
         print(f"ℹ️  Found {len(memories)} memories in Vector Store")
     except Exception as e:
@@ -183,7 +189,12 @@ def main():
                 )
                 deleted_count = 0
                 for mem in memories:
-                    mem_id = mem.get("id")
+                    mem_id = None
+                    if isinstance(mem, dict):
+                        mem_id = mem.get("id")
+                    elif hasattr(mem, "id"):
+                        mem_id = getattr(mem, "id", None)
+                    
                     if mem_id:
                         mem0.delete(mem_id)
                         deleted_count += 1

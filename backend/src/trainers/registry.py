@@ -1,3 +1,7 @@
+"""
+Module for trainer implementation.
+"""
+
 from typing import Dict, List
 from src.trainers.base_trainer import BaseTrainer
 from src.trainers.atlas_trainer import AtlasTrainer
