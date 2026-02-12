@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '../../../shared/components/ui/Button';
 import { Input } from '../../../shared/components/ui/Input';
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
-import type { HevyStatus, HevyWebhookConfig, HevyWebhookCredentials, ImportResult } from '../../../shared/types/integration';
+import type { HevyStatus, HevyWebhookConfig, HevyWebhookCredentials, ImportResult, TelegramStatus } from '../../../shared/types/integration';
 import { integrationsApi } from '../api/integrations-api';
 
 export function IntegrationsPage() {
@@ -20,7 +20,7 @@ export function IntegrationsPage() {
   const [webhookLoading, setWebhookLoading] = useState(false);
 
   // Telegram State
-  const [telegramStatus, setTelegramStatus] = useState<{ connected: boolean; username?: string } | null>(null);
+  const [telegramStatus, setTelegramStatus] = useState<TelegramStatus | null>(null);
   const [telegramCode, setTelegramCode] = useState<{ code: string; url: string } | null>(null);
   const [telegramLoading, setTelegramLoading] = useState(false);
 
@@ -308,13 +308,13 @@ export function IntegrationsPage() {
              <h2 className="text-xl font-bold text-text-primary">Telegram Bot</h2>
              <p className="text-sm text-text-secondary">Receba notificações e logs rápidos pelo chat.</p>
            </div>
-           {telegramStatus?.connected && <BadgeConnected />}
+           {telegramStatus?.linked && <BadgeConnected />}
         </div>
 
         <div className="pt-2">
-          {telegramStatus?.connected ? (
+          {telegramStatus?.linked ? (
              <div className="text-center p-4 bg-zinc-900 rounded-xl">
-               <p className="text-green-500 font-bold mb-1">Conectado como @{telegramStatus.username}</p>
+               <p className="text-green-500 font-bold mb-1">Conectado como @{telegramStatus.telegram_username}</p>
                <p className="text-sm text-text-secondary">O bot está pronto para enviar alertas.</p>
              </div>
           ) : telegramCode ? (

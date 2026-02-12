@@ -1,5 +1,5 @@
 import { httpClient } from '../../../shared/api/http-client';
-import type { HevyStatus, HevyWebhookConfig, HevyWebhookCredentials, ImportResult } from '../../../shared/types/integration';
+import type { HevyStatus, HevyWebhookConfig, HevyWebhookCredentials, ImportResult, TelegramStatus } from '../../../shared/types/integration';
 
 export const integrationsApi = {
   // Hevy
@@ -88,7 +88,7 @@ export const integrationsApi = {
   },
 
   // Telegram
-  getTelegramStatus: async (): Promise<{ connected: boolean; username?: string } | undefined> => {
+  getTelegramStatus: async (): Promise<TelegramStatus | undefined> => {
      return httpClient('/integrations/telegram/status');
   },
   

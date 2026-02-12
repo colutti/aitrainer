@@ -126,7 +126,7 @@ describe('integrationsApi', () => {
   });
 
   it('should get Telegram status', async () => {
-    const mockRes = { connected: true, username: 'user' };
+    const mockRes = { linked: true, telegram_username: 'user' };
     vi.mocked(httpClient).mockResolvedValue(mockRes);
     
     const res = await integrationsApi.getTelegramStatus();
