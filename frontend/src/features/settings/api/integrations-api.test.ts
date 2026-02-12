@@ -37,18 +37,54 @@ describe('integrationsApi', () => {
     await integrationsApi.saveHevyKey('key-123');
     expect(httpClient).toHaveBeenCalledWith('/integrations/hevy/config', {
       method: 'POST',
-      body: JSON.stringify({ api_key: 'key-123' })
+      body: JSON.stringify({ api_key: 'key-123', enabled: true })
+    });
+  });
+
+  it('should remove Hevy key', async () => {
+    await integrationsApi.removeHevyKey();
+    expect(httpClient).toHaveBeenCalledWith('/integrations/hevy/config', {
+      method: 'POST',
+      body: JSON.stringify({ api_key: '', enabled: false })
     });
   });
 
   it('should sync Hevy', async () => {
-    const mockRes = { message: 'Synced', workouts: 5 };
+    const mockRes = { imported: 5, skipped: 0 };
     vi.mocked(httpClient).mockResolvedValue(mockRes);
-    
+
     const res = await integrationsApi.syncHevy();
-    
-    expect(httpClient).toHaveBeenCalledWith('/integrations/hevy/sync', { method: 'POST' });
+
+    expect(httpClient).toHaveBeenCalledWith('/integrations/hevy/import', {
+      method: 'POST',
+      body: JSON.stringify({ mode: 'skip_duplicates' })
+    });
     expect(res).toEqual(mockRes);
+  });
+
+  it('should get webhook config', async () => {
+    const mockRes = { hasWebhook: true, webhookUrl: 'https://example.com/webhook', authHeader: 'Bearer ****' };
+    vi.mocked(httpClient).mockResolvedValue(mockRes);
+
+    const res = await integrationsApi.getWebhookConfig();
+
+    expect(httpClient).toHaveBeenCalledWith('/integrations/hevy/webhook/config');
+    expect(res).toEqual(mockRes);
+  });
+
+  it('should generate webhook', async () => {
+    const mockRes = { webhookUrl: 'https://example.com/webhook/new', authHeader: 'Bearer secret' };
+    vi.mocked(httpClient).mockResolvedValue(mockRes);
+
+    const res = await integrationsApi.generateWebhook();
+
+    expect(httpClient).toHaveBeenCalledWith('/integrations/hevy/webhook/generate', { method: 'POST' });
+    expect(res).toEqual(mockRes);
+  });
+
+  it('should revoke webhook', async () => {
+    await integrationsApi.revokeWebhook();
+    expect(httpClient).toHaveBeenCalledWith('/integrations/hevy/webhook', { method: 'DELETE' });
   });
 
   it('should upload MFP CSV', async () => {

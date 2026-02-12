@@ -1,5 +1,5 @@
 import { httpClient } from '../../../shared/api/http-client';
-import type { HevyStatus, ImportResult } from '../../../shared/types/integration';
+import type { HevyStatus, HevyWebhookConfig, HevyWebhookCredentials, ImportResult } from '../../../shared/types/integration';
 
 export const integrationsApi = {
   // Hevy
@@ -10,12 +10,35 @@ export const integrationsApi = {
   saveHevyKey: async (apiKey: string): Promise<HevyStatus | undefined> => {
     return httpClient('/integrations/hevy/config', {
       method: 'POST',
-      body: JSON.stringify({ api_key: apiKey })
+      body: JSON.stringify({ api_key: apiKey, enabled: true })
     });
   },
 
-  syncHevy: async (): Promise<{ message: string; workouts: number } | undefined> => {
-    return httpClient('/integrations/hevy/sync', { method: 'POST' });
+  removeHevyKey: async (): Promise<HevyStatus | undefined> => {
+    return httpClient('/integrations/hevy/config', {
+      method: 'POST',
+      body: JSON.stringify({ api_key: '', enabled: false })
+    });
+  },
+
+  syncHevy: async (): Promise<{ imported: number; skipped: number } | undefined> => {
+    return httpClient('/integrations/hevy/import', {
+      method: 'POST',
+      body: JSON.stringify({ mode: 'skip_duplicates' })
+    });
+  },
+
+  // Webhook
+  getWebhookConfig: async (): Promise<HevyWebhookConfig | undefined> => {
+    return httpClient('/integrations/hevy/webhook/config');
+  },
+
+  generateWebhook: async (): Promise<HevyWebhookCredentials | undefined> => {
+    return httpClient('/integrations/hevy/webhook/generate', { method: 'POST' });
+  },
+
+  revokeWebhook: async (): Promise<void> => {
+    await httpClient('/integrations/hevy/webhook', { method: 'DELETE' });
   },
 
   // MyFitnessPal (CSV Import)

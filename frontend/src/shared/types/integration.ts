@@ -21,4 +21,15 @@ export interface HevyStatus {
   lastSync: string | null; // ISO date
 }
 
+export interface HevyWebhookConfig {
+  hasWebhook: boolean;
+  webhookUrl: string | null;
+  authHeader: string | null;
+}
+
+export interface HevyWebhookCredentials {
+  webhookUrl: string;
+  authHeader: string;
+}
+
 export type { ImportResult };

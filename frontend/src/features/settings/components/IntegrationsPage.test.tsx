@@ -11,7 +11,11 @@ vi.mock('../api/integrations-api', () => ({
   integrationsApi: {
     getHevyStatus: vi.fn(),
     saveHevyKey: vi.fn(),
+    removeHevyKey: vi.fn(),
     syncHevy: vi.fn(),
+    getWebhookConfig: vi.fn(),
+    generateWebhook: vi.fn(),
+    revokeWebhook: vi.fn(),
     getTelegramStatus: vi.fn(),
     generateTelegramCode: vi.fn(),
     uploadMfpCsv: vi.fn(),
@@ -38,6 +42,7 @@ describe('IntegrationsPage', () => {
   const setupMocks = () => {
     vi.mocked(integrationsApi.getHevyStatus).mockResolvedValue({ enabled: false, hasKey: false, apiKeyMasked: null, lastSync: null });
     vi.mocked(integrationsApi.getTelegramStatus).mockResolvedValue({ connected: false });
+    vi.mocked(integrationsApi.getWebhookConfig).mockResolvedValue({ hasWebhook: false, webhookUrl: null, authHeader: null });
   };
 
   it('should render integrations status', async () => {
@@ -72,7 +77,8 @@ describe('IntegrationsPage', () => {
   it('should sync Hevy successfully', async () => {
     vi.mocked(integrationsApi.getHevyStatus).mockResolvedValue({ enabled: true, hasKey: true, apiKeyMasked: '****123', lastSync: null });
     vi.mocked(integrationsApi.getTelegramStatus).mockResolvedValue({ connected: false });
-    vi.mocked(integrationsApi.syncHevy).mockResolvedValue({ message: 'Success', workouts: 5 });
+    vi.mocked(integrationsApi.getWebhookConfig).mockResolvedValue({ hasWebhook: false, webhookUrl: null, authHeader: null });
+    vi.mocked(integrationsApi.syncHevy).mockResolvedValue({ imported: 5, skipped: 0 });
 
     render(<IntegrationsPage />);
 
@@ -81,20 +87,26 @@ describe('IntegrationsPage', () => {
 
     await waitFor(() => {
       expect(integrationsApi.syncHevy).toHaveBeenCalled();
-      expect(mockNotify.success).toHaveBeenCalledWith(expect.stringContaining('Workouts: 5'));
+      expect(mockNotify.success).toHaveBeenCalledWith(expect.stringContaining('Importados: 5'));
     });
   });
 
-  it('should remove Hevy key visually', async () => {
-    vi.mocked(integrationsApi.getHevyStatus).mockResolvedValue({ enabled: true, hasKey: true, apiKeyMasked: '****123', lastSync: null });
+  it('should remove Hevy key via backend', async () => {
+    vi.mocked(integrationsApi.getHevyStatus)
+      .mockResolvedValueOnce({ enabled: true, hasKey: true, apiKeyMasked: '****123', lastSync: null });
     vi.mocked(integrationsApi.getTelegramStatus).mockResolvedValue({ connected: false });
+    vi.mocked(integrationsApi.getWebhookConfig).mockResolvedValue({ hasWebhook: false, webhookUrl: null, authHeader: null });
+    vi.mocked(integrationsApi.removeHevyKey).mockResolvedValue({ enabled: false, hasKey: false, apiKeyMasked: null, lastSync: null });
 
     render(<IntegrationsPage />);
 
     const removeBtn = await screen.findByText(/Remover/);
     fireEvent.click(removeBtn);
 
-    expect(screen.getByLabelText(/API Key/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(integrationsApi.removeHevyKey).toHaveBeenCalled();
+      expect(screen.getByLabelText(/API Key/i)).toBeInTheDocument();
+    });
   });
 
   it('should handle uploads (MFP)', async () => {
@@ -144,6 +156,46 @@ describe('IntegrationsPage', () => {
 
     await waitFor(() => {
       expect(mockNotify.error).toHaveBeenCalledWith('Erro ao gerar código do Telegram.');
+    });
+  });
+
+  it('should display webhook configuration when available', async () => {
+    vi.mocked(integrationsApi.getHevyStatus).mockResolvedValue({ enabled: true, hasKey: true, apiKeyMasked: '****123', lastSync: null });
+    vi.mocked(integrationsApi.getTelegramStatus).mockResolvedValue({ connected: false });
+    vi.mocked(integrationsApi.getWebhookConfig).mockResolvedValue({
+      hasWebhook: true,
+      webhookUrl: 'https://example.com/webhook/token123',
+      authHeader: 'Bearer ****abcd',
+    });
+
+    render(<IntegrationsPage />);
+
+    expect(await screen.findByText(/Webhook para Sincronização Automática/i)).toBeInTheDocument();
+    expect(await screen.findByText(/example.com\/webhook\/token123/)).toBeInTheDocument();
+  });
+
+  it('should generate webhook credentials', async () => {
+    vi.mocked(integrationsApi.getHevyStatus).mockResolvedValue({ enabled: true, hasKey: true, apiKeyMasked: '****123', lastSync: null });
+    vi.mocked(integrationsApi.getTelegramStatus).mockResolvedValue({ connected: false });
+    vi.mocked(integrationsApi.getWebhookConfig).mockResolvedValueOnce({ hasWebhook: false, webhookUrl: null, authHeader: null });
+    vi.mocked(integrationsApi.generateWebhook).mockResolvedValue({
+      webhookUrl: 'https://example.com/webhook/new',
+      authHeader: 'Bearer full_secret',
+    });
+    vi.mocked(integrationsApi.getWebhookConfig).mockResolvedValueOnce({
+      hasWebhook: true,
+      webhookUrl: 'https://example.com/webhook/new',
+      authHeader: 'Bearer ****cret',
+    });
+
+    render(<IntegrationsPage />);
+
+    const configBtn = await screen.findByText(/Configurar Webhook/);
+    fireEvent.click(configBtn);
+
+    await waitFor(() => {
+      expect(integrationsApi.generateWebhook).toHaveBeenCalled();
+      expect(mockNotify.success).toHaveBeenCalledWith('Webhook gerado com sucesso!');
     });
   });
 });

@@ -90,6 +90,7 @@ class TestHevyConfig:
         profile = MagicMock()
         profile.hevy_api_key = None
         profile.hevy_enabled = False
+        profile.hevy_last_sync = None
         mock_brain.get_user_profile.return_value = profile
 
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
@@ -104,6 +105,11 @@ class TestHevyConfig:
         assert profile.hevy_api_key == "new_key_123"
         assert profile.hevy_enabled is True
         mock_brain.save_user_profile.assert_called_once()
+        data = response.json()
+        assert data["enabled"] is True
+        assert data["hasKey"] is True
+        assert data["apiKeyMasked"] == "****_123"
+        assert data["lastSync"] is None
         app.dependency_overrides = {}
 
     def test_save_config_clear_key(self, client, mock_brain):
@@ -113,18 +119,47 @@ class TestHevyConfig:
         profile = MagicMock()
         profile.hevy_api_key = "old_key"
         profile.hevy_enabled = True
+        profile.hevy_last_sync = None
         mock_brain.get_user_profile.return_value = profile
 
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
         response = client.post(
             "/integrations/hevy/config",
-            json={"api_key": "", "enabled": True},
+            json={"api_key": "", "enabled": False},
             headers={"Authorization": "Bearer token"},
         )
 
         assert response.status_code == 200
         assert profile.hevy_api_key is None
+        data = response.json()
+        assert data["hasKey"] is False
+        assert data["apiKeyMasked"] is None
+        assert data["enabled"] is False
+        app.dependency_overrides = {}
+
+    def test_save_config_without_enabled(self, client, mock_brain):
+        """Test that saving with just api_key works (enabled defaults to True)."""
+        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+
+        profile = MagicMock()
+        profile.hevy_api_key = None
+        profile.hevy_enabled = False
+        profile.hevy_last_sync = None
+        mock_brain.get_user_profile.return_value = profile
+
+        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+        response = client.post(
+            "/integrations/hevy/config",
+            json={"api_key": "test_key"},
+            headers={"Authorization": "Bearer token"},
+        )
+
+        assert response.status_code == 200
+        assert profile.hevy_enabled is True  # default enabled=True
+        data = response.json()
+        assert data["enabled"] is True
         app.dependency_overrides = {}
 
 
@@ -151,9 +186,9 @@ class TestHevyStatus:
         assert response.status_code == 200
         data = response.json()
         assert data["enabled"] is True
-        assert data["has_key"] is True
-        assert data["api_key_masked"] == "****2345"
-        assert data["last_sync"] == "2024-01-15T10:30:00"
+        assert data["hasKey"] is True
+        assert data["apiKeyMasked"] == "****2345"
+        assert data["lastSync"] == "2024-01-15T10:30:00"
         app.dependency_overrides = {}
 
     def test_get_status_without_key(self, client, mock_brain):
@@ -174,8 +209,8 @@ class TestHevyStatus:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["has_key"] is False
-        assert data["api_key_masked"] is None
+        assert data["hasKey"] is False
+        assert data["apiKeyMasked"] is None
         app.dependency_overrides = {}
 
 
@@ -299,9 +334,9 @@ class TestHevyWebhook:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["has_webhook"] is True
-        assert "webhook_token_xyz" in data["webhook_url"]
-        assert data["auth_header"] == "Bearer ****abcd"
+        assert data["hasWebhook"] is True
+        assert "webhook_token_xyz" in data["webhookUrl"]
+        assert data["authHeader"] == "Bearer ****abcd"
         app.dependency_overrides = {}
 
     def test_get_webhook_config_no_token(self, client, mock_brain):
@@ -321,8 +356,8 @@ class TestHevyWebhook:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["has_webhook"] is False
-        assert data["webhook_url"] is None
+        assert data["hasWebhook"] is False
+        assert data["webhookUrl"] is None
         app.dependency_overrides = {}
 
     def test_generate_webhook_credentials(self, client, mock_brain):
@@ -343,9 +378,9 @@ class TestHevyWebhook:
 
         assert response.status_code == 200
         data = response.json()
-        assert "webhook_url" in data
-        assert "auth_header" in data
-        assert data["auth_header"].startswith("Bearer ")
+        assert "webhookUrl" in data
+        assert "authHeader" in data
+        assert data["authHeader"].startswith("Bearer ")
         # Verify save was called with new token/secret
         mock_brain.save_user_profile.assert_called_once()
         app.dependency_overrides = {}

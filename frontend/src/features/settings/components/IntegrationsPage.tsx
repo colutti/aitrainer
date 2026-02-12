@@ -1,10 +1,10 @@
-import { Upload, Check, RefreshCw, Smartphone, Database, Send } from 'lucide-react';
+import { Upload, Check, RefreshCw, Smartphone, Database, Send, Copy, Link2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 import { Button } from '../../../shared/components/ui/Button';
 import { Input } from '../../../shared/components/ui/Input';
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
-import type { HevyStatus, ImportResult } from '../../../shared/types/integration';
+import type { HevyStatus, HevyWebhookConfig, HevyWebhookCredentials, ImportResult } from '../../../shared/types/integration';
 import { integrationsApi } from '../api/integrations-api';
 
 export function IntegrationsPage() {
@@ -15,6 +15,9 @@ export function IntegrationsPage() {
   const [hevyKey, setHevyKey] = useState('');
   const [hevyLoading, setHevyLoading] = useState(false);
   const [hevySyncing, setHevySyncing] = useState(false);
+  const [webhookConfig, setWebhookConfig] = useState<HevyWebhookConfig | null>(null);
+  const [webhookCredentials, setWebhookCredentials] = useState<HevyWebhookCredentials | null>(null);
+  const [webhookLoading, setWebhookLoading] = useState(false);
 
   // Telegram State
   const [telegramStatus, setTelegramStatus] = useState<{ connected: boolean; username?: string } | null>(null);
@@ -27,6 +30,7 @@ export function IntegrationsPage() {
   useEffect(() => {
     void loadHevyStatus();
     void loadTelegramStatus();
+    void loadWebhookConfig();
   }, []);
 
   async function loadHevyStatus() {
@@ -42,6 +46,15 @@ export function IntegrationsPage() {
     try {
       const status = await integrationsApi.getTelegramStatus();
       setTelegramStatus(status ?? null);
+    } catch {
+      // ignore
+    }
+  }
+
+  async function loadWebhookConfig() {
+    try {
+      const config = await integrationsApi.getWebhookConfig();
+      setWebhookConfig(config ?? null);
     } catch {
       // ignore
     }
@@ -67,12 +80,65 @@ export function IntegrationsPage() {
     try {
       const res = await integrationsApi.syncHevy();
       if (res) {
-        notify.success(`Sincronização iniciada: ${res.message}. Workouts: ${String(res.workouts)}`);
+        notify.success(`Sincronização concluída! Importados: ${String(res.imported)}, Ignorados: ${String(res.skipped)}`);
+        await loadHevyStatus();
       }
     } catch {
       notify.error('Erro ao sincronizar Hevy.');
     } finally {
       setHevySyncing(false);
+    }
+  }
+
+  async function handleRemoveHevy() {
+    setHevyLoading(true);
+    try {
+      const status = await integrationsApi.removeHevyKey();
+      setHevyStatus(status ?? null);
+      notify.success('Integração Hevy removida com sucesso!');
+    } catch {
+      notify.error('Erro ao remover integração Hevy.');
+    } finally {
+      setHevyLoading(false);
+    }
+  }
+
+  async function handleGenerateWebhook() {
+    setWebhookLoading(true);
+    try {
+      const creds = await integrationsApi.generateWebhook();
+      if (creds) {
+        setWebhookCredentials(creds);
+        await loadWebhookConfig();
+        notify.success('Webhook gerado com sucesso!');
+      }
+    } catch {
+      notify.error('Erro ao gerar webhook.');
+    } finally {
+      setWebhookLoading(false);
+    }
+  }
+
+  async function handleRevokeWebhook() {
+    setWebhookLoading(true);
+    try {
+      await integrationsApi.revokeWebhook();
+      setWebhookConfig({ hasWebhook: false, webhookUrl: null, authHeader: null });
+      setWebhookCredentials(null);
+      notify.success('Webhook revogado com sucesso!');
+    } catch {
+      notify.error('Erro ao revogar webhook.');
+    } finally {
+      setWebhookLoading(false);
+    }
+  }
+
+  async function copyToClipboard(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      notify.success('Copiado para a área de transferência!');
+    } catch {
+      notify.error('Erro ao copiar.');
     }
   }
 
@@ -150,7 +216,7 @@ export function IntegrationsPage() {
                    <Check size={16} />
                    Integração ativa. Chave: {hevyStatus.apiKeyMasked}
                  </div>
-                 <Button variant="ghost" size="sm" onClick={() => { setHevyStatus({...hevyStatus, hasKey: false}); }} className="text-red-400 hover:text-red-300">
+                 <Button variant="ghost" size="sm" onClick={() => void handleRemoveHevy()} isLoading={hevyLoading} className="text-red-400 hover:text-red-300">
                    Remover
                  </Button>
                </div>
@@ -166,6 +232,67 @@ export function IntegrationsPage() {
                {hevyStatus.lastSync && (
                  <p className="text-xs text-center text-text-muted">Última sincronização: {new Date(hevyStatus.lastSync).toLocaleString()}</p>
                )}
+
+               {/* Webhook Configuration */}
+               <div className="border-t border-border pt-4 mt-4">
+                 <h3 className="text-sm font-bold text-text-primary mb-3 flex items-center gap-2">
+                   <Link2 size={16} />
+                   Webhook para Sincronização Automática
+                 </h3>
+                 {!webhookConfig?.hasWebhook ? (
+                   <Button
+                     variant="secondary"
+                     className="w-full gap-2"
+                     onClick={() => void handleGenerateWebhook()}
+                     isLoading={webhookLoading}
+                   >
+                     Configurar Webhook
+                   </Button>
+                 ) : (
+                   <div className="space-y-3">
+                     <div className="bg-zinc-900 p-3 rounded-lg">
+                       <label className="text-xs text-text-secondary block mb-1">URL do Webhook</label>
+                       <div className="flex items-center gap-2">
+                         <code className="text-xs text-text-primary flex-1 truncate">{webhookConfig.webhookUrl}</code>
+                         <Button
+                           size="sm"
+                           variant="ghost"
+                           onClick={() => void copyToClipboard(webhookConfig.webhookUrl || '')}
+                         >
+                           <Copy size={14} />
+                         </Button>
+                       </div>
+                     </div>
+                     <div className="bg-zinc-900 p-3 rounded-lg">
+                       <label className="text-xs text-text-secondary block mb-1">Auth Header</label>
+                       <div className="flex items-center gap-2">
+                         <code className="text-xs text-text-primary flex-1 truncate">{webhookConfig.authHeader}</code>
+                         <Button
+                           size="sm"
+                           variant="ghost"
+                           onClick={() => void copyToClipboard(webhookConfig.authHeader || '')}
+                         >
+                           <Copy size={14} />
+                         </Button>
+                       </div>
+                     </div>
+                     {webhookCredentials && (
+                       <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-lg">
+                         <p className="text-xs text-yellow-600 font-medium mb-2">⚠️ Copie agora - não será mostrado novamente</p>
+                         <code className="text-xs text-text-primary block break-all">{webhookCredentials.authHeader}</code>
+                       </div>
+                     )}
+                     <Button
+                       variant="ghost"
+                       className="w-full text-red-400 hover:text-red-300"
+                       onClick={() => void handleRevokeWebhook()}
+                       isLoading={webhookLoading}
+                     >
+                       Revogar Webhook
+                     </Button>
+                   </div>
+                 )}
+               </div>
              </div>
            )}
         </div>

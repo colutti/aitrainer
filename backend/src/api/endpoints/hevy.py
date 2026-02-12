@@ -30,7 +30,7 @@ class ValidateRequest(BaseModel):
 class HevyConfigRequest(BaseModel):
     """Request model for Hevy configuration."""
     api_key: Optional[str] = None
-    enabled: bool
+    enabled: bool = True
 
 
 class ImportRequest(BaseModel):
@@ -68,7 +68,16 @@ def save_config(request: HevyConfigRequest, user_email: CurrentUser, brain: Brai
     profile.hevy_enabled = request.enabled
 
     brain.save_user_profile(profile)
-    return {"message": "Configuration saved"}
+
+    # Return updated status
+    api_key = profile.hevy_api_key
+    api_key_masked = f"****{api_key[-4:]}" if api_key else None
+    return {
+        "enabled": profile.hevy_enabled,
+        "hasKey": bool(api_key),
+        "apiKeyMasked": api_key_masked,
+        "lastSync": str(profile.hevy_last_sync) if profile.hevy_last_sync else None,
+    }
 
 
 @router.get("/status")
@@ -83,9 +92,9 @@ def get_status(user_email: CurrentUser, brain: BrainDep):
 
     return {
         "enabled": getattr(profile, "hevy_enabled", False),
-        "has_key": bool(api_key),
-        "api_key_masked": api_key_masked,
-        "last_sync": getattr(profile, "hevy_last_sync", None),
+        "hasKey": bool(api_key),
+        "apiKeyMasked": api_key_masked,
+        "lastSync": getattr(profile, "hevy_last_sync", None),
     }
 
 
@@ -251,7 +260,7 @@ async def process_webhook_async(
 @router.get("/webhook/config")
 def get_webhook_config(
     user_email: CurrentUser, brain: BrainDep
-) -> WebhookConfigResponse:
+):
     """Returns current webhook configuration."""
     profile = brain.get_user_profile(user_email)
     if not profile:
@@ -261,21 +270,27 @@ def get_webhook_config(
     secret = getattr(profile, "hevy_webhook_secret", None)
 
     if not token:
-        return WebhookConfigResponse(has_webhook=False)
+        return {
+            "hasWebhook": False,
+            "webhookUrl": None,
+            "authHeader": None,
+        }
 
     base_url = "https://aitrainer-backend.onrender.com"
     webhook_url = f"{base_url}/integrations/hevy/webhook/{token}"
     masked_auth = f"Bearer ****{secret[-4:]}" if secret else None
 
-    return WebhookConfigResponse(
-        has_webhook=True, webhook_url=webhook_url, auth_header=masked_auth
-    )
+    return {
+        "hasWebhook": True,
+        "webhookUrl": webhook_url,
+        "authHeader": masked_auth,
+    }
 
 
 @router.post("/webhook/generate")
 def generate_webhook_credentials(
     user_email: CurrentUser, brain: BrainDep
-) -> WebhookGenerateResponse:
+):
     """Generates a new webhook token and secret."""
     try:
         profile = brain.get_user_profile(user_email)
@@ -294,9 +309,10 @@ def generate_webhook_credentials(
         base_url = "https://aitrainer-backend.onrender.com"
         webhook_url = f"{base_url}/integrations/hevy/webhook/{token}"
 
-        return WebhookGenerateResponse(
-            webhook_url=webhook_url, auth_header=f"Bearer {secret}"
-        )
+        return {
+            "webhookUrl": webhook_url,
+            "authHeader": f"Bearer {secret}",
+        }
     except HTTPException:
         raise
     except Exception as e:
