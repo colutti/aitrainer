@@ -23,6 +23,9 @@ export function IntegrationsPage() {
   const [telegramStatus, setTelegramStatus] = useState<TelegramStatus | null>(null);
   const [telegramCode, setTelegramCode] = useState<{ code: string; url: string } | null>(null);
   const [telegramLoading, setTelegramLoading] = useState(false);
+  const [telegramNotifyOnWorkout, setTelegramNotifyOnWorkout] = useState(true);
+  const [telegramNotifyOnNutrition, setTelegramNotifyOnNutrition] = useState(false);
+  const [telegramNotifyOnWeight, setTelegramNotifyOnWeight] = useState(false);
 
   // Import State
   const [importing, setImporting] = useState(false);
@@ -46,6 +49,11 @@ export function IntegrationsPage() {
     try {
       const status = await integrationsApi.getTelegramStatus();
       setTelegramStatus(status ?? null);
+      if (status) {
+        setTelegramNotifyOnWorkout(status.telegram_notify_on_workout ?? true);
+        setTelegramNotifyOnNutrition(status.telegram_notify_on_nutrition ?? false);
+        setTelegramNotifyOnWeight(status.telegram_notify_on_weight ?? false);
+      }
     } catch {
       // ignore
     }
@@ -151,6 +159,26 @@ export function IntegrationsPage() {
       notify.error('Erro ao gerar código do Telegram.');
     } finally {
       setTelegramLoading(false);
+    }
+  }
+
+  async function handleTelegramNotificationChange(
+    field: 'workout' | 'nutrition' | 'weight',
+    value: boolean
+  ) {
+    try {
+      await integrationsApi.updateUserNotifications({
+        [`telegram_notify_on_${field}`]: value
+      });
+
+      // Update local state
+      if (field === 'workout') setTelegramNotifyOnWorkout(value);
+      if (field === 'nutrition') setTelegramNotifyOnNutrition(value);
+      if (field === 'weight') setTelegramNotifyOnWeight(value);
+
+      notify.success('Preferência de notificação atualizada!');
+    } catch {
+      notify.error('Erro ao atualizar preferência de notificação.');
     }
   }
 
@@ -311,12 +339,58 @@ export function IntegrationsPage() {
            {telegramStatus?.linked && <BadgeConnected />}
         </div>
 
-        <div className="pt-2">
+        <div className="pt-2 space-y-4">
           {telegramStatus?.linked ? (
-             <div className="text-center p-4 bg-zinc-900 rounded-xl">
-               <p className="text-green-500 font-bold mb-1">Conectado como @{telegramStatus.telegram_username}</p>
-               <p className="text-sm text-text-secondary">O bot está pronto para enviar alertas.</p>
-             </div>
+             <>
+               <div className="text-center p-4 bg-zinc-900 rounded-xl">
+                 <p className="text-green-500 font-bold mb-1">Conectado como @{telegramStatus.telegram_username}</p>
+                 <p className="text-sm text-text-secondary">O bot está pronto para enviar alertas.</p>
+               </div>
+
+               {/* Notification Preferences */}
+               <div className="border-t border-border pt-4 space-y-3">
+                 <h3 className="text-sm font-bold text-text-primary">Receber notificações por Telegram:</h3>
+
+                 <div className="flex items-center gap-3 p-3 bg-zinc-900 rounded-lg hover:bg-zinc-800 cursor-pointer transition-colors" onClick={() => void handleTelegramNotificationChange('workout', !telegramNotifyOnWorkout)}>
+                   <input
+                     type="checkbox"
+                     checked={telegramNotifyOnWorkout}
+                     onChange={(e) => void handleTelegramNotificationChange('workout', e.target.checked)}
+                     className="w-4 h-4 cursor-pointer"
+                   />
+                   <div className="flex-1">
+                     <p className="text-sm font-medium text-text-primary">Análise de Treinos</p>
+                     <p className="text-xs text-text-secondary">Quando sincronizar treinos da Hevy</p>
+                   </div>
+                 </div>
+
+                 <div className="flex items-center gap-3 p-3 bg-zinc-900 rounded-lg hover:bg-zinc-800 cursor-pointer transition-colors" onClick={() => void handleTelegramNotificationChange('nutrition', !telegramNotifyOnNutrition)}>
+                   <input
+                     type="checkbox"
+                     checked={telegramNotifyOnNutrition}
+                     onChange={(e) => void handleTelegramNotificationChange('nutrition', e.target.checked)}
+                     className="w-4 h-4 cursor-pointer"
+                   />
+                   <div className="flex-1">
+                     <p className="text-sm font-medium text-text-primary">Nutrição</p>
+                     <p className="text-xs text-text-secondary">Resumo diário de nutrição</p>
+                   </div>
+                 </div>
+
+                 <div className="flex items-center gap-3 p-3 bg-zinc-900 rounded-lg hover:bg-zinc-800 cursor-pointer transition-colors" onClick={() => void handleTelegramNotificationChange('weight', !telegramNotifyOnWeight)}>
+                   <input
+                     type="checkbox"
+                     checked={telegramNotifyOnWeight}
+                     onChange={(e) => void handleTelegramNotificationChange('weight', e.target.checked)}
+                     className="w-4 h-4 cursor-pointer"
+                   />
+                   <div className="flex-1">
+                     <p className="text-sm font-medium text-text-primary">Peso</p>
+                     <p className="text-xs text-text-secondary">Atualizações de peso corporal</p>
+                   </div>
+                 </div>
+               </div>
+             </>
           ) : telegramCode ? (
              <div className="text-center space-y-4">
                <p className="text-text-primary font-medium">Envie este código para o nosso bot:</p>

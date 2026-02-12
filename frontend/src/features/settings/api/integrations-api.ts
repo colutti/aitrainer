@@ -94,5 +94,16 @@ export const integrationsApi = {
 
   generateTelegramCode: async (): Promise<{ code: string; url: string } | undefined> => {
      return httpClient('/telegram/generate-code', { method: 'POST' });
+  },
+
+  updateUserNotifications: async (preferences: {
+    telegram_notify_on_workout?: boolean;
+    telegram_notify_on_nutrition?: boolean;
+    telegram_notify_on_weight?: boolean;
+  }): Promise<void> => {
+    return httpClient('/user', {
+      method: 'POST',
+      body: JSON.stringify(preferences)
+    });
   }
 };
