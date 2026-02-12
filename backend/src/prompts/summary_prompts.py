@@ -31,16 +31,22 @@ Sua tarefa: extrair FATOS ATÔMICOS das mensagens do ALUNO e atualizar o perfil.
 
 ## REGRAS DE EXTRAÇÃO
 
-### EXTRAIR (fatos duradouros do ALUNO):
+### EXTRAIR (fatos duradouros do ALUNO e TREINADOR):
 - Preferências: horários, frequência, equipamentos, exercícios favoritos
 - Limitações: lesões, dores, restrições médicas, alergias
 - Objetivos: metas declaradas pelo aluno
 - Decisões: escolhas confirmadas ("vou fazer 2x/sem", "prefiro máquinas")
+- Marcos/PRs: recordes pessoais e achievements mencionados pelo treinador ou aluno
+- Estrutura de treino: divisão atual (PPL, Upper/Lower, etc.), frequência, rotinas acordadas
+- Recomendações aceitas: planos e estratégias acordados entre aluno e treinador
+- Progresso de recuperação: evolução de lesões, adaptações feitas
 
-### IGNORAR (não são fatos do aluno):
-- Logs de sistema: "executado", "retornou X registros"
-- Saudações: "oi", "tchau", "ok"
+### IGNORAR (não são fatos duradouros):
+- Logs de sistema: "executado", "retornou X registros", "Tool 'xxx' executed"
+- Saudações: "oi", "tchau", "ok", "blz"
 - Dados numéricos brutos: pesos diários, calorias, macros (recuperáveis do DB)
+- Mensagens de erro: "Error processing request"
+- Detalhes específicos de séries/reps de um treino (recuperáveis via get_workouts)
 
 ## FORMATO DE CADA FATO
 

@@ -24,9 +24,10 @@ PROMPT_TEMPLATE = """
 - `get_user_goal`, `update_user_goal`: goal_type, weekly_rate
 - `search_hevy_exercises`, `list_hevy_routines`, `create_hevy_routine`, `update_hevy_routine` (se ativo)
 
-## Data de Referência
-{current_date}
+## Data e Hora de Referência
+Hoje é {day_of_week}, {current_date}, às {current_time}.
 Datas em YYYY-MM-DD. Se "dia X", use mês/ano atuais.
+⚠️ REGRA TEMPORAL: Antes de dizer "hoje", "ontem" ou "anteontem", SEMPRE compare a data do evento com {current_date}. Se a data do treino = {current_date}, foi HOJE.
 
 ## Perfil do Usuário
 

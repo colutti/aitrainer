@@ -303,8 +303,10 @@ class AITrainerBrain:
             is_system = hasattr(msg, "type") and msg.type == "system"
 
             if is_system:
-                # Keep system messages as HumanMessage for visibility
-                formatted_msgs.append(HumanMessage(content=content))
+                # Skip system messages (tool results) - they were processed during their
+                # original turn and should not consume context window slots.
+                # This prevents tool metadata from misleading the LLM in future turns.
+                continue
 
             elif isinstance(msg, HumanMessage):
                 # Pass user messages as-is
@@ -509,11 +511,14 @@ class AITrainerBrain:
                 if chunk.get("type") == "tool_result":
                     tool_name = chunk.get("tool_name")
                     content = chunk.get("content")
-                    # Create a concise log for the system
-                    log_msg = (
-                        f"✅ Tool '{tool_name}' executed. Result: {str(content)[:200]}"
+                    # Log tool result for audit trail (in prompt_logs), but don't save to chat history
+                    # to avoid polluting the context window with tool metadata
+                    logger.debug(
+                        "Tool '%s' executed for %s. Result: %s",
+                        tool_name,
+                        user_email,
+                        str(content)[:200]
                     )
-                    self._add_system_message_to_history(user_email, log_msg)
                     continue
                 elif chunk.get("type") == "tools_summary":
                     # Capture tools called for memory decision
@@ -532,6 +537,16 @@ class AITrainerBrain:
             (flat_response[:500] + "...") if len(flat_response) > 500 else flat_response
         )
         logger.debug("LLM responded with: %s", log_response)
+
+        # Detect error responses - don't save to history or trigger background tasks
+        is_error_response = final_response.startswith("Error processing request:")
+        if is_error_response:
+            logger.warning(
+                "Error response detected for user %s, skipping history save: %s",
+                user_email,
+                final_response[:100]
+            )
+            return
 
         if background_tasks:
             # Move DB saving to background to avoid blocking the generator completion
@@ -581,6 +596,7 @@ class AITrainerBrain:
             self._add_to_mongo_history(
                 user_email, user_input, final_response, current_trainer_type
             )
+            # Note: is_error_response check above already returns before reaching here
 
     def send_message_sync(
         self, user_email: str, user_input: str, is_telegram: bool = False

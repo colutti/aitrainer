@@ -149,18 +149,18 @@ async def test_history_compactor_idempotency(mock_db, mock_llm_client):
 
 
 def test_preprocess_filters_non_student_messages(mock_db, mock_llm_client):
-    """Should keep only student messages."""
+    """Should keep student and trainer messages, but filter out system messages."""
     compactor = HistoryCompactor(mock_db, mock_llm_client)
 
     messages = [
         ChatHistory(
             sender=Sender.TRAINER,
-            text="list_hevy_routines executado → 3 rotinas",
+            text="Ótimo, vou atualizar suas rotinas para 2x por semana",
             timestamp="2026-01-31T10:00:00",
         ),
         ChatHistory(
             sender=Sender.SYSTEM,
-            text="Ação executada: update_hevy_routine",
+            text="✅ Tool 'update_hevy_routine' executed. Result: ...",
             timestamp="2026-01-31T10:01:00",
         ),
         ChatHistory(
@@ -172,9 +172,13 @@ def test_preprocess_filters_non_student_messages(mock_db, mock_llm_client):
 
     filtered = compactor._preprocess_messages(messages)
 
-    assert len(filtered) == 1
-    assert filtered[0].sender == Sender.STUDENT
-    assert "Push 2x" in filtered[0].text
+    # Should have student (1) + trainer (1) messages, but NOT system (1)
+    assert len(filtered) == 2
+    senders = {msg.sender for msg in filtered}
+    assert Sender.STUDENT in senders
+    assert Sender.TRAINER in senders
+    assert Sender.SYSTEM not in senders
+    assert "Push 2x" in [msg.text for msg in filtered if msg.sender == Sender.STUDENT][0]
 
 
 def test_preprocess_filters_greetings(mock_db, mock_llm_client):
@@ -308,17 +312,17 @@ async def test_compact_history_uses_preprocessing(mock_db, mock_llm_client):
                 timestamp=ts.isoformat(),
             )
         elif i % 3 == 1:
-            # Trainer message (should be filtered)
+            # Trainer message (now KEPT, not filtered)
             msg = ChatHistory(
                 sender=Sender.TRAINER,
-                text=f"list_hevy_routines executado → {i} rotinas",
+                text=f"Ótimo, vou atualizar suas rotinas {i}",
                 timestamp=ts.isoformat(),
             )
         else:
-            # System message (should be filtered)
+            # System message (FILTERED - tool results)
             msg = ChatHistory(
                 sender=Sender.SYSTEM,
-                text=f"Ação executada: tool_{i}",
+                text=f"✅ Tool executed: tool_{i}",
                 timestamp=ts.isoformat(),
             )
         messages.append(msg)
@@ -335,11 +339,11 @@ async def test_compact_history_uses_preprocessing(mock_db, mock_llm_client):
     call_kwargs = mock_llm_client.stream_simple.call_args[1]
     new_lines = call_kwargs["input_data"]["new_lines"]
 
-    # Should NOT contain trainer/system messages
-    assert "executado" not in new_lines
-    assert "Ação executada" not in new_lines
-    # Should contain student messages
+    # Should NOT contain system messages (tool results)
+    assert "Tool executed" not in new_lines
+    # Should contain both student and trainer messages
     assert "Prefiro treinar" in new_lines
+    assert "Ótimo, vou atualizar" in new_lines
 
 
 @pytest.mark.asyncio
@@ -378,18 +382,18 @@ async def test_compaction_produces_clean_json_output(mock_db, mock_llm_client):
     # Create realistic mixed messages
     base_ts = datetime(2026, 1, 31, 10, 0)
     messages = [
-        # Student: greeting (should be filtered)
+        # Student: greeting (should be filtered - too short)
         ChatHistory(sender=Sender.STUDENT, text="oi", timestamp=(base_ts + timedelta(minutes=0)).isoformat()),
-        # Trainer: tool log (should be filtered)
-        ChatHistory(sender=Sender.TRAINER, text="list_hevy_routines executado → 3 rotinas", timestamp=(base_ts + timedelta(minutes=1)).isoformat()),
+        # System: tool log (should be filtered - system message)
+        ChatHistory(sender=Sender.SYSTEM, text="✅ Tool 'search_hevy_exercises' executed", timestamp=(base_ts + timedelta(minutes=1)).isoformat()),
         # Student: decision (should be kept)
         ChatHistory(sender=Sender.STUDENT, text="Vou fazer o treino de Push 2x por semana", timestamp=(base_ts + timedelta(minutes=2)).isoformat()),
-        # System: tool log (should be filtered)
-        ChatHistory(sender=Sender.SYSTEM, text="update_hevy_routine executado → Rotina atualizada", timestamp=(base_ts + timedelta(minutes=3)).isoformat()),
+        # System: tool log (should be filtered - system message)
+        ChatHistory(sender=Sender.SYSTEM, text="✅ Tool 'update_hevy_routine' executed", timestamp=(base_ts + timedelta(minutes=3)).isoformat()),
         # Student: preference (should be kept)
         ChatHistory(sender=Sender.STUDENT, text="Prefiro usar máquinas, não gosto de barra", timestamp=(base_ts + timedelta(minutes=4)).isoformat()),
-        # Trainer: response (should be filtered)
-        ChatHistory(sender=Sender.TRAINER, text="Perfeito, vou ajustar sua rotina!", timestamp=(base_ts + timedelta(minutes=5)).isoformat()),
+        # Trainer: meaningful response (should be KEPT - contains useful context)
+        ChatHistory(sender=Sender.TRAINER, text="Perfeito, vou ajustar sua rotina para Push 2x com máquinas!", timestamp=(base_ts + timedelta(minutes=5)).isoformat()),
     ]
 
     # Add more messages to reach threshold (40 total)
@@ -408,14 +412,13 @@ async def test_compaction_produces_clean_json_output(mock_db, mock_llm_client):
     call_kwargs = mock_llm_client.stream_simple.call_args[1]
     new_lines = call_kwargs["input_data"]["new_lines"]
 
-    # Should NOT contain system/trainer noise
-    assert "executado" not in new_lines
-    assert "list_hevy_routines" not in new_lines
-    assert "update_hevy_routine" not in new_lines
+    # Should NOT contain system messages (tool results)
+    assert "Tool" not in new_lines or "Tool 'search_hevy_exercises'" not in new_lines
 
-    # Should contain student decisions
+    # Should contain student decisions AND trainer responses
     assert "Push 2x" in new_lines
     assert "máquinas" in new_lines
+    assert "Treinador:" in new_lines  # Trainer messages included
 
     # Verify database was updated with valid JSON
     mock_db.update_user_profile_fields.assert_called_once()

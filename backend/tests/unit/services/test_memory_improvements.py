@@ -39,6 +39,23 @@ def create_test_user_profile(**kwargs):
     return UserProfile(**defaults)
 
 
+def create_test_input_data(**kwargs):
+    """Create a complete input_data dict with all required fields for prompt building."""
+    defaults = {
+        "user_profile_obj": create_test_user_profile(),
+        "trainer_profile": "Atlas Prime",
+        "user_profile": "Male, 30yo",
+        "relevant_memories": "Test memories",
+        "chat_history": [],
+        "user_message": "Test",
+        "current_date": "2026-02-12",
+        "day_of_week": "Quinta-feira",
+        "current_time": "15:40",
+    }
+    defaults.update(kwargs)
+    return defaults
+
+
 # ============================================================================
 # Test 1: Memory Window Synchronization
 # ============================================================================
@@ -262,14 +279,7 @@ class TestSummaryRepositioning:
             long_term_summary="User has been training for 3 months. Squat: 100kg."
         )
 
-        input_data = {
-            "user_profile_obj": user_profile,
-            "trainer_profile": "Atlas Prime",
-            "user_profile": "Male, 30yo",
-            "relevant_memories": "Test memories",
-            "chat_history": [],
-            "user_message": "Test",
-        }
+        input_data = create_test_input_data(user_profile_obj=user_profile)
 
         prompt_template = prompt_builder.get_prompt_template(input_data, is_telegram=False)
 
@@ -290,14 +300,7 @@ class TestSummaryRepositioning:
         # Create profile without summary
         user_profile = create_test_user_profile(long_term_summary=None)
 
-        input_data = {
-            "user_profile_obj": user_profile,
-            "trainer_profile": "Atlas Prime",
-            "user_profile": "Male, 30yo",
-            "relevant_memories": "Test memories",
-            "chat_history": [],
-            "user_message": "Test",
-        }
+        input_data = create_test_input_data(user_profile_obj=user_profile)
 
         prompt_template = prompt_builder.get_prompt_template(input_data, is_telegram=False)
 
@@ -464,15 +467,10 @@ class TestEdgeCases:
 
         user_profile = create_test_user_profile(long_term_summary=long_summary)
 
-        input_data = {
-            "user_profile_obj": user_profile,
-            "trainer_profile": "Atlas Prime",
-            "user_profile": "Male, 30yo",
-            "relevant_memories": "Test memories",
-            "chat_history": [],
-            "user_message": "Test",
-            "long_term_summary_section": f"\n\n[HISTÓRICO]:\n{long_summary}",
-        }
+        input_data = create_test_input_data(
+            user_profile_obj=user_profile,
+            long_term_summary_section=f"\n\n[HISTÓRICO]:\n{long_summary}",
+        )
 
         mock_settings.PROMPT_TEMPLATE = PROMPT_TEMPLATE
         prompt_template = prompt_builder.get_prompt_template(input_data, is_telegram=False)

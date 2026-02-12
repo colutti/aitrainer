@@ -46,8 +46,14 @@ class PromptBuilder:
         Returns:
             dict: Input data ready for prompt template
         """
+        DIAS_PT = {
+            0: "Segunda-feira", 1: "Terça-feira", 2: "Quarta-feira",
+            3: "Quinta-feira", 4: "Sexta-feira", 5: "Sábado", 6: "Domingo"
+        }
+
+        now = datetime.now()
         if not current_date:
-            current_date = datetime.now().strftime("%Y-%m-%d")
+            current_date = now.strftime("%Y-%m-%d")
 
         return {
             "trainer_profile": trainer_profile_summary,
@@ -58,6 +64,8 @@ class PromptBuilder:
             "chat_history": formatted_history_msgs,  # For MessagesPlaceholder
             "user_message": user_input,
             "current_date": current_date,
+            "day_of_week": DIAS_PT[now.weekday()],
+            "current_time": now.strftime("%H:%M"),
         }
 
     @staticmethod

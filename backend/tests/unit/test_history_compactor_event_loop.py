@@ -249,12 +249,17 @@ class TestHistoryCompactorPreprocessing:
         assert "strength" in filtered[0].text
 
     def test_preprocess_filters_trainer_messages(self, compactor):
-        """Test that trainer messages are filtered out."""
+        """Test that system messages are filtered out, but trainer messages are kept."""
         messages = [
             ChatHistory(
                 sender=Sender.TRAINER,
                 text="This is a long trainer message with important info",
                 timestamp="2026-02-01T10:00:00",
+            ),
+            ChatHistory(
+                sender=Sender.SYSTEM,
+                text="✅ Tool 'search_hevy_exercises' executed",
+                timestamp="2026-02-01T10:00:30",
             ),
             ChatHistory(
                 sender=Sender.STUDENT,
@@ -264,5 +269,9 @@ class TestHistoryCompactorPreprocessing:
         ]
 
         filtered = compactor._preprocess_messages(messages)
-        assert len(filtered) == 1
-        assert filtered[0].sender == Sender.STUDENT
+        # Should have both trainer and student (2), but not system (1)
+        assert len(filtered) == 2
+        senders = {msg.sender for msg in filtered}
+        assert Sender.STUDENT in senders
+        assert Sender.TRAINER in senders
+        assert Sender.SYSTEM not in senders

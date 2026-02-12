@@ -43,20 +43,21 @@ class HistoryCompactor:
         filtered = []
 
         for msg in messages:
-            # 1. Manter apenas mensagens do aluno
-            if msg.sender != Sender.STUDENT:
+            # 1. Pular system messages (tool results) completamente
+            if msg.sender == Sender.SYSTEM:
                 continue
 
             text = msg.text.strip()
 
-            # 2. Filtrar saudações triviais
-            if GREETING_PATTERN.match(text):
+            # 2. Filtrar saudações triviais (apenas para student messages)
+            if msg.sender == Sender.STUDENT and GREETING_PATTERN.match(text):
                 continue
 
-            # 3. Filtrar mensagens muito curtas
-            if len(text) < MIN_MESSAGE_LENGTH:
+            # 3. Filtrar mensagens muito curtas (apenas para student messages)
+            if msg.sender == Sender.STUDENT and len(text) < MIN_MESSAGE_LENGTH:
                 continue
 
+            # Keep both STUDENT and TRAINER messages
             filtered.append(msg)
 
         logger.debug(
@@ -137,7 +138,7 @@ class HistoryCompactor:
                 msg_ts = datetime.min
 
             if msg_ts > last_ts:
-                sender_label = "Aluno" if msg.sender == Sender.STUDENT else "Outro"
+                sender_label = "Aluno" if msg.sender == Sender.STUDENT else "Treinador"
                 line = f"[{msg_ts.strftime('%d/%m %H:%M')}] {sender_label}: {msg.text}"
                 new_lines_to_summarize.append(line)
                 new_last_ts_str = msg_ts_str
