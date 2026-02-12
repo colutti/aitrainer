@@ -75,12 +75,14 @@ export function WeightLogCard({ log, onDelete, onEdit, onClick }: WeightLogCardP
                     <p className="text-sm font-black text-white tabular-nums">{log.body_fat_pct.toFixed(1)}<span className="text-[10px] ml-0.5 opacity-50">%</span></p>
                   ) : <span className="h-5 flex items-center"><div className="w-4 h-0.5 bg-white/5 rounded-full" /></span>}
                </div>
-               <div className="flex flex-col items-center md:items-end border-l border-white/5 pl-4">
+                <div className="flex flex-col items-center md:items-end border-l border-white/5 pl-4">
                   <p className="text-[9px] uppercase font-black text-[#666] tracking-[0.15em] mb-1">Músculo</p>
-                  {log.muscle_mass_pct ? (
+                  {log.muscle_mass_kg ? (
+                    <p className="text-sm font-black text-white tabular-nums">{log.muscle_mass_kg.toFixed(1)}<span className="text-[10px] ml-0.5 opacity-50">kg</span></p>
+                  ) : log.muscle_mass_pct ? (
                     <p className="text-sm font-black text-white tabular-nums">{log.muscle_mass_pct.toFixed(1)}<span className="text-[10px] ml-0.5 opacity-50">%</span></p>
                   ) : <span className="h-5 flex items-center"><div className="w-4 h-0.5 bg-white/5 rounded-full" /></span>}
-               </div>
+                </div>
           </div>
           
           {/* Actions - Right */}
@@ -141,10 +143,16 @@ export function WeightLogCard({ log, onDelete, onEdit, onClick }: WeightLogCardP
           )}
           
           {(log.thigh_r_cm ?? log.thigh_l_cm) && (
-             <span className="flex gap-1">
-               Coxa <strong className="text-text-secondary">{log.thigh_r_cm && `D:${log.thigh_r_cm.toString()}cm`} {log.thigh_l_cm && `E:${log.thigh_l_cm.toString()}cm`}</strong>
-             </span>
-          )}
+              <span className="flex gap-1">
+                Coxa <strong className="text-text-secondary">{log.thigh_r_cm && `D:${log.thigh_r_cm.toString()}cm`} {log.thigh_l_cm && `E:${log.thigh_l_cm.toString()}cm`}</strong>
+              </span>
+           )}
+           
+           {(log.calf_r_cm ?? log.calf_l_cm) && (
+              <span className="flex gap-1">
+                Panturrilha <strong className="text-text-secondary">{log.calf_r_cm && `D:${log.calf_r_cm.toString()}cm`} {log.calf_l_cm && `E:${log.calf_l_cm.toString()}cm`}</strong>
+              </span>
+           )}
         </div>
       )}
     </div>

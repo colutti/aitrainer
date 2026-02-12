@@ -25,7 +25,7 @@ def mock_user_email():
 
 @pytest.fixture
 def sample_chat_messages():
-    """Sample chat history with various message types."""
+    """Sample chat history with only public messages."""
     return [
         ChatHistory(
             text="What's my workout routine?",
@@ -36,11 +36,6 @@ def sample_chat_messages():
             text="Your routine consists of...",
             sender=Sender.TRAINER,
             timestamp="2024-01-29T10:05:00Z"
-        ),
-        ChatHistory(
-            text="[Internal logging]",
-            sender=Sender.SYSTEM,
-            timestamp="2024-01-29T10:06:00Z"
         )
     ]
 
@@ -61,7 +56,7 @@ def test_get_history_success(sample_chat_messages):
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
-    assert len(data) == 2  # SYSTEM messages filtered out
+    assert len(data) == 2  # Brain already returns filtered messages
 
     # Verify SYSTEM messages are excluded
     for msg in data:
@@ -105,13 +100,8 @@ def test_get_history_only_system_messages():
     """Test that only system messages returns empty list."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_brain = MagicMock()
-    mock_brain.get_chat_history.return_value = [
-        ChatHistory(
-            text="[Internal]",
-            sender=Sender.SYSTEM,
-            timestamp="2024-01-29T10:00:00Z"
-        )
-    ]
+    mock_brain.get_chat_history.return_value = [] # System messages filtered by repo
+
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
     response = client.get(

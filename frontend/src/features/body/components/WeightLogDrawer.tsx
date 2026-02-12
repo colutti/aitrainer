@@ -85,7 +85,7 @@ export function WeightLogDrawer({ log, isOpen, onClose }: WeightLogDrawerProps) 
           </div>
 
           {/* Body Composition Grid */}
-          {(log.body_fat_pct != null || log.muscle_mass_pct != null || log.body_water_pct != null || log.bone_mass_kg != null || log.visceral_fat != null || log.bmr != null || log.bmi != null) && (
+          {(log.body_fat_pct != null || log.muscle_mass_pct != null || log.muscle_mass_kg != null || log.body_water_pct != null || log.bone_mass_kg != null || log.visceral_fat != null || log.bmr != null || log.bmi != null) && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 pb-2 border-b border-white/5">
                 <Activity className="text-blue-400" size={18} />
@@ -105,13 +105,17 @@ export function WeightLogDrawer({ log, isOpen, onClose }: WeightLogDrawerProps) 
                   </div>
                 )}
                 
-                {log.muscle_mass_pct != null && (
+                {(log.muscle_mass_pct != null || log.muscle_mass_kg != null) && (
                   <div className="bg-zinc-900/30 p-3 rounded-xl border border-white/5">
                     <div className="flex items-center gap-2 mb-1">
                       <Zap size={14} className="text-yellow-400" />
                       <p className="text-[10px] text-text-muted font-bold uppercase">Massa Muscular</p>
                     </div>
-                    <p className="text-xl font-bold text-text-primary">{log.muscle_mass_pct}%</p>
+                    {log.muscle_mass_kg != null ? (
+                      <p className="text-xl font-bold text-text-primary">{log.muscle_mass_kg}kg</p>
+                    ) : (
+                      <p className="text-xl font-bold text-text-primary">{log.muscle_mass_pct}%</p>
+                    )}
                   </div>
                 )}
 

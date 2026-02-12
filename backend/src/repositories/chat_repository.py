@@ -2,10 +2,16 @@
 This module contains the repository for chat history management using MongoDB.
 """
 
+import json
 from datetime import datetime
 
 from langchain_mongodb.chat_message_histories import MongoDBChatMessageHistory
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import (
+    AIMessage,
+    HumanMessage,
+    SystemMessage,
+    messages_from_dict,
+)
 from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import PromptTemplate
 from langchain_classic.memory import (
@@ -26,13 +32,14 @@ class ChatRepository(BaseRepository):
     """
 
     def __init__(self, database):
-        super().__init__(database, "chat_history")
+        super().__init__(database, "message_store")
+        self.db = database
 
     def get_history(
         self, user_id: str, limit: int = 20, offset: int = 0
     ) -> list[ChatHistory]:
         """
-        Retrieves paginated chat history for a session.
+        Retrieves paginated chat history for a session, excluding system messages.
         """
         self.logger.debug(
             "Retrieving chat history for session: %s (limit: %d, offset: %d)",
@@ -40,23 +47,43 @@ class ChatRepository(BaseRepository):
             limit,
             offset,
         )
-        # Fetch enough messages to cover the offset from the end
-        fetch_size = limit + offset
-        history = MongoDBChatMessageHistory(
-            connection_string=settings.MONGO_URI,
-            session_id=user_id,
-            database_name=settings.DB_NAME,
-            history_size=fetch_size,
-        )
-        messages = ChatHistory.from_mongodb_chat_message_history(history)
 
+        # 1. Query raw messages from MongoDB message_store
+        # We fetch ALL and filter/sort in memory because message_store format is complex
+        # and total number of messages per user is usually manageable (< 1000)
+        cursor = self.collection.find({"SessionId": user_id})
+
+        messages = []
+        for doc in cursor:
+            try:
+                msg_dict = json.loads(doc["History"])
+                msg_obj = messages_from_dict([msg_dict])[0]
+                messages.append(msg_obj)
+            except (json.JSONDecodeError, KeyError, IndexError):
+                continue
+
+        # 2. Convert to ChatHistory model (this also sorts them chronologically)
+        # pylint: disable=too-few-public-methods
+        class DummyHistory:
+            """Wrapper for conversion utility"""
+            def __init__(self, msgs):
+                self.messages = msgs
+
+        all_chat_history = ChatHistory.from_mongodb_chat_message_history(DummyHistory(messages))
+
+        # 3. Filter out SYSTEM messages before pagination
+        public_messages = [msg for msg in all_chat_history if msg.sender != Sender.SYSTEM]
+
+        # 4. Apply pagination relative to the END (most recent messages)
+        # Offset 0 means the last `limit` messages.
+        # Offset 20 means the 21st to 40th most recent messages.
         if offset > 0:
-            messages = messages[:-offset]
+            public_messages = public_messages[:-offset]
 
-        if messages:
-            messages = messages[-limit:]
+        if public_messages:
+            public_messages = public_messages[-limit:]
 
-        return messages
+        return public_messages
 
     def add_message(
         self,

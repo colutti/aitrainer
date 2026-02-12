@@ -10,7 +10,6 @@ from fastapi.responses import StreamingResponse
 from src.services.auth import verify_token
 from src.core.deps import get_ai_trainer_brain
 from src.api.models.message import MessageRequest
-from src.api.models.sender import Sender
 from src.services.trainer import AITrainerBrain
 from src.core.logs import logger
 
@@ -33,9 +32,7 @@ def get_history(
         user_email, limit, offset,
     )
     messages = brain.get_chat_history(user_email, limit=limit, offset=offset)
-    # Filter out SYSTEM messages (internal tool logs, etc.)
-    public_messages = [msg for msg in messages if msg.sender != Sender.SYSTEM]
-    return public_messages
+    return messages
 
 
 @router.post("/message")

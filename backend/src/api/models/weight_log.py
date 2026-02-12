@@ -21,6 +21,9 @@ class WeightLogInput(BaseModel):
     muscle_mass_pct: float | None = Field(
         default=None, ge=0, le=100, description="Muscle mass percentage"
     )
+    muscle_mass_kg: float | None = Field(
+        default=None, ge=0, lt=500, description="Muscle mass in kg"
+    )
     bone_mass_kg: float | None = Field(
         default=None, ge=0, lt=20, description="Bone mass in kg"
     )

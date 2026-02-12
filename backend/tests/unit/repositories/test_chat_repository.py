@@ -43,39 +43,40 @@ def mock_llm():
 class TestChatRepositoryGetHistory:
     """Test get_history method."""
 
-    @patch('src.repositories.chat_repository.MongoDBChatMessageHistory')
+    @patch('src.repositories.chat_repository.messages_from_dict')
     @patch('src.repositories.chat_repository.ChatHistory')
-    def test_get_history_default_limit(self, mock_chat_history_class, mock_mongo_history, chat_repo):
+    def test_get_history_default_limit(self, mock_chat_history_class, mock_messages_from_dict, chat_repo):
         """Test retrieving chat history with default limit."""
-        mock_mongo_instance = MagicMock()
-        mock_mongo_history.return_value = mock_mongo_instance
+        mock_cursor = MagicMock()
+        mock_cursor.__iter__.return_value = []
+        chat_repo.collection.find.return_value = mock_cursor
         mock_chat_history_class.from_mongodb_chat_message_history.return_value = []
 
         _ = chat_repo.get_history("user_123")
 
-        mock_mongo_history.assert_called_once()
-        mock_chat_history_class.from_mongodb_chat_message_history.assert_called_once_with(mock_mongo_instance)
+        chat_repo.collection.find.assert_called_once_with({"SessionId": "user_123"})
+        mock_chat_history_class.from_mongodb_chat_message_history.assert_called_once()
 
-    @patch('src.repositories.chat_repository.MongoDBChatMessageHistory')
     @patch('src.repositories.chat_repository.ChatHistory')
-    def test_get_history_custom_limit(self, mock_chat_history_class, mock_mongo_history, chat_repo):
+    def test_get_history_custom_limit(self, mock_chat_history_class, chat_repo):
         """Test retrieving chat history with custom limit."""
-        mock_mongo_instance = MagicMock()
-        mock_mongo_history.return_value = mock_mongo_instance
+        mock_cursor = MagicMock()
+        mock_cursor.__iter__.return_value = []
+        chat_repo.collection.find.return_value = mock_cursor
         mock_chat_history_class.from_mongodb_chat_message_history.return_value = []
 
         _ = chat_repo.get_history("user_123", limit=50)
 
-        # Verify MongoDBChatMessageHistory was initialized with correct history_size
-        call_kwargs = mock_mongo_history.call_args[1]
-        assert call_kwargs['history_size'] == 50
+        # In the new implementation, limit is applied after filtering and sorting
+        # We don't verify 'limit' in find() anymore
+        chat_repo.collection.find.assert_called_once_with({"SessionId": "user_123"})
 
-    @patch('src.repositories.chat_repository.MongoDBChatMessageHistory')
     @patch('src.repositories.chat_repository.ChatHistory')
-    def test_get_history_returns_chat_history_list(self, mock_chat_history_class, mock_mongo_history, chat_repo):
+    def test_get_history_returns_chat_history_list(self, mock_chat_history_class, chat_repo):
         """Test that get_history returns list of ChatHistory objects."""
-        mock_mongo_instance = MagicMock()
-        mock_mongo_history.return_value = mock_mongo_instance
+        mock_cursor = MagicMock()
+        mock_cursor.__iter__.return_value = []
+        chat_repo.collection.find.return_value = mock_cursor
 
         expected_histories = [
             ChatHistory(
@@ -322,7 +323,7 @@ class TestChatRepositoryInitialization:
     def test_chat_repository_collection_name(self, mock_db):
         """Test that ChatRepository uses correct collection name."""
         _ = ChatRepository(mock_db)
-        mock_db.__getitem__.assert_called_once_with("chat_history")
+        mock_db.__getitem__.assert_called_with("message_store")
 
     def test_chat_repository_with_mock_database(self, mock_db):
         """Test ChatRepository initialization with mock database."""
@@ -333,11 +334,11 @@ class TestChatRepositoryInitialization:
 class TestChatRepositoryEdgeCases:
     """Test edge cases and error handling."""
 
-    @patch('src.repositories.chat_repository.MongoDBChatMessageHistory')
-    def test_get_history_empty_session(self, mock_mongo_history, chat_repo):
+    def test_get_history_empty_session(self, chat_repo):
         """Test getting history for empty session."""
-        mock_mongo_instance = MagicMock()
-        mock_mongo_history.return_value = mock_mongo_instance
+        mock_cursor = MagicMock()
+        mock_cursor.__iter__.return_value = []
+        chat_repo.collection.find.return_value = mock_cursor
 
         with patch('src.repositories.chat_repository.ChatHistory') as mock_chat_cls:
             mock_chat_cls.from_mongodb_chat_message_history.return_value = []

@@ -58,8 +58,8 @@ export function WeightTab() {
               id="weight_kg"
               label="Peso (kg)" 
               type="number" 
-              step="0.1" 
-              placeholder="Ex: 75.5" 
+              step="0.01" 
+              placeholder="Ex: 75.50" 
               error={errors.weight_kg?.message}
               {...register('weight_kg', { valueAsNumber: true })}
             />
@@ -67,41 +67,41 @@ export function WeightTab() {
               id="body_fat_pct"
               label="Gordura Corporal (%)" 
               type="number" 
-              step="0.1" 
-              placeholder="Ex: 15.5"
+              step="0.01" 
+              placeholder="Ex: 15.50"
               error={errors.body_fat_pct?.message}
               {...register('body_fat_pct', { valueAsNumber: true })}
             />
             <Input 
-              id="muscle_mass_pct"
-              label="Massa Muscular (%)" 
+              id="muscle_mass_kg"
+              label="Massa Muscular (kg)" 
               type="number" 
-              step="0.1" 
-              placeholder="Ex: 40.2"
-              error={errors.muscle_mass_pct?.message}
-              {...register('muscle_mass_pct', { valueAsNumber: true })}
+              step="0.01" 
+              placeholder="Ex: 35.20"
+              error={errors.muscle_mass_kg?.message}
+              {...register('muscle_mass_kg', { valueAsNumber: true })}
             />
             <Input 
               label="Água Corporal (%)" 
               type="number" 
-              step="0.1" 
-              placeholder="Ex: 55.5"
+              step="0.01" 
+              placeholder="Ex: 55.50"
               error={errors.body_water_pct?.message}
               {...register('body_water_pct', { valueAsNumber: true })}
             />
             <Input 
               label="Massa Óssea (kg)" 
               type="number" 
-              step="0.1" 
-              placeholder="Ex: 3.5"
+              step="0.01" 
+              placeholder="Ex: 3.50"
               error={errors.bone_mass_kg?.message}
               {...register('bone_mass_kg', { valueAsNumber: true })}
             />
             <Input 
               label="Gordura Visceral" 
               type="number" 
-              step="0.1" 
-              placeholder="Ex: 5"
+              step="0.01" 
+              placeholder="Ex: 5.0"
               error={errors.visceral_fat?.message}
               {...register('visceral_fat', { valueAsNumber: true })}
             />
@@ -129,16 +129,16 @@ export function WeightTab() {
           <div className="pt-6 border-t border-border">
             <h3 className="text-sm font-bold text-text-secondary uppercase tracking-wider mb-4">Medidas Corporais (cm)</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-              <Input label="Pescoço" type="number" step="0.1" placeholder="Ex: 38" error={errors.neck_cm?.message} {...register('neck_cm', { valueAsNumber: true })} />
-              <Input label="Peito" type="number" step="0.1" placeholder="Ex: 100" error={errors.chest_cm?.message} {...register('chest_cm', { valueAsNumber: true })} />
-              <Input id="waist_cm" label="Cintura" type="number" step="0.1" placeholder="Ex: 85" error={errors.waist_cm?.message} {...register('waist_cm', { valueAsNumber: true })} />
-              <Input label="Quadril" type="number" step="0.1" placeholder="Ex: 95" error={errors.hips_cm?.message} {...register('hips_cm', { valueAsNumber: true })} />
-              <Input label="Bíceps (D)" type="number" step="0.1" placeholder="Ex: 35" error={errors.bicep_r_cm?.message} {...register('bicep_r_cm', { valueAsNumber: true })} />
-              <Input label="Bíceps (E)" type="number" step="0.1" placeholder="Ex: 35" error={errors.bicep_l_cm?.message} {...register('bicep_l_cm', { valueAsNumber: true })} />
-              <Input label="Coxa (D)" type="number" step="0.1" placeholder="Ex: 55" error={errors.thigh_r_cm?.message} {...register('thigh_r_cm', { valueAsNumber: true })} />
-              <Input label="Coxa (E)" type="number" step="0.1" placeholder="Ex: 55" error={errors.thigh_l_cm?.message} {...register('thigh_l_cm', { valueAsNumber: true })} />
-              <Input label="Pant. (D)" type="number" step="0.1" placeholder="Ex: 38" error={errors.calf_r_cm?.message} {...register('calf_r_cm', { valueAsNumber: true })} />
-              <Input label="Pant. (E)" type="number" step="0.1" placeholder="Ex: 38" error={errors.calf_l_cm?.message} {...register('calf_l_cm', { valueAsNumber: true })} />
+              <Input label="Pescoço" type="number" step="0.01" placeholder="Ex: 38" error={errors.neck_cm?.message} {...register('neck_cm', { valueAsNumber: true })} />
+              <Input label="Peito" type="number" step="0.01" placeholder="Ex: 100" error={errors.chest_cm?.message} {...register('chest_cm', { valueAsNumber: true })} />
+              <Input id="waist_cm" label="Cintura" type="number" step="0.01" placeholder="Ex: 85" error={errors.waist_cm?.message} {...register('waist_cm', { valueAsNumber: true })} />
+              <Input label="Quadril" type="number" step="0.01" placeholder="Ex: 95" error={errors.hips_cm?.message} {...register('hips_cm', { valueAsNumber: true })} />
+              <Input label="Bíceps (D)" type="number" step="0.01" placeholder="Ex: 35" error={errors.bicep_r_cm?.message} {...register('bicep_r_cm', { valueAsNumber: true })} />
+              <Input label="Bíceps (E)" type="number" step="0.01" placeholder="Ex: 35" error={errors.bicep_l_cm?.message} {...register('bicep_l_cm', { valueAsNumber: true })} />
+              <Input label="Coxa (D)" type="number" step="0.01" placeholder="Ex: 55" error={errors.thigh_r_cm?.message} {...register('thigh_r_cm', { valueAsNumber: true })} />
+              <Input label="Coxa (E)" type="number" step="0.01" placeholder="Ex: 55" error={errors.thigh_l_cm?.message} {...register('thigh_l_cm', { valueAsNumber: true })} />
+              <Input label="Panturrilha (D)" type="number" step="0.01" placeholder="Ex: 38" error={errors.calf_r_cm?.message} {...register('calf_r_cm', { valueAsNumber: true })} />
+              <Input label="Panturrilha (E)" type="number" step="0.01" placeholder="Ex: 38" error={errors.calf_l_cm?.message} {...register('calf_l_cm', { valueAsNumber: true })} />
             </div>
           </div>
 

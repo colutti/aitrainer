@@ -3,6 +3,7 @@ export interface WeightLog {
   weight_kg: number;
   body_fat_pct?: number;
   muscle_mass_pct?: number;
+  muscle_mass_kg?: number;
   bone_mass_kg?: number;
   body_water_pct?: number;
   visceral_fat?: number;

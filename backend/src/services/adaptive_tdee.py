@@ -408,7 +408,10 @@ class AdaptiveTDEEService:
         fat_change = fat_mass_end - fat_mass_start
 
         muscle_change = None
-        if first.muscle_mass_pct and last.muscle_mass_pct:
+        # Priority: muscle_mass_kg -> muscle_mass_pct -> fallback (LBM change)
+        if first.muscle_mass_kg is not None and last.muscle_mass_kg is not None:
+            muscle_change = last.muscle_mass_kg - first.muscle_mass_kg
+        elif first.muscle_mass_pct and last.muscle_mass_pct:
             m_start = first.weight_kg * (first.muscle_mass_pct / 100.0)
             m_end = last.weight_kg * (last.muscle_mass_pct / 100.0)
             muscle_change = m_end - m_start
@@ -418,14 +421,16 @@ class AdaptiveTDEEService:
         return {
             "fat_change_kg": round(fat_change, 2),
             "muscle_change_kg": round(muscle_change, 2),
-            "start_fat_pct": round(cast(float, first.body_fat_pct), 1),
-            "end_fat_pct": round(cast(float, last.body_fat_pct), 1),
-            "start_muscle_pct": round(cast(float, first.muscle_mass_pct), 1)
+            "start_fat_pct": round(cast(float, first.body_fat_pct), 2),
+            "end_fat_pct": round(cast(float, last.body_fat_pct), 2),
+            "start_muscle_pct": round(cast(float, first.muscle_mass_pct), 2)
             if first.muscle_mass_pct
-            else None,
-            "end_muscle_pct": round(cast(float, last.muscle_mass_pct), 1)
+            else (round(first.muscle_mass_kg / first.weight_kg * 100, 2) if first.muscle_mass_kg else None),
+            "end_muscle_pct": round(cast(float, last.muscle_mass_pct), 2)
             if last.muscle_mass_pct
-            else None,
+            else (round(last.muscle_mass_kg / last.weight_kg * 100, 2) if last.muscle_mass_kg else None),
+            "start_muscle_kg": round(first.muscle_mass_kg, 2) if first.muscle_mass_kg else None,
+            "end_muscle_kg": round(last.muscle_mass_kg, 2) if last.muscle_mass_kg else None,
         }
 
     # pylint: disable=too-many-locals

@@ -20,6 +20,7 @@ def create_save_composition_tool(database, user_email: str):
         date: str | None = None,
         body_fat_pct: float | None = None,
         muscle_mass_pct: float | None = None,
+        muscle_mass_kg: float | None = None,
         bone_mass_kg: float | None = None,
         body_water_pct: float | None = None,
         visceral_fat: float | None = None,
@@ -30,7 +31,7 @@ def create_save_composition_tool(database, user_email: str):
         """
         Salva ou atualiza os dados de composição corporal do aluno.
         Use esta ferramenta quando o aluno reportar peso ou dados de bioimpedância.
-        Argumentos: Peso (obrigatório), Data, %Gordura, %Músculo, BMR, etc.
+        Argumentos: Peso (obrigatório), Data, %Gordura, Músculo (kg), BMR, etc.
         """
         try:
             if date:
@@ -47,6 +48,7 @@ def create_save_composition_tool(database, user_email: str):
                 weight_kg=weight_kg,
                 body_fat_pct=body_fat_pct,
                 muscle_mass_pct=muscle_mass_pct,
+                muscle_mass_kg=muscle_mass_kg,
                 bone_mass_kg=bone_mass_kg,
                 body_water_pct=body_water_pct,
                 visceral_fat=visceral_fat,
@@ -105,7 +107,9 @@ def create_get_composition_tool(database, user_email: str):
                 metrics = [f"Peso: {log.weight_kg}kg"]
                 if log.body_fat_pct:
                     metrics.append(f"Gordura: {log.body_fat_pct}%")
-                if log.muscle_mass_pct:
+                if log.muscle_mass_kg:
+                    metrics.append(f"Músculo: {log.muscle_mass_kg}kg")
+                elif log.muscle_mass_pct:
                     metrics.append(f"Músculo: {log.muscle_mass_pct}%")
                 if log.visceral_fat:
                     metrics.append(f"Gord. Visceral: {log.visceral_fat}")

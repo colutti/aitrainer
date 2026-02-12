@@ -32,7 +32,8 @@ const weightSchema = z.object({
   date: z.string().min(1, "A data é obrigatória"),
   weight_kg: mandatoryNumberSchema(30, 300, "Peso"),
   body_fat_pct: mandatoryNumberSchema(2, 100, "Gordura corporal"),
-  muscle_mass_pct: mandatoryNumberSchema(2, 100, "Massa muscular"),
+  muscle_mass_pct: optionalNumberSchema(2, 100, "Massa muscular (%)"),
+  muscle_mass_kg: optionalNumberSchema(10, 200, "Massa muscular (kg)"),
   body_water_pct: optionalNumberSchema(2, 100, "Água corporal"),
   bone_mass_kg: optionalNumberSchema(0, 20, "Massa óssea"),
   visceral_fat: optionalNumberSchema(0, 50, "Gordura visceral"),
@@ -125,6 +126,7 @@ export function useWeightTab() {
         weight_kg: undefined,
         body_fat_pct: undefined,
         muscle_mass_pct: undefined,
+        muscle_mass_kg: undefined,
         body_water_pct: undefined,
         bone_mass_kg: undefined,
         visceral_fat: undefined,
@@ -163,7 +165,8 @@ export function useWeightTab() {
     setValue('date', log.date);
     setValue('weight_kg', log.weight_kg);
     setValue('body_fat_pct', log.body_fat_pct ?? 0);
-    setValue('muscle_mass_pct', log.muscle_mass_pct ?? 0);
+    setValue('muscle_mass_pct', log.muscle_mass_pct ?? undefined);
+    setValue('muscle_mass_kg', log.muscle_mass_kg ?? undefined);
     setValue('body_water_pct', log.body_water_pct ?? undefined);
     setValue('bone_mass_kg', log.bone_mass_kg ?? undefined);
     setValue('visceral_fat', log.visceral_fat ?? undefined);
