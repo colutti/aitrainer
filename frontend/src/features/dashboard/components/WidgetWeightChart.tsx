@@ -1,4 +1,4 @@
-import { Area, AreaChart, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import type { WeightHistoryPoint } from '../../../shared/types/dashboard';
 
@@ -26,10 +26,15 @@ export function WidgetWeightChart({ data }: WidgetWeightChartProps) {
               <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
             </linearGradient>
           </defs>
+          <XAxis dataKey="date" hide />
           <Tooltip 
             contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }}
             formatter={(value: number) => [`${value.toString()} kg`, 'Peso']}
-            labelFormatter={(label: string | number) => new Date(label).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+            labelFormatter={(label: string | number) => {
+              const date = new Date(label);
+              if (isNaN(date.getTime())) return label.toString();
+              return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+            }}
           />
           <Area 
             type="monotone" 
