@@ -128,20 +128,20 @@ describe('integrationsApi', () => {
   it('should get Telegram status', async () => {
     const mockRes = { linked: true, telegram_username: 'user' };
     vi.mocked(httpClient).mockResolvedValue(mockRes);
-    
+
     const res = await integrationsApi.getTelegramStatus();
-    
-    expect(httpClient).toHaveBeenCalledWith('/integrations/telegram/status');
+
+    expect(httpClient).toHaveBeenCalledWith('/telegram/status');
     expect(res).toEqual(mockRes);
   });
 
   it('should generate Telegram code', async () => {
     const mockRes = { code: '123456', url: 't.me/bot?start=123456' };
     vi.mocked(httpClient).mockResolvedValue(mockRes);
-    
+
     const res = await integrationsApi.generateTelegramCode();
-    
-    expect(httpClient).toHaveBeenCalledWith('/integrations/telegram/code', { method: 'POST' });
+
+    expect(httpClient).toHaveBeenCalledWith('/telegram/generate-code', { method: 'POST' });
     expect(res).toEqual(mockRes);
   });
 

@@ -89,10 +89,10 @@ export const integrationsApi = {
 
   // Telegram
   getTelegramStatus: async (): Promise<TelegramStatus | undefined> => {
-     return httpClient('/integrations/telegram/status');
+     return httpClient('/telegram/status');
   },
-  
+
   generateTelegramCode: async (): Promise<{ code: string; url: string } | undefined> => {
-     return httpClient('/integrations/telegram/code', { method: 'POST' });
+     return httpClient('/telegram/generate-code', { method: 'POST' });
   }
 };
