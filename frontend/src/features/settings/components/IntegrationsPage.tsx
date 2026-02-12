@@ -24,8 +24,6 @@ export function IntegrationsPage() {
   const [telegramCode, setTelegramCode] = useState<{ code: string; url: string } | null>(null);
   const [telegramLoading, setTelegramLoading] = useState(false);
   const [telegramNotifyOnWorkout, setTelegramNotifyOnWorkout] = useState(true);
-  const [telegramNotifyOnNutrition, setTelegramNotifyOnNutrition] = useState(false);
-  const [telegramNotifyOnWeight, setTelegramNotifyOnWeight] = useState(false);
 
   // Import State
   const [importing, setImporting] = useState(false);
@@ -51,8 +49,6 @@ export function IntegrationsPage() {
       setTelegramStatus(status ?? null);
       if (status) {
         setTelegramNotifyOnWorkout(status.telegram_notify_on_workout ?? true);
-        setTelegramNotifyOnNutrition(status.telegram_notify_on_nutrition ?? false);
-        setTelegramNotifyOnWeight(status.telegram_notify_on_weight ?? false);
       }
     } catch {
       // ignore
@@ -162,20 +158,13 @@ export function IntegrationsPage() {
     }
   }
 
-  async function handleTelegramNotificationChange(
-    field: 'workout' | 'nutrition' | 'weight',
-    value: boolean
-  ) {
+  async function handleTelegramNotificationChange(value: boolean) {
     try {
-      await integrationsApi.updateUserNotifications({
-        [`telegram_notify_on_${field}`]: value
+      await integrationsApi.updateTelegramNotifications({
+        telegram_notify_on_workout: value
       });
 
-      // Update local state
-      if (field === 'workout') setTelegramNotifyOnWorkout(value);
-      if (field === 'nutrition') setTelegramNotifyOnNutrition(value);
-      if (field === 'weight') setTelegramNotifyOnWeight(value);
-
+      setTelegramNotifyOnWorkout(value);
       notify.success('Preferência de notificação atualizada!');
     } catch {
       notify.error('Erro ao atualizar preferência de notificação.');
@@ -349,44 +338,18 @@ export function IntegrationsPage() {
 
                {/* Notification Preferences */}
                <div className="border-t border-border pt-4 space-y-3">
-                 <h3 className="text-sm font-bold text-text-primary">Receber notificações por Telegram:</h3>
+                 <h3 className="text-sm font-bold text-text-primary">Receber análise de treinos:</h3>
 
-                 <div className="flex items-center gap-3 p-3 bg-zinc-900 rounded-lg hover:bg-zinc-800 cursor-pointer transition-colors" onClick={() => void handleTelegramNotificationChange('workout', !telegramNotifyOnWorkout)}>
+                 <div className="flex items-center gap-3 p-3 bg-zinc-900 rounded-lg hover:bg-zinc-800 cursor-pointer transition-colors" onClick={() => void handleTelegramNotificationChange(!telegramNotifyOnWorkout)}>
                    <input
                      type="checkbox"
                      checked={telegramNotifyOnWorkout}
-                     onChange={(e) => void handleTelegramNotificationChange('workout', e.target.checked)}
+                     onChange={(e) => void handleTelegramNotificationChange(e.target.checked)}
                      className="w-4 h-4 cursor-pointer"
                    />
                    <div className="flex-1">
-                     <p className="text-sm font-medium text-text-primary">Análise de Treinos</p>
-                     <p className="text-xs text-text-secondary">Quando sincronizar treinos da Hevy</p>
-                   </div>
-                 </div>
-
-                 <div className="flex items-center gap-3 p-3 bg-zinc-900 rounded-lg hover:bg-zinc-800 cursor-pointer transition-colors" onClick={() => void handleTelegramNotificationChange('nutrition', !telegramNotifyOnNutrition)}>
-                   <input
-                     type="checkbox"
-                     checked={telegramNotifyOnNutrition}
-                     onChange={(e) => void handleTelegramNotificationChange('nutrition', e.target.checked)}
-                     className="w-4 h-4 cursor-pointer"
-                   />
-                   <div className="flex-1">
-                     <p className="text-sm font-medium text-text-primary">Nutrição</p>
-                     <p className="text-xs text-text-secondary">Resumo diário de nutrição</p>
-                   </div>
-                 </div>
-
-                 <div className="flex items-center gap-3 p-3 bg-zinc-900 rounded-lg hover:bg-zinc-800 cursor-pointer transition-colors" onClick={() => void handleTelegramNotificationChange('weight', !telegramNotifyOnWeight)}>
-                   <input
-                     type="checkbox"
-                     checked={telegramNotifyOnWeight}
-                     onChange={(e) => void handleTelegramNotificationChange('weight', e.target.checked)}
-                     className="w-4 h-4 cursor-pointer"
-                   />
-                   <div className="flex-1">
-                     <p className="text-sm font-medium text-text-primary">Peso</p>
-                     <p className="text-xs text-text-secondary">Atualizações de peso corporal</p>
+                     <p className="text-sm font-medium text-text-primary">Análise Automática de Treinos</p>
+                     <p className="text-xs text-text-secondary">Receba análise da IA quando sincronizar treinos da Hevy</p>
                    </div>
                  </div>
                </div>
