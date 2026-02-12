@@ -402,8 +402,82 @@ class HevyService:
                 )
                 return None
             except Exception as e:
-                logger.error("Failed to fetch routine %s: %s", routine_id, e)
+                logger.error("Failed to fetch routine %s", routine_id)
                 return None
+
+    @staticmethod
+    def _prepare_routine_payload(routine_data: dict, for_update: bool = False) -> dict:
+        """
+        Cleans routine payload before sending to Hevy API.
+
+        Hevy API rejects:
+        - folder_id in PUT requests (remove for_update=True)
+        - index in exercises and sets (always remove)
+        - title in individual exercises (always remove)
+
+        Args:
+            routine_data: Routine dict from model_dump()
+            for_update: True if this is a PUT request (removes folder_id)
+
+        Returns:
+            Cleaned routine_data dict
+        """
+        logger.debug(
+            "[_prepare_routine_payload] Starting cleanup - for_update=%s, routine_title=%s",
+            for_update,
+            routine_data.get("title", "UNKNOWN"),
+        )
+
+        removed_fields = {"folder_id": 0, "exercise_index": 0, "exercise_title": 0, "set_index": 0}
+
+        # Remove folder_id for PUT (not allowed in update)
+        if for_update and "folder_id" in routine_data:
+            del routine_data["folder_id"]
+            removed_fields["folder_id"] += 1
+            logger.debug("[_prepare_routine_payload] Removed folder_id (PUT request)")
+
+        # Clean exercises: remove index and title, then clean sets
+        if "exercises" in routine_data:
+            num_exercises = len(routine_data["exercises"])
+            logger.debug("[_prepare_routine_payload] Cleaning %d exercises", num_exercises)
+
+            for ex_idx, ex in enumerate(routine_data["exercises"]):
+                ex_id = ex.get("exercise_template_id", "UNKNOWN")
+
+                # Remove index from exercise
+                if "index" in ex:
+                    del ex["index"]
+                    removed_fields["exercise_index"] += 1
+
+                # Remove title from exercise (API doesn't accept it in routine update)
+                if "title" in ex:
+                    del ex["title"]
+                    removed_fields["exercise_title"] += 1
+                    logger.debug(
+                        "[_prepare_routine_payload] Removed title from exercise %d (ID: %s)",
+                        ex_idx,
+                        ex_id,
+                    )
+
+                # Remove index from all sets
+                if "sets" in ex:
+                    num_sets = len(ex["sets"])
+                    logger.debug(
+                        "[_prepare_routine_payload] Cleaning %d sets in exercise %d",
+                        num_sets,
+                        ex_idx,
+                    )
+
+                    for set_idx, s in enumerate(ex["sets"]):
+                        if "index" in s:
+                            del s["index"]
+                            removed_fields["set_index"] += 1
+
+        logger.info(
+            "[_prepare_routine_payload] Cleanup complete - Removed: %s",
+            removed_fields,
+        )
+        return routine_data
 
     async def create_routine(
         self, api_key: str, routine: HevyRoutine
@@ -413,21 +487,35 @@ class HevyService:
         """
         async with httpx.AsyncClient() as client:
             try:
+                logger.info(
+                    "[create_routine] Creating routine: %s", routine.title
+                )
+
                 routine_data = routine.model_dump(
                     exclude={"id", "created_at", "updated_at"},
                     exclude_none=True,
                 )
 
-                if "exercises" in routine_data:
-                    for ex in routine_data["exercises"]:
-                        if "title" in ex:
-                            del ex["title"]
+                logger.debug(
+                    "[create_routine] Routine data before cleanup - exercises: %d",
+                    len(routine_data.get("exercises", [])),
+                )
 
+                # Ensure folder_id is included (can be null)
                 routine_data["folder_id"] = routine.folder_id
+
+                # Clean payload: remove index, title, etc.
+                logger.debug("[create_routine] Cleaning payload for POST request")
+                routine_data = self._prepare_routine_payload(routine_data, for_update=False)
 
                 import json
 
                 payload = {"routine": routine_data}
+
+                logger.debug(
+                    "[create_routine] Payload after cleanup - exercises: %d",
+                    len(payload["routine"].get("exercises", [])),
+                )
 
                 logger.info(
                     "[create_routine] Sending payload:\n%s",
@@ -489,22 +577,34 @@ class HevyService:
         """
         async with httpx.AsyncClient() as client:
             try:
+                logger.info(
+                    "[update_routine] Updating routine ID: %s (title: %s)",
+                    routine_id,
+                    routine.title,
+                )
+
                 routine_data = routine.model_dump(
                     exclude={"id", "created_at", "updated_at"},
                     exclude_none=True,
                 )
 
-                if "exercises" in routine_data:
-                    for ex in routine_data["exercises"]:
-                        if "title" in ex:
-                            del ex["title"]
+                logger.debug(
+                    "[update_routine] Routine data before cleanup - exercises: %d",
+                    len(routine_data.get("exercises", [])),
+                )
 
-                if "folder_id" in routine_data:
-                    del routine_data["folder_id"]
+                # Clean payload: remove index, title, folder_id, etc. for PUT
+                logger.debug("[update_routine] Cleaning payload for PUT request (for_update=True)")
+                routine_data = self._prepare_routine_payload(routine_data, for_update=True)
 
                 import json
 
                 payload = {"routine": routine_data}
+
+                logger.debug(
+                    "[update_routine] Payload after cleanup - exercises: %d",
+                    len(payload["routine"].get("exercises", [])),
+                )
 
                 logger.info(
                     "[update_routine] Sending payload for routine %s:\n%s",

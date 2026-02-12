@@ -488,3 +488,318 @@ def create_replace_hevy_exercise_tool(hevy_service, database, user_email: str):
             return f"Erro técnico: {str(e)}"
 
     return replace_hevy_exercise
+
+
+def create_get_hevy_routine_detail_tool(hevy_service, database, user_email: str):
+    @tool
+    async def get_hevy_routine_detail(routine_title_or_id: str) -> str:
+        """
+        Obtém detalhes COMPLETOS de uma rotina do Hevy incluindo:
+        - Nome, notas e ID da rotina
+        - Lista completa de exercícios com IDs, nomes, rest_seconds, superset_id
+        - Para cada exercício: lista de sets com tipo, peso, reps, rep_range, duração
+
+        **IMPORTANTE**: Use SEMPRE esta ferramenta ANTES de tentar modificar uma rotina.
+        Isso garante que você veja o estado atual e não perca dados.
+
+        Args:
+            routine_title_or_id: Título ou ID da rotina (ex: "Full Body A" ou "routine-123")
+
+        Retorna: Descrição estruturada dos detalhes da rotina
+        """
+        profile = database.get_user_profile(user_email)
+        if not profile or not profile.hevy_enabled or not profile.hevy_api_key:
+            return "A integração com Hevy está desativada ou a chave API não está configurada."
+
+        try:
+            logger.debug(
+                "[get_hevy_routine_detail] Request for routine: %s (user: %s)",
+                routine_title_or_id,
+                user_email,
+            )
+
+            # First, fetch all routines to find the matching one
+            logger.debug("[get_hevy_routine_detail] Fetching all routines...")
+            routines_resp = await hevy_service.get_routines(
+                profile.hevy_api_key, page=1, page_size=50
+            )
+
+            if not routines_resp or not routines_resp.routines:
+                logger.warning("[get_hevy_routine_detail] No routines found in Hevy")
+                return "Nenhuma rotina encontrada no Hevy."
+
+            logger.debug(
+                "[get_hevy_routine_detail] Found %d routines",
+                len(routines_resp.routines),
+            )
+
+            # Find routine by title or ID
+            target_routine = None
+            search_key = routine_title_or_id.lower()
+
+            for r in routines_resp.routines:
+                if r.id == routine_title_or_id or (
+                    r.title and r.title.lower() == search_key
+                ):
+                    target_routine = r
+                    logger.debug(
+                        "[get_hevy_routine_detail] Found matching routine: %s (ID: %s)",
+                        r.title,
+                        r.id,
+                    )
+                    break
+
+            if not target_routine:
+                logger.warning(
+                    "[get_hevy_routine_detail] Routine not found: %s",
+                    routine_title_or_id,
+                )
+                return f"Rotina '{routine_title_or_id}' não encontrada."
+
+            # Fetch full details of the routine
+            logger.debug(
+                "[get_hevy_routine_detail] Fetching full details for routine ID: %s",
+                target_routine.id,
+            )
+            routine = await hevy_service.get_routine_by_id(
+                profile.hevy_api_key, target_routine.id
+            )
+
+            if not routine:
+                logger.error(
+                    "[get_hevy_routine_detail] Failed to load routine details: %s",
+                    target_routine.id,
+                )
+                return f"Não consegui carregar os detalhes da rotina '{target_routine.title}'."
+
+            logger.info(
+                "[get_hevy_routine_detail] Successfully loaded routine: %s with %d exercises",
+                routine.title,
+                len(routine.exercises) if routine.exercises else 0,
+            )
+
+            # Format detailed response
+            result = f"📋 **{routine.title}** (ID: {routine.id})\n"
+            if routine.notes:
+                result += f"📝 Notas: {routine.notes}\n"
+            result += "\n"
+
+            if not routine.exercises:
+                result += "Nenhum exercício nesta rotina.\n"
+                return result
+
+            result += f"🏋️ **Exercícios ({len(routine.exercises)})**:\n\n"
+
+            for i, ex in enumerate(routine.exercises, 1):
+                ex_name = ex.title if ex.title else f"(ID: {ex.exercise_template_id})"
+                result += f"{i}. **{ex_name}**\n"
+                result += f"   ID do Exercício: {ex.exercise_template_id}\n"
+
+                if ex.rest_seconds is not None:
+                    result += f"   Descanso: {ex.rest_seconds}s\n"
+                if ex.superset_id is not None:
+                    result += f"   Superset ID: {ex.superset_id}\n"
+                if ex.notes:
+                    result += f"   Notas: {ex.notes}\n"
+
+                if ex.sets:
+                    result += f"   Séries ({len(ex.sets)}):\n"
+                    for j, s in enumerate(ex.sets, 1):
+                        set_desc = f"      {j}. {s.type.upper()}"
+
+                        if s.weight_kg is not None:
+                            set_desc += f" - {s.weight_kg}kg"
+
+                        if s.rep_range:
+                            if s.rep_range.end is not None:
+                                set_desc += f" x {s.rep_range.start}-{s.rep_range.end}"
+                            else:
+                                set_desc += f" x {s.rep_range.start}"
+                        elif s.reps is not None:
+                            set_desc += f" x {s.reps}"
+
+                        if s.duration_seconds is not None:
+                            set_desc += f" ({s.duration_seconds}s)"
+
+                        result += set_desc + "\n"
+                else:
+                    result += "      Nenhuma série registrada.\n"
+
+                result += "\n"
+
+            return result
+
+        except Exception as e:
+            logger.error("Error in get_hevy_routine_detail: %s", e, exc_info=True)
+            return f"Erro ao carregar detalhes da rotina: {str(e)}"
+
+    return get_hevy_routine_detail
+
+
+def create_set_routine_rest_and_ranges_tool(hevy_service, database, user_email: str):
+    @tool
+    async def set_routine_rest_and_ranges(
+        routine_title_or_id: str,
+        rest_seconds: int = 90,
+        rep_range_start: int = 8,
+        rep_range_end: int = 12,
+    ) -> str:
+        """
+        Ferramenta especializada para atualizar rest_seconds e rep_range de uma rotina.
+
+        Operação segura: busca a rotina atual, aplica as mudanças nos exercícios existentes,
+        e envia o payload completo de volta ao Hevy (preservando todos os outros campos).
+
+        **Uso recomendado**: Use quando quiser ajustar descansos ou ranges de uma rotina existente.
+
+        Args:
+            routine_title_or_id: Título ou ID da rotina (ex: "Full Body A")
+            rest_seconds: Descanso padrão em segundos (default: 90s)
+            rep_range_start: Início do range de reps (default: 8)
+            rep_range_end: Fim do range de reps (default: 12)
+
+        Retorna: Confirmação da atualização com resumo das mudanças
+        """
+        profile = database.get_user_profile(user_email)
+        if not profile or not profile.hevy_enabled or not profile.hevy_api_key:
+            return "A integração com Hevy está desativada ou a chave API não está configurada."
+
+        try:
+            logger.info(
+                "[set_routine_rest_and_ranges] Starting: routine=%s, rest=%d, range=%d-%d",
+                routine_title_or_id,
+                rest_seconds,
+                rep_range_start,
+                rep_range_end,
+            )
+
+            # 1. Fetch current state
+            logger.debug(
+                "[set_routine_rest_and_ranges] Fetching all routines to find match..."
+            )
+            routines_resp = await hevy_service.get_routines(
+                profile.hevy_api_key, page=1, page_size=50
+            )
+
+            if not routines_resp or not routines_resp.routines:
+                logger.warning("[set_routine_rest_and_ranges] No routines found")
+                return "Nenhuma rotina encontrada no Hevy."
+
+            # Find routine
+            target_routine = None
+            search_key = routine_title_or_id.lower()
+
+            for r in routines_resp.routines:
+                if r.id == routine_title_or_id or (
+                    r.title and r.title.lower() == search_key
+                ):
+                    target_routine = r
+                    break
+
+            if not target_routine:
+                logger.warning(
+                    "[set_routine_rest_and_ranges] Routine not found: %s",
+                    routine_title_or_id,
+                )
+                return f"Rotina '{routine_title_or_id}' não encontrada."
+
+            # 2. Fetch full details
+            logger.debug(
+                "[set_routine_rest_and_ranges] Fetching full routine details: %s",
+                target_routine.id,
+            )
+            current = await hevy_service.get_routine_by_id(
+                profile.hevy_api_key, target_routine.id
+            )
+
+            if not current:
+                logger.error(
+                    "[set_routine_rest_and_ranges] Failed to load routine: %s",
+                    target_routine.id,
+                )
+                return f"Não consegui carregar a rotina '{target_routine.title}'."
+
+            if not current.exercises:
+                logger.warning(
+                    "[set_routine_rest_and_ranges] Routine has no exercises: %s",
+                    target_routine.id,
+                )
+                return f"A rotina '{current.title}' não tem exercícios para atualizar."
+
+            # 3. Apply changes to all exercises
+            logger.debug(
+                "[set_routine_rest_and_ranges] Applying changes to %d exercises",
+                len(current.exercises),
+            )
+
+            changes_summary = []
+            updated_count = 0
+
+            for ex in current.exercises:
+                # Update rest_seconds
+                old_rest = ex.rest_seconds
+                ex.rest_seconds = rest_seconds
+                if old_rest != rest_seconds:
+                    changes_summary.append(
+                        f"  - {ex.title or ex.exercise_template_id}: descanso {old_rest}s → {rest_seconds}s"
+                    )
+                    updated_count += 1
+
+                # Update sets with new rep_range
+                if ex.sets:
+                    for s in ex.sets:
+                        if s.type == "normal":  # Only update normal sets
+                            old_range = (
+                                f"{s.rep_range.start}-{s.rep_range.end}"
+                                if s.rep_range
+                                else "N/A"
+                            )
+                            s.rep_range = {
+                                "start": rep_range_start,
+                                "end": rep_range_end,
+                            }
+                            logger.debug(
+                                "[set_routine_rest_and_ranges] Updated rep_range: %s → %d-%d",
+                                old_range,
+                                rep_range_start,
+                                rep_range_end,
+                            )
+
+            # 4. Send updated routine back to Hevy
+            logger.info(
+                "[set_routine_rest_and_ranges] Sending updated routine to Hevy..."
+            )
+            result = await hevy_service.update_routine(
+                profile.hevy_api_key, current.id, current
+            )
+
+            if result:
+                logger.info(
+                    "[set_routine_rest_and_ranges] Successfully updated routine: %s",
+                    current.title,
+                )
+                summary = f"✅ Rotina '{current.title}' atualizada com sucesso!\n\n"
+                summary += f"📊 Mudanças aplicadas:\n"
+                summary += f"  - Descanso: {rest_seconds}s em todos os exercícios\n"
+                summary += f"  - Rep Range: {rep_range_start}-{rep_range_end} em séries normais\n"
+                summary += f"  - Total de exercícios atualizados: {len(current.exercises)}\n"
+
+                if changes_summary:
+                    summary += f"\nDetalhes:\n" + "\n".join(changes_summary[:10])
+                    if len(changes_summary) > 10:
+                        summary += f"\n  ... e mais {len(changes_summary) - 10}"
+
+                return summary
+
+            logger.error(
+                "[set_routine_rest_and_ranges] Failed to update routine in Hevy"
+            )
+            return "Erro ao atualizar a rotina no Hevy (validação da API)."
+
+        except Exception as e:
+            logger.error(
+                "[set_routine_rest_and_ranges] Exception: %s", e, exc_info=True
+            )
+            return f"Erro técnico ao atualizar rotina: {str(e)}"
+
+    return set_routine_rest_and_ranges

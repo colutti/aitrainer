@@ -448,6 +448,8 @@ class AITrainerBrain:
             create_update_hevy_routine_tool,
             create_search_hevy_exercises_tool,
             create_replace_hevy_exercise_tool,
+            create_get_hevy_routine_detail_tool,
+            create_set_routine_rest_and_ranges_tool,
         )
         from src.services.hevy_service import HevyService
 
@@ -466,6 +468,12 @@ class AITrainerBrain:
             hevy_service, self._database, user_email
         )
         replace_hevy_exercise_tool = create_replace_hevy_exercise_tool(
+            hevy_service, self._database, user_email
+        )
+        get_hevy_routine_detail_tool = create_get_hevy_routine_detail_tool(
+            hevy_service, self._database, user_email
+        )
+        set_routine_rest_and_ranges_tool = create_set_routine_rest_and_ranges_tool(
             hevy_service, self._database, user_email
         )
 
@@ -490,6 +498,8 @@ class AITrainerBrain:
             update_hevy_routine_tool,
             search_hevy_exercises_tool,
             replace_hevy_exercise_tool,
+            get_hevy_routine_detail_tool,
+            set_routine_rest_and_ranges_tool,
             get_user_goal_tool,
             update_user_goal_tool,
         ]
