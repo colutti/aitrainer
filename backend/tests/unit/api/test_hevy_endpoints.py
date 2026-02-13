@@ -406,9 +406,9 @@ class TestHevyWebhook:
         assert response.status_code == 200
         data = response.json()
 
-        # Verify token is preserved (in the URL)
-        expected_url = f"https://aitrainer-backend.onrender.com/integrations/hevy/webhook/{existing_token}"
-        assert data["webhookUrl"] == expected_url
+        # Verify token is preserved (in the URL) - works with both localhost and production URLs
+        assert f"/integrations/hevy/webhook/{existing_token}" in data["webhookUrl"]
+        assert existing_token in data["webhookUrl"]
 
         # Verify secret has been rotated (new Bearer token)
         assert data["authHeader"].startswith("Bearer ")

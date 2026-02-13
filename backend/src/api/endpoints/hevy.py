@@ -6,7 +6,7 @@ import secrets
 from datetime import datetime
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from src.services.auth import verify_token
@@ -264,7 +264,7 @@ async def process_webhook_async(
 
 @router.get("/webhook/config")
 def get_webhook_config(
-    user_email: CurrentUser, brain: BrainDep
+    user_email: CurrentUser, brain: BrainDep, request: Request
 ):
     """Returns current webhook configuration."""
     profile = brain.get_user_profile(user_email)
@@ -281,7 +281,8 @@ def get_webhook_config(
             "authHeader": None,
         }
 
-    base_url = "https://aitrainer-backend.onrender.com"
+    # Build webhook URL dynamically from request (works locally and in production)
+    base_url = str(request.base_url).rstrip("/")
     webhook_url = f"{base_url}/integrations/hevy/webhook/{token}"
     masked_auth = f"Bearer ****{secret[-4:]}" if secret else None
 
@@ -294,7 +295,7 @@ def get_webhook_config(
 
 @router.post("/webhook/generate")
 def generate_webhook_credentials(
-    user_email: CurrentUser, brain: BrainDep
+    user_email: CurrentUser, brain: BrainDep, request: Request
 ):
     """Generates a new webhook token and secret."""
     try:
@@ -312,7 +313,8 @@ def generate_webhook_credentials(
         logger.info("Generating webhook for %s. Token: %s...", user_email, token[:4])
         brain.save_user_profile(profile)
 
-        base_url = "https://aitrainer-backend.onrender.com"
+        # Build webhook URL dynamically from request (works locally and in production)
+        base_url = str(request.base_url).rstrip("/")
         webhook_url = f"{base_url}/integrations/hevy/webhook/{token}"
 
         return {
