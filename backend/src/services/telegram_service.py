@@ -146,6 +146,13 @@ class TelegramBotService:
         Envia notificação proativa para um usuário vinculado ao Telegram.
         """
         try:
+            # 0. Validar mensagem não está vazia
+            if not message or not message.strip():
+                logger.warning(
+                    "[Telegram Notification] Skipping - empty message for %s", user_email
+                )
+                return False
+
             # 1. Buscar vinculação
             link = self.repository.get_link_by_email(user_email)
             if not link:

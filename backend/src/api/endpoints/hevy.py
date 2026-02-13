@@ -243,6 +243,11 @@ async def process_webhook_async(
             logger.info("[Webhook BG] Requesting AI analysis for %s", user_email)
             analysis = await brain.analyze_workout_async(user_email, workout_summary)
 
+            # Validar que análise não está vazia antes de enviar
+            if not analysis or not analysis.strip():
+                logger.warning("[Webhook BG] AI analysis empty for %s, skipping Telegram notification", user_email)
+                return
+
             # Enviar via Telegram
             telegram_service = get_telegram_service()
             await telegram_service.send_notification(user_email, analysis)
