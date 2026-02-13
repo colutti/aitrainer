@@ -14,7 +14,7 @@ interface WorkoutState {
 }
 
 interface WorkoutActions {
-  fetchWorkouts: (page?: number, workoutType?: string) => Promise<void>;
+  fetchWorkouts: (page?: number) => Promise<void>;
   deleteWorkout: (id: string) => Promise<void>;
   setSelectedWorkout: (workout: WorkoutLog | null) => void;
   reset: () => void;
@@ -36,14 +36,11 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   error: null,
   selectedWorkout: null,
 
-  fetchWorkouts: async (page = 1, workoutType) => {
+  fetchWorkouts: async (page = 1) => {
     set({ isLoading: true, error: null });
     try {
       const params = new URLSearchParams();
       params.append('page', page.toString());
-      if (workoutType) {
-        params.append('workout_type', workoutType);
-      }
 
       const response = await httpClient<WorkoutListResponse>(`/workout/list?${params.toString()}`);
       

@@ -1,4 +1,4 @@
-import { Dumbbell, Filter, Plus, Search } from 'lucide-react';
+import { Dumbbell, Plus, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { Button } from '../../shared/components/ui/Button';
@@ -118,12 +118,6 @@ export function WorkoutsPage() {
                 }}
                 leftIcon={<Search size={18} />}
               />
-            </div>
-            <div className="flex gap-2">
-              <Button variant="secondary" className="gap-2">
-                <Filter size={18} />
-                Filtrar
-              </Button>
             </div>
           </div>
         }
