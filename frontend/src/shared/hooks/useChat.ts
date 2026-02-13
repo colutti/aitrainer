@@ -117,7 +117,7 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
           'Content-Type': 'application/json',
           'Authorization': token ? `Bearer ${token}` : '',
         },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ user_message: text }),
       });
 
       if (!response.ok) {
