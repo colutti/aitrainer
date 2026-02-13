@@ -111,13 +111,13 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
 
     try {
       const token = localStorage.getItem(AUTH_TOKEN_KEY);
-      const response = await fetch(`${API_BASE_URL}/message/message`, {
+      const response = await fetch(`${API_BASE_URL}/message`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': token ? `Bearer ${token}` : '',
         },
-        body: JSON.stringify({ user_message: text }),
+        body: JSON.stringify({ message: text }),
       });
 
       if (!response.ok) {
