@@ -297,7 +297,8 @@ def generate_webhook_credentials(
         if not profile:
             raise HTTPException(status_code=404, detail="Profile not found")
 
-        token = secrets.token_urlsafe(16)
+        # Preserve existing token — generate only on first setup
+        token = profile.hevy_webhook_token or secrets.token_urlsafe(16)
         secret = secrets.token_urlsafe(24)
 
         profile.hevy_webhook_token = token
@@ -349,6 +350,7 @@ async def receive_hevy_webhook(
     """
     Receives webhook from Hevy. Identifies user by token and validates auth header.
     """
+    logger.info("[Webhook] Incoming request. Token: %s...", user_token[:8])
     logger.info("[Webhook] Received webhook from Hevy. Payload: %s", body.model_dump())
 
     # 1. Find user by token

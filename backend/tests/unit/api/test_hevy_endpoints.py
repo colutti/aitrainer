@@ -385,6 +385,40 @@ class TestHevyWebhook:
         mock_brain.save_user_profile.assert_called_once()
         app.dependency_overrides = {}
 
+    def test_generate_webhook_preserves_existing_token(self, client, mock_brain):
+        """Test that regenerating webhook preserves existing token but rotates secret."""
+        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+
+        existing_token = "existing_token_12345"
+        existing_secret = "existing_secret_67890"
+        profile = MagicMock()
+        profile.hevy_webhook_token = existing_token
+        profile.hevy_webhook_secret = existing_secret
+        mock_brain.get_user_profile.return_value = profile
+
+        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+        response = client.post(
+            "/integrations/hevy/webhook/generate",
+            headers={"Authorization": "Bearer token"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Verify token is preserved (in the URL)
+        expected_url = f"https://aitrainer-backend.onrender.com/integrations/hevy/webhook/{existing_token}"
+        assert data["webhookUrl"] == expected_url
+
+        # Verify secret has been rotated (new Bearer token)
+        assert data["authHeader"].startswith("Bearer ")
+        assert data["authHeader"] != f"Bearer {existing_secret}"
+
+        # Verify profile.hevy_webhook_token was set to the existing token
+        assert profile.hevy_webhook_token == existing_token
+        mock_brain.save_user_profile.assert_called_once()
+        app.dependency_overrides = {}
+
     def test_revoke_webhook(self, client, mock_brain):
         """Test revoking webhook credentials."""
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
