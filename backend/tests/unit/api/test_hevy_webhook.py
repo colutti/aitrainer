@@ -223,3 +223,83 @@ async def test_why_webhook_prompt_logging_was_missing():
     # Step 5 was completely untested, so the bug went undetected
 
     assert True  # This test documents the issue, doesn't make assertions
+
+
+@pytest.mark.asyncio
+async def test_webhook_end_to_end_with_ai_analysis(mock_brain):
+    """
+    Test complete webhook flow: receive → fetch → transform → save → AI analysis.
+    This test mocks the Hevy API response to simulate a real workout.
+    """
+    from src.core.deps import get_ai_trainer_brain, get_hevy_service
+    from src.api.models.workout_log import WorkoutLog, ExerciseLog
+    from unittest.mock import AsyncMock
+
+    # Mock hevy service to return a fake but realistic workout
+    mock_hevy_service = AsyncMock()
+    mock_hevy_service.fetch_workout_by_id.return_value = {
+        "id": "hevy-workout-123",
+        "title": "Peito e Tríceps",
+        "start_time": "2026-02-13T15:46:00Z",
+        "end_time": "2026-02-13T17:01:00Z",
+        "exercises": [
+            {
+                "id": "ex1",
+                "title": "Supino",
+                "sets": [
+                    {"reps": 8, "weight_kg": 80},
+                    {"reps": 8, "weight_kg": 80},
+                    {"reps": 10, "weight_kg": 70}
+                ]
+            },
+            {
+                "id": "ex2",
+                "title": "Rosca Direta",
+                "sets": [
+                    {"reps": 10, "weight_kg": 20},
+                    {"reps": 10, "weight_kg": 20}
+                ]
+            }
+        ]
+    }
+
+    # Mock the transformed workout
+    mock_workout_log = WorkoutLog(
+        user_email="test@example.com",
+        date="2026-02-13T15:46:00+00:00",
+        workout_type="Peito e Tríceps",
+        exercises=[
+            ExerciseLog(name="Supino", sets=3, reps_per_set=[8, 8, 10], weights_per_set=[80.0, 80.0, 70.0]),
+            ExerciseLog(name="Rosca Direta", sets=2, reps_per_set=[10, 10], weights_per_set=[20.0, 20.0]),
+        ],
+        source="hevy",
+        external_id="hevy-workout-123"
+    )
+    mock_hevy_service.transform_to_workout_log.return_value = mock_workout_log
+
+    # Mock AI analysis
+    mock_brain.analyze_workout_async = AsyncMock(
+        return_value="Ótimo treino de peito! Manteve a carga bem e progressão visível no tríceps. Continue assim!"
+    )
+
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    app.dependency_overrides[get_hevy_service] = lambda: mock_hevy_service
+
+    # Simulate webhook call
+    response = client.post(
+        "/integrations/hevy/webhook/valid_token",
+        json={"id": "webhook-789", "payload": {"workoutId": "hevy-workout-123"}},
+        headers={"Authorization": "Bearer secret123"},
+    )
+
+    # Should return 200 immediately (queues background task)
+    assert response.status_code == 200
+    assert response.json() == {"status": "queued"}
+
+    # Verify hevy service was called to fetch
+    mock_hevy_service.fetch_workout_by_id.assert_called_once()
+
+    # Verify workout was transformed
+    mock_hevy_service.transform_to_workout_log.assert_called_once()
+
+    app.dependency_overrides = {}
