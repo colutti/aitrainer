@@ -38,16 +38,16 @@ export function WeightTab() {
   }
 
   return (
-    <div className="space-y-8 w-full">
+    <div className="space-y-8 w-full overflow-x-hidden">
       {/* Entry Form - Full Width at Top */}
-      <section className="bg-dark-card border border-border rounded-2xl p-6 shadow-sm">
+      <section className="bg-dark-card border border-border rounded-2xl p-4 md:p-6 shadow-sm w-full">
         <div className="flex items-center gap-2 pb-4 mb-4 border-b border-border">
           <Scale className="text-gradient-start" size={24} />
           <h2 className="text-xl font-bold text-text-primary">Registrar Peso</h2>
         </div>
 
-        <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4 md:space-y-6">
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
             <Input 
               label="Data" 
               type="date" 
@@ -128,7 +128,7 @@ export function WeightTab() {
           {/* Measurements Section */}
           <div className="pt-6 border-t border-border">
             <h3 className="text-sm font-bold text-text-secondary uppercase tracking-wider mb-4">Medidas Corporais (cm)</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
               <Input label="Pescoço" type="number" step="0.01" placeholder="Ex: 38" error={errors.neck_cm?.message} {...register('neck_cm', { valueAsNumber: true })} />
               <Input label="Peito" type="number" step="0.01" placeholder="Ex: 100" error={errors.chest_cm?.message} {...register('chest_cm', { valueAsNumber: true })} />
               <Input id="waist_cm" label="Cintura" type="number" step="0.01" placeholder="Ex: 85" error={errors.waist_cm?.message} {...register('waist_cm', { valueAsNumber: true })} />

@@ -49,26 +49,28 @@ export function AdminLogsPage() {
         <h1 className="text-3xl font-bold text-text-primary">Logs do Sistema</h1>
       </div>
 
-      <div className="flex gap-4 border-b border-border pb-4">
+      <div className="flex gap-2 md:gap-4 border-b border-border pb-4 overflow-x-auto">
         <Button
           variant={source === 'local' ? 'primary' : 'secondary'}
           onClick={() => { setSource('local'); }}
-          className="gap-2"
+          className="gap-1 md:gap-2 text-xs md:text-sm shrink-0"
         >
-          <FileText size={18} />
-          Logs Locais
+          <FileText size={16} className="md:w-[18px] md:h-[18px]" />
+          <span className="hidden sm:inline">Logs Locais</span>
+          <span className="sm:hidden">Locais</span>
         </Button>
         <Button
           variant={source === 'betterstack' ? 'primary' : 'secondary'}
           onClick={() => { setSource('betterstack'); }}
-          className="gap-2"
+          className="gap-1 md:gap-2 text-xs md:text-sm shrink-0"
         >
-          <Cloud size={18} />
-          BetterStack
+          <Cloud size={16} className="md:w-[18px] md:h-[18px]" />
+          <span className="hidden sm:inline">BetterStack</span>
+          <span className="sm:hidden">Stack</span>
         </Button>
       </div>
 
-      <div className="flex-1 bg-black border border-border rounded-xl p-4 overflow-hidden flex flex-col font-mono text-xs shadow-inner">
+      <div className="flex-1 bg-black border border-border rounded-xl p-2 md:p-4 overflow-hidden flex flex-col font-mono text-xs shadow-inner">
         {error ? (
           <div className="flex items-center gap-2 text-red-400 p-4">
             <AlertTriangle size={18} />

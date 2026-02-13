@@ -37,16 +37,16 @@ export function NutritionTab() {
   }
 
   return (
-    <div className="space-y-8 w-full">
+    <div className="space-y-8 w-full overflow-x-hidden">
       {/* Entry Form - Full Width at Top */}
-      <section className="bg-dark-card border border-border rounded-2xl p-6 shadow-sm">
+      <section className="bg-dark-card border border-border rounded-2xl p-4 md:p-6 shadow-sm w-full">
         <div className="flex items-center gap-2 pb-4 mb-4 border-b border-border">
           <Flame className="text-orange-500" size={24} />
           <h2 className="text-xl font-bold text-text-primary">Registrar Dieta</h2>
         </div>
 
-        <form onSubmit={(e) => { void handleSubmit(e); }} className="flex flex-col gap-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+        <form onSubmit={(e) => { void handleSubmit(e); }} className="flex flex-col gap-4 md:gap-6 w-full">
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
             <Input 
               label="Data" 
               type="date" 

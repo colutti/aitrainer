@@ -35,7 +35,7 @@ export function BodyPage() {
               </>
             )}
           </h1>
-          <p className="text-text-secondary mt-1 ml-11">
+          <p className="text-text-secondary mt-1 md:ml-11">
             {isNutrition 
               ? "Acompanhe sua ingestão calórica e macronutrientes diários."
               : "Gerencie seu histórico de peso e composição corporal."

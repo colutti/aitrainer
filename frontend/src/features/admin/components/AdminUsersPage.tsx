@@ -112,41 +112,41 @@ export function AdminUsersPage() {
           <table className="w-full text-left border-collapse">
             <thead className="bg-zinc-900 text-sm text-text-secondary uppercase tracking-wider">
               <tr>
-                <th className="p-4 font-medium">Email</th>
-                <th className="p-4 font-medium">Nome</th>
-                <th className="p-4 font-medium">Role</th>
-                <th className="p-4 font-medium">Data Criação</th>
-                <th className="p-4 font-medium text-right">Ações</th>
+                <th className="p-2 md:p-4 font-medium">Email</th>
+                <th className="p-2 md:p-4 font-medium hidden md:table-cell">Nome</th>
+                <th className="p-2 md:p-4 font-medium hidden lg:table-cell">Role</th>
+                <th className="p-2 md:p-4 font-medium hidden lg:table-cell">Data Criação</th>
+                <th className="p-2 md:p-4 font-medium text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {isLoading && users.length === 0 ? (
                 <tr>
-                   <td colSpan={5} className="p-8 text-center text-text-muted">Carregando...</td>
+                   <td colSpan={5} className="p-2 md:p-8 text-center text-text-muted">Carregando...</td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-text-muted">Nenhum usuário encontrado.</td>
+                  <td colSpan={5} className="p-2 md:p-8 text-center text-text-muted">Nenhum usuário encontrado.</td>
                 </tr>
               ) : (
                 users.map((user) => (
                   <tr key={user.email} className="hover:bg-white/5 transition-colors group">
-                    <td className="p-4 text-text-primary font-medium">{user.email}</td>
-                    <td className="p-4 text-text-secondary">{user.name ?? '-'}</td>
-                    <td className="p-4">
+                    <td className="p-2 md:p-4 text-text-primary font-medium text-sm md:text-base">{user.email}</td>
+                    <td className="p-2 md:p-4 text-text-secondary hidden md:table-cell text-sm">{user.name ?? '-'}</td>
+                    <td className="p-2 md:p-4 hidden lg:table-cell">
                       <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                        user.is_admin 
-                          ? 'bg-yellow-500/20 text-yellow-500' 
+                        user.is_admin
+                          ? 'bg-yellow-500/20 text-yellow-500'
                           : 'bg-zinc-700 text-zinc-300'
                       }`}>
                         {user.is_admin ? 'ADMIN' : 'USER'}
                       </span>
                     </td>
-                     <td className="p-4 text-text-secondary text-sm">
+                     <td className="p-2 md:p-4 text-text-secondary text-sm hidden lg:table-cell">
                       {user.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}
                     </td>
-                    <td className="p-4 text-right">
-                      <div className="flex justify-end gap-2">
+                    <td className="p-2 md:p-4 text-right">
+                      <div className="flex justify-end gap-1 md:gap-2">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -177,24 +177,24 @@ export function AdminUsersPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="border-t border-border p-4 bg-zinc-900/50 flex justify-center gap-2 mt-auto">
-             <Button
-               variant="ghost" 
+          <div className="border-t border-border p-1 md:p-4 bg-zinc-900/50 flex justify-center items-center gap-0.5 md:gap-2 mt-auto">
+             <button
                disabled={page === 1 || isLoading}
                onClick={() => { handlePageChange(page - 1); }}
+               className="p-1 md:p-2 disabled:opacity-50"
              >
-               <ArrowLeft size={16} />
-             </Button>
-             <span className="flex items-center px-4 text-sm text-text-secondary">
-               Página {page} de {totalPages}
+               <ArrowLeft size={14} className="md:w-4 md:h-4" />
+             </button>
+             <span className="text-[10px] md:text-sm text-text-secondary flex-shrink-0 px-1 md:px-2">
+               {page}/{totalPages}
              </span>
-             <Button
-               variant="ghost"
+             <button
                disabled={page === totalPages || isLoading}
                onClick={() => { handlePageChange(page + 1); }}
+               className="p-1 md:p-2 disabled:opacity-50"
              >
-               <ArrowRight size={16} />
-             </Button>
+               <ArrowRight size={14} className="md:w-4 md:h-4" />
+             </button>
           </div>
         )}
       </div>

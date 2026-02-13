@@ -88,42 +88,42 @@ export function AdminPromptsPage() {
        <div className="bg-dark-card border border-border rounded-xl overflow-hidden flex-1 flex flex-col">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
-            <thead className="bg-zinc-900 text-sm text-text-secondary uppercase tracking-wider">
+            <thead className="bg-zinc-900 text-xs md:text-sm text-text-secondary uppercase tracking-wider">
               <tr>
-                <th className="p-4 font-medium">Data</th>
-                <th className="p-4 font-medium">Prompt Name</th>
-                <th className="p-4 font-medium">User</th>
-                <th className="p-4 font-medium">Model</th>
-                <th className="p-4 font-medium">Tokens (In/Out)</th>
-                <th className="p-4 font-medium">Status</th>
-                <th className="p-4 font-medium text-right">Ações</th>
+                <th className="p-2 md:p-4 font-medium">Data</th>
+                <th className="p-2 md:p-4 font-medium">Prompt</th>
+                <th className="p-2 md:p-4 font-medium hidden md:table-cell">User</th>
+                <th className="p-2 md:p-4 font-medium hidden lg:table-cell">Model</th>
+                <th className="p-2 md:p-4 font-medium hidden lg:table-cell">Tokens</th>
+                <th className="p-2 md:p-4 font-medium">Status</th>
+                <th className="p-2 md:p-4 font-medium text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {loading && prompts.length === 0 ? (
-                 <tr><td colSpan={7} className="p-8 text-center text-text-muted">Carregando...</td></tr>
+                 <tr><td colSpan={7} className="p-2 md:p-8 text-center text-text-muted">Carregando...</td></tr>
               ) : prompts.length === 0 ? (
-                 <tr><td colSpan={7} className="p-8 text-center text-text-muted">Nenhum registro encontrado.</td></tr>
+                 <tr><td colSpan={7} className="p-2 md:p-8 text-center text-text-muted">Nenhum registro encontrado.</td></tr>
               ) : (
                 prompts.map((log) => (
                   <tr key={log.id} className="hover:bg-white/5 transition-colors">
-                    <td className="p-4 text-sm text-text-secondary whitespace-nowrap">
-                      {new Date(log.timestamp).toLocaleString()}
+                    <td className="p-2 md:p-4 text-xs md:text-sm text-text-secondary whitespace-nowrap">
+                      {new Date(log.timestamp).toLocaleDateString()}
                     </td>
-                    <td className="p-4 text-text-primary font-medium">{log.prompt_name ?? '-'}</td>
-                    <td className="p-4 text-sm text-text-secondary">{log.user_email}</td>
-                    <td className="p-4 text-sm font-mono text-blue-400">{log.model}</td>
-                    <td className="p-4 text-sm text-text-secondary">
+                    <td className="p-2 md:p-4 text-xs md:text-sm text-text-primary font-medium truncate max-w-[100px] md:max-w-none">{log.prompt_name ?? '-'}</td>
+                    <td className="p-2 md:p-4 text-xs text-text-secondary hidden md:table-cell">{log.user_email}</td>
+                    <td className="p-2 md:p-4 text-xs font-mono text-blue-400 hidden lg:table-cell">{log.model}</td>
+                    <td className="p-2 md:p-4 text-xs text-text-secondary hidden lg:table-cell">
                         {log.tokens_input} / {log.tokens_output}
                     </td>
-                    <td className="p-4">
-                      <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
+                    <td className="p-2 md:p-4">
+                      <span className={`px-2 py-0.5 rounded text-[10px] md:text-xs font-bold uppercase ${
                           log.status === 'success' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
                       }`}>
-                        {log.status}
+                        {log.status === 'success' ? '✓' : '✗'}
                       </span>
                     </td>
-                    <td className="p-4 text-right">
+                    <td className="p-2 md:p-4 text-right">
                        <Button
                           variant="ghost"
                           size="icon"
@@ -131,7 +131,7 @@ export function AdminPromptsPage() {
                           title="Ver detalhes"
                           aria-label="Ver detalhes"
                         >
-                          <Eye size={18} className="text-text-primary" />
+                          <Eye size={16} className="text-text-primary" />
                         </Button>
                     </td>
                   </tr>
@@ -142,16 +142,16 @@ export function AdminPromptsPage() {
           </div>
 
           {totalPages > 1 && (
-             <div className="border-t border-border p-4 bg-zinc-900/50 flex justify-center gap-2 mt-auto">
-                <Button variant="ghost" disabled={page === 1} onClick={() => { handlePageChange(page - 1); }}>
-                   <ArrowLeft size={16} />
-                </Button>
-                <span className="flex items-center px-4 text-sm text-text-secondary">
-                   Página {page} de {totalPages}
+             <div className="border-t border-border p-1 md:p-4 bg-zinc-900/50 flex justify-center items-center gap-0.5 md:gap-2 mt-auto">
+                <button disabled={page === 1} onClick={() => { handlePageChange(page - 1); }} className="p-1 md:p-2 disabled:opacity-50">
+                   <ArrowLeft size={14} className="md:w-4 md:h-4" />
+                </button>
+                <span className="text-[10px] md:text-sm text-text-secondary flex-shrink-0 px-1 md:px-2">
+                   {page}/{totalPages}
                 </span>
-                <Button variant="ghost" disabled={page === totalPages} onClick={() => { handlePageChange(page + 1); }}>
-                   <ArrowRight size={16} />
-                </Button>
+                <button disabled={page === totalPages} onClick={() => { handlePageChange(page + 1); }} className="p-1 md:p-2 disabled:opacity-50">
+                   <ArrowRight size={14} className="md:w-4 md:h-4" />
+                </button>
              </div>
           )}
        </div>

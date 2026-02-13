@@ -56,7 +56,7 @@ export function AdminTokensPage() {
   return (
     <div className="space-y-6 h-full flex flex-col animate-in fade-in duration-700">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h1 className="text-3xl font-bold text-text-primary">Token Analytics</h1>
 
         {/* Period Selector */}
@@ -67,7 +67,7 @@ export function AdminTokensPage() {
               onClick={() => {
                 handleDaysChange(d);
               }}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
+              className={`px-3 md:px-4 py-2 rounded-lg font-medium text-sm md:text-base transition ${
                 days === d
                   ? 'bg-accent text-white'
                   : 'bg-surface-secondary text-text-secondary hover:bg-surface-tertiary'
@@ -86,7 +86,7 @@ export function AdminTokensPage() {
       ) : (
         <>
           {/* KPI Cards */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-surface-secondary rounded-lg p-4">
               <div className="text-text-secondary text-sm mb-2">Total Tokens (Input)</div>
               <div className="text-2xl font-bold text-text-primary">
@@ -160,56 +160,58 @@ export function AdminTokensPage() {
           <div className="bg-surface-secondary rounded-lg p-4 flex-1 overflow-auto">
             <h2 className="text-lg font-semibold text-text-primary mb-4">Por Usuário</h2>
             {tokenSummary.length > 0 ? (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-surface-tertiary">
-                    <th className="text-left py-3 px-4 text-text-secondary font-medium">Email</th>
-                    <th className="text-right py-3 px-4 text-text-secondary font-medium">
-                      Tokens In
-                    </th>
-                    <th className="text-right py-3 px-4 text-text-secondary font-medium">
-                      Tokens Out
-                    </th>
-                    <th className="text-right py-3 px-4 text-text-secondary font-medium">
-                      Custo (USD)
-                    </th>
-                    <th className="text-right py-3 px-4 text-text-secondary font-medium">
-                      Mensagens
-                    </th>
-                    <th className="text-right py-3 px-4 text-text-secondary font-medium">
-                      Última Atividade
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tokenSummary.map((item) => (
-                    <tr
-                      key={item._id}
-                      className="border-b border-surface-tertiary hover:bg-surface-tertiary cursor-pointer transition"
-                      onClick={() => {
-                        setExpandedUser(expandedUser === item._id ? null : item._id);
-                      }}
-                    >
-                      <td className="py-3 px-4 text-text-primary">{item._id}</td>
-                      <td className="py-3 px-4 text-right text-text-primary">
-                        {(item.total_input / 1_000).toFixed(0)}K
-                      </td>
-                      <td className="py-3 px-4 text-right text-text-primary">
-                        {(item.total_output / 1_000).toFixed(0)}K
-                      </td>
-                      <td className="py-3 px-4 text-right text-text-primary">
-                        ${(item.cost_usd ?? 0).toFixed(4)}
-                      </td>
-                      <td className="py-3 px-4 text-right text-text-primary">
-                        {item.message_count}
-                      </td>
-                      <td className="py-3 px-4 text-right text-text-secondary text-xs">
-                        {new Date(item.last_activity).toLocaleDateString('pt-BR')}
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-surface-tertiary">
+                      <th className="text-left py-3 px-2 md:px-4 text-text-secondary font-medium">Email</th>
+                      <th className="text-right py-3 px-2 md:px-4 text-text-secondary font-medium">
+                        Tokens In
+                      </th>
+                      <th className="text-right py-3 px-2 md:px-4 text-text-secondary font-medium hidden md:table-cell">
+                        Tokens Out
+                      </th>
+                      <th className="text-right py-3 px-2 md:px-4 text-text-secondary font-medium">
+                        Custo
+                      </th>
+                      <th className="text-right py-3 px-2 md:px-4 text-text-secondary font-medium hidden lg:table-cell">
+                        Msgs
+                      </th>
+                      <th className="text-right py-3 px-2 md:px-4 text-text-secondary font-medium hidden md:table-cell">
+                        Última Ativ.
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {tokenSummary.map((item) => (
+                      <tr
+                        key={item._id}
+                        className="border-b border-surface-tertiary hover:bg-surface-tertiary cursor-pointer transition"
+                        onClick={() => {
+                          setExpandedUser(expandedUser === item._id ? null : item._id);
+                        }}
+                      >
+                        <td className="py-3 px-2 md:px-4 text-text-primary text-xs md:text-sm">{item._id}</td>
+                        <td className="py-3 px-2 md:px-4 text-right text-text-primary text-xs md:text-sm">
+                          {(item.total_input / 1_000).toFixed(0)}K
+                        </td>
+                        <td className="py-3 px-2 md:px-4 text-right text-text-primary hidden md:table-cell text-xs">
+                          {(item.total_output / 1_000).toFixed(0)}K
+                        </td>
+                        <td className="py-3 px-2 md:px-4 text-right text-text-primary text-xs md:text-sm">
+                          ${(item.cost_usd ?? 0).toFixed(2)}
+                        </td>
+                        <td className="py-3 px-2 md:px-4 text-right text-text-primary hidden lg:table-cell text-xs">
+                          {item.message_count}
+                        </td>
+                        <td className="py-3 px-2 md:px-4 text-right text-text-secondary text-xs hidden md:table-cell">
+                          {new Date(item.last_activity).toLocaleDateString('pt-BR')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <div className="text-center py-8 text-text-secondary">Sem dados disponíveis</div>
             )}

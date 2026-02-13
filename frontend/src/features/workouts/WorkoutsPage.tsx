@@ -69,7 +69,7 @@ export function WorkoutsPage() {
             Acompanhe sua evolução e mantenha a consistência.
           </p>
         </div>
-        <Button variant="primary" size="lg" className="shadow-orange gap-2">
+        <Button variant="primary" size="lg" className="shadow-orange gap-2 hidden">
           <Plus size={20} />
           Novo Treino
         </Button>

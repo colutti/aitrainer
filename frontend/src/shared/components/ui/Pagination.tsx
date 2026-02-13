@@ -23,29 +23,31 @@ export function Pagination({
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex items-center justify-center gap-2 pt-4">
-      <Button 
-        variant="secondary" 
+    <div className="flex items-center justify-center gap-0.5 md:gap-2 pt-2 md:pt-4 px-1">
+      <Button
+        variant="secondary"
+        size="sm"
         disabled={currentPage === 1 || isLoading}
         onClick={() => { onPageChange(currentPage - 1); }}
-        className="gap-1"
+        className="gap-1 px-2 md:px-4"
       >
-        <ChevronLeft size={16} />
-        Anterior
+        <ChevronLeft size={14} className="md:w-4 md:h-4" />
+        <span className="hidden sm:inline">Anterior</span>
       </Button>
-      
-      <div className="flex items-center px-4 font-medium text-text-secondary">
-        Página {currentPage} de {totalPages}
+
+      <div className="flex items-center px-1 md:px-4 font-medium text-text-secondary text-[10px] md:text-sm whitespace-nowrap">
+        {currentPage}/{totalPages}
       </div>
-      
-      <Button 
+
+      <Button
         variant="secondary"
+        size="sm"
         disabled={currentPage === totalPages || isLoading}
         onClick={() => { onPageChange(currentPage + 1); }}
-        className="gap-1"
+        className="gap-1 px-2 md:px-4"
       >
-        Próxima
-        <ChevronRight size={16} />
+        <span className="hidden sm:inline">Próxima</span>
+        <ChevronRight size={14} className="md:w-4 md:h-4" />
       </Button>
     </div>
   );

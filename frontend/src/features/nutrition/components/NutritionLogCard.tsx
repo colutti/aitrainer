@@ -32,7 +32,7 @@ export function NutritionLogCard({ log, onDelete, onEdit }: NutritionLogCardProp
         <Utensils size={22} />
       </div>
       
-      <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+      <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 items-center">
         {/* Date and Calories Section */}
         <div className="md:col-span-4 min-w-0 flex flex-col justify-center">
            <h3 className="font-black text-text-primary text-base leading-tight tracking-tight group-hover:text-white transition-colors">{formatDate(log.date)}</h3>

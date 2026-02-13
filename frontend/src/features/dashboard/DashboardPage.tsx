@@ -250,7 +250,7 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Target Card */}
         <div className="lg:col-span-2 bg-gradient-to-br from-dark-card to-dark-card/50 border border-border rounded-3xl p-8 relative overflow-hidden group">
-          <div className="relative z-10 flex flex-col md:flex-row justify-between gap-8 h-full">
+          <div className="relative z-10 flex flex-col md:flex-row justify-between gap-4 md:gap-8 h-full">
             <div className="space-y-6 flex-1">
               <div className="flex items-center gap-3">
                 <div className="p-3 rounded-xl bg-gradient-start/10 text-gradient-start">
@@ -293,7 +293,7 @@ export function DashboardPage() {
 
             {/* Macro Preview (if available) */}
             {metabolism.macro_targets && (
-              <div className="bg-white/5 rounded-2xl p-6 min-w-[200px] border border-white/5 backdrop-blur-sm">
+              <div className="bg-white/5 rounded-2xl p-6 min-w-0 border border-white/5 backdrop-blur-sm">
                 <h3 className="text-sm font-bold text-text-secondary mb-4 uppercase tracking-wider">Macros Sugeridos</h3>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">

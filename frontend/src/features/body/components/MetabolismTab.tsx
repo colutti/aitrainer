@@ -93,7 +93,7 @@ export function MetabolismTab() {
           </div>
 
           <div className="space-y-6">
-            <div className="flex gap-4">
+            <div className="flex gap-2 md:gap-4">
                {[2, 4, 8, 12].map(period => (
                  <button
                    key={period}
@@ -145,18 +145,18 @@ export function MetabolismTab() {
                     : `Para atingir seu objetivo de ${goalLabels[stats?.goal_type ?? '']?.toLowerCase() ?? 'manutenção'}, sugerimos manter uma ingestão de ${String(stats?.daily_target)} kcal diárias.`
                   }
                 </p>
-                <div className="pt-4 flex gap-4">
-                   <div className="text-center">
+                <div className="pt-4 flex flex-col md:flex-row gap-4 md:gap-0">
+                   <div className="text-center flex-1">
                      <p className="text-[10px] text-text-muted uppercase font-bold tracking-widest mb-1">Proteína</p>
                      <p className="text-xl font-bold text-text-primary">~{stats?.macro_targets?.protein ?? '--'}g</p>
                    </div>
-                   <div className="w-px h-10 bg-border mx-2" />
-                   <div className="text-center">
+                   <div className="hidden md:block w-px h-10 bg-border" />
+                   <div className="text-center flex-1">
                      <p className="text-[10px] text-text-muted uppercase font-bold tracking-widest mb-1">Gordura</p>
                      <p className="text-xl font-bold text-text-primary">~{stats?.macro_targets?.fat ?? '--'}g</p>
                    </div>
-                   <div className="w-px h-10 bg-border mx-2" />
-                   <div className="text-center">
+                   <div className="hidden md:block w-px h-10 bg-border" />
+                   <div className="text-center flex-1">
                      <p className="text-[10px] text-text-muted uppercase font-bold tracking-widest mb-1">Carboidratos</p>
                      <p className="text-xl font-bold text-text-primary">~{stats?.macro_targets?.carbs ?? '--'}g</p>
                    </div>
