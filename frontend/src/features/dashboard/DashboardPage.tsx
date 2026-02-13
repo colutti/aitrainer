@@ -16,7 +16,6 @@ import { StatsCard } from '../../shared/components/ui/StatsCard';
 import { useDashboardStore } from '../../shared/hooks/useDashboard';
 import { cn } from '../../shared/utils/cn';
 
-import { WidgetCompositionChart } from './components/WidgetCompositionChart';
 import { WidgetRecentPRs } from './components/WidgetRecentPRs';
 import { WidgetStreak } from './components/WidgetStreak';
 import { WidgetStrengthRadar } from './components/WidgetStrengthRadar';
@@ -149,7 +148,53 @@ export function DashboardPage() {
     });
   };
 
+  // Helper function to merge fat trend data with regression line
+  const getMergedFatData = () => {
+    if (!data?.fatTrend) return null;
+
+    const regression = calculateLinearRegression(data.fatTrend);
+    if (!regression) return null;
+
+    return data.fatTrend.map((point, index) => {
+      const dateStr = typeof point.date === 'string' ? point.date : String(point.date ?? '');
+      const dateKey = dateStr.split('T')[0] || dateStr;
+      return {
+        date: dateKey,
+        value: point.value,
+        trendLine: regression.start + (regression.slope * index)
+      };
+    }).sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateA - dateB;
+    });
+  };
+
+  // Helper function to merge muscle trend data with regression line
+  const getMergedMuscleData = () => {
+    if (!data?.muscleTrend) return null;
+
+    const regression = calculateLinearRegression(data.muscleTrend);
+    if (!regression) return null;
+
+    return data.muscleTrend.map((point, index) => {
+      const dateStr = typeof point.date === 'string' ? point.date : String(point.date ?? '');
+      const dateKey = dateStr.split('T')[0] || dateStr;
+      return {
+        date: dateKey,
+        value: point.value,
+        trendLine: regression.start + (regression.slope * index)
+      };
+    }).sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateA - dateB;
+    });
+  };
+
   const mergedWeightData = getMergedWeightData();
+  const mergedFatData = getMergedFatData();
+  const mergedMuscleData = getMergedMuscleData();
 
   const goalLabels: Record<string, string> = {
     'lose': 'Perda de Peso',
@@ -399,25 +444,153 @@ export function DashboardPage() {
           )}
 
           {/* Fat Trend */}
-          {data?.fatTrend && data.fatTrend.length > 0 && (
-            <WidgetCompositionChart
-              title="Gordura Corporal"
-              data={data.fatTrend}
-              color="#f97316"
-              unit="%"
-              valueFormatter={(v) => v.toFixed(1)}
-            />
+          {data?.fatTrend && data.fatTrend.length > 0 && mergedFatData && (
+            <div className="bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden group">
+              <div className="relative z-10 flex flex-col h-full">
+                <div className="mb-4">
+                  <p className="text-text-secondary text-sm font-medium mb-1">Gordura Corporal</p>
+                  <h3 className="text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
+                    {data.fatTrend[data.fatTrend.length - 1]?.value.toFixed(1) ?? '--'} <span className="text-lg text-text-muted">%</span>
+                    <div className="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center">
+                      <Flame size={16} />
+                    </div>
+                  </h3>
+                </div>
+
+                {/* Fat chart with two lines */}
+                <div className="flex-1 min-h-[120px] -mx-2 -mb-2">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={mergedFatData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                      <XAxis dataKey="date" hide />
+                      <YAxis hide domain={['dataMin - 0.5', 'dataMax + 0.5']} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#1e293b',
+                          borderColor: '#334155',
+                          borderRadius: '6px',
+                          color: '#f8fafc',
+                          fontSize: '11px',
+                          padding: '6px'
+                        }}
+                        labelFormatter={(label) => {
+                          const date = new Date(label as string);
+                          return isNaN(date.getTime()) ? String(label) : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                        }}
+                      />
+                      {/* Gordura Real - linha mais grossa laranja (destaque) */}
+                      <Line
+                        type="monotone"
+                        dataKey="value"
+                        stroke="#f97316"
+                        strokeWidth={2.5}
+                        dot={false}
+                        isAnimationActive={false}
+                        name="Gordura"
+                      />
+                      {/* Tendência Linear - linha fina verde (de fundo) */}
+                      <Line
+                        type="linear"
+                        dataKey="trendLine"
+                        stroke="#10b981"
+                        strokeWidth={1}
+                        dot={false}
+                        isAnimationActive={false}
+                        name="Tendência"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Legend */}
+                <div className="flex gap-4 mt-3 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-orange-500" />
+                    <span className="text-text-muted">Gordura (30d)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="text-text-muted">Tendência (30d)</span>
+                  </div>
+                </div>
+              </div>
+              {/* Background glow */}
+              <div className="absolute right-0 top-0 w-32 h-32 bg-orange-500/5 rounded-full blur-3xl" />
+            </div>
           )}
 
           {/* Muscle Trend */}
-          {data?.muscleTrend && data.muscleTrend.length > 0 && (
-            <WidgetCompositionChart
-              title="Massa Muscular"
-              data={data.muscleTrend}
-              color="#3b82f6"
-              unit="%"
-              valueFormatter={(v) => v.toFixed(1)}
-            />
+          {data?.muscleTrend && data.muscleTrend.length > 0 && mergedMuscleData && (
+            <div className="bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden group">
+              <div className="relative z-10 flex flex-col h-full">
+                <div className="mb-4">
+                  <p className="text-text-secondary text-sm font-medium mb-1">Massa Muscular</p>
+                  <h3 className="text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
+                    {data.muscleTrend[data.muscleTrend.length - 1]?.value.toFixed(1) ?? '--'} <span className="text-lg text-text-muted">%</span>
+                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                      <Dumbbell size={16} />
+                    </div>
+                  </h3>
+                </div>
+
+                {/* Muscle chart with two lines */}
+                <div className="flex-1 min-h-[120px] -mx-2 -mb-2">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={mergedMuscleData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                      <XAxis dataKey="date" hide />
+                      <YAxis hide domain={['dataMin - 0.5', 'dataMax + 0.5']} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#1e293b',
+                          borderColor: '#334155',
+                          borderRadius: '6px',
+                          color: '#f8fafc',
+                          fontSize: '11px',
+                          padding: '6px'
+                        }}
+                        labelFormatter={(label) => {
+                          const date = new Date(label as string);
+                          return isNaN(date.getTime()) ? String(label) : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                        }}
+                      />
+                      {/* Músculo Real - linha mais grossa azul (destaque) */}
+                      <Line
+                        type="monotone"
+                        dataKey="value"
+                        stroke="#3b82f6"
+                        strokeWidth={2.5}
+                        dot={false}
+                        isAnimationActive={false}
+                        name="Músculo"
+                      />
+                      {/* Tendência Linear - linha fina verde (de fundo) */}
+                      <Line
+                        type="linear"
+                        dataKey="trendLine"
+                        stroke="#10b981"
+                        strokeWidth={1}
+                        dot={false}
+                        isAnimationActive={false}
+                        name="Tendência"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Legend */}
+                <div className="flex gap-4 mt-3 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                    <span className="text-text-muted">Músculo (30d)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="text-text-muted">Tendência (30d)</span>
+                  </div>
+                </div>
+              </div>
+              {/* Background glow */}
+              <div className="absolute right-0 top-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl" />
+            </div>
           )}
         </div>
 
