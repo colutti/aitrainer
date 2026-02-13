@@ -205,8 +205,8 @@ export function AdminUsersPage() {
           className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200"
           onClick={() => { setSelectedUser(null); }}
         >
-          <div 
-             className="bg-dark-card border border-border p-6 rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl"
+          <div
+             className="bg-dark-card border border-border p-6 rounded-xl max-w-[calc(100vw-2rem)] md:max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl"
              onClick={(e) => { e.stopPropagation(); }}
           >
              <div className="flex justify-between items-center mb-6">
