@@ -90,14 +90,14 @@ export function AdminTokensPage() {
             <div className="bg-surface-secondary rounded-lg p-4">
               <div className="text-text-secondary text-sm mb-2">Total Tokens (Input)</div>
               <div className="text-2xl font-bold text-text-primary">
-                {(totalTokensInput / 1_000_000).toFixed(1)}M
+                {(totalTokensInput / 1_000).toFixed(0)}K
               </div>
             </div>
 
             <div className="bg-surface-secondary rounded-lg p-4">
               <div className="text-text-secondary text-sm mb-2">Total Tokens (Output)</div>
               <div className="text-2xl font-bold text-text-primary">
-                {(totalTokensOutput / 1_000_000).toFixed(1)}M
+                {(totalTokensOutput / 1_000).toFixed(0)}K
               </div>
             </div>
 

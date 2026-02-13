@@ -35,7 +35,7 @@ def get_history(
     return messages
 
 
-@router.post("/")
+@router.post("")
 async def message_ai(
     message: MessageRequest,
     user_email: CurrentUser,
