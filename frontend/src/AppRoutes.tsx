@@ -4,6 +4,7 @@ import { AdminDashboardPage } from './features/admin/components/AdminDashboardPa
 import { AdminLayout } from './features/admin/components/AdminLayout';
 import { AdminLogsPage } from './features/admin/components/AdminLogsPage';
 import { AdminPromptsPage } from './features/admin/components/AdminPromptsPage';
+import { AdminTokensPage } from './features/admin/components/AdminTokensPage';
 import { AdminUsersPage } from './features/admin/components/AdminUsersPage';
 import { LoginPage } from './features/auth/LoginPage';
 import { BodyPage } from './features/body/BodyPage';
@@ -97,6 +98,7 @@ export function AppRoutes() {
           <Route path="users" element={<AdminUsersPage />} />
           <Route path="logs" element={<AdminLogsPage />} />
           <Route path="prompts" element={<AdminPromptsPage />} />
+          <Route path="tokens" element={<AdminTokensPage />} />
         </Route>
       </Route>
 

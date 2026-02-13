@@ -60,3 +60,19 @@ export interface PromptListResponse {
   page_size: number;
   total_pages: number;
 }
+
+export interface TokenSummary {
+  _id: string;
+  total_input: number;
+  total_output: number;
+  message_count: number;
+  last_activity: string;
+  model: string;
+  cost_usd?: number;
+}
+
+export interface TokenTimeseries {
+  date: string;
+  tokens_input: number;
+  tokens_output: number;
+}

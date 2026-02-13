@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, FileText, AlignLeft } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, AlignLeft, BarChart3 } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 
 import { cn } from '../../../shared/utils/cn';
@@ -9,6 +9,7 @@ export function AdminLayout() {
     { to: 'users', label: 'Usuários', icon: Users },
     { to: 'logs', label: 'Logs', icon: FileText }, // or Terminal
     { to: 'prompts', label: 'Prompts', icon: AlignLeft },
+    { to: 'tokens', label: 'Tokens', icon: BarChart3 },
   ];
 
   return (

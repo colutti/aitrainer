@@ -1,6 +1,7 @@
-import { test, expect } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
+
+import { test, expect } from '@playwright/test';
 
 const OUTPUT_DIR = '/tmp/mobile-audit-screenshots';
 const BASE_URL = 'http://localhost:3000';
@@ -35,7 +36,7 @@ for (const viewport of VIEWPORTS) {
     });
 
     for (const route of ROUTES) {
-      test(`${route.name}`, async ({ page }) => {
+      test(route.name, async ({ page }) => {
         const url = `${BASE_URL}${route.path}`;
         console.log(`📸 ${viewport.name} - ${route.name}`);
 

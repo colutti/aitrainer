@@ -2,7 +2,7 @@
 This module contains the repository for logging LLM prompts.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pymongo.database import Database
 from src.repositories.base import BaseRepository
 
@@ -38,6 +38,11 @@ class PromptRepository(BaseRepository):
             "user_email": user_email,
             "timestamp": datetime.now(timezone.utc),
             "prompt": sanitized_prompt,
+            "tokens_input": prompt_data.get("tokens_input", 0),
+            "tokens_output": prompt_data.get("tokens_output", 0),
+            "duration_ms": prompt_data.get("duration_ms", 0),
+            "model": prompt_data.get("model", "unknown"),
+            "status": prompt_data.get("status", "success"),
         }
 
         # Insert the new log
@@ -68,3 +73,70 @@ class PromptRepository(BaseRepository):
             .sort("timestamp", -1)
             .limit(limit)
         )
+
+    def get_token_summary(self, days: int = 30):
+        """
+        Retrieves aggregated token consumption per user over the last N days.
+        Only includes logs with tokens_input > 0 (real data).
+        """
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
+        pipeline = [
+            {
+                "$match": {
+                    "timestamp": {"$gte": start_date},
+                    "tokens_input": {"$gt": 0},  # Only real data
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$user_email",
+                    "total_input": {"$sum": "$tokens_input"},
+                    "total_output": {"$sum": "$tokens_output"},
+                    "message_count": {"$sum": 1},
+                    "last_activity": {"$max": "$timestamp"},
+                    "model": {"$last": "$model"},
+                }
+            },
+            {"$sort": {"total_input": -1}},
+        ]
+        return list(self.collection.aggregate(pipeline))
+
+    def get_token_timeseries(self, days: int = 30, user_email: str | None = None):
+        """
+        Retrieves daily token consumption for charting.
+        If user_email is provided, returns data for that user only.
+        Otherwise returns aggregated data for all users.
+        """
+        start_date = datetime.now(timezone.utc) - timedelta(days=days)
+        match_stage = {
+            "timestamp": {"$gte": start_date},
+            "tokens_input": {"$gt": 0},  # Only real data
+        }
+        if user_email:
+            match_stage["user_email"] = user_email
+
+        pipeline = [
+            {"$match": match_stage},
+            {
+                "$group": {
+                    "_id": {
+                        "$dateToString": {
+                            "format": "%Y-%m-%d",
+                            "date": "$timestamp",
+                        }
+                    },
+                    "tokens_input": {"$sum": "$tokens_input"},
+                    "tokens_output": {"$sum": "$tokens_output"},
+                }
+            },
+            {"$sort": {"_id": 1}},  # Sort by date ascending
+            {
+                "$project": {
+                    "_id": 0,
+                    "date": "$_id",
+                    "tokens_input": 1,
+                    "tokens_output": 1,
+                }
+            },
+        ]
+        return list(self.collection.aggregate(pipeline))

@@ -4,6 +4,7 @@ Provides a unified interface for different LLM providers (Gemini, Ollama, OpenAI
 """
 
 from typing import AsyncGenerator, Any
+import time
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import AIMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
@@ -97,22 +98,15 @@ class LLMClient:
         )
 
         tools_called: list[str] = []
+        start_time = time.time()
+        usage_metadata: dict = {"input_tokens": 0, "output_tokens": 0}
+        prompt_str = ""
+        usage_metadata_captured = False  # Track if we already captured
 
         try:
             # Format initial messages
             messages = list(prompt_template.format_messages(**input_data))
-
-            # V3: Log Prompt if callback provided
-            if log_callback and user_email:
-                try:
-                    prompt_str = prompt_template.format(**input_data)
-                    log_callback(
-                        user_email, {"prompt": prompt_str, "type": "with_tools"}
-                    )
-                except Exception as log_err:  # pylint: disable=broad-exception-caught
-                    logger.warning(
-                        "Failed to log prompt in stream_with_tools: %s", log_err
-                    )
+            prompt_str = prompt_template.format(**input_data)
 
             # Create the ReAct agent
             agent: CompiledStateGraph = create_agent(self._llm, tools)
@@ -127,6 +121,22 @@ class LLMClient:
                     event, _ = item
                 else:
                     event = item
+
+                # Capture usage_metadata from AIMessage chunks
+                # Only capture ONCE - the first time we see real token values
+                if not usage_metadata_captured and isinstance(event, AIMessage):
+                    if hasattr(event, "usage_metadata") and event.usage_metadata:
+                        # Only capture if this has real token counts (not all zeros)
+                        tokens = event.usage_metadata.get("input_tokens", 0) + event.usage_metadata.get("output_tokens", 0)
+                        if tokens > 0:
+                            usage_metadata = event.usage_metadata
+                            usage_metadata_captured = True
+                            logger.info(
+                                "✓ Captured usage_metadata (FIRST TIME): input=%s, output=%s, total=%s",
+                                event.usage_metadata.get("input_tokens", 0),
+                                event.usage_metadata.get("output_tokens", 0),
+                                tokens
+                            )
 
                 # V3: Intercept Tool Outputs (System Feedback)
                 if isinstance(event, ToolMessage):
@@ -157,6 +167,29 @@ class LLMClient:
             logger.error("Error in stream_with_tools: %s", e)
             yield f"Error processing request: {str(e)}"
         finally:
+            # Log prompt with tokens at the END of streaming
+            duration_ms = int((time.time() - start_time) * 1000)
+            if log_callback and user_email:
+                try:
+                    tokens_in = usage_metadata.get("input_tokens", 0)
+                    tokens_out = usage_metadata.get("output_tokens", 0)
+                    log_callback(
+                        user_email,
+                        {
+                            "prompt": prompt_str,
+                            "type": "with_tools",
+                            "tokens_input": tokens_in,
+                            "tokens_output": tokens_out,
+                            "duration_ms": duration_ms,
+                            "model": self.model_name,
+                            "status": "success",
+                        },
+                    )
+                except Exception as log_err:  # pylint: disable=broad-exception-caught
+                    logger.warning(
+                        "Failed to log prompt in stream_with_tools: %s", log_err
+                    )
+
             # Yield tools summary at the end to allow caller to make decisions
             yield {"type": "tools_summary", "tools_called": tools_called}
 
@@ -185,14 +218,11 @@ class LLMClient:
             list(input_data.keys()),
         )
 
+        start_time = time.time()
+        prompt_str = ""
+
         try:
-            # V3: Log Prompt if callback provided
-            if log_callback and user_email:
-                try:
-                    prompt_str = prompt_template.format(**input_data)
-                    log_callback(user_email, {"prompt": prompt_str, "type": "simple"})
-                except Exception as log_err:  # pylint: disable=broad-exception-caught
-                    logger.warning("Failed to log prompt in stream_simple: %s", log_err)
+            prompt_str = prompt_template.format(**input_data)
 
             chain = prompt_template | self._llm | StrOutputParser()
             async for chunk in chain.astream(input_data):
@@ -200,6 +230,25 @@ class LLMClient:
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Error in stream_simple: %s", e)
             yield f"Error processing request: {str(e)}"
+        finally:
+            # Log prompt at the END of streaming
+            duration_ms = int((time.time() - start_time) * 1000)
+            if log_callback and user_email:
+                try:
+                    log_callback(
+                        user_email,
+                        {
+                            "prompt": prompt_str,
+                            "type": "simple",
+                            "tokens_input": 0,  # stream_simple não retorna tokens por padrão
+                            "tokens_output": 0,
+                            "duration_ms": duration_ms,
+                            "model": self.model_name,
+                            "status": "success",
+                        },
+                    )
+                except Exception as log_err:  # pylint: disable=broad-exception-caught
+                    logger.warning("Failed to log prompt in stream_simple: %s", log_err)
 
 
 # Manual agent loop methods removed (refactoring to LangGraph)
@@ -219,6 +268,7 @@ class GeminiClient(LLMClient):
         """
         from langchain_google_genai import ChatGoogleGenerativeAI  # pylint: disable=import-outside-toplevel
 
+        self.model_name = model
         self._llm = ChatGoogleGenerativeAI(
             model=model,
             google_api_key=api_key or "",
@@ -233,6 +283,7 @@ class OllamaClient(LLMClient):
         """Initialize Ollama client."""
         from langchain_ollama import ChatOllama  # pylint: disable=import-outside-toplevel
 
+        self.model_name = model
         self._llm = ChatOllama(
             model=model,
             base_url=base_url,
@@ -248,6 +299,7 @@ class OpenAIClient(LLMClient):
         from langchain_openai import ChatOpenAI  # pylint: disable=import-outside-toplevel
         from pydantic import SecretStr  # pylint: disable=import-outside-toplevel
 
+        self.model_name = model
         self._llm = ChatOpenAI(
             model=model,
             api_key=SecretStr(api_key) if api_key else SecretStr(""),

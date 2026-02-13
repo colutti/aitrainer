@@ -7,12 +7,15 @@ import sys
 from logging.handlers import RotatingFileHandler
 
 
-def setup_logging(log_file="api.log", max_bytes=10 * 1024 * 1024, backup_count=5):
+def setup_logging(log_file="api.log", max_bytes=10 * 1024 * 1024, backup_count=5, log_level="INFO"):
     """
     Sets up a robust logging configuration for the application.
-    The log level is initially INFO and will be updated by config.py.
     """
-    level = logging.INFO
+    # Convert string log level to logging constant
+    if isinstance(log_level, str):
+        level = getattr(logging, log_level.upper(), logging.INFO)
+    else:
+        level = log_level
 
     # Create a custom logger
     brain_logger = logging.getLogger("AITrainerBrain")
@@ -47,5 +50,17 @@ def setup_logging(log_file="api.log", max_bytes=10 * 1024 * 1024, backup_count=5
     return brain_logger
 
 
-# Initialize the logger for the application
+# Initialize the logger for the application (defaults to INFO)
 logger = setup_logging()
+
+
+def set_log_level(log_level: str):
+    """
+    Update the log level for the AITrainerBrain logger after initialization.
+    Called from main.py after settings are loaded.
+    """
+    level = getattr(logging, log_level.upper(), logging.INFO)
+    logger.setLevel(level)
+    # Also update all handlers
+    for handler in logger.handlers:
+        handler.setLevel(level)

@@ -54,23 +54,31 @@ def list_prompts(
             p["_id"] = str(p["_id"])
 
         # Campos que o frontend espera no nível superior
-        p["model"] = "unknown"
-        p["tokens_input"] = 0
-        p["tokens_output"] = 0
-        p["duration_ms"] = 0
-        p["status"] = "success"
-        p["prompt_name"] = "N/A"
+        # Ler do nível superior do documento (novo formato com tokens)
+        # Se não existir, tentar ler do dict "prompt" (formato legado)
+        p["model"] = p.get("model", "unknown")
+        p["tokens_input"] = p.get("tokens_input", 0)
+        p["tokens_output"] = p.get("tokens_output", 0)
+        p["duration_ms"] = p.get("duration_ms", 0)
+        p["status"] = p.get("status", "success")
+        p["prompt_name"] = p.get("prompt_name", "N/A")
 
+        # Fallback: tentar extrair do dict "prompt" se os campos não estiverem no nível superior
         if "prompt" in p and isinstance(p["prompt"], dict):
             prompt_data = p["prompt"]
 
-            # Tentar extrair metadados se existirem
-            p["model"] = prompt_data.get("model", p["model"])
-            p["tokens_input"] = prompt_data.get("tokens_input", p["tokens_input"])
-            p["tokens_output"] = prompt_data.get("tokens_output", p["tokens_output"])
-            p["duration_ms"] = prompt_data.get("duration_ms", p["duration_ms"])
-            p["status"] = prompt_data.get("status", p["status"])
-            p["prompt_name"] = prompt_data.get("prompt_name", p["prompt_name"])
+            if p["model"] == "unknown":
+                p["model"] = prompt_data.get("model", p["model"])
+            if p["tokens_input"] == 0:
+                p["tokens_input"] = prompt_data.get("tokens_input", p["tokens_input"])
+            if p["tokens_output"] == 0:
+                p["tokens_output"] = prompt_data.get("tokens_output", p["tokens_output"])
+            if p["duration_ms"] == 0:
+                p["duration_ms"] = prompt_data.get("duration_ms", p["duration_ms"])
+            if p["status"] == "success":
+                p["status"] = prompt_data.get("status", p["status"])
+            if p["prompt_name"] == "N/A":
+                p["prompt_name"] = prompt_data.get("prompt_name", p["prompt_name"])
 
             # Preview logic
             _process_prompt_preview(p, prompt_data)

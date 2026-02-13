@@ -27,14 +27,19 @@ from src.api.endpoints import (
     admin_users,
     admin_logs,
     admin_prompts,
+    admin_tokens,
     admin_memory,
     admin_analytics,
     dashboard,
 )
 from src.core.config import settings
 from src.core.deps import get_mongo_database, get_mem0_client
-from src.core.logs import logger
+from src.core.logs import logger, set_log_level
 from src.core.limiter import limiter, RATE_LIMITING_ENABLED
+
+# Configure log level based on settings
+set_log_level(settings.LOG_LEVEL)
+logger.info(f"Log level set to: {settings.LOG_LEVEL}")
 
 # Suppress known deprecation warnings from libraries
 warnings.filterwarnings("ignore", message=".*migrating_memory.*")
@@ -106,6 +111,7 @@ app.include_router(telegram.router, prefix="/telegram", tags=["telegram"])
 app.include_router(admin_users.router, tags=["admin"])
 app.include_router(admin_logs.router, tags=["admin"])
 app.include_router(admin_prompts.router, tags=["admin"])
+app.include_router(admin_tokens.router, tags=["admin"])
 app.include_router(admin_memory.router, tags=["admin"])
 app.include_router(admin_analytics.router, tags=["admin"])
 

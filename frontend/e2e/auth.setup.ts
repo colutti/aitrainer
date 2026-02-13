@@ -21,7 +21,7 @@ setup('authenticate', async ({ page }) => {
     await page.click('button[type="submit"]');
 
     // Wait for navigation to home
-    await page.waitForURL('http://localhost:3000/', { timeout: 10000 }).catch(() => {});
+    await page.waitForURL('http://localhost:3000/', { timeout: 10000 }).catch(() => void 0);
     await page.waitForTimeout(1000);
   }
 

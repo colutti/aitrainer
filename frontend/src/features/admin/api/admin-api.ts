@@ -6,6 +6,8 @@ import type {
   PromptLog,
   QualityMetrics,
   UserListResponse,
+  TokenSummary,
+  TokenTimeseries,
 } from '../../../shared/types/admin';
 
 export const adminApi = {
@@ -66,5 +68,16 @@ export const adminApi = {
 
   getPrompt: async (id: string): Promise<PromptLog> => {
     return httpClient<PromptLog>(`/admin/prompts/${id}`) as Promise<PromptLog>;
+  },
+
+  getTokenSummary: async (days = 30): Promise<{ data: TokenSummary[]; total_users_with_tokens: number }> => {
+    const params = new URLSearchParams({ days: days.toString() });
+    return httpClient<{ data: TokenSummary[]; total_users_with_tokens: number }>(`/admin/tokens/summary?${params.toString()}`) as Promise<{ data: TokenSummary[]; total_users_with_tokens: number }>;
+  },
+
+  getTokenTimeseries: async (days = 30, userEmail?: string): Promise<{ data: TokenTimeseries[]; data_points: number }> => {
+    const params = new URLSearchParams({ days: days.toString() });
+    if (userEmail) params.append('user_email', userEmail);
+    return httpClient<{ data: TokenTimeseries[]; data_points: number }>(`/admin/tokens/timeseries?${params.toString()}`) as Promise<{ data: TokenTimeseries[]; data_points: number }>;
   },
 };
