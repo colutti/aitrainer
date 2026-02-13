@@ -1,7 +1,7 @@
-import { 
-  Scale, 
-  Flame, 
-  Dumbbell, 
+import {
+  Scale,
+  Flame,
+  Dumbbell,
   History,
   Activity,
   Zap,
@@ -10,6 +10,7 @@ import {
   TrendingDown
 } from 'lucide-react';
 import { useEffect } from 'react';
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { StatsCard } from '../../shared/components/ui/StatsCard';
 import { useDashboardStore } from '../../shared/hooks/useDashboard';
@@ -238,18 +239,83 @@ export function DashboardPage() {
           <h2 className="text-xl font-bold text-text-primary">Composição Corporal</h2>
         </div>
 
-        {/* Composition Charts */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        {/* Composition Charts - Grid: Weight + Fat + Muscle */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          {/* Weight Card (Larger - spans 1 or 2 cols) */}
           {data?.weightTrend && data.weightTrend.length > 0 && (
-            <WidgetCompositionChart
-              title="Tendência de Peso"
-              data={data.weightTrend}
-              color="#10b981"
-              gradientId="colorWeight"
-              unit="kg"
-              valueFormatter={(v) => v.toFixed(1)}
-            />
+            <div className="lg:col-span-1 bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden group">
+              <div className="relative z-10 flex flex-col h-full justify-between">
+                <div className="mb-6">
+                  <p className="text-text-secondary text-sm font-medium mb-1">Peso Atual</p>
+                  <h3 className="text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
+                    {body.weight_current.toFixed(1)} <span className="text-lg text-text-muted">kg</span>
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                      <Scale size={16} />
+                    </div>
+                  </h3>
+                  <div className="flex items-center gap-2 mt-2 text-xs">
+                    <span className={cn(
+                      "font-bold px-2 py-0.5 rounded-full",
+                      body.weight_diff > 0 ? 'bg-orange-500/10 text-orange-500' : 'bg-emerald-500/10 text-emerald-500'
+                    )}>
+                      {body.weight_diff > 0 ? '+' : ''}{body.weight_diff.toFixed(1)} kg
+                    </span>
+                    <span className="text-text-muted">últimos 7 dias</span>
+                  </div>
+                </div>
+
+                {/* Two charts stacked */}
+                <div className="space-y-4">
+                  <div className="flex-1 min-h-[100px] -mx-2">
+                    <p className="text-[10px] text-text-muted uppercase font-bold mb-2 px-2">Tendência (30 dias)</p>
+                    <ResponsiveContainer width="100%" height={80}>
+                      <AreaChart data={data.weightTrend}>
+                        <defs>
+                          <linearGradient id="colorWeightTrend" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <XAxis dataKey="date" hide />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#1e293b',
+                            borderColor: '#334155',
+                            borderRadius: '8px',
+                            color: '#f8fafc',
+                            fontSize: '12px'
+                          }}
+                          formatter={(value: number) => [`${value.toFixed(1)} kg`, 'Peso']}
+                          labelFormatter={(label) => {
+                            const date = new Date(label);
+                            return isNaN(date.getTime()) ? label.toString() : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="value"
+                          stroke="#10b981"
+                          strokeWidth={2}
+                          fillOpacity={1}
+                          fill="url(#colorWeightTrend)"
+                        />
+                        <YAxis hide domain={['dataMin - 2', 'dataMax + 2']} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div className="flex-1 min-h-[100px] -mx-2">
+                    <p className="text-[10px] text-text-muted uppercase font-bold mb-2 px-2">Histórico (14 dias)</p>
+                    {weightHistory && <WidgetWeightChart data={weightHistory} />}
+                  </div>
+                </div>
+              </div>
+              {/* Background glow */}
+              <div className="absolute right-0 top-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl" />
+            </div>
           )}
+
+          {/* Fat Trend */}
           {data?.fatTrend && data.fatTrend.length > 0 && (
             <WidgetCompositionChart
               title="Gordura Corporal"
@@ -260,6 +326,8 @@ export function DashboardPage() {
               valueFormatter={(v) => v.toFixed(1)}
             />
           )}
+
+          {/* Muscle Trend */}
           {data?.muscleTrend && data.muscleTrend.length > 0 && (
             <WidgetCompositionChart
               title="Massa Muscular"
@@ -272,55 +340,8 @@ export function DashboardPage() {
           )}
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Enhanced Weight Card with Chart */}
-          <div className="md:col-span-2 bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden group">
-             <div className="flex flex-col h-full justify-between relative z-10">
-                <div className="flex justify-between items-start mb-4">
-                   <div>
-                      <p className="text-text-secondary text-sm font-medium mb-1">Peso Atual</p>
-                      <h3 className="text-3xl font-bold text-text-primary tracking-tight">
-                         {body.weight_current.toFixed(1)} <span className="text-lg text-text-muted">kg</span>
-                      </h3>
-                   </div>
-                   <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                      <Scale size={20} />
-                   </div>
-                </div>
-                
-                {/* Chart Integration */}
-                <div className="flex-1 min-h-[100px] -mx-2">
-                   {weightHistory && <WidgetWeightChart data={weightHistory} />}
-                </div>
-
-                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/50">
-                    <span className={cn(
-                        "text-xs font-bold px-2 py-0.5 rounded-full capitalize flex items-center gap-1",
-                        body.weight_diff > 0 ? 'bg-orange-500/10 text-orange-500' : 'bg-emerald-500/10 text-emerald-500'
-                    )}>
-                        {body.weight_diff > 0 ? '+' : ''}{body.weight_diff.toFixed(1)} kg
-                    </span>
-                    <span className="text-xs text-text-muted">últimos 7 dias</span>
-                </div>
-             </div>
-             {/* Background glow */}
-             <div className="absolute right-0 top-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl" />
-          </div>
-          <StatsCard
-            title="Gordura Corporal"
-            value={`${body.body_fat_pct?.toFixed(1) ?? '--'}%`}
-            subtitle="Estimativa"
-            icon={<Target size={24} />}
-            variant="secondary"
-          />
-          <StatsCard
-            title="Massa Muscular"
-            value={`${body.muscle_mass_pct?.toFixed(1) ?? '--'}%`}
-            subtitle="Estimativa"
-            icon={<Zap size={24} />}
-            variant="secondary"
-          />
+        {/* Additional Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
           <StatsCard
             title="BMR Estimado"
             value={body.bmr?.toString() ?? '--'}
