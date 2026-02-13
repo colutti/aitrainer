@@ -9,8 +9,8 @@ import {
   Target,
   TrendingDown
 } from 'lucide-react';
-import { useEffect } from 'react';
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { useEffect, useMemo } from 'react';
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { StatsCard } from '../../shared/components/ui/StatsCard';
 import { useDashboardStore } from '../../shared/hooks/useDashboard';
@@ -21,7 +21,6 @@ import { WidgetStreak } from './components/WidgetStreak';
 import { WidgetStrengthRadar } from './components/WidgetStrengthRadar';
 import { WidgetVolumeTrend } from './components/WidgetVolumeTrend';
 import { WidgetWeeklyFrequency } from './components/WidgetWeeklyFrequency';
-import { WidgetWeightChart } from './components/WidgetWeightChart';
 import { WidgetCompositionChart } from './components/WidgetCompositionChart';
 
 /**
@@ -239,13 +238,13 @@ export function DashboardPage() {
           <h2 className="text-xl font-bold text-text-primary">Composição Corporal</h2>
         </div>
 
-        {/* Composition Charts - Grid: Weight + Fat + Muscle */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          {/* Weight Card (Larger - spans 1 or 2 cols) */}
-          {data?.weightTrend && data.weightTrend.length > 0 && (
-            <div className="lg:col-span-1 bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden group">
-              <div className="relative z-10 flex flex-col h-full justify-between">
-                <div className="mb-6">
+        {/* Composition Charts - Grid: Weight (2cols) + Fat + Muscle */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+          {/* Weight Card (Larger - spans 2 cols) */}
+          {data?.weightTrend && data.weightTrend.length > 0 && weightHistory && (
+            <div className="lg:col-span-2 bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden group">
+              <div className="relative z-10 flex flex-col h-full">
+                <div className="mb-4">
                   <p className="text-text-secondary text-sm font-medium mb-1">Peso Atual</p>
                   <h3 className="text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
                     {body.weight_current.toFixed(1)} <span className="text-lg text-text-muted">kg</span>
@@ -264,49 +263,85 @@ export function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Two charts stacked */}
-                <div className="space-y-4">
-                  <div className="flex-1 min-h-[100px] -mx-2">
-                    <p className="text-[10px] text-text-muted uppercase font-bold mb-2 px-2">Tendência (30 dias)</p>
-                    <ResponsiveContainer width="100%" height={80}>
-                      <AreaChart data={data.weightTrend}>
-                        <defs>
-                          <linearGradient id="colorWeightTrend" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <XAxis dataKey="date" hide />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: '#1e293b',
-                            borderColor: '#334155',
-                            borderRadius: '8px',
-                            color: '#f8fafc',
-                            fontSize: '12px'
-                          }}
-                          formatter={(value: number) => [`${value.toFixed(1)} kg`, 'Peso']}
-                          labelFormatter={(label) => {
-                            const date = new Date(label);
-                            return isNaN(date.getTime()) ? label.toString() : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-                          }}
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="value"
-                          stroke="#10b981"
-                          strokeWidth={2}
-                          fillOpacity={1}
-                          fill="url(#colorWeightTrend)"
-                        />
-                        <YAxis hide domain={['dataMin - 2', 'dataMax + 2']} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
+                {/* Weight chart with two lines */}
+                <div className="flex-1 min-h-[120px] -mx-2 -mb-2">
+                  {useMemo(() => {
+                    if (!data?.weightTrend) return null;
 
-                  <div className="flex-1 min-h-[100px] -mx-2">
-                    <p className="text-[10px] text-text-muted uppercase font-bold mb-2 px-2">Histórico (14 dias)</p>
-                    {weightHistory && <WidgetWeightChart data={weightHistory} />}
+                    // Merge weightHistory and weightTrend by date
+                    const dateMap = new Map();
+
+                    weightHistory.forEach(point => {
+                      const dateKey = typeof point.date === 'string' ? point.date.split('T')[0] : point.date;
+                      dateMap.set(dateKey, { date: dateKey, weight: point.weight });
+                    });
+
+                    data.weightTrend.forEach(point => {
+                      const dateKey = typeof point.date === 'string' ? point.date.split('T')[0] : point.date;
+                      const existing = dateMap.get(dateKey) || { date: dateKey };
+                      existing.trend = point.value;
+                      dateMap.set(dateKey, existing);
+                    });
+
+                    const mergedData = Array.from(dateMap.values()).sort((a, b) =>
+                      new Date(a.date).getTime() - new Date(b.date).getTime()
+                    );
+
+                    return (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={mergedData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                          <XAxis dataKey="date" hide />
+                          <YAxis hide domain={['dataMin - 0.5', 'dataMax + 0.5']} />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: '#1e293b',
+                              borderColor: '#334155',
+                              borderRadius: '6px',
+                              color: '#f8fafc',
+                              fontSize: '11px',
+                              padding: '6px'
+                            }}
+                            labelFormatter={(label) => {
+                              const date = new Date(label);
+                              return isNaN(date.getTime()) ? label.toString() : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                            }}
+                          />
+                          {/* Peso Real - linha fina azul */}
+                          <Line
+                            type="monotone"
+                            dataKey="weight"
+                            stroke="#60a5fa"
+                            strokeWidth={1}
+                            dot={false}
+                            isAnimationActive={false}
+                            name="Peso"
+                          />
+                          {/* Tendência - linha mais grossa verde */}
+                          <Line
+                            type="natural"
+                            dataKey="trend"
+                            stroke="#10b981"
+                            strokeWidth={2.5}
+                            dot={false}
+                            isAnimationActive={false}
+                            name="Tendência"
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    );
+                  }, [data?.weightTrend, weightHistory])
+                  }
+                </div>
+
+                {/* Legend */}
+                <div className="flex gap-4 mt-3 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-blue-400" />
+                    <span className="text-text-muted">Peso (14d)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="text-text-muted">Tendência (30d)</span>
                   </div>
                 </div>
               </div>
@@ -321,7 +356,6 @@ export function DashboardPage() {
               title="Gordura Corporal"
               data={data.fatTrend}
               color="#f97316"
-              gradientId="colorFat"
               unit="%"
               valueFormatter={(v) => v.toFixed(1)}
             />
@@ -333,7 +367,6 @@ export function DashboardPage() {
               title="Massa Muscular"
               data={data.muscleTrend}
               color="#3b82f6"
-              gradientId="colorMuscle"
               unit="%"
               valueFormatter={(v) => v.toFixed(1)}
             />

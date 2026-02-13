@@ -1,4 +1,4 @@
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import type { TrendPoint } from '../../../shared/types/dashboard';
 
@@ -6,7 +6,6 @@ interface WidgetCompositionChartProps {
   title: string;
   data: TrendPoint[];
   color: string;
-  gradientId: string;
   unit?: string;
   valueFormatter?: (value: number) => string;
 }
@@ -15,7 +14,6 @@ export function WidgetCompositionChart({
   title,
   data,
   color,
-  gradientId,
   unit = '',
   valueFormatter = (v) => v.toFixed(1)
 }: WidgetCompositionChartProps) {
@@ -24,10 +22,10 @@ export function WidgetCompositionChart({
   const values = data.map(d => d.value);
   const minValue = Math.min(...values);
   const maxValue = Math.max(...values);
-  const padding = (maxValue - minValue) * 0.2;
+  const padding = (maxValue - minValue) * 0.15;
 
   return (
-    <div className="bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden group">
+    <div className="bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden group h-full">
       <div className="relative z-10 flex flex-col h-full justify-between">
         <div className="mb-4">
           <h3 className="text-sm font-bold text-text-secondary uppercase tracking-wider mb-1">
@@ -41,22 +39,17 @@ export function WidgetCompositionChart({
           )}
         </div>
 
-        <div className="flex-1 min-h-[120px] -mx-2">
+        <div className="flex-1 min-h-[100px] -mx-2 -mb-2">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data}>
-              <defs>
-                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={color} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={color} stopOpacity={0} />
-                </linearGradient>
-              </defs>
+            <LineChart data={data}>
               <XAxis dataKey="date" hide />
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#1e293b',
                   borderColor: '#334155',
                   borderRadius: '8px',
-                  color: '#f8fafc'
+                  color: '#f8fafc',
+                  fontSize: '12px'
                 }}
                 formatter={(value: number) => [
                   `${valueFormatter(value)} ${unit}`,
@@ -68,19 +61,19 @@ export function WidgetCompositionChart({
                   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
                 }}
               />
-              <Area
+              <Line
                 type="monotone"
                 dataKey="value"
                 stroke={color}
                 strokeWidth={2}
-                fillOpacity={1}
-                fill={`url(#${gradientId})`}
+                dot={false}
+                isAnimationActive={false}
               />
               <YAxis
                 hide
                 domain={[minValue - padding, maxValue + padding]}
               />
-            </AreaChart>
+            </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
