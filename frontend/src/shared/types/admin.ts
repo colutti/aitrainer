@@ -17,6 +17,7 @@ export interface QualityMetrics {
 export interface AdminUser {
   email: string;
   name?: string;
+  display_name?: string;
   is_admin: boolean;
   created_at?: string;
   last_login?: string;

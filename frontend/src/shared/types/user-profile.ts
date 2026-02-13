@@ -9,6 +9,8 @@ export interface UserProfile {
   weekly_rate: number;
   email: string;
   notes?: string;
+  display_name?: string;
+  photo_base64?: string;
 }
 
 export type OnboardingData = Partial<UserProfile>;

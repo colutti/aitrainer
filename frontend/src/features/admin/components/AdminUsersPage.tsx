@@ -132,7 +132,7 @@ export function AdminUsersPage() {
                 users.map((user) => (
                   <tr key={user.email} className="hover:bg-white/5 transition-colors group">
                     <td className="p-2 md:p-4 text-text-primary font-medium text-sm md:text-base">{user.email}</td>
-                    <td className="p-2 md:p-4 text-text-secondary hidden md:table-cell text-sm">{user.name ?? '-'}</td>
+                    <td className="p-2 md:p-4 text-text-secondary hidden md:table-cell text-sm">{user.display_name ?? user.email.split('@')[0] ?? '-'}</td>
                     <td className="p-2 md:p-4 hidden lg:table-cell">
                       <span className={`px-2 py-1 rounded-full text-xs font-bold ${
                         user.is_admin

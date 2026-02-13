@@ -1,16 +1,18 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { User, Save } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { Button } from '../../../shared/components/ui/Button';
 import { Input } from '../../../shared/components/ui/Input';
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
+import { useAuthStore } from '../../../shared/hooks/useAuth';
 import { settingsApi } from '../api/settings-api';
+import { PhotoUpload } from './PhotoUpload';
 
 const profileSchema = z.object({
-  name: z.string().optional(), // name not in UserProfile explicitly but usually handled
+  display_name: z.string().max(50).optional(),
   email: z.string().email(),
   age: z.coerce.number().min(1, 'Idade inválida'),
   weight: z.coerce.number().min(1, 'Peso inválido'),
@@ -26,6 +28,10 @@ type ProfileForm = z.infer<typeof profileSchema>;
 
 export function UserProfilePage() {
   const notify = useNotificationStore();
+  const { userInfo, loadUserInfo } = useAuthStore();
+  const [photo, setPhoto] = useState<string | null | undefined>(userInfo?.photo_base64);
+  const [isSaving, setIsSaving] = useState(false);
+
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema)
   });
@@ -39,21 +45,38 @@ export function UserProfilePage() {
           ...data,
           goal: data.goal ?? '',
           target_weight: data.target_weight ?? 0,
-          name: '' // Handle name if API returns it
-        } satisfies ProfileForm); 
+          display_name: typeof data.display_name === 'string' ? data.display_name : ''
+        } satisfies ProfileForm);
+        setPhoto(data.photo_base64);
       } catch {
         // Silently fail - user will see empty form
       }
     }
     void load();
-  }, [reset, notify]);
+  }, [reset]);
 
   const onSubmit = async (data: ProfileForm) => {
+    setIsSaving(true);
     try {
-      await settingsApi.updateProfile(data);
+      // Update identity (name + photo) in parallel with profile
+      const identityUpdate: { display_name?: string | null; photo_base64?: string | null } = {
+        display_name: data.display_name || undefined,
+        photo_base64: photo === undefined ? undefined : photo
+      };
+
+      await Promise.all([
+        settingsApi.updateProfile(data),
+        settingsApi.updateIdentity(identityUpdate)
+      ]);
+
+      // Refresh auth store to update sidebar/dashboard with new name/photo
+      await loadUserInfo();
+
       notify.success('Perfil atualizado com sucesso!');
     } catch {
       notify.error('Erro ao atualizar perfil');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -70,6 +93,28 @@ export function UserProfilePage() {
       </div>
 
       <form onSubmit={(e) => { void handleSubmit(onSubmit)(e); }} className="space-y-6 bg-dark-card p-6 rounded-xl border border-border shadow-sm">
+        {/* Identity Section */}
+        <div className="border-b border-border pb-6">
+          <h3 className="text-lg font-semibold text-text-primary mb-4">Identidade</h3>
+          <div className="space-y-4">
+            <PhotoUpload
+              currentPhoto={photo}
+              displayName={userInfo?.name}
+              email={userInfo?.email ?? 'user@example.com'}
+              onPhotoChange={(newPhoto) => setPhoto(newPhoto)}
+              isLoading={isSaving}
+            />
+            <Input
+              id="profile-display-name"
+              label="Nome Exibido"
+              placeholder="Seu nome para o app e treinador"
+              maxLength={50}
+              {...register('display_name')}
+              error={errors.display_name?.message}
+            />
+          </div>
+        </div>
+
         <Input id="profile-email" label="Email" {...register('email')} disabled className="opacity-60 cursor-not-allowed" />
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -107,8 +152,8 @@ export function UserProfilePage() {
         </div>
 
         <div className="flex justify-end pt-6">
-            <Button type="submit" disabled={isSubmitting} className="w-full md:w-auto">
-                <Save className="mr-2 h-4 w-4" /> Salvar Alterações
+            <Button type="submit" disabled={isSubmitting || isSaving} className="w-full md:w-auto">
+                <Save className="mr-2 h-4 w-4" /> {isSaving ? 'Salvando...' : 'Salvar Alterações'}
             </Button>
         </div>
       </form>
