@@ -39,7 +39,8 @@ export function ChatPage() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prevScrollHeightRef = useRef<number>(0);
   const prevMessagesLength = useRef(0);
-  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(false);
+  const isFirstRenderRef = useRef(true);
 
   // Scroll handler
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -65,19 +66,23 @@ export function ChatPage() {
     if (prevScrollHeightRef.current > 0 && newLength > prevMessagesLength.current) {
       const newScrollHeight = container.scrollHeight;
       const diff = newScrollHeight - prevScrollHeightRef.current;
-      
+
       // Only adjust if height actually increased (history prepended)
       if (diff > 0) {
         container.scrollTop = diff;
       }
       prevScrollHeightRef.current = 0;
+    } else if (isFirstRenderRef.current && newLength > 0) {
+        // First load with messages: scroll immediately (no animation)
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' } as ScrollIntoViewOptions);
+        isFirstRenderRef.current = false;
     } else if (shouldAutoScroll || (newLength > prevMessagesLength.current && messages[newLength-1]?.sender === 'Student')) {
-        // Scroll to bottom if auto-scroll enabled OR user sent a message (force scroll)
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        // Auto-scroll if at bottom or user sent a message (smooth animation)
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' } as ScrollIntoViewOptions);
     }
-    
+
     prevMessagesLength.current = newLength;
-  }, [messages, shouldAutoScroll]);
+  }, [messages, shouldAutoScroll, isLoading]);
 
   useEffect(() => {
     if (textareaRef.current) {
