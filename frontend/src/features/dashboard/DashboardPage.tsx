@@ -356,22 +356,22 @@ export function DashboardPage() {
                             return isNaN(date.getTime()) ? String(label) : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
                           }}
                         />
-                        {/* Peso Real - linha fina azul */}
+                        {/* Peso Real - linha mais grossa azul (destaque) */}
                         <Line
                           type="monotone"
                           dataKey="weight"
                           stroke="#60a5fa"
-                          strokeWidth={1}
+                          strokeWidth={2.5}
                           dot={false}
                           isAnimationActive={false}
                           name="Peso"
                         />
-                        {/* Tendência Linear - linha reta mais grossa verde */}
+                        {/* Tendência Linear - linha fina verde (de fundo) */}
                         <Line
                           type="linear"
                           dataKey="trendLine"
                           stroke="#10b981"
-                          strokeWidth={2.5}
+                          strokeWidth={1}
                           dot={false}
                           isAnimationActive={false}
                           name="Tendência"
