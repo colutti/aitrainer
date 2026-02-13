@@ -79,6 +79,37 @@ export function DashboardPage() {
   const { metabolism, body, calories, workouts } = stats;
   const { streak, weightHistory, recentPRs, strengthRadar, volumeTrend, weeklyFrequency } = data ?? {};
 
+  // Calculate linear regression from trend data
+  const calculateLinearRegression = (points: { date: string; value: number }[]) => {
+    if (points.length < 2) return null;
+
+    const n = points.length;
+    let sumX = 0;
+    let sumY = 0;
+    let sumXY = 0;
+    let sumX2 = 0;
+
+    points.forEach((point, index) => {
+      sumX += index;
+      sumY += point.value;
+      sumXY += index * point.value;
+      sumX2 += index * index;
+    });
+
+    const m = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const b = (sumY - m * sumX) / n;
+
+    // Create regression line with first and last points
+    const firstValue = b;
+    const lastValue = m * (n - 1) + b;
+
+    return {
+      start: firstValue,
+      end: lastValue,
+      slope: m
+    };
+  };
+
   // Helper function to merge weight and trend data
   const getMergedWeightData = () => {
     if (!data?.weightTrend || !weightHistory) return null;
@@ -93,12 +124,20 @@ export function DashboardPage() {
       }
     });
 
-    data.weightTrend.forEach(point => {
+    // Calculate linear regression for trend line
+    const regression = calculateLinearRegression(data.weightTrend);
+
+    data.weightTrend.forEach((point, index) => {
       const dateStr = typeof point.date === 'string' ? point.date : String(point.date ?? '');
       const dateKey = dateStr.split('T')[0];
       if (dateKey) {
         const existing = dateMap.get(dateKey) ?? { date: dateKey };
         existing.trend = point.value;
+        // Add trend line point (linear interpolation)
+        if (regression) {
+          const trendLineValue = regression.start + (regression.slope * index);
+          existing.trendLine = trendLineValue;
+        }
         dateMap.set(dateKey, existing);
       }
     });
@@ -327,10 +366,10 @@ export function DashboardPage() {
                           isAnimationActive={false}
                           name="Peso"
                         />
-                        {/* Tendência - linha mais grossa verde */}
+                        {/* Tendência Linear - linha reta mais grossa verde */}
                         <Line
-                          type="natural"
-                          dataKey="trend"
+                          type="linear"
+                          dataKey="trendLine"
                           stroke="#10b981"
                           strokeWidth={2.5}
                           dot={false}
