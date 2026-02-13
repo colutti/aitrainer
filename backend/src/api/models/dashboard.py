@@ -74,6 +74,13 @@ class WeightHistoryPoint(BaseModel):
     weight: float
 
 
+class TrendPoint(BaseModel):
+    """Model for a trend data point (generic for weight, fat, muscle, etc)."""
+
+    date: str
+    value: float
+
+
 class StreakStats(BaseModel):
     """Stats for user's activity streak."""
 
@@ -108,6 +115,9 @@ class DashboardData(BaseModel):
     stats: DashboardStats
     recentActivities: List[RecentActivity]
     weightHistory: Optional[List[WeightHistoryPoint]] = None
+    weightTrend: Optional[List[TrendPoint]] = None
+    fatTrend: Optional[List[TrendPoint]] = None
+    muscleTrend: Optional[List[TrendPoint]] = None
     streak: Optional[StreakStats] = None
     recentPRs: Optional[List[PRRecord]] = None
     strengthRadar: Optional[StrengthRadarData] = None

@@ -48,6 +48,11 @@ export interface WeightHistoryPoint {
   weight: number;
 }
 
+export interface TrendPoint {
+  date: string;
+  value: number;
+}
+
 export interface StreakStats {
   current_weeks: number;
   current_days: number;
@@ -74,6 +79,9 @@ export interface DashboardData {
   stats: DashboardStats;
   recentActivities: RecentActivity[];
   weightHistory?: WeightHistoryPoint[];
+  weightTrend?: TrendPoint[];
+  fatTrend?: TrendPoint[];
+  muscleTrend?: TrendPoint[];
   streak?: StreakStats;
   recentPRs?: PRRecord[];
   strengthRadar?: StrengthRadarData;

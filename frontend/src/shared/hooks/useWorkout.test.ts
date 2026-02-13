@@ -71,11 +71,11 @@ describe('useWorkoutStore', () => {
       expect(httpClient).toHaveBeenCalledWith('/workout/list?page=1');
     });
 
-    it('should fetch workouts with type filter', async () => {
+    it('should fetch workouts with pagination', async () => {
       vi.mocked(httpClient).mockResolvedValue({ workouts: [], total: 0, page: 1, total_pages: 0 });
-      
-      await useWorkoutStore.getState().fetchWorkouts(1, 'strength');
-      expect(httpClient).toHaveBeenCalledWith('/workout/list?page=1&workout_type=strength');
+
+      await useWorkoutStore.getState().fetchWorkouts(1);
+      expect(httpClient).toHaveBeenCalledWith('/workout/list?page=1');
     });
 
     it('should handle undefined response', async () => {

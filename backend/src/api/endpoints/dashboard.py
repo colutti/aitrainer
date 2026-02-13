@@ -21,6 +21,7 @@ from src.api.models.dashboard import (
     WorkoutStats,
     MetabolismStats,
     WeightHistoryPoint,
+    TrendPoint,
     StreakStats,
     PRRecord,
     StrengthRadarData,
@@ -132,6 +133,36 @@ def get_dashboard_data(
         for log in reversed(weight_logs)
     ]
 
+    # --- Composition Trends (30 days) ---
+    composition_logs = db.get_weight_logs(user_email, limit=30)
+    composition_logs_asc = sorted(composition_logs, key=lambda x: x.date)
+
+    weight_trend_data = [
+        TrendPoint(
+            date=log.date.isoformat() if isinstance(log.date, datetime) else str(log.date),
+            value=log.weight_kg,
+        )
+        for log in composition_logs_asc
+    ]
+
+    fat_trend_data = [
+        TrendPoint(
+            date=log.date.isoformat() if isinstance(log.date, datetime) else str(log.date),
+            value=log.body_fat_pct,
+        )
+        for log in composition_logs_asc
+        if log.body_fat_pct is not None
+    ]
+
+    muscle_trend_data = [
+        TrendPoint(
+            date=log.date.isoformat() if isinstance(log.date, datetime) else str(log.date),
+            value=log.muscle_mass_pct,
+        )
+        for log in composition_logs_asc
+        if log.muscle_mass_pct is not None
+    ]
+
     # --- Recent Activities ---
     activities = _assemble_recent_activities(
         recent_workouts,
@@ -148,6 +179,9 @@ def get_dashboard_data(
         ),
         recentActivities=activities[:5],
         weightHistory=weight_history_data,
+        weightTrend=weight_trend_data,
+        fatTrend=fat_trend_data,
+        muscleTrend=muscle_trend_data,
         streak=streak_data,
         recentPRs=recent_prs_data,
         strengthRadar=radar_data,

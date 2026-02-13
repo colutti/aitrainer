@@ -21,6 +21,7 @@ import { WidgetStrengthRadar } from './components/WidgetStrengthRadar';
 import { WidgetVolumeTrend } from './components/WidgetVolumeTrend';
 import { WidgetWeeklyFrequency } from './components/WidgetWeeklyFrequency';
 import { WidgetWeightChart } from './components/WidgetWeightChart';
+import { WidgetCompositionChart } from './components/WidgetCompositionChart';
 
 /**
  * DashboardPage component
@@ -236,6 +237,42 @@ export function DashboardPage() {
           <Activity className="text-gradient-start" size={20} />
           <h2 className="text-xl font-bold text-text-primary">Composição Corporal</h2>
         </div>
+
+        {/* Composition Charts */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {data?.weightTrend && data.weightTrend.length > 0 && (
+            <WidgetCompositionChart
+              title="Tendência de Peso"
+              data={data.weightTrend}
+              color="#10b981"
+              gradientId="colorWeight"
+              unit="kg"
+              valueFormatter={(v) => v.toFixed(1)}
+            />
+          )}
+          {data?.fatTrend && data.fatTrend.length > 0 && (
+            <WidgetCompositionChart
+              title="Gordura Corporal"
+              data={data.fatTrend}
+              color="#f97316"
+              gradientId="colorFat"
+              unit="%"
+              valueFormatter={(v) => v.toFixed(1)}
+            />
+          )}
+          {data?.muscleTrend && data.muscleTrend.length > 0 && (
+            <WidgetCompositionChart
+              title="Massa Muscular"
+              data={data.muscleTrend}
+              color="#3b82f6"
+              gradientId="colorMuscle"
+              unit="%"
+              valueFormatter={(v) => v.toFixed(1)}
+            />
+          )}
+        </div>
+
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Enhanced Weight Card with Chart */}
           <div className="md:col-span-2 bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden group">
