@@ -116,11 +116,16 @@ export function AdminTokensPage() {
           <div className="bg-surface-secondary rounded-lg p-4">
             <h2 className="text-lg font-semibold text-text-primary mb-4">Consumo de Tokens</h2>
             {tokenTimeseries.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={tokenTimeseries}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                  <XAxis dataKey="date" stroke="#888" />
-                  <YAxis stroke="#888" />
+              <ResponsiveContainer width="100%" height={350}>
+                <LineChart data={tokenTimeseries} margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+                  <XAxis dataKey="date" stroke="#888" style={{ fontSize: '12px' }} />
+                  <YAxis
+                    stroke="#888"
+                    width={70}
+                    tickFormatter={(value) => `${(value / 1000).toFixed(1)}K`}
+                    style={{ fontSize: '12px' }}
+                  />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: '#1a1a1a',
