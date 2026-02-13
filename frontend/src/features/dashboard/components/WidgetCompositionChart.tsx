@@ -33,7 +33,7 @@ export function WidgetCompositionChart({
           </h3>
           {data.length > 0 && (
             <p className="text-2xl font-bold text-text-primary">
-              {valueFormatter(data[data.length - 1]!.value)}
+              {valueFormatter(data[data.length - 1]?.value ?? 0)}
               {unit && <span className="text-base text-text-muted ml-1">{unit}</span>}
             </p>
           )}

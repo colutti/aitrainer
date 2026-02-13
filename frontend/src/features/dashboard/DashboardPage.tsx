@@ -9,19 +9,19 @@ import {
   Target,
   TrendingDown
 } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { StatsCard } from '../../shared/components/ui/StatsCard';
 import { useDashboardStore } from '../../shared/hooks/useDashboard';
 import { cn } from '../../shared/utils/cn';
 
+import { WidgetCompositionChart } from './components/WidgetCompositionChart';
 import { WidgetRecentPRs } from './components/WidgetRecentPRs';
 import { WidgetStreak } from './components/WidgetStreak';
 import { WidgetStrengthRadar } from './components/WidgetStrengthRadar';
 import { WidgetVolumeTrend } from './components/WidgetVolumeTrend';
 import { WidgetWeeklyFrequency } from './components/WidgetWeeklyFrequency';
-import { WidgetCompositionChart } from './components/WidgetCompositionChart';
 
 /**
  * DashboardPage component
@@ -78,6 +78,39 @@ export function DashboardPage() {
 
   const { metabolism, body, calories, workouts } = stats;
   const { streak, weightHistory, recentPRs, strengthRadar, volumeTrend, weeklyFrequency } = data ?? {};
+
+  // Helper function to merge weight and trend data
+  const getMergedWeightData = () => {
+    if (!data?.weightTrend || !weightHistory) return null;
+
+    const dateMap = new Map<string, Record<string, unknown>>();
+
+    weightHistory.forEach(point => {
+      const dateStr = typeof point.date === 'string' ? point.date : String(point.date ?? '');
+      const dateKey = dateStr.split('T')[0];
+      if (dateKey) {
+        dateMap.set(dateKey, { date: dateKey, weight: point.weight });
+      }
+    });
+
+    data.weightTrend.forEach(point => {
+      const dateStr = typeof point.date === 'string' ? point.date : String(point.date ?? '');
+      const dateKey = dateStr.split('T')[0];
+      if (dateKey) {
+        const existing = dateMap.get(dateKey) ?? { date: dateKey };
+        existing.trend = point.value;
+        dateMap.set(dateKey, existing);
+      }
+    });
+
+    return Array.from(dateMap.values()).sort((a, b) => {
+      const dateA = new Date(String(a.date)).getTime();
+      const dateB = new Date(String(b.date)).getTime();
+      return dateA - dateB;
+    });
+  };
+
+  const mergedWeightData = getMergedWeightData();
 
   const goalLabels: Record<string, string> = {
     'lose': 'Perda de Peso',
@@ -264,74 +297,50 @@ export function DashboardPage() {
                 </div>
 
                 {/* Weight chart with two lines */}
-                <div className="flex-1 min-h-[120px] -mx-2 -mb-2">
-                  {useMemo(() => {
-                    if (!data?.weightTrend) return null;
-
-                    // Merge weightHistory and weightTrend by date
-                    const dateMap = new Map();
-
-                    weightHistory.forEach(point => {
-                      const dateKey = typeof point.date === 'string' ? point.date.split('T')[0] : point.date;
-                      dateMap.set(dateKey, { date: dateKey, weight: point.weight });
-                    });
-
-                    data.weightTrend.forEach(point => {
-                      const dateKey = typeof point.date === 'string' ? point.date.split('T')[0] : point.date;
-                      const existing = dateMap.get(dateKey) || { date: dateKey };
-                      existing.trend = point.value;
-                      dateMap.set(dateKey, existing);
-                    });
-
-                    const mergedData = Array.from(dateMap.values()).sort((a, b) =>
-                      new Date(a.date).getTime() - new Date(b.date).getTime()
-                    );
-
-                    return (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={mergedData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                          <XAxis dataKey="date" hide />
-                          <YAxis hide domain={['dataMin - 0.5', 'dataMax + 0.5']} />
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: '#1e293b',
-                              borderColor: '#334155',
-                              borderRadius: '6px',
-                              color: '#f8fafc',
-                              fontSize: '11px',
-                              padding: '6px'
-                            }}
-                            labelFormatter={(label) => {
-                              const date = new Date(label);
-                              return isNaN(date.getTime()) ? label.toString() : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-                            }}
-                          />
-                          {/* Peso Real - linha fina azul */}
-                          <Line
-                            type="monotone"
-                            dataKey="weight"
-                            stroke="#60a5fa"
-                            strokeWidth={1}
-                            dot={false}
-                            isAnimationActive={false}
-                            name="Peso"
-                          />
-                          {/* Tendência - linha mais grossa verde */}
-                          <Line
-                            type="natural"
-                            dataKey="trend"
-                            stroke="#10b981"
-                            strokeWidth={2.5}
-                            dot={false}
-                            isAnimationActive={false}
-                            name="Tendência"
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    );
-                  }, [data?.weightTrend, weightHistory])
-                  }
-                </div>
+                {mergedWeightData && (
+                  <div className="flex-1 min-h-[120px] -mx-2 -mb-2">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={mergedWeightData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                        <XAxis dataKey="date" hide />
+                        <YAxis hide domain={['dataMin - 0.5', 'dataMax + 0.5']} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#1e293b',
+                            borderColor: '#334155',
+                            borderRadius: '6px',
+                            color: '#f8fafc',
+                            fontSize: '11px',
+                            padding: '6px'
+                          }}
+                          labelFormatter={(label) => {
+                            const date = new Date(label as string);
+                            return isNaN(date.getTime()) ? String(label) : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                          }}
+                        />
+                        {/* Peso Real - linha fina azul */}
+                        <Line
+                          type="monotone"
+                          dataKey="weight"
+                          stroke="#60a5fa"
+                          strokeWidth={1}
+                          dot={false}
+                          isAnimationActive={false}
+                          name="Peso"
+                        />
+                        {/* Tendência - linha mais grossa verde */}
+                        <Line
+                          type="natural"
+                          dataKey="trend"
+                          stroke="#10b981"
+                          strokeWidth={2.5}
+                          dot={false}
+                          isAnimationActive={false}
+                          name="Tendência"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
 
                 {/* Legend */}
                 <div className="flex gap-4 mt-3 text-xs">

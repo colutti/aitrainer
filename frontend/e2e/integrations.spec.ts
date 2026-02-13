@@ -105,7 +105,7 @@ test.describe('Integrations - Hevy e Telegram', () => {
     await page.waitForTimeout(1000);
 
     // Deve exibir "Conectado como @test_bot_user"
-    const connectedText = await page.locator('text=Conectado como @test_bot_user');
+    const connectedText = page.locator('text=Conectado como @test_bot_user');
     await expect(connectedText).toBeVisible();
 
     // NÃO deve exibir o botão "Gerar Código de Conexão"
