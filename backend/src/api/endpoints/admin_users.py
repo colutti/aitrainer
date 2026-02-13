@@ -39,11 +39,11 @@ def list_users(
     if search:
         query = {"email": {"$regex": search, "$options": "i"}}
 
-    # Buscar usuários (excluir senha e chaves sensíveis)
+    # Buscar usuários (excluir senha, chaves sensíveis e foto para economizar banda)
     users = list(
         db.users.collection.find(
             query,
-            {"_id": 0, "password_hash": 0, "hevy_api_key": 0, "hevy_webhook_secret": 0},
+            {"_id": 0, "password_hash": 0, "hevy_api_key": 0, "hevy_webhook_secret": 0, "photo_base64": 0},
         )
         .skip(skip)
         .limit(page_size)

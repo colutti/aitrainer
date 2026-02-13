@@ -1,8 +1,8 @@
-import { 
-  LayoutDashboard, 
-  MessageSquare, 
-  Dumbbell, 
-  ShieldAlert, 
+import {
+  LayoutDashboard,
+  MessageSquare,
+  Dumbbell,
+  ShieldAlert,
   LogOut,
   Scale,
   Flame,
@@ -12,6 +12,7 @@ import { NavLink } from 'react-router-dom';
 
 import { useAuthStore } from '../../hooks/useAuth';
 import { cn } from '../../utils/cn';
+import { UserAvatar } from '../ui/UserAvatar';
 
 interface NavItemProps {
   to: string;
@@ -41,7 +42,7 @@ function NavItem({ to, icon: Icon, label }: NavItemProps) {
  * Sidebar component for Desktop navigation
  */
 export function Sidebar() {
-  const { isAdmin, logout } = useAuthStore();
+  const { isAdmin, logout, userInfo } = useAuthStore();
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-72 bg-dark-card border-r border-white/5 hidden lg:flex flex-col p-6 z-50 shadow-2xl">
@@ -72,8 +73,21 @@ export function Sidebar() {
         <NavItem to="/body/nutrition" icon={Flame} label="Dieta e Macros" />
       </nav>
 
+      {/* User Info Section */}
+      {userInfo && (
+        <div className="mt-auto pt-6 border-t border-border mb-4">
+          <div className="flex items-center gap-3 px-3 py-3 bg-white/5 rounded-xl">
+            <UserAvatar photo={userInfo.photo_base64} name={userInfo.name} size="md" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-text-primary truncate">{userInfo.name}</p>
+              <p className="text-xs text-text-muted truncate">{userInfo.email}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bottom Actions / Settings Section */}
-      <div className="mt-auto pt-6 border-t border-border flex flex-col gap-1">
+      <div className="pt-6 border-t border-border flex flex-col gap-1">
         <NavItem to="/settings" icon={SettingsIcon} label="Configurações" />
         
         {isAdmin && (

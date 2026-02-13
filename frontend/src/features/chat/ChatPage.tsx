@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useMemo, useLayoutEffect } from 'react';
 
 import { useChatStore } from '../../shared/hooks/useChat';
 import { useSettingsStore } from '../../shared/hooks/useSettings';
+import { useAuthStore } from '../../shared/hooks/useAuth';
 import { cn } from '../../shared/utils/cn';
 
 import { MessageBubble } from './components/MessageBubble';
@@ -16,6 +17,7 @@ import { MessageBubble } from './components/MessageBubble';
 export function ChatPage() {
   const { messages, isStreaming, error, fetchHistory, sendMessage, loadMore, hasMore, isLoading } = useChatStore();
   const { trainer, availableTrainers, fetchTrainer, fetchAvailableTrainers } = useSettingsStore();
+  const { userInfo } = useAuthStore();
   
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -151,10 +153,12 @@ export function ChatPage() {
           ) : (
             <>
               {messages.map((msg, i) => (
-                <MessageBubble 
-                  key={`${msg.timestamp}-${i.toString()}`} 
-                  message={msg} 
+                <MessageBubble
+                  key={`${msg.timestamp}-${i.toString()}`}
+                  message={msg}
                   trainerId={currentTrainer?.trainer_id}
+                  userPhoto={userInfo?.photo_base64}
+                  userName={userInfo?.name}
                 />
               ))}
               <div ref={messagesEndRef} />

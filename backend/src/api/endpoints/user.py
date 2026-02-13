@@ -69,7 +69,12 @@ def get_current_user(user_email: CurrentUser, brain: AITrainerBrainDep) -> dict:
     if not user_profile:
         raise HTTPException(status_code=404, detail="User not found")
 
-    return {"email": user_profile.email, "role": user_profile.role}
+    return {
+        "email": user_profile.email,
+        "role": user_profile.role,
+        "name": user_profile.display_name,
+        "photo_base64": user_profile.photo_base64,
+    }
 
 
 @router.post("/update_profile")
@@ -97,6 +102,35 @@ def update_profile(
 
     logger.info("User profile updated for email: %s", user_email)
     return JSONResponse(content={"message": "Profile updated successfully"})
+
+
+class UpdateIdentityRequest(BaseModel):
+    """User identity update (display name and profile photo)."""
+
+    display_name: str | None = None
+    photo_base64: str | None = None
+
+
+@router.post("/update_identity")
+def update_identity(
+    data: UpdateIdentityRequest, user_email: CurrentUser, brain: AITrainerBrainDep
+) -> JSONResponse:
+    """
+    Updates the user's display name and/or profile photo.
+    """
+    existing_profile = brain.get_user_profile(user_email)
+
+    if not existing_profile:
+        logger.warning("Attempted to update identity for non-existent user: %s", user_email)
+        raise HTTPException(status_code=404, detail="User profile not found")
+
+    # Update only the fields that were provided (not None)
+    update_data = data.model_dump(exclude_unset=True)
+    updated_profile = existing_profile.model_copy(update=update_data)
+    brain.save_user_profile(updated_profile)
+
+    logger.info("User identity updated for email: %s", user_email)
+    return JSONResponse(content={"message": "Identity updated successfully"})
 
 
 class TelegramNotificationSettings(BaseModel):

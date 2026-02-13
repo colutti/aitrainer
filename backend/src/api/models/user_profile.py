@@ -95,6 +95,14 @@ class UserProfile(UserProfileInput):
         default=False, description="Send Telegram notification when weight is logged (future)"
     )
 
+    # User Identity
+    display_name: str | None = Field(
+        default=None, max_length=50, description="User display name for UI and prompts"
+    )
+    photo_base64: str | None = Field(
+        default=None, max_length=700_000, description="Profile photo as base64 data URI (max ~500KB)"
+    )
+
     def _goal_type_label(self) -> str:
         labels = {
             "lose": "Perder peso",
@@ -110,7 +118,9 @@ class UserProfile(UserProfileInput):
         Returns:
             str: Formatted summary of the user's profile as key-value pairs.
         """
+        name_line = f"**Nome:** {self.display_name}\n" if self.display_name else ""
         return (
+            f"{name_line}"
             f"**Gênero:** {self.gender}\n"
             f"**Idade:** {self.age} anos\n"
             f"**Peso Inicial:** {self.weight}kg\n"

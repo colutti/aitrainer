@@ -3,43 +3,50 @@ import ReactMarkdown from 'react-markdown';
 
 import { type ChatMessage } from '../../../shared/types/chat';
 import { cn } from '../../../shared/utils/cn';
+import { UserAvatar } from '../../../shared/components/ui/UserAvatar';
 
 interface MessageBubbleProps {
   message: ChatMessage;
   trainerId?: string;
+  userPhoto?: string;
+  userName?: string;
 }
 
 /**
  * MessageBubble component
- * 
+ *
  * Displays a single chat message with different styling based on the sender.
  * Supports Markdown rendering for AI responses.
  */
-export function MessageBubble({ message, trainerId }: MessageBubbleProps) {
+export function MessageBubble({ message, trainerId, userPhoto, userName }: MessageBubbleProps) {
   const isUser = message.sender === 'Student';
 
   return (
     <div className={cn(
-      "flex w-full gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300",
-      isUser ? "flex-row-reverse" : "flex-row"
+      'flex w-full gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300',
+      isUser ? 'flex-row-reverse' : 'flex-row'
     )}>
       {/* Avatar */}
-      <div className={cn(
-        "shrink-0 w-8 h-8 rounded-full flex items-center justify-center overflow-hidden",
-        isUser ? "bg-gradient-start text-white" : "bg-dark-bg border border-border text-gradient-start"
-      )}>
-        {isUser ? (
-          <User size={18} />
-        ) : trainerId ? (
-          <img 
-            src={`/assets/avatars/${trainerId.toLowerCase()}.png`} 
-            alt="Trainer"
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <Bot size={18} />
-        )}
-      </div>
+      {isUser && userPhoto ? (
+        <UserAvatar photo={userPhoto} name={userName} size="sm" className="shrink-0" />
+      ) : (
+        <div className={cn(
+          'shrink-0 w-8 h-8 rounded-full flex items-center justify-center overflow-hidden',
+          isUser ? 'bg-gradient-start text-white' : 'bg-dark-bg border border-border text-gradient-start'
+        )}>
+          {isUser ? (
+            <User size={18} />
+          ) : trainerId ? (
+            <img
+              src={`/assets/avatars/${trainerId.toLowerCase()}.png`}
+              alt="Trainer"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <Bot size={18} />
+          )}
+        </div>
+      )}
 
       {/* Bubble */}
       <div className={cn(

@@ -14,6 +14,13 @@ export const settingsApi = {
     }) as Promise<UserProfile>;
   },
 
+  updateIdentity: async (data: { display_name?: string | null; photo_base64?: string | null }): Promise<void> => {
+    await httpClient('/user/update_identity', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
   getTrainer: async (): Promise<TrainerProfile> => {
       return httpClient<TrainerProfile>('/trainer/trainer_profile') as Promise<TrainerProfile>;
   },
