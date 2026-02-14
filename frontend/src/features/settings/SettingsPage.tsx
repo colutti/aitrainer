@@ -29,21 +29,21 @@ export function SettingsPage() {
       </div>
 
       {/* Horizontal Tab Navigation */}
-      <div className="border-b border-border overflow-x-auto hide-scrollbar">
-        <nav className="flex gap-2 md:gap-4 pb-4 min-w-max md:min-w-0">
+      <div className="border-b border-border overflow-x-auto hide-scrollbar flex-shrink-0">
+        <nav className="flex gap-1 sm:gap-2 md:gap-4 pb-4 min-w-max md:min-w-0">
           {tabs.map((tab) => (
             <NavLink
               key={tab.to}
               to={tab.to}
               className={({ isActive }) => cn(
-                "flex items-center gap-2 px-3 md:px-4 py-2 rounded-lg text-sm md:text-base font-medium transition-colors whitespace-nowrap shrink-0 md:shrink",
+                "flex items-center gap-1 sm:gap-2 px-2 sm:px-3 md:px-4 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors whitespace-nowrap shrink-0 md:shrink",
                 isActive
                   ? "bg-gradient-start/10 text-gradient-start border border-gradient-start/20 shadow-orange-sm/5"
                   : "text-text-secondary hover:text-text-primary hover:bg-white/5"
               )}
             >
-              <tab.icon size={20} />
-              <span>{tab.label}</span>
+              <tab.icon size={16} className="sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">{tab.label}</span>
             </NavLink>
           ))}
         </nav>
