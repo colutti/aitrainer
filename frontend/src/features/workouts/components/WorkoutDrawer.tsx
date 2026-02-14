@@ -103,24 +103,24 @@ export function WorkoutDrawer({ workout, isOpen, onClose }: WorkoutDrawerProps) 
                     >
                       <span className="text-text-secondary">Série {setIdx + 1}</span>
                       <div className="flex items-center gap-4 text-text-primary">
-                        {set.weight_kg && (
+                        {set.distance_meters != null && (
+                          <span className="font-mono text-blue-400">
+                            {set.distance_meters}m
+                          </span>
+                        )}
+                        {set.duration_seconds != null && (
+                          <span className="font-mono text-cyan-400">
+                            {set.duration_seconds}s
+                          </span>
+                        )}
+                        {set.weight_kg != null && set.weight_kg > 0 && (
                           <span className="font-mono">
                             {set.weight_kg}kg
                           </span>
                         )}
-                        {set.reps && (
+                        {set.reps != null && set.reps > 0 && (
                           <span className="font-mono">
                             {set.reps} reps
-                          </span>
-                        )}
-                        {set.duration_seconds && (
-                          <span className="font-mono">
-                            {set.duration_seconds}s
-                          </span>
-                        )}
-                        {set.distance_meters && (
-                          <span className="font-mono">
-                            {set.distance_meters}m
                           </span>
                         )}
                       </div>
