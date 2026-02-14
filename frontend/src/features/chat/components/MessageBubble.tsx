@@ -2,8 +2,8 @@ import { User, Bot } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 import { UserAvatar } from '../../../shared/components/ui/UserAvatar';
-import { cn } from '../../../shared/utils/cn';
 import { type ChatMessage } from '../../../shared/types/chat';
+import { cn } from '../../../shared/utils/cn';
 
 interface MessageBubbleProps {
   message: ChatMessage;
