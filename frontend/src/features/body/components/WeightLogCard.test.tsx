@@ -28,7 +28,7 @@ describe('WeightLogCard', () => {
       />
     );
 
-    expect(screen.getByText('80.5')).toBeInTheDocument();
+    expect(screen.getByText('80.50')).toBeInTheDocument();
     expect(screen.getByText('15.5')).toBeInTheDocument();
     // Helper function formats date, check if date part is present or mock format if needed. 
     // Assuming standard format or checking specific text if format is known.
@@ -47,20 +47,20 @@ describe('WeightLogCard', () => {
     );
 
     // Main Card click
-    screen.getByText('80.5').closest('div'); // A bit loose but valid if closest div is clickable
+    screen.getByText('80.50').closest('div'); // A bit loose but valid if closest div is clickable
     // The closest div might be deep in the card.
-    
+
     // The whole card has the onClick. Let's find the card container.
     // The card container has `cursor-pointer`.
-    // Or we can just click "80.5" directly, as event bubbles up.
+    // Or we can just click "80.50" directly, as event bubbles up.
     
-    // Let's fire click on "80.5"
-    fireEvent.click(screen.getByText('80.5'));
+    // Let's fire click on "80.50"
+    fireEvent.click(screen.getByText('80.50'));
     // Wait, the card structure:
     /*
       <div onClick={() => onClick?.(log)} ...>
         ...
-        <span>80.5 ...</span>
+        <span>80.50 ...</span>
     */
     // Clicking child triggers parent onClick.
     expect(mockOnClick).toHaveBeenCalledWith(mockLog);

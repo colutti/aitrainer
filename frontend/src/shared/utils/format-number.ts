@@ -9,7 +9,7 @@ export type NumberFormat =
   | 'percent' // 50%
   | 'currency' // R$ 1.234,56
   | 'compact' // 1,5 mil
-  | 'weight'; // 75,5 kg
+  | 'weight'; // 75,50 kg
 
 /**
  * Format a number using predefined formats
@@ -26,7 +26,7 @@ export type NumberFormat =
  * formatNumber(0.5, 'percent') // "50%"
  * formatNumber(1234.56, 'currency') // "R$ 1.234,56"
  * formatNumber(1500, 'compact') // "1,5 mil"
- * formatNumber(75.5, 'weight') // "75,5 kg"
+ * formatNumber(75.5, 'weight') // "75,50 kg"
  * ```
  */
 export function formatNumber(
@@ -72,8 +72,8 @@ export function formatNumber(
 
     case 'weight':
       return `${new Intl.NumberFormat('pt-BR', {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
       }).format(value)} kg`;
 
     default:

@@ -61,9 +61,9 @@ describe('formatNumber', () => {
 
   describe('weight format', () => {
     it('should format weight in kg', () => {
-      expect(formatNumber(75.5, 'weight')).toBe('75,5 kg');
-      expect(formatNumber(100, 'weight')).toBe('100,0 kg');
-      expect(formatNumber(0, 'weight')).toBe('0,0 kg');
+      expect(formatNumber(75.5, 'weight')).toBe('75,50 kg');
+      expect(formatNumber(100, 'weight')).toBe('100,00 kg');
+      expect(formatNumber(0, 'weight')).toBe('0,00 kg');
     });
   });
 

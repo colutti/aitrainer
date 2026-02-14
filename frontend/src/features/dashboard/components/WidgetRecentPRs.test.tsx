@@ -40,6 +40,6 @@ describe('WidgetRecentPRs', () => {
 
   it('should show weight increase if previous_weight exists', () => {
     render(<WidgetRecentPRs prs={mockPRs} />);
-    expect(screen.getByText('+10.0kg')).toBeInTheDocument();
+    expect(screen.getByText('+10.00kg')).toBeInTheDocument();
   });
 });

@@ -48,15 +48,15 @@ export function NutritionLogCard({ log, onDelete, onEdit }: NutritionLogCardProp
         <div className="md:col-span-5 grid grid-cols-3 gap-0 md:border-l md:border-white/5 md:pl-6">
              <div className="flex flex-col items-center md:items-end">
                 <p className="text-[9px] uppercase font-black text-[#666] tracking-[0.15em] mb-1">Prot</p>
-                <p className="text-sm font-black text-emerald-400 tabular-nums">{log.protein_grams.toFixed(1)}<span className="text-[10px] ml-0.5 opacity-60">g</span></p>
+                <p className="text-sm font-black text-emerald-400 tabular-nums">{log.protein_grams.toFixed(2)}<span className="text-[10px] ml-0.5 opacity-60">g</span></p>
              </div>
              <div className="flex flex-col items-center md:items-end border-l border-white/5">
                 <p className="text-[9px] uppercase font-black text-[#666] tracking-[0.15em] mb-1">Carb</p>
-                <p className="text-sm font-black text-blue-400 tabular-nums">{log.carbs_grams.toFixed(1)}<span className="text-[10px] ml-0.5 opacity-60">g</span></p>
+                <p className="text-sm font-black text-blue-400 tabular-nums">{log.carbs_grams.toFixed(2)}<span className="text-[10px] ml-0.5 opacity-60">g</span></p>
              </div>
              <div className="flex flex-col items-center md:items-end border-l border-white/5">
                 <p className="text-[9px] uppercase font-black text-[#666] tracking-[0.15em] mb-1">Gord</p>
-                <p className="text-sm font-black text-yellow-400 tabular-nums">{log.fat_grams.toFixed(1)}<span className="text-[10px] ml-0.5 opacity-60">g</span></p>
+                <p className="text-sm font-black text-yellow-400 tabular-nums">{log.fat_grams.toFixed(2)}<span className="text-[10px] ml-0.5 opacity-60">g</span></p>
              </div>
         </div>
         

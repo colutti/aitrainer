@@ -66,7 +66,7 @@ export function WeightLogDrawer({ log, isOpen, onClose }: WeightLogDrawerProps) 
             <div>
               <p className="text-sm text-text-muted mb-1 font-medium uppercase tracking-wider">Peso Registrado</p>
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black text-white">{log.weight_kg.toFixed(1)}</span>
+                <span className="text-4xl font-black text-white">{log.weight_kg.toFixed(2)}</span>
                 <span className="text-xl text-text-secondary font-medium">kg</span>
               </div>
             </div>
@@ -78,7 +78,7 @@ export function WeightLogDrawer({ log, isOpen, onClose }: WeightLogDrawerProps) 
                    log.weight_kg > (log.trend_weight || 0) ? "text-red-400" : "text-emerald-400"
                  )}>
                     {log.weight_kg > (log.trend_weight || 0) ? '▲' : '▼'}
-                    {Math.abs(log.weight_kg - (log.trend_weight || 0)).toFixed(1)}kg
+                    {Math.abs(log.weight_kg - (log.trend_weight || 0)).toFixed(2)}kg
                  </div>
               </div>
             )}

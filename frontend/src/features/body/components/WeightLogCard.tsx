@@ -50,7 +50,7 @@ export function WeightLogCard({ log, onDelete, onEdit, onClick }: WeightLogCardP
              <h3 className="font-black text-text-primary text-base leading-tight tracking-tight group-hover:text-white transition-colors">{formatDate(log.date)}</h3>
              <div className="flex items-center gap-3 mt-1">
                 <span className="text-xl font-black text-white tracking-tighter">
-                  {log.weight_kg.toFixed(1)} <span className="text-[10px] font-bold text-text-muted uppercase ml-0.5">kg</span>
+                  {log.weight_kg.toFixed(2)} <span className="text-[10px] font-bold text-text-muted uppercase ml-0.5">kg</span>
                 </span>
                 
                 {hasTrend && (
@@ -61,7 +61,7 @@ export function WeightLogCard({ log, onDelete, onEdit, onClick }: WeightLogCardP
                       : "bg-emerald-500/5 text-emerald-500 border-emerald-500/10"
                   )}>
                     {isTrendUp ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-                    <span className="tabular-nums">{(Math.abs(log.weight_kg - (log.trend_weight ?? 0))).toFixed(1)}</span>
+                    <span className="tabular-nums">{(Math.abs(log.weight_kg - (log.trend_weight ?? 0))).toFixed(2)}</span>
                   </div>
                 )}
              </div>
@@ -78,7 +78,7 @@ export function WeightLogCard({ log, onDelete, onEdit, onClick }: WeightLogCardP
                 <div className="flex flex-col items-center md:items-end border-l border-white/5 pl-4">
                   <p className="text-[9px] uppercase font-black text-[#666] tracking-[0.15em] mb-1">Músculo</p>
                   {log.muscle_mass_kg ? (
-                    <p className="text-sm font-black text-white tabular-nums">{log.muscle_mass_kg.toFixed(1)}<span className="text-[10px] ml-0.5 opacity-50">kg</span></p>
+                    <p className="text-sm font-black text-white tabular-nums">{log.muscle_mass_kg.toFixed(2)}<span className="text-[10px] ml-0.5 opacity-50">kg</span></p>
                   ) : log.muscle_mass_pct ? (
                     <p className="text-sm font-black text-white tabular-nums">{log.muscle_mass_pct.toFixed(1)}<span className="text-[10px] ml-0.5 opacity-50">%</span></p>
                   ) : <span className="h-5 flex items-center"><div className="w-4 h-0.5 bg-white/5 rounded-full" /></span>}

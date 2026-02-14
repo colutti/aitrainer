@@ -30,10 +30,10 @@ describe('NutritionLogCard', () => {
     // Look for calories value "2,000" (toLocaleString)
     expect(screen.getByText('2,000')).toBeInTheDocument();
 
-    // Look for macros (toFixed(1))
-    expect(screen.getByText('150.0')).toBeInTheDocument(); // Protein
-    expect(screen.getByText('200.0')).toBeInTheDocument();  // Carbs
-    expect(screen.getByText('70.0')).toBeInTheDocument();   // Fat
+    // Look for macros (toFixed(2))
+    expect(screen.getByText('150.00')).toBeInTheDocument(); // Protein
+    expect(screen.getByText('200.00')).toBeInTheDocument();  // Carbs
+    expect(screen.getByText('70.00')).toBeInTheDocument();   // Fat
     
     // Check Date format (using regex or partial match if needed)
     // "01/01/2024" likely format for PT-BR

@@ -13,8 +13,8 @@ import { useEffect } from 'react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { StatsCard } from '../../shared/components/ui/StatsCard';
-import { useDashboardStore } from '../../shared/hooks/useDashboard';
 import { useAuthStore } from '../../shared/hooks/useAuth';
+import { useDashboardStore } from '../../shared/hooks/useDashboard';
 import { cn } from '../../shared/utils/cn';
 
 import { WidgetRecentPRs } from './components/WidgetRecentPRs';
@@ -57,17 +57,17 @@ export function DashboardPage() {
     metabolism: {
       tdee: 0,
       daily_target: 0,
-      confidence: 'none',
+      confidence: 'none' as const,
       weekly_change: 0,
       energy_balance: 0,
       status: 'maintenance',
       macro_targets: null,
-      goal_type: 'maintain',
+      goal_type: 'maintain' as const,
       consistency_score: 0
     },
-    body: { 
-      weight_current: 0, 
-      weight_diff: 0, 
+    body: {
+      weight_current: 0,
+      weight_diff: 0,
       weight_trend: 'stable' as const,
       body_fat_pct: null,
       muscle_mass_pct: null,
@@ -118,7 +118,7 @@ export function DashboardPage() {
     const dateMap = new Map<string, Record<string, unknown>>();
 
     weightHistory.forEach(point => {
-      const dateStr = typeof point.date === 'string' ? point.date : String(point.date ?? '');
+      const dateStr = typeof point.date === 'string' ? point.date : String(point.date);
       const dateKey = dateStr.split('T')[0];
       if (dateKey) {
         dateMap.set(dateKey, { date: dateKey, weight: point.weight });
@@ -129,7 +129,7 @@ export function DashboardPage() {
     const regression = calculateLinearRegression(data.weightTrend);
 
     data.weightTrend.forEach((point, index) => {
-      const dateStr = typeof point.date === 'string' ? point.date : String(point.date ?? '');
+      const dateStr = typeof point.date === 'string' ? point.date : String(point.date);
       const dateKey = dateStr.split('T')[0];
       if (dateKey) {
         const existing = dateMap.get(dateKey) ?? { date: dateKey };
@@ -158,8 +158,8 @@ export function DashboardPage() {
     if (!regression) return null;
 
     return data.fatTrend.map((point, index) => {
-      const dateStr = typeof point.date === 'string' ? point.date : String(point.date ?? '');
-      const dateKey = dateStr.split('T')[0] || dateStr;
+      const dateStr = typeof point.date === 'string' ? point.date : String(point.date);
+      const dateKey = dateStr.split('T')[0] ?? dateStr;
       return {
         date: dateKey,
         value: point.value,
@@ -180,8 +180,8 @@ export function DashboardPage() {
     if (!regression) return null;
 
     return data.muscleTrend.map((point, index) => {
-      const dateStr = typeof point.date === 'string' ? point.date : String(point.date ?? '');
-      const dateKey = dateStr.split('T')[0] || dateStr;
+      const dateStr = typeof point.date === 'string' ? point.date : String(point.date);
+      const dateKey = dateStr.split('T')[0] ?? dateStr;
       return {
         date: dateKey,
         value: point.value,
@@ -235,12 +235,12 @@ export function DashboardPage() {
               <span className="text-text-muted/70 leading-none mb-1">Confiança</span>
               <span className="text-sm font-black leading-none">
                TDEE: {
-                 metabolism.confidence === 'none' ? '---' : 
+                 metabolism.confidence === 'none' ? '---' :
                  ({
                    'high': 'Alta',
                    'medium': 'Média',
                    'low': 'Baixa'
-                 }[metabolism.confidence.toLowerCase()] ?? metabolism.confidence)
+                 }[metabolism.confidence.toLowerCase()] ?? 'Desconhecida')
                }
               </span>
             </div>
@@ -282,7 +282,7 @@ export function DashboardPage() {
                  <div>
                     <p className="text-xs text-text-muted uppercase font-bold tracking-wider mb-1">Tendência Semanal</p>
                     <p className={cn("text-xl font-bold flex items-center gap-1", metabolism.weekly_change > 0 ? "text-orange-400" : "text-blue-400")}>
-                       <TrendingDown size={16} className={metabolism.weekly_change > 0 ? "rotate-180" : ""} /> 
+                       <TrendingDown size={16} className={metabolism.weekly_change > 0 ? "rotate-180" : undefined} />
                        {Math.abs(metabolism.weekly_change).toFixed(2)} kg
                     </p>
                  </div>
@@ -366,7 +366,7 @@ export function DashboardPage() {
                 <div className="mb-4">
                   <p className="text-text-secondary text-sm font-medium mb-1">Peso Atual</p>
                   <h3 className="text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
-                    {body.weight_current.toFixed(1)} <span className="text-lg text-text-muted">kg</span>
+                    {body.weight_current.toFixed(2)} <span className="text-lg text-text-muted">kg</span>
                     <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
                       <Scale size={16} />
                     </div>
@@ -376,7 +376,7 @@ export function DashboardPage() {
                       "font-bold px-2 py-0.5 rounded-full",
                       body.weight_diff > 0 ? 'bg-orange-500/10 text-orange-500' : 'bg-emerald-500/10 text-emerald-500'
                     )}>
-                      {body.weight_diff > 0 ? '+' : ''}{body.weight_diff.toFixed(1)} kg
+                      {body.weight_diff > 0 ? '+' : ''}{body.weight_diff.toFixed(2)} kg
                     </span>
                     <span className="text-text-muted">últimos 7 dias</span>
                   </div>

@@ -44,7 +44,7 @@ export function WidgetRecentPRs({ prs }: WidgetRecentPRsProps) {
               {pr.previous_weight && (
                  <div className="flex items-center justify-end gap-1 text-xs text-emerald-400 font-medium">
                     <ArrowUpRight size={12} />
-                    <span>+{((pr.weight - pr.previous_weight)).toFixed(1)}kg</span>
+                    <span>+{((pr.weight - pr.previous_weight)).toFixed(2)}kg</span>
                  </div>
               )}
             </div>

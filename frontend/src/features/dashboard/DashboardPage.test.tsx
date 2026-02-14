@@ -57,6 +57,7 @@ describe('DashboardPage', () => {
     ],
     streak: { current_weeks: 5, current_days: 3 },
     weightHistory: [{ date: '2024-01-01', weight: 80 }],
+    weightTrend: [{ date: '2024-01-01', value: 80 }],
     recentPRs: [{ id: '1', exercise: 'Squat', weight: 100, reps: 5, date: '2024-01-01' }],
     strengthRadar: { push: 0.8, pull: 0.7, legs: 0.9, core: 0.5 },
     volumeTrend: [1000, 1100],
@@ -96,14 +97,13 @@ describe('DashboardPage', () => {
     expect(screen.getByText('2000')).toBeInTheDocument(); 
     expect(screen.getByText('2500')).toBeInTheDocument(); 
     expect(screen.getByText('95%')).toBeInTheDocument(); 
-    expect(screen.getByText('80.0')).toBeInTheDocument();
+    expect(screen.getByText('80.00')).toBeInTheDocument();
     expect(screen.getByText('180g')).toBeInTheDocument(); 
     expect(screen.getByText('Treino A')).toBeInTheDocument();
     expect(screen.getByText('Refeição')).toBeInTheDocument();
     expect(screen.getByText('Pesagem')).toBeInTheDocument();
-    
+
     // Widgets
-    expect(screen.getByTestId('weight-chart')).toBeInTheDocument();
     expect(screen.getByTestId('prs-widget')).toBeInTheDocument();
     expect(screen.getByTestId('radar-widget')).toBeInTheDocument();
     expect(screen.getByTestId('volume-widget')).toBeInTheDocument();

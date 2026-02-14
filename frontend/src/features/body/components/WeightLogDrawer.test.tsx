@@ -39,16 +39,16 @@ describe('WeightLogDrawer', () => {
     expect(screen.getByText('Detalhes do Registro')).toBeInTheDocument();
     
     // Weight
-    expect(screen.getByText('80.5')).toBeInTheDocument();
+    expect(screen.getByText('80.50')).toBeInTheDocument();
     expect(screen.getByText('kg')).toBeInTheDocument();
 
     // Trend
     expect(screen.getByText('Tendência')).toBeInTheDocument();
     // 81.0 - 80.5 = 0.5. diff is 0.5. Arrow ▼ because 80.5 < 81.0 (Down)
-    // "0.5kg" or similar.
-    // Text might be split: "▼" "0.5kg".
-    // Let's check for "0.5kg" text content presence or loosely.
-    expect(screen.getByText(/0.5kg/)).toBeInTheDocument();
+    // "0.50kg" or similar.
+    // Text might be split: "▼" "0.50kg".
+    // Let's check for "0.50kg" text content presence or loosely.
+    expect(screen.getByText(/0.50kg/)).toBeInTheDocument();
 
     // Composition
     expect(screen.getByText('15.5%')).toBeInTheDocument(); // Fat
