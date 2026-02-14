@@ -81,8 +81,8 @@ test.describe('Integrations - Hevy e Telegram', () => {
 
   test('Telegram: se linked=true, deve exibir "Conectado como @username"', async () => {
     // Mock response para linked=true
-    await page.route('**/integrations/telegram/status', (route) => {
-      route.abort('blockedbypage');
+    await page.route('**/integrations/telegram/status', async (route) => {
+      await route.abort('blockedbypage');
     });
 
     await page.route('**/integrations/telegram/status', async (route) => {

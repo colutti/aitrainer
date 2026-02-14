@@ -46,7 +46,7 @@ export function UserProfilePage() {
           ...data,
           goal: data.goal ?? '',
           target_weight: data.target_weight ?? undefined,
-          weekly_rate: data.weekly_rate ?? 0.5,
+          weekly_rate: data.weekly_rate,
           display_name: typeof data.display_name === 'string' ? data.display_name : ''
         } satisfies ProfileForm);
         setPhoto(data.photo_base64);

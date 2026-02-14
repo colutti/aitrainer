@@ -274,7 +274,7 @@ export function IntegrationsPage() {
                          <Button
                            size="sm"
                            variant="ghost"
-                           onClick={() => void copyToClipboard(webhookConfig.webhookUrl || '')}
+                           onClick={() => void copyToClipboard(webhookConfig.webhookUrl ?? '')}
                          >
                            <Copy size={14} />
                          </Button>
@@ -287,7 +287,7 @@ export function IntegrationsPage() {
                          <Button
                            size="sm"
                            variant="ghost"
-                           onClick={() => void copyToClipboard(webhookConfig.authHeader || '')}
+                           onClick={() => void copyToClipboard(webhookConfig.authHeader ?? '')}
                          >
                            <Copy size={14} />
                          </Button>
