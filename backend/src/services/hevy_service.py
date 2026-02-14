@@ -166,6 +166,7 @@ class HevyService:
                 weights_per_set = []
                 distance_meters_per_set = []
                 duration_seconds_per_set = []
+                has_cardio = False
 
                 for s in sets_data:
                     reps = s.get("reps")
@@ -176,16 +177,23 @@ class HevyService:
                     # Hevy might return None for some fields
                     reps_per_set.append(int(reps) if reps is not None else 0)
                     weights_per_set.append(float(weight) if weight is not None else 0.0)
-                    distance_meters_per_set.append(float(distance) if distance is not None else 0.0)
-                    duration_seconds_per_set.append(int(duration) if duration is not None else 0)
 
+                    # Only populate cardio fields if they exist (not None)
+                    if distance is not None:
+                        distance_meters_per_set.append(float(distance))
+                        has_cardio = True
+                    if duration is not None:
+                        duration_seconds_per_set.append(int(duration))
+                        has_cardio = True
+
+                # Only include cardio lists if exercise actually has cardio data
                 exercise_log = ExerciseLog(
                     name=exercise_data["title"],
                     sets=len(sets_data),
                     reps_per_set=reps_per_set,
                     weights_per_set=weights_per_set,
-                    distance_meters_per_set=distance_meters_per_set,
-                    duration_seconds_per_set=duration_seconds_per_set,
+                    distance_meters_per_set=distance_meters_per_set if has_cardio else [],
+                    duration_seconds_per_set=duration_seconds_per_set if has_cardio else [],
                 )
                 exercises.append(exercise_log)
 

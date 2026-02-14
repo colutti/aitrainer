@@ -20,8 +20,8 @@ export function mapWorkoutLogToWorkout(log: WorkoutLog): Workout {
         set_index: sIdx + 1,
         reps: reps || undefined,
         weight_kg: ex.weights_per_set[sIdx] ?? undefined,
-        duration_seconds: ex.duration_seconds_per_set?.[sIdx] ?? undefined,
-        distance_meters: ex.distance_meters_per_set?.[sIdx] ?? undefined,
+        duration_seconds: (ex.duration_seconds_per_set && ex.duration_seconds_per_set[sIdx]) ? ex.duration_seconds_per_set[sIdx] : undefined,
+        distance_meters: (ex.distance_meters_per_set && ex.distance_meters_per_set[sIdx]) ? ex.distance_meters_per_set[sIdx] : undefined,
       }))
     }))
   };
