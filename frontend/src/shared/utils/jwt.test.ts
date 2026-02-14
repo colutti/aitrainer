@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { decodeJwtPayload, getTokenExpiryMs, isTokenExpiringSoon } from './jwt';
 
 // A real JWT with known exp claim: { sub: "test@test.com", exp: 9999999999 }

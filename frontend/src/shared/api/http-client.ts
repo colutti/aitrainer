@@ -63,7 +63,7 @@ export async function httpClient<T = unknown>(
         const refreshed = await useAuthStore.getState().refreshToken();
         if (refreshed) {
           // Retry original request with the new token
-          return httpClient<T>(endpoint, { ...config, _isRetry: true });
+          return await httpClient<T>(endpoint, { ...config, _isRetry: true });
         }
       }
 

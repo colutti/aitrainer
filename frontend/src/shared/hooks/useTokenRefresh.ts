@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { useAuthStore } from './useAuth';
+
 import { isTokenExpiringSoon } from '../utils/jwt';
+import { useAuthStore } from './useAuth';
 
 const CHECK_INTERVAL_MS = 60 * 1000; // Check every minute
 const REFRESH_THRESHOLD_MS = 5 * 60 * 1000; // Refresh when < 5 minutes remain
