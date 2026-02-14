@@ -42,8 +42,8 @@ export function SettingsPage() {
                   : "text-text-secondary hover:text-text-primary hover:bg-white/5"
               )}
             >
-              <tab.icon size={16} className="sm:w-5 sm:h-5" />
-              <span className="hidden sm:inline">{tab.label}</span>
+              <tab.icon size={18} className="sm:w-5 sm:h-5" />
+              <span>{tab.label}</span>
             </NavLink>
           ))}
         </nav>
