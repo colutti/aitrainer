@@ -18,6 +18,7 @@ PROMPT_TEMPLATE = """
 - `save_daily_nutrition`: calories, protein_grams, carbs_grams, fat_grams, date
 - `get_nutrition`: limit
 - `save_workout`: workout_type, exercises[], duration_minutes
+  * exercises pode ter: name, sets, reps_per_set[], weights_per_set[], distance_meters_per_set[], duration_seconds_per_set[]
 - `get_workouts`: limit
 - `save_body_composition`: weight_kg, date, body_fat_pct, muscle_mass_pct
 - `get_body_composition`: limit

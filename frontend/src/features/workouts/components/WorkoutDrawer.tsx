@@ -110,7 +110,7 @@ export function WorkoutDrawer({ workout, isOpen, onClose }: WorkoutDrawerProps) 
                         )}
                         {set.duration_seconds != null && (
                           <span className="font-mono text-cyan-400">
-                            {set.duration_seconds}s
+                            {(set.duration_seconds / 60).toFixed(1)}min
                           </span>
                         )}
                         {set.weight_kg != null && set.weight_kg > 0 && (

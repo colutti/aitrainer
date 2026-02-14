@@ -24,9 +24,14 @@ def create_save_workout_tool(database, user_email: str):
         Salva um treino executado pelo aluno no banco de dados.
         Argumentos:
         - workout_type: Tipo de treino. Ex: "Pernas", "Peito"
-        - exercises: Lista de dicts com 'name', 'sets', 'reps_per_set', 'weights_per_set'
+        - exercises: Lista de dicts com 'name', 'sets', 'reps_per_set', 'weights_per_set', 'distance_meters_per_set', 'duration_seconds_per_set'
         - duration_minutes: Duração total em minutos (opcional)
         - date: Data do treino no formato ISO (YYYY-MM-DD). Default: hoje.
+
+        Exemplos de exercises:
+        - Força: {name: "Supino", sets: 3, reps_per_set: [10, 8, 6], weights_per_set: [80, 85, 90]}
+        - Cardio: {name: "Esteira", sets: 1, distance_meters_per_set: [1000], duration_seconds_per_set: [900]}
+        - Misto: {name: "Remo", sets: 2, reps_per_set: [15, 12], distance_meters_per_set: [500, 600], duration_seconds_per_set: [120, 140]}
         """
         try:
             log_date = _parse_date(date)
@@ -88,12 +93,18 @@ def _parse_exercises(exercises: list[dict]) -> list[ExerciseLog]:
             weight_kg = ex.get("weight_kg")
             weights_per_set = [weight_kg] * sets if weight_kg is not None else []
 
+        # Novos campos de cardio
+        distance_meters_per_set = ex.get("distance_meters_per_set", [])
+        duration_seconds_per_set = ex.get("duration_seconds_per_set", [])
+
         exercise_logs.append(
             ExerciseLog(
                 name=name,
                 sets=sets,
                 reps_per_set=reps_per_set,
                 weights_per_set=weights_per_set,
+                distance_meters_per_set=distance_meters_per_set,
+                duration_seconds_per_set=duration_seconds_per_set,
             )
         )
     return exercise_logs
