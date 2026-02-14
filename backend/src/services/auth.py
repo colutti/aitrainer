@@ -17,6 +17,20 @@ logger.info("JWT module path: %s", getattr(jwt, "__file__", "unknown"))
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
+def create_token(email: str) -> str:
+    """
+    Creates a JWT token for the given email with 2-hour expiration.
+
+    Args:
+        email (str): The user's email address.
+
+    Returns:
+        str: A JWT token valid for 2 hours.
+    """
+    payload = {"sub": email, "exp": datetime.now(timezone.utc) + timedelta(hours=2)}
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
+
+
 def user_login(email: str, password: str) -> str:
     """
     Authenticates a user and generates a JWT token upon successful login.
@@ -33,9 +47,7 @@ def user_login(email: str, password: str) -> str:
     """
     if not get_mongo_database().validate_user(email, password):
         raise ValueError("Invalid credentials")
-    payload = {"sub": email, "exp": datetime.now(timezone.utc) + timedelta(hours=2)}
-    token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
-    return token
+    return create_token(email)
 
 
 def verify_token(token: str = Depends(oauth2_scheme)) -> str:

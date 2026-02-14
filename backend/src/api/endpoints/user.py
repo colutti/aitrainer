@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from src.services.auth import user_login, user_logout, oauth2_scheme, verify_token
+from src.services.auth import user_login, user_logout, oauth2_scheme, verify_token, create_token
 from src.core.deps import get_ai_trainer_brain
 from src.core.logs import logger
 from src.core.config import settings
@@ -174,6 +174,19 @@ def update_telegram_notifications(
     return JSONResponse(
         content={"message": "Notification settings updated successfully"}
     )
+
+
+@router.post("/refresh")
+def refresh(user_email: CurrentUser) -> dict[str, str]:
+    """
+    Exchange a valid JWT for a new one with a fresh 2-hour expiration.
+
+    Called proactively by the frontend before the token expires,
+    ensuring active users are never disconnected due to token expiry.
+    """
+    new_token = create_token(user_email)
+    logger.info("Token refreshed for user: %s", user_email)
+    return {"token": new_token}
 
 
 @router.post("/logout")

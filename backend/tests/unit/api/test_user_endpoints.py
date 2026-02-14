@@ -428,3 +428,27 @@ def test_update_telegram_notifications_unauthorized():
     assert response.status_code == 401
 
     app.dependency_overrides = {}
+
+
+def test_refresh_token_returns_new_token():
+    """Active user can refresh their token before expiry"""
+    # Mock the verify_token dependency to return a valid email
+    app.dependency_overrides[verify_token] = lambda: "test@example.com"
+
+    try:
+        response = client.post("/user/refresh")
+
+        # Should return 200 with a new token
+        assert response.status_code == 200
+        data = response.json()
+        assert "token" in data
+        assert isinstance(data["token"], str)
+        assert len(data["token"]) > 20
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_refresh_token_requires_auth():
+    """Unauthenticated refresh attempt returns 401"""
+    response = client.post("/user/refresh")
+    assert response.status_code == 401
