@@ -3,7 +3,7 @@ import { cn } from '../../utils/cn';
 interface UserAvatarProps {
   photo?: string | null;
   name?: string | null;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   className?: string;
 }
 
@@ -18,6 +18,8 @@ export function UserAvatar({ photo, name, size = 'md', className }: UserAvatarPr
     sm: 'w-8 h-8 text-xs',
     md: 'w-10 h-10 text-sm',
     lg: 'w-20 h-20 text-2xl',
+    xl: 'w-32 h-32 text-4xl',
+    '2xl': 'w-48 h-48 text-6xl',
   };
 
   if (photo) {
@@ -30,7 +32,7 @@ export function UserAvatar({ photo, name, size = 'md', className }: UserAvatarPr
     );
   }
 
-  const initial = name?.charAt(0)?.toUpperCase() ?? '?';
+  const initial = name?.[0]?.toUpperCase() ?? '?';
 
   return (
     <div

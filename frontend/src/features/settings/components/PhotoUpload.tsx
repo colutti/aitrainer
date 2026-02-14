@@ -1,7 +1,8 @@
 import { Upload, X } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { UserAvatar } from '../../../shared/components/ui/UserAvatar';
+
 import { Button } from '../../../shared/components/ui/Button';
+import { UserAvatar } from '../../../shared/components/ui/UserAvatar';
 
 interface PhotoUploadProps {
   currentPhoto?: string | null;
@@ -68,41 +69,47 @@ export function PhotoUpload({
               resolve(dataUrl);
             }
           } catch (err) {
-            reject(err);
+            reject(err instanceof Error ? err : new Error(String(err)));
           }
         };
-        img.onerror = () => reject(new Error('Failed to load image'));
+        img.onerror = () => {
+          reject(new Error('Failed to load image'));
+        };
         img.src = e.target?.result as string;
       };
 
-      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.onerror = () => {
+        reject(new Error('Failed to read file'));
+      };
       reader.readAsDataURL(file);
     });
   };
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setError(null);
     setProcessing(true);
 
-    try {
-      const base64 = await processImage(file);
-      setPreview(base64);
-      onPhotoChange(base64);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to process image';
-      setError(message);
-      setPreview(undefined);
-      onPhotoChange(null);
-    } finally {
-      setProcessing(false);
-      // Reset input so same file can be selected again
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+    void (async () => {
+      try {
+        const base64 = await processImage(file);
+        setPreview(base64);
+        onPhotoChange(base64);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to process image';
+        setError(message);
+        setPreview(undefined);
+        onPhotoChange(null);
+      } finally {
+        setProcessing(false);
+        // Reset input so same file can be selected again
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       }
-    }
+    })();
   };
 
   const handleRemove = () => {
@@ -115,15 +122,16 @@ export function PhotoUpload({
     fileInputRef.current?.click();
   };
 
-  const nameForDisplay = displayName || email.split('@')[0] || 'User';
+  const nameForDisplay = displayName ?? email.split('@')[0] ?? 'User';
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col items-center gap-4">
         {/* Avatar Preview */}
         <div className="relative group">
-          <UserAvatar photo={preview} name={nameForDisplay} size="lg" />
+          <UserAvatar photo={preview} name={nameForDisplay} size="2xl" />
           <button
+            type="button"
             onClick={handleClick}
             disabled={processing || isLoading}
             className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
