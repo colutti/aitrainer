@@ -84,24 +84,31 @@ def update_profile(
     """
     Updates the user profile with the provided information.
     """
-    # Fetch existing profile first to preserve system fields (Hevy, etc.)
-    existing_profile = brain.get_user_profile(user_email)
+    try:
+        # Fetch existing profile first to preserve system fields (Hevy, etc.)
+        existing_profile = brain.get_user_profile(user_email)
 
-    if existing_profile:
-        # Update existing profile with new data
-        update_data = profile_data.model_dump(exclude_unset=True)
-        updated_profile = existing_profile.model_copy(update=update_data)
-        brain.save_user_profile(updated_profile)
-    else:
-        # Fallback: Create new profile if weirdly not found
-        logger.warning(
-            "Creating new profile during update for %s (unexpected)", user_email
-        )
-        profile = UserProfile(**profile_data.model_dump(), email=user_email)
-        brain.save_user_profile(profile)
+        if existing_profile:
+            # Update existing profile with new data
+            update_data = profile_data.model_dump(exclude_unset=True)
+            updated_profile = existing_profile.model_copy(update=update_data)
+            brain.save_user_profile(updated_profile)
+        else:
+            # Fallback: Create new profile if weirdly not found
+            logger.warning(
+                "Creating new profile during update for %s (unexpected)", user_email
+            )
+            profile = UserProfile(**profile_data.model_dump(), email=user_email)
+            brain.save_user_profile(profile)
 
-    logger.info("User profile updated for email: %s", user_email)
-    return JSONResponse(content={"message": "Profile updated successfully"})
+        logger.info("User profile updated for email: %s", user_email)
+        return JSONResponse(content={"message": "Profile updated successfully"})
+    except ValueError as e:
+        logger.error("Validation error in update_profile: %s", str(e))
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        logger.error("Error in update_profile: %s", str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 class UpdateIdentityRequest(BaseModel):

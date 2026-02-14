@@ -45,7 +45,8 @@ export function UserProfilePage() {
         reset({
           ...data,
           goal: data.goal ?? '',
-          target_weight: data.target_weight ?? 0,
+          target_weight: data.target_weight ?? undefined,
+          weekly_rate: data.weekly_rate ?? 0.5,
           display_name: typeof data.display_name === 'string' ? data.display_name : ''
         } satisfies ProfileForm);
         setPhoto(data.photo_base64);
@@ -138,7 +139,7 @@ export function UserProfilePage() {
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                     <label className="text-sm font-medium text-text-secondary px-1 block mb-1.5">Tipo de Objetivo</label>
-                    <select 
+                    <select
                     {...register('goal_type')}
                     className="flex h-11 w-full rounded-lg bg-dark-card border border-border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-gradient-start/20 focus:border-gradient-start text-white"
                     >
@@ -147,7 +148,7 @@ export function UserProfilePage() {
                         <option value="maintain">Manter Peso</option>
                     </select>
                 </div>
-                 <Input label="Meta Semanal (kg)" type="number" step="0.1" {...register('weekly_rate')} error={errors.weekly_rate?.message} />
+                 <Input id="profile-weekly-rate" label="Meta Semanal (kg)" type="number" step="0.1" {...register('weekly_rate')} error={errors.weekly_rate?.message} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

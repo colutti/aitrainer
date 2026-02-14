@@ -28,7 +28,7 @@ class UserProfileInput(BaseModel):
         description="Type of goal: lose, gain, or maintain",
     )
     target_weight: float | None = Field(
-        default=None, ge=30.0, le=500.0, description="Target weight in kg (optional)"
+        default=None, gt=0, le=500.0, description="Target weight in kg (optional, must be > 0 if set)"
     )
     weekly_rate: float = Field(
         default=0.5, ge=0.0, le=2.0, description="Desired weekly weight change rate in kg"
