@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 
 import { useInactivityLogout } from '../../hooks/useInactivityLogout';
+import { useTokenRefresh } from '../../hooks/useTokenRefresh';
 import { ConfirmationProvider } from '../ui/ConfirmationProvider';
 import { ToastContainer } from '../ui/ToastContainer';
 
@@ -20,6 +21,7 @@ import { Sidebar } from './Sidebar';
  */
 export function MainLayout() {
   useInactivityLogout();
+  useTokenRefresh();
 
   return (
     <div className="min-h-screen bg-dark-bg text-text-primary flex">
