@@ -30,7 +30,7 @@ export function SettingsPage() {
 
       {/* Horizontal Tab Navigation */}
       <div className="border-b border-border overflow-x-auto hide-scrollbar flex-shrink-0">
-        <nav className="flex gap-1 sm:gap-2 md:gap-4 pb-4 min-w-max md:min-w-0">
+        <nav className="flex flex-wrap gap-1 sm:gap-2 md:gap-4 pb-4 w-full">
           {tabs.map((tab) => (
             <NavLink
               key={tab.to}
