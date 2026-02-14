@@ -1,9 +1,9 @@
 import { Bot, Send } from 'lucide-react';
 import { useEffect, useRef, useState, useMemo, useLayoutEffect } from 'react';
 
+import { useAuthStore } from '../../shared/hooks/useAuth';
 import { useChatStore } from '../../shared/hooks/useChat';
 import { useSettingsStore } from '../../shared/hooks/useSettings';
-import { useAuthStore } from '../../shared/hooks/useAuth';
 import { cn } from '../../shared/utils/cn';
 
 import { MessageBubble } from './components/MessageBubble';
