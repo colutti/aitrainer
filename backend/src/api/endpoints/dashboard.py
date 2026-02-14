@@ -46,7 +46,7 @@ def get_dashboard_data(
     today = datetime.now()
 
     # --- Body Stats ---
-    weight_logs = db.get_weight_logs(user_email, limit=14)
+    weight_logs = db.get_weight_logs(user_email, limit=30)
     body_stats = _calculate_body_stats(today, weight_logs)
 
     # --- Metabolism & TDEE Stats ---
