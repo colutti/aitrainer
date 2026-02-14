@@ -398,6 +398,10 @@ export function DashboardPage() {
                             fontSize: '11px',
                             padding: '6px'
                           }}
+                          formatter={(value: number, name: string) => {
+                            if (name === 'Tendência') return [value.toFixed(2), name];
+                            return [value.toFixed(2), name];
+                          }}
                           labelFormatter={(label) => {
                             const date = new Date(label as string);
                             return isNaN(date.getTime()) ? String(label) : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
@@ -474,6 +478,10 @@ export function DashboardPage() {
                           fontSize: '11px',
                           padding: '6px'
                         }}
+                        formatter={(value: number, name: string) => {
+                          if (name === 'Tendência') return [value.toFixed(2), name];
+                          return [value.toFixed(1), name];
+                        }}
                         labelFormatter={(label) => {
                           const date = new Date(label as string);
                           return isNaN(date.getTime()) ? String(label) : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
@@ -548,6 +556,10 @@ export function DashboardPage() {
                           color: '#f8fafc',
                           fontSize: '11px',
                           padding: '6px'
+                        }}
+                        formatter={(value: number, name: string) => {
+                          if (name === 'Tendência') return [value.toFixed(2), name];
+                          return [value.toFixed(1), name];
                         }}
                         labelFormatter={(label) => {
                           const date = new Date(label as string);
