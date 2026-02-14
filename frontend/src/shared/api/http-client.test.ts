@@ -142,4 +142,51 @@ describe('httpClient', () => {
 
     await expect(httpClient('/test')).rejects.toThrow('Network error');
   });
+
+  it('should retry request with refreshed token on 401', async () => {
+    const mockRefreshResponse = { token: 'refreshed-token' };
+    const mockFinalResponse = { data: 'success' };
+
+    // First call: 401
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: async () => ({ detail: 'Token expired' }),
+      } as Response)
+      // Refresh call
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockRefreshResponse,
+      } as Response)
+      // Retry of original request
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockFinalResponse,
+      } as Response);
+
+    mockLocalStorage.getItem.mockReturnValue('old-token');
+
+    const result = await httpClient('/some/endpoint');
+    expect(result).toEqual(mockFinalResponse);
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(3);
+  });
+
+  it('should logout when refresh also fails on 401', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: async () => ({ detail: 'Unauthorized' }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: async () => ({ detail: 'Token expired' }),
+      } as Response);
+
+    mockLocalStorage.getItem.mockReturnValue('expired-token');
+
+    await expect(httpClient('/some/endpoint')).rejects.toThrow();
+  });
 });

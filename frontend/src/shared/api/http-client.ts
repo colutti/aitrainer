@@ -10,6 +10,7 @@ const AUTH_TOKEN_KEY = 'auth_token';
 
 interface RequestConfig extends RequestInit {
   headers?: Record<string, string>;
+  _isRetry?: boolean;
 }
 
 interface ErrorResponse {
@@ -53,11 +54,20 @@ export async function httpClient<T = unknown>(
       headers,
     });
 
-    // Handle 401 Unauthorized - sync Zustand store and clear token
+    // Handle 401 Unauthorized — attempt silent token refresh, then retry once
     if (response.status === 401) {
-      // Synchronize Zustand store state (also removes localStorage token)
-      // Use dynamic import to avoid circular dependency: useAuth -> http-client -> useAuth
       const { useAuthStore } = await import('../hooks/useAuth');
+
+      // Attempt refresh (only if this isn't already a retry)
+      if (!config._isRetry) {
+        const refreshed = await useAuthStore.getState().refreshToken();
+        if (refreshed) {
+          // Retry original request with the new token
+          return httpClient<T>(endpoint, { ...config, _isRetry: true });
+        }
+      }
+
+      // Refresh failed or this is already a retry — logout
       useAuthStore.getState().logout();
 
       const error = (await response.json().catch(() => ({
