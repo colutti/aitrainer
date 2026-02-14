@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
 import { httpClient } from '../api/http-client';
 
@@ -8,11 +8,22 @@ import { useAuthStore } from './useAuth';
 // Mock the http-client module
 vi.mock('../api/http-client');
 
+// Mock localStorage
+const mockLocalStorage = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+};
+
 describe('useAuth', () => {
   beforeEach(() => {
-    // Reset the store state before each test
-    useAuthStore.getState().logout();
+    vi.stubGlobal('localStorage', mockLocalStorage);
     vi.clearAllMocks();
+    mockLocalStorage.getItem.mockReturnValue(null);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   describe('Initial State', () => {
@@ -297,6 +308,44 @@ describe('useAuth', () => {
         expect(result.current.isAuthenticated).toBe(false);
         expect(localStorage.getItem('auth_token')).toBeNull();
       });
+    });
+  });
+
+  describe('refreshToken', () => {
+    it('refreshToken method exists and is callable', () => {
+      const store = useAuthStore.getState();
+      expect(typeof store.refreshToken).toBe('function');
+    });
+
+    it('refreshToken returns false when no token exists', async () => {
+      mockLocalStorage.getItem.mockReturnValue(null);
+
+      const result = await useAuthStore.getState().refreshToken();
+      expect(result).toBe(false);
+    });
+
+    it('refreshToken stores new token on success', async () => {
+      mockLocalStorage.getItem.mockReturnValue('old-token');
+
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ token: 'new-token-xyz' }),
+      }));
+
+      const result = await useAuthStore.getState().refreshToken();
+      expect(result).toBe(true);
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('auth_token', 'new-token-xyz');
+    });
+
+    it('refreshToken returns false on fetch failure', async () => {
+      mockLocalStorage.getItem.mockReturnValue('expired-token');
+
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: false,
+      }));
+
+      const result = await useAuthStore.getState().refreshToken();
+      expect(result).toBe(false);
     });
   });
 });

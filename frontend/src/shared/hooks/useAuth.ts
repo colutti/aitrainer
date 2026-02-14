@@ -24,6 +24,7 @@ export interface AuthActions {
   loadUserInfo: () => Promise<void>;
   getToken: () => string | null;
   init: () => Promise<void>;
+  refreshToken: () => Promise<boolean>;
 }
 
 export type AuthStore = AuthState & AuthActions;
@@ -146,6 +147,47 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       get().logout();
     } finally {
       set({ isLoading: false });
+    }
+  },
+
+  /**
+   * Silently refreshes the JWT token using the /user/refresh endpoint.
+   * Returns true on success (new token stored), false on failure (triggers logout).
+   * Uses fetch directly to avoid recursive httpClient calls.
+   */
+  refreshToken: async (): Promise<boolean> => {
+    const token = get().getToken();
+    if (!token) {
+      get().logout();
+      return false;
+    }
+
+    try {
+      const { API_BASE_URL } = await import('../api/http-client');
+      const response = await fetch(`${API_BASE_URL}/user/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        get().logout();
+        return false;
+      }
+
+      const data = (await response.json()) as { token?: string };
+      if (!data.token) {
+        get().logout();
+        return false;
+      }
+
+      localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+      return true;
+    } catch {
+      get().logout();
+      return false;
     }
   },
 }));
