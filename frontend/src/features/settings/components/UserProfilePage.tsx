@@ -6,9 +6,10 @@ import { z } from 'zod';
 
 import { Button } from '../../../shared/components/ui/Button';
 import { Input } from '../../../shared/components/ui/Input';
-import { useNotificationStore } from '../../../shared/hooks/useNotification';
 import { useAuthStore } from '../../../shared/hooks/useAuth';
+import { useNotificationStore } from '../../../shared/hooks/useNotification';
 import { settingsApi } from '../api/settings-api';
+
 import { PhotoUpload } from './PhotoUpload';
 
 const profileSchema = z.object({
@@ -60,7 +61,7 @@ export function UserProfilePage() {
     try {
       // Update identity (name + photo) in parallel with profile
       const identityUpdate: { display_name?: string | null; photo_base64?: string | null } = {
-        display_name: data.display_name || undefined,
+        display_name: data.display_name ?? undefined,
         photo_base64: photo === undefined ? undefined : photo
       };
 
@@ -81,7 +82,7 @@ export function UserProfilePage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-700 h-full overflow-y-auto pb-20">
+    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-700 h-full overflow-y-auto pb-20">
       <div className="flex items-center gap-3 mb-6">
         <div className="p-3 bg-gradient-start/10 rounded-xl">
             <User className="text-gradient-start" size={24} />
@@ -92,7 +93,9 @@ export function UserProfilePage() {
         </div>
       </div>
 
-      <form onSubmit={(e) => { void handleSubmit(onSubmit)(e); }} className="space-y-6 bg-dark-card p-6 rounded-xl border border-border shadow-sm">
+      <form onSubmit={(e) => {
+        void handleSubmit(onSubmit)(e);
+      }} className="space-y-6 bg-dark-card p-6 rounded-xl border border-border shadow-sm">
         {/* Identity Section */}
         <div className="border-b border-border pb-6">
           <h3 className="text-lg font-semibold text-text-primary mb-4">Identidade</h3>
@@ -101,7 +104,9 @@ export function UserProfilePage() {
               currentPhoto={photo}
               displayName={userInfo?.name}
               email={userInfo?.email ?? 'user@example.com'}
-              onPhotoChange={(newPhoto) => setPhoto(newPhoto)}
+              onPhotoChange={(newPhoto) => {
+                setPhoto(newPhoto);
+              }}
               isLoading={isSaving}
             />
             <Input

@@ -55,7 +55,7 @@ export function TrainerSettingsPage() {
 
   if (isLoading && availableTrainers.length === 0) {
     return (
-        <div className="max-w-4xl mx-auto space-y-6 p-4">
+        <div className="max-w-6xl mx-auto space-y-6 p-4">
              <div className="flex gap-4 mb-8">
                 <Skeleton className="w-16 h-16 rounded-xl" />
                 <div className="space-y-2">
@@ -73,7 +73,7 @@ export function TrainerSettingsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-700 h-full overflow-y-auto pb-20">
+    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-700 h-full overflow-y-auto pb-20">
       <div className="flex items-center gap-3 mb-6">
         <div className="p-3 bg-gradient-start/10 rounded-xl">
             <Dumbbell className="text-gradient-start" size={24} />
