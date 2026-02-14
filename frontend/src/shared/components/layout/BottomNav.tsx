@@ -4,7 +4,8 @@ import {
   Utensils,
   User,
   MessageSquare,
-  ShieldAlert
+  ShieldAlert,
+  Settings
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
@@ -81,6 +82,12 @@ export function BottomNav() {
           icon={<MessageSquare size={20} />}
           label="Chat"
           testId="nav-chat"
+        />
+        <NavItem
+          to="/settings"
+          icon={<Settings size={20} />}
+          label="Configurações"
+          testId="nav-settings"
         />
         {isAdmin && (
           <NavItem
