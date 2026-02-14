@@ -48,6 +48,8 @@ export interface ExerciseLog {
   sets: number;
   reps_per_set: number[];
   weights_per_set: number[];
+  distance_meters_per_set?: number[];
+  duration_seconds_per_set?: number[];
 }
 
 export interface WorkoutListResponse {

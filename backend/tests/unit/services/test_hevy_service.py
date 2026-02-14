@@ -250,3 +250,155 @@ class TestPrepareRoutinePayload:
         for s in ex["sets"]:
             assert "index" not in s
             assert "type" in s
+
+
+class TestTransformToWorkoutLogCardio:
+    """Test transform_to_workout_log with cardio exercises"""
+
+    def test_treadmill_exercise_with_distance_and_duration(self):
+        """Should correctly map treadmill exercise with distance and duration"""
+        from src.services.hevy_service import HevyService
+        from unittest.mock import Mock
+
+        mock_repo = Mock()
+        service = HevyService(workout_repository=mock_repo)
+
+        hevy_workout = {
+            "id": "workout-123",
+            "start_time": "2024-01-15T10:00:00Z",
+            "end_time": "2024-01-15T10:30:00Z",
+            "title": "Cardio Session",
+            "exercises": [
+                {
+                    "title": "Treadmill",
+                    "sets": [
+                        {
+                            "type": "normal",
+                            "reps": None,
+                            "weight_kg": None,
+                            "distance_meters": 1000.0,
+                            "duration_seconds": 300
+                        },
+                        {
+                            "type": "normal",
+                            "reps": None,
+                            "weight_kg": None,
+                            "distance_meters": 1200.0,
+                            "duration_seconds": 360
+                        }
+                    ]
+                }
+            ]
+        }
+
+        result = service.transform_to_workout_log(hevy_workout, "user@example.com")
+
+        assert result is not None
+        assert len(result.exercises) == 1
+        exercise = result.exercises[0]
+        assert exercise.name == "Treadmill"
+        assert exercise.sets == 2
+        assert exercise.distance_meters_per_set == [1000.0, 1200.0]
+        assert exercise.duration_seconds_per_set == [300, 360]
+        # Reps and weights should be 0 when None in Hevy
+        assert exercise.reps_per_set == [0, 0]
+        assert exercise.weights_per_set == [0.0, 0.0]
+
+    def test_mixed_exercise_with_reps_and_distance(self):
+        """Should handle exercise with both reps and distance in same set"""
+        from src.services.hevy_service import HevyService
+        from unittest.mock import Mock
+
+        mock_repo = Mock()
+        service = HevyService(workout_repository=mock_repo)
+
+        hevy_workout = {
+            "id": "workout-456",
+            "start_time": "2024-01-15T10:00:00Z",
+            "end_time": "2024-01-15T10:45:00Z",
+            "title": "Mixed Workout",
+            "exercises": [
+                {
+                    "title": "Row Machine",
+                    "sets": [
+                        {
+                            "type": "normal",
+                            "reps": 20,
+                            "weight_kg": 0.0,
+                            "distance_meters": 500.0,
+                            "duration_seconds": 120
+                        }
+                    ]
+                }
+            ]
+        }
+
+        result = service.transform_to_workout_log(hevy_workout, "user@example.com")
+
+        assert result is not None
+        exercise = result.exercises[0]
+        assert exercise.reps_per_set == [20]
+        assert exercise.distance_meters_per_set == [500.0]
+        assert exercise.duration_seconds_per_set == [120]
+
+    def test_multiple_exercises_mixed_cardio_strength(self):
+        """Should handle workout with both strength and cardio exercises"""
+        from src.services.hevy_service import HevyService
+        from unittest.mock import Mock
+
+        mock_repo = Mock()
+        service = HevyService(workout_repository=mock_repo)
+
+        hevy_workout = {
+            "id": "workout-789",
+            "start_time": "2024-01-15T09:00:00Z",
+            "end_time": "2024-01-15T10:00:00Z",
+            "title": "Full Body",
+            "exercises": [
+                {
+                    "title": "Bench Press",
+                    "sets": [
+                        {
+                            "type": "normal",
+                            "reps": 10,
+                            "weight_kg": 80.0,
+                            "distance_meters": None,
+                            "duration_seconds": None
+                        }
+                    ]
+                },
+                {
+                    "title": "Bike",
+                    "sets": [
+                        {
+                            "type": "normal",
+                            "reps": None,
+                            "weight_kg": None,
+                            "distance_meters": 2000.0,
+                            "duration_seconds": 480
+                        }
+                    ]
+                }
+            ]
+        }
+
+        result = service.transform_to_workout_log(hevy_workout, "user@example.com")
+
+        assert result is not None
+        assert len(result.exercises) == 2
+
+        # Strength exercise
+        strength = result.exercises[0]
+        assert strength.name == "Bench Press"
+        assert strength.reps_per_set == [10]
+        assert strength.weights_per_set == [80.0]
+        assert strength.distance_meters_per_set == [0.0]
+        assert strength.duration_seconds_per_set == [0]
+
+        # Cardio exercise
+        cardio = result.exercises[1]
+        assert cardio.name == "Bike"
+        assert cardio.reps_per_set == [0]
+        assert cardio.weights_per_set == [0.0]
+        assert cardio.distance_meters_per_set == [2000.0]
+        assert cardio.duration_seconds_per_set == [480]

@@ -193,15 +193,17 @@ def main():
     parser = argparse.ArgumentParser(description="Sync User Data from PROD to LOCAL")
     parser.add_argument("--email", required=True, help="User email to sync")
     parser.add_argument("--source-uri", required=True, help="Source MongoDB URI (PROD)")
+    parser.add_argument("--source-db", default="aitrainerdb", help="Source Database name (PROD, default: aitrainerdb)")
     parser.add_argument("--prod-qdrant-url", help="Source Qdrant URL (PROD)")
     parser.add_argument("--prod-qdrant-key", help="Source Qdrant API Key (PROD)")
     parser.add_argument("--src-collection", help="Source Qdrant collection name")
     parser.add_argument("--dest-collection", help="Destination Qdrant collection name (local)")
-    
+
     args = parser.parse_args()
-    
+
     local_uri = settings.MONGO_URI
-    db_name = settings.DB_NAME
+    local_db_name = settings.DB_NAME
+    src_db_name = args.source_db
     src_collection = args.src_collection or settings.QDRANT_COLLECTION_NAME
     dest_collection = args.dest_collection or settings.QDRANT_COLLECTION_NAME
     
@@ -209,17 +211,19 @@ def main():
     confirm_execution("SYNC PROD DATA -> LOCAL", {
         "User": args.email,
         "Source Mongo": args.source_uri,
+        "Source DB": src_db_name,
         "Dest Mongo (Local)": local_uri,
+        "Dest DB": local_db_name,
         "Source Qdrant": args.prod_qdrant_url or "N/A"
     })
-    
+
     # --- MongoDB Sync ---
     print("\n🐘 Connecting to MongoDBs...")
     src_mongo = get_mongo_client(args.source_uri)
     dest_mongo = get_mongo_client(local_uri)
-    
-    src_db = src_mongo[db_name]
-    dest_db = dest_mongo[db_name]
+
+    src_db = src_mongo[src_db_name]
+    dest_db = dest_mongo[local_db_name]
     
     # Verify User in Source
     user = src_db.users.find_one({"email": args.email})

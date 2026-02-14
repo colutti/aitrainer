@@ -18,6 +18,8 @@ class ExerciseLog(BaseModel):
         sets: Number of sets performed.
         reps_per_set: List of repetitions for each set.
         weights_per_set: List of weights in kg for each set (optional).
+        distance_meters_per_set: List of distances in meters for each set (cardio, optional).
+        duration_seconds_per_set: List of durations in seconds for each set (cardio, optional).
     """
 
     name: str = Field(..., description="Nome do exercício")
@@ -25,6 +27,12 @@ class ExerciseLog(BaseModel):
     reps_per_set: list[int] = Field(..., description="Repetições por série")
     weights_per_set: list[float] = Field(
         default_factory=list, description="Pesos em kg por série"
+    )
+    distance_meters_per_set: list[float] = Field(
+        default_factory=list, description="Distância em metros por série (cardio)"
+    )
+    duration_seconds_per_set: list[int] = Field(
+        default_factory=list, description="Duração em segundos por série (cardio)"
     )
 
     @model_validator(mode="after")
@@ -37,6 +45,14 @@ class ExerciseLog(BaseModel):
         if self.weights_per_set and len(self.weights_per_set) != self.sets:
             raise ValueError(
                 f"weights_per_set deve ter {self.sets} elementos, tem {len(self.weights_per_set)}"
+            )
+        if self.distance_meters_per_set and len(self.distance_meters_per_set) != self.sets:
+            raise ValueError(
+                f"distance_meters_per_set deve ter {self.sets} elementos, tem {len(self.distance_meters_per_set)}"
+            )
+        if self.duration_seconds_per_set and len(self.duration_seconds_per_set) != self.sets:
+            raise ValueError(
+                f"duration_seconds_per_set deve ter {self.sets} elementos, tem {len(self.duration_seconds_per_set)}"
             )
         return self
 
