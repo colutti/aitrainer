@@ -543,6 +543,7 @@ class AITrainerBrain:
                 user_email=user_email,
                 active_window_size=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,  # Synced with window memory
                 log_callback=log_callback,
+                compaction_threshold=settings.COMPACTION_THRESHOLD,
             )
 
             logger.info(
@@ -553,6 +554,13 @@ class AITrainerBrain:
             # Fallback for sync callers (like Telegram)
             self._add_to_mongo_history(
                 user_email, user_input, final_response, current_trainer_type
+            )
+            # Run compaction directly for non-HTTP callers (Telegram, webhooks)
+            await self.compactor.compact_history(
+                user_email=user_email,
+                active_window_size=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
+                log_callback=log_callback,
+                compaction_threshold=settings.COMPACTION_THRESHOLD,
             )
             # Note: is_error_response check above already returns before reaching here
 

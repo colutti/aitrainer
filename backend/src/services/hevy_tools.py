@@ -779,13 +779,13 @@ def create_set_routine_rest_and_ranges_tool(hevy_service, database, user_email: 
                     current.title,
                 )
                 summary = f"✅ Rotina '{current.title}' atualizada com sucesso!\n\n"
-                summary += f"📊 Mudanças aplicadas:\n"
+                summary += "📊 Mudanças aplicadas:\n"
                 summary += f"  - Descanso: {rest_seconds}s em todos os exercícios\n"
                 summary += f"  - Rep Range: {rep_range_start}-{rep_range_end} em séries normais\n"
                 summary += f"  - Total de exercícios atualizados: {len(current.exercises)}\n"
 
                 if changes_summary:
-                    summary += f"\nDetalhes:\n" + "\n".join(changes_summary[:10])
+                    summary += "\nDetalhes:\n" + "\n".join(changes_summary[:10])
                     if len(changes_summary) > 10:
                         summary += f"\n  ... e mais {len(changes_summary) - 10}"
 

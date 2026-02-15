@@ -14,9 +14,7 @@ import argparse
 import sys
 import os
 import asyncio
-import time
-from datetime import datetime, timezone
-from pymongo import MongoClient, ASCENDING
+from pymongo import MongoClient
 
 # Add backend directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))

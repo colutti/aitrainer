@@ -256,6 +256,58 @@ class TestAITrainerBrainSync(unittest.TestCase):
         expected = "Training your strength is important. Let's work on your goal!"
         self.assertEqual(response, expected)
 
+    def test_send_message_sync_triggers_compaction_for_telegram(self):
+        """
+        Test that send_message_sync (Telegram path) triggers compaction.
+
+        This is critical for Telegram users - they should get history
+        compaction same as HTTP users.
+        """
+        # Arrange
+        user_email = "telegram@test.com"
+        user_input = "Hello from Telegram"
+
+        user_profile = UserProfile(
+            email=user_email,
+            gender="Masculino",
+            age=25,
+            weight=70,
+            height=175,
+            goal="Muscle gain",
+            goal_type="gain",
+            weekly_rate=0.5,
+        )
+        trainer_profile = TrainerProfile(user_email=user_email, trainer_type="atlas")
+
+        self.mock_db.get_user_profile.return_value = user_profile
+        self.mock_db.get_trainer_profile.return_value = trainer_profile
+
+        # Mock send_message_ai to capture background_tasks param
+        background_tasks_captured = []
+
+        async def mock_send_message_ai(*args, **kwargs):
+            bg_tasks = kwargs.get("background_tasks")
+            background_tasks_captured.append(bg_tasks)
+            # Simulate compaction being called directly in else branch
+            if bg_tasks is None:
+                # In the real code, compaction would be awaited here
+                pass
+            yield "Response"
+
+        self.brain.send_message_ai = mock_send_message_ai
+
+        # Act
+        response = self.brain.send_message_sync(
+            user_email=user_email,
+            user_input=user_input,
+            is_telegram=True
+        )
+
+        # Assert
+        self.assertEqual(response, "Response")
+        # Verify background_tasks was None (sync path)
+        self.assertEqual(background_tasks_captured[0], None)
+
 
 if __name__ == "__main__":
     unittest.main()

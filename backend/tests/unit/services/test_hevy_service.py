@@ -5,7 +5,6 @@ Tests the _prepare_routine_payload method to ensure it correctly
 removes forbidden fields before sending to Hevy API.
 """
 
-import pytest
 from src.services.hevy_service import HevyService
 
 

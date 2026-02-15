@@ -177,7 +177,13 @@ class LLMClient:
                         user_email,
                         {
                             "prompt": prompt_str,
+                            "prompt_name": "chat",
                             "type": "with_tools",
+                            "messages": [
+                                {"role": msg.type, "content": msg.content}
+                                for msg in messages
+                            ],
+                            "tools": [t.name for t in tools],
                             "tokens_input": tokens_in,
                             "tokens_output": tokens_out,
                             "duration_ms": duration_ms,
@@ -262,6 +268,7 @@ class LLMClient:
                         user_email,
                         {
                             "prompt": prompt_str,
+                            "prompt_name": "resumo",
                             "type": "simple",
                             "tokens_input": usage_metadata.get("input_tokens", 0),
                             "tokens_output": usage_metadata.get("output_tokens", 0),

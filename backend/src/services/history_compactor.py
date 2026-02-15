@@ -26,6 +26,9 @@ GREETING_PATTERN = re.compile(
 # Tamanho mínimo para mensagem relevante
 MIN_MESSAGE_LENGTH = 10
 
+# Categorias de summary para merge
+SUMMARY_CATEGORIES = ("health", "goals", "preferences", "progress", "restrictions")
+
 
 class HistoryCompactor:
     """
@@ -68,6 +71,34 @@ class HistoryCompactor:
         )
 
         return filtered
+
+    def _merge_summary(
+        self, existing_summary_str: str | None, new_data: dict
+    ) -> dict:
+        """
+        Merges LLM partial output with existing summary.
+        Categories present in new_data replace existing values.
+        Categories absent from new_data are preserved from existing.
+        Prevents data loss when LLM returns incomplete updates.
+        """
+        # Parse existing summary
+        existing = {}
+        if existing_summary_str:
+            try:
+                existing = json.loads(existing_summary_str)
+            except json.JSONDecodeError:
+                logger.warning("Failed to parse existing summary JSON")
+                existing = {}
+
+        # Start with full category skeleton from existing, default to empty lists
+        merged = {cat: existing.get(cat, []) for cat in SUMMARY_CATEGORIES}
+
+        # Overwrite only categories present in LLM output
+        for cat in SUMMARY_CATEGORIES:
+            if cat in new_data:
+                merged[cat] = new_data[cat]
+
+        return merged
 
     async def _get_summary_candidates(
         self, user_email: str, active_window_size: int, compaction_threshold: int
@@ -158,15 +189,18 @@ class HistoryCompactor:
             return
 
         summary_dict = self._parse_json_response(response_text)
-        if not summary_dict:
+        if summary_dict is None:
             return
+
+        # Merge with existing summary to prevent data loss
+        merged_summary = self._merge_summary(current_summary, summary_dict)
 
         # Atomic Update
         self.db.update_user_profile_fields(
             user_email,
             {
                 "long_term_summary": json.dumps(
-                    summary_dict, ensure_ascii=False, indent=2
+                    merged_summary, ensure_ascii=False, indent=2
                 ),
                 "last_compaction_timestamp": new_last_ts_str,
             },

@@ -5,7 +5,6 @@ Based on POC findings: API requires rep_range as {"start": int, "end": int}
 We need validators to handle LLM mistakes (int, str, list inputs)
 """
 
-import pytest
 from src.api.models.routine import HevySet, HevyRepRange, HevyRoutineExercise
 
 

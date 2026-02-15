@@ -418,7 +418,7 @@ class HevyService:
                     response.text,
                 )
                 return None
-            except Exception as e:
+            except Exception:
                 logger.error("Failed to fetch routine %s", routine_id)
                 return None
 

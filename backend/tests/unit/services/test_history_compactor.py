@@ -552,3 +552,283 @@ async def test_history_compactor_logs_tokens_in_callback(mock_db, mock_llm_clien
     call_kwargs = mock_llm_client.stream_simple.call_args[1]
     assert "log_callback" in call_kwargs, "stream_simple should receive log_callback"
     assert call_kwargs["log_callback"] is mock_log, "log_callback should be passed through"
+
+
+def test_merge_summary_preserves_existing_categories(mock_db, mock_llm_client):
+    """Test that merge preserves categories not in LLM response."""
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    existing = json.dumps({
+        "health": ["[01/02] Lesao no joelho"],
+        "goals": ["[01/02] Perder 5kg"],
+        "preferences": ["[31/01] Treinar 2x/semana"],
+        "progress": [],
+        "restrictions": []
+    })
+
+    # LLM only returns updated preferences
+    new_data = {
+        "preferences": ["[15/02] Agora treinar 3x/semana"]
+    }
+
+    merged = compactor._merge_summary(existing, new_data)
+
+    # Health and goals should be preserved
+    assert merged["health"] == ["[01/02] Lesao no joelho"]
+    assert merged["goals"] == ["[01/02] Perder 5kg"]
+    # Preferences should be updated
+    assert merged["preferences"] == ["[15/02] Agora treinar 3x/semana"]
+    # Empty categories should be preserved
+    assert merged["progress"] == []
+    assert merged["restrictions"] == []
+
+
+def test_merge_summary_with_empty_llm_response(mock_db, mock_llm_client):
+    """Test that empty LLM response preserves existing summary."""
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    existing = json.dumps({
+        "health": ["[01/02] Lesao"],
+        "goals": ["[01/02] Meta"],
+        "preferences": [],
+        "progress": [],
+        "restrictions": []
+    })
+
+    # LLM returns no new facts
+    new_data = {}
+
+    merged = compactor._merge_summary(existing, new_data)
+
+    # Everything should be preserved
+    assert merged["health"] == ["[01/02] Lesao"]
+    assert merged["goals"] == ["[01/02] Meta"]
+
+
+def test_merge_summary_with_no_existing_summary(mock_db, mock_llm_client):
+    """Test merge when there's no existing summary."""
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    # No existing summary
+    new_data = {
+        "goals": ["[15/02] Novo objetivo"],
+        "preferences": ["[15/02] Malha seg/qua/sex"]
+    }
+
+    merged = compactor._merge_summary(None, new_data)
+
+    # Should create skeleton with new data
+    assert merged["goals"] == ["[15/02] Novo objetivo"]
+    assert merged["preferences"] == ["[15/02] Malha seg/qua/sex"]
+    assert merged["health"] == []
+    assert merged["progress"] == []
+    assert merged["restrictions"] == []
+
+
+def test_merge_summary_multiple_categories_updated(mock_db, mock_llm_client):
+    """Test merge with updates to multiple categories."""
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    existing = json.dumps({
+        "health": ["[01/02] Sem lesoes"],
+        "goals": ["[01/02] Perder 5kg"],
+        "preferences": ["[31/01] 2x/semana"],
+        "progress": ["[10/02] 2kg perdidos"],
+        "restrictions": []
+    })
+
+    # LLM updates 2 categories
+    new_data = {
+        "health": ["[15/02] Dor no ombro direito"],
+        "progress": ["[15/02] 3kg perdidos"]
+    }
+
+    merged = compactor._merge_summary(existing, new_data)
+
+    # Updated categories
+    assert merged["health"] == ["[15/02] Dor no ombro direito"]
+    assert merged["progress"] == ["[15/02] 3kg perdidos"]
+    # Unchanged categories
+    assert merged["goals"] == ["[01/02] Perder 5kg"]
+    assert merged["preferences"] == ["[31/01] 2x/semana"]
+
+
+@pytest.mark.asyncio
+async def test_compact_history_merges_with_existing_summary(mock_db, mock_llm_client):
+    """Integration test: verify compaction merges with existing summary."""
+    async def async_gen(*args, **kwargs):
+        # LLM only updates health, other categories NOT returned
+        yield json.dumps({
+            "health": ["[15/02] Nova lesao"]
+        })
+    mock_llm_client.stream_simple = MagicMock(side_effect=async_gen)
+
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    existing_summary = json.dumps({
+        "health": ["[01/02] Lesao anterior"],
+        "goals": ["[01/02] Perder peso"],
+        "preferences": ["[31/01] Treinar 2x"],
+        "progress": [],
+        "restrictions": []
+    })
+
+    profile = UserProfile(
+        email="test@test.com",
+        goal="test",
+        gender="Masculino",
+        age=30,
+        weight=70.0,
+        height=175,
+        goal_type="maintain",
+        weekly_rate=0.5,
+        long_term_summary=existing_summary,
+    )
+    mock_db.get_user_profile.return_value = profile
+
+    # 70 messages to trigger compaction
+    base_ts = datetime(2026, 2, 15, 10, 0)
+    messages = []
+    for i in range(70):
+        ts = base_ts + timedelta(minutes=i)
+        msg = ChatHistory(
+            sender=Sender.STUDENT,
+            text=f"Mensagem numero {i} com conteudo relevante",
+            timestamp=ts.isoformat(),
+        )
+        messages.append(msg)
+
+    mock_db.get_chat_history.return_value = messages
+
+    await compactor.compact_history("test@test.com", active_window_size=10, compaction_threshold=20)
+
+    # Verify merge happened
+    call_args = mock_db.update_user_profile_fields.call_args[0]
+    stored_summary_str = call_args[1]["long_term_summary"]
+    stored_summary = json.loads(stored_summary_str)
+
+    # Old health should be replaced (not preserved)
+    assert any("[15/02]" in h for h in stored_summary.get("health", []))
+    # Goals should be preserved (not in LLM response)
+    assert any("Perder peso" in g for g in stored_summary.get("goals", []))
+    # Preferences should be preserved
+    assert any("Treinar 2x" in p for p in stored_summary.get("preferences", []))
+
+
+def test_parse_json_response_with_markdown_fence(mock_db, mock_llm_client):
+    """Test JSON parsing with markdown code fence."""
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    response_with_fence = """```json
+{"health": ["[15/02] Lesao"], "goals": [], "preferences": [], "progress": [], "restrictions": []}
+```"""
+
+    result = compactor._parse_json_response(response_with_fence)
+
+    assert result is not None
+    assert result["health"] == ["[15/02] Lesao"]
+
+
+def test_parse_json_response_invalid_json_returns_none(mock_db, mock_llm_client):
+    """Test that invalid JSON returns None."""
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    invalid_json = '{"health": ["unclosed'
+
+    result = compactor._parse_json_response(invalid_json)
+
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_compact_history_advances_timestamp_on_empty_result(mock_db, mock_llm_client):
+    """Test that empty LLM result still advances last_compaction_timestamp."""
+    async def async_gen(*args, **kwargs):
+        yield json.dumps({})  # Empty response - no new facts
+    mock_llm_client.stream_simple = MagicMock(side_effect=async_gen)
+
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    base_ts = datetime(2026, 2, 15, 10, 0)
+    last_ts_str = (base_ts + timedelta(minutes=10)).isoformat()
+
+    profile = UserProfile(
+        email="test@test.com",
+        goal="test",
+        gender="Masculino",
+        age=30,
+        weight=70.0,
+        height=175,
+        goal_type="maintain",
+        weekly_rate=0.5,
+        long_term_summary='{"health": [], "goals": [], "preferences": [], "progress": [], "restrictions": []}',
+        last_compaction_timestamp=last_ts_str,
+    )
+    mock_db.get_user_profile.return_value = profile
+
+    # 70 messages with timestamps after last compaction
+    messages = []
+    for i in range(70):
+        ts = base_ts + timedelta(minutes=15 + i)
+        msg = ChatHistory(
+            sender=Sender.STUDENT,
+            text=f"Mensagem numero {i}",
+            timestamp=ts.isoformat(),
+        )
+        messages.append(msg)
+
+    mock_db.get_chat_history.return_value = messages
+
+    await compactor.compact_history("test@test.com", active_window_size=10, compaction_threshold=20)
+
+    # Verify timestamp was advanced even with empty response
+    call_args = mock_db.update_user_profile_fields.call_args[0]
+    new_ts = call_args[1]["last_compaction_timestamp"]
+    assert new_ts > last_ts_str
+
+
+def test_compaction_threshold_gap_new_user(mock_db, mock_llm_client):
+    """Test that low threshold (25) triggers compaction for new users."""
+    async def async_gen(*args, **kwargs):
+        yield json.dumps({"preferences": []})
+    mock_llm_client.stream_simple = MagicMock(side_effect=async_gen)
+
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    profile = UserProfile(
+        email="new-user@test.com",
+        goal="test",
+        gender="Masculino",
+        age=30,
+        weight=70.0,
+        height=175,
+        goal_type="maintain",
+        weekly_rate=0.5,
+    )
+    mock_db.get_user_profile.return_value = profile
+
+    # 25 messages with window=20, threshold=25 should trigger compaction
+    base_ts = datetime(2026, 2, 15, 10, 0)
+    messages = []
+    for i in range(25):
+        ts = base_ts + timedelta(minutes=i)
+        msg = ChatHistory(
+            sender=Sender.STUDENT,
+            text=f"Mensagem numero {i} com conteudo",
+            timestamp=ts.isoformat(),
+        )
+        messages.append(msg)
+
+    mock_db.get_chat_history.return_value = messages
+
+    # This must be run in async context
+    import asyncio
+    asyncio.run(compactor.compact_history("new-user@test.com", active_window_size=20, compaction_threshold=25))
+
+    # Verify LLM was called (compaction triggered)
+    mock_llm_client.stream_simple.assert_called_once()
+    # Verify messages 0-4 were compacted
+    call_kwargs = mock_llm_client.stream_simple.call_args[1]
+    new_lines = call_kwargs["input_data"]["new_lines"]
+    assert "Mensagem numero 0" in new_lines
+    assert "Mensagem numero 4" in new_lines

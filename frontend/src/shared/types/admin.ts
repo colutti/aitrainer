@@ -51,6 +51,9 @@ export interface PromptLog {
   prompt?: {
     prompt?: string;
     type?: string;
+    prompt_name?: string;
+    messages?: { role: string; content: string }[];
+    tools?: string[];
   };
 }
 
