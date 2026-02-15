@@ -49,31 +49,39 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
 
         # Mock the chain behavior
         prompt = MagicMock()
-        
+        prompt.format.return_value = "test prompt"
+
         async def mock_stream(*args, **kwargs):
             yield "res"
-            
-        prompt.__or__.return_value.__or__.return_value.astream = mock_stream
+
+        # Mock prompt | llm (returns mock_llm)
+        mock_llm_chain = MagicMock()
+        mock_llm_chain.astream = mock_stream
+        prompt.__or__.return_value = mock_llm_chain
 
         results = []
         async for chunk in client.stream_simple(prompt, {}):
             results.append(chunk)
-            
+
         self.assertEqual(results, ["res"])
 
     async def test_stream_simple_with_logging(self):
         """Test simple streaming with log_callback."""
         client = LLMClient()
+        client.model_name = "test-model"
         client._llm = MagicMock()
 
         # Mock the chain behavior
         prompt = MagicMock()
         prompt.format.return_value = "formatted prompt"
-        
+
         async def mock_stream(*args, **kwargs):
             yield "res"
-            
-        prompt.__or__.return_value.__or__.return_value.astream = mock_stream
+
+        # Mock prompt | llm
+        mock_llm_chain = MagicMock()
+        mock_llm_chain.astream = mock_stream
+        prompt.__or__.return_value = mock_llm_chain
 
         log_callback = MagicMock()
         user_email = "test@test.com"
@@ -83,9 +91,61 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
             prompt, {}, user_email=user_email, log_callback=log_callback
         ):
             results.append(chunk)
-            
+
         self.assertEqual(results, ["res"])
-        log_callback.assert_called_once_with(user_email, {"prompt": "formatted prompt", "type": "simple"})
+        # Verify log_callback was called with the correct structure
+        log_callback.assert_called_once()
+        call_args = log_callback.call_args
+        logged_data = call_args[0][1]
+        self.assertEqual(logged_data["prompt"], "formatted prompt")
+        self.assertEqual(logged_data["type"], "simple")
+        self.assertEqual(logged_data["model"], "test-model")
+
+    async def test_stream_simple_captures_token_usage(self):
+        """Test that stream_simple captures token usage from LLM metadata."""
+        client = LLMClient()
+        client.model_name = "test-model"
+
+        # Create a mock AIMessage with usage_metadata
+        ai_msg = AIMessage(
+            content="response text",
+            usage_metadata={"input_tokens": 10, "output_tokens": 5, "total_tokens": 15}
+        )
+
+        # Mock the LLM to return AIMessage with metadata
+        async def mock_llm_stream(*args, **kwargs):
+            yield ai_msg
+
+        mock_llm = MagicMock()
+        mock_llm.astream = mock_llm_stream
+        client._llm = mock_llm
+
+        # Mock the prompt template
+        prompt = MagicMock()
+        prompt.format.return_value = "formatted prompt"
+
+        # Mock pipe operator to return the LLM (skip StrOutputParser for this test)
+        prompt.__or__.return_value = mock_llm
+
+        log_callback = MagicMock()
+        user_email = "test@test.com"
+
+        results = []
+        async for chunk in client.stream_simple(
+            prompt, {}, user_email=user_email, log_callback=log_callback
+        ):
+            results.append(chunk)
+
+        # Verify callback was called with token data
+        log_callback.assert_called_once()
+        call_args = log_callback.call_args
+        logged_data = call_args[0][1]  # Second argument to log_callback
+
+        # THIS IS THE KEY TEST: tokens should be > 0
+        self.assertGreater(logged_data["tokens_input"], 0,
+                          "stream_simple should capture tokens_input from LLM metadata")
+        self.assertGreater(logged_data["tokens_output"], 0,
+                          "stream_simple should capture tokens_output from LLM metadata")
 
     @patch("src.services.llm_client.create_agent")
     async def test_stream_with_tools_success(self, mock_create_agent):

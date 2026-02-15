@@ -486,3 +486,69 @@ async def test_event_loop_isolation_background_task(mock_db, mock_llm_client):
     # Verify compaction actually ran
     mock_llm_client.stream_simple.assert_called_once()
     mock_db.update_user_profile_fields.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_history_compactor_logs_tokens_in_callback(mock_db, mock_llm_client):
+    """
+    Test that history_compactor passes log_callback to stream_simple.
+    This ensures resumos (summaries) can register tokens when LLM provides them.
+
+    Note: This test verifies the integration point - actual token capture
+    is tested in test_llm_client.py::test_stream_simple_captures_token_usage
+    """
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    # Track if log_callback was passed to stream_simple
+    captured_callback = []
+
+    async def mock_stream_simple(*args, **kwargs):
+        # Capture the log_callback that was passed
+        log_cb = kwargs.get("log_callback")
+        if log_cb:
+            captured_callback.append(log_cb)
+        yield '{"preferences": []}'
+
+    mock_llm_client.stream_simple = MagicMock(side_effect=mock_stream_simple)
+
+    profile = UserProfile(
+        email="test@test.com",
+        goal="test",
+        gender="Masculino",
+        age=30,
+        weight=70.0,
+        height=175,
+        goal_type="maintain",
+        weekly_rate=0.5,
+    )
+    mock_db.get_user_profile.return_value = profile
+
+    # Create 70 messages, with sufficient length to not be filtered
+    base_ts = datetime(2026, 1, 1, 10, 0)
+    messages = []
+    for i in range(70):
+        ts = base_ts + timedelta(minutes=i)
+        msg = ChatHistory(
+            sender=Sender.STUDENT,
+            text=f"This is message {i} with enough content to not get filtered by preprocessor",
+            timestamp=ts.isoformat(),
+        )
+        messages.append(msg)
+    mock_db.get_chat_history.return_value = messages
+
+    # Provide a mock log_callback
+    mock_log = MagicMock()
+
+    # Run compaction - this should pass log_callback to stream_simple
+    await compactor.compact_history(
+        "test@test.com",
+        active_window_size=10,
+        log_callback=mock_log,
+        compaction_threshold=20,
+    )
+
+    # VERIFY: stream_simple was called with a log_callback
+    assert mock_llm_client.stream_simple.called, "stream_simple should be called during compaction"
+    call_kwargs = mock_llm_client.stream_simple.call_args[1]
+    assert "log_callback" in call_kwargs, "stream_simple should receive log_callback"
+    assert call_kwargs["log_callback"] is mock_log, "log_callback should be passed through"

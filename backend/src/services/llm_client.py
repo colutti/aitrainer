@@ -220,13 +220,36 @@ class LLMClient:
 
         start_time = time.time()
         prompt_str = ""
+        usage_metadata: dict = {"input_tokens": 0, "output_tokens": 0}
 
         try:
             prompt_str = prompt_template.format(**input_data)
 
-            chain = prompt_template | self._llm | StrOutputParser()
-            async for chunk in chain.astream(input_data):
-                yield chunk
+            # Try to stream from LLM directly first (to capture usage_metadata)
+            try:
+                chain_before_parser = prompt_template | self._llm
+                async for chunk in chain_before_parser.astream(input_data):
+                    # Capture usage_metadata from AIMessage
+                    if isinstance(chunk, AIMessage):
+                        if hasattr(chunk, "usage_metadata") and chunk.usage_metadata:
+                            tokens = chunk.usage_metadata.get("input_tokens", 0) + chunk.usage_metadata.get("output_tokens", 0)
+                            if tokens > 0:
+                                usage_metadata = chunk.usage_metadata
+                                logger.info(
+                                    "✓ Captured usage_metadata (stream_simple): input=%s, output=%s",
+                                    chunk.usage_metadata.get("input_tokens", 0),
+                                    chunk.usage_metadata.get("output_tokens", 0),
+                                )
+                        # Yield just the text content
+                        if chunk.content:
+                            yield chunk.content
+                    elif isinstance(chunk, str):
+                        yield chunk
+            except (AttributeError, TypeError):
+                # Fallback: use full chain with parser if direct LLM stream fails
+                chain = prompt_template | self._llm | StrOutputParser()
+                async for chunk in chain.astream(input_data):
+                    yield chunk
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Error in stream_simple: %s", e)
             yield f"Error processing request: {str(e)}"
@@ -240,8 +263,8 @@ class LLMClient:
                         {
                             "prompt": prompt_str,
                             "type": "simple",
-                            "tokens_input": 0,  # stream_simple não retorna tokens por padrão
-                            "tokens_output": 0,
+                            "tokens_input": usage_metadata.get("input_tokens", 0),
+                            "tokens_output": usage_metadata.get("output_tokens", 0),
                             "duration_ms": duration_ms,
                             "model": self.model_name,
                             "status": "success",
