@@ -33,6 +33,11 @@ CurrentUser = Annotated[str, Depends(verify_token)]
 DatabaseDep = Annotated[MongoDatabase, Depends(get_mongo_database)]
 
 
+def _get_today() -> datetime:
+    """Get current datetime. Extracted for easy mocking in tests."""
+    return datetime.now()
+
+
 @router.get("", response_model=DashboardData)
 # pylint: disable=too-many-locals
 def get_dashboard_data(
@@ -43,7 +48,7 @@ def get_dashboard_data(
     Aggregates data for the user's dashboard.
     """
     # user_email is passed directly
-    today = datetime.now()
+    today = _get_today()
 
     # --- Body Stats ---
     weight_logs = db.get_weight_logs(user_email, limit=30)
@@ -194,9 +199,17 @@ def _calculate_body_stats(today, weight_logs) -> BodyStats:
     """Helper to calculate body stats and trends."""
     current_weight = 0.0
     weight_diff_week = 0.0
+    weight_diff_15 = None
+    weight_diff_30 = None
     weight_trend = "stable"
     body_fat_pct = None
     muscle_mass_pct = None
+    fat_diff = None
+    fat_diff_15 = None
+    fat_diff_30 = None
+    muscle_diff = None
+    muscle_diff_15 = None
+    muscle_diff_30 = None
     bmr = None
 
     if weight_logs:
@@ -212,19 +225,53 @@ def _calculate_body_stats(today, weight_logs) -> BodyStats:
         )
         bmr = next((log.bmr for log in weight_logs if log.bmr is not None), None)
 
-        target_date = today.date() - timedelta(days=7)
-        closest_log = None
-        min_days_diff = 999
+        # Find closest logs for 7, 15, and 30 day periods
+        target_dates = {
+            7: today.date() - timedelta(days=7),
+            15: today.date() - timedelta(days=15),
+            30: today.date() - timedelta(days=30),
+        }
+        closest_logs = {7: None, 15: None, 30: None}
+        min_days_diffs = {7: 999, 15: 999, 30: 999}
 
         for log in weight_logs[1:]:
             log_date = log.date.date() if isinstance(log.date, datetime) else log.date
-            days_diff = abs((log_date - target_date).days)
-            if days_diff < min_days_diff and days_diff <= 3:
-                closest_log = log
-                min_days_diff = days_diff
+            for period in [7, 15, 30]:
+                days_diff = abs((log_date - target_dates[period]).days)
+                threshold = 3 if period == 7 else 5  # ±3 days for 7d, ±5 days for 15d/30d
+                if days_diff < min_days_diffs[period] and days_diff <= threshold:
+                    closest_logs[period] = log
+                    min_days_diffs[period] = days_diff
 
-        if closest_log:
-            weight_diff_week = current_weight - closest_log.weight_kg
+        # Calculate diffs for each period
+        closest_log_7 = closest_logs[7]
+        if closest_log_7:
+            weight_diff_week = current_weight - closest_log_7.weight_kg
+
+            # Calculate fat and muscle diffs for 7 days
+            if body_fat_pct is not None and closest_log_7.body_fat_pct is not None:
+                fat_diff = round(body_fat_pct - closest_log_7.body_fat_pct, 1)
+
+            if muscle_mass_pct is not None and closest_log_7.muscle_mass_pct is not None:
+                muscle_diff = round(muscle_mass_pct - closest_log_7.muscle_mass_pct, 1)
+
+        # 15-day diffs
+        closest_log_15 = closest_logs[15]
+        if closest_log_15:
+            weight_diff_15 = round(current_weight - closest_log_15.weight_kg, 2)
+            if body_fat_pct is not None and closest_log_15.body_fat_pct is not None:
+                fat_diff_15 = round(body_fat_pct - closest_log_15.body_fat_pct, 1)
+            if muscle_mass_pct is not None and closest_log_15.muscle_mass_pct is not None:
+                muscle_diff_15 = round(muscle_mass_pct - closest_log_15.muscle_mass_pct, 1)
+
+        # 30-day diffs
+        closest_log_30 = closest_logs[30]
+        if closest_log_30:
+            weight_diff_30 = round(current_weight - closest_log_30.weight_kg, 2)
+            if body_fat_pct is not None and closest_log_30.body_fat_pct is not None:
+                fat_diff_30 = round(body_fat_pct - closest_log_30.body_fat_pct, 1)
+            if muscle_mass_pct is not None and closest_log_30.muscle_mass_pct is not None:
+                muscle_diff_30 = round(muscle_mass_pct - closest_log_30.muscle_mass_pct, 1)
 
         if weight_diff_week > 0.3:
             weight_trend = "up"
@@ -234,9 +281,17 @@ def _calculate_body_stats(today, weight_logs) -> BodyStats:
     return BodyStats(
         weight_current=current_weight,
         weight_diff=round(weight_diff_week, 2),
+        weight_diff_15=weight_diff_15,
+        weight_diff_30=weight_diff_30,
         weight_trend=weight_trend,
         body_fat_pct=body_fat_pct,
         muscle_mass_pct=muscle_mass_pct,
+        fat_diff=fat_diff,
+        fat_diff_15=fat_diff_15,
+        fat_diff_30=fat_diff_30,
+        muscle_diff=muscle_diff,
+        muscle_diff_15=muscle_diff_15,
+        muscle_diff_30=muscle_diff_30,
         bmr=bmr,
     )
 

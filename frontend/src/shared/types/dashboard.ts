@@ -17,9 +17,17 @@ export interface DashboardStats {
   body: {
     weight_current: number;
     weight_diff: number;
+    weight_diff_15?: number | null;
+    weight_diff_30?: number | null;
     weight_trend: 'up' | 'down' | 'stable';
     body_fat_pct?: number | null;
     muscle_mass_pct?: number | null;
+    fat_diff?: number | null;
+    fat_diff_15?: number | null;
+    fat_diff_30?: number | null;
+    muscle_diff?: number | null;
+    muscle_diff_15?: number | null;
+    muscle_diff_30?: number | null;
     bmr?: number | null;
   };
   calories: {

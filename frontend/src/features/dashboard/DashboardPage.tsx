@@ -5,7 +5,6 @@ import {
   History,
   Activity,
   Zap,
-  Droplets,
   Target,
   TrendingDown
 } from 'lucide-react';
@@ -357,11 +356,11 @@ export function DashboardPage() {
           <h2 className="text-xl font-bold text-text-primary">Composição Corporal</h2>
         </div>
 
-        {/* Composition Charts - Grid: Weight (2cols) + Fat + Muscle */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
-          {/* Weight Card (Larger - spans 2 cols) */}
+        {/* Composition Charts - Grid: Weight + Fat on first row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Weight Card */}
           {data?.weightTrend && data.weightTrend.length > 0 && weightHistory && (
-            <div className="lg:col-span-2 bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden group">
+            <div className="bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden group">
               <div className="relative z-10 flex flex-col h-full">
                 <div className="mb-4">
                   <p className="text-text-secondary text-sm font-medium mb-1">Peso Atual</p>
@@ -371,14 +370,29 @@ export function DashboardPage() {
                       <Scale size={16} />
                     </div>
                   </h3>
-                  <div className="flex items-center gap-2 mt-2 text-xs">
+                  <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
                     <span className={cn(
                       "font-bold px-2 py-0.5 rounded-full",
                       body.weight_diff > 0 ? 'bg-orange-500/10 text-orange-500' : 'bg-emerald-500/10 text-emerald-500'
                     )}>
-                      {body.weight_diff > 0 ? '+' : ''}{body.weight_diff.toFixed(2)} kg
+                      {body.weight_diff > 0 ? '+' : ''}{body.weight_diff.toFixed(2)} kg <span className="text-text-muted ml-1">(7d)</span>
                     </span>
-                    <span className="text-text-muted">últimos 7 dias</span>
+                    {body.weight_diff_15 !== undefined && body.weight_diff_15 !== null && (
+                      <span className={cn(
+                        "font-bold px-2 py-0.5 rounded-full",
+                        body.weight_diff_15 > 0 ? 'bg-orange-500/10 text-orange-500' : 'bg-emerald-500/10 text-emerald-500'
+                      )}>
+                        {body.weight_diff_15 > 0 ? '+' : ''}{body.weight_diff_15.toFixed(2)} kg <span className="text-text-muted ml-1">(15d)</span>
+                      </span>
+                    )}
+                    {body.weight_diff_30 !== undefined && body.weight_diff_30 !== null && (
+                      <span className={cn(
+                        "font-bold px-2 py-0.5 rounded-full",
+                        body.weight_diff_30 > 0 ? 'bg-orange-500/10 text-orange-500' : 'bg-emerald-500/10 text-emerald-500'
+                      )}>
+                        {body.weight_diff_30 > 0 ? '+' : ''}{body.weight_diff_30.toFixed(2)} kg <span className="text-text-muted ml-1">(30d)</span>
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -461,6 +475,32 @@ export function DashboardPage() {
                       <Flame size={16} />
                     </div>
                   </h3>
+                  {body.fat_diff !== undefined && body.fat_diff !== null && (
+                    <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
+                      <span className={cn(
+                        "font-bold px-2 py-0.5 rounded-full",
+                        body.fat_diff > 0 ? 'bg-orange-500/10 text-orange-500' : 'bg-emerald-500/10 text-emerald-500'
+                      )}>
+                        {body.fat_diff > 0 ? '+' : ''}{body.fat_diff.toFixed(1)} % <span className="text-text-muted ml-1">(7d)</span>
+                      </span>
+                      {body.fat_diff_15 !== undefined && body.fat_diff_15 !== null && (
+                        <span className={cn(
+                          "font-bold px-2 py-0.5 rounded-full",
+                          body.fat_diff_15 > 0 ? 'bg-orange-500/10 text-orange-500' : 'bg-emerald-500/10 text-emerald-500'
+                        )}>
+                          {body.fat_diff_15 > 0 ? '+' : ''}{body.fat_diff_15.toFixed(1)} % <span className="text-text-muted ml-1">(15d)</span>
+                        </span>
+                      )}
+                      {body.fat_diff_30 !== undefined && body.fat_diff_30 !== null && (
+                        <span className={cn(
+                          "font-bold px-2 py-0.5 rounded-full",
+                          body.fat_diff_30 > 0 ? 'bg-orange-500/10 text-orange-500' : 'bg-emerald-500/10 text-emerald-500'
+                        )}>
+                          {body.fat_diff_30 > 0 ? '+' : ''}{body.fat_diff_30.toFixed(1)} % <span className="text-text-muted ml-1">(30d)</span>
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Fat chart with two lines */}
@@ -527,7 +567,10 @@ export function DashboardPage() {
               <div className="absolute right-0 top-0 w-32 h-32 bg-orange-500/5 rounded-full blur-3xl" />
             </div>
           )}
+        </div>
 
+        {/* Composition Charts - Row 2: Muscle + BMR */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Muscle Trend */}
           {data?.muscleTrend && data.muscleTrend.length > 0 && mergedMuscleData && (
             <div className="bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden group">
@@ -540,6 +583,32 @@ export function DashboardPage() {
                       <Dumbbell size={16} />
                     </div>
                   </h3>
+                  {body.muscle_diff !== undefined && body.muscle_diff !== null && (
+                    <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
+                      <span className={cn(
+                        "font-bold px-2 py-0.5 rounded-full",
+                        body.muscle_diff > 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-orange-500/10 text-orange-500'
+                      )}>
+                        {body.muscle_diff > 0 ? '+' : ''}{body.muscle_diff.toFixed(1)} % <span className="text-text-muted ml-1">(7d)</span>
+                      </span>
+                      {body.muscle_diff_15 !== undefined && body.muscle_diff_15 !== null && (
+                        <span className={cn(
+                          "font-bold px-2 py-0.5 rounded-full",
+                          body.muscle_diff_15 > 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-orange-500/10 text-orange-500'
+                        )}>
+                          {body.muscle_diff_15 > 0 ? '+' : ''}{body.muscle_diff_15.toFixed(1)} % <span className="text-text-muted ml-1">(15d)</span>
+                        </span>
+                      )}
+                      {body.muscle_diff_30 !== undefined && body.muscle_diff_30 !== null && (
+                        <span className={cn(
+                          "font-bold px-2 py-0.5 rounded-full",
+                          body.muscle_diff_30 > 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-orange-500/10 text-orange-500'
+                        )}>
+                          {body.muscle_diff_30 > 0 ? '+' : ''}{body.muscle_diff_30.toFixed(1)} % <span className="text-text-muted ml-1">(30d)</span>
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Muscle chart with two lines */}
@@ -606,17 +675,6 @@ export function DashboardPage() {
               <div className="absolute right-0 top-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl" />
             </div>
           )}
-        </div>
-
-        {/* Additional Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-          <StatsCard
-            title="BMR Estimado"
-            value={body.bmr?.toString() ?? '--'}
-            subtitle="Basal"
-            icon={<Droplets size={24} />}
-            variant="secondary"
-          />
         </div>
       </div>
 
