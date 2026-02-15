@@ -47,6 +47,9 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
     "search_hevy_exercises": ToolMetadata(
         "search_hevy_exercises", ToolMemoryType.EPHEMERAL, "Search Hevy"
     ),
+    "get_hevy_routine_detail": ToolMetadata(
+        "get_hevy_routine_detail", ToolMemoryType.EPHEMERAL, "Fetch Hevy routine details"
+    ),
     # Memorable (SAVE/CREATE/UPDATE - significant events)
     "save_workout": ToolMetadata(
         "save_workout", ToolMemoryType.MEMORABLE, "Save workout"
@@ -68,6 +71,9 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
     ),
     "replace_hevy_exercise": ToolMetadata(
         "replace_hevy_exercise", ToolMemoryType.MEMORABLE, "Replace exercise"
+    ),
+    "set_routine_rest_and_ranges": ToolMetadata(
+        "set_routine_rest_and_ranges", ToolMemoryType.MEMORABLE, "Update rest times and rep ranges"
     ),
 }
 

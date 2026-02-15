@@ -15,8 +15,15 @@ def create_get_user_goal_tool(database: MongoDatabase, user_email: str):
     @tool
     def get_user_goal() -> str:
         """
-        Consulta o objetivo atual do aluno (perder peso, ganhar massa, manter peso).
-        Use para saber o foco atual antes de dar recomendações.
+        Consulta o perfil e objetivo atual do aluno (perder peso, ganhar massa, manter peso).
+
+        O perfil básico já está em seu contexto no sistema, mas use esta tool quando:
+        - O aluno mencionar mudança de objetivo e você quiser confirmar os dados atualizados
+        - Precisar re-consultar após possível atualização de perfil
+        - Quiser validar dados antes de fazer recomendações personalizadas
+
+        Exemplo: "Antes eu perdia peso, mas agora quero ganhar massa" → use esta tool
+                 para confirmar que o objetivo foi atualizado.
         """
         try:
             profile = database.get_user_profile(user_email)
@@ -42,8 +49,18 @@ def create_update_user_goal_tool(database: MongoDatabase, user_email: str):
     def update_user_goal(goal_type: str, weekly_rate: float | None = None) -> str:
         """
         Atualiza o tipo de objetivo e a taxa semanal de mudança de peso do perfil do aluno.
-        'goal_type': 'lose', 'gain', ou 'maintain'.
-        'weekly_rate': taxa semanal em kg (obrigatório para lose/gain).
+
+        Parâmetros:
+        - goal_type: um de 'lose' (perda), 'gain' (ganho), 'maintain' (manutenção)
+        - weekly_rate: taxa semanal em kg (OBRIGATÓRIO para 'lose' ou 'gain', ignorado para 'maintain')
+
+        Exemplos de uso:
+        - Aluno quer parar de perder peso: goal_type='maintain'
+        - Aluno quer ganhar 0.5kg/semana: goal_type='gain', weekly_rate=0.5
+        - Aluno quer perder 1kg/semana: goal_type='lose', weekly_rate=1.0
+
+        Use quando o aluno expressar mudança clara de objetivo ou quando calcular
+        que o objetivo atual não mais faz sentido (ex: já atingiu peso-alvo).
         """
         try:
             if goal_type not in ["lose", "gain", "maintain"]:

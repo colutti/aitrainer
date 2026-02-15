@@ -27,11 +27,30 @@ def create_save_composition_tool(database, user_email: str):
         bmr: int | None = None,
         bmi: float | None = None,
         notes: str | None = None,
+        neck_cm: float | None = None,
+        chest_cm: float | None = None,
+        waist_cm: float | None = None,
+        hips_cm: float | None = None,
+        bicep_r_cm: float | None = None,
+        bicep_l_cm: float | None = None,
+        thigh_r_cm: float | None = None,
+        thigh_l_cm: float | None = None,
+        calf_r_cm: float | None = None,
+        calf_l_cm: float | None = None,
     ) -> str:
         """
         Salva ou atualiza os dados de composição corporal do aluno.
-        Use esta ferramenta quando o aluno reportar peso ou dados de bioimpedância.
-        Argumentos: Peso (obrigatório), Data, %Gordura, Músculo (kg), BMR, etc.
+
+        Use quando o aluno reportar:
+        - Peso de uma balança inteligente (com bioimpedância): peso_kg, body_fat_pct, muscle_mass_kg, etc.
+        - Medidas manuais com fita métrica: waist_cm, hip_cm, chest_cm, etc.
+        - Dados de wearable/aplicativo: qualquer combinação dos campos acima
+
+        Todos os campos são opcionais exceto weight_kg. Retorna dados brutos para seu análise e
+        comparação com seus algoritmos.
+
+        Exemplo: aluno fez medição no Zepp Life → use body_fat_pct, muscle_mass_kg, visceral_fat, bmr.
+                 aluno mediu com fita → use waist_cm, hips_cm, chest_cm, neck_cm, bicep_r_cm, etc.
         """
         try:
             if date:
@@ -56,17 +75,16 @@ def create_save_composition_tool(database, user_email: str):
                 bmi=bmi,
                 notes=notes,
                 source="chat",
-                # Missing fields for Pyright
-                neck_cm=None,
-                chest_cm=None,
-                waist_cm=None,
-                hips_cm=None,
-                bicep_r_cm=None,
-                bicep_l_cm=None,
-                thigh_r_cm=None,
-                thigh_l_cm=None,
-                calf_r_cm=None,
-                calf_l_cm=None,
+                neck_cm=neck_cm,
+                chest_cm=chest_cm,
+                waist_cm=waist_cm,
+                hips_cm=hips_cm,
+                bicep_r_cm=bicep_r_cm,
+                bicep_l_cm=bicep_l_cm,
+                thigh_r_cm=thigh_r_cm,
+                thigh_l_cm=thigh_l_cm,
+                calf_r_cm=calf_r_cm,
+                calf_l_cm=calf_l_cm,
                 trend_weight=None,
             )
 
@@ -92,7 +110,14 @@ def create_get_composition_tool(database, user_email: str):
     @tool
     def get_body_composition(limit: int = 10) -> str:
         """
-        Busca o histórico recente de composição corporal do aluno.
+        Busca o histórico recente de composição corporal do aluno (últimos N registros).
+
+        Use quando o aluno perguntar sobre evolução de peso, gordura corporal, ou histórico
+        de medições. Retorna dados brutos para você calcular tendências e tirar suas próprias
+        conclusões sobre progressão corporal.
+
+        Exemplo: "Mostre meu histórico de gordura corporal dos últimos meses"
+                 → Use esta tool, e você fará sua própria análise vs seus algoritmos.
         """
         try:
             logs = database.get_weight_logs(user_email, limit=limit)
@@ -117,6 +142,39 @@ def create_get_composition_tool(database, user_email: str):
                     metrics.append(f"BMR: {log.bmr} kcal")
 
                 result += f"📅 {date_str}: {', '.join(metrics)}\n"
+
+                # Medidas corporais
+                measurements = []
+                if log.neck_cm:
+                    measurements.append(f"Pescoço: {log.neck_cm}cm")
+                if log.chest_cm:
+                    measurements.append(f"Peito: {log.chest_cm}cm")
+                if log.waist_cm:
+                    measurements.append(f"Cintura: {log.waist_cm}cm")
+                if log.hips_cm:
+                    measurements.append(f"Quadril: {log.hips_cm}cm")
+                if log.bicep_r_cm or log.bicep_l_cm:
+                    measurements.append(
+                        f"Bíceps: D={log.bicep_r_cm}cm E={log.bicep_l_cm}cm"
+                        if log.bicep_r_cm and log.bicep_l_cm
+                        else f"Bíceps: {log.bicep_r_cm or log.bicep_l_cm}cm"
+                    )
+                if log.thigh_r_cm or log.thigh_l_cm:
+                    measurements.append(
+                        f"Coxa: D={log.thigh_r_cm}cm E={log.thigh_l_cm}cm"
+                        if log.thigh_r_cm and log.thigh_l_cm
+                        else f"Coxa: {log.thigh_r_cm or log.thigh_l_cm}cm"
+                    )
+                if log.calf_r_cm or log.calf_l_cm:
+                    measurements.append(
+                        f"Panturrilha: D={log.calf_r_cm}cm E={log.calf_l_cm}cm"
+                        if log.calf_r_cm and log.calf_l_cm
+                        else f"Panturrilha: {log.calf_r_cm or log.calf_l_cm}cm"
+                    )
+
+                if measurements:
+                    result += f"   Medidas: {', '.join(measurements)}\n"
+
                 if log.notes:
                     result += f"   Nota: {log.notes}\n"
                 result += "\n"

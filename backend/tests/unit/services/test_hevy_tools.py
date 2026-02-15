@@ -6,6 +6,9 @@ from src.services.hevy_tools import (
     create_search_hevy_exercises_tool,
     create_create_hevy_routine_tool,
     create_list_hevy_routines_tool,
+    create_replace_hevy_exercise_tool,
+    create_get_hevy_routine_detail_tool,
+    create_set_routine_rest_and_ranges_tool,
 )
 
 
@@ -366,5 +369,255 @@ class TestListHevyRoutines:
         )
 
         result = await tool.ainvoke({})
+
+        assert "desativada" in result.lower() or "integração" in result.lower()
+
+
+class TestReplaceHevyExercise:
+    """Test replace hevy exercise tool."""
+
+    @pytest.mark.asyncio
+    async def test_replace_exercise_success(self, mock_hevy_service, mock_database):
+        """Test successful exercise replacement."""
+        profile = MagicMock()
+        profile.hevy_enabled = True
+        profile.hevy_api_key = "api_key"
+        mock_database.get_user_profile.return_value = profile
+
+        # Mock the get_routines response
+        routine = MagicMock(id="R001", title="Push Day")
+        routine.exercises = [
+            MagicMock(id="EXE001", exercise_template_id="EX001", notes=""),
+            MagicMock(id="EXE002", exercise_template_id="EX002", notes=""),
+        ]
+
+        routines_resp = MagicMock()
+        routines_resp.routines = [routine]
+        mock_hevy_service.get_routines = AsyncMock(return_value=routines_resp)
+        mock_hevy_service.get_routine_by_id = AsyncMock(return_value=routine)
+        mock_hevy_service.update_routine = AsyncMock(return_value=(routine, None))
+
+        tool = create_replace_hevy_exercise_tool(
+            mock_hevy_service, mock_database, "user@test.com"
+        )
+
+        result = await tool.ainvoke({
+            "routine_title": "Push Day",
+            "old_exercise_name_or_id": "EX001",
+            "new_exercise_id": "EX003",
+        })
+
+        # Should indicate success
+        assert "substituído" in result.lower() or "sucesso" in result.lower() or "atualizado" in result.lower()
+
+    @pytest.mark.asyncio
+    async def test_replace_exercise_not_found(self, mock_hevy_service, mock_database):
+        """Test replacement fails when old exercise not found."""
+        profile = MagicMock()
+        profile.hevy_enabled = True
+        profile.hevy_api_key = "api_key"
+        mock_database.get_user_profile.return_value = profile
+
+        routine = MagicMock(id="R001", title="Push Day")
+        routine.exercises = [MagicMock(id="EXE001", exercise_template_id="EX001", notes="")]
+
+        routines_resp = MagicMock()
+        routines_resp.routines = [routine]
+        mock_hevy_service.get_routines = AsyncMock(return_value=routines_resp)
+
+        tool = create_replace_hevy_exercise_tool(
+            mock_hevy_service, mock_database, "user@test.com"
+        )
+
+        result = await tool.ainvoke({
+            "routine_title": "Push Day",
+            "old_exercise_name_or_id": "NONEXISTENT",
+            "new_exercise_id": "EX003",
+        })
+
+        # Should indicate error
+        assert "não encontrado" in result.lower() or "erro" in result.lower() or "encontrar" in result.lower()
+
+    @pytest.mark.asyncio
+    async def test_replace_exercise_integration_disabled(self, mock_hevy_service, mock_database):
+        """Test replacement fails when integration disabled."""
+        profile = MagicMock()
+        profile.hevy_enabled = False
+        mock_database.get_user_profile.return_value = profile
+
+        tool = create_replace_hevy_exercise_tool(
+            mock_hevy_service, mock_database, "user@test.com"
+        )
+
+        result = await tool.ainvoke({
+            "routine_title": "Push Day",
+            "old_exercise_name_or_id": "EX001",
+            "new_exercise_id": "EX003",
+        })
+
+        assert "desativada" in result.lower() or "integração" in result.lower()
+
+
+class TestGetHevyRoutineDetail:
+    """Test get hevy routine detail tool."""
+
+    @pytest.mark.asyncio
+    async def test_get_routine_detail_success(self, mock_hevy_service, mock_database):
+        """Test successful routine detail fetch."""
+        profile = MagicMock()
+        profile.hevy_enabled = True
+        profile.hevy_api_key = "api_key"
+        mock_database.get_user_profile.return_value = profile
+
+        # Mock routine with exercises and sets
+        exercise = MagicMock()
+        exercise.id = "EXE001"
+        exercise.exercise_template_id = "EX001"
+        exercise.title = "Bench Press"
+        exercise.notes = "💪 Focus"
+        exercise.rest_seconds = 90
+        exercise.superset_id = None
+        exercise.sets = [
+            MagicMock(type="normal", weight_kg=100, reps=10, rep_range=None, duration_seconds=None, distance_meters=None),
+        ]
+
+        routine = MagicMock()
+        routine.id = "R001"
+        routine.title = "Push Day"
+        routine.notes = "Upper body"
+        routine.exercises = [exercise]
+
+        routines_resp = MagicMock()
+        routines_resp.routines = [routine]
+        mock_hevy_service.get_routines = AsyncMock(return_value=routines_resp)
+        mock_hevy_service.get_routine_by_id = AsyncMock(return_value=routine)
+
+        tool = create_get_hevy_routine_detail_tool(
+            mock_hevy_service, mock_database, "user@test.com"
+        )
+
+        result = await tool.ainvoke({"routine_title_or_id": "Push Day"})
+
+        # Should contain routine details
+        assert "Push Day" in result
+        assert "Bench Press" in result
+        assert "R001" in result
+
+    @pytest.mark.asyncio
+    async def test_get_routine_detail_not_found(self, mock_hevy_service, mock_database):
+        """Test when routine not found."""
+        profile = MagicMock()
+        profile.hevy_enabled = True
+        profile.hevy_api_key = "api_key"
+        mock_database.get_user_profile.return_value = profile
+
+        mock_hevy_service.get_routine.return_value = None
+
+        tool = create_get_hevy_routine_detail_tool(
+            mock_hevy_service, mock_database, "user@test.com"
+        )
+
+        result = await tool.ainvoke({"routine_title_or_id": "Nonexistent"})
+
+        # Should indicate not found
+        assert "não encontrada" in result.lower() or "não encontrado" in result.lower() or "erro" in result.lower()
+
+    @pytest.mark.asyncio
+    async def test_get_routine_detail_integration_disabled(self, mock_hevy_service, mock_database):
+        """Test when integration disabled."""
+        profile = MagicMock()
+        profile.hevy_enabled = False
+        mock_database.get_user_profile.return_value = profile
+
+        tool = create_get_hevy_routine_detail_tool(
+            mock_hevy_service, mock_database, "user@test.com"
+        )
+
+        result = await tool.ainvoke({"routine_title_or_id": "Push Day"})
+
+        assert "desativada" in result.lower() or "integração" in result.lower()
+
+
+class TestSetRoutineRestAndRanges:
+    """Test set routine rest and ranges tool."""
+
+    @pytest.mark.asyncio
+    async def test_set_rest_and_ranges_success(self, mock_hevy_service, mock_database):
+        """Test successful update of rest times and rep ranges."""
+        profile = MagicMock()
+        profile.hevy_enabled = True
+        profile.hevy_api_key = "api_key"
+        mock_database.get_user_profile.return_value = profile
+
+        # Mock routine
+        routine = MagicMock()
+        routine.id = "R001"
+        routine.title = "Push Day"
+        routine.exercises = [
+            MagicMock(
+                id="EXE001",
+                exercise_template_id="EX001",
+                rest_seconds=60,
+                sets=[MagicMock(reps=10, rep_range=None)],
+            ),
+        ]
+
+        routines_resp = MagicMock()
+        routines_resp.routines = [routine]
+        mock_hevy_service.get_routines = AsyncMock(return_value=routines_resp)
+        mock_hevy_service.get_routine_by_id = AsyncMock(return_value=routine)
+        mock_hevy_service.update_routine = AsyncMock(return_value=(routine, None))
+
+        tool = create_set_routine_rest_and_ranges_tool(
+            mock_hevy_service, mock_database, "user@test.com"
+        )
+
+        result = await tool.ainvoke({
+            "routine_title_or_id": "Push Day",
+            "rest_seconds": 90,
+            "rep_range_start": 8,
+            "rep_range_end": 12,
+        })
+
+        # Should indicate success
+        assert "atualizado" in result.lower() or "sucesso" in result.lower() or "modificado" in result.lower()
+
+    @pytest.mark.asyncio
+    async def test_set_rest_and_ranges_routine_not_found(self, mock_hevy_service, mock_database):
+        """Test when routine not found."""
+        profile = MagicMock()
+        profile.hevy_enabled = True
+        profile.hevy_api_key = "api_key"
+        mock_database.get_user_profile.return_value = profile
+
+        mock_hevy_service.get_routine.return_value = None
+
+        tool = create_set_routine_rest_and_ranges_tool(
+            mock_hevy_service, mock_database, "user@test.com"
+        )
+
+        result = await tool.ainvoke({
+            "routine_title_or_id": "Nonexistent",
+            "rest_seconds": 90,
+        })
+
+        # Should indicate not found
+        assert "não encontrada" in result.lower() or "não encontrado" in result.lower() or "erro" in result.lower()
+
+    @pytest.mark.asyncio
+    async def test_set_rest_and_ranges_integration_disabled(self, mock_hevy_service, mock_database):
+        """Test when integration disabled."""
+        profile = MagicMock()
+        profile.hevy_enabled = False
+        mock_database.get_user_profile.return_value = profile
+
+        tool = create_set_routine_rest_and_ranges_tool(
+            mock_hevy_service, mock_database, "user@test.com"
+        )
+
+        result = await tool.ainvoke({
+            "routine_title_or_id": "Push Day",
+            "rest_seconds": 90,
+        })
 
         assert "desativada" in result.lower() or "integração" in result.lower()
