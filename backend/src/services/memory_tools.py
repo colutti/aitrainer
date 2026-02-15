@@ -95,6 +95,9 @@ def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str):
         - save_memory(content="Tem dor nas costas", category="limitation")
         """
         try:
+            # pylint: disable=import-outside-toplevel
+            from qdrant_client import models as qdrant_models
+
             valid_categories = {"preference", "limitation", "goal", "health", "context"}
             if category not in valid_categories:
                 return f"Erro: categoria '{category}' inválida. Use: {', '.join(valid_categories)}"
@@ -104,6 +107,34 @@ def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str):
 
             # Generate 768-dim embedding using Gemini with dimensionality reduction
             embedding = _embed_text(content)
+
+            # Check for semantic duplicates before saving
+            user_filter = qdrant_models.Filter(
+                must=[
+                    qdrant_models.FieldCondition(
+                        key="user_id", match=qdrant_models.MatchValue(value=user_email)
+                    )
+                ]
+            )
+            similar_results = qdrant_client.query_points(
+                collection_name=collection_name,
+                query=embedding,
+                query_filter=user_filter,
+                limit=1,
+                score_threshold=0.92,  # High threshold for semantic duplicates
+                with_payload=True,
+            )
+
+            if similar_results.points:
+                existing = similar_results.points[0]
+                existing_id = existing.payload.get("id", existing.id)
+                existing_text = existing.payload.get("memory", "")[:80]
+                logger.info("Duplicate memory detected for %s (existing ID: %s)", user_email, existing_id)
+                return (
+                    f"⚠️ Memória similar já existe (ID: {existing_id}): \"{existing_text}...\"\n"
+                    f"Use update_memory(memory_id='{existing_id}', new_content=...) para atualizar, "
+                    "ou delete_memory para remover antes de criar uma nova."
+                )
 
             # Create point
             memory_id = str(uuid4())

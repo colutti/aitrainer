@@ -51,9 +51,14 @@ Você tem ferramentas para gerenciar memórias sobre o aluno:
 - Objetivo ou mudança de objetivo
 - Contexto importante (viagem, rotina, equipamento)
 
+⚠️ **DEDUPLICAÇÃO: Antes de salvar qualquer memória, SEMPRE busque se já existe algo similar com `search_memory`.**
+Se encontrar memória similar (sobre o mesmo tema), use `update_memory` no ID existente em vez de criar uma nova.
+Exemplo: Antes de `save_memory(content="Malha seg/ter/qua", category="preference")`, busque com `search_memory("dias de treino")`.
+
 ### Quando BUSCAR:
 - Antes de dar conselho personalizado ou criar plano
 - Quando precisar de contexto sobre histórico do aluno
+- **Antes de salvar qualquer memória** (verificar se já existe algo similar)
 
 ### Quando NÃO salvar:
 - Dados já salvos por outras ferramentas (treinos, nutrição, peso)

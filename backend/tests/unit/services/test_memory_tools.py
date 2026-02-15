@@ -58,6 +58,61 @@ class TestMemoryToolsIntegration:
         assert hasattr(tool, 'name')
         assert 'save' in tool.name.lower() or 'memory' in tool.name.lower()
 
+    def test_save_memory_returns_duplicate_warning_when_similar_exists(self):
+        """Test that save_memory detects duplicates and returns warning without creating new."""
+        from src.services.memory_tools import create_save_memory_tool
+        from unittest.mock import patch
+        from qdrant_client.models import PointStruct
+
+        mock_qdrant = MagicMock()
+
+        # Mock similar memory detection
+        existing_point = PointStruct(
+            id="existing-id",
+            vector=[0.1] * 768,
+            payload={
+                "id": "existing-id",
+                "memory": "eu malho segunda, terça, quarta",
+                "user_id": "test@example.com",
+                "category": "context"
+            }
+        )
+        mock_qdrant.query_points.return_value = MagicMock(points=[existing_point])
+
+        # Mock embedding function to return a 768-dim vector
+        with patch('src.services.memory_tools._embed_text') as mock_embed:
+            mock_embed.return_value = [0.1] * 768
+
+            tool = create_save_memory_tool(mock_qdrant, "test@example.com")
+            result = tool.func(content="eu malho segunda, terça, quarta", category="context")
+
+        # Should return warning about duplicate
+        assert "similar" in result.lower() or "já existe" in result.lower() or "⚠️" in result
+        # Should NOT have called upsert
+        mock_qdrant.upsert.assert_not_called()
+
+    def test_save_memory_saves_when_no_similar_exists(self):
+        """Test that save_memory creates new memory when no similar exists."""
+        from src.services.memory_tools import create_save_memory_tool
+        from unittest.mock import patch
+
+        mock_qdrant = MagicMock()
+
+        # Mock no similar memories found
+        mock_qdrant.query_points.return_value = MagicMock(points=[])
+
+        # Mock embedding function
+        with patch('src.services.memory_tools._embed_text') as mock_embed:
+            mock_embed.return_value = [0.2] * 768
+
+            tool = create_save_memory_tool(mock_qdrant, "test@example.com")
+            result = tool.func(content="nova informação", category="preference")
+
+        # Should return success message
+        assert "✅" in result or "salva" in result.lower()
+        # Should have called upsert
+        mock_qdrant.upsert.assert_called_once()
+
     def test_search_memory_tool_creation(self):
         """Test that search_memory_tool can be created."""
         from src.services.memory_tools import create_search_memory_tool
