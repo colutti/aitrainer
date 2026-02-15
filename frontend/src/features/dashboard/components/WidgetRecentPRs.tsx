@@ -11,7 +11,7 @@ export function WidgetRecentPRs({ prs }: WidgetRecentPRsProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-2 mb-4">
         <Trophy className="text-yellow-500" size={20} />
         <h2 className="text-lg font-bold text-text-primary">Recordes Recentes</h2>
       </div>
