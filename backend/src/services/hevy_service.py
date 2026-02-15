@@ -186,12 +186,13 @@ class HevyService:
                         duration_seconds_per_set.append(int(duration))
                         has_cardio = True
 
-                # Only include cardio lists if exercise actually has cardio data
+                # Only include weights/cardio lists if exercise actually has that data
+                # For cardio exercises with no weight, keep weights_per_set empty to avoid 0kg PRs
                 exercise_log = ExerciseLog(
                     name=exercise_data["title"],
                     sets=len(sets_data),
                     reps_per_set=reps_per_set,
-                    weights_per_set=weights_per_set,
+                    weights_per_set=weights_per_set if not has_cardio or any(w > 0 for w in weights_per_set) else [],
                     distance_meters_per_set=distance_meters_per_set if has_cardio else [],
                     duration_seconds_per_set=duration_seconds_per_set if has_cardio else [],
                 )

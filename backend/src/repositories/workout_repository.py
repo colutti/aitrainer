@@ -256,6 +256,10 @@ class WorkoutRepository(BaseRepository):
                 if not weights:
                     continue
 
+                # Skip cardio-only exercises (all weights are 0, but has distance/duration)
+                if all(w == 0 for w in weights):
+                    continue
+
                 session_max = -1.0
                 session_max_reps = 0
 

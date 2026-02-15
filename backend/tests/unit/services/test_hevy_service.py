@@ -300,9 +300,9 @@ class TestTransformToWorkoutLogCardio:
         assert exercise.sets == 2
         assert exercise.distance_meters_per_set == [1000.0, 1200.0]
         assert exercise.duration_seconds_per_set == [300, 360]
-        # Reps and weights should be 0 when None in Hevy
+        # Reps should be 0 when None in Hevy, but weights should be empty for pure cardio
         assert exercise.reps_per_set == [0, 0]
-        assert exercise.weights_per_set == [0.0, 0.0]
+        assert exercise.weights_per_set == []  # Empty for pure cardio
 
     def test_mixed_exercise_with_reps_and_distance(self):
         """Should handle exercise with both reps and distance in same set"""
@@ -392,13 +392,13 @@ class TestTransformToWorkoutLogCardio:
         assert strength.name == "Bench Press"
         assert strength.reps_per_set == [10]
         assert strength.weights_per_set == [80.0]
-        assert strength.distance_meters_per_set == [0.0]
-        assert strength.duration_seconds_per_set == [0]
+        assert strength.distance_meters_per_set == []  # No cardio data for strength exercise
+        assert strength.duration_seconds_per_set == []  # No cardio data for strength exercise
 
         # Cardio exercise
         cardio = result.exercises[1]
         assert cardio.name == "Bike"
         assert cardio.reps_per_set == [0]
-        assert cardio.weights_per_set == [0.0]
+        assert cardio.weights_per_set == []  # Empty for pure cardio
         assert cardio.distance_meters_per_set == [2000.0]
         assert cardio.duration_seconds_per_set == [480]

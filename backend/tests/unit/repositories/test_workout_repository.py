@@ -359,6 +359,48 @@ class TestWorkoutRepositoryCalculateRecentPRs:
 
         assert isinstance(result, list)
 
+    def test_calculate_recent_prs_excludes_cardio_with_empty_weights(self, workout_repo):
+        """Test that cardio exercises with empty weights_per_set are NOT included in PRs."""
+        now = datetime.now()
+        # Cardio exercise: spinning with NO weights
+        workouts = [{
+            "date": now,
+            "exercises": [{
+                "name": "Spinning",
+                "weights_per_set": [],  # Empty for cardio
+                "reps_per_set": [20],   # Might have reps but no weight
+                "distance_meters_per_set": [5000],
+                "duration_seconds_per_set": [1200]
+            }],
+            "_id": ObjectId()
+        }]
+
+        result = workout_repo._calculate_recent_prs(workouts)
+
+        # Cardio should NOT appear in personal records
+        assert len(result) == 0
+
+    def test_calculate_recent_prs_excludes_cardio_with_zero_weights(self, workout_repo):
+        """Test that cardio exercises with [0.0] weights are NOT included in PRs."""
+        now = datetime.now()
+        # If cardio somehow has weights_per_set = [0.0] instead of []
+        workouts = [{
+            "date": now,
+            "exercises": [{
+                "name": "Spinning",
+                "weights_per_set": [0.0],  # Problematic: 0 weight instead of empty
+                "reps_per_set": [1],
+                "distance_meters_per_set": [5000],
+                "duration_seconds_per_set": [1200]
+            }],
+            "_id": ObjectId()
+        }]
+
+        result = workout_repo._calculate_recent_prs(workouts)
+
+        # Cardio with 0 weight should NOT appear - but BUG: it does!
+        assert len(result) == 0, f"Expected no PRs, but got: {result}"
+
 
 class TestWorkoutRepositoryCalculateVolumeTrend:
     """Test _calculate_volume_trend method."""
