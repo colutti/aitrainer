@@ -23,7 +23,6 @@ def cleanup_resources():
     yield
     # Clear lru_caches
     deps.get_mongo_database.cache_clear()
-    deps.get_mem0_client.cache_clear()
     deps.get_qdrant_client.cache_clear()
     deps.get_llm_client.cache_clear()
 
@@ -35,14 +34,12 @@ def mock_dependencies():
     This fixture runs automatically for every test.
     """
     with unittest.mock.patch("src.core.deps.get_mongo_database") as mock_db, \
-         unittest.mock.patch("src.core.deps.get_mem0_client") as mock_mem0, \
          unittest.mock.patch("src.core.deps.get_qdrant_client") as mock_qdrant, \
          unittest.mock.patch("src.core.deps.get_llm_client") as mock_llm, \
          unittest.mock.patch("pymongo.MongoClient") as mock_mongo:
-        
+
         # Configure mocks to provide safe mocks that don't connect.
         mock_db.return_value = unittest.mock.MagicMock()
-        mock_mem0.return_value = unittest.mock.MagicMock()
         mock_qdrant.return_value = unittest.mock.MagicMock()
         mock_llm.return_value = unittest.mock.MagicMock()
         mock_mongo.return_value = unittest.mock.MagicMock()

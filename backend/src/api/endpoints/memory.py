@@ -113,7 +113,7 @@ def delete_memory(
 
     try:
         # Validate ownership first
-        memory = brain.get_memory_by_id(memory_id)
+        memory = brain.get_memory_by_id(memory_id, user_email)
         if not memory:
             logger.warning("Memory not found: %s", memory_id)
             raise HTTPException(status_code=404, detail="Memory not found")
@@ -129,7 +129,7 @@ def delete_memory(
                 status_code=403, detail="Not authorized to delete this memory"
             )
 
-        brain.delete_memory(memory_id)
+        brain.delete_memory(memory_id, user_email)
         logger.info("Memory %s deleted successfully by user %s", memory_id, user_email)
         return {"message": "Memory deleted successfully"}
     except HTTPException:

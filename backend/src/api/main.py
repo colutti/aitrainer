@@ -33,7 +33,7 @@ from src.api.endpoints import (
     dashboard,
 )
 from src.core.config import settings
-from src.core.deps import get_mongo_database, get_mem0_client
+from src.core.deps import get_mongo_database
 from src.core.logs import logger, set_log_level
 from src.core.limiter import limiter, RATE_LIMITING_ENABLED
 
@@ -132,20 +132,6 @@ def health_check() -> JSONResponse:
         logger.error("MongoDB health check failed: %s", e)
         health_status["status"] = "unhealthy"
         health_status["services"]["mongodb"] = f"unhealthy: {str(e)}"
-
-    # Check Mem0
-    try:
-        mem0 = get_mem0_client()
-        # Mem0 doesn't have a direct ping, so we check if it's instantiated
-        if mem0 is not None:
-            health_status["services"]["mem0"] = "healthy"
-        else:
-            health_status["services"]["mem0"] = "unhealthy: client is None"
-            health_status["status"] = "unhealthy"
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        logger.error("Mem0 health check failed: %s", e)
-        health_status["status"] = "unhealthy"
-        health_status["services"]["mem0"] = f"unhealthy: {str(e)}"
 
     status_code = 200 if health_status["status"] == "healthy" else 503
     return JSONResponse(content=health_status, status_code=status_code)

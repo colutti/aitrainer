@@ -14,96 +14,108 @@ AI Personal Trainer - Full-stack web application for AI-powered fitness coaching
 - Container: Docker/Podman + podman-compose
 - Testing: Pytest (Backend), Vitest (Frontend), Playwright (E2E)
 
+## Development Methodology
+
+**TDD (Test-Driven Development):** All features and bugfixes MUST follow the TDD cycle: write failing tests first, then implement the minimum code to pass, then refactor.
+
+**Zero Tolerance for Linting Errors:** Both backend and frontend must have ZERO linting errors and ZERO warnings at all times. Always run lint checks after any code change.
+
+### Mandatory Quality Checks
+
+After ANY code modification, run the appropriate checks:
+
+```bash
+# Backend: linting
+cd backend && ruff check .
+
+# Frontend: linting + type checking (BOTH required)
+cd frontend && npm run lint
+cd frontend && npm run typecheck
+
+# Combined frontend check (lint + typecheck + tests)
+cd frontend && npm run check
+```
+
+These checks must pass with zero errors and zero warnings before considering any task complete.
+
 ## Development Commands
 
-### Full Stack Development
+### Full Stack
 
 ```bash
-# Start all services (backend, frontend, MongoDB, Qdrant)
-make up
-
-# Stop all services
-make down
-
-# Build containers (development mode)
-make build
-
-# Build containers (production mode - minified)
-make build-prod
-
-# Rebuild and restart
-make restart
-
-# View logs
-podman-compose logs -f [service_name]
+make up              # Start all services (backend, frontend, MongoDB, Qdrant)
+make down            # Stop all services
+make build           # Build containers (development)
+make build-prod      # Build containers (production - minified)
+make restart         # Rebuild and restart
 ```
 
-### Backend Development
+### Backend
 
 ```bash
-# Run backend locally (outside container)
-cd backend
-make api
-
-# Run tests
-cd backend
-pytest
-
-# Run tests with coverage
-pytest --cov=src
-
-# Run linter
-ruff check .
+cd backend && make api            # Run backend locally (outside container)
+cd backend && ruff check .        # Lint (zero errors/warnings required)
 ```
 
-### Frontend Development
+### Frontend
 
 ```bash
-# Serve frontend locally (port 3000)
-cd frontend
-npm run dev
-
-# Build production
-npm run build
-
-# Run unit tests (Vitest)
-npm test
-
-# Run e2e tests (Playwright)
-npx playwright test
+cd frontend && npm run dev        # Dev server (port 3000)
+cd frontend && npm run build      # Production build (includes tsc)
+cd frontend && npm run lint       # ESLint (strict TypeScript rules)
+cd frontend && npm run lint:fix   # ESLint with auto-fix
+cd frontend && npm run typecheck  # TypeScript strict type checking
+cd frontend && npm run check      # All checks: lint + typecheck + tests
 ```
 
-### User Management
+### Testing
 
 ```bash
-# Initialize database with first user
-make init-db USUARIO=email@example.com SENHA=password
+# Backend
+cd backend && pytest                        # All tests
+cd backend && pytest tests/test_file.py     # Specific file
+cd backend && pytest -k "test_function"     # Specific test
+cd backend && pytest --cov=src              # Coverage report
 
-# Create new user
-make user-create EMAIL=user@example.com PASSWORD=pass123
+# Frontend unit tests (Vitest)
+cd frontend && npm test                     # Run all
+cd frontend && npm run test:watch           # Watch mode
+cd frontend && npm run test:coverage        # Coverage report
 
-# List all users
-make user-list
+# E2E tests (Playwright)
+cd frontend && npx playwright test          # Headless
+cd frontend && npx playwright test --ui     # UI mode
+cd frontend && npx playwright show-report   # View report
 
-# Get user details
-make user-get EMAIL=user@example.com
-
-# Update user password
-make user-password EMAIL=user@example.com PASSWORD=newpass123
-
-# Delete user completely (MongoDB + Qdrant + logs)
-make user-nuke EMAIL=user@example.com
-make user-nuke-force EMAIL=user@example.com  # Skip confirmation
+# CI validation
+make ci-fast         # Quick gate: backend tests + frontend tests
+make ci-test         # Full suite: backend + frontend + e2e
 ```
 
-### Invite Management
+### User & Admin Management
 
 ```bash
-# Create invite (48h expiration)
-make invite-create EMAIL=newuser@example.com
+make init-db USUARIO=email@example.com SENHA=password    # Init DB with first user
+make user-create EMAIL=user@example.com PASSWORD=pass123  # Create user
+make user-list                                            # List all users
+make user-get EMAIL=user@example.com                      # Get user details
+make user-password EMAIL=user@example.com PASSWORD=new123 # Update password
+make user-nuke EMAIL=user@example.com                     # Delete user completely
+make user-nuke-force EMAIL=user@example.com               # Delete without confirmation
+make invite-create EMAIL=newuser@example.com              # Create invite (48h)
+make invite-list                                          # List invites
+make admin-promote EMAIL=user@example.com                 # Promote to admin
+```
 
-# List all invites
-make invite-list
+### Render Deployment
+
+```bash
+make render-deploy                # Deploy backend + frontend
+make render-deploy-backend        # Deploy backend only
+make render-deploy-frontend       # Deploy frontend only
+make render-deploy-clean          # Deploy with cache clear
+make render-logs-backend          # Stream backend logs
+make render-logs-frontend         # Stream frontend logs
 ```
 
 ## Architecture & Patterns
@@ -111,189 +123,72 @@ make invite-list
 ### Backend Architecture
 
 ```
-Request → API Endpoint → Service Layer → Repository Layer → Database
-              ↓
-         Dependency Injection (FastAPI Depends)
-              ↓
-         Configuration (Pydantic Settings)
+Request -> API Endpoint -> Service Layer -> Repository Layer -> Database
+                |
+           Dependency Injection (FastAPI Depends)
+                |
+           Configuration (Pydantic Settings)
 ```
 
 **Key Patterns:**
 
-1. **Repository Pattern** (`backend/src/repositories/`)
-   - `BaseRepository`: Common MongoDB operations
-   - Specific repositories: `UserRepository`, `ChatRepository`, etc.
-   - All DB access goes through repositories
-
-2. **Service Layer** (`backend/src/services/`)
-   - Business logic separated from API endpoints
-   - Example: `trainer.py` orchestrates AI agent execution
-
-3. **Dependency Injection** (`backend/src/core/deps.py`)
-   - Uses FastAPI's `Depends()` system
-   - Database connections, current user, settings injected into endpoints
-
-4. **AI Provider Abstraction** (`backend/src/core/config.py`)
-   - `AI_PROVIDER` setting switches between providers (gemini/openai/ollama)
-   - `get_mem0_config()` dynamically configures LLM + embeddings + vector store
-   - Provider-agnostic code in services/trainers
-
-5. **Trainer Registry** (`backend/src/trainers/registry.py`)
-   - Singleton pattern managing all trainer personalities
-   - Each trainer extends `BaseTrainer` with custom prompts/tools
-   - Available trainers: Atlas, Luna, Sofia, Sargento, GymBro
+1. **Repository Pattern** (`backend/src/repositories/`) - All DB access through `BaseRepository` subclasses
+2. **Service Layer** (`backend/src/services/`) - Business logic separated from endpoints
+3. **Dependency Injection** (`backend/src/core/deps.py`) - DB connections, current user, settings via `Depends()`
+4. **AI Provider Abstraction** (`backend/src/core/config.py`) - `AI_PROVIDER` switches between gemini/openai/ollama
+5. **Trainer Registry** (`backend/src/trainers/registry.py`) - Singleton managing trainer personalities (Atlas, Luna, Sofia, Sargento, GymBro)
 
 ### Frontend Architecture
 
-- **Framework**: React 19 with Vite 6
 - **Architecture**: Feature-based folder structure (`src/features/`)
-- **State Management**: Zustand for global stores (`useAuth`, `useChat`, etc.)
+- **State Management**: Zustand stores (`useAuth`, `useChat`, etc.)
 - **Styling**: TailwindCSS v4 with CSS variables theme
 - **Routing**: React Router v7
 - **Forms**: React Hook Form + Zod validation
 - **API**: Centralized `httpClient` + specialized API modules per feature
-
-### Frontend File Structure
-
-```
-src/
-  features/         # Feature-based modules (Auth, Chat, Body, etc.)
-    auth/
-      components/
-      api/
-    dashboard/
-  shared/           # Shared utilities, components, hooks
-    components/ui/  # Reusable UI components (Button, Input, Card)
-    hooks/          # Global hooks (useTheme, useMediaQuery)
-    utils/          # Helper functions (date formatting, calculations)
-    types/          # TypeScript interfaces
-  App.tsx           # App entry point
-  AppRoutes.tsx     # Route definitions
-```
+- **Linting**: ESLint with `tseslint.configs.strictTypeChecked` + `stylisticTypeChecked`
+- **TypeScript**: Strict mode with `noUncheckedIndexedAccess`, `noUnusedLocals`, `noUnusedParameters`
 
 ### AI Agent System
 
-**LangGraph Agent Flow:**
 ```
-User Message → Trainer Service → LangGraph Agent → Tools → Response
-                                        ↓
-                                   Mem0 Memory (Qdrant)
+User Message -> Trainer Service -> LangGraph Agent -> Tools -> Response
+                                         |
+                                    Mem0 Memory (Qdrant)
 ```
 
-**Tools Available to AI:**
-- `backend/src/services/workout_tools.py` - Workout CRUD
-- `backend/src/services/nutrition_tools.py` - Nutrition logging
-- `backend/src/services/weight_tools.py` - Weight tracking
-- `backend/src/services/metabolism_tools.py` - TDEE calculations
-- External integrations: Hevy, MyFitnessPal, Zepp Life
+**Tools:** `workout_tools.py`, `nutrition_tools.py`, `weight_tools.py`, `metabolism_tools.py` + external integrations (Hevy, MyFitnessPal, Zepp Life)
 
-**Memory System:**
-- Short-term: Last N messages in chat history (configurable)
-- Long-term: Mem0AI with Qdrant vector store
-- Summarization: Automatic when message buffer exceeds token limit
+**Memory:** Short-term (last N messages) + Long-term (Mem0/Qdrant vectors) + Auto-summarization
 
 ## Configuration & Environment
 
-### Backend Environment Variables
+### Backend `.env`
 
-Critical variables in `backend/.env`:
 ```bash
-# API
+AI_PROVIDER=gemini              # gemini | openai | ollama
+GEMINI_API_KEY=your-key
+MONGO_URI=mongodb://user:pass@mongo:27017/
+DB_NAME=aitrainer
+QDRANT_HOST=http://qdrant
+QDRANT_PORT=6333
 SECRET_KEY=your-secret-key
 API_SERVER_PORT=8000
 ALLOWED_ORIGINS=http://localhost:3000
-
-# AI Provider Selection
-AI_PROVIDER=gemini  # or "openai" or "ollama"
-
-# Gemini (Primary)
-GEMINI_API_KEY=your-key
-GEMINI_LLM_MODEL=gemini-1.5-flash
-GEMINI_EMBEDDER_MODEL=text-embedding-004
-
-# OpenAI (Alternative)
-OPENAI_API_KEY=your-key
-OPENAI_LLM_MODEL=gpt-4o-mini
-
-# Ollama (Local)
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_LLM_MODEL=llama3-groq-tool-use:8b
-
-# MongoDB
-MONGO_URI=mongodb://user:pass@mongo:27017/
-DB_NAME=aitrainer
-
-# Qdrant
-QDRANT_HOST=http://qdrant
-QDRANT_PORT=6333
-QDRANT_COLLECTION_NAME=personal_trainer_memory
 ```
 
-### Switching AI Providers
+All AI providers use 768-dimensional embeddings for Qdrant compatibility.
 
-Change `AI_PROVIDER` in `.env` to switch between:
-- `gemini` - Google Gemini (default, fastest)
-- `openai` - OpenAI GPT models
-- `ollama` - Local models (privacy, offline)
+## API Endpoints
 
-All providers use 768-dimensional embeddings for Qdrant compatibility.
-
-## Testing
-
-### Backend Tests
-
-```bash
-cd backend
-pytest                          # All tests
-pytest tests/test_file.py       # Specific file
-pytest -v                       # Verbose
-pytest --cov=src               # Coverage report
-pytest -k "test_function"      # Specific test
-```
-
-### Frontend Tests
-
-```bash
-cd frontend
-npm test                        # Vitest unit tests
-npx playwright test             # E2E tests
-```
-
-## API Structure
-
-**Endpoints** (all in `backend/src/api/endpoints/`):
-
-- `/user` - Authentication, profile management
-- `/message` - Chat conversations
-- `/trainer` - Trainer selection & configuration
-- `/memory` - Memory management (Mem0)
-- `/workout` - Workout logging & stats
-- `/nutrition` - Nutrition tracking
-- `/weight` - Weight tracking
-- `/metabolism` - Metabolism calculations
-- `/integrations/hevy` - Hevy app sync
-- `/onboarding` - User onboarding flow
-- `/telegram` - Telegram bot webhooks
-- `/health` - Health check
+All in `backend/src/api/endpoints/`: `/user`, `/message`, `/trainer`, `/memory`, `/workout`, `/nutrition`, `/weight`, `/metabolism`, `/integrations/hevy`, `/onboarding`, `/telegram`, `/health`, `/admin`
 
 **Authentication:** JWT tokens via `/user/login`
 
-## Database Schema
+## Database
 
 ### MongoDB Collections
-
-- `users` - User profiles, credentials (bcrypt)
-- `chat_history` - Conversation messages
-- `trainers` - Trainer configurations per user
-- `workouts` - Workout logs with exercises
-- `nutrition` - Daily nutrition entries
-- `weights` - Weight measurements
-- `invites` - Onboarding invite codes
-- `tokens` - Auth tokens
-- `telegram_users` - Telegram integration
+`users`, `chat_history`, `trainers`, `workouts`, `nutrition`, `weights`, `invites`, `tokens`, `telegram_users`
 
 ### Qdrant Vector Store
-
-- Collection per user: `{collection_name}_{user_id}`
-- Stores semantic embeddings of memories
-- 768-dimensional vectors (all providers)
+Collection per user: `{collection_name}_{user_id}` with 768-dim vectors

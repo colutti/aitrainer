@@ -3,7 +3,6 @@ This module contains the dependency injection for the application.
 """
 
 import functools
-from mem0 import Memory  # type: ignore
 from qdrant_client import QdrantClient
 
 from src.core.config import settings
@@ -13,15 +12,6 @@ from src.services.trainer import AITrainerBrain
 from src.services.hevy_service import HevyService
 from src.repositories.telegram_repository import TelegramRepository
 from src.services.telegram_service import TelegramBotService
-
-
-@functools.lru_cache()
-def get_mem0_client() -> Memory:
-    """
-    Returns a MEM0 client.
-    """
-    memory = Memory.from_config(settings.get_mem0_config())
-    return memory
 
 
 @functools.lru_cache()
@@ -68,10 +58,10 @@ def get_ai_trainer_brain() -> AITrainerBrain:
     Returns an AI trainer brain.
     """
     llm_client = get_llm_client()
-    memory_client = get_mem0_client()
     database = get_mongo_database()
+    qdrant_client = get_qdrant_client()
     return AITrainerBrain(
-        llm_client=llm_client, memory=memory_client, database=database
+        llm_client=llm_client, database=database, qdrant_client=qdrant_client
     )
 
 

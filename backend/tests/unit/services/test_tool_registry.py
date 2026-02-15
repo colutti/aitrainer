@@ -18,6 +18,18 @@ class TestIsToolEphemeral:
     def test_unknown_tool_defaults_to_memorable(self):
         assert is_tool_ephemeral("unknown_tool") is False
 
+    def test_search_memory_is_ephemeral(self):
+        assert is_tool_ephemeral("search_memory") is True
+
+    def test_save_memory_is_memorable(self):
+        assert is_tool_ephemeral("save_memory") is False
+
+    def test_update_memory_is_memorable(self):
+        assert is_tool_ephemeral("update_memory") is False
+
+    def test_delete_memory_is_memorable(self):
+        assert is_tool_ephemeral("delete_memory") is False
+
 
 class TestShouldStoreMemory:
     def test_no_tools_should_store(self):
@@ -31,3 +43,17 @@ class TestShouldStoreMemory:
 
     def test_mixed_tools_should_store(self):
         assert should_store_memory(["get_workouts", "save_workout"]) is True
+
+    def test_search_memory_only_should_skip(self):
+        """search_memory is ephemeral, so only it should skip storage."""
+        assert should_store_memory(["search_memory"]) is False
+
+    def test_save_memory_should_store(self):
+        """save_memory is memorable, should trigger storage."""
+        assert should_store_memory(["save_memory"]) is True
+
+    def test_memory_tools_mixed_should_store(self):
+        """Any memorable memory tool should trigger storage."""
+        assert should_store_memory(["search_memory", "save_memory"]) is True
+        assert should_store_memory(["search_memory", "update_memory"]) is True
+        assert should_store_memory(["search_memory", "delete_memory"]) is True

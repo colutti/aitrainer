@@ -27,7 +27,6 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         """Set up test fixtures."""
         self.mock_db = MagicMock()
         self.mock_llm = MagicMock()
-        self.mock_memory = MagicMock()
 
         # Mock get_conversation_memory to return our mock
         self.mock_conversation_memory = MockConversationMemory()
@@ -52,7 +51,7 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
             self.mock_db.get_window_memory.return_value = self.mock_conversation_memory
 
             self.brain = AITrainerBrain(
-                database=self.mock_db, llm_client=self.mock_llm, memory=self.mock_memory
+                database=self.mock_db, llm_client=self.mock_llm
             )
 
             # Ensure compactor was instantiated
@@ -79,7 +78,7 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         trainer_profile = TrainerProfile(user_email=user_email, trainer_type="atlas")
         self.mock_db.get_user_profile.return_value = user_profile
         self.mock_db.get_trainer_profile.return_value = trainer_profile
-        self.mock_memory.search.return_value = {}
+        # Memory search removed with Mem0
         
         # Mock async iterator for stream_with_tools
         async def mock_stream(*args, **kwargs):
@@ -100,8 +99,9 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         self.mock_db.get_user_profile.assert_called_once_with(user_email)
         self.mock_db.get_trainer_profile.assert_called_once_with(user_email)
         self.mock_db.get_window_memory.assert_called_once()
-        # Hybrid search makes 2 calls: Critical and Semantic
-        self.assertEqual(self.mock_memory.search.call_count, 2)
+        # POC: Memory injection removed, AI now manages memories via tools
+        # No automatic memory retrieval happens
+        # Memory search removed with Mem0
 
     async def test_send_message_ai_no_user_profile(self):
         """
@@ -116,7 +116,7 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         self.mock_db.get_trainer_profile.return_value = TrainerProfile(
             user_email=user_email, trainer_type="atlas"
         )
-        self.mock_memory.search.return_value = {}
+        # Memory search removed with Mem0
         
         async def mock_stream(*args, **kwargs):
             yield "Response"
@@ -156,7 +156,7 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
 
         self.mock_db.get_user_profile.return_value = user_profile
         self.mock_db.get_trainer_profile.return_value = None
-        self.mock_memory.search.return_value = {}
+        # Memory search removed with Mem0
         
         async def mock_stream(*args, **kwargs):
             yield "Response"

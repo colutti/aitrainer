@@ -204,8 +204,8 @@ class TestMemoryApi(unittest.TestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"message": "Memory deleted successfully"})
-        mock_brain.get_memory_by_id.assert_called_once_with("mem_123")
-        mock_brain.delete_memory.assert_called_once_with("mem_123")
+        mock_brain.get_memory_by_id.assert_called_once_with("mem_123", user_email)
+        mock_brain.delete_memory.assert_called_once_with("mem_123", user_email)
 
     def test_delete_memory_not_owner(self):
         """
@@ -231,13 +231,15 @@ class TestMemoryApi(unittest.TestCase):
         self.assertEqual(
             response.json(), {"detail": "Not authorized to delete this memory"}
         )
+        mock_brain.get_memory_by_id.assert_called_once_with("mem_123", user_email)
 
     def test_delete_memory_not_found(self):
         """
         Test deletion of non-existent memory returns 404.
         """
         # Arrange
-        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+        user_email = "test@test.com"
+        app.dependency_overrides[verify_token] = lambda: user_email
         mock_brain = MagicMock()
         mock_brain.get_memory_by_id.return_value = None
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
@@ -249,6 +251,7 @@ class TestMemoryApi(unittest.TestCase):
 
         # Assert
         self.assertEqual(response.status_code, 404)
+        mock_brain.get_memory_by_id.assert_called_once_with("mem_xxx", user_email)
 
     def test_delete_memory_failure(self):
         """
@@ -262,7 +265,7 @@ class TestMemoryApi(unittest.TestCase):
             "id": "mem_123",
             "user_id": user_email,
         }
-        mock_brain.delete_memory.side_effect = Exception("Mem0 error")
+        mock_brain.delete_memory.side_effect = Exception("Qdrant error")
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
         # Act
@@ -273,6 +276,8 @@ class TestMemoryApi(unittest.TestCase):
         # Assert
         self.assertEqual(response.status_code, 500)
         self.assertEqual(response.json(), {"detail": "Failed to delete memory"})
+        mock_brain.get_memory_by_id.assert_called_once_with("mem_123", user_email)
+        mock_brain.delete_memory.assert_called_once_with("mem_123", user_email)
 
 if __name__ == "__main__":
     unittest.main()

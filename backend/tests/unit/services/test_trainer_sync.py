@@ -31,7 +31,6 @@ class TestAITrainerBrainSync(unittest.TestCase):
         """Set up test fixtures."""
         self.mock_db = MagicMock()
         self.mock_llm = MagicMock()
-        self.mock_memory = MagicMock()
 
         # Mock get_conversation_memory to return our mock
         self.mock_conversation_memory = MockConversationMemory()
@@ -56,7 +55,7 @@ class TestAITrainerBrainSync(unittest.TestCase):
             self.mock_db.get_window_memory.return_value = self.mock_conversation_memory
 
             self.brain = AITrainerBrain(
-                database=self.mock_db, llm_client=self.mock_llm, memory=self.mock_memory
+                database=self.mock_db, llm_client=self.mock_llm
             )
 
             # Ensure compactor was instantiated

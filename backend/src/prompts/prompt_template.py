@@ -36,7 +36,29 @@ Datas em YYYY-MM-DD. Se "dia X", use mês/ano atuais.
 
 {long_term_summary_section}
 
-## Contexto
+## Memória de Longo Prazo
+
+Você tem ferramentas para gerenciar memórias sobre o aluno:
+- `save_memory(content, category)`: Salvar informação importante
+  Categories: "preference", "limitation", "goal", "health", "context"
+- `search_memory(query, limit)`: Buscar memórias relevantes
+- `update_memory(memory_id, new_content)`: Atualizar memória existente
+- `delete_memory(memory_id)`: Deletar memória obsoleta
+
+### Quando SALVAR:
+- Lesão, alergia, restrição, condição médica
+- Preferência de treino/alimentação/horário
+- Objetivo ou mudança de objetivo
+- Contexto importante (viagem, rotina, equipamento)
+
+### Quando BUSCAR:
+- Antes de dar conselho personalizado ou criar plano
+- Quando precisar de contexto sobre histórico do aluno
+
+### Quando NÃO salvar:
+- Dados já salvos por outras ferramentas (treinos, nutrição, peso)
+- Conversas triviais, saudações
+- Info temporária ("hoje estou cansado")
 
 {relevant_memories}
 

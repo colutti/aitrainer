@@ -4,31 +4,11 @@ Tests for dependency injection functions in src/core/deps.py
 
 from unittest.mock import patch, MagicMock
 from src.core.deps import (
-    get_mem0_client,
     get_qdrant_client,
     get_llm_client,
     get_mongo_database,
     get_ai_trainer_brain,
 )
-
-
-def test_get_mem0_client():
-    """Test that get_mem0_client returns a Memory instance."""
-    # Clear cache before test
-    get_mem0_client.cache_clear()
-
-    with patch("src.core.deps.Memory.from_config") as mock_memory:
-        mock_memory.return_value = MagicMock()
-
-        client = get_mem0_client()
-
-        assert client is not None
-        mock_memory.assert_called_once()
-
-        # Test caching - should not call from_config again
-        client2 = get_mem0_client()
-        assert client is client2
-        assert mock_memory.call_count == 1
 
 
 def test_get_qdrant_client_with_url():
@@ -106,18 +86,15 @@ def test_get_ai_trainer_brain():
     """Test that get_ai_trainer_brain creates AITrainerBrain with dependencies."""
     # Clear all caches
     get_llm_client.cache_clear()
-    get_mem0_client.cache_clear()
     get_mongo_database.cache_clear()
     get_ai_trainer_brain.cache_clear()
 
     with (
         patch("src.core.deps.LLMClient.from_config") as mock_llm,
-        patch("src.core.deps.Memory.from_config") as mock_mem0,
         patch("src.core.deps.MongoDatabase") as mock_mongo,
         patch("src.core.deps.AITrainerBrain") as mock_brain,
     ):
         mock_llm.return_value = MagicMock()
-        mock_mem0.return_value = MagicMock()
         mock_mongo.return_value = MagicMock()
         mock_brain.return_value = MagicMock()
 
@@ -127,5 +104,4 @@ def test_get_ai_trainer_brain():
         mock_brain.assert_called_once()
         call_kwargs = mock_brain.call_args[1]
         assert "llm_client" in call_kwargs
-        assert "memory" in call_kwargs
         assert "database" in call_kwargs

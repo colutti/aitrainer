@@ -75,6 +75,25 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
     "set_routine_rest_and_ranges": ToolMetadata(
         "set_routine_rest_and_ranges", ToolMemoryType.MEMORABLE, "Update rest times and rep ranges"
     ),
+    # Memory management (AI-driven, replacing Mem0 extraction)
+    "save_memory": ToolMetadata(
+        "save_memory", ToolMemoryType.MEMORABLE, "Save memory"
+    ),
+    "search_memory": ToolMetadata(
+        "search_memory", ToolMemoryType.EPHEMERAL, "Search memories"
+    ),
+    "list_raw_memories": ToolMetadata(
+        "list_raw_memories", ToolMemoryType.EPHEMERAL, "List all memories for review"
+    ),
+    "update_memory": ToolMetadata(
+        "update_memory", ToolMemoryType.MEMORABLE, "Update memory"
+    ),
+    "delete_memory": ToolMetadata(
+        "delete_memory", ToolMemoryType.MEMORABLE, "Delete memory"
+    ),
+    "delete_memories_batch": ToolMetadata(
+        "delete_memories_batch", ToolMemoryType.MEMORABLE, "Delete multiple memories"
+    ),
 }
 
 

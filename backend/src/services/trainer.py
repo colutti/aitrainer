@@ -7,14 +7,11 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 from fastapi import BackgroundTasks
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
-from mem0 import Memory  # type: ignore
 
 from src.core.config import settings
 from src.services.database import MongoDatabase
 from src.services.llm_client import LLMClient
 from src.services.history_compactor import HistoryCompactor
-from src.services.tool_registry import should_store_memory
-from src.services.memory_manager import MemoryManager
 from src.services.prompt_builder import PromptBuilder
 from src.services.workout_tools import (
     create_save_workout_tool,
@@ -28,40 +25,19 @@ from src.services.composition_tools import (
     create_save_composition_tool,
     create_get_composition_tool,
 )
+from src.services.memory_tools import (
+    create_save_memory_tool,
+    create_search_memory_tool,
+    create_list_raw_memories_tool,
+    create_update_memory_tool,
+    create_delete_memory_tool,
+    create_delete_memories_batch_tool,
+)
 from src.core.logs import logger
 from src.api.models.chat_history import ChatHistory
 from src.api.models.user_profile import UserProfile
 from src.api.models.sender import Sender
 from src.api.models.trainer_profile import TrainerProfile
-
-
-def _add_to_mem0_background(
-    memory: Memory, user_email: str, user_input: str, response_text: str
-):
-    """
-    Background task function to add conversation to Mem0 (long-term memory).
-    This runs asynchronously to avoid blocking the response stream.
-
-    Args:
-        memory (Memory): The Mem0 Memory client instance.
-        user_email (str): The user's email.
-        user_input (str): The user's input message.
-        response_text (str): The AI's response message.
-    """
-    try:
-        # Format as conversation messages so Mem0 extracts facts cleaner
-        messages = [
-            {"role": "user", "content": user_input},
-            {"role": "assistant", "content": response_text},
-        ]
-        memory.add(messages, user_id=user_email)
-        logger.info(
-            "Successfully added conversation turn to Mem0 for user: %s", user_email
-        )
-    except Exception as e:
-        # Log error but don't crash - Mem0 storage is not critical for user experience
-        logger.error("Failed to add memory to Mem0 for user %s: %s", user_email, e)
-
 
 class AITrainerBrain:
     """
@@ -69,12 +45,11 @@ class AITrainerBrain:
     Uses LLMClient for LLM operations (abstracted from specific providers).
     """
 
-    def __init__(self, database: MongoDatabase, llm_client: LLMClient, memory: Memory):
+    def __init__(self, database: MongoDatabase, llm_client: LLMClient, qdrant_client=None):
         self._database: MongoDatabase = database
         self._llm_client: LLMClient = llm_client
-        self._memory: Memory = memory
+        self._qdrant_client = qdrant_client
         self.compactor = HistoryCompactor(database, llm_client)
-        self.memory_manager = MemoryManager(memory)
         self.prompt_builder = PromptBuilder()
         self._executor = ThreadPoolExecutor(max_workers=10)
 
@@ -363,29 +338,10 @@ class AITrainerBrain:
         # Memory retrieval is now async
         profile = await asyncio.wrap_future(future_user)
         trainer_profile_obj = await asyncio.wrap_future(future_trainer)
-        hybrid_memories = await self.memory_manager.retrieve_hybrid_memories(
-            user_input, user_email
-        )
 
-        # Format memories using MemoryManager
-        relevant_memories_str = self.memory_manager.format_memories(hybrid_memories)
-
-        # Log memory retrieval statistics for cost monitoring
-        summary_length = (
-            len(profile.long_term_summary) if profile.long_term_summary else 0
-        )
-        memory_context_chars = len(relevant_memories_str)
-        estimated_tokens = memory_context_chars // 4  # Rough approximation
-        logger.info(
-            "🔍 Memory optimization: context=%d chars (~%d tokens), "
-            "critical=%d, semantic=%d, recent=%d, summary=%d chars",
-            memory_context_chars,
-            estimated_tokens,
-            len(hybrid_memories["critical"]),
-            len(hybrid_memories["semantic"]),
-            len(hybrid_memories["recent"]),
-            summary_length,
-        )
+        # POC: Remove automatic memory injection. AI now manages memories explicitly via tools.
+        # Mem0 background task still runs for comparison.
+        relevant_memories_str = ""
 
         current_trainer_type = trainer_profile_obj.trainer_type or "atlas"
 
@@ -486,6 +442,15 @@ class AITrainerBrain:
         get_user_goal_tool = create_get_user_goal_tool(self._database, user_email)
         update_user_goal_tool = create_update_user_goal_tool(self._database, user_email)
 
+        # Create memory management tools (POC: AI-driven memory curation)
+        # Pass mem0_client to ensure 768-dim embedding compatibility with existing vectors
+        save_memory_tool = create_save_memory_tool(self._qdrant_client, user_email, self._memory)
+        search_memory_tool = create_search_memory_tool(self._qdrant_client, user_email, self._memory)
+        list_raw_memories_tool = create_list_raw_memories_tool(self._qdrant_client, user_email, self._memory)
+        update_memory_tool = create_update_memory_tool(self._qdrant_client, user_email, self._memory)
+        delete_memory_tool = create_delete_memory_tool(self._qdrant_client, user_email, self._memory)
+        delete_memories_batch_tool = create_delete_memories_batch_tool(self._qdrant_client, user_email, self._memory)
+
         tools = [
             save_workout_tool,
             get_workouts_tool,
@@ -502,13 +467,18 @@ class AITrainerBrain:
             set_routine_rest_and_ranges_tool,
             get_user_goal_tool,
             update_user_goal_tool,
+            save_memory_tool,
+            search_memory_tool,
+            list_raw_memories_tool,
+            update_memory_tool,
+            delete_memory_tool,
+            delete_memories_batch_tool,
         ]
 
         # Create log callback
         log_callback = self._get_log_callback(background_tasks)
 
         full_response = []
-        tools_called: list[str] = []
         async for chunk in self._llm_client.stream_with_tools(
             prompt_template=prompt_template,
             input_data=input_data,
@@ -531,8 +501,7 @@ class AITrainerBrain:
                     )
                     continue
                 elif chunk.get("type") == "tools_summary":
-                    # Capture tools called for memory decision
-                    tools_called = chunk.get("tools_called", [])
+                    # Skip tools summary chunk
                     continue
 
             # It's a string chunk (AI Response)
@@ -568,28 +537,7 @@ class AITrainerBrain:
                 current_trainer_type,
             )
 
-            # Store memory to Mem0 only if meaningful content (not just data retrieval)
-            if should_store_memory(tools_called):
-                background_tasks.add_task(
-                    _add_to_mem0_background,
-                    memory=self._memory,
-                    user_email=user_email,
-                    user_input=user_input,
-                    response_text=final_response,
-                )
-                logger.info(
-                    "Scheduled Mem0 storage for user: %s (tools: %s)",
-                    user_email,
-                    tools_called,
-                )
-            else:
-                logger.info(
-                    "Skipped Mem0 storage for user: %s (ephemeral tools only: %s)",
-                    user_email,
-                    tools_called,
-                )
-
-            # V3: Schedule History Compaction
+            # Schedule History Compaction
             background_tasks.add_task(
                 self.compactor.compact_history,
                 user_email=user_email,
@@ -598,7 +546,7 @@ class AITrainerBrain:
             )
 
             logger.info(
-                "Scheduled background tasks (Mongo + Mem0 + Compactor) for user: %s",
+                "Scheduled background tasks (Mongo + Compactor) for user: %s",
                 user_email,
             )
         else:
@@ -753,37 +701,60 @@ class AITrainerBrain:
             logger.error("Failed to retrieve memories for user %s: %s", user_id, e)
             raise
 
-    def delete_memory(self, memory_id: str) -> bool:
+    def delete_memory(self, memory_id: str, user_email: str) -> bool:
         """
-        Deletes a specific memory from Mem0.
+        Deletes a specific memory from Qdrant (POC: supports both Mem0 and AI-created memories).
 
         Args:
             memory_id (str): The unique ID of the memory to delete.
+            user_email (str): The user's email (for authorization verification).
 
         Returns:
             bool: True if deletion was successful.
         """
-        logger.info("Attempting to delete memory: %s", memory_id)
+        logger.info("Attempting to delete memory: %s for user: %s", memory_id, user_email)
         try:
-            self._memory.delete(memory_id=memory_id)
+            # Use Qdrant directly to support both Mem0 and tool-created memories
+            # All memories share same base collection, filtered by user_id in payload
+            self._qdrant_client.delete(
+                settings.QDRANT_COLLECTION_NAME, points_selector=[memory_id]
+            )
             logger.info("Successfully deleted memory: %s", memory_id)
             return True
         except Exception as e:
             logger.error("Failed to delete memory %s: %s", memory_id, e)
             raise
 
-    def get_memory_by_id(self, memory_id: str) -> dict | None:
+    def get_memory_by_id(self, memory_id: str, user_email: str) -> dict | None:
         """
-        Retrieves a specific memory by ID.
+        Retrieves a specific memory by ID from Qdrant (POC: supports both Mem0 and AI-created memories).
 
         Args:
             memory_id (str): The unique ID of the memory.
+            user_email (str): The user's email (for authorization verification).
 
         Returns:
             dict | None: The memory object if found, otherwise None.
         """
         try:
-            return self._memory.get(memory_id)
+            # Use Qdrant directly to support both Mem0 and tool-created memories
+            # All memories share same base collection, filtered by user_id in payload
+            points = self._qdrant_client.retrieve(settings.QDRANT_COLLECTION_NAME, ids=[memory_id])
+
+            if not points:
+                return None
+
+            point = points[0]
+            payload = point.payload or {}
+
+            # Return in same format as Mem0 would
+            return {
+                "id": payload.get("id", str(point.id)),
+                "memory": payload.get("memory", ""),
+                "user_id": payload.get("user_id", user_email),
+                "created_at": payload.get("created_at"),
+                "updated_at": payload.get("updated_at"),
+            }
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to get memory %s: %s", memory_id, e)
             return None
