@@ -319,6 +319,14 @@ def _calculate_workout_summary(today, recent_workouts) -> dict:
     return {"count": count, "last_date": last_date}
 
 
+def _format_activity_date(date_obj) -> str:
+    """Format date as DD/MM/YYYY (Brazilian format, no time)."""
+    if isinstance(date_obj, datetime):
+        return date_obj.strftime("%d/%m/%Y")
+    # date_obj is already a date object
+    return date_obj.strftime("%d/%m/%Y")
+
+
 def _assemble_recent_activities(workouts, nutrition, weight_logs) -> List[RecentActivity]:
     """Helper to assemble and sort recent activities."""
     activities: List[RecentActivity] = []
@@ -331,7 +339,7 @@ def _assemble_recent_activities(workouts, nutrition, weight_logs) -> List[Recent
             activities.append(RecentActivity(
                 id=w.id, type="workout", title=f"Treino de {w.workout_type or 'Força'}",
                 subtitle=f"{w.duration_minutes or 0} min • {len(w.exercises)} exercícios",
-                date=str(w.date), icon="dumbbell"
+                date=_format_activity_date(w.date), icon="dumbbell"
             ))
 
     # Nutrition
@@ -339,15 +347,15 @@ def _assemble_recent_activities(workouts, nutrition, weight_logs) -> List[Recent
         activities.append(RecentActivity(
             id=str(getattr(n, "id", n.date)), type="nutrition", title="Refeição Registrada",
             subtitle=f"{n.calories} kcal • {n.protein_grams}g proteína",
-            date=str(n.date), icon="utensils"
+            date=_format_activity_date(n.date), icon="utensils"
         ))
 
     # Weight
     for weight in weight_logs[:2]:
         activities.append(RecentActivity(
             id=str(weight.date), type="body", title="Pesagem",
-            subtitle=f"{weight.weight_kg} kg", date=str(weight.date), icon="scale"
+            subtitle=f"{weight.weight_kg} kg", date=_format_activity_date(weight.date), icon="scale"
         ))
 
-    activities.sort(key=lambda x: str(x.date), reverse=True)
+    activities.sort(key=lambda x: x.date, reverse=True)
     return activities
