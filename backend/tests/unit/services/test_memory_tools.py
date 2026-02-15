@@ -51,8 +51,7 @@ class TestMemoryToolsIntegration:
         from src.services.memory_tools import create_save_memory_tool
 
         mock_qdrant = MagicMock()
-        mock_mem0 = MagicMock()
-        tool = create_save_memory_tool(mock_qdrant, "test@example.com", mock_mem0)
+        tool = create_save_memory_tool(mock_qdrant, "test@example.com")
 
         # Tool should exist and have a name
         assert tool is not None
@@ -64,8 +63,7 @@ class TestMemoryToolsIntegration:
         from src.services.memory_tools import create_search_memory_tool
 
         mock_qdrant = MagicMock()
-        mock_mem0 = MagicMock()
-        tool = create_search_memory_tool(mock_qdrant, "test@example.com", mock_mem0)
+        tool = create_search_memory_tool(mock_qdrant, "test@example.com")
 
         assert tool is not None
         assert hasattr(tool, 'name')
@@ -75,8 +73,7 @@ class TestMemoryToolsIntegration:
         from src.services.memory_tools import create_update_memory_tool
 
         mock_qdrant = MagicMock()
-        mock_mem0 = MagicMock()
-        tool = create_update_memory_tool(mock_qdrant, "test@example.com", mock_mem0)
+        tool = create_update_memory_tool(mock_qdrant, "test@example.com")
 
         assert tool is not None
         assert hasattr(tool, 'name')
@@ -86,8 +83,7 @@ class TestMemoryToolsIntegration:
         from src.services.memory_tools import create_delete_memory_tool
 
         mock_qdrant = MagicMock()
-        mock_mem0 = MagicMock()
-        tool = create_delete_memory_tool(mock_qdrant, "test@example.com", mock_mem0)
+        tool = create_delete_memory_tool(mock_qdrant, "test@example.com")
 
         assert tool is not None
         assert hasattr(tool, 'name')

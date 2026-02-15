@@ -444,12 +444,12 @@ class AITrainerBrain:
 
         # Create memory management tools (POC: AI-driven memory curation)
         # Pass mem0_client to ensure 768-dim embedding compatibility with existing vectors
-        save_memory_tool = create_save_memory_tool(self._qdrant_client, user_email, self._memory)
-        search_memory_tool = create_search_memory_tool(self._qdrant_client, user_email, self._memory)
-        list_raw_memories_tool = create_list_raw_memories_tool(self._qdrant_client, user_email, self._memory)
-        update_memory_tool = create_update_memory_tool(self._qdrant_client, user_email, self._memory)
-        delete_memory_tool = create_delete_memory_tool(self._qdrant_client, user_email, self._memory)
-        delete_memories_batch_tool = create_delete_memories_batch_tool(self._qdrant_client, user_email, self._memory)
+        save_memory_tool = create_save_memory_tool(self._qdrant_client, user_email)
+        search_memory_tool = create_search_memory_tool(self._qdrant_client, user_email)
+        list_raw_memories_tool = create_list_raw_memories_tool(self._qdrant_client, user_email)
+        update_memory_tool = create_update_memory_tool(self._qdrant_client, user_email)
+        delete_memory_tool = create_delete_memory_tool(self._qdrant_client, user_email)
+        delete_memories_batch_tool = create_delete_memories_batch_tool(self._qdrant_client, user_email)
 
         tools = [
             save_workout_tool,

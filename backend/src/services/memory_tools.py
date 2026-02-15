@@ -4,17 +4,47 @@ LangChain tools for AI-driven memory management.
 The AI agent can explicitly save, search, update, and delete memories,
 replacing the automatic Mem0 extraction with agent-controlled memory curation.
 
-Uses Mem0's embedding model to ensure 768-dim compatibility with existing vectors.
+Uses Gemini embeddings with dimensionality reduction to ensure 768-dim
+compatibility with existing Qdrant vectors.
 """
 
 from datetime import datetime
 from uuid import uuid4
+import numpy as np
 from langchain_core.tools import tool
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance, PointStruct
 
 from src.core.config import settings
 from src.core.logs import logger
+
+
+def _get_embedder() -> GoogleGenerativeAIEmbeddings:
+    """Returns a Gemini embedder for generating 768-dim vectors."""
+    return GoogleGenerativeAIEmbeddings(
+        model=settings.GEMINI_EMBEDDER_MODEL,
+        google_api_key=settings.GEMINI_API_KEY
+    )
+
+
+def _embed_text(text: str) -> list:
+    """
+    Generate 768-dim embedding from text using Gemini with dimensionality reduction.
+
+    Gemini returns 3072-dim vectors which we reduce to 768-dim via average pooling.
+    """
+    embedder = _get_embedder()
+    embedding = embedder.embed_query(text)
+
+    # Reduce 3072 → 768 via average pooling
+    embedding_array = np.array(embedding)
+    reduced = embedding_array.reshape(-1, 4).mean(axis=1)
+
+    # Normalize
+    reduced = reduced / np.linalg.norm(reduced)
+
+    return reduced.tolist()
 
 
 def _get_collection_name(user_email: str) -> str:
@@ -42,14 +72,13 @@ def _ensure_collection(qdrant_client: QdrantClient, collection_name: str):
                 raise
 
 
-def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str, mem0_client):
+def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str):
     """
     Factory function to create a save_memory tool with injected dependencies.
 
     Args:
         qdrant_client: Qdrant client for vector storage
         user_email: User email for ownership and filtering
-        mem0_client: Mem0 client with embedding_model (ensures 768-dim compatibility)
     """
 
     @tool
@@ -73,8 +102,8 @@ def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str, mem0_c
             collection_name = _get_collection_name(user_email)
             _ensure_collection(qdrant_client, collection_name)
 
-            # Generate embedding using Mem0's embedder (ensures 768-dim compatibility)
-            embedding = mem0_client.embedding_model.embed(text=content)
+            # Generate 768-dim embedding using Gemini with dimensionality reduction
+            embedding = _embed_text(content)
 
             # Create point
             memory_id = str(uuid4())
@@ -108,14 +137,13 @@ def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str, mem0_c
     return save_memory
 
 
-def create_search_memory_tool(qdrant_client: QdrantClient, user_email: str, mem0_client):
+def create_search_memory_tool(qdrant_client: QdrantClient, user_email: str):
     """
     Factory function to create a search_memory tool with injected dependencies.
 
     Args:
         qdrant_client: Qdrant client for vector search
         user_email: User email for filtering
-        mem0_client: Mem0 client with embedding_model (ensures 768-dim compatibility)
     """
 
     @tool
@@ -142,8 +170,8 @@ def create_search_memory_tool(qdrant_client: QdrantClient, user_email: str, mem0
             except Exception:  # pylint: disable=broad-exception-caught
                 return "Nenhuma memória encontrada (coleção vazia)."
 
-            # Generate query embedding using Mem0's embedder
-            query_embedding = mem0_client.embedding_model.embed(text=query)
+            # Generate query embedding with Gemini + dimensionality reduction
+            query_embedding = _embed_text(query)
 
             # Filter by user_id to ensure data isolation
             user_filter = qdrant_models.Filter(
@@ -198,14 +226,13 @@ def create_search_memory_tool(qdrant_client: QdrantClient, user_email: str, mem0
     return search_memory
 
 
-def create_update_memory_tool(qdrant_client: QdrantClient, user_email: str, mem0_client):
+def create_update_memory_tool(qdrant_client: QdrantClient, user_email: str):
     """
     Factory function to create an update_memory tool with injected dependencies.
 
     Args:
         qdrant_client: Qdrant client for vector updates
         user_email: User email for filtering
-        mem0_client: Mem0 client with embedding_model (ensures 768-dim compatibility)
     """
 
     @tool
@@ -236,8 +263,8 @@ def create_update_memory_tool(qdrant_client: QdrantClient, user_email: str, mem0
             if payload.get("user_id") != user_email:
                 return "❌ Você não tem permissão para atualizar esta memória."
 
-            # Generate new embedding
-            new_embedding = mem0_client.embedding_model.embed(text=new_content)
+            # Generate new embedding with Gemini + dimensionality reduction
+            new_embedding = _embed_text(new_content)
 
             # Update payload
             now = datetime.utcnow().isoformat()
@@ -267,14 +294,13 @@ def create_update_memory_tool(qdrant_client: QdrantClient, user_email: str, mem0
     return update_memory
 
 
-def create_delete_memory_tool(qdrant_client: QdrantClient, user_email: str, mem0_client):
+def create_delete_memory_tool(qdrant_client: QdrantClient, user_email: str):
     """
     Factory function to create a delete_memory tool with injected dependencies.
 
     Args:
         qdrant_client: Qdrant client for deletion
         user_email: User email for filtering
-        mem0_client: Mem0 client (for future use, consistency)
     """
 
     @tool
@@ -317,14 +343,13 @@ def create_delete_memory_tool(qdrant_client: QdrantClient, user_email: str, mem0
     return delete_memory
 
 
-def create_list_raw_memories_tool(qdrant_client: QdrantClient, user_email: str, mem0_client):
+def create_list_raw_memories_tool(qdrant_client: QdrantClient, user_email: str):
     """
     Factory function to create a list_raw_memories tool with injected dependencies.
 
     Args:
         qdrant_client: Qdrant client for retrieving memories
         user_email: User email for filtering
-        mem0_client: Mem0 client (for consistency, not used here)
     """
 
     @tool
@@ -433,14 +458,13 @@ def create_list_raw_memories_tool(qdrant_client: QdrantClient, user_email: str, 
     return list_raw_memories
 
 
-def create_delete_memories_batch_tool(qdrant_client: QdrantClient, user_email: str, mem0_client):
+def create_delete_memories_batch_tool(qdrant_client: QdrantClient, user_email: str):
     """
     Factory function to create a delete_memories_batch tool with injected dependencies.
 
     Args:
         qdrant_client: Qdrant client for batch deletion
         user_email: User email for filtering
-        mem0_client: Mem0 client (for consistency)
     """
 
     @tool
