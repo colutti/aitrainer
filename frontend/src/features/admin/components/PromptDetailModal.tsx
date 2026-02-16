@@ -28,7 +28,9 @@ function parsePromptSections(prompt: string): XmlSection[] {
   const regex = /<(\w+)>([\s\S]*?)<\/\1>/g;
   let match;
   while ((match = regex.exec(prompt)) !== null) {
-    sections.push({ tag: match[1], content: match[2].trim() });
+    const tag = match[1] ?? '';
+    const content = (match[2] ?? '').trim();
+    if (tag) sections.push({ tag, content });
   }
   return sections;
 }
@@ -40,7 +42,7 @@ function parseMsgAttributes(content: string): { attributes: MsgMetadata; text: s
   if (match) {
     return {
       attributes: { data: match[1], hora: match[2] },
-      text: match[3],
+      text: match[3] ?? '',
     };
   }
   return { attributes: {}, text: content };
