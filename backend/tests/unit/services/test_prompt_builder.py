@@ -117,8 +117,9 @@ def test_get_prompt_template_injects_long_term_summary(sample_profile_with_summa
     prompt_template = PromptBuilder.get_prompt_template(input_data, is_telegram=False)
     rendered = prompt_template.format(**input_data)
 
-    # Verify [HISTÓRICO] section is present
-    assert "[HISTÓRICO]" in rendered
+    # Verify <historico> section is present (new XML structure)
+    assert "<historico>" in rendered
+    assert "</historico>" in rendered
     # Verify the summary content is there
     assert "Perder 5kg" in rendered
     assert "Treinar 2x/semana" in rendered

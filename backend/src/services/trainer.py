@@ -254,16 +254,25 @@ class AITrainerBrain:
 
         formatted_msgs: list[BaseMessage] = []
         for msg in messages:
-            # Extract timestamp prefix
-            timestamp_prefix = ""
+            # Extract timestamp and create XML tag
+            msg_tag_prefix = ""
+            msg_tag_suffix = ""
             if hasattr(msg, "additional_kwargs") and msg.additional_kwargs:
                 ts = msg.additional_kwargs.get("timestamp", "")
                 if ts:
                     try:
                         dt = datetime.fromisoformat(ts)
-                        timestamp_prefix = f"[{dt.strftime('%d/%m %H:%M')}] "
+                        date_str = dt.strftime('%d/%m')
+                        time_str = dt.strftime('%H:%M')
+                        msg_tag_prefix = f'<msg data="{date_str}" hora="{time_str}">'
+                        msg_tag_suffix = "</msg>"
                     except (ValueError, TypeError):
                         pass
+
+            # If no timestamp, use simple <msg> tag
+            if not msg_tag_prefix:
+                msg_tag_prefix = "<msg>"
+                msg_tag_suffix = "</msg>"
 
             # Clean message content - single line
             raw_content = msg.content if msg.content else ""
@@ -271,8 +280,8 @@ class AITrainerBrain:
                 raw_content = str(raw_content)
             content = " ".join(raw_content.split())
 
-            # Incorporate timestamp into content for LLM visibility
-            content = f"{timestamp_prefix}{content}"
+            # Incorporate XML tags for LLM visibility
+            content = f"{msg_tag_prefix}{content}{msg_tag_suffix}"
 
             # Check message type
             is_system = hasattr(msg, "type") and msg.type == "system"

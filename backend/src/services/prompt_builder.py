@@ -55,6 +55,11 @@ class PromptBuilder:
         if not current_date:
             current_date = now.strftime("%Y-%m-%d")
 
+        # Wrap user message with <msg> tag including current date/time
+        date_str = now.strftime('%d/%m')
+        time_str = now.strftime('%H:%M')
+        user_message_with_tag = f'<msg data="{date_str}" hora="{time_str}">{user_input}</msg>'
+
         return {
             "trainer_profile": trainer_profile_summary,
             "user_profile": user_profile_summary,
@@ -62,7 +67,7 @@ class PromptBuilder:
             "relevant_memories": relevant_memories_str,
             "chat_history_summary": chat_history_summary,  # Legacy (removed from template V3)
             "chat_history": formatted_history_msgs,  # For MessagesPlaceholder
-            "user_message": user_input,
+            "user_message": user_message_with_tag,
             "current_date": current_date,
             "day_of_week": DIAS_PT[now.weekday()],
             "current_time": now.strftime("%H:%M"),
@@ -96,7 +101,7 @@ class PromptBuilder:
         user_profile = input_data.get("user_profile_obj")
         if user_profile and user_profile.long_term_summary:
             input_data["long_term_summary_section"] = (
-                f"\n\n[HISTÓRICO]:\n{user_profile.long_term_summary}"
+                f"\n\n{user_profile.long_term_summary}"
             )
         else:
             input_data["long_term_summary_section"] = ""
