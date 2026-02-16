@@ -41,6 +41,9 @@ def create_save_composition_tool(database, user_email: str):
         """
         Salva ou atualiza os dados de composição corporal do aluno.
 
+        Use APENAS para dados corporais (peso, gordura, medidas).
+        NÃO salve: humor, sono, nível de energia.
+
         Use quando o aluno reportar:
         - Peso de uma balança inteligente (com bioimpedância): peso_kg, body_fat_pct, muscle_mass_kg, etc.
         - Medidas manuais com fita métrica: waist_cm, hip_cm, chest_cm, etc.
