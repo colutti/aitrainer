@@ -103,6 +103,14 @@ class UserProfile(UserProfileInput):
         default=None, max_length=700_000, description="Profile photo as base64 data URI (max ~500KB)"
     )
 
+    # Coaching Check-in (TDEE)
+    tdee_last_target: int | None = Field(
+        default=None, description="Last recommended daily calorie target"
+    )
+    tdee_last_check_in: str | None = Field(
+        default=None, description="ISO date of last coaching check-in"
+    )
+
     def _goal_type_label(self) -> str:
         labels = {
             "lose": "Perder peso",

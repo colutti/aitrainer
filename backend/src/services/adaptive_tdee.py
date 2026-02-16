@@ -13,6 +13,7 @@ from src.core.logs import logger
 
 if TYPE_CHECKING:
     from src.services.database import MongoDatabase
+    from src.api.models.user_profile import UserProfile
 
 
 class AdaptiveTDEEService:
@@ -37,6 +38,11 @@ class AdaptiveTDEEService:
     MAX_TDEE = 5000
     MAX_DAILY_WEIGHT_CHANGE = 1.0  # kg (flag as anomaly if higher)
     EMA_SPAN = 10  # Days span for EMA (MacroFactor style: 7-14)
+
+    # Coaching check-in
+    MAX_WEEKLY_ADJUSTMENT = 75  # kcal max step per check-in
+    CHECK_IN_INTERVAL_DAYS = 7
+    RATE_THRESHOLD = 0.75  # If actual_rate >= 75% of goal_rate, on track
 
     def __init__(self, db: "MongoDatabase"):
         """Initialize the AdaptiveTDEEService with a database connection."""
@@ -214,18 +220,16 @@ class AdaptiveTDEEService:
         weekly_change = (total_weight_change / days_elapsed) * 7
 
         # 6. Include Goal & Target Info
-        daily_target = int(round(tdee))
         goal_rate, goal_type = 0.0, "maintain"
         profile = self.db.get_user_profile(user_email)
+
+        # Use coaching check-in for daily_target
+        daily_target = self._calculate_coaching_target(
+            tdee, avg_calories_logged, weekly_change, profile
+        )
+
         if profile:
             goal_rate, goal_type = profile.weekly_rate or 0.0, profile.goal_type
-            adjustment = 0.0
-            if goal_type == "lose":
-                adjustment = -1 * abs(goal_rate) * 1100
-            elif goal_type == "gain":
-                adjustment = abs(goal_rate) * 1100
-            daily_target = int(round(tdee + adjustment))
-            daily_target = max(1000, daily_target)
 
         # 7. Body Composition Analysis
         comp_changes = self._calculate_body_composition_changes(weight_logs)
@@ -287,29 +291,34 @@ class AdaptiveTDEEService:
             result.update(comp_changes)
         if weight_logs[-1].bmr:
             result["scale_bmr"] = weight_logs[-1].bmr
+
+        # Persist coaching check-in data
+        if profile and daily_target != profile.tdee_last_target:
+            self.db.update_user_coaching_target(
+                user_email, daily_target, date.today().isoformat()
+            )
+
         return result
 
     def get_current_targets(self, user_email: str) -> dict:
         """
         Retrieves current TDEE and daily calorie targets for a user.
+        Uses coaching check-in logic for daily_target calculation.
         """
         tdee_data = self.calculate_tdee(user_email)
         tdee = tdee_data.get("tdee", 2000)
+        daily_target = tdee_data.get("daily_target", tdee)
 
         profile = self.db.get_user_profile(user_email)
-        daily_target = tdee
         reason = "Maintenance"
         goal_type = "maintain"
 
         if profile:
             goal_type = profile.goal_type
-            weekly_rate = profile.weekly_rate or 0.0
             if goal_type == "lose":
-                daily_target = tdee - (abs(weekly_rate) * 1100)
-                reason = "Weight loss (lose)"
+                reason = "Weight loss (coaching check-in)"
             elif goal_type == "gain":
-                daily_target = tdee + (abs(weekly_rate) * 1100)
-                reason = "Weight gain (gain)"
+                reason = "Weight gain (coaching check-in)"
 
         return {
             "tdee": tdee,
@@ -580,3 +589,67 @@ class AdaptiveTDEEService:
             1 for log in last_7 if abs(log.calories - target) <= (target * 0.10)
         )
         return int(round((stable / len(last_7)) * 100))
+
+    def _calculate_coaching_target(
+        self,
+        tdee: float,
+        avg_calories: float,
+        weekly_change: float,
+        profile: "UserProfile | None",
+    ) -> int:
+        """
+        Calculates daily_target with weekly coaching check-in.
+
+        Logic:
+        1. If no profile or goal=maintain: return TDEE
+        2. If no previous target: calculate and return ideal_target
+        3. If check-in < 7 days: return previous target unchanged
+        4. If check-in >= 7 days: adjust max ±75 kcal toward ideal
+        """
+        if not profile or profile.goal_type == "maintain":
+            return int(round(tdee))
+
+        goal_rate = abs(profile.weekly_rate or 0.0)
+        actual_rate = abs(weekly_change)
+
+        # Calculate ideal target based on rate comparison
+        if goal_rate > 0 and actual_rate >= goal_rate * self.RATE_THRESHOLD:
+            # On track - maintain current intake
+            ideal_target = int(round(avg_calories))
+        else:
+            # Off track - calculate proportional deficit/surplus
+            if profile.goal_type == "lose":
+                gap = goal_rate - actual_rate
+                ideal_target = int(round(avg_calories - (gap * 1100)))
+            else:  # gain
+                gap = goal_rate - actual_rate
+                ideal_target = int(round(avg_calories + (gap * 1100)))
+
+        ideal_target = max(1000, ideal_target)
+
+        # Coaching check-in: gradual adjustment
+        prev_target = profile.tdee_last_target
+        last_check_in = profile.tdee_last_check_in
+
+        if prev_target is None or not isinstance(prev_target, int):
+            # First time: use ideal_target directly
+            return ideal_target
+
+        today = date.today()
+        if last_check_in and isinstance(last_check_in, str):
+            try:
+                last_date = date.fromisoformat(last_check_in)
+                if (today - last_date).days < self.CHECK_IN_INTERVAL_DAYS:
+                    return prev_target  # No change yet
+            except (ValueError, TypeError):
+                pass  # Invalid date format, proceed with adjustment
+
+        # Gradual adjustment: max ±75 kcal per check-in
+        diff = ideal_target - prev_target
+        adjustment = max(
+            -self.MAX_WEEKLY_ADJUSTMENT,
+            min(self.MAX_WEEKLY_ADJUSTMENT, diff),
+        )
+        new_target = prev_target + adjustment
+
+        return max(1000, new_target)

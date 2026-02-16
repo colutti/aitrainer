@@ -83,6 +83,18 @@ class MongoDatabase:
         """Updates specific fields in user profile."""
         return self.users.update_profile_fields(email, fields)
 
+    def update_user_coaching_target(
+        self, email: str, target: int, check_in_date: str
+    ) -> None:
+        """Updates coaching check-in target and date for TDEE tracking."""
+        self.users.update_profile_fields(
+            email,
+            {
+                "tdee_last_target": target,
+                "tdee_last_check_in": check_in_date,
+            },
+        )
+
     def get_user_profile(self, email: str) -> UserProfile | None:
         """Retrieves user profile."""
         return self.users.get_profile(email)
