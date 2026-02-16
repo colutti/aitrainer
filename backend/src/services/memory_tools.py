@@ -86,6 +86,20 @@ def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str):
         """
         Salva uma memória importante sobre o aluno.
 
+        QUANDO SALVAR:
+        - Lesão, alergia, restrição, condição médica
+        - Preferência de treino/alimentação/horário
+        - Objetivo ou mudança de objetivo
+        - Contexto importante (viagem, rotina, equipamento)
+
+        QUANDO NÃO SALVAR:
+        - Dados já salvos por outras ferramentas (treinos, nutrição, peso)
+        - Conversas triviais, saudações
+        - Info temporária ("hoje estou cansado")
+
+        ⚠️ DEDUPLICAÇÃO: Antes de salvar, SEMPRE busque com search_memory
+        se já existe algo similar. Se encontrar, use update_memory.
+
         Argumentos:
         - content: O conteúdo da memória (ex: "Tem alergia a amendoim")
         - category: Categoria da memória. Opções: "preference", "limitation", "goal", "health", "context"
@@ -181,6 +195,11 @@ def create_search_memory_tool(qdrant_client: QdrantClient, user_email: str):
     def search_memory(query: str, limit: int = 5) -> str:
         """
         Busca memórias relacionadas a uma query.
+
+        QUANDO BUSCAR:
+        - Antes de dar conselho personalizado ou criar plano
+        - Quando precisar de contexto sobre histórico do aluno
+        - ANTES de salvar qualquer memória (verificar duplicatas)
 
         Argumentos:
         - query: Descrição do que procurar (ex: "limitações", "preferências")

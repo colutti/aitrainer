@@ -109,6 +109,10 @@ def create_save_nutrition_tool(database, user_email: str):
     ) -> str:
         """
         Salva o resumo nutricional DIÁRIO do aluno.
+
+        Use APENAS para dados nutricionais (calorias, macros).
+        NÃO salve: água, suplementos isolados, refeições individuais sem macros.
+
         Geralmente usado quando o aluno reporta o que comeu no dia (ex: dados do MyFitnessPal).
         Se já existe log para a data, ATUALIZA os dados (upsert).
 

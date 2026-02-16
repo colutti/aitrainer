@@ -22,6 +22,10 @@ def create_save_workout_tool(database, user_email: str):
     ) -> str:
         """
         Salva um treino executado pelo aluno no banco de dados.
+
+        Use APENAS para treinos (musculação, cardio, spinning, etc).
+        NÃO salve: descanso, água, humor, sono, atividades do dia-a-dia.
+
         Argumentos:
         - workout_type: Tipo de treino. Ex: "Pernas", "Peito"
         - exercises: Lista de dicts com 'name', 'sets', 'reps_per_set', 'weights_per_set', 'distance_meters_per_set', 'duration_seconds_per_set'
