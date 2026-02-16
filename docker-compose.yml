@@ -17,6 +17,9 @@ services:
       - RUNNING_IN_CONTAINER=true
       - RATE_LIMIT_LOGIN=100/minute
 
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
