@@ -38,8 +38,8 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
     }
   };
 
-  const hasMessages = selectedPrompt.prompt?.messages && selectedPrompt.prompt.messages.length > 0;
-  const hasTools = selectedPrompt.prompt?.tools && selectedPrompt.prompt.tools.length > 0;
+  const hasMessages = !!(selectedPrompt.prompt?.messages && selectedPrompt.prompt.messages.length > 0);
+  const hasTools = !!(selectedPrompt.prompt?.tools && selectedPrompt.prompt.tools.length > 0);
   const promptStr = selectedPrompt.prompt?.prompt ?? '';
   const durationSec = (selectedPrompt.duration_ms / 1000).toFixed(2);
 
@@ -130,6 +130,7 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
               </div>
 
               {/* Chat History Section */}
+              {/* eslint-disable-next-line @typescript-eslint/no-unnecessary-condition */}
               {hasMessages && (
                 <div className="bg-black/40 rounded-lg border border-white/5 overflow-hidden">
                   <button

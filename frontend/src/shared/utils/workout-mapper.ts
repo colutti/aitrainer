@@ -18,10 +18,10 @@ export function mapWorkoutLogToWorkout(log: WorkoutLog): Workout {
       exercise_title: ex.name,
       sets: ex.reps_per_set.map((reps, sIdx) => ({
         set_index: sIdx + 1,
-        reps: reps || undefined,
+        reps,
         weight_kg: ex.weights_per_set[sIdx] ?? undefined,
-        duration_seconds: ex.duration_seconds_per_set?.[sIdx] || undefined,
-        distance_meters: ex.distance_meters_per_set?.[sIdx] || undefined,
+        duration_seconds: ex.duration_seconds_per_set?.[sIdx] ?? undefined,
+        distance_meters: ex.distance_meters_per_set?.[sIdx] ?? undefined,
       }))
     }))
   };

@@ -34,16 +34,17 @@ describe('AdminPromptsPage', () => {
   });
 
   const mockPrompts: PromptLog[] = [
-    { 
-      id: '1', 
-      timestamp: '2024-01-01T10:00:00Z', 
-      prompt_name: 'test-p', 
-      user_email: 'u@test.com', 
+    {
+      id: '1',
+      timestamp: '2024-01-01T10:00:00Z',
+      prompt_name: 'test-p',
+      user_email: 'u@test.com',
       status: 'success',
       model: 'gpt-4',
       tokens_input: 10,
       tokens_output: 20,
       duration_ms: 100,
+      prompt: { prompt_name: 'test-p' },
     },
   ];
 
@@ -86,7 +87,7 @@ describe('AdminPromptsPage', () => {
       expect(screen.getByText(/Detalhes do Prompt/i)).toBeInTheDocument();
     }, { timeout: 3000 });
 
-    const copyBtn = screen.getByText(/Copiar JSON/i);
+    const copyBtn = screen.getByRole('button', { name: /JSON/i });
     fireEvent.click(copyBtn);
     expect(mockClipboard.writeText).toHaveBeenCalled();
   });

@@ -8,18 +8,31 @@ import { useAuthStore } from './useAuth';
 // Mock the http-client module
 vi.mock('../api/http-client');
 
-// Mock localStorage
+// Mock localStorage with actual storage
+const mockStorage = new Map();
+
 const mockLocalStorage = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
+  getItem: vi.fn((key) => mockStorage.get(key) ?? null),
+  setItem: vi.fn((key, value) => mockStorage.set(key, value)),
+  removeItem: vi.fn((key) => mockStorage.delete(key)),
+  clear: vi.fn(() => mockStorage.clear()),
 };
 
 describe('useAuth', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', mockLocalStorage);
     vi.clearAllMocks();
-    mockLocalStorage.getItem.mockReturnValue(null);
+    mockStorage.clear();
+    mockLocalStorage.getItem.mockImplementation((key) => mockStorage.get(key) ?? null);
+    mockLocalStorage.setItem.mockImplementation((key, value) => mockStorage.set(key, value));
+    mockLocalStorage.removeItem.mockImplementation((key) => mockStorage.delete(key));
+    // Reset Zustand store state
+    useAuthStore.setState({
+      isAuthenticated: false,
+      userInfo: null,
+      isAdmin: false,
+      isLoading: false,
+    });
   });
 
   afterEach(() => {

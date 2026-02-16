@@ -135,7 +135,7 @@ def test_message_ai_success():
     }
 
     response = client.post(
-        "/message/message",
+        "/message",
         json=payload,
         headers={"Authorization": "Bearer test_token"}
     )
@@ -163,7 +163,7 @@ def test_message_ai_user_not_found():
     }
 
     response = client.post(
-        "/message/message",
+        "/message",
         json=payload,
         headers={"Authorization": "Bearer test_token"}
     )
@@ -186,7 +186,7 @@ def test_message_ai_empty_message():
     }
 
     response = client.post(
-        "/message/message",
+        "/message",
         json=payload,
         headers={"Authorization": "Bearer test_token"}
     )
@@ -204,7 +204,7 @@ def test_message_ai_unauthorized():
         "user_message": "Hello trainer"
     }
 
-    response = client.post("/message/message", json=payload)
+    response = client.post("/message", json=payload)
 
     assert response.status_code == 401
 
@@ -225,7 +225,7 @@ def test_message_ai_long_message():
     }
 
     response = client.post(
-        "/message/message",
+        "/message",
         json=payload,
         headers={"Authorization": "Bearer test_token"}
     )
@@ -249,7 +249,7 @@ def test_message_ai_special_characters():
     }
 
     response = client.post(
-        "/message/message",
+        "/message",
         json=payload,
         headers={"Authorization": "Bearer test_token"}
     )

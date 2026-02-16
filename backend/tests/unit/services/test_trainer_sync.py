@@ -7,7 +7,7 @@ nest_asyncio when an event loop is already running.
 """
 
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, AsyncMock
 
 from src.api.models.user_profile import UserProfile
 from src.api.models.trainer_profile import TrainerProfile
@@ -31,6 +31,7 @@ class TestAITrainerBrainSync(unittest.TestCase):
         """Set up test fixtures."""
         self.mock_db = MagicMock()
         self.mock_llm = MagicMock()
+        self.mock_memory = MagicMock()
 
         # Mock get_conversation_memory to return our mock
         self.mock_conversation_memory = MockConversationMemory()
@@ -46,6 +47,8 @@ class TestAITrainerBrainSync(unittest.TestCase):
             patch("src.services.trainer.HistoryCompactor") as mock_compactor_cls,
         ):
             self.mock_compactor = mock_compactor_cls.return_value
+            # Mock compact_history as an async function
+            self.mock_compactor.compact_history = AsyncMock()
             mock_settings.MAX_LONG_TERM_MEMORY_MESSAGES = 20
             mock_settings.SUMMARY_MAX_TOKEN_LIMIT = 2000
             mock_settings.MAX_SHORT_TERM_MEMORY_MESSAGES = 10

@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
+import { useAuthStore } from '../../../shared/hooks/useAuth';
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
 import { settingsApi } from '../api/settings-api';
 
@@ -11,11 +12,16 @@ vi.mock('../api/settings-api', () => ({
   settingsApi: {
     getProfile: vi.fn(),
     updateProfile: vi.fn(),
+    updateIdentity: vi.fn(),
   },
 }));
 
 vi.mock('../../../shared/hooks/useNotification', () => ({
   useNotificationStore: vi.fn(),
+}));
+
+vi.mock('../../../shared/hooks/useAuth', () => ({
+  useAuthStore: vi.fn(),
 }));
 
 describe('UserProfilePage', () => {
@@ -38,7 +44,13 @@ describe('UserProfilePage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useNotificationStore as any).mockReturnValue(mockNotify);
+    vi.mocked(useNotificationStore).mockReturnValue(mockNotify as any);
+    vi.mocked(useAuthStore).mockReturnValue({
+      userInfo: { email: 'test@example.com' },
+      loadUserInfo: vi.fn().mockResolvedValue(undefined),
+      isAuthenticated: true,
+    } as any);
+    (settingsApi.updateIdentity as any).mockResolvedValue(undefined);
   });
 
   it('should render profile data correctly', async () => {

@@ -12,8 +12,8 @@ describe('Pagination', () => {
 
   it('renders correctly', () => {
     render(<Pagination {...defaultProps} />);
-    
-    expect(screen.getByText('Página 1 de 5')).toBeInTheDocument();
+
+    expect(screen.getByText('1/5')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /anterior/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /próxima/i })).toBeInTheDocument();
   });

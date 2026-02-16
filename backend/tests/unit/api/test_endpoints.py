@@ -308,7 +308,7 @@ class TestEndpoints(unittest.TestCase):
 
         # Act
         response = self.client.post(
-            "/message/message",
+            "/message",
             headers={"Authorization": "Bearer test_token"},
             json=message_data,
         )
@@ -345,7 +345,7 @@ class TestEndpoints(unittest.TestCase):
 
         # Act
         response = self.client.post(
-            "/message/message",
+            "/message",
             headers={"Authorization": "Bearer test_token"},
             json=message_data,
         )
@@ -369,7 +369,7 @@ class TestEndpoints(unittest.TestCase):
         ).model_dump()
 
         # Act
-        response = self.client.post("/message/message", json=message_data)
+        response = self.client.post("/message", json=message_data)
 
         # Assert
         self.assertEqual(response.status_code, 401)

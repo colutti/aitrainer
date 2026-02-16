@@ -75,7 +75,7 @@ def test_get_memory_by_id_error(mock_deps):
     db, llm, memory = mock_deps
     qdrant_client = MagicMock()
     with patch("src.services.trainer.HistoryCompactor"):
-        trainer = AITrainerBrain(db, llm, memory, qdrant_client)
+        trainer = AITrainerBrain(db, llm, qdrant_client)
 
     qdrant_client.retrieve.side_effect = Exception("Not found")
 
