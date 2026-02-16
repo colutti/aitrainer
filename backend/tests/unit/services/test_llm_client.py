@@ -147,6 +147,80 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
         self.assertGreater(logged_data["tokens_output"], 0,
                           "stream_simple should capture tokens_output from LLM metadata")
 
+    async def test_stream_simple_captures_only_first_valid_tokens(self):
+        """Test that stream_simple captures tokens only ONCE (from first chunk with valid tokens).
+
+        Bug: Multiple chunks arrive with usage_metadata, and we must capture only the first one
+        with tokens > 0, not the last one. This prevents tokens from being overwritten with
+        later chunks that have 0 input tokens.
+        """
+        client = LLMClient()
+        client.model_name = "test-model"
+
+        # Simulate multiple chunks like real LLM streaming:
+        # 1. First chunk: Full metadata (input=1386, output=2452)
+        # 2. Second chunk: Only output (input=0, output=27)
+        # 3. Third chunk: Only output (input=0, output=24)
+        first_chunk = AIMessage(
+            content="response",
+            usage_metadata={
+                "input_tokens": 1386,
+                "output_tokens": 2452,
+                "total_tokens": 3838
+            }
+        )
+        second_chunk = AIMessage(
+            content=" chunk",
+            usage_metadata={
+                "input_tokens": 0,
+                "output_tokens": 27,
+                "total_tokens": 27
+            }
+        )
+        third_chunk = AIMessage(
+            content=" more",
+            usage_metadata={
+                "input_tokens": 0,
+                "output_tokens": 24,
+                "total_tokens": 24
+            }
+        )
+
+        # Mock the LLM to return multiple chunks
+        async def mock_llm_stream(*args, **kwargs):
+            yield first_chunk
+            yield second_chunk
+            yield third_chunk
+
+        mock_llm = MagicMock()
+        mock_llm.astream = mock_llm_stream
+        client._llm = mock_llm
+
+        # Mock the prompt template
+        prompt = MagicMock()
+        prompt.format.return_value = "formatted prompt"
+        prompt.__or__.return_value = mock_llm
+
+        log_callback = MagicMock()
+        user_email = "test@test.com"
+
+        results = []
+        async for chunk in client.stream_simple(
+            prompt, {}, user_email=user_email, log_callback=log_callback
+        ):
+            results.append(chunk)
+
+        # Verify callback was called
+        log_callback.assert_called_once()
+        call_args = log_callback.call_args
+        logged_data = call_args[0][1]
+
+        # BUG TEST: Should capture FIRST chunk tokens (1386/2452), not LAST chunk (0/24)
+        self.assertEqual(logged_data["tokens_input"], 1386,
+                        "Should capture tokens from FIRST chunk with valid tokens, not last chunk")
+        self.assertEqual(logged_data["tokens_output"], 2452,
+                        "Should capture tokens from FIRST chunk with valid tokens, not last chunk")
+
     @patch("src.services.llm_client.create_agent")
     async def test_stream_with_tools_success(self, mock_create_agent):
         """Test streaming with tool support."""

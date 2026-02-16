@@ -227,6 +227,7 @@ class LLMClient:
         start_time = time.time()
         prompt_str = ""
         usage_metadata: dict = {"input_tokens": 0, "output_tokens": 0}
+        usage_metadata_captured = False  # Flag to ensure we capture only once
 
         try:
             prompt_str = prompt_template.format(**input_data)
@@ -235,12 +236,13 @@ class LLMClient:
             try:
                 chain_before_parser = prompt_template | self._llm
                 async for chunk in chain_before_parser.astream(input_data):
-                    # Capture usage_metadata from AIMessage
-                    if isinstance(chunk, AIMessage):
+                    # Capture usage_metadata from AIMessage (only once - the first chunk with valid tokens)
+                    if not usage_metadata_captured and isinstance(chunk, AIMessage):
                         if hasattr(chunk, "usage_metadata") and chunk.usage_metadata:
                             tokens = chunk.usage_metadata.get("input_tokens", 0) + chunk.usage_metadata.get("output_tokens", 0)
                             if tokens > 0:
                                 usage_metadata = chunk.usage_metadata
+                                usage_metadata_captured = True  # Mark as captured to prevent overwriting
                                 logger.info(
                                     "✓ Captured usage_metadata (stream_simple): input=%s, output=%s",
                                     chunk.usage_metadata.get("input_tokens", 0),
