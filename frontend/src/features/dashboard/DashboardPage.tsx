@@ -115,24 +115,30 @@ export function DashboardPage() {
   const getMergedFatData = () => {
     if (!data?.fatTrend) return null;
 
-    const dateMap = new Map<string, Record<string, unknown>>();
+    interface FatDataPoint {
+      date: string;
+      value?: number;
+      trend?: number;
+    }
+
+    const dateMap = new Map<string, FatDataPoint>();
 
     // Raw fat history
     if (data.fatHistory) {
-      data.fatHistory.forEach(point => {
+      data.fatHistory.forEach((point) => {
         const dateStr = typeof point.date === 'string' ? point.date : String(point.date);
         const dateKey = dateStr.split('T')[0] ?? dateStr;
-        if (dateKey) {
+        if (dateKey && typeof point.value === 'number') {
           dateMap.set(dateKey, { date: dateKey, value: point.value });
         }
       });
     }
 
     // EMA trend data
-    data.fatTrend.forEach(point => {
+    data.fatTrend.forEach((point) => {
       const dateStr = typeof point.date === 'string' ? point.date : String(point.date);
       const dateKey = dateStr.split('T')[0] ?? dateStr;
-      if (dateKey) {
+      if (dateKey && typeof point.value === 'number') {
         const existing = dateMap.get(dateKey) ?? { date: dateKey };
         existing.trend = point.value;  // EMA do backend
         dateMap.set(dateKey, existing);
@@ -140,8 +146,8 @@ export function DashboardPage() {
     });
 
     return Array.from(dateMap.values()).sort((a, b) => {
-      const dateA = new Date(String(a.date)).getTime();
-      const dateB = new Date(String(b.date)).getTime();
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
       return dateA - dateB;
     });
   };
@@ -150,24 +156,30 @@ export function DashboardPage() {
   const getMergedMuscleData = () => {
     if (!data?.muscleTrend) return null;
 
-    const dateMap = new Map<string, Record<string, unknown>>();
+    interface MuscleDataPoint {
+      date: string;
+      value?: number;
+      trend?: number;
+    }
+
+    const dateMap = new Map<string, MuscleDataPoint>();
 
     // Raw muscle history
     if (data.muscleHistory) {
-      data.muscleHistory.forEach(point => {
+      data.muscleHistory.forEach((point) => {
         const dateStr = typeof point.date === 'string' ? point.date : String(point.date);
         const dateKey = dateStr.split('T')[0] ?? dateStr;
-        if (dateKey) {
+        if (dateKey && typeof point.value === 'number') {
           dateMap.set(dateKey, { date: dateKey, value: point.value });
         }
       });
     }
 
     // EMA trend data
-    data.muscleTrend.forEach(point => {
+    data.muscleTrend.forEach((point) => {
       const dateStr = typeof point.date === 'string' ? point.date : String(point.date);
       const dateKey = dateStr.split('T')[0] ?? dateStr;
-      if (dateKey) {
+      if (dateKey && typeof point.value === 'number') {
         const existing = dateMap.get(dateKey) ?? { date: dateKey };
         existing.trend = point.value;  // EMA do backend
         dateMap.set(dateKey, existing);
@@ -175,8 +187,8 @@ export function DashboardPage() {
     });
 
     return Array.from(dateMap.values()).sort((a, b) => {
-      const dateA = new Date(String(a.date)).getTime();
-      const dateB = new Date(String(b.date)).getTime();
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
       return dateA - dateB;
     });
   };

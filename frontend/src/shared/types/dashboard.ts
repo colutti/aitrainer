@@ -88,7 +88,9 @@ export interface DashboardData {
   recentActivities: RecentActivity[];
   weightHistory?: WeightHistoryPoint[];
   weightTrend?: TrendPoint[];
+  fatHistory?: TrendPoint[];
   fatTrend?: TrendPoint[];
+  muscleHistory?: TrendPoint[];
   muscleTrend?: TrendPoint[];
   streak?: StreakStats;
   recentPRs?: PRRecord[];
