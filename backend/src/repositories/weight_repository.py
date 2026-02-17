@@ -36,7 +36,7 @@ class WeightRepository(BaseRepository):
         # pylint: disable=duplicate-code
         log_datetime = datetime(log.date.year, log.date.month, log.date.day)
 
-        data = log.model_dump()
+        data = log.model_dump(exclude_none=True)
         data["date"] = log_datetime
 
         result = self.collection.update_one(

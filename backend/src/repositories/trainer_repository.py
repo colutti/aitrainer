@@ -21,7 +21,7 @@ class TrainerRepository(BaseRepository):
         """
         result = self.collection.update_one(
             {"user_email": trainer_profile.user_email},
-            {"$set": trainer_profile.model_dump()},
+            {"$set": trainer_profile.model_dump(exclude_none=True)},
             upsert=True,
         )
         if result.upserted_id:

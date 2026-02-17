@@ -184,3 +184,62 @@ class TestNutritionRepository(unittest.TestCase):
         self.assertEqual(stats.avg_daily_calories, 2250)
         self.assertEqual(stats.avg_daily_calories_14_days, 2250)
 
+    def test_save_log_excludes_none_fields_from_update(self):
+        """
+        CRITICAL BUG FIX:
+        When updating a nutrition log with partial data (only required fields),
+        the $set should NOT include None fields. Otherwise MongoDB overwrites previous
+        data with None, corrupting the record.
+
+        Example: User has record with fiber_grams=30, sugar_grams=50.
+        User updates calories. If we send {"$set": {"calories": 2000, "fiber_grams": None, ...}},
+        MongoDB will set fiber_grams to None, erasing the previous value.
+
+        This test ensures None fields are excluded from the $set operation.
+        """
+        # Create a log with ONLY required fields, optional fields None
+        log_partial = NutritionLog(
+            user_email="test@example.com",
+            date=datetime(2024, 1, 1),
+            calories=2000,
+            protein_grams=150,
+            carbs_grams=200,
+            fat_grams=60,
+            # All optional fields are None:
+            fiber_grams=None,
+            sugar_grams=None,
+            sodium_mg=None,
+            cholesterol_mg=None,
+        )
+
+        # Mock result for update
+        mock_result = MagicMock()
+        mock_result.upserted_id = None
+        mock_result.modified_count = 1
+        self.mock_collection.update_one.return_value = mock_result
+        self.mock_collection.find_one.return_value = {"_id": "existing_id"}
+
+        self.repo.save_log(log_partial)
+
+        # Verify that update_one was called
+        self.mock_collection.update_one.assert_called_once()
+
+        # Get the $set data that was passed to update_one
+        call_args = self.mock_collection.update_one.call_args
+        update_dict = call_args[0][1]
+        set_data = update_dict.get("$set", {})
+
+        # CRITICAL: None fields should NOT be in $set AT ALL
+        # Otherwise they overwrite previous values in MongoDB
+        none_fields_in_set = [k for k, v in set_data.items() if v is None and k != "date"]
+        self.assertEqual(
+            len(none_fields_in_set),
+            0,
+            f"None fields should not be in $set: {none_fields_in_set}. "
+            "This causes data corruption when updating existing records."
+        )
+
+        # Required fields SHOULD be in $set
+        self.assertEqual(set_data.get("calories"), 2000)
+        self.assertEqual(set_data.get("protein_grams"), 150)
+

@@ -45,7 +45,7 @@ class NutritionRepository(BaseRepository):
 
         result = self.collection.update_one(
             {"user_email": log.user_email, "date": log_date},
-            {"$set": log.model_dump()},
+            {"$set": log.model_dump(exclude_none=True)},
             upsert=True,
         )
 

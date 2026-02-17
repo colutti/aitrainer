@@ -463,3 +463,66 @@ class TestWeightRepositoryEdgeCases:
             weight_repo.get_logs("user@example.com")
 
         assert "DB Error" in str(exc_info.value)
+
+
+class TestWeightRepositoryUpsertPartialUpdate:
+    """Test that upsert doesn't overwrite fields with None values (MongoDB partial update)."""
+
+    def test_save_log_excludes_none_fields_from_update(self, weight_repo, mock_db):
+        """
+        CRITICAL BUG FIX:
+        When updating a weight log with partial data (only weight_kg, other fields None),
+        the $set should NOT include None fields. Otherwise MongoDB overwrites previous
+        data with None, corrupting the record.
+
+        Example: User has record with body_fat_pct=23.2, muscle_mass_kg=54.78.
+        User corrects weight to 75.6. If we send {"$set": {"weight_kg": 75.6, "body_fat_pct": None, ...}},
+        MongoDB will set body_fat_pct to None, erasing the previous value.
+
+        This test ensures None fields are excluded from the $set operation.
+        """
+        # Create a log with ONLY required field (weight_kg), other fields None
+        log_partial = WeightLog(
+            user_email="user@example.com",
+            date=date(2024, 1, 15),
+            weight_kg=75.6,
+            # All optional fields are None:
+            body_fat_pct=None,
+            muscle_mass_pct=None,
+            muscle_mass_kg=None,
+            bone_mass_kg=None,
+            body_water_pct=None,
+            visceral_fat=None,
+            bmr=None,
+            bmi=None,
+            trend_weight=None,
+        )
+
+        mock_db.__getitem__.return_value.update_one.return_value.upserted_id = None
+        mock_db.__getitem__.return_value.update_one.return_value.modified_count = 1
+        mock_db.__getitem__.return_value.find_one.return_value = {
+            "_id": "existing_id",
+            "weight_kg": 75.6,
+        }
+
+        weight_repo.save_log(log_partial)
+
+        # Verify that update_one was called
+        collection = mock_db.__getitem__.return_value
+        collection.update_one.assert_called_once()
+
+        # Get the $set data that was passed to update_one
+        call_args = collection.update_one.call_args
+        update_dict = call_args[0][1]  # The {"$set": {...}} part
+        set_data = update_dict.get("$set", {})
+
+        # CRITICAL: None fields should NOT be in $set AT ALL
+        # Otherwise they overwrite previous values in MongoDB
+        none_fields_in_set = [k for k, v in set_data.items() if v is None and k != "date"]
+        assert len(none_fields_in_set) == 0, \
+            f"None fields should not be in $set: {none_fields_in_set}. " \
+            "This causes data corruption when updating existing records."
+
+        # weight_kg SHOULD be in $set
+        assert set_data.get("weight_kg") == 75.6, \
+            "weight_kg should be in $set"
