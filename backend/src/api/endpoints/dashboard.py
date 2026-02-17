@@ -151,7 +151,16 @@ def get_dashboard_data(
         for log in composition_logs_asc
     ]
 
-    # Gordura: calcula EMA sequencialmente (sem campo persistido)
+    # Gordura: dados brutos + EMA sequencialmente
+    fat_history_data = [
+        TrendPoint(
+            date=log.date.isoformat() if isinstance(log.date, datetime) else str(log.date),
+            value=log.body_fat_pct,
+        )
+        for log in composition_logs_asc
+        if log.body_fat_pct is not None
+    ]
+
     fat_trend_data: list[TrendPoint] = []
     prev_fat_ema: float | None = None
     for log in composition_logs_asc:
@@ -163,7 +172,16 @@ def get_dashboard_data(
                 value=ema_val,
             ))
 
-    # Músculo: calcula EMA sequencialmente (sem campo persistido)
+    # Músculo: dados brutos + EMA sequencialmente
+    muscle_history_data = [
+        TrendPoint(
+            date=log.date.isoformat() if isinstance(log.date, datetime) else str(log.date),
+            value=log.muscle_mass_pct,
+        )
+        for log in composition_logs_asc
+        if log.muscle_mass_pct is not None
+    ]
+
     muscle_trend_data: list[TrendPoint] = []
     prev_muscle_ema: float | None = None
     for log in composition_logs_asc:
@@ -192,7 +210,9 @@ def get_dashboard_data(
         recentActivities=activities[:5],
         weightHistory=weight_history_data,
         weightTrend=weight_trend_data,
+        fatHistory=fat_history_data,
         fatTrend=fat_trend_data,
+        muscleHistory=muscle_history_data,
         muscleTrend=muscle_trend_data,
         streak=streak_data,
         recentPRs=recent_prs_data,

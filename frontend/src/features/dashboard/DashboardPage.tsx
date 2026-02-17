@@ -111,38 +111,72 @@ export function DashboardPage() {
     });
   };
 
-  // Helper function for fat trend data (já suavizado pelo backend com EMA)
+  // Helper function for fat trend data (merge raw + EMA)
   const getMergedFatData = () => {
     if (!data?.fatTrend) return null;
 
-    return data.fatTrend.map(point => {
+    const dateMap = new Map<string, Record<string, unknown>>();
+
+    // Raw fat history
+    if (data.fatHistory) {
+      data.fatHistory.forEach(point => {
+        const dateStr = typeof point.date === 'string' ? point.date : String(point.date);
+        const dateKey = dateStr.split('T')[0] ?? dateStr;
+        if (dateKey) {
+          dateMap.set(dateKey, { date: dateKey, value: point.value });
+        }
+      });
+    }
+
+    // EMA trend data
+    data.fatTrend.forEach(point => {
       const dateStr = typeof point.date === 'string' ? point.date : String(point.date);
       const dateKey = dateStr.split('T')[0] ?? dateStr;
-      return {
-        date: dateKey,
-        value: point.value,
-      };
-    }).sort((a, b) => {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
+      if (dateKey) {
+        const existing = dateMap.get(dateKey) ?? { date: dateKey };
+        existing.trend = point.value;  // EMA do backend
+        dateMap.set(dateKey, existing);
+      }
+    });
+
+    return Array.from(dateMap.values()).sort((a, b) => {
+      const dateA = new Date(String(a.date)).getTime();
+      const dateB = new Date(String(b.date)).getTime();
       return dateA - dateB;
     });
   };
 
-  // Helper function for muscle trend data (já suavizado pelo backend com EMA)
+  // Helper function for muscle trend data (merge raw + EMA)
   const getMergedMuscleData = () => {
     if (!data?.muscleTrend) return null;
 
-    return data.muscleTrend.map(point => {
+    const dateMap = new Map<string, Record<string, unknown>>();
+
+    // Raw muscle history
+    if (data.muscleHistory) {
+      data.muscleHistory.forEach(point => {
+        const dateStr = typeof point.date === 'string' ? point.date : String(point.date);
+        const dateKey = dateStr.split('T')[0] ?? dateStr;
+        if (dateKey) {
+          dateMap.set(dateKey, { date: dateKey, value: point.value });
+        }
+      });
+    }
+
+    // EMA trend data
+    data.muscleTrend.forEach(point => {
       const dateStr = typeof point.date === 'string' ? point.date : String(point.date);
       const dateKey = dateStr.split('T')[0] ?? dateStr;
-      return {
-        date: dateKey,
-        value: point.value,
-      };
-    }).sort((a, b) => {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
+      if (dateKey) {
+        const existing = dateMap.get(dateKey) ?? { date: dateKey };
+        existing.trend = point.value;  // EMA do backend
+        dateMap.set(dateKey, existing);
+      }
+    });
+
+    return Array.from(dateMap.values()).sort((a, b) => {
+      const dateA = new Date(String(a.date)).getTime();
+      const dateB = new Date(String(b.date)).getTime();
       return dateA - dateB;
     });
   };
@@ -491,6 +525,16 @@ export function DashboardPage() {
                         isAnimationActive={false}
                         name="Gordura"
                       />
+                      {/* Tendência EMA (backend) - linha fina verde */}
+                      <Line
+                        type="monotone"
+                        dataKey="trend"
+                        stroke="#10b981"
+                        strokeWidth={1}
+                        dot={false}
+                        isAnimationActive={false}
+                        name="Tendência"
+                      />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -499,7 +543,11 @@ export function DashboardPage() {
                 <div className="flex gap-4 mt-3 text-xs">
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full bg-orange-500" />
-                    <span className="text-text-muted">Gordura EMA (30d)</span>
+                    <span className="text-text-muted">Gordura (30d)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="text-text-muted">Tendência (30d)</span>
                   </div>
                 </div>
               </div>
@@ -585,6 +633,16 @@ export function DashboardPage() {
                         isAnimationActive={false}
                         name="Músculo"
                       />
+                      {/* Tendência EMA (backend) - linha fina verde */}
+                      <Line
+                        type="monotone"
+                        dataKey="trend"
+                        stroke="#10b981"
+                        strokeWidth={1}
+                        dot={false}
+                        isAnimationActive={false}
+                        name="Tendência"
+                      />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -593,7 +651,11 @@ export function DashboardPage() {
                 <div className="flex gap-4 mt-3 text-xs">
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full bg-blue-500" />
-                    <span className="text-text-muted">Músculo EMA (30d)</span>
+                    <span className="text-text-muted">Músculo (30d)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="text-text-muted">Tendência (30d)</span>
                   </div>
                 </div>
               </div>

@@ -124,8 +124,10 @@ class DashboardData(BaseModel):
     recentActivities: List[RecentActivity]
     weightHistory: Optional[List[WeightHistoryPoint]] = None
     weightTrend: Optional[List[TrendPoint]] = None
-    fatTrend: Optional[List[TrendPoint]] = None
-    muscleTrend: Optional[List[TrendPoint]] = None
+    fatHistory: Optional[List[TrendPoint]] = None  # raw fat data
+    fatTrend: Optional[List[TrendPoint]] = None    # EMA-smoothed fat
+    muscleHistory: Optional[List[TrendPoint]] = None  # raw muscle data
+    muscleTrend: Optional[List[TrendPoint]] = None    # EMA-smoothed muscle
     streak: Optional[StreakStats] = None
     recentPRs: Optional[List[PRRecord]] = None
     strengthRadar: Optional[StrengthRadarData] = None
