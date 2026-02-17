@@ -79,38 +79,8 @@ export function DashboardPage() {
   const { metabolism, body, calories, workouts } = stats;
   const { streak, weightHistory, recentPRs, strengthRadar, volumeTrend, weeklyFrequency } = data ?? {};
 
-  // Calculate linear regression from trend data
-  const calculateLinearRegression = (points: { date: string; value: number }[]) => {
-    if (points.length < 2) return null;
-
-    const n = points.length;
-    let sumX = 0;
-    let sumY = 0;
-    let sumXY = 0;
-    let sumX2 = 0;
-
-    points.forEach((point, index) => {
-      sumX += index;
-      sumY += point.value;
-      sumXY += index * point.value;
-      sumX2 += index * index;
-    });
-
-    const m = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-    const b = (sumY - m * sumX) / n;
-
-    // Create regression line with first and last points
-    const firstValue = b;
-    const lastValue = m * (n - 1) + b;
-
-    return {
-      start: firstValue,
-      end: lastValue,
-      slope: m
-    };
-  };
-
   // Helper function to merge weight and trend data
+  // weightTrend já vem EMA-suavizado do backend, sem necessidade de recalcular
   const getMergedWeightData = () => {
     if (!data?.weightTrend || !weightHistory) return null;
 
@@ -124,20 +94,12 @@ export function DashboardPage() {
       }
     });
 
-    // Calculate linear regression for trend line
-    const regression = calculateLinearRegression(data.weightTrend);
-
-    data.weightTrend.forEach((point, index) => {
+    data.weightTrend.forEach(point => {
       const dateStr = typeof point.date === 'string' ? point.date : String(point.date);
       const dateKey = dateStr.split('T')[0];
       if (dateKey) {
         const existing = dateMap.get(dateKey) ?? { date: dateKey };
-        existing.trend = point.value;
-        // Add trend line point (linear interpolation)
-        if (regression) {
-          const trendLineValue = regression.start + (regression.slope * index);
-          existing.trendLine = trendLineValue;
-        }
+        existing.trend = point.value;  // EMA já vem do backend
         dateMap.set(dateKey, existing);
       }
     });
@@ -149,20 +111,16 @@ export function DashboardPage() {
     });
   };
 
-  // Helper function to merge fat trend data with regression line
+  // Helper function for fat trend data (já suavizado pelo backend com EMA)
   const getMergedFatData = () => {
     if (!data?.fatTrend) return null;
 
-    const regression = calculateLinearRegression(data.fatTrend);
-    if (!regression) return null;
-
-    return data.fatTrend.map((point, index) => {
+    return data.fatTrend.map(point => {
       const dateStr = typeof point.date === 'string' ? point.date : String(point.date);
       const dateKey = dateStr.split('T')[0] ?? dateStr;
       return {
         date: dateKey,
         value: point.value,
-        trendLine: regression.start + (regression.slope * index)
       };
     }).sort((a, b) => {
       const dateA = new Date(a.date).getTime();
@@ -171,20 +129,16 @@ export function DashboardPage() {
     });
   };
 
-  // Helper function to merge muscle trend data with regression line
+  // Helper function for muscle trend data (já suavizado pelo backend com EMA)
   const getMergedMuscleData = () => {
     if (!data?.muscleTrend) return null;
 
-    const regression = calculateLinearRegression(data.muscleTrend);
-    if (!regression) return null;
-
-    return data.muscleTrend.map((point, index) => {
+    return data.muscleTrend.map(point => {
       const dateStr = typeof point.date === 'string' ? point.date : String(point.date);
       const dateKey = dateStr.split('T')[0] ?? dateStr;
       return {
         date: dateKey,
         value: point.value,
-        trendLine: regression.start + (regression.slope * index)
       };
     }).sort((a, b) => {
       const dateA = new Date(a.date).getTime();
@@ -431,10 +385,10 @@ export function DashboardPage() {
                           isAnimationActive={false}
                           name="Peso"
                         />
-                        {/* Tendência Linear - linha fina verde (de fundo) */}
+                        {/* Tendência EMA (backend) - linha fina verde */}
                         <Line
-                          type="linear"
-                          dataKey="trendLine"
+                          type="monotone"
+                          dataKey="trend"
                           stroke="#10b981"
                           strokeWidth={1}
                           dot={false}
@@ -537,16 +491,6 @@ export function DashboardPage() {
                         isAnimationActive={false}
                         name="Gordura"
                       />
-                      {/* Tendência Linear - linha fina verde (de fundo) */}
-                      <Line
-                        type="linear"
-                        dataKey="trendLine"
-                        stroke="#10b981"
-                        strokeWidth={1}
-                        dot={false}
-                        isAnimationActive={false}
-                        name="Tendência"
-                      />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -555,11 +499,7 @@ export function DashboardPage() {
                 <div className="flex gap-4 mt-3 text-xs">
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full bg-orange-500" />
-                    <span className="text-text-muted">Gordura (30d)</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="text-text-muted">Tendência (30d)</span>
+                    <span className="text-text-muted">Gordura EMA (30d)</span>
                   </div>
                 </div>
               </div>
@@ -645,16 +585,6 @@ export function DashboardPage() {
                         isAnimationActive={false}
                         name="Músculo"
                       />
-                      {/* Tendência Linear - linha fina verde (de fundo) */}
-                      <Line
-                        type="linear"
-                        dataKey="trendLine"
-                        stroke="#10b981"
-                        strokeWidth={1}
-                        dot={false}
-                        isAnimationActive={false}
-                        name="Tendência"
-                      />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -663,11 +593,7 @@ export function DashboardPage() {
                 <div className="flex gap-4 mt-3 text-xs">
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full bg-blue-500" />
-                    <span className="text-text-muted">Músculo (30d)</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="text-text-muted">Tendência (30d)</span>
+                    <span className="text-text-muted">Músculo EMA (30d)</span>
                   </div>
                 </div>
               </div>

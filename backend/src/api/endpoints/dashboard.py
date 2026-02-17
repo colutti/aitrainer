@@ -138,35 +138,42 @@ def get_dashboard_data(
         for log in reversed(weight_logs)
     ]
 
-    # --- Composition Trends (30 days) ---
+    # --- Composition Trends (30 days, EMA-smoothed) ---
     composition_logs = db.get_weight_logs(user_email, limit=30)
     composition_logs_asc = sorted(composition_logs, key=lambda x: x.date)
 
+    # Peso: usa trend_weight (EMA já persistido), fallback para raw se ausente (logs antigos)
     weight_trend_data = [
         TrendPoint(
             date=log.date.isoformat() if isinstance(log.date, datetime) else str(log.date),
-            value=log.weight_kg,
+            value=log.trend_weight if log.trend_weight is not None else log.weight_kg,
         )
         for log in composition_logs_asc
     ]
 
-    fat_trend_data = [
-        TrendPoint(
-            date=log.date.isoformat() if isinstance(log.date, datetime) else str(log.date),
-            value=log.body_fat_pct,
-        )
-        for log in composition_logs_asc
-        if log.body_fat_pct is not None
-    ]
+    # Gordura: calcula EMA sequencialmente (sem campo persistido)
+    fat_trend_data: list[TrendPoint] = []
+    prev_fat_ema: float | None = None
+    for log in composition_logs_asc:
+        if log.body_fat_pct is not None:
+            ema_val = tdee_service.calculate_ema_trend(log.body_fat_pct, prev_fat_ema)
+            prev_fat_ema = ema_val
+            fat_trend_data.append(TrendPoint(
+                date=log.date.isoformat() if isinstance(log.date, datetime) else str(log.date),
+                value=ema_val,
+            ))
 
-    muscle_trend_data = [
-        TrendPoint(
-            date=log.date.isoformat() if isinstance(log.date, datetime) else str(log.date),
-            value=log.muscle_mass_pct,
-        )
-        for log in composition_logs_asc
-        if log.muscle_mass_pct is not None
-    ]
+    # Músculo: calcula EMA sequencialmente (sem campo persistido)
+    muscle_trend_data: list[TrendPoint] = []
+    prev_muscle_ema: float | None = None
+    for log in composition_logs_asc:
+        if log.muscle_mass_pct is not None:
+            ema_val = tdee_service.calculate_ema_trend(log.muscle_mass_pct, prev_muscle_ema)
+            prev_muscle_ema = ema_val
+            muscle_trend_data.append(TrendPoint(
+                date=log.date.isoformat() if isinstance(log.date, datetime) else str(log.date),
+                value=ema_val,
+            ))
 
     # --- Recent Activities ---
     activities = _assemble_recent_activities(
