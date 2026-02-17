@@ -159,3 +159,70 @@ class TestCompositionTools:
         assert "Quadril: 95.0cm" in result
         assert "Bíceps: D=32.0cm E=31.5cm" in result
         assert "Coxa: D=52.0cm E=51.5cm" in result
+
+    def test_save_body_composition_calculates_trend_first_time(self, mock_db):
+        """
+        CRITICAL FIX: When saving body composition via chat for the FIRST time,
+        trend_weight should be calculated (first time = weight_kg).
+
+        Currently: trend_weight=None (always)
+        Expected: trend_weight=weight_kg (for first entry, like EMA does)
+        """
+        # Setup: First weight for user (no previous logs)
+        mock_db.get_weight_logs.return_value = []  # No previous weight
+        mock_db.save_weight_log.return_value = ("new_id_123", True)
+        tool = create_save_composition_tool(mock_db, "user@test.com")
+
+        # Execute
+        result = tool.invoke({"weight_kg": 80.5, "date": "2024-01-01"})
+
+        # Verify: trend should be calculated
+        mock_db.save_weight_log.assert_called_once()
+        saved_log = mock_db.save_weight_log.call_args[0][0]
+
+        # First entry: trend should equal weight (EMA initialization)
+        assert saved_log.trend_weight is not None, \
+            "trend_weight should be calculated, not None"
+        assert saved_log.trend_weight == 80.5, \
+            f"First trend should equal weight (80.5), got {saved_log.trend_weight}"
+
+    def test_save_body_composition_calculates_trend_with_previous(self, mock_db):
+        """
+        CRITICAL FIX: When saving body composition via chat with a PREVIOUS weight,
+        trend_weight should be calculated using EMA with prev_trend.
+
+        Example:
+        - Previous: weight=80.0, trend=80.5
+        - Current: weight=79.5
+        - Expected: trend ≈ 80.1 (EMA calculation)
+
+        Currently: trend_weight=None (always)
+        Expected: trend_weight=calculated via EMA
+        """
+        # Setup: Previous weight exists
+        previous_log = WeightLog(
+            user_email="user@test.com",
+            date=date(2024, 1, 1),
+            weight_kg=80.0,
+            trend_weight=80.5,  # Previous trend
+        )
+        mock_db.get_weight_logs.return_value = [previous_log]
+        mock_db.save_weight_log.return_value = ("update_id_456", False)
+        tool = create_save_composition_tool(mock_db, "user@test.com")
+
+        # Execute
+        result = tool.invoke({"weight_kg": 79.5, "date": "2024-01-02"})
+
+        # Verify: trend should be calculated using EMA
+        mock_db.save_weight_log.assert_called_once()
+        saved_log = mock_db.save_weight_log.call_args[0][0]
+
+        assert saved_log.trend_weight is not None, \
+            "trend_weight should be calculated using EMA, not None"
+
+        # EMA formula: new = weight * alpha + prev_trend * (1 - alpha)
+        # where alpha = 2 / (EMA_SPAN + 1) = 2 / (10 + 1) ≈ 0.1818
+        # new = 79.5 * 0.1818 + 80.5 * 0.8182 ≈ 80.3
+        expected_trend = 79.5 * (2 / 11) + 80.5 * (9 / 11)
+        assert abs(saved_log.trend_weight - expected_trend) < 0.01, \
+            f"Trend should be ~{expected_trend:.2f}, got {saved_log.trend_weight:.2f}"

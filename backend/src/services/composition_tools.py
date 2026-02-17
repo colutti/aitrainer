@@ -6,6 +6,7 @@ from datetime import datetime
 from langchain_core.tools import tool
 from src.core.logs import logger
 from src.api.models.weight_log import WeightLog
+from src.services.adaptive_tdee import AdaptiveTDEEService
 
 
 def create_save_composition_tool(database, user_email: str):
@@ -64,6 +65,12 @@ def create_save_composition_tool(database, user_email: str):
             else:
                 log_date = datetime.now().date()
 
+            # Calculate trend weight using EMA (same as API does)
+            prev_logs = database.get_weight_logs(user_email, limit=1)
+            prev_trend = prev_logs[0].trend_weight if prev_logs else None
+            tdee_service = AdaptiveTDEEService(database)
+            new_trend = tdee_service.calculate_ema_trend(weight_kg, prev_trend)
+
             log = WeightLog(
                 user_email=user_email,
                 date=log_date,
@@ -88,7 +95,7 @@ def create_save_composition_tool(database, user_email: str):
                 thigh_l_cm=thigh_l_cm,
                 calf_r_cm=calf_r_cm,
                 calf_l_cm=calf_l_cm,
-                trend_weight=None,
+                trend_weight=new_trend,
             )
 
             doc_id, is_new = database.save_weight_log(log)
