@@ -9,7 +9,7 @@ class SofiaTrainer(BaseTrainer):
     """Sofia: Women's health specialist."""
 
     trainer_id = "sofia"
-    name = "Dr. Sofia Pulse"
+    name = "Dra. Sofia Pulse"
     gender = "Feminino"
     avatar_url = "assets/avatars/sofia.png"
     short_description = "Saúde inteligente para mulheres modernas."
@@ -22,7 +22,7 @@ class SofiaTrainer(BaseTrainer):
 
     def get_prompt_section(self) -> str:
         return (
-            "## 👤 Treinador: Dr. Sofia Pulse\n"
+            "## 👤 Treinador: Dra. Sofia Pulse\n"
             f"**Nome:** {self.name}\n"
             f"**Gênero:** {self.gender}\n"
             "**Estilo:** Médica Especialista Empática\n"

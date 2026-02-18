@@ -27,7 +27,7 @@ class TestSofiaTrainerAttributes:
     def test_sofia_name(self):
         """Verify Sofia name is correct."""
         trainer = SofiaTrainer()
-        assert trainer.name == "Dr. Sofia Pulse"
+        assert trainer.name == "Dra. Sofia Pulse"
 
     def test_sofia_gender(self):
         """Verify Sofia gender is correct."""
