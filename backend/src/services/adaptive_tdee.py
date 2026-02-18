@@ -676,12 +676,4 @@ class AdaptiveTDEEService:
             except (ValueError, TypeError):
                 pass  # Invalid date format, proceed with adjustment
 
-        # Gradual adjustment: max ±75 kcal per check-in
-        diff = ideal_target - prev_target
-        adjustment = max(
-            -self.MAX_WEEKLY_ADJUSTMENT,
-            min(self.MAX_WEEKLY_ADJUSTMENT, diff),
-        )
-        new_target = prev_target + adjustment
-
-        return max(1000, new_target)
+        return max(1000, ideal_target)

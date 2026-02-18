@@ -1,6 +1,7 @@
 """
 Test to reproduce the bug: daily_target always equals TDEE regardless of goal.
 Also test the macro calculation bug where macros exceed calorie target.
+And test that coaching target returns ideal directly, not gradual step.
 """
 
 import pytest
@@ -212,3 +213,42 @@ def test_macro_targets_detail(service):
     if protein_kcal + fat_kcal > daily_target:
         assert macros["carbs"] == 0, "Carbs should be 0 if protein+fat exceed target"
         assert total_kcal > daily_target, "Total macros exceed daily_target!"
+
+
+def test_coaching_target_returns_ideal_directly_not_gradual(service):
+    """
+    BUG: Gradual MAX_WEEKLY_ADJUSTMENT=75 faz com que o target demore semanas
+    pra atingir o ideal quando estava travado no TDEE.
+
+    Para perda de 0.25kg/semana com TDEE=2508:
+      ideal_target = 2508 - (0.25 * 1100) = 2508 - 275 = 2233
+
+    Comportamento BUGADO:  retorna 2508 - 75 = 2433 (gradual step)
+    Comportamento CORRETO: retorna ~2233 (ideal diretamente)
+    """
+    profile = UserProfile(
+        email="test@test.com",
+        password_hash="hash",
+        goal_type="lose",
+        weekly_rate=0.25,
+        gender="Masculino",
+        age=30,
+        weight=80.0,
+        height=180,
+        tdee_last_target=2508,  # Preso no TDEE do bug antigo
+        tdee_last_check_in=(date.today() - timedelta(days=8)).isoformat(),
+    )
+
+    result = service._calculate_coaching_target(
+        tdee=2508.0,
+        avg_calories=2000.0,
+        weekly_change=-0.25,  # perdendo exatamente no ritmo da meta (on-track)
+        profile=profile,
+    )
+
+    # Ideal = 2508 - 275 = 2233 (±20 para arredondamento)
+    assert result <= 2255, (
+        f"BUG: retornou {result} em vez de ~2233. "
+        f"Sistema está usando ajuste gradual de 75 kcal/semana em vez de ir direto ao ideal."
+    )
+    assert result >= 2200, f"Valor muito baixo: {result} (esperado ~2233)"

@@ -717,13 +717,13 @@ def test_coaching_target_on_track(service, mock_db):
 
     result = service.calculate_tdee("test@test.com")
 
-    # NEW LOGIC: ideal = TDEE - (goal_rate * 1100), then gradual adjustment (±75 kcal)
-    # ideal ≈ 2190, prev_target = 1900, diff = 290
-    # adjustment = max(-75, min(75, 290)) = 75
-    # new_target = 1900 + 75 = 1975
+    # NEW LOGIC: ideal = TDEE - (goal_rate * 1100), returned directly (no gradual adjustment)
+    # User eating 1900, losing ~0.56 kg/week → TDEE ≈ 2521
+    # ideal = 2521 - (0.3 * 1100) = 2521 - 330 ≈ 2191
+    # System correctly suggests eating MORE (user is in too aggressive a deficit)
     # Allow range for rounding and EMA variations
-    assert 1900 < result["daily_target"] < 2100, (
-        f"Expected daily_target in range 1900-2100 (with gradual adjustment), got {result['daily_target']}"
+    assert 2100 < result["daily_target"] < 2300, (
+        f"Expected daily_target in range 2100-2300 (ideal diretamente), got {result['daily_target']}"
     )
 
 
@@ -771,8 +771,8 @@ def test_coaching_target_check_in_within_7_days(service, mock_db):
     assert result["daily_target"] == 1850
 
 
-def test_coaching_target_gradual_adjustment(service, mock_db):
-    """Check-in >= 7 days: adjust max ±75 kcal toward ideal."""
+def test_coaching_target_offtrack_reduces_target(service, mock_db):
+    """Check-in >= 7 days, off track: target should be below previous target."""
     today = date.today()
     start_date = today - timedelta(days=20)
 
@@ -797,10 +797,9 @@ def test_coaching_target_gradual_adjustment(service, mock_db):
         for i in range(21)
     ]
 
-    # Previous target was 1950, ideal is now 1800 (off track)
-    # diff = 1800 - 1950 = -150
-    # adjustment = max(-75, min(75, -150)) = -75
-    # new_target = 1950 - 75 = 1875
+    # Previous target was 1950, user is off track (maintaining weight instead of losing)
+    # Off-track penalty: ideal = TDEE - deficit_needed - gap_penalty ≈ 2200 - 330 - 330 = 1540
+    # Result should be below prev_target=1950
     profile_mock = MagicMock()
     profile_mock.goal_type = "lose"
     profile_mock.weekly_rate = 0.3
@@ -813,9 +812,8 @@ def test_coaching_target_gradual_adjustment(service, mock_db):
 
     result = service.calculate_tdee("test@test.com")
 
-    # Off track (maintaining, not losing) -> ideal ~1100 (too low for this logic)
-    # But let's check it limits the adjustment
-    assert result["daily_target"] <= 1950  # Should be reduced by max 75
+    # Off track (maintaining, not losing) -> target should be below previous
+    assert result["daily_target"] <= 1950  # Should be reduced vs prev_target
 
 
 def test_coaching_target_goal_maintain(service, mock_db):
