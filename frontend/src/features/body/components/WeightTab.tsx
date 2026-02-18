@@ -1,10 +1,12 @@
-import { 
+import {
   Scale
 } from 'lucide-react';
 import { useState } from 'react';
+import { Controller } from 'react-hook-form';
 
 import { Button } from '../../../shared/components/ui/Button';
 import { DataList } from '../../../shared/components/ui/DataList';
+import { DateInput } from '../../../shared/components/ui/DateInput';
 import { Input } from '../../../shared/components/ui/Input';
 import type { WeightLog } from '../../../shared/types/body';
 import { useWeightTab } from '../hooks/useWeightTab';
@@ -20,6 +22,7 @@ export function WeightTab() {
     isLoading,
     isSaving,
     register,
+    control,
     handleSubmit,
     errors,
     deleteEntry,
@@ -48,11 +51,18 @@ export function WeightTab() {
 
         <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4 md:space-y-6">
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
-            <Input 
-              label="Data" 
-              type="date" 
-              error={errors.date?.message}
-              {...register('date')}
+            <Controller
+              name="date"
+              control={control}
+              render={({ field }) => (
+                <DateInput
+                  label="Data"
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  error={errors.date?.message}
+                />
+              )}
             />
             <Input 
               id="weight_kg"
