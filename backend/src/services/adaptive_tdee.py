@@ -635,18 +635,27 @@ class AdaptiveTDEEService:
         goal_rate = abs(profile.weekly_rate or 0.0)
         actual_rate = abs(weekly_change)
 
-        # Calculate ideal target based on rate comparison
-        if goal_rate > 0 and actual_rate >= goal_rate * self.RATE_THRESHOLD:
-            # On track - maintain current intake
-            ideal_target = int(round(avg_calories))
-        else:
-            # Off track - calculate proportional deficit/surplus
-            if profile.goal_type == "lose":
+        # Calculate ideal target based on goal and progress
+        # The key insight: we want to ACHIEVE the goal, not maintain current intake
+        if profile.goal_type == "lose":
+            # For weight loss: ideal is TDEE minus the deficit needed for goal_rate
+            # Example: TDEE=2500, goal=0.5kg/week needs 550 kcal deficit → target=1950
+            deficit_needed = goal_rate * 1100  # kcal/week deficit for goal_rate
+            ideal_target = int(round(tdee - deficit_needed))
+
+            # If off-track (not losing fast enough), increase deficit
+            if actual_rate < goal_rate * self.RATE_THRESHOLD:
                 gap = goal_rate - actual_rate
-                ideal_target = int(round(avg_calories - (gap * 1100)))
-            else:  # gain
+                ideal_target = int(round(ideal_target - (gap * 1100)))
+        else:  # gain
+            # For weight gain: ideal is TDEE plus the surplus needed for goal_rate
+            surplus_needed = goal_rate * 1100  # kcal/week surplus for goal_rate
+            ideal_target = int(round(tdee + surplus_needed))
+
+            # If off-track (not gaining fast enough), increase surplus
+            if actual_rate < goal_rate * self.RATE_THRESHOLD:
                 gap = goal_rate - actual_rate
-                ideal_target = int(round(avg_calories + (gap * 1100)))
+                ideal_target = int(round(ideal_target + (gap * 1100)))
 
         ideal_target = max(1000, ideal_target)
 
