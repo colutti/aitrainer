@@ -67,7 +67,6 @@ export function UserProfilePage() {
         // Default values for missing fields to avoid uncontrolled input warnings
         reset({
           ...data,
-          goal: data.goal ?? '',
           target_weight: data.target_weight ?? undefined,
           weekly_rate: data.weekly_rate,
           display_name: typeof data.display_name === 'string' ? data.display_name : ''
