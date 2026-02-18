@@ -174,7 +174,7 @@ class TestCompositionTools:
         tool = create_save_composition_tool(mock_db, "user@test.com")
 
         # Execute
-        result = tool.invoke({"weight_kg": 80.5, "date": "2024-01-01"})
+        tool.invoke({"weight_kg": 80.5, "date": "2024-01-01"})
 
         # Verify: trend should be calculated
         mock_db.save_weight_log.assert_called_once()
@@ -211,7 +211,7 @@ class TestCompositionTools:
         tool = create_save_composition_tool(mock_db, "user@test.com")
 
         # Execute
-        result = tool.invoke({"weight_kg": 79.5, "date": "2024-01-02"})
+        tool.invoke({"weight_kg": 79.5, "date": "2024-01-02"})
 
         # Verify: trend should be calculated using EMA
         mock_db.save_weight_log.assert_called_once()

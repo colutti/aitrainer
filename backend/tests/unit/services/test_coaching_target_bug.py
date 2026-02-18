@@ -200,7 +200,7 @@ def test_macro_targets_detail(service):
 
     total_kcal = protein_kcal + fat_kcal + carbs_kcal
 
-    print(f"\n--- Macro Calculation Bug Example ---")
+    print("\n--- Macro Calculation Bug Example ---")
     print(f"Daily Target: {daily_target} kcal")
     print(f"Weight: {weight_kg} kg")
     print(f"Protein: {macros['protein']}g = {protein_kcal} kcal")
