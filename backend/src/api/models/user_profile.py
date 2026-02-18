@@ -15,8 +15,8 @@ class UserProfileInput(BaseModel):
         ..., description="User's gender", pattern="^(Masculino|Feminino)$"
     )
     age: int = Field(..., ge=18, le=100, description="Age between 18 and 100 years")
-    weight: float = Field(
-        ..., ge=30.0, le=500.0, description="Weight in kg between 30 and 500"
+    weight: float | None = Field(
+        default=None, ge=30.0, le=500.0, description="Weight in kg between 30 and 500"
     )
     height: int = Field(
         ..., ge=100, le=250, description="Height in cm between 100 and 250"
@@ -127,11 +127,12 @@ class UserProfile(UserProfileInput):
             str: Formatted summary of the user's profile as key-value pairs.
         """
         name_line = f"**Nome:** {self.display_name}\n" if self.display_name else ""
+        weight_line = f"**Peso Inicial:** {self.weight}kg\n" if self.weight else ""
         return (
             f"{name_line}"
             f"**Gênero:** {self.gender}\n"
             f"**Idade:** {self.age} anos\n"
-            f"**Peso Inicial:** {self.weight}kg\n"
+            f"{weight_line}"
             f"**Altura:** {self.height}cm\n"
             f"**Tipo de Objetivo:** {self._goal_type_label()}\n"
             f"**Taxa Semanal:** {self.weekly_rate}kg/semana\n"

@@ -295,6 +295,39 @@ def test_update_profile_invalid_data():
     app.dependency_overrides = {}
 
 
+# Test: POST /update_profile - Without Weight Field Preserves Existing
+def test_update_profile_without_weight_preserves_existing(sample_user_profile):
+    """Confirma que update de perfil sem campo weight não zera o peso existente."""
+    app.dependency_overrides[verify_token] = lambda: "test@example.com"
+    mock_brain = MagicMock()
+    mock_brain.get_user_profile.return_value = sample_user_profile
+    mock_brain.save_user_profile.return_value = None
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+    # Update payload sem o campo weight
+    update_payload = {
+        "gender": "Masculino",
+        "age": 31,  # só muda a idade
+        "height": 180,
+        "goal_type": "lose",
+        "weekly_rate": 0.5,
+        # weight ausente intencionalmente
+    }
+
+    response = client.post(
+        "/user/update_profile",
+        json=update_payload,
+        headers={"Authorization": "Bearer test_token"}
+    )
+
+    assert response.status_code == 200
+    saved = mock_brain.save_user_profile.call_args[0][0]
+    assert saved.weight == 75.0, "Peso original deve ser preservado"
+    assert saved.age == 31, "Idade deve ser atualizada"
+
+    app.dependency_overrides = {}
+
+
 # Test: POST /telegram-notifications - Success Case
 def test_update_telegram_notifications_success(sample_user_profile):
     """Test successful update of Telegram notification settings."""
