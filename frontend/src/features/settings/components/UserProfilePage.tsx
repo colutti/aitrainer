@@ -12,6 +12,15 @@ import { settingsApi } from '../api/settings-api';
 
 import { PhotoUpload } from './PhotoUpload';
 
+const WEEKLY_RATE_OPTIONS = [
+  { value: 0.25, label: '0.25 kg/semana' },
+  { value: 0.5,  label: '0.5 kg/semana (recomendado)' },
+  { value: 0.75, label: '0.75 kg/semana' },
+  { value: 1,    label: '1.0 kg/semana' },
+  { value: 1.5,  label: '1.5 kg/semana' },
+  { value: 2,    label: '2.0 kg/semana (máximo)' },
+] as const;
+
 const profileSchema = z.object({
   display_name: z.string().max(50).optional(),
   email: z.string().email(),
@@ -22,7 +31,10 @@ const profileSchema = z.object({
   goal: z.string().optional(),
   goal_type: z.enum(['lose', 'gain', 'maintain']),
   weekly_rate: z.coerce.number(),
-  target_weight: z.coerce.number().optional()
+  target_weight: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined) ? undefined : Number(val),
+    z.number().positive('Peso alvo deve ser positivo').optional()
+  )
 });
 
 type ProfileForm = z.infer<typeof profileSchema>;
@@ -33,9 +45,22 @@ export function UserProfilePage() {
   const [photo, setPhoto] = useState<string | null | undefined>(userInfo?.photo_base64);
   const [isSaving, setIsSaving] = useState(false);
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<ProfileForm>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting } } = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema)
   });
+
+  const goalType = watch('goal_type');
+
+  useEffect(() => {
+    if (goalType === 'maintain') {
+      setValue('weekly_rate', 0);
+    } else {
+      const currentRate = watch('weekly_rate');
+      if (!currentRate || currentRate === 0) {
+        setValue('weekly_rate', 0.5);
+      }
+    }
+  }, [goalType, setValue, watch]);
 
   useEffect(() => {
     async function load() {
@@ -82,6 +107,8 @@ export function UserProfilePage() {
     }
   };
 
+  const isMaintain = goalType === 'maintain';
+
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-700 h-full overflow-y-auto pb-20">
       <div className="flex items-center gap-3 mb-6">
@@ -122,12 +149,12 @@ export function UserProfilePage() {
         </div>
 
         <Input id="profile-email" label="Email" {...register('email')} disabled className="opacity-60 cursor-not-allowed" />
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input id="profile-age" label="Idade" type="number" {...register('age')} error={errors.age?.message} />
             <Input id="profile-gender" label="Gênero" {...register('gender')} error={errors.gender?.message} />
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input id="profile-weight" label="Peso (kg)" type="number" step="0.1" {...register('weight')} error={errors.weight?.message} />
             <Input id="profile-height" label="Altura (cm)" type="number" {...register('height')} error={errors.height?.message} />
@@ -135,24 +162,43 @@ export function UserProfilePage() {
 
         <div className="border-t border-border pt-4 mt-6">
             <h3 className="text-lg font-semibold text-text-primary mb-4">Metas & Objetivos</h3>
-            
+
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                    <label className="text-sm font-medium text-text-secondary px-1 block mb-1.5">Tipo de Objetivo</label>
+                    <label htmlFor="profile-goal-type" className="text-sm font-medium text-text-secondary px-1 block mb-1.5">Tipo de Objetivo</label>
                     <select
-                    {...register('goal_type')}
-                    className="flex h-11 w-full rounded-lg bg-dark-card border border-border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-gradient-start/20 focus:border-gradient-start text-white"
+                      id="profile-goal-type"
+                      {...register('goal_type')}
+                      className="flex h-11 w-full rounded-lg bg-dark-card border border-border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-gradient-start/20 focus:border-gradient-start text-white"
                     >
                         <option value="lose">Perder Peso</option>
                         <option value="gain">Ganhar Massa</option>
                         <option value="maintain">Manter Peso</option>
                     </select>
                 </div>
-                 <Input id="profile-weekly-rate" label="Meta Semanal (kg)" type="number" step="0.1" {...register('weekly_rate')} error={errors.weekly_rate?.message} />
+
+                <div>
+                    <label htmlFor="profile-weekly-rate" className="text-sm font-medium text-text-secondary px-1 block mb-1.5">Meta Semanal</label>
+                    <select
+                      id="profile-weekly-rate"
+                      {...register('weekly_rate')}
+                      disabled={isMaintain}
+                      className="flex h-11 w-full rounded-lg bg-dark-card border border-border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-gradient-start/20 focus:border-gradient-start text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {WEEKLY_RATE_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.weekly_rate && (
+                      <p className="text-red-400 text-xs mt-1 px-1">{errors.weekly_rate.message}</p>
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input label="Peso Alvo (kg)" type="number" step="0.1" {...register('target_weight')} error={errors.target_weight?.message} />
+                <Input id="profile-target-weight" label="Peso Alvo (kg)" type="number" step="0.1" {...register('target_weight')} error={errors.target_weight?.message} />
                 <Input label="Descrição do Objetivo" {...register('goal')} error={errors.goal?.message} placeholder="Ex: Ficar mais definido para o verão" />
             </div>
         </div>

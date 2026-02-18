@@ -448,6 +448,83 @@ def test_refresh_token_returns_new_token():
         app.dependency_overrides.clear()
 
 
+# Test: POST /update_identity - Race condition fix
+def test_update_identity_uses_partial_update_not_full_write(
+    mock_user_email, mock_ai_trainer_brain, sample_user_profile
+):
+    """
+    Regression test: update_identity must NOT use full read-modify-write.
+
+    Bug: When update_profile and update_identity are called concurrently
+    (Promise.all on frontend), update_identity reads the old profile and
+    writes ALL fields back via $set, overwriting changes from update_profile.
+    Result: goal_type and weekly_rate revert to old values after page refresh.
+
+    Fix: update_identity must use targeted partial update (update_user_profile_fields)
+    that only touches identity fields (display_name, photo_base64).
+    """
+    app.dependency_overrides[verify_token] = lambda: mock_user_email
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_ai_trainer_brain
+    mock_ai_trainer_brain.get_user_profile.return_value = sample_user_profile
+
+    response = client.post(
+        "/user/update_identity",
+        json={"display_name": "New Name"},
+        headers={"Authorization": "Bearer test_token"},
+    )
+
+    assert response.status_code == 200
+    # Must NOT use full write (which overwrites concurrent profile field changes)
+    mock_ai_trainer_brain.save_user_profile.assert_not_called()
+    # Must use targeted partial update with only identity fields
+    mock_ai_trainer_brain.update_user_profile_fields.assert_called_once_with(
+        mock_user_email, {"display_name": "New Name"}
+    )
+
+    app.dependency_overrides.clear()
+
+
+def test_update_identity_partial_update_photo_only(
+    mock_user_email, mock_ai_trainer_brain, sample_user_profile
+):
+    """update_identity with only photo_base64 must use partial update."""
+    app.dependency_overrides[verify_token] = lambda: mock_user_email
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_ai_trainer_brain
+    mock_ai_trainer_brain.get_user_profile.return_value = sample_user_profile
+
+    response = client.post(
+        "/user/update_identity",
+        json={"photo_base64": "data:image/png;base64,abc123"},
+        headers={"Authorization": "Bearer test_token"},
+    )
+
+    assert response.status_code == 200
+    mock_ai_trainer_brain.save_user_profile.assert_not_called()
+    mock_ai_trainer_brain.update_user_profile_fields.assert_called_once_with(
+        mock_user_email, {"photo_base64": "data:image/png;base64,abc123"}
+    )
+
+    app.dependency_overrides.clear()
+
+
+def test_update_identity_user_not_found(mock_user_email, mock_ai_trainer_brain):
+    """update_identity returns 404 when user profile does not exist."""
+    app.dependency_overrides[verify_token] = lambda: mock_user_email
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_ai_trainer_brain
+    mock_ai_trainer_brain.get_user_profile.return_value = None
+
+    response = client.post(
+        "/user/update_identity",
+        json={"display_name": "New Name"},
+        headers={"Authorization": "Bearer test_token"},
+    )
+
+    assert response.status_code == 404
+    mock_ai_trainer_brain.save_user_profile.assert_not_called()
+
+    app.dependency_overrides.clear()
+
+
 def test_refresh_token_requires_auth():
     """Unauthenticated refresh attempt returns 401"""
     response = client.post("/user/refresh")

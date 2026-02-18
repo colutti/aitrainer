@@ -124,6 +124,11 @@ def update_identity(
 ) -> JSONResponse:
     """
     Updates the user's display name and/or profile photo.
+
+    Uses a targeted partial update ($set on identity fields only) to avoid race
+    conditions with concurrent update_profile calls. Previously used full
+    read-modify-write which could overwrite concurrent changes to goal_type,
+    weekly_rate, etc. when both endpoints were called in parallel.
     """
     existing_profile = brain.get_user_profile(user_email)
 
@@ -131,10 +136,11 @@ def update_identity(
         logger.warning("Attempted to update identity for non-existent user: %s", user_email)
         raise HTTPException(status_code=404, detail="User profile not found")
 
-    # Update only the fields that were provided (not None)
+    # Use targeted partial update to avoid overwriting concurrent profile changes.
+    # Only touch identity fields (display_name, photo_base64) — never profile fields.
     update_data = data.model_dump(exclude_unset=True)
-    updated_profile = existing_profile.model_copy(update=update_data)
-    brain.save_user_profile(updated_profile)
+    if update_data:
+        brain.update_user_profile_fields(user_email, update_data)
 
     logger.info("User identity updated for email: %s", user_email)
     return JSONResponse(content={"message": "Identity updated successfully"})

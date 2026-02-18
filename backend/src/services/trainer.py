@@ -128,6 +128,14 @@ class AITrainerBrain:
         """
         self._database.save_user_profile(profile)
 
+    def update_user_profile_fields(self, email: str, fields: dict) -> bool:
+        """
+        Partially updates specific fields in user profile without overwriting others.
+        Use this instead of save_user_profile when only updating a subset of fields
+        to avoid race conditions with concurrent full-profile updates.
+        """
+        return self._database.update_user_profile_fields(email, fields)
+
     def save_trainer_profile(self, profile: TrainerProfile):
         """
         Saves a trainer profile to the database.
