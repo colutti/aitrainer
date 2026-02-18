@@ -58,6 +58,7 @@ export function useNutritionTab() {
     handleSubmit,
     reset,
     setValue,
+    control,
     formState: { errors }
   } = useForm<NutritionFormData>({
     resolver: zodResolver(nutritionSchema),
@@ -175,6 +176,7 @@ export function useNutritionTab() {
     daysFilter,
     register,
     handleSubmit: handleSubmit(onSubmit),
+    control,
     errors,
     loadData,
     deleteEntry,

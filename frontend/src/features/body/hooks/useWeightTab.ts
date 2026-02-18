@@ -71,6 +71,7 @@ export function useWeightTab() {
     handleSubmit,
     reset,
     setValue,
+    control,
     formState: { errors }
   } = useForm<WeightFormData>({
     resolver: zodResolver(weightSchema),
@@ -195,6 +196,7 @@ export function useWeightTab() {
     changePage,
     register,
     handleSubmit: handleSubmit(onSubmit),
+    control,
     errors,
     loadData,
     deleteEntry,
