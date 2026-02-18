@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { DayPicker, type DayButtonProps } from 'react-day-picker';
+import 'react-day-picker/src/style.css';
 
 import { cn } from '../../utils/cn';
 

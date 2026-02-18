@@ -178,6 +178,18 @@ input[type='number'] {
   background-color: rgba(255, 255, 255, 0.02);
 }
 
+/* react-day-picker dark theme overrides */
+.rdp-root {
+  --rdp-accent-color: #6366f1;
+  --rdp-accent-background-color: rgba(99, 102, 241, 0.15);
+  --rdp-today-color: #6366f1;
+  color: #fafafa;
+}
+
+.rdp-day_button:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
 /* Phase 4: Mobile Touch Targets */
 @media (pointer: coarse) {
   button,
