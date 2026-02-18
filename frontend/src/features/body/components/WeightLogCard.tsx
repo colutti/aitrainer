@@ -25,7 +25,7 @@ export function WeightLogCard({ log, onDelete, onEdit, onClick }: WeightLogCardP
     }
   };
 
-  const hasTrend = log.trend_weight !== undefined;
+  const hasTrend = log.trend_weight != null;
   const isTrendUp = hasTrend && log.weight_kg > (log.trend_weight ?? 0);
 
   return (
