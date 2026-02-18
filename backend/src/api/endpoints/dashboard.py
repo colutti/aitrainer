@@ -231,6 +231,7 @@ def _calculate_body_stats(today, weight_logs) -> BodyStats:
     weight_trend = "stable"
     body_fat_pct = None
     muscle_mass_pct = None
+    muscle_mass_kg = None
     fat_diff = None
     fat_diff_15 = None
     fat_diff_30 = None
@@ -248,6 +249,10 @@ def _calculate_body_stats(today, weight_logs) -> BodyStats:
         )
         muscle_mass_pct = next(
             (log.muscle_mass_pct for log in weight_logs if log.muscle_mass_pct is not None),
+            None,
+        )
+        muscle_mass_kg = next(
+            (log.muscle_mass_kg for log in weight_logs if log.muscle_mass_kg is not None),
             None,
         )
         bmr = next((log.bmr for log in weight_logs if log.bmr is not None), None)
@@ -313,6 +318,7 @@ def _calculate_body_stats(today, weight_logs) -> BodyStats:
         weight_trend=weight_trend,
         body_fat_pct=body_fat_pct,
         muscle_mass_pct=muscle_mass_pct,
+        muscle_mass_kg=muscle_mass_kg,
         fat_diff=fat_diff,
         fat_diff_15=fat_diff_15,
         fat_diff_30=fat_diff_30,

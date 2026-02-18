@@ -470,7 +470,7 @@ export function DashboardPage() {
                 <div className="mb-4">
                   <p className="text-text-secondary text-sm font-medium mb-1">Gordura Corporal</p>
                   <h3 className="text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
-                    {data.fatTrend[data.fatTrend.length - 1]?.value.toFixed(1) ?? '--'} <span className="text-lg text-text-muted">%</span>
+                    {body.body_fat_pct?.toFixed(1) ?? '--'} <span className="text-lg text-text-muted">%</span>
                     <div className="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center">
                       <Flame size={16} />
                     </div>
@@ -578,7 +578,7 @@ export function DashboardPage() {
                 <div className="mb-4">
                   <p className="text-text-secondary text-sm font-medium mb-1">Massa Muscular</p>
                   <h3 className="text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
-                    {data.muscleTrend[data.muscleTrend.length - 1]?.value.toFixed(1) ?? '--'} <span className="text-lg text-text-muted">%</span>
+                    {body.muscle_mass_kg?.toFixed(1) ?? '--'} <span className="text-lg text-text-muted">kg</span>
                     <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
                       <Dumbbell size={16} />
                     </div>

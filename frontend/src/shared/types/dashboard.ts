@@ -22,6 +22,7 @@ export interface DashboardStats {
     weight_trend: 'up' | 'down' | 'stable';
     body_fat_pct?: number | null;
     muscle_mass_pct?: number | null;
+    muscle_mass_kg?: number | null;
     fat_diff?: number | null;
     fat_diff_15?: number | null;
     fat_diff_30?: number | null;

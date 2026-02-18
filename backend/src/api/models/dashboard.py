@@ -32,6 +32,7 @@ class BodyStats(BaseModel):
     weight_trend: Literal["up", "down", "stable"]
     body_fat_pct: Optional[float] = None
     muscle_mass_pct: Optional[float] = None
+    muscle_mass_kg: Optional[float] = None
     fat_diff: Optional[float] = None
     fat_diff_15: Optional[float] = None
     fat_diff_30: Optional[float] = None
