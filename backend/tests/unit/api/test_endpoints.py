@@ -155,6 +155,97 @@ class TestEndpoints(unittest.TestCase):
         mock_brain.save_user_profile.assert_called_once()
         app.dependency_overrides = {}
 
+    def test_update_profile_resets_coaching_data_when_goal_changes(self):
+        """
+        BUG: Quando weekly_rate ou goal_type muda, tdee_last_check_in/tdee_last_target
+        devem ser resetados para forçar recálculo com a nova meta.
+
+        Sem o reset, se check_in=hoje e prev_target=TDEE, o sistema retorna TDEE
+        mesmo com nova meta diferente.
+        """
+        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+        mock_brain = MagicMock()
+        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+        # Existing profile has old goal (0.25) and coaching data stuck at TDEE
+        existing_profile = UserProfile(
+            email="test@test.com",
+            password_hash="hash",
+            gender="Masculino",
+            age=30,
+            weight=80.0,
+            height=180,
+            goal_type="lose",
+            weekly_rate=0.25,
+            tdee_last_target=2508,
+            tdee_last_check_in="2026-02-18",  # today - blocks recalculation
+        )
+        mock_brain.get_user_profile.return_value = existing_profile
+
+        # User changes weekly_rate to 0.5 (all required fields must be sent)
+        response = self.client.post(
+            "/user/update_profile",
+            headers={"Authorization": "Bearer test_token"},
+            json={
+                "gender": "Masculino",
+                "age": 30,
+                "weight": 80.0,
+                "height": 180,
+                "goal_type": "lose",
+                "weekly_rate": 0.5,  # changed from 0.25
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        # Must reset coaching check-in so next calculate_tdee uses new goal
+        mock_brain.update_user_profile_fields.assert_called_once_with(
+            "test@test.com",
+            {"tdee_last_check_in": None, "tdee_last_target": None},
+        )
+        app.dependency_overrides = {}
+
+    def test_update_profile_does_not_reset_coaching_data_when_goal_unchanged(self):
+        """
+        Quando goal_type e weekly_rate NÃO mudam, não deve resetar coaching data.
+        Isso evita interromper check-ins normais por updates de outros campos.
+        """
+        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+        mock_brain = MagicMock()
+        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+        existing_profile = UserProfile(
+            email="test@test.com",
+            password_hash="hash",
+            gender="Masculino",
+            age=30,
+            weight=80.0,
+            height=180,
+            goal_type="lose",
+            weekly_rate=0.25,
+            tdee_last_target=2233,
+            tdee_last_check_in="2026-02-18",
+        )
+        mock_brain.get_user_profile.return_value = existing_profile
+
+        # User changes only weight (not goal) - all required fields sent, goal unchanged
+        response = self.client.post(
+            "/user/update_profile",
+            headers={"Authorization": "Bearer test_token"},
+            json={
+                "gender": "Masculino",
+                "age": 30,
+                "weight": 79.0,  # changed
+                "height": 180,
+                "goal_type": "lose",  # same
+                "weekly_rate": 0.25,  # same
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        # Should NOT reset coaching data
+        mock_brain.update_user_profile_fields.assert_not_called()
+        app.dependency_overrides = {}
+
     def test_update_profile_unauthenticated(self):
         """
         Test update of user profile without authentication.

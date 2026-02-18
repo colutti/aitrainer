@@ -91,8 +91,17 @@ def update_profile(
         if existing_profile:
             # Update existing profile with new data
             update_data = profile_data.model_dump(exclude_unset=True)
+            goal_changed = (
+                ("goal_type" in update_data and update_data["goal_type"] != existing_profile.goal_type)
+                or ("weekly_rate" in update_data and update_data["weekly_rate"] != existing_profile.weekly_rate)
+            )
             updated_profile = existing_profile.model_copy(update=update_data)
             brain.save_user_profile(updated_profile)
+            if goal_changed:
+                brain.update_user_profile_fields(
+                    user_email,
+                    {"tdee_last_check_in": None, "tdee_last_target": None},
+                )
         else:
             # Fallback: Create new profile if weirdly not found
             logger.warning(
