@@ -1,4 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
+import { useForm } from 'react-hook-form';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { useNutritionTab } from '../hooks/useNutritionTab';
@@ -7,6 +9,11 @@ import { NutritionTab } from './NutritionTab';
 
 // Mock hook
 vi.mock('../hooks/useNutritionTab');
+
+// Mock DateInput so Controller doesn't need a real form context
+vi.mock('../../../shared/components/ui/DateInput', () => ({
+  DateInput: ({ label }: { label?: string }) => <div data-testid="date-input">{label}</div>,
+}));
 
 // Mock child component
 vi.mock('../../nutrition/components/NutritionLogCard', () => ({
@@ -27,36 +34,54 @@ describe('NutritionTab', () => {
   const mockDeleteEntry = vi.fn();
   const mockChangePage = vi.fn();
 
-  const defaultHookValues = {
-    logs: [],
-    stats: null,
-    isLoading: false,
-    isSaving: false,
-    currentPage: 1,
-    totalPages: 1,
-    daysFilter: undefined,
-    register: mockRegister,
-    handleSubmit: mockHandleSubmit,
-    errors: {},
-    loadData: vi.fn(),
-    deleteEntry: mockDeleteEntry,
-    editEntry: vi.fn(),
-    setFilter: vi.fn(),
-    nextPage: vi.fn(),
-    prevPage: vi.fn(),
-    changePage: mockChangePage,
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useNutritionTab).mockReturnValue(defaultHookValues as unknown as ReturnType<typeof useNutritionTab>);
+    const { result } = renderHook(() => useForm());
+    const control = result.current.control;
+
+    vi.mocked(useNutritionTab).mockReturnValue({
+      logs: [],
+      stats: null,
+      isLoading: false,
+      isSaving: false,
+      currentPage: 1,
+      totalPages: 1,
+      daysFilter: undefined,
+      register: mockRegister,
+      handleSubmit: mockHandleSubmit,
+      control,
+      errors: {},
+      loadData: vi.fn(),
+      deleteEntry: mockDeleteEntry,
+      editEntry: vi.fn(),
+      setFilter: vi.fn(),
+      nextPage: vi.fn(),
+      prevPage: vi.fn(),
+      changePage: mockChangePage,
+    } as unknown as ReturnType<typeof useNutritionTab>);
   });
 
   it('should render loading state', () => {
+    const { result } = renderHook(() => useForm());
     vi.mocked(useNutritionTab).mockReturnValue({
-      ...defaultHookValues,
-      isLoading: true,
       logs: [],
+      stats: null,
+      isLoading: true,
+      isSaving: false,
+      currentPage: 1,
+      totalPages: 1,
+      daysFilter: undefined,
+      register: mockRegister,
+      handleSubmit: mockHandleSubmit,
+      control: result.current.control,
+      errors: {},
+      loadData: vi.fn(),
+      deleteEntry: mockDeleteEntry,
+      editEntry: vi.fn(),
+      setFilter: vi.fn(),
+      nextPage: vi.fn(),
+      prevPage: vi.fn(),
+      changePage: mockChangePage,
     } as unknown as ReturnType<typeof useNutritionTab>);
 
     const { container } = render(<NutritionTab />);
@@ -64,37 +89,71 @@ describe('NutritionTab', () => {
   });
 
   it('should render form and log list', () => {
+    const { result } = renderHook(() => useForm());
     const mockLogs = [{ id: '1', date: '2024-01-01', calories: 2000 }];
     vi.mocked(useNutritionTab).mockReturnValue({
-      ...defaultHookValues,
       logs: mockLogs,
+      stats: null,
+      isLoading: false,
+      isSaving: false,
+      currentPage: 1,
+      totalPages: 1,
+      daysFilter: undefined,
+      register: mockRegister,
+      handleSubmit: mockHandleSubmit,
+      control: result.current.control,
+      errors: {},
+      loadData: vi.fn(),
+      deleteEntry: mockDeleteEntry,
+      editEntry: vi.fn(),
+      setFilter: vi.fn(),
+      nextPage: vi.fn(),
+      prevPage: vi.fn(),
+      changePage: mockChangePage,
     } as unknown as ReturnType<typeof useNutritionTab>);
 
     render(<NutritionTab />);
-    
+
     expect(screen.getByText('Registrar Dieta')).toBeInTheDocument();
     expect(screen.getByText('Histórico Recente')).toBeInTheDocument();
     expect(screen.getByText('2000 kcal')).toBeInTheDocument();
   });
 
   it('should call deleteEntry when delete button is clicked', () => {
+    const { result } = renderHook(() => useForm());
     const mockLogs = [{ id: '1', date: '2024-01-01', calories: 2000 }];
     vi.mocked(useNutritionTab).mockReturnValue({
-      ...defaultHookValues,
       logs: mockLogs,
+      stats: null,
+      isLoading: false,
+      isSaving: false,
+      currentPage: 1,
+      totalPages: 1,
+      daysFilter: undefined,
+      register: mockRegister,
+      handleSubmit: mockHandleSubmit,
+      control: result.current.control,
+      errors: {},
+      loadData: vi.fn(),
+      deleteEntry: mockDeleteEntry,
+      editEntry: vi.fn(),
+      setFilter: vi.fn(),
+      nextPage: vi.fn(),
+      prevPage: vi.fn(),
+      changePage: mockChangePage,
     } as unknown as ReturnType<typeof useNutritionTab>);
 
     render(<NutritionTab />);
-    
+
     const deleteBtn = screen.getByText('Delete');
     fireEvent.click(deleteBtn);
-    
+
     expect(mockDeleteEntry).toHaveBeenCalledWith('1');
   });
 
   it('should submit form', () => {
     render(<NutritionTab />);
-    
+
     const submitBtn = screen.getByText('Salvar Registro');
     fireEvent.click(submitBtn);
 
