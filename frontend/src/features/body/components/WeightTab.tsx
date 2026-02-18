@@ -1,5 +1,7 @@
 import {
-  Scale
+  Scale,
+  Pencil,
+  X
 } from 'lucide-react';
 import { useState } from 'react';
 import { Controller } from 'react-hook-form';
@@ -27,6 +29,9 @@ export function WeightTab() {
     errors,
     deleteEntry,
     editEntry,
+    cancelEdit,
+    isEditing,
+    editingDate,
     page,
     totalPages,
     changePage
@@ -43,10 +48,28 @@ export function WeightTab() {
   return (
     <div className="space-y-8 w-full overflow-x-hidden">
       {/* Entry Form - Full Width at Top */}
-      <section className="bg-dark-card border border-border rounded-2xl p-4 md:p-6 shadow-sm w-full">
-        <div className="flex items-center gap-2 pb-4 mb-4 border-b border-border">
-          <Scale className="text-gradient-start" size={24} />
-          <h2 className="text-xl font-bold text-text-primary">Registrar Peso</h2>
+      <section key={editingDate ?? 'new'} className="bg-dark-card border border-border rounded-2xl p-4 md:p-6 shadow-sm w-full">
+        <div className="flex items-center justify-between pb-4 mb-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            {isEditing ? (
+              <Pencil className="text-amber-400" size={24} />
+            ) : (
+              <Scale className="text-gradient-start" size={24} />
+            )}
+            <h2 className="text-xl font-bold text-text-primary">
+              {isEditing ? 'Editando Registro' : 'Registrar Peso'}
+            </h2>
+          </div>
+          {isEditing && (
+            <button
+              type="button"
+              onClick={cancelEdit}
+              className="flex items-center gap-1 text-sm text-text-secondary hover:text-red-400 transition-colors"
+            >
+              <X size={16} />
+              Cancelar
+            </button>
+          )}
         </div>
 
         <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4 md:space-y-6">

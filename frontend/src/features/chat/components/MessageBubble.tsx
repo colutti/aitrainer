@@ -74,11 +74,11 @@ export function MessageBubble({ message, trainerId, userPhoto, userName }: Messa
           "text-[10px] mt-2 opacity-50",
           isUser ? "text-right" : "text-left"
         )}>
-          {new Date(message.timestamp).toLocaleString([], { 
-            day: '2-digit', 
-            month: '2-digit', 
-            hour: '2-digit', 
-            minute: '2-digit' 
+          {new Date(message.timestamp).toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
           })}
         </div>
       </div>

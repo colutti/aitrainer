@@ -32,41 +32,15 @@ describe('NutritionTab', () => {
     fn();
   });
   const mockDeleteEntry = vi.fn();
+  const mockCancelEdit = vi.fn();
   const mockChangePage = vi.fn();
 
-  beforeEach(() => {
-    vi.clearAllMocks();
+  function makeMock(overrides: Partial<ReturnType<typeof useNutritionTab>> = {}): ReturnType<typeof useNutritionTab> {
     const { result } = renderHook(() => useForm());
-    const control = result.current.control;
-
-    vi.mocked(useNutritionTab).mockReturnValue({
+    return {
       logs: [],
       stats: null,
       isLoading: false,
-      isSaving: false,
-      currentPage: 1,
-      totalPages: 1,
-      daysFilter: undefined,
-      register: mockRegister,
-      handleSubmit: mockHandleSubmit,
-      control,
-      errors: {},
-      loadData: vi.fn(),
-      deleteEntry: mockDeleteEntry,
-      editEntry: vi.fn(),
-      setFilter: vi.fn(),
-      nextPage: vi.fn(),
-      prevPage: vi.fn(),
-      changePage: mockChangePage,
-    } as unknown as ReturnType<typeof useNutritionTab>);
-  });
-
-  it('should render loading state', () => {
-    const { result } = renderHook(() => useForm());
-    vi.mocked(useNutritionTab).mockReturnValue({
-      logs: [],
-      stats: null,
-      isLoading: true,
       isSaving: false,
       currentPage: 1,
       totalPages: 1,
@@ -78,39 +52,31 @@ describe('NutritionTab', () => {
       loadData: vi.fn(),
       deleteEntry: mockDeleteEntry,
       editEntry: vi.fn(),
+      cancelEdit: mockCancelEdit,
+      isEditing: false,
+      editingId: null,
       setFilter: vi.fn(),
       nextPage: vi.fn(),
       prevPage: vi.fn(),
       changePage: mockChangePage,
-    } as unknown as ReturnType<typeof useNutritionTab>);
+      ...overrides,
+    } as unknown as ReturnType<typeof useNutritionTab>;
+  }
 
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(useNutritionTab).mockReturnValue(makeMock());
+  });
+
+  it('should render loading state', () => {
+    vi.mocked(useNutritionTab).mockReturnValue(makeMock({ isLoading: true }));
     const { container } = render(<NutritionTab />);
     expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
   it('should render form and log list', () => {
-    const { result } = renderHook(() => useForm());
-    const mockLogs = [{ id: '1', date: '2024-01-01', calories: 2000 }];
-    vi.mocked(useNutritionTab).mockReturnValue({
-      logs: mockLogs,
-      stats: null,
-      isLoading: false,
-      isSaving: false,
-      currentPage: 1,
-      totalPages: 1,
-      daysFilter: undefined,
-      register: mockRegister,
-      handleSubmit: mockHandleSubmit,
-      control: result.current.control,
-      errors: {},
-      loadData: vi.fn(),
-      deleteEntry: mockDeleteEntry,
-      editEntry: vi.fn(),
-      setFilter: vi.fn(),
-      nextPage: vi.fn(),
-      prevPage: vi.fn(),
-      changePage: mockChangePage,
-    } as unknown as ReturnType<typeof useNutritionTab>);
+    const mockLogs = [{ id: '1', date: '2024-01-01', calories: 2000 }] as unknown as ReturnType<typeof useNutritionTab>['logs'];
+    vi.mocked(useNutritionTab).mockReturnValue(makeMock({ logs: mockLogs }));
 
     render(<NutritionTab />);
 
@@ -120,48 +86,41 @@ describe('NutritionTab', () => {
   });
 
   it('should call deleteEntry when delete button is clicked', () => {
-    const { result } = renderHook(() => useForm());
-    const mockLogs = [{ id: '1', date: '2024-01-01', calories: 2000 }];
-    vi.mocked(useNutritionTab).mockReturnValue({
-      logs: mockLogs,
-      stats: null,
-      isLoading: false,
-      isSaving: false,
-      currentPage: 1,
-      totalPages: 1,
-      daysFilter: undefined,
-      register: mockRegister,
-      handleSubmit: mockHandleSubmit,
-      control: result.current.control,
-      errors: {},
-      loadData: vi.fn(),
-      deleteEntry: mockDeleteEntry,
-      editEntry: vi.fn(),
-      setFilter: vi.fn(),
-      nextPage: vi.fn(),
-      prevPage: vi.fn(),
-      changePage: mockChangePage,
-    } as unknown as ReturnType<typeof useNutritionTab>);
+    const mockLogs = [{ id: '1', date: '2024-01-01', calories: 2000 }] as unknown as ReturnType<typeof useNutritionTab>['logs'];
+    vi.mocked(useNutritionTab).mockReturnValue(makeMock({ logs: mockLogs, deleteEntry: mockDeleteEntry }));
 
     render(<NutritionTab />);
-
-    const deleteBtn = screen.getByText('Delete');
-    fireEvent.click(deleteBtn);
+    fireEvent.click(screen.getByText('Delete'));
 
     expect(mockDeleteEntry).toHaveBeenCalledWith('1');
   });
 
   it('should submit form', () => {
     render(<NutritionTab />);
-
-    const submitBtn = screen.getByText('Salvar Registro');
-    fireEvent.click(submitBtn);
-
+    fireEvent.click(screen.getByText('Salvar Registro'));
     expect(mockHandleSubmit).toHaveBeenCalled();
   });
 
   it('should render empty state', () => {
     render(<NutritionTab />);
     expect(screen.getByText('Nenhum registro encontrado.')).toBeInTheDocument();
+  });
+
+  it('should show editing indicator and cancel button when isEditing is true', () => {
+    vi.mocked(useNutritionTab).mockReturnValue(makeMock({ isEditing: true, editingId: 'abc123' }));
+
+    render(<NutritionTab />);
+
+    expect(screen.getByText('Editando Registro')).toBeInTheDocument();
+    expect(screen.getByText('Cancelar')).toBeInTheDocument();
+  });
+
+  it('should call cancelEdit when cancel button is clicked', () => {
+    vi.mocked(useNutritionTab).mockReturnValue(makeMock({ isEditing: true, editingId: 'abc123' }));
+
+    render(<NutritionTab />);
+    fireEvent.click(screen.getByText('Cancelar'));
+
+    expect(mockCancelEdit).toHaveBeenCalled();
   });
 });

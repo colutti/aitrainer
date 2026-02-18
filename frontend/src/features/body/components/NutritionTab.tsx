@@ -3,7 +3,9 @@ import {
   Flame,
   Beef,
   Wheat,
-  Droplet
+  Droplet,
+  Pencil,
+  X
 } from 'lucide-react';
 import { Controller } from 'react-hook-form';
 
@@ -28,6 +30,9 @@ export function NutritionTab() {
     errors,
     deleteEntry,
     editEntry,
+    cancelEdit,
+    isEditing,
+    editingId,
     changePage
   } = useNutritionTab();
 
@@ -42,10 +47,28 @@ export function NutritionTab() {
   return (
     <div className="space-y-8 w-full overflow-x-hidden">
       {/* Entry Form - Full Width at Top */}
-      <section className="bg-dark-card border border-border rounded-2xl p-4 md:p-6 shadow-sm w-full">
-        <div className="flex items-center gap-2 pb-4 mb-4 border-b border-border">
-          <Flame className="text-orange-500" size={24} />
-          <h2 className="text-xl font-bold text-text-primary">Registrar Dieta</h2>
+      <section key={editingId ?? 'new'} className="bg-dark-card border border-border rounded-2xl p-4 md:p-6 shadow-sm w-full">
+        <div className="flex items-center justify-between pb-4 mb-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            {isEditing ? (
+              <Pencil className="text-amber-400" size={24} />
+            ) : (
+              <Flame className="text-orange-500" size={24} />
+            )}
+            <h2 className="text-xl font-bold text-text-primary">
+              {isEditing ? 'Editando Registro' : 'Registrar Dieta'}
+            </h2>
+          </div>
+          {isEditing && (
+            <button
+              type="button"
+              onClick={cancelEdit}
+              className="flex items-center gap-1 text-sm text-text-secondary hover:text-red-400 transition-colors"
+            >
+              <X size={16} />
+              Cancelar
+            </button>
+          )}
         </div>
 
         <form onSubmit={(e) => { void handleSubmit(e); }} className="flex flex-col gap-4 md:gap-6 w-full">

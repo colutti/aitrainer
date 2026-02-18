@@ -54,6 +54,29 @@ const weightSchema = z.object({
 
 type WeightFormData = z.infer<typeof weightSchema>;
 
+const WEIGHT_DEFAULTS = {
+  date: new Date().toISOString().split('T')[0],
+  weight_kg: undefined,
+  body_fat_pct: undefined,
+  muscle_mass_pct: undefined,
+  muscle_mass_kg: undefined,
+  body_water_pct: undefined,
+  bone_mass_kg: undefined,
+  visceral_fat: undefined,
+  bmr: undefined,
+  notes: null,
+  neck_cm: undefined,
+  chest_cm: undefined,
+  waist_cm: undefined,
+  hips_cm: undefined,
+  bicep_r_cm: undefined,
+  bicep_l_cm: undefined,
+  thigh_r_cm: undefined,
+  thigh_l_cm: undefined,
+  calf_r_cm: undefined,
+  calf_l_cm: undefined,
+};
+
 /**
  * Hook to manage Weight Tab state and logic
  */
@@ -64,21 +87,18 @@ export function useWeightTab() {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [editingDate, setEditingDate] = useState<string | null>(null);
   const notify = useNotificationStore();
 
   const {
     register,
     handleSubmit,
     reset,
-    setValue,
     control,
     formState: { errors }
   } = useForm<WeightFormData>({
     resolver: zodResolver(weightSchema),
-    defaultValues: {
-      date: new Date().toISOString().split('T')[0],
-      weight_kg: undefined,
-    }
+    defaultValues: WEIGHT_DEFAULTS,
   });
 
   const loadData = useCallback(async (targetPage = 1) => {
@@ -122,28 +142,8 @@ export function useWeightTab() {
       
       await bodyApi.logWeight(data.weight_kg, payload as Partial<WeightLog>);
       notify.success('Registro de peso salvo!');
-      reset({
-        date: new Date().toISOString().split('T')[0],
-        weight_kg: undefined,
-        body_fat_pct: undefined,
-        muscle_mass_pct: undefined,
-        muscle_mass_kg: undefined,
-        body_water_pct: undefined,
-        bone_mass_kg: undefined,
-        visceral_fat: undefined,
-        bmr: undefined,
-        notes: null,
-        neck_cm: undefined,
-        chest_cm: undefined,
-        waist_cm: undefined,
-        hips_cm: undefined,
-        bicep_r_cm: undefined,
-        bicep_l_cm: undefined,
-        thigh_r_cm: undefined,
-        thigh_l_cm: undefined,
-        calf_r_cm: undefined,
-        calf_l_cm: undefined
-      });
+      setEditingDate(null);
+      reset({ ...WEIGHT_DEFAULTS, date: new Date().toISOString().split('T')[0] });
       await loadData(1); // Reload first page on new entry
     } catch {
       notify.error('Erro ao salvar registro de peso.');
@@ -162,27 +162,35 @@ export function useWeightTab() {
     }
   };
 
+  const cancelEdit = () => {
+    setEditingDate(null);
+    reset({ ...WEIGHT_DEFAULTS, date: new Date().toISOString().split('T')[0] });
+  };
+
   const editEntry = (log: WeightLog) => {
-    setValue('date', log.date);
-    setValue('weight_kg', log.weight_kg);
-    setValue('body_fat_pct', log.body_fat_pct ?? 0);
-    setValue('muscle_mass_pct', log.muscle_mass_pct ?? undefined);
-    setValue('muscle_mass_kg', log.muscle_mass_kg ?? undefined);
-    setValue('body_water_pct', log.body_water_pct ?? undefined);
-    setValue('bone_mass_kg', log.bone_mass_kg ?? undefined);
-    setValue('visceral_fat', log.visceral_fat ?? undefined);
-    setValue('bmr', log.bmr ?? undefined);
-    setValue('notes', log.notes ?? null);
-    setValue('neck_cm', log.neck_cm ?? undefined);
-    setValue('chest_cm', log.chest_cm ?? undefined);
-    setValue('waist_cm', log.waist_cm ?? undefined);
-    setValue('hips_cm', log.hips_cm ?? undefined);
-    setValue('bicep_r_cm', log.bicep_r_cm ?? undefined);
-    setValue('bicep_l_cm', log.bicep_l_cm ?? undefined);
-    setValue('thigh_r_cm', log.thigh_r_cm ?? undefined);
-    setValue('thigh_l_cm', log.thigh_l_cm ?? undefined);
-    setValue('calf_r_cm', log.calf_r_cm ?? undefined);
-    setValue('calf_l_cm', log.calf_l_cm ?? undefined);
+    setEditingDate(log.date);
+    reset({
+      date: log.date,
+      weight_kg: log.weight_kg,
+      body_fat_pct: log.body_fat_pct ?? undefined,
+      muscle_mass_pct: log.muscle_mass_pct ?? undefined,
+      muscle_mass_kg: log.muscle_mass_kg ?? undefined,
+      body_water_pct: log.body_water_pct ?? undefined,
+      bone_mass_kg: log.bone_mass_kg ?? undefined,
+      visceral_fat: log.visceral_fat ?? undefined,
+      bmr: log.bmr ?? undefined,
+      notes: log.notes ?? null,
+      neck_cm: log.neck_cm ?? undefined,
+      chest_cm: log.chest_cm ?? undefined,
+      waist_cm: log.waist_cm ?? undefined,
+      hips_cm: log.hips_cm ?? undefined,
+      bicep_r_cm: log.bicep_r_cm ?? undefined,
+      bicep_l_cm: log.bicep_l_cm ?? undefined,
+      thigh_r_cm: log.thigh_r_cm ?? undefined,
+      thigh_l_cm: log.thigh_l_cm ?? undefined,
+      calf_r_cm: log.calf_r_cm ?? undefined,
+      calf_l_cm: log.calf_l_cm ?? undefined,
+    });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -200,6 +208,9 @@ export function useWeightTab() {
     errors,
     loadData,
     deleteEntry,
-    editEntry
+    editEntry,
+    cancelEdit,
+    isEditing: editingDate !== null,
+    editingDate,
   };
 }

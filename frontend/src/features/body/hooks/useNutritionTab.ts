@@ -39,6 +39,15 @@ const nutritionSchema = z.object({
 
 type NutritionFormData = z.infer<typeof nutritionSchema>;
 
+const NUTRITION_DEFAULTS = {
+  date: new Date().toISOString().split('T')[0],
+  source: 'Manual',
+  calories: undefined,
+  protein_grams: undefined,
+  carbs_grams: undefined,
+  fat_grams: undefined,
+};
+
 /**
  * Hook to manage Nutrition Tab state and logic
  */
@@ -50,23 +59,19 @@ export function useNutritionTab() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [daysFilter, setDaysFilter] = useState<number | undefined>(undefined);
-  
+  const [editingId, setEditingId] = useState<string | null>(null);
+
   const notify = useNotificationStore();
 
   const {
     register,
     handleSubmit,
     reset,
-    setValue,
     control,
     formState: { errors }
   } = useForm<NutritionFormData>({
     resolver: zodResolver(nutritionSchema),
-    defaultValues: {
-      date: new Date().toISOString().split('T')[0],
-      source: 'Manual',
-      calories: undefined,
-    }
+    defaultValues: NUTRITION_DEFAULTS,
   });
 
   const loadLogs = useCallback(async (page = 1, filter = daysFilter) => {
@@ -107,14 +112,8 @@ export function useNutritionTab() {
       );
       await bodyApi.logNutrition(payload as Partial<NutritionLog>);
       notify.success('Registro nutricional salvo!');
-      reset({
-        date: new Date().toISOString().split('T')[0],
-        source: 'Manual',
-        calories: undefined,
-        protein_grams: null,
-        carbs_grams: null,
-        fat_grams: null
-      });
+      setEditingId(null);
+      reset({ ...NUTRITION_DEFAULTS, date: new Date().toISOString().split('T')[0] });
       await loadData();
     } catch {
       notify.error('Erro ao salvar registro nutricional.');
@@ -133,15 +132,26 @@ export function useNutritionTab() {
     }
   };
 
-  const editEntry = (log: NutritionLog) => {
-    // Format date to YYYY-MM-DD for HTML date input
-    const dateStr = new Date(log.date).toISOString().split('T')[0] ?? '';
+  const cancelEdit = () => {
+    setEditingId(null);
+    reset({ ...NUTRITION_DEFAULTS, date: new Date().toISOString().split('T')[0] });
+  };
 
-    setValue('date', dateStr);
-    setValue('calories', log.calories);
-    setValue('protein_grams', log.protein_grams);
-    setValue('carbs_grams', log.carbs_grams);
-    setValue('fat_grams', log.fat_grams);
+  const editEntry = (log: NutritionLog) => {
+    // Extract date safely: avoid UTC conversion by slicing the string directly
+    const dateStr = typeof log.date === 'string'
+      ? log.date.split('T')[0]
+      : new Date(log.date as unknown as string).toISOString().split('T')[0];
+
+    setEditingId(log.id);
+    reset({
+      date: dateStr,
+      source: log.source,
+      calories: log.calories,
+      protein_grams: log.protein_grams,
+      carbs_grams: log.carbs_grams,
+      fat_grams: log.fat_grams,
+    });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -181,6 +191,9 @@ export function useNutritionTab() {
     loadData,
     deleteEntry,
     editEntry,
+    cancelEdit,
+    isEditing: editingId !== null,
+    editingId,
     setFilter,
     nextPage,
     prevPage,
