@@ -2,7 +2,7 @@
 Onboarding API endpoints.
 """
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import bcrypt
 from fastapi import APIRouter, HTTPException, Query
 from src.api.models.onboarding import (
@@ -12,6 +12,7 @@ from src.api.models.onboarding import (
 )
 from src.api.models.user_profile import UserProfile
 from src.api.models.trainer_profile import TrainerProfile
+from src.api.models.weight_log import WeightLog
 from src.core.deps import get_mongo_database
 from src.core.logs import logger
 from src.services.auth import user_login
@@ -144,6 +145,15 @@ def complete_onboarding(request: OnboardingCompleteRequest):
     # Save to database
     db.save_user_profile(user_profile)
     db.save_trainer_profile(trainer_profile)
+
+    # Criar primeiro registro de peso (histórico desde o onboarding)
+    initial_log = WeightLog(
+        user_email=email,
+        date=date.today(),
+        weight_kg=request.weight,
+        trend_weight=request.weight,  # Primeiro log: trend = peso real
+    )
+    db.weight.save_log(initial_log)
 
     # Mark invite as used
     invite_repo.mark_as_used(request.token)

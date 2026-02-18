@@ -152,3 +152,39 @@ def test_complete_onboarding_various_trainers(trainer_type, valid_invite):
         assert mock_db.save_trainer_profile.called
         profile = mock_db.save_trainer_profile.call_args[0][0]
         assert profile.trainer_type == trainer_type
+
+
+def test_complete_onboarding_creates_weight_log(valid_invite):
+    """Confirma que o onboarding cria um WeightLog inicial com o peso informado."""
+    with (
+        patch("src.api.endpoints.onboarding.get_mongo_database") as mock_db,
+        patch("src.api.endpoints.onboarding.user_login") as mock_login,
+    ):
+        mock_invites = MagicMock()
+        mock_invites.get_by_token.return_value = valid_invite
+        mock_invites.mark_as_used.return_value = True
+        mock_db_instance = MagicMock()
+        mock_db_instance.invites = mock_invites
+        mock_db_instance.get_user_profile.return_value = None
+        mock_db.return_value = mock_db_instance
+        mock_login.return_value = "fake-jwt-token"
+
+        request_data = {
+            "token": valid_invite.token,
+            "password": "SecurePass1",
+            "gender": "Masculino",
+            "age": 30,
+            "weight": 80.0,
+            "height": 175,
+            "goal_type": "maintain",
+            "weekly_rate": 0.5,
+            "trainer_type": "atlas",
+        }
+        response = client.post("/onboarding/complete", json=request_data)
+
+        assert response.status_code == 200
+        mock_db_instance.weight.save_log.assert_called_once()
+        saved_log = mock_db_instance.weight.save_log.call_args[0][0]
+        assert saved_log.weight_kg == 80.0
+        assert saved_log.trend_weight == 80.0
+        assert saved_log.user_email == "newuser@test.com"
