@@ -570,10 +570,33 @@ class AdaptiveTDEEService:
         return res
 
     def _calculate_macro_targets(self, daily_target: int, weight_kg: float) -> dict:
-        """Calculates macro targets."""
-        protein_g = int(round(weight_kg * 2.0))
-        fat_g = int(round((daily_target * 0.25) / 9))
-        carb_g = int(round(max(0, (daily_target - (protein_g * 4) - (fat_g * 9)) / 4)))
+        """
+        Calculates macro targets ensuring total calories = daily_target.
+
+        Strategy:
+        1. Protein: 1.6-2.0g per kg, but capped to max 40% of daily target
+        2. Fat: 25-30% of daily target
+        3. Carbs: Remaining calories
+
+        This prevents macro totals from exceeding the daily target in extreme cases
+        (e.g., high weight + low calorie target).
+        """
+        # Step 1: Calculate ideal protein (1.8g per kg of body weight)
+        ideal_protein_g = weight_kg * 1.8
+        protein_kcal_max = daily_target * 0.40  # Cap at 40% of target
+        ideal_protein_g = min(ideal_protein_g, protein_kcal_max / 4)  # Convert to grams
+        protein_g = int(round(ideal_protein_g))
+        protein_kcal = protein_g * 4
+
+        # Step 2: Calculate fat (27% of daily target - middle of 25-30% range)
+        fat_kcal = daily_target * 0.27
+        fat_g = int(round(fat_kcal / 9))
+        fat_kcal = fat_g * 9  # Recalculate based on rounded grams
+
+        # Step 3: Carbs get the remainder
+        remaining_kcal = daily_target - protein_kcal - fat_kcal
+        carb_g = int(round(max(0, remaining_kcal / 4)))
+
         return {"protein": protein_g, "carbs": carb_g, "fat": fat_g}
 
     def _calculate_stability_score(
