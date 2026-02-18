@@ -25,10 +25,8 @@ const profileSchema = z.object({
   display_name: z.string().max(50).optional(),
   email: z.string().email(),
   age: z.coerce.number().min(1, 'Idade inválida'),
-  weight: z.coerce.number().min(1, 'Peso inválido'),
   height: z.coerce.number().min(1, 'Altura inválida'),
   gender: z.string().min(1, 'Gênero obrigatório'),
-  goal: z.string().optional(),
   goal_type: z.enum(['lose', 'gain', 'maintain']),
   weekly_rate: z.coerce.number(),
   target_weight: z.preprocess(
@@ -155,10 +153,7 @@ export function UserProfilePage() {
             <Input id="profile-gender" label="Gênero" {...register('gender')} error={errors.gender?.message} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input id="profile-weight" label="Peso (kg)" type="number" step="0.1" {...register('weight')} error={errors.weight?.message} />
-            <Input id="profile-height" label="Altura (cm)" type="number" {...register('height')} error={errors.height?.message} />
-        </div>
+        <Input id="profile-height" label="Altura (cm)" type="number" {...register('height')} error={errors.height?.message} />
 
         <div className="border-t border-border pt-4 mt-6">
             <h3 className="text-lg font-semibold text-text-primary mb-4">Metas & Objetivos</h3>
@@ -197,10 +192,7 @@ export function UserProfilePage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input id="profile-target-weight" label="Peso Alvo (kg)" type="number" step="0.1" {...register('target_weight')} error={errors.target_weight?.message} />
-                <Input label="Descrição do Objetivo" {...register('goal')} error={errors.goal?.message} placeholder="Ex: Ficar mais definido para o verão" />
-            </div>
+            <Input id="profile-target-weight" label="Peso Alvo (kg)" type="number" step="0.1" {...register('target_weight')} error={errors.target_weight?.message} />
         </div>
 
         <div className="flex justify-end pt-6">

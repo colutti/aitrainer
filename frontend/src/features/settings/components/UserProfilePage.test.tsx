@@ -33,13 +33,11 @@ describe('UserProfilePage', () => {
   const mockProfile = {
     email: 'test@example.com',
     age: 25,
-    weight: 70,
     height: 175,
     gender: 'Masc',
     goal_type: 'maintain',
     weekly_rate: 0,
     target_weight: 70,
-    goal: 'Be healthy',
   };
 
   beforeEach(() => {
@@ -61,7 +59,6 @@ describe('UserProfilePage', () => {
     await waitFor(() => {
       expect(screen.getByLabelText(/Email/i)).toHaveValue('test@example.com');
       expect(screen.getByLabelText(/Idade/i)).toHaveValue(25);
-      expect(screen.getByLabelText(/Peso \(kg\)/i)).toHaveValue(70);
     });
   });
 
@@ -224,6 +221,22 @@ describe('UserProfilePage', () => {
       expect(settingsApi.updateProfile).toHaveBeenCalledWith(
         expect.objectContaining({ goal_type: 'gain', weekly_rate: 0.75 })
       );
+    });
+  });
+
+  it('não exibe campo Peso no formulário de perfil', async () => {
+    (settingsApi.getProfile as any).mockResolvedValue(mockProfile);
+    render(<UserProfilePage />);
+    await waitFor(() => {
+      expect(screen.queryByLabelText(/Peso \(kg\)/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it('não exibe campo Descrição do Objetivo no formulário de perfil', async () => {
+    (settingsApi.getProfile as any).mockResolvedValue(mockProfile);
+    render(<UserProfilePage />);
+    await waitFor(() => {
+      expect(screen.queryByLabelText(/Descrição do Objetivo/i)).not.toBeInTheDocument();
     });
   });
 });
