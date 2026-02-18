@@ -1,13 +1,15 @@
-import { 
+import {
   History,
-  Flame, 
+  Flame,
   Beef,
   Wheat,
   Droplet
 } from 'lucide-react';
+import { Controller } from 'react-hook-form';
 
 import { Button } from '../../../shared/components/ui/Button';
 import { DataList } from '../../../shared/components/ui/DataList';
+import { DateInput } from '../../../shared/components/ui/DateInput';
 import { Input } from '../../../shared/components/ui/Input';
 import { type NutritionLog } from '../../../shared/types/nutrition';
 import { NutritionLogCard } from '../../nutrition/components/NutritionLogCard';
@@ -21,6 +23,7 @@ export function NutritionTab() {
     currentPage,
     totalPages,
     register,
+    control,
     handleSubmit,
     errors,
     deleteEntry,
@@ -47,11 +50,18 @@ export function NutritionTab() {
 
         <form onSubmit={(e) => { void handleSubmit(e); }} className="flex flex-col gap-4 md:gap-6 w-full">
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
-            <Input 
-              label="Data" 
-              type="date" 
-              error={errors.date?.message}
-              {...register('date')}
+            <Controller
+              name="date"
+              control={control}
+              render={({ field }) => (
+                <DateInput
+                  label="Data"
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  error={errors.date?.message}
+                />
+              )}
             />
             <Input 
               id="calories"
