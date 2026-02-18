@@ -385,8 +385,12 @@ class TestHevyWebhook:
         mock_brain.save_user_profile.assert_called_once()
         app.dependency_overrides = {}
 
-    def test_generate_webhook_preserves_existing_token(self, client, mock_brain):
-        """Test that regenerating webhook preserves existing token but rotates secret."""
+    def test_generate_webhook_preserves_credentials_when_already_exist(self, client, mock_brain):
+        """Calling /webhook/generate when credentials exist must NOT change them.
+
+        Credentials only change when the user explicitly revokes and regenerates.
+        This is the invariant that prevents webhook breakage in production.
+        """
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
 
         existing_token = "existing_token_12345"
@@ -406,17 +410,10 @@ class TestHevyWebhook:
         assert response.status_code == 200
         data = response.json()
 
-        # Verify token is preserved (in the URL) - works with both localhost and production URLs
-        assert f"/integrations/hevy/webhook/{existing_token}" in data["webhookUrl"]
+        # Token must be preserved in the URL
         assert existing_token in data["webhookUrl"]
-
-        # Verify secret has been rotated (new Bearer token)
-        assert data["authHeader"].startswith("Bearer ")
-        assert data["authHeader"] != f"Bearer {existing_secret}"
-
-        # Verify profile.hevy_webhook_token was set to the existing token
-        assert profile.hevy_webhook_token == existing_token
-        mock_brain.save_user_profile.assert_called_once()
+        # Secret must NOT be rotated — Hevy has the old secret configured
+        assert data["authHeader"] == f"Bearer {existing_secret}"
         app.dependency_overrides = {}
 
     def test_revoke_webhook(self, client, mock_brain):

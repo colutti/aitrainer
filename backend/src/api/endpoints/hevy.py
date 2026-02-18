@@ -303,9 +303,9 @@ def generate_webhook_credentials(
         if not profile:
             raise HTTPException(status_code=404, detail="Profile not found")
 
-        # Preserve existing token — generate only on first setup
+        # Preserve existing credentials — only generate on first setup
         token = profile.hevy_webhook_token or secrets.token_urlsafe(16)
-        secret = secrets.token_urlsafe(24)
+        secret = profile.hevy_webhook_secret or secrets.token_urlsafe(24)
 
         profile.hevy_webhook_token = token
         profile.hevy_webhook_secret = secret
