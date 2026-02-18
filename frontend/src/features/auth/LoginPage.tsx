@@ -66,9 +66,9 @@ export function LoginPage() {
         {/* Brand Overlay */}
         <div className="absolute top-12 left-12 animate-in fade-in slide-in-from-left duration-1000">
            <div className="flex items-center gap-4">
-              <img src="/brand_icon_final.png" alt="FIT IQ" className="h-16 w-16 drop-shadow-2xl brightness-110" />
+              <img src="/brand_icon_final.png" alt="FityQ" className="h-28 w-28 drop-shadow-2xl brightness-110" />
               <div>
-                <h1 className="text-4xl font-black text-white tracking-widest uppercase">FIT IQ</h1>
+                <h1 className="text-4xl font-black text-white tracking-widest uppercase">FityQ</h1>
                 <p className="text-gradient-start font-bold uppercase tracking-[0.3em] text-xs">Intelligence x Fitness</p>
               </div>
            </div>
@@ -88,8 +88,8 @@ export function LoginPage() {
       <div className="w-full lg:w-2/5 flex items-center justify-center p-8 bg-dark-bg relative z-10 border-l border-white/5 shadow-[-20px_0_50px_rgba(0,0,0,0.5)]">
         <div className="w-full max-w-md space-y-10 animate-in fade-in slide-in-from-right duration-700 bg-white/[0.02] p-10 rounded-[2.5rem] border border-white/5 backdrop-blur-xl">
           <div className="lg:hidden text-center mb-10">
-            <img src="/brand_icon_final.png" alt="FIT IQ" className="h-24 w-auto mx-auto drop-shadow-2xl mb-4 brightness-110" />
-            <h1 className="text-3xl font-bold text-white tracking-widest">FIT IQ</h1>
+            <img src="/brand_icon_final.png" alt="FityQ" className="h-36 w-auto mx-auto drop-shadow-2xl mb-4 brightness-110" />
+            <h1 className="text-3xl font-bold text-white tracking-widest">FityQ</h1>
           </div>
 
           <div className="space-y-4">

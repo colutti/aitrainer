@@ -51,12 +51,12 @@ export function Sidebar() {
         <div className="absolute inset-0 bg-gradient-to-b from-gradient-start/5 to-transparent rounded-3xl -m-2 opacity-50" />
         <img 
           src="/brand_icon_final.png" 
-          alt="FIT IQ" 
-          className="h-20 w-20 object-contain drop-shadow-[0_0_15px_rgba(235,93,29,0.4)] filter brightness-110 relative z-10" 
+          alt="FityQ"
+          className="h-32 w-32 object-contain drop-shadow-[0_0_15px_rgba(235,93,29,0.4)] filter brightness-110 relative z-10"
         />
         <div className="text-center relative z-10">
           <span className="text-2xl font-black bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent tracking-[0.2em] block">
-            FIT IQ
+            FityQ
           </span>
           <span className="text-[10px] uppercase tracking-[0.4em] text-gradient-start font-bold">
             Inteligência

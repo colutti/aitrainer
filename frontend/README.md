@@ -1,6 +1,6 @@
-# Fit IQ - Frontend React
+# FityQ - Frontend React
 
-Modern React 19 + Vite 7 + TypeScript single-page application for Fit IQ fitness platform.
+Modern React 19 + Vite 7 + TypeScript single-page application for FityQ fitness platform.
 
 ## 🚀 Tech Stack
 
