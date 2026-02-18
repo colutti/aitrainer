@@ -39,8 +39,8 @@ describe('BodyPage', () => {
       editEntry: vi.fn(),
       changePage: vi.fn(),
       loadData: vi.fn()
-    });
-    
+    } as unknown as ReturnType<typeof useWeightTab>);
+
     vi.mocked(useNutritionTab).mockReturnValue({
       logs: [],
       stats: null,
@@ -59,7 +59,7 @@ describe('BodyPage', () => {
       prevPage: vi.fn(),
       loadData: vi.fn(),
       changePage: vi.fn()
-    });
+    } as unknown as ReturnType<typeof useNutritionTab>);
     
     vi.mocked(useMetabolismTab).mockReturnValue({
       stats: null,
