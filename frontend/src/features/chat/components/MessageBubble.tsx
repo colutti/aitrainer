@@ -1,5 +1,6 @@
 import { User, Bot } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 import { UserAvatar } from '../../../shared/components/ui/UserAvatar';
 import { type ChatMessage } from '../../../shared/types/chat';
@@ -59,7 +60,7 @@ export function MessageBubble({ message, trainerId, userPhoto, userName }: Messa
           <p className="whitespace-pre-wrap">{message.text}</p>
         ) : (
           <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-dark-bg/50 prose-pre:border prose-pre:border-border/50">
-            <ReactMarkdown>{message.text}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.text}</ReactMarkdown>
             {message.text === '' && (
               <div className="flex gap-1 mt-1">
                 <div className="w-1.5 h-1.5 bg-gradient-start rounded-full animate-bounce" />
