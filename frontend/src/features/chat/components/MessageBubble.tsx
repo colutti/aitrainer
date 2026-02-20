@@ -59,7 +59,7 @@ export function MessageBubble({ message, trainerId, userPhoto, userName }: Messa
         {isUser ? (
           <p className="whitespace-pre-wrap">{message.text}</p>
         ) : (
-          <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-dark-bg/50 prose-pre:border prose-pre:border-border/50">
+          <div className="markdown-content prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-dark-bg/50 prose-pre:border prose-pre:border-border/50">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.text}</ReactMarkdown>
             {message.text === '' && (
               <div className="flex gap-1 mt-1">
