@@ -8,9 +8,12 @@ from src.services.database import MongoDatabase
 
 # Mock the NutritionLog since it's used in the service but we don't need its logic for the weight filter test
 class MockNutritionLog:
-    def __init__(self, date_obj, calories):
+    def __init__(self, date_obj, calories, protein_grams=150, carbs_grams=200, fat_grams=65):
         self.date = datetime(date_obj.year, date_obj.month, date_obj.day)
         self.calories = calories
+        self.protein_grams = protein_grams
+        self.carbs_grams = carbs_grams
+        self.fat_grams = fat_grams
 
 
 
@@ -413,3 +416,117 @@ class TestModifiedZScoreOutlier:
         filtered, count = service._filter_outliers(logs)
         assert count == 0
         assert len(filtered) == 14
+
+
+class TestAdaptiveTDEEV2Integration:
+    """
+    End-to-end test simulating production data to verify v2 algorithm
+    produces reasonable targets (not the old 1415 kcal bug).
+    """
+
+    @pytest.fixture
+    def mock_db(self):
+        return MagicMock(spec=MongoDatabase)
+
+    @pytest.fixture
+    def service(self, mock_db):
+        return AdaptiveTDEEService(mock_db)
+
+    def test_production_scenario_male_moderate_loss(self, service, mock_db):
+        """
+        Simulates the real production bug scenario:
+        75kg male, 23% bf, goal lose 0.5kg/week, avg intake ~1900 kcal.
+        OLD result: 1415 kcal (36% deficit — too aggressive!)
+        NEW result: should be ~1650-1700 kcal (24% deficit — sustainable)
+        """
+        start = date(2025, 1, 1)
+
+        # 28 days of weight logs: gradual decline 77 → 75.5
+        weight_logs = []
+        for i in range(28):
+            w = 77.0 - (i * 0.054)  # ~0.054 kg/day = ~0.38 kg/week
+            weight_logs.append(WeightLog(
+                user_email="test@test.com",
+                date=start + timedelta(days=i),
+                weight_kg=round(w, 1),
+                body_fat_pct=23.3 if i >= 20 else None,
+            ))
+
+        # 28 days of nutrition: avg ~1900 kcal
+        nutrition_logs = []
+        import random
+        random.seed(42)
+        for i in range(28):
+            cal = 1900 + random.randint(-200, 200)
+            nutrition_logs.append(MockNutritionLog(start + timedelta(days=i), cal))
+
+        # Profile: male, lose 0.5 kg/week, no previous target (first calculation)
+        profile = MagicMock()
+        profile.goal_type = "lose"
+        profile.weekly_rate = 0.5
+        profile.gender = "Masculino"
+        profile.target_weight = 72.0
+        profile.tdee_last_target = None
+        profile.tdee_last_check_in = None
+        profile.height = 175
+        profile.age = 45
+        profile.weight = 75.0
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com", lookback_weeks=4)
+
+        # The TDEE should be reasonable (around 2100-2300)
+        assert 2000 <= result["tdee"] <= 2400, f"TDEE {result['tdee']} out of expected range"
+
+        # The daily target should NOT be as low as 1415 (the old bug)
+        assert result["daily_target"] >= 1500, (
+            f"daily_target {result['daily_target']} is below male minimum — v2 bug!"
+        )
+
+        # The deficit should be at most 30%
+        deficit_pct = (result["tdee"] - result["daily_target"]) / result["tdee"]
+        assert deficit_pct <= 0.31, (
+            f"Deficit {deficit_pct:.0%} exceeds 30% max — safety floor not working!"
+        )
+
+    def test_female_low_tdee_respects_1200_floor(self, service, mock_db):
+        """Female user with low TDEE should not go below 1200."""
+        start = date(2025, 1, 1)
+        weight_logs = []
+        for i in range(28):
+            w = 55.0 - (i * 0.02)
+            weight_logs.append(WeightLog(
+                user_email="test@test.com",
+                date=start + timedelta(days=i),
+                weight_kg=round(w, 1),
+            ))
+
+        nutrition_logs = []
+        for i in range(28):
+            nutrition_logs.append(MockNutritionLog(start + timedelta(days=i), 1400))
+
+        profile = MagicMock()
+        profile.goal_type = "lose"
+        profile.weekly_rate = 0.5
+        profile.gender = "Feminino"
+        profile.target_weight = 50.0
+        profile.tdee_last_target = None
+        profile.tdee_last_check_in = None
+        profile.height = 160
+        profile.age = 30
+        profile.weight = 55.0
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com", lookback_weeks=4)
+
+        assert result["daily_target"] >= 1200, (
+            f"Female daily_target {result['daily_target']} below 1200 floor!"
+        )
