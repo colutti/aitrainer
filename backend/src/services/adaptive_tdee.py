@@ -31,9 +31,6 @@ class AdaptiveTDEEService:
     KCAL_PER_KG_LEAN_MASS = 1800
     KCAL_PER_KG_DEFAULT = 7700  # Fallback when no body fat data
 
-    # Legacy alias (used in calculate_tdee line 204)
-    KCAL_PER_KG_FAT = 7700
-
     MIN_DATA_DAYS = 7
 
     # Regression config
@@ -48,7 +45,6 @@ class AdaptiveTDEEService:
     # Coaching check-in
     MAX_WEEKLY_ADJUSTMENT = 100  # was 75, now actually used
     CHECK_IN_INTERVAL_DAYS = 7
-    RATE_THRESHOLD = 0.75  # If actual_rate >= 75% of goal_rate, on track
 
     # Lookback
     DEFAULT_LOOKBACK_WEEKS = 4  # was 3
