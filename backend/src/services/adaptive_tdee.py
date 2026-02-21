@@ -67,70 +67,91 @@ class AdaptiveTDEEService:
 
     def _filter_outliers(self, logs: List[WeightLog]) -> tuple[List[WeightLog], int]:
         """
-        Filters out transient weight anomalies and handles 'step changes'.
+        Filters out weight anomalies using a two-pass approach:
+        1. Modified Z-Score (statistical) — catches extreme one-off values
+        2. Contextual (semantic) — handles step changes and transient spikes
+
         Returns:
-            tuple: (List[WeightLog], int: number of ignored/discarded logs)
+            tuple: (filtered_logs, count_of_removed_logs)
         """
         if len(logs) < 3:
             return logs, 0
 
-        # Sort just in case
         sorted_logs = sorted(logs, key=lambda x: x.date)
 
-        # Start with the first log
-        clean_logs = [sorted_logs[0]]
-        last_valid_log = sorted_logs[0]
-        ignored_count = 0
+        # === Pass 1: Modified Z-Score ===
+        weights = np.array([log.weight_kg for log in sorted_logs])
+        median = np.median(weights)
+        mad = np.median(np.abs(weights - median))
+
+        statistical_clean = []
+        stat_removed = 0
+
+        if mad > 0:
+            modified_z_scores = 0.6745 * (weights - median) / mad
+            for i, log in enumerate(sorted_logs):
+                if abs(modified_z_scores[i]) > self.OUTLIER_MODIFIED_Z_THRESHOLD:
+                    logger.info(
+                        "Modified Z-Score outlier: %.1f kg on %s (z=%.2f)",
+                        log.weight_kg, log.date, modified_z_scores[i],
+                    )
+                    stat_removed += 1
+                else:
+                    statistical_clean.append(log)
+        else:
+            # MAD=0 means all values are the same (or very close), no outliers
+            statistical_clean = list(sorted_logs)
+
+        if len(statistical_clean) < 3:
+            return statistical_clean, stat_removed
+
+        # === Pass 2: Contextual (spike/step-change) ===
+        clean_logs = [statistical_clean[0]]
+        last_valid_log = statistical_clean[0]
+        contextual_removed = 0
 
         i = 1
-        while i < len(sorted_logs):
-            curr = sorted_logs[i]
+        while i < len(statistical_clean):
+            curr = statistical_clean[i]
             delta = abs(curr.weight_kg - last_valid_log.weight_kg)
             days_diff = (curr.date - last_valid_log.date).days
 
-            # Only flag if jump happened in short time (e.g. < 3 days)
             if delta > self.MAX_DAILY_WEIGHT_CHANGE and days_diff <= 3:
-                # Potential Anomaly. Check next log (future) if exists
-                if i + 1 < len(sorted_logs):
-                    next_log = sorted_logs[i + 1]
-                    dist_to_baseline = abs(
-                        next_log.weight_kg - last_valid_log.weight_kg
-                    )
+                if i + 1 < len(statistical_clean):
+                    next_log = statistical_clean[i + 1]
+                    dist_to_baseline = abs(next_log.weight_kg - last_valid_log.weight_kg)
 
-                    # Case A: Spike (76 -> 78 -> 76). Next log is closer to baseline.
+                    # Case A: Spike
                     if dist_to_baseline < delta:
                         logger.info(
                             "Ignoring transient weight spike: %s kg on %s",
-                            curr.weight_kg,
-                            curr.date,
+                            curr.weight_kg, curr.date,
                         )
-                        ignored_count += 1
+                        contextual_removed += 1
                         i += 1
                         continue
 
-                    # Case B: Step Change (78 -> 76.5 -> 76.5). Next log confirms new level.
+                    # Case B: Step Change
                     logger.info(
-                        "Detected Step Change in weight: %s -> %s. Resetting baseline.",
-                        last_valid_log.weight_kg,
-                        curr.weight_kg,
+                        "Detected Step Change: %s -> %s. Resetting baseline.",
+                        last_valid_log.weight_kg, curr.weight_kg,
                     )
-                    ignored_count += len(clean_logs)
+                    contextual_removed += len(clean_logs)
                     clean_logs = [curr]
                     last_valid_log = curr
                     i += 1
                     continue
 
-                # Last log is big jump. Cannot verify. Let's keep it but log.
                 logger.info(
                     "Last weight log shows large jump: %s -> %s",
-                    last_valid_log.weight_kg,
-                    curr.weight_kg,
+                    last_valid_log.weight_kg, curr.weight_kg,
                 )
+
             clean_logs.append(curr)
             last_valid_log = curr
             i += 1
 
-        return clean_logs, ignored_count
+        return clean_logs, stat_removed + contextual_removed
 
     def _estimate_energy_per_kg(self, body_fat_pct: float | None, slope: float) -> float:
         """

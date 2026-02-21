@@ -368,3 +368,48 @@ class TestSafetyFloor:
         profile = self._make_profile(gender="Masculino", goal_type="gain")
         result = service._apply_safety_floor(2800, 2500.0, profile)
         assert result == 2800
+
+
+class TestModifiedZScoreOutlier:
+    """Tests Modified Z-Score outlier detection as first pass."""
+
+    @pytest.fixture
+    def mock_db(self):
+        return MagicMock(spec=MongoDatabase)
+
+    @pytest.fixture
+    def service(self, mock_db):
+        return AdaptiveTDEEService(mock_db)
+
+    def _create_logs(self, weight_values, start_date=None):
+        if start_date is None:
+            start_date = date(2025, 1, 1)
+        logs = []
+        for i, w in enumerate(weight_values):
+            logs.append(WeightLog(
+                user_email="test@test.com",
+                date=start_date + timedelta(days=i),
+                weight_kg=w,
+            ))
+        return logs
+
+    def test_statistical_outlier_detected(self, service):
+        """A single extreme value among consistent data should be detected."""
+        # 14 days at ~76 kg, one day at 82 kg (extreme outlier)
+        weights = [76.0, 76.1, 75.9, 76.2, 76.0, 75.8, 76.1,
+                   82.0,  # Statistical outlier
+                   76.0, 76.1, 75.9, 76.2, 76.0, 75.8]
+        logs = self._create_logs(weights)
+        filtered, count = service._filter_outliers(logs)
+        assert count >= 1
+        # The 82.0 should be removed
+        assert all(log.weight_kg < 80.0 for log in filtered)
+
+    def test_no_outliers_in_consistent_data(self, service):
+        """Consistent data with normal variation should have no outliers."""
+        weights = [76.0, 76.2, 75.8, 76.1, 75.9, 76.3, 76.0,
+                   75.7, 76.1, 76.2, 75.8, 76.0, 76.1, 75.9]
+        logs = self._create_logs(weights)
+        filtered, count = service._filter_outliers(logs)
+        assert count == 0
+        assert len(filtered) == 14
