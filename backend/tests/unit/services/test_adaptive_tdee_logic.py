@@ -183,3 +183,64 @@ class TestCalculateTDEEIntegration:
         sig = inspect.signature(service.calculate_tdee)
         default = sig.parameters["lookback_weeks"].default
         assert default == 4
+
+
+class TestCoachingTargetNoPenalty:
+    """Tests that coaching target does NOT apply off-track penalty."""
+
+    @pytest.fixture
+    def mock_db(self):
+        return MagicMock(spec=MongoDatabase)
+
+    @pytest.fixture
+    def service(self, mock_db):
+        return AdaptiveTDEEService(mock_db)
+
+    def _make_profile(self, goal_type="lose", weekly_rate=0.5, gender="Masculino",
+                      tdee_last_target=None, tdee_last_check_in=None):
+        """Helper to create a mock profile."""
+        profile = MagicMock()
+        profile.goal_type = goal_type
+        profile.weekly_rate = weekly_rate
+        profile.gender = gender
+        profile.tdee_last_target = tdee_last_target
+        profile.tdee_last_check_in = tdee_last_check_in
+        return profile
+
+    def test_lose_target_no_penalty_when_off_track(self, service):
+        """Even when actual rate (0.2 kg/week) < goal rate (0.5 kg/week), NO extra penalty. Target = TDEE - deficit_needed."""
+        profile = self._make_profile(goal_type="lose", weekly_rate=0.5)
+        tdee = 2200.0
+        avg_calories = 1800.0
+        weekly_change = -0.2  # Only losing 0.2 kg/week (off-track)
+
+        target = service._calculate_coaching_target(tdee, avg_calories, weekly_change, profile)
+
+        # Target should be TDEE - (0.5 * 1100) = 2200 - 550 = 1650
+        # NOT 2200 - 550 - (0.3 * 1100) = 1320 with penalty
+        assert target >= 1600, f"Target {target} is too low — penalty was applied!"
+        assert target <= 1700
+
+    def test_gain_target_no_penalty_when_off_track(self, service):
+        """Even when not gaining fast enough, no extra surplus penalty."""
+        profile = self._make_profile(goal_type="gain", weekly_rate=0.5)
+        tdee = 2200.0
+        avg_calories = 2500.0
+        weekly_change = 0.2  # Only gaining 0.2 kg/week (off-track)
+
+        target = service._calculate_coaching_target(tdee, avg_calories, weekly_change, profile)
+
+        # Target should be TDEE + (0.5 * 1100) = 2200 + 550 = 2750
+        assert target <= 2800, f"Target {target} is too high — penalty was applied!"
+        assert target >= 2700
+
+    def test_maintain_returns_tdee(self, service):
+        """Maintain goal returns TDEE directly."""
+        profile = self._make_profile(goal_type="maintain")
+        target = service._calculate_coaching_target(2200.0, 2200.0, 0.0, profile)
+        assert target == 2200
+
+    def test_no_profile_returns_tdee(self, service):
+        """No profile returns TDEE directly."""
+        target = service._calculate_coaching_target(2200.0, 2200.0, 0.0, None)
+        assert target == 2200

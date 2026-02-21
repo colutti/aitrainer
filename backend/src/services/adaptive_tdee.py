@@ -675,59 +675,48 @@ class AdaptiveTDEEService:
         profile: "UserProfile | None",
     ) -> int:
         """
-        Calculates daily_target with weekly coaching check-in.
+        Calculates daily_target using MacroFactor-inspired approach.
+
+        v2 changes:
+        - NO off-track penalty (adherence-neutral)
+        - The adaptive TDEE naturally adjusts if user isn't progressing
+        - Gradual adjustment applied separately via _apply_gradual_adjustment()
 
         Logic:
         1. If no profile or goal=maintain: return TDEE
-        2. If no previous target: calculate and return ideal_target
-        3. If check-in < 7 days: return previous target unchanged
-        4. If check-in >= 7 days: adjust max ±75 kcal toward ideal
+        2. Calculate ideal_target = TDEE ± deficit/surplus for goal_rate
+        3. Apply gradual adjustment (max ±100 kcal/week vs previous target)
+        4. Apply safety floor (gender min + max 30% deficit)
         """
         if not profile or profile.goal_type == "maintain":
             return int(round(tdee))
 
         goal_rate = abs(profile.weekly_rate or 0.0)
-        actual_rate = abs(weekly_change)
 
-        # Calculate ideal target based on goal and progress
-        # The key insight: we want to ACHIEVE the goal, not maintain current intake
+        # Calculate ideal target based on goal — NO penalty for being off-track
         if profile.goal_type == "lose":
-            # For weight loss: ideal is TDEE minus the deficit needed for goal_rate
-            # Example: TDEE=2500, goal=0.5kg/week needs 550 kcal deficit → target=1950
-            deficit_needed = goal_rate * 1100  # kcal/week deficit for goal_rate
+            deficit_needed = goal_rate * 1100
             ideal_target = int(round(tdee - deficit_needed))
-
-            # If off-track (not losing fast enough), increase deficit
-            if actual_rate < goal_rate * self.RATE_THRESHOLD:
-                gap = goal_rate - actual_rate
-                ideal_target = int(round(ideal_target - (gap * 1100)))
         else:  # gain
-            # For weight gain: ideal is TDEE plus the surplus needed for goal_rate
-            surplus_needed = goal_rate * 1100  # kcal/week surplus for goal_rate
+            surplus_needed = goal_rate * 1100
             ideal_target = int(round(tdee + surplus_needed))
 
-            # If off-track (not gaining fast enough), increase surplus
-            if actual_rate < goal_rate * self.RATE_THRESHOLD:
-                gap = goal_rate - actual_rate
-                ideal_target = int(round(ideal_target + (gap * 1100)))
+        # Apply gradual adjustment
+        ideal_target = self._apply_gradual_adjustment(ideal_target, profile)
 
-        ideal_target = max(1000, ideal_target)
+        # Apply safety floor
+        ideal_target = self._apply_safety_floor(ideal_target, tdee, profile)
 
-        # Coaching check-in: gradual adjustment
-        prev_target = profile.tdee_last_target
-        last_check_in = profile.tdee_last_check_in
+        return ideal_target
 
-        if prev_target is None or not isinstance(prev_target, int):
-            # First time: use ideal_target directly
-            return ideal_target
+    def _apply_gradual_adjustment(
+        self, ideal_target: int, profile: "UserProfile | None"
+    ) -> int:
+        """Stub — implemented in Task 5."""
+        return ideal_target
 
-        today = date.today()
-        if last_check_in and isinstance(last_check_in, str):
-            try:
-                last_date = date.fromisoformat(last_check_in)
-                if (today - last_date).days < self.CHECK_IN_INTERVAL_DAYS:
-                    return prev_target  # No change yet
-            except (ValueError, TypeError):
-                pass  # Invalid date format, proceed with adjustment
-
-        return max(1000, ideal_target)
+    def _apply_safety_floor(
+        self, target: int, tdee: float, profile: "UserProfile | None"
+    ) -> int:
+        """Stub — implemented in Task 6."""
+        return max(1000, target)
