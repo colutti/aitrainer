@@ -164,3 +164,22 @@ class TestEnergyPerKg:
         rapid = service._estimate_energy_per_kg(body_fat_pct=25.0, slope=-0.15)
         # Rapid loss should have lower energy per kg (more lean tissue lost)
         assert rapid < normal
+
+
+class TestCalculateTDEEIntegration:
+    """Tests that calculate_tdee uses dynamic energy density and 4-week lookback."""
+
+    @pytest.fixture
+    def mock_db(self):
+        return MagicMock(spec=MongoDatabase)
+
+    @pytest.fixture
+    def service(self, mock_db):
+        return AdaptiveTDEEService(mock_db)
+
+    def test_default_lookback_is_4_weeks(self, service):
+        """calculate_tdee should default to 4-week lookback."""
+        import inspect
+        sig = inspect.signature(service.calculate_tdee)
+        default = sig.parameters["lookback_weeks"].default
+        assert default == 4

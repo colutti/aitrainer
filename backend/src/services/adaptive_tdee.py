@@ -175,7 +175,7 @@ class AdaptiveTDEEService:
         return (weight_kg * alpha) + (prev_trend * (1 - alpha))
 
     # pylint: disable=too-many-locals,too-many-branches,too-many-statements
-    def calculate_tdee(self, user_email: str, lookback_weeks: int = 3) -> dict:
+    def calculate_tdee(self, user_email: str, lookback_weeks: int = 4) -> dict:
         """
         Calculates the user's TDEE over the specified lookback period.
         """
@@ -249,8 +249,13 @@ class AdaptiveTDEEService:
         adherence_rate = len(relevant_nutrition) / (days_elapsed + 1)
         avg_calories_logged = total_calories / len(relevant_nutrition)
 
-        # 4. Calculate TDEE
-        daily_surplus_deficit = slope * self.KCAL_PER_KG_FAT
+        # 4. Calculate TDEE (dynamic energy density)
+        latest_body_fat = next(
+            (log.body_fat_pct for log in reversed(weight_logs) if log.body_fat_pct is not None),
+            None,
+        )
+        energy_per_kg = self._estimate_energy_per_kg(latest_body_fat, slope)
+        daily_surplus_deficit = slope * energy_per_kg
         tdee = avg_calories_logged - daily_surplus_deficit
 
         # 5. Sanity Checks & Confidence
