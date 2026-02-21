@@ -132,6 +132,38 @@ class AdaptiveTDEEService:
 
         return clean_logs, ignored_count
 
+    def _estimate_energy_per_kg(self, body_fat_pct: float | None, slope: float) -> float:
+        """
+        Estimates energy content per kg of weight change using Forbes/Hall model.
+
+        Higher body fat → more fat lost per kg → higher kcal/kg.
+        Rapid loss → more lean tissue lost → lower kcal/kg.
+
+        Args:
+            body_fat_pct: User's body fat percentage (None = use default 7700).
+            slope: Daily weight change in kg/day (negative = losing).
+
+        Returns:
+            Estimated kcal per kg of weight change (range: ~5600-8640).
+        """
+        if body_fat_pct is None:
+            return self.KCAL_PER_KG_DEFAULT
+
+        # Base fat fraction from body fat % (Forbes model)
+        # At 25% bf: fat_fraction = 0.75 (baseline)
+        # Each 1% bf above/below 25% shifts fraction by 0.005
+        fat_fraction = 0.75 + (body_fat_pct - 25) * 0.005
+
+        # Rapid loss penalty: losing > 0.5 kg/week means more lean tissue lost
+        rate_weekly = abs(slope * 7)
+        if rate_weekly > 0.5:
+            fat_fraction -= 0.05 * (rate_weekly - 0.5)
+
+        # Clamp to physiological bounds
+        fat_fraction = max(0.50, min(0.90, fat_fraction))
+
+        return fat_fraction * self.KCAL_PER_KG_FAT_MASS + (1 - fat_fraction) * self.KCAL_PER_KG_LEAN_MASS
+
     def calculate_ema_trend(self, weight_kg: float, prev_trend: float | None) -> float:
         """
         Calculates the new Trend Weight using Exponential Moving Average.

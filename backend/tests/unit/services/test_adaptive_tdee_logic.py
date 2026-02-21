@@ -115,3 +115,52 @@ class TestAdaptiveTDEELogic:
         assert service.MAX_DEFICIT_PCT == 0.30
         assert service.MAX_WEEKLY_ADJUSTMENT == 100
         assert service.OUTLIER_MODIFIED_Z_THRESHOLD == 3.5
+
+
+class TestEnergyPerKg:
+    @pytest.fixture
+    def mock_db(self):
+        return MagicMock(spec=MongoDatabase)
+
+    @pytest.fixture
+    def service(self, mock_db):
+        return AdaptiveTDEEService(mock_db)
+
+    def test_no_body_fat_returns_default(self, service):
+        """When body_fat_pct is None, fallback to 7700."""
+        result = service._estimate_energy_per_kg(body_fat_pct=None, slope=-0.05)
+        assert result == 7700
+
+    def test_average_body_fat_25pct(self, service):
+        """At 25% body fat, fat_fraction = 0.75 → energy ≈ 0.75*9400 + 0.25*1800 = 7500."""
+        result = service._estimate_energy_per_kg(body_fat_pct=25.0, slope=-0.05)
+        assert 7400 <= result <= 7600
+
+    def test_high_body_fat_35pct(self, service):
+        """At 35% body fat, fat_fraction = 0.80 → energy ≈ 0.80*9400 + 0.20*1800 = 7880."""
+        result = service._estimate_energy_per_kg(body_fat_pct=35.0, slope=-0.05)
+        assert 7700 <= result <= 8100
+
+    def test_low_body_fat_15pct(self, service):
+        """At 15% body fat, fat_fraction = 0.70 → energy ≈ 0.70*9400 + 0.30*1800 = 7120."""
+        result = service._estimate_energy_per_kg(body_fat_pct=15.0, slope=-0.05)
+        assert 6900 <= result <= 7300
+
+    def test_very_low_body_fat_clamps_at_50pct(self, service):
+        """Fat fraction never goes below 0.50."""
+        result = service._estimate_energy_per_kg(body_fat_pct=5.0, slope=-0.05)
+        # 0.50 * 9400 + 0.50 * 1800 = 5600
+        assert result >= 5600
+
+    def test_very_high_body_fat_clamps_at_90pct(self, service):
+        """Fat fraction never goes above 0.90."""
+        result = service._estimate_energy_per_kg(body_fat_pct=60.0, slope=-0.05)
+        # 0.90 * 9400 + 0.10 * 1800 = 8640
+        assert result <= 8640
+
+    def test_rapid_loss_reduces_fat_fraction(self, service):
+        """Losing > 0.5 kg/week penalizes fat fraction (more lean loss)."""
+        normal = service._estimate_energy_per_kg(body_fat_pct=25.0, slope=-0.05)
+        rapid = service._estimate_energy_per_kg(body_fat_pct=25.0, slope=-0.15)
+        # Rapid loss should have lower energy per kg (more lean tissue lost)
+        assert rapid < normal
