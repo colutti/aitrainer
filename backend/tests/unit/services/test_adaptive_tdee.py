@@ -680,7 +680,7 @@ def test_coaching_target_first_execution(service, mock_db):
 
 
 def test_coaching_target_on_track(service, mock_db):
-    """On track (actual >= 75% goal): should calculate based on goal."""
+    """Check-in > 7 days: gradual adjustment applies, capping to ±100 from previous."""
     today = date.today()
     start_date = today - timedelta(days=20)
 
@@ -704,7 +704,7 @@ def test_coaching_target_on_track(service, mock_db):
         for i in range(21)
     ]
 
-    # Profile with previous target = 1900
+    # Profile with previous target = 1900, last check-in 8 days ago (past 7-day interval)
     profile_mock = MagicMock()
     profile_mock.goal_type = "lose"
     profile_mock.weekly_rate = 0.3
@@ -717,13 +717,12 @@ def test_coaching_target_on_track(service, mock_db):
 
     result = service.calculate_tdee("test@test.com")
 
-    # NEW LOGIC: ideal = TDEE - (goal_rate * 1100), returned directly (no gradual adjustment)
-    # User eating 1900, losing ~0.56 kg/week → TDEE ≈ 2521
-    # ideal = 2521 - (0.3 * 1100) = 2521 - 330 ≈ 2191
-    # System correctly suggests eating MORE (user is in too aggressive a deficit)
-    # Allow range for rounding and EMA variations
-    assert 2100 < result["daily_target"] < 2300, (
-        f"Expected daily_target in range 2100-2300 (ideal diretamente), got {result['daily_target']}"
+    # Check-in > 7 days, so gradual adjustment applies:
+    # ideal = TDEE - (goal_rate * 1100) = ~2521 - 330 = ~2191
+    # gradual adjustment: diff = 2191 - 1900 = 291 > 100
+    # so result = prev_target + 100 = 1900 + 100 = 2000
+    assert result["daily_target"] == 2000, (
+        f"Expected daily_target = 2000 (prev + 100 cap), got {result['daily_target']}"
     )
 
 
