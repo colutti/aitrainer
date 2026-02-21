@@ -103,3 +103,15 @@ class TestAdaptiveTDEELogic:
         assert len(filtered) == 3
         assert count == 1
         assert filtered[0].weight_kg == 78.0
+
+    def test_v2_constants_exist(self, service):
+        """Verify new v2 constants are defined on the service."""
+        assert service.KCAL_PER_KG_FAT_MASS == 9400
+        assert service.KCAL_PER_KG_LEAN_MASS == 1800
+        assert service.KCAL_PER_KG_DEFAULT == 7700
+        assert service.DEFAULT_LOOKBACK_WEEKS == 4
+        assert service.MIN_CALORIES_FEMALE == 1200
+        assert service.MIN_CALORIES_MALE == 1500
+        assert service.MAX_DEFICIT_PCT == 0.30
+        assert service.MAX_WEEKLY_ADJUSTMENT == 100
+        assert service.OUTLIER_MODIFIED_Z_THRESHOLD == 3.5

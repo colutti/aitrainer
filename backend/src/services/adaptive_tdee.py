@@ -26,9 +26,15 @@ class AdaptiveTDEEService:
     Using Exponential Moving Average (EMA) for weight smoothing.
     """
 
-    # Constants
+    # Constants — Energy Content (Forbes/Hall model)
+    KCAL_PER_KG_FAT_MASS = 9400
+    KCAL_PER_KG_LEAN_MASS = 1800
+    KCAL_PER_KG_DEFAULT = 7700  # Fallback when no body fat data
+
+    # Legacy alias (used in calculate_tdee line 204)
     KCAL_PER_KG_FAT = 7700
-    MIN_DATA_DAYS = 7  # Minimum days of data required
+
+    MIN_DATA_DAYS = 7
 
     # Regression config
     MIN_DATA_DAYS_FOR_REGRESSION = 10
@@ -40,9 +46,20 @@ class AdaptiveTDEEService:
     EMA_SPAN = 10  # Days span for EMA (MacroFactor style: 7-14)
 
     # Coaching check-in
-    MAX_WEEKLY_ADJUSTMENT = 75  # kcal max step per check-in
+    MAX_WEEKLY_ADJUSTMENT = 100  # was 75, now actually used
     CHECK_IN_INTERVAL_DAYS = 7
     RATE_THRESHOLD = 0.75  # If actual_rate >= 75% of goal_rate, on track
+
+    # Lookback
+    DEFAULT_LOOKBACK_WEEKS = 4  # was 3
+
+    # Safety floors (gender-specific, NIH/Harvard)
+    MIN_CALORIES_FEMALE = 1200
+    MIN_CALORIES_MALE = 1500
+    MAX_DEFICIT_PCT = 0.30  # Never exceed 30% deficit
+
+    # Outlier detection
+    OUTLIER_MODIFIED_Z_THRESHOLD = 3.5
 
     def __init__(self, db: "MongoDatabase"):
         """Initialize the AdaptiveTDEEService with a database connection."""
