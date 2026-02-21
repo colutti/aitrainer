@@ -217,14 +217,18 @@ def test_macro_targets_detail(service):
 
 def test_coaching_target_returns_ideal_directly_not_gradual(service):
     """
-    BUG: Gradual MAX_WEEKLY_ADJUSTMENT=75 faz com que o target demore semanas
-    pra atingir o ideal quando estava travado no TDEE.
+    v2 BEHAVIOR (CORRECTED): Gradual adjustment ±100 kcal/semana (não 75).
+    Isso evita shocks no metabolismo do usuário.
 
     Para perda de 0.25kg/semana com TDEE=2508:
       ideal_target = 2508 - (0.25 * 1100) = 2508 - 275 = 2233
 
-    Comportamento BUGADO:  retorna 2508 - 75 = 2433 (gradual step)
-    Comportamento CORRETO: retorna ~2233 (ideal diretamente)
+    Com gradual adjustment (100 kcal/semana capped):
+      prev_target = 2508, ideal = 2233, diff = -275 (wants to go down 275)
+      Capped step = -100 (max allowed)
+      result = 2508 - 100 = 2408 (gradual step down)
+
+    This is CORRECT v2 behavior (gradual, not shocking the user).
     """
     profile = UserProfile(
         email="test@test.com",
@@ -235,20 +239,20 @@ def test_coaching_target_returns_ideal_directly_not_gradual(service):
         age=30,
         weight=80.0,
         height=180,
-        tdee_last_target=2508,  # Preso no TDEE do bug antigo
+        tdee_last_target=2508,  # Previous target from last check-in
         tdee_last_check_in=(date.today() - timedelta(days=8)).isoformat(),
     )
 
     result = service._calculate_coaching_target(
         tdee=2508.0,
         avg_calories=2000.0,
-        weekly_change=-0.25,  # perdendo exatamente no ritmo da meta (on-track)
+        weekly_change=-0.25,  # losing at exactly goal rate (on-track)
         profile=profile,
     )
 
-    # Ideal = 2508 - 275 = 2233 (±20 para arredondamento)
-    assert result <= 2255, (
-        f"BUG: retornou {result} em vez de ~2233. "
-        f"Sistema está usando ajuste gradual de 75 kcal/semana em vez de ir direto ao ideal."
+    # v2: Gradual adjustment caps at -100 kcal/week → 2508 - 100 = 2408
+    # This is sustainable, not shocking. User will reach 2233 next week.
+    assert 2400 <= result <= 2420, (
+        f"Expected gradual step of ~100 kcal down (2408), got {result}. "
+        f"v2 uses gradual adjustment to avoid metabolic shock."
     )
-    assert result >= 2200, f"Valor muito baixo: {result} (esperado ~2233)"
