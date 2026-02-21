@@ -244,3 +244,127 @@ class TestCoachingTargetNoPenalty:
         """No profile returns TDEE directly."""
         target = service._calculate_coaching_target(2200.0, 2200.0, 0.0, None)
         assert target == 2200
+
+
+class TestGradualAdjustment:
+    """Tests that gradual adjustment caps changes to ±100 kcal/week."""
+
+    @pytest.fixture
+    def mock_db(self):
+        return MagicMock(spec=MongoDatabase)
+
+    @pytest.fixture
+    def service(self, mock_db):
+        return AdaptiveTDEEService(mock_db)
+
+    def _make_profile(self, tdee_last_target=None, tdee_last_check_in=None, **kwargs):
+        profile = MagicMock()
+        profile.goal_type = kwargs.get("goal_type", "lose")
+        profile.weekly_rate = kwargs.get("weekly_rate", 0.5)
+        profile.gender = kwargs.get("gender", "Masculino")
+        profile.tdee_last_target = tdee_last_target
+        profile.tdee_last_check_in = tdee_last_check_in
+        return profile
+
+    def test_first_time_no_previous_target(self, service):
+        """First time: return ideal_target directly (no capping)."""
+        profile = self._make_profile(tdee_last_target=None)
+        result = service._apply_gradual_adjustment(1650, profile)
+        assert result == 1650
+
+    def test_small_change_within_100_passes_through(self, service):
+        """Change of 80 kcal (< 100) passes through unchanged."""
+        profile = self._make_profile(tdee_last_target=1600, tdee_last_check_in="2025-01-01")
+        result = service._apply_gradual_adjustment(1680, profile)
+        assert result == 1680
+
+    def test_large_decrease_capped_at_minus_100(self, service):
+        """Change of -300 kcal capped to -100."""
+        profile = self._make_profile(tdee_last_target=1800, tdee_last_check_in="2025-01-01")
+        result = service._apply_gradual_adjustment(1500, profile)
+        assert result == 1700  # 1800 - 100
+
+    def test_large_increase_capped_at_plus_100(self, service):
+        """Change of +250 kcal capped to +100."""
+        profile = self._make_profile(tdee_last_target=1500, tdee_last_check_in="2025-01-01")
+        result = service._apply_gradual_adjustment(1750, profile)
+        assert result == 1600  # 1500 + 100
+
+    def test_check_in_too_recent_returns_previous(self, service):
+        """If last check-in was < 7 days ago, return previous target."""
+        yesterday = (date.today() - timedelta(days=1)).isoformat()
+        profile = self._make_profile(tdee_last_target=1600, tdee_last_check_in=yesterday)
+        result = service._apply_gradual_adjustment(1400, profile)
+        assert result == 1600  # No change
+
+    def test_check_in_exactly_7_days_allows_adjustment(self, service):
+        """If last check-in was exactly 7 days ago, allow adjustment."""
+        seven_days_ago = (date.today() - timedelta(days=7)).isoformat()
+        profile = self._make_profile(tdee_last_target=1800, tdee_last_check_in=seven_days_ago)
+        result = service._apply_gradual_adjustment(1500, profile)
+        assert result == 1700  # 1800 - 100
+
+
+class TestSafetyFloor:
+    """Tests gender-specific calorie floors and max deficit percentage."""
+
+    @pytest.fixture
+    def mock_db(self):
+        return MagicMock(spec=MongoDatabase)
+
+    @pytest.fixture
+    def service(self, mock_db):
+        return AdaptiveTDEEService(mock_db)
+
+    def _make_profile(self, gender="Masculino", **kwargs):
+        profile = MagicMock()
+        profile.gender = gender
+        profile.goal_type = kwargs.get("goal_type", "lose")
+        profile.weekly_rate = kwargs.get("weekly_rate", 0.5)
+        profile.tdee_last_target = kwargs.get("tdee_last_target", None)
+        profile.tdee_last_check_in = kwargs.get("tdee_last_check_in", None)
+        return profile
+
+    def test_male_floor_1500(self, service):
+        """Male target should never go below 1500."""
+        profile = self._make_profile(gender="Masculino")
+        result = service._apply_safety_floor(1200, 2000.0, profile)
+        assert result == 1500
+
+    def test_female_floor_1200(self, service):
+        """Female target should never go below 1200."""
+        profile = self._make_profile(gender="Feminino")
+        # With TDEE=1600, 30% deficit = 1120. Female floor = 1200. Floor wins.
+        result = service._apply_safety_floor(1000, 1600.0, profile)
+        assert result == 1200
+
+    def test_max_deficit_30pct(self, service):
+        """Target should not exceed 30% deficit from TDEE."""
+        profile = self._make_profile(gender="Masculino")
+        # TDEE=2500, 30% deficit = 1750. Target 1500 is 40% deficit → clamp to 1750
+        result = service._apply_safety_floor(1500, 2500.0, profile)
+        assert result == 1750
+
+    def test_gender_floor_wins_over_deficit_pct(self, service):
+        """When both apply, the HIGHER floor wins."""
+        profile = self._make_profile(gender="Masculino")
+        # TDEE=1800, 30% deficit = 1260. Male floor = 1500. Floor wins.
+        result = service._apply_safety_floor(1100, 1800.0, profile)
+        assert result == 1500
+
+    def test_target_above_all_floors_unchanged(self, service):
+        """Target above all floors passes through unchanged."""
+        profile = self._make_profile(gender="Masculino")
+        result = service._apply_safety_floor(1900, 2500.0, profile)
+        assert result == 1900
+
+    def test_no_profile_uses_generic_floor(self, service):
+        """Without profile, use MIN_TDEE (1200) as generic floor."""
+        result = service._apply_safety_floor(1000, 2000.0, None)
+        assert result == 1200
+
+    def test_gain_goal_no_deficit_floor(self, service):
+        """For gain goals, deficit floor should not apply (target > TDEE)."""
+        profile = self._make_profile(gender="Masculino", goal_type="gain")
+        result = service._apply_safety_floor(2800, 2500.0, profile)
+        assert result == 2800

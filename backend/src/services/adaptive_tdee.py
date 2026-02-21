@@ -712,11 +712,57 @@ class AdaptiveTDEEService:
     def _apply_gradual_adjustment(
         self, ideal_target: int, profile: "UserProfile | None"
     ) -> int:
-        """Stub — implemented in Task 5."""
-        return ideal_target
+        """
+        Caps target changes to ±MAX_WEEKLY_ADJUSTMENT kcal per check-in interval.
+        """
+        if not profile:
+            return ideal_target
+
+        prev_target = profile.tdee_last_target
+        last_check_in = profile.tdee_last_check_in
+
+        # First time: no previous target to cap against
+        if prev_target is None or not isinstance(prev_target, int):
+            return ideal_target
+
+        # Check if enough time has passed since last check-in
+        today = date.today()
+        if last_check_in and isinstance(last_check_in, str):
+            try:
+                last_date = date.fromisoformat(last_check_in)
+                if (today - last_date).days < self.CHECK_IN_INTERVAL_DAYS:
+                    return prev_target  # Too soon, no change
+            except (ValueError, TypeError):
+                pass
+
+        # Apply ±100 kcal cap
+        diff = ideal_target - prev_target
+        if abs(diff) <= self.MAX_WEEKLY_ADJUSTMENT:
+            return ideal_target
+        step = self.MAX_WEEKLY_ADJUSTMENT if diff > 0 else -self.MAX_WEEKLY_ADJUSTMENT
+        return prev_target + step
 
     def _apply_safety_floor(
         self, target: int, tdee: float, profile: "UserProfile | None"
     ) -> int:
-        """Stub — implemented in Task 6."""
-        return max(1000, target)
+        """
+        Applies gender-specific calorie floor and max deficit percentage.
+        Three safety checks (highest floor wins):
+        1. Gender minimum: 1200 (female) / 1500 (male)
+        2. Max deficit: never exceed 30% below TDEE
+        3. Absolute minimum: 1200 kcal (generic)
+        """
+        if not profile:
+            return max(self.MIN_TDEE, target)
+
+        # Gender-specific minimum
+        is_female = profile.gender in ("Feminino", "female")
+        gender_min = self.MIN_CALORIES_FEMALE if is_female else self.MIN_CALORIES_MALE
+
+        # Max deficit percentage (only for deficit goals)
+        if profile.goal_type == "lose":
+            min_by_deficit = int(round(tdee * (1 - self.MAX_DEFICIT_PCT)))
+            return max(gender_min, min_by_deficit, target)
+
+        # For gain/maintain, only gender floor applies
+        return max(gender_min, target)
