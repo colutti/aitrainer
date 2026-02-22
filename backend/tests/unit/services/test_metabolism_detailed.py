@@ -107,9 +107,9 @@ def test_scenario_gain(service, mock_db):
 
     result = service.calculate_tdee("demo@demo.com", lookback_weeks=3)
 
-    # v3 EMA estimates ~2469 kcal (prior blended with weight gain observations)
+    # v3 EMA with 7-day windows + activity factor 1.45 estimates ~2578 kcal
     print(f"Calculated TDEE (Gain): {result['tdee']}")
-    assert 2400 < result["tdee"] < 2550, f"Expected ~2469, got {result['tdee']}"
+    assert 2500 < result["tdee"] < 2650, f"Expected ~2578, got {result['tdee']}"
 
 
 def test_scenario_maintenance(service, mock_db):

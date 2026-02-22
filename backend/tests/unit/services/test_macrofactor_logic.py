@@ -95,9 +95,9 @@ def test_tdee_rapid_metabolic_adaptation(service, mock_db):
     result = service.calculate_tdee("test@test.com")
     
     # Simple AVG expenditure would be ~2350.
-    # v3 EMA with 21-day span is slower to adapt, produces ~2419 kcal
+    # v3 EMA with 7-day windows + activity factor 1.45 produces ~2489 kcal
     # (still between simple average and true current expenditure)
-    assert result["tdee"] < 2450 # Still reacting but slower
+    assert result["tdee"] < 2550 # Still reacting but slower
     assert result["tdee"] > 2300  # Better than naive average of 2350
 
 def test_tdee_chronic_under_logging_detection(service, mock_db):
