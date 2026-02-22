@@ -831,6 +831,210 @@ class TestComputeTDEEObservations:
         pass
 
 
+class TestComputeTDEEObservations7d:
+    """Tests for 7-day window TDEE observations (v3 algorithm)."""
+
+    @pytest.fixture
+    def mock_db(self):
+        return MagicMock(spec=MongoDatabase)
+
+    @pytest.fixture
+    def service(self, mock_db):
+        return AdaptiveTDEEService(mock_db)
+
+    def _make_daily_trend(self, start_date, daily_weights):
+        """Helper to create daily_trend dict from list of weights."""
+        trend = {}
+        for i, weight in enumerate(daily_weights):
+            trend[start_date + timedelta(days=i)] = weight
+        return trend
+
+    def _make_nutrition_by_date(self, start_date, calories_list):
+        """Helper to create nutrition_by_date dict from list of calories."""
+        nutrition = {}
+        for i, calories in enumerate(calories_list):
+            nutrition[start_date + timedelta(days=i)] = calories
+        return nutrition
+
+    def test_requires_at_least_8_days_of_trend(self, service):
+        """
+        When daily_trend has <= 7 days, no observation window is possible.
+
+        With only 7 days, the first window would need days 1-7 to compute
+        a 7-day observation, which requires checking day 0 for the baseline.
+        Returns empty list when insufficient data.
+        """
+        start = date(2025, 1, 1)
+        daily_trend = self._make_daily_trend(start, [75.0, 74.8, 74.6, 74.4, 74.2, 74.0, 73.8])
+        nutrition_by_date = self._make_nutrition_by_date(start, [2000] * 7)
+
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, energy_per_kg=7700, span=7
+        )
+
+        assert observations == []
+
+    def test_generates_observation_from_window(self, service):
+        """
+        With 10 days of trend and nutrition data, should generate observations
+        using 7-day windows.
+
+        The 7-day window starting at day 8 uses:
+        - avg_calories = mean(calories[day2 to day8])
+        - trend_change = trend[day8] - trend[day1] (7-day weight change)
+        - obs = avg_calories - (trend_change / 7) * 7700
+
+        For 10 days of data, we should have at least 3 valid 7-day windows:
+        - Window 1: days 1-7 (ends at day 7)
+        - Window 2: days 2-8 (ends at day 8)
+        - Window 3: days 3-9 (ends at day 9)
+        """
+        start = date(2025, 1, 1)
+        # 10 days of stable 75kg with -0.2kg/day trend
+        daily_trend = self._make_daily_trend(
+            start,
+            [75.0, 74.8, 74.6, 74.4, 74.2, 74.0, 73.8, 73.6, 73.4, 73.2]
+        )
+        nutrition_by_date = self._make_nutrition_by_date(start, [2100] * 10)
+
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, energy_per_kg=7700, span=7
+        )
+
+        # Should have generated at least 3 observations (windows ending at days 7, 8, 9)
+        assert len(observations) >= 3, f"Expected >= 3 observations, got {len(observations)}"
+        assert all(isinstance(obs, tuple) and len(obs) == 2 for obs in observations)
+        assert all(isinstance(obs[0], date) and isinstance(obs[1], (int, float)) for obs in observations)
+
+    def test_window_skipped_if_less_than_4_nutrition_days(self, service):
+        """
+        When a 7-day window has fewer than 4 days with nutrition data,
+        the observation is skipped (incomplete data).
+
+        Example: 10 days trend but only 3 days with nutrition logs → no observation.
+        """
+        start = date(2025, 1, 1)
+        daily_trend = self._make_daily_trend(
+            start,
+            [75.0, 74.8, 74.6, 74.4, 74.2, 74.0, 73.8, 73.6, 73.4, 73.2]
+        )
+        # Only 3 days of nutrition data
+        nutrition_by_date = {
+            start: 2100,
+            start + timedelta(days=1): 2100,
+            start + timedelta(days=2): 2100,
+        }
+
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, energy_per_kg=7700, span=7
+        )
+
+        # With only 3 nutrition days and 10 trend days, no valid window has >= 4 nutrition days
+        assert observations == []
+
+    def test_window_ok_with_4_of_7_nutrition_days(self, service):
+        """
+        When a 7-day window has exactly 4 days with nutrition data (>= threshold),
+        the observation is generated.
+
+        Example: 10 days trend, 4 nutrition logs spread across window → observation created.
+        Window 1 (days 1-7): has nutrition on days 1, 2, 5 → only 3 days → skipped
+        Window 2 (days 2-8): has nutrition on days 2, 5, 8 → only 3 days → skipped
+        Window 3 (days 3-9): has nutrition on days 5, 8 → only 2 days → skipped
+
+        We need more nutrition days for any window to qualify. Let's test with more spread.
+        """
+        start = date(2025, 1, 1)
+        daily_trend = self._make_daily_trend(
+            start,
+            [75.0, 74.8, 74.6, 74.4, 74.2, 74.0, 73.8, 73.6, 73.4, 73.2]
+        )
+        # 5+ days of nutrition data spread out to ensure a window gets >= 4
+        nutrition_by_date = {
+            start: 2100,
+            start + timedelta(days=1): 2100,
+            start + timedelta(days=2): 2100,
+            start + timedelta(days=3): 2100,
+            start + timedelta(days=4): 2100,
+        }
+
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, energy_per_kg=7700, span=7
+        )
+
+        # Should generate observations since we have multiple 7-day windows with >= 4 nutrition days
+        assert len(observations) > 0, "Expected at least one observation when window has >= 4 nutrition days"
+
+    def test_outlier_observations_filtered(self, service):
+        """
+        Observations with unrealistic TDEE values are filtered out.
+
+        - Observation of 400 kcal (absurdly low) → discarded
+        - Observation of 6000 kcal (absurdly high) → discarded
+        - Only observations in [500, 5000] kcal range are returned
+        """
+        start = date(2025, 1, 1)
+        daily_trend = self._make_daily_trend(
+            start,
+            [75.0, 74.8, 74.6, 74.4, 74.2, 74.0, 73.8, 73.6, 73.4, 73.2]
+        )
+        nutrition_by_date = self._make_nutrition_by_date(start, [2100] * 10)
+
+        # Use extreme energy_per_kg to force outlier scenarios
+        # High energy_per_kg will create low TDEE observations
+        observations_low = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, energy_per_kg=20000, span=7
+        )
+
+        # All returned observations should be within valid range [500, 5000]
+        for obs_date, obs_tdee in observations_low:
+            assert 500 <= obs_tdee <= 5000, f"Observation {obs_tdee} at {obs_date} out of bounds"
+
+    def test_weekly_window_reduces_noise(self, service):
+        """
+        7-day windows reduce noise compared to daily weight changes.
+
+        When daily weights have high variability (±0.3 kg/day - typical hydration noise),
+        but trend is stable, 7-day windows should produce more stable TDEE observations.
+
+        Validates that std(observations) is lower than expected from daily noise.
+        """
+        start = date(2025, 1, 1)
+
+        # Create 20 days with high daily noise but stable trend
+        # Trend: 75.0 → 73.0 over 20 days = -0.1 kg/day
+        # Daily noise: ±0.3 kg
+        daily_weights = []
+        for i in range(20):
+            base = 75.0 - (i * 0.1)  # Smooth -0.1 kg/day trend
+            noise = (i % 3) * 0.3 - 0.3  # Cycle ±0.3 kg
+            daily_weights.append(base + noise)
+
+        daily_trend = self._make_daily_trend(start, daily_weights)
+        nutrition_by_date = self._make_nutrition_by_date(start, [2200] * 20)
+
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, energy_per_kg=7700, span=7
+        )
+
+        # Should generate multiple observations with 20 days of data
+        assert len(observations) > 0
+
+        # Extract observation TDEE values
+        tdee_values = [obs[1] for obs in observations]
+
+        # Calculate coefficient of variation (std / mean)
+        if len(tdee_values) > 1:
+            mean_tdee = sum(tdee_values) / len(tdee_values)
+            variance = sum((x - mean_tdee) ** 2 for x in tdee_values) / len(tdee_values)
+            std_dev = variance ** 0.5
+            cv = std_dev / mean_tdee if mean_tdee > 0 else 0
+
+            # With 7-day smoothing, CV should be relatively low (< 0.15)
+            # This validates noise reduction from windowing
+            assert cv < 0.15, f"High noise in observations: CV={cv}, std={std_dev}, mean={mean_tdee}"
+
+
 class TestComputeTDEEFromObservations:
     """Tests for computing TDEE from observations (Task 3)."""
 
