@@ -42,6 +42,10 @@ class NutritionLog(BaseModel):
 
     source: str = Field(default="chat", description="Origem dos dados")
     notes: str | None = Field(default=None, description="Notas opcionais")
+    partial_logged: bool = Field(
+        default=False,
+        description="Se o log é incompleto (apenas alguns alimentos registrados)",
+    )
 
 
 class NutritionWithId(NutritionLog):
@@ -67,6 +71,7 @@ class NutritionWithId(NutritionLog):
             "cholesterol_mg": self.cholesterol_mg,
             "source": self.source,
             "notes": self.notes,
+            "partial_logged": self.partial_logged,
             "id": self.id,  # Use field name, not alias
         }
         return data
