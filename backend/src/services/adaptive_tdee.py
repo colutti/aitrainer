@@ -431,7 +431,7 @@ class AdaptiveTDEEService:
             except Exception:
                 pass
         base_bmr = scale_bmr or calc_bmr or (latest_weight * 22) or 1500
-        formula_tdee = base_bmr * 1.35
+        formula_tdee = base_bmr * 1.45
 
         # Step 3: Minimal data check
         if len(weight_logs) < 2:
@@ -836,7 +836,7 @@ class AdaptiveTDEEService:
             except Exception:
                 pass
         base_bmr = scale_bmr or calc_bmr or (latest_weight * 22) or 1500
-        tdee_est = base_bmr * 1.35
+        tdee_est = base_bmr * 1.45
         days = (
             (weight_logs[-1].date - weight_logs[0].date).days
             if weight_logs and len(weight_logs) >= 2
