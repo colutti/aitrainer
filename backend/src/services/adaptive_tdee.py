@@ -290,48 +290,77 @@ class AdaptiveTDEEService:
         daily_trend: dict[date, float],
         nutrition_by_date: dict[date, int],
         energy_per_kg: float,
-        span: int = 7,
     ) -> list[tuple[date, float]]:
         """
-        Computes daily TDEE observations from weight trend and nutrition data.
+        Computes TDEE observations using 7-day sliding windows.
 
-        Algorithm (MacroFactor-style):
-        For each day with nutrition data:
-            tdee_obs = avg_calories - (daily_weight_change * energy_per_kg)
-            where daily_weight_change = (trend[today] - trend[yesterday]) in kg
+        Algorithm (v3 - MacroFactor-style with 7-day smoothing):
+        For each valid 7-day window ending at date D:
+            avg_calories = mean(calories[D-6 to D])
+            trend_change_7d = trend[D] - trend[D-7]
+            tdee_obs = avg_calories - (trend_change_7d / 7) * energy_per_kg
+
+        This approach reduces noise from daily weight fluctuations (hydration, etc.)
+        by averaging over a week while accounting for the net weight change.
 
         Args:
             daily_trend: {date: trend_weight_kg} from _compute_daily_trend()
             nutrition_by_date: {date: calories_int}
             energy_per_kg: kcal per kg of weight change
-            span: window size for observation (not used for generation, for EMA later)
 
         Returns:
-            List of (date, tdee_obs) tuples sorted by date
+            List of (date, tdee_obs) tuples sorted by date, filtered for outliers
         """
         if not daily_trend or not nutrition_by_date:
             return []
 
-        observations = []
         sorted_dates = sorted(daily_trend.keys())
 
-        for i, current_date in enumerate(sorted_dates):
-            if current_date not in nutrition_by_date:
+        # Require at least 8 days of trend data (to have at least one complete 7-day window)
+        if len(sorted_dates) < 8:
+            return []
+
+        observations = []
+        window_size = 7
+        min_nutrition_days_in_window = 4
+
+        # Iterate through each date that could be the END of a 7-day window
+        for i, window_end_date in enumerate(sorted_dates):
+            # A 7-day window needs indices [i-6, i-5, ..., i-1, i]
+            # This requires i >= 6 (0-indexed), so we have at least 7 days
+            if i < window_size:
                 continue
 
-            if i == 0:
-                # First day: no previous trend, skip
+            window_start_idx = i - window_size
+            window_start_date = sorted_dates[window_start_idx]
+            window_end_date_actual = sorted_dates[i]
+
+            # Collect all nutrition data within the window [window_start_date, window_end_date]
+            window_dates = sorted_dates[window_start_idx : i + 1]
+            window_nutrition_days = [
+                nutrition_by_date[d] for d in window_dates if d in nutrition_by_date
+            ]
+
+            # Skip this window if it has fewer than min_nutrition_days_in_window days with nutrition
+            if len(window_nutrition_days) < min_nutrition_days_in_window:
                 continue
 
-            prev_date = sorted_dates[i - 1]
-            prev_trend = daily_trend[prev_date]
-            curr_trend = daily_trend[current_date]
-            daily_weight_change = curr_trend - prev_trend
-            daily_surplus_deficit = daily_weight_change * energy_per_kg
-            calories_consumed = nutrition_by_date[current_date]
+            # Calculate average calories over the window
+            avg_calories = sum(window_nutrition_days) / len(window_nutrition_days)
 
-            tdee_obs = calories_consumed - daily_surplus_deficit
-            observations.append((current_date, tdee_obs))
+            # Calculate weight change over the 7-day period
+            trend_at_start = daily_trend[window_start_date]
+            trend_at_end = daily_trend[window_end_date_actual]
+            trend_change_7d = trend_at_end - trend_at_start
+
+            # Compute TDEE observation: avg_calories - (weight_change_per_day * energy_per_kg)
+            weight_change_per_day = trend_change_7d / window_size
+            daily_surplus_deficit = weight_change_per_day * energy_per_kg
+            tdee_obs = avg_calories - daily_surplus_deficit
+
+            # Filter outliers: only keep observations in realistic range [500, 5000] kcal
+            if 500 <= tdee_obs <= 5000:
+                observations.append((window_end_date_actual, tdee_obs))
 
         return observations
 
@@ -488,7 +517,7 @@ class AdaptiveTDEEService:
 
         # Step 10: Generate TDEE observations (Task 3)
         observations = self._compute_tdee_observations(
-            daily_trend, nutrition_by_date, energy_per_kg, span=7
+            daily_trend, nutrition_by_date, energy_per_kg
         )
 
         # Step 11: Compute TDEE from observations (Task 3)
