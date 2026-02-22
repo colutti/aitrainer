@@ -290,48 +290,61 @@ class AdaptiveTDEEService:
         daily_trend: dict[date, float],
         nutrition_by_date: dict[date, int],
         energy_per_kg: float,
-        span: int = 7,
     ) -> list[tuple[date, float]]:
         """
-        Computes daily TDEE observations from weight trend and nutrition data.
+        Computes TDEE observations using 7-day windows (MacroFactor-style).
 
-        Algorithm (MacroFactor-style):
-        For each day with nutrition data:
-            tdee_obs = avg_calories - (daily_weight_change * energy_per_kg)
-            where daily_weight_change = (trend[today] - trend[yesterday]) in kg
+        For each date, looks back 7 days:
+        - avg_calories = mean of last 7 days
+        - trend_change_7d = trend[now] - trend[7days_ago]
+        - obs = avg_calories - (trend_change_7d / 7) × energy_per_kg
 
-        Args:
-            daily_trend: {date: trend_weight_kg} from _compute_daily_trend()
-            nutrition_by_date: {date: calories_int}
-            energy_per_kg: kcal per kg of weight change
-            span: window size for observation (not used for generation, for EMA later)
-
-        Returns:
-            List of (date, tdee_obs) tuples sorted by date
+        Requirements:
+        - Minimum 8 days of trend data (returns [] otherwise)
+        - Minimum 4/7 days with nutrition data per window
+        - Filters observations outside [500, 5000] kcal range
         """
         if not daily_trend or not nutrition_by_date:
             return []
 
-        observations = []
         sorted_dates = sorted(daily_trend.keys())
 
-        for i, current_date in enumerate(sorted_dates):
-            if current_date not in nutrition_by_date:
+        # Need at least 8 days to have a complete 7-day window
+        if len(sorted_dates) < 8:
+            return []
+
+        observations = []
+
+        # For each date that is at least 7 days after start
+        for i in range(6, len(sorted_dates)):  # Start at index 6 (7th day)
+            window_end_date = sorted_dates[i]
+            window_start_date = sorted_dates[i - 6]  # 7 days before
+
+            # Collect calories from last 7 days
+            window_calories = []
+            for j in range(i - 6, i + 1):
+                d = sorted_dates[j]
+                if d in nutrition_by_date:
+                    window_calories.append(nutrition_by_date[d])
+
+            # Need minimum 4 days with nutrition data
+            if len(window_calories) < 4:
                 continue
 
-            if i == 0:
-                # First day: no previous trend, skip
-                continue
+            avg_calories = sum(window_calories) / len(window_calories)
 
-            prev_date = sorted_dates[i - 1]
-            prev_trend = daily_trend[prev_date]
-            curr_trend = daily_trend[current_date]
-            daily_weight_change = curr_trend - prev_trend
-            daily_surplus_deficit = daily_weight_change * energy_per_kg
-            calories_consumed = nutrition_by_date[current_date]
+            # Weight trend change over 7 days
+            trend_start = daily_trend[window_start_date]
+            trend_end = daily_trend[window_end_date]
+            trend_change_7d = trend_end - trend_start
 
-            tdee_obs = calories_consumed - daily_surplus_deficit
-            observations.append((current_date, tdee_obs))
+            # TDEE observation
+            daily_trend_change = trend_change_7d / 7
+            obs_tdee = avg_calories - (daily_trend_change * energy_per_kg)
+
+            # Filter outliers: [500, 5000] kcal
+            if 500 <= obs_tdee <= 5000:
+                observations.append((window_end_date, obs_tdee))
 
         return observations
 
@@ -488,7 +501,7 @@ class AdaptiveTDEEService:
 
         # Step 10: Generate TDEE observations (Task 3)
         observations = self._compute_tdee_observations(
-            daily_trend, nutrition_by_date, energy_per_kg, span=7
+            daily_trend, nutrition_by_date, energy_per_kg
         )
 
         # Step 11: Compute TDEE from observations (Task 3)
