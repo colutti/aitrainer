@@ -584,3 +584,415 @@ class TestNutritionLogPartialLogged:
             fat_grams=65,
         )
         assert isinstance(log.partial_logged, bool)
+
+
+class TestInterpolateWeightGaps:
+    """Tests for the _interpolate_weight_gaps method."""
+
+    @pytest.fixture
+    def mock_db(self):
+        return MagicMock(spec=MongoDatabase)
+
+    @pytest.fixture
+    def service(self, mock_db):
+        return AdaptiveTDEEService(mock_db)
+
+    def _create_logs(self, weight_values, start_date=None):
+        """Helper to create weight logs."""
+        if start_date is None:
+            start_date = date(2025, 1, 1)
+        logs = []
+        for i, w in enumerate(weight_values):
+            logs.append(
+                WeightLog(
+                    user_email="test@test.com",
+                    date=start_date + timedelta(days=i),
+                    weight_kg=w,
+                )
+            )
+        return logs
+
+    def test_empty_list_returns_empty_dict(self, service):
+        """Empty weight log list should return empty dict."""
+        result = service._interpolate_weight_gaps([])
+        assert result == {}
+
+    def test_single_log_returns_single_day(self, service):
+        """Single weight log should return dict with one entry."""
+        logs = self._create_logs([80.0])
+        result = service._interpolate_weight_gaps(logs)
+        assert len(result) == 1
+        assert result[date(2025, 1, 1)] == 80.0
+
+    def test_consecutive_days_no_gap(self, service):
+        """Consecutive days with no gap should return all dates."""
+        logs = self._create_logs([80.0, 79.8, 79.6])
+        result = service._interpolate_weight_gaps(logs)
+        assert len(result) == 3
+        assert result[date(2025, 1, 1)] == 80.0
+        assert result[date(2025, 1, 2)] == 79.8
+        assert result[date(2025, 1, 3)] == 79.6
+
+    def test_one_day_gap_interpolated(self, service):
+        """One day gap should be interpolated."""
+        start = date(2025, 1, 1)
+        logs = [
+            WeightLog(user_email="test@test.com", date=start, weight_kg=80.0),
+            WeightLog(user_email="test@test.com", date=start + timedelta(days=2), weight_kg=78.0),
+        ]
+        result = service._interpolate_weight_gaps(logs)
+        assert len(result) == 3
+        assert result[start] == 80.0
+        assert result[start + timedelta(days=1)] == 79.0  # Halfway
+        assert result[start + timedelta(days=2)] == 78.0
+
+    def test_two_day_gap_interpolated(self, service):
+        """Two day gap should be interpolated with two intermediate points."""
+        start = date(2025, 1, 1)
+        logs = [
+            WeightLog(user_email="test@test.com", date=start, weight_kg=80.0),
+            WeightLog(user_email="test@test.com", date=start + timedelta(days=3), weight_kg=77.0),
+        ]
+        result = service._interpolate_weight_gaps(logs)
+        assert len(result) == 4
+        assert result[start] == 80.0
+        assert abs(result[start + timedelta(days=1)] - 79.0) < 0.01
+        assert abs(result[start + timedelta(days=2)] - 78.0) < 0.01
+        assert result[start + timedelta(days=3)] == 77.0
+
+    def test_gap_at_max_boundary_14_days_interpolated(self, service):
+        """14-day gap (at MAX_INTERPOLATION_GAP boundary) should be interpolated."""
+        start = date(2025, 1, 1)
+        logs = [
+            WeightLog(user_email="test@test.com", date=start, weight_kg=80.0),
+            WeightLog(user_email="test@test.com", date=start + timedelta(days=14), weight_kg=73.6),
+        ]
+        result = service._interpolate_weight_gaps(logs)
+        # Should have 15 entries (day 0 to day 14)
+        assert len(result) == 15
+        assert result[start] == 80.0
+        assert result[start + timedelta(days=14)] == 73.6
+        # Check mid-point interpolation
+        assert abs(result[start + timedelta(days=7)] - 76.8) < 0.01
+
+    def test_gap_exceeds_max_15_days_not_interpolated(self, service):
+        """15-day gap (exceeds MAX=14) should use last known value."""
+        start = date(2025, 1, 1)
+        logs = [
+            WeightLog(user_email="test@test.com", date=start, weight_kg=80.0),
+            WeightLog(user_email="test@test.com", date=start + timedelta(days=15), weight_kg=73.0),
+        ]
+        result = service._interpolate_weight_gaps(logs)
+        assert len(result) == 16
+        assert result[start] == 80.0
+        # Gap between day 1-14 should use last known value (80.0)
+        assert result[start + timedelta(days=7)] == 80.0
+        assert result[start + timedelta(days=14)] == 80.0
+        assert result[start + timedelta(days=15)] == 73.0
+
+    def test_multiple_segments_with_gaps(self, service):
+        """Multiple segments with different gap sizes."""
+        start = date(2025, 1, 1)
+        logs = [
+            WeightLog(user_email="test@test.com", date=start, weight_kg=80.0),
+            WeightLog(user_email="test@test.com", date=start + timedelta(days=7), weight_kg=79.0),
+            WeightLog(user_email="test@test.com", date=start + timedelta(days=20), weight_kg=79.0),
+        ]
+        result = service._interpolate_weight_gaps(logs)
+        # First segment (7 days): interpolated
+        # Gap between day 7-20 (13 days): interpolated
+        assert len(result) == 21
+        assert result[start] == 80.0
+        assert result[start + timedelta(days=7)] == 79.0
+        assert result[start + timedelta(days=20)] == 79.0
+
+    def test_all_same_weight_interpolated_flat(self, service):
+        """When all logs have same weight, result should be flat."""
+        start = date(2025, 1, 1)
+        logs = [
+            WeightLog(user_email="test@test.com", date=start, weight_kg=75.0),
+            WeightLog(user_email="test@test.com", date=start + timedelta(days=5), weight_kg=75.0),
+        ]
+        result = service._interpolate_weight_gaps(logs)
+        assert len(result) == 6
+        for val in result.values():
+            assert val == 75.0
+
+    def test_v_shape_weight_interpolated(self, service):
+        """V-shaped weight change (down then up) should interpolate correctly."""
+        start = date(2025, 1, 1)
+        logs = [
+            WeightLog(user_email="test@test.com", date=start, weight_kg=80.0),
+            WeightLog(user_email="test@test.com", date=start + timedelta(days=7), weight_kg=76.0),
+            WeightLog(user_email="test@test.com", date=start + timedelta(days=14), weight_kg=80.0),
+        ]
+        result = service._interpolate_weight_gaps(logs)
+        assert len(result) == 15
+        # Check V pattern
+        assert result[start] == 80.0
+        assert result[start + timedelta(days=7)] == 76.0
+        assert result[start + timedelta(days=14)] == 80.0
+        # Mid-point of first segment (day 3.5 into 7-day gap, so ~78.29)
+        assert abs(result[start + timedelta(days=3)] - 78.29) < 0.1
+
+    def test_result_contains_all_days_in_range(self, service):
+        """Result should contain all calendar days from first to last log."""
+        start = date(2025, 1, 1)
+        logs = [
+            WeightLog(user_email="test@test.com", date=start, weight_kg=80.0),
+            WeightLog(user_email="test@test.com", date=start + timedelta(days=10), weight_kg=77.0),
+        ]
+        result = service._interpolate_weight_gaps(logs)
+        assert len(result) == 11
+        for i in range(11):
+            assert (start + timedelta(days=i)) in result
+
+    def test_float_weight_precision_maintained(self, service):
+        """Float weights should maintain precision."""
+        start = date(2025, 1, 1)
+        logs = [
+            WeightLog(user_email="test@test.com", date=start, weight_kg=80.55),
+            WeightLog(user_email="test@test.com", date=start + timedelta(days=2), weight_kg=79.45),
+        ]
+        result = service._interpolate_weight_gaps(logs)
+        assert result[start] == 80.55
+        # Mid-point should be ~80.0
+        assert abs(result[start + timedelta(days=1)] - 80.0) < 0.01
+        assert result[start + timedelta(days=2)] == 79.45
+
+    def test_unsorted_logs_handled(self, service):
+        """Unsorted logs should be sorted internally."""
+        start = date(2025, 1, 1)
+        # Create logs in reverse order
+        logs = [
+            WeightLog(user_email="test@test.com", date=start + timedelta(days=2), weight_kg=78.0),
+            WeightLog(user_email="test@test.com", date=start, weight_kg=80.0),
+        ]
+        result = service._interpolate_weight_gaps(logs)
+        assert len(result) == 3
+        assert result[start] == 80.0
+        assert result[start + timedelta(days=2)] == 78.0
+
+    def test_custom_max_gap_parameter(self, service):
+        """Custom max_gap_days should be respected."""
+        start = date(2025, 1, 1)
+        logs = [
+            WeightLog(user_email="test@test.com", date=start, weight_kg=80.0),
+            WeightLog(user_email="test@test.com", date=start + timedelta(days=5), weight_kg=77.0),
+        ]
+        # With max_gap=3, a 5-day gap should NOT interpolate
+        result = service._interpolate_weight_gaps(logs, max_gap_days=3)
+        assert result[start] == 80.0
+        assert result[start + timedelta(days=1)] == 80.0  # Not interpolated
+        assert result[start + timedelta(days=5)] == 77.0
+
+    def test_result_is_sorted_by_date(self, service):
+        """Result dict should be sorted by date."""
+        start = date(2025, 1, 1)
+        logs = [
+            WeightLog(user_email="test@test.com", date=start, weight_kg=80.0),
+            WeightLog(user_email="test@test.com", date=start + timedelta(days=3), weight_kg=77.0),
+        ]
+        result = service._interpolate_weight_gaps(logs)
+        dates = list(result.keys())
+        assert dates == sorted(dates)
+
+    def test_large_weight_drop_still_interpolates(self, service):
+        """Even large weight drops should be interpolated linearly."""
+        start = date(2025, 1, 1)
+        logs = [
+            WeightLog(user_email="test@test.com", date=start, weight_kg=100.0),
+            WeightLog(user_email="test@test.com", date=start + timedelta(days=4), weight_kg=80.0),
+        ]
+        result = service._interpolate_weight_gaps(logs)
+        assert len(result) == 5
+        assert result[start] == 100.0
+        assert result[start + timedelta(days=2)] == 90.0
+        assert result[start + timedelta(days=4)] == 80.0
+
+
+class TestComputeDailyTrend:
+    """Tests for the _compute_daily_trend method."""
+
+    @pytest.fixture
+    def mock_db(self):
+        return MagicMock(spec=MongoDatabase)
+
+    @pytest.fixture
+    def service(self, mock_db):
+        return AdaptiveTDEEService(mock_db)
+
+    def test_empty_dict_returns_empty_dict(self, service):
+        """Empty daily weight series should return empty dict."""
+        result = service._compute_daily_trend({})
+        assert result == {}
+
+    def test_single_day_returns_first_weight(self, service):
+        """Single day should return weight as-is (initialization)."""
+        daily_weights = {date(2025, 1, 1): 80.0}
+        result = service._compute_daily_trend(daily_weights)
+        assert len(result) == 1
+        assert result[date(2025, 1, 1)] == 80.0
+
+    def test_two_consecutive_days_ema_applied(self, service):
+        """EMA formula should apply correctly for two days."""
+        daily_weights = {
+            date(2025, 1, 1): 80.0,
+            date(2025, 1, 2): 79.0,
+        }
+        result = service._compute_daily_trend(daily_weights)
+        assert len(result) == 2
+        assert result[date(2025, 1, 1)] == 80.0
+        # trend_day2 = 0.0909*79 + 0.9091*80 ≈ 79.909
+        alpha = 2 / 22  # EMA_SPAN=21
+        expected = (79.0 * alpha) + (80.0 * (1 - alpha))
+        assert abs(result[date(2025, 1, 2)] - expected) < 0.001
+
+    def test_all_same_weights_trend_constant(self, service):
+        """When all weights are same, trend should also be constant."""
+        daily_weights = {
+            date(2025, 1, 1): 75.0,
+            date(2025, 1, 2): 75.0,
+            date(2025, 1, 3): 75.0,
+            date(2025, 1, 4): 75.0,
+        }
+        result = service._compute_daily_trend(daily_weights)
+        for val in result.values():
+            # With EMA, floating point precision may cause tiny differences
+            assert abs(val - 75.0) < 0.0001
+
+    def test_trend_lags_raw_weight_on_sharp_drop(self, service):
+        """Trend should lag behind sharp weight drops."""
+        daily_weights = {
+            date(2025, 1, 1): 80.0,
+            date(2025, 1, 2): 80.0,
+            date(2025, 1, 3): 75.0,  # Sharp drop
+        }
+        result = service._compute_daily_trend(daily_weights)
+        # Trend on day 3 should be HIGHER than the actual weight (lag)
+        assert result[date(2025, 1, 3)] > 75.0
+        assert result[date(2025, 1, 3)] < 80.0
+
+    def test_ema_alpha_formula_correct_span21(self, service):
+        """EMA alpha should be calculated correctly for span=21."""
+        alpha = 2 / (service.EMA_SPAN + 1)
+        assert service.EMA_SPAN == 21
+        assert abs(alpha - (2 / 22)) < 0.0001
+        assert abs(alpha - 0.090909) < 0.00001
+
+    def test_trend_initialized_with_first_weight(self, service):
+        """First day trend should equal first weight."""
+        daily_weights = {
+            date(2025, 1, 1): 85.5,
+            date(2025, 1, 2): 84.0,
+        }
+        result = service._compute_daily_trend(daily_weights)
+        assert result[date(2025, 1, 1)] == 85.5
+
+    def test_trend_converges_toward_new_level(self, service):
+        """Trend should gradually converge toward a new stable level."""
+        # Start at 80, then move to 75 and stay there
+        daily_weights = {}
+        base_date = date(2025, 1, 1)
+        for i in range(50):
+            if i < 5:
+                daily_weights[base_date + timedelta(days=i)] = 80.0
+            else:
+                daily_weights[base_date + timedelta(days=i)] = 75.0
+
+        result = service._compute_daily_trend(daily_weights)
+
+        # At day 6, trend should be between 80 and 75, moving toward 75
+        # At day 45 (40 days at 75kg), trend should be closer to 75 (with 21-day window)
+        trend_day6 = result[base_date + timedelta(days=6)]
+        trend_day45 = result[base_date + timedelta(days=45)]
+
+        assert 75.0 < trend_day6 < 80.0
+        # After 40 days at 75, trend should be much closer (but not perfect due to EMA memory)
+        assert abs(trend_day45 - 75.0) < 1.0
+
+    def test_trend_weights_ordered_by_date(self, service):
+        """Trend dict should maintain date order."""
+        daily_weights = {
+            date(2025, 1, 1): 80.0,
+            date(2025, 1, 3): 78.0,
+            date(2025, 1, 2): 79.0,
+        }
+        result = service._compute_daily_trend(daily_weights)
+        dates = list(result.keys())
+        assert dates == sorted(dates)
+
+    def test_trend_is_smoother_than_raw_weights(self, service):
+        """Trend should have smaller day-to-day changes than raw weights."""
+        daily_weights = {
+            date(2025, 1, 1): 80.0,
+            date(2025, 1, 2): 76.0,
+            date(2025, 1, 3): 80.0,
+            date(2025, 1, 4): 76.0,
+        }
+        result = service._compute_daily_trend(daily_weights)
+
+        # Calculate day-to-day changes
+        raw_changes = []
+        trend_changes = []
+        dates = sorted(result.keys())
+
+        for i in range(1, len(dates)):
+            raw_change = abs(daily_weights[dates[i]] - daily_weights[dates[i - 1]])
+            trend_change = abs(result[dates[i]] - result[dates[i - 1]])
+            raw_changes.append(raw_change)
+            trend_changes.append(trend_change)
+
+        # Average trend change should be smaller than average raw change
+        avg_raw = sum(raw_changes) / len(raw_changes)
+        avg_trend = sum(trend_changes) / len(trend_changes)
+        assert avg_trend < avg_raw
+
+    def test_long_series_stability(self, service):
+        """Long series should converge to expected trend."""
+        # 60 days at 80kg, then shift to 75kg
+        daily_weights = {}
+        base_date = date(2025, 1, 1)
+        for i in range(60):
+            daily_weights[base_date + timedelta(days=i)] = 80.0
+        for i in range(60, 100):
+            daily_weights[base_date + timedelta(days=i)] = 75.0
+
+        result = service._compute_daily_trend(daily_weights)
+
+        # After ~40 days at 75kg, trend should be moving toward 75
+        # With EMA span=21, convergence is gradual
+        trend_day_60 = result[base_date + timedelta(days=60)]
+        trend_day_99 = result[base_date + timedelta(days=99)]
+
+        # By day 60, should have started moving down
+        assert trend_day_60 < 80.0
+        # By day 99 (39 days after shift), should be much closer
+        assert abs(trend_day_99 - 75.0) < 1.5
+
+    def test_volatile_weights_smoothed(self, service):
+        """Volatile daily weights should be smoothed by trend."""
+        # Oscillating weights
+        daily_weights = {}
+        base_date = date(2025, 1, 1)
+        for i in range(20):
+            w = 78.0 if (i % 2 == 0) else 82.0
+            daily_weights[base_date + timedelta(days=i)] = w
+
+        result = service._compute_daily_trend(daily_weights)
+
+        # Trend should be around 80 (the mean), not oscillating
+        trend_values = list(result.values())
+        trend_range = max(trend_values) - min(trend_values)
+        assert trend_range < 4.0  # Much smaller than 4kg raw oscillation
+
+    def test_unsorted_input_handled(self, service):
+        """Unsorted dict input should be sorted internally."""
+        daily_weights = {
+            date(2025, 1, 3): 78.0,
+            date(2025, 1, 1): 80.0,
+            date(2025, 1, 2): 79.0,
+        }
+        result = service._compute_daily_trend(daily_weights)
+        dates = list(result.keys())
+        assert dates == [date(2025, 1, 1), date(2025, 1, 2), date(2025, 1, 3)]

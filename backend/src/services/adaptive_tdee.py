@@ -31,7 +31,7 @@ class AdaptiveTDEEService:
     KCAL_PER_KG_LEAN_MASS = 1800
     KCAL_PER_KG_DEFAULT = 7700  # Fallback when no body fat data
 
-    MIN_DATA_DAYS = 7
+    MIN_DATA_DAYS = 3
 
     # Regression config
     MIN_DATA_DAYS_FOR_REGRESSION = 10
@@ -40,7 +40,9 @@ class AdaptiveTDEEService:
     MIN_TDEE = 1200
     MAX_TDEE = 5000
     MAX_DAILY_WEIGHT_CHANGE = 1.0  # kg (flag as anomaly if higher)
-    EMA_SPAN = 10  # Days span for EMA (MacroFactor style: 7-14)
+    EMA_SPAN = 21  # Days span for EMA (21-day window)
+    TDEE_OBS_EMA_SPAN = 21  # EMA span for daily TDEE observations
+    MAX_INTERPOLATION_GAP = 14  # Maximum days to interpolate linearly
 
     # Coaching check-in
     MAX_WEEKLY_ADJUSTMENT = 100  # was 75, now actually used
@@ -190,6 +192,98 @@ class AdaptiveTDEEService:
 
         alpha = 2 / (self.EMA_SPAN + 1)
         return (weight_kg * alpha) + (prev_trend * (1 - alpha))
+
+    def _interpolate_weight_gaps(
+        self, weight_logs: list[WeightLog], max_gap_days: int | None = None
+    ) -> dict[date, float]:
+        """
+        Interpola linealmente pesos entre pesagens (até max_gap_days de intervalo).
+
+        Exemplo:
+        - logs = [day1=80kg, day15=73.6kg]  (gap de 14 dias)
+        - Retorna: {day1: 80.0, day2: 79.54, day3: 79.09, ..., day15: 73.6}
+
+        Se gap > max_gap_days, usa o último valor conhecido para preencher o gap.
+
+        Args:
+            weight_logs: Lista de WeightLog ordenados por data
+            max_gap_days: Máximo intervalo em dias para interpolar (padrão: MAX_INTERPOLATION_GAP)
+
+        Returns:
+            Dict ordenado {date: weight_kg} com todas as datas no range
+        """
+        if max_gap_days is None:
+            max_gap_days = self.MAX_INTERPOLATION_GAP
+
+        if not weight_logs:
+            return {}
+
+        sorted_logs = sorted(weight_logs, key=lambda x: x.date)
+        result = {}
+
+        for i, log in enumerate(sorted_logs):
+            # Adiciona o peso registrado
+            result[log.date] = log.weight_kg
+
+            # Se não é o último log, processa o gap até o próximo
+            if i < len(sorted_logs) - 1:
+                next_log = sorted_logs[i + 1]
+                gap_days = (next_log.date - log.date).days
+
+                if gap_days <= 1:
+                    # Sem gap, próxima iteração vai adicionar próximo log
+                    continue
+
+                # Calcula interpolação linear
+                weight_diff = next_log.weight_kg - log.weight_kg
+                daily_change = weight_diff / gap_days
+
+                if gap_days <= max_gap_days:
+                    # Interpola linear entre os pesos
+                    for day_offset in range(1, gap_days):
+                        interpolated_date = log.date + timedelta(days=day_offset)
+                        interpolated_weight = log.weight_kg + (daily_change * day_offset)
+                        result[interpolated_date] = interpolated_weight
+                else:
+                    # Gap muito grande, usa o último valor conhecido
+                    for day_offset in range(1, gap_days):
+                        interpolated_date = log.date + timedelta(days=day_offset)
+                        result[interpolated_date] = log.weight_kg
+
+        return dict(sorted(result.items()))
+
+    def _compute_daily_trend(self, daily_weight_series: dict[date, float]) -> dict[date, float]:
+        """
+        Calcula EMA (21 dias) sobre a série diária de pesos.
+
+        EMA: trend_today = alpha * weight_today + (1-alpha) * trend_yesterday
+        alpha = 2 / (span + 1) = 2 / 22 ≈ 0.0909
+
+        Args:
+            daily_weight_series: Dict ordenado {date: weight_kg}
+
+        Returns:
+            Dict {date: trend_kg} com valores suavizados
+        """
+        if not daily_weight_series:
+            return {}
+
+        sorted_dates = sorted(daily_weight_series.keys())
+        result = {}
+        alpha = 2 / (self.EMA_SPAN + 1)
+
+        for i, current_date in enumerate(sorted_dates):
+            current_weight = daily_weight_series[current_date]
+
+            if i == 0:
+                # Primeira data: trend = weight
+                result[current_date] = current_weight
+            else:
+                # EMA: trend = alpha * weight + (1-alpha) * prev_trend
+                prev_trend = result[sorted_dates[i - 1]]
+                result[current_date] = (current_weight * alpha) + (prev_trend * (1 - alpha))
+
+        return result
 
     # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     def calculate_tdee(self, user_email: str, lookback_weeks: int = 4) -> dict:
