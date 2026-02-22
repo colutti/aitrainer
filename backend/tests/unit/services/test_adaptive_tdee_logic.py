@@ -3,6 +3,7 @@ from datetime import date, datetime, timedelta
 from unittest.mock import MagicMock
 from src.services.adaptive_tdee import AdaptiveTDEEService
 from src.api.models.weight_log import WeightLog
+from src.api.models.nutrition_log import NutritionLog, NutritionWithId
 from src.services.database import MongoDatabase
 
 
@@ -530,3 +531,56 @@ class TestAdaptiveTDEEV2Integration:
         assert result["daily_target"] >= 1200, (
             f"Female daily_target {result['daily_target']} below 1200 floor!"
         )
+
+
+class TestNutritionLogPartialLogged:
+    """Tests for the partial_logged field in NutritionLog."""
+
+    def test_default_is_false(self):
+        """New NutritionLog should have partial_logged=False by default."""
+        log = NutritionLog(
+            user_email="test@example.com",
+            calories=2000,
+            protein_grams=150,
+            carbs_grams=200,
+            fat_grams=65,
+        )
+        assert log.partial_logged is False
+
+    def test_can_be_set_to_true(self):
+        """partial_logged can be explicitly set to True."""
+        log = NutritionLog(
+            user_email="test@example.com",
+            calories=2000,
+            protein_grams=150,
+            carbs_grams=200,
+            fat_grams=65,
+            partial_logged=True,
+        )
+        assert log.partial_logged is True
+
+    def test_serialized_in_nutrition_with_id(self):
+        """partial_logged should be included in NutritionWithId serialization."""
+        log = NutritionWithId(
+            id="507f1f77bcf86cd799439011",
+            user_email="test@example.com",
+            calories=2000,
+            protein_grams=150,
+            carbs_grams=200,
+            fat_grams=65,
+            partial_logged=True,
+        )
+        serialized = log.model_dump()
+        assert "partial_logged" in serialized
+        assert serialized["partial_logged"] is True
+
+    def test_partial_logged_is_bool_type(self):
+        """partial_logged field should be a boolean type."""
+        log = NutritionLog(
+            user_email="test@example.com",
+            calories=2000,
+            protein_grams=150,
+            carbs_grams=200,
+            fat_grams=65,
+        )
+        assert isinstance(log.partial_logged, bool)
