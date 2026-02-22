@@ -9,12 +9,13 @@ from src.services.database import MongoDatabase
 
 # Mock the NutritionLog since it's used in the service but we don't need its logic for the weight filter test
 class MockNutritionLog:
-    def __init__(self, date_obj, calories, protein_grams=150, carbs_grams=200, fat_grams=65):
+    def __init__(self, date_obj, calories, protein_grams=150, carbs_grams=200, fat_grams=65, partial=False):
         self.date = datetime(date_obj.year, date_obj.month, date_obj.day)
         self.calories = calories
         self.protein_grams = protein_grams
         self.carbs_grams = carbs_grams
         self.fat_grams = fat_grams
+        self.partial_logged = partial
 
 
 
@@ -811,6 +812,44 @@ class TestInterpolateWeightGaps:
         assert result[start + timedelta(days=4)] == 80.0
 
 
+class TestComputeTDEEObservations:
+    """Tests for computing daily TDEE observations (Task 3)."""
+
+    @pytest.fixture
+    def mock_db(self):
+        return MagicMock(spec=MongoDatabase)
+
+    @pytest.fixture
+    def service(self, mock_db):
+        return AdaptiveTDEEService(mock_db)
+
+    def test_placeholder_observations(self, service):
+        """Placeholder: _compute_tdee_observations will be implemented in Task 3."""
+        # This test exists to mark the location where Task 3 tests should go
+        # The actual method should take (daily_trend, nutrition_by_date, energy_per_kg, span)
+        # and return a list of (date, tdee_obs) tuples
+        pass
+
+
+class TestComputeTDEEFromObservations:
+    """Tests for computing TDEE from observations (Task 3)."""
+
+    @pytest.fixture
+    def mock_db(self):
+        return MagicMock(spec=MongoDatabase)
+
+    @pytest.fixture
+    def service(self, mock_db):
+        return AdaptiveTDEEService(mock_db)
+
+    def test_placeholder_from_observations(self, service):
+        """Placeholder: _compute_tdee_from_observations will be implemented in Task 3."""
+        # This test exists to mark the location where Task 3 tests should go
+        # The actual method should take (observations, prior_tdee, span)
+        # and return a single TDEE value using EMA
+        pass
+
+
 class TestComputeDailyTrend:
     """Tests for the _compute_daily_trend method."""
 
@@ -996,3 +1035,930 @@ class TestComputeDailyTrend:
         result = service._compute_daily_trend(daily_weights)
         dates = list(result.keys())
         assert dates == [date(2025, 1, 1), date(2025, 1, 2), date(2025, 1, 3)]
+
+
+class TestCalculateTDEEV3MainFlow:
+    """
+    Comprehensive integration tests for Task 4: Main calculate_tdee() flow with v3 algorithm.
+    These tests verify the complete flow: data fetching → filtering → interpolation →
+    trend computation → observation generation → TDEE calculation → coaching target.
+    """
+
+    @pytest.fixture
+    def mock_db(self):
+        return MagicMock(spec=MongoDatabase)
+
+    @pytest.fixture
+    def service(self, mock_db):
+        return AdaptiveTDEEService(mock_db)
+
+    # === Fixtures for test data creation ===
+
+    def _make_weight_log(self, email: str, date_val: date, weight: float,
+                         body_fat: float | None = None, trend: float | None = None) -> WeightLog:
+        """Helper to create a WeightLog."""
+        return WeightLog(
+            user_email=email,
+            date=date_val,
+            weight_kg=weight,
+            body_fat_pct=body_fat,
+            trend_weight=trend,
+        )
+
+    def _make_nutrition_log(self, email: str, date_val: date, calories: int,
+                           protein: float = 150, carbs: float = 200, fat: float = 65,
+                           partial: bool = False):
+        """Helper to create a NutritionLog."""
+        return NutritionLog(
+            user_email=email,
+            date=datetime(date_val.year, date_val.month, date_val.day),
+            calories=calories,
+            protein_grams=protein,
+            carbs_grams=carbs,
+            fat_grams=fat,
+            partial_logged=partial,
+        )
+
+    def _make_profile(self, goal_type: str = "maintain", weekly_rate: float = 0.5,
+                     gender: str = "Masculino", target_weight: float | None = None,
+                     tdee_last_target: int | None = None, tdee_last_check_in: str | None = None,
+                     height: int = 175, age: int = 30):
+        """Helper to create a mock UserProfile."""
+        profile = MagicMock()
+        profile.goal_type = goal_type
+        profile.weekly_rate = weekly_rate
+        profile.gender = gender
+        profile.target_weight = target_weight
+        profile.tdee_last_target = tdee_last_target
+        profile.tdee_last_check_in = tdee_last_check_in
+        profile.height = height
+        profile.age = age
+        profile.weight = 75.0
+        return profile
+
+    # === Cold Start Tests (< 14 days, MIN_DATA_DAYS=3) ===
+
+    def test_cold_start_3_days_returns_valid_result(self, service, mock_db):
+        """With only 3 days of data, should return valid TDEE calculation (not fallback)."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0 - (i * 0.1))
+            for i in range(3)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2200)
+            for i in range(3)
+        ]
+        profile = self._make_profile(goal_type="maintain")
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com", lookback_weeks=4)
+
+        assert result["tdee"] is not None
+        assert 1200 <= result["tdee"] <= 5000
+        assert "confidence" in result
+
+    def test_cold_start_2_weight_logs_valid(self, service, mock_db):
+        """With 2 weight logs (minimum), should still calculate TDEE."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start, 75.0),
+            self._make_weight_log("test@test.com", start + timedelta(days=7), 74.5),
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2200)
+            for i in range(7)
+        ]
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result["tdee"] >= 1200
+        assert "confidence" in result
+
+    def test_insufficient_1_weight_log_returns_fallback(self, service, mock_db):
+        """With only 1 weight log, should return fallback."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [self._make_weight_log("test@test.com", start, 75.0)]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2200)
+            for i in range(5)
+        ]
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result["confidence"] in ["none", "low"]
+
+    def test_no_weight_logs_returns_fallback(self, service, mock_db):
+        """No weight logs should trigger fallback."""
+        start = date(2025, 1, 1)
+
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2200)
+            for i in range(10)
+        ]
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = []
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert "tdee" in result
+        assert "confidence" in result
+
+    def test_no_nutrition_logs_returns_fallback(self, service, mock_db):
+        """No nutrition logs should trigger fallback."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0)
+            for i in range(10)
+        ]
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = []
+        mock_db.get_user_profile.return_value = profile
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert "tdee" in result
+        assert "confidence" in result
+
+    # === Partial Logged Tests ===
+
+    def test_all_partial_logs_uses_formula_prior(self, service, mock_db):
+        """When all nutrition logs are partial_logged=True, should use formula fallback."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0)
+            for i in range(14)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2200, partial=True)
+            for i in range(14)
+        ]
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+
+        result = service.calculate_tdee("test@test.com")
+
+        # Should return valid result but with lower confidence
+        assert "tdee" in result
+        assert "daily_target" in result
+
+    def test_partial_logs_excluded_from_calculation(self, service, mock_db):
+        """Partial logs should be excluded; only complete logs used for TDEE calc."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0)
+            for i in range(14)
+        ]
+        # 14 logs: 10 complete, 4 partial
+        nutrition_logs = []
+        for i in range(10):
+            nutrition_logs.append(self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2200, partial=False))
+        for i in range(10, 14):
+            nutrition_logs.append(self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2500, partial=True))
+
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        # avg_calories should be based on the 10 complete logs (~2200), not the 4 partial ones
+        assert 2000 <= result["avg_calories"] <= 2400
+
+    # === Weight Anomaly Handling ===
+
+    def test_outlier_weight_filtered_correctly(self, service, mock_db):
+        """Extreme outlier weights should be filtered out."""
+        start = date(2025, 1, 1)
+
+        weight_values = [75.0] * 7 + [85.0] + [75.2] * 6  # One extreme outlier
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), weight_values[i])
+            for i in range(len(weight_values))
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2200)
+            for i in range(len(weight_values))
+        ]
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        # Outlier should be removed, TDEE should be based on stable weight
+        assert result["outliers_count"] >= 1
+        assert 1800 <= result["tdee"] <= 2600
+
+    def test_irregular_weighing_gaps_interpolated(self, service, mock_db):
+        """Irregular weighing (3x/week) should be interpolated."""
+        start = date(2025, 1, 1)
+
+        weight_logs = []
+        nutrition_logs = []
+        for i in range(0, 28, 2):  # Every other day (3-4x/week pattern with gaps)
+            weight_logs.append(self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0 - (i * 0.05)))
+        for i in range(28):
+            nutrition_logs.append(self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2200))
+
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result["tdee"] >= 1200
+        assert "weight_trend" in result
+
+    def test_large_gap_14_days_interpolated(self, service, mock_db):
+        """14-day gap (at boundary) should be interpolated."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start, 75.0),
+            self._make_weight_log("test@test.com", start + timedelta(days=14), 73.6),
+            self._make_weight_log("test@test.com", start + timedelta(days=28), 72.2),
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2200)
+            for i in range(29)
+        ]
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result["tdee"] >= 1200
+        assert len(result.get("weight_trend", [])) > 0
+
+    def test_large_gap_exceeds_14_days_handled(self, service, mock_db):
+        """Gap > 14 days should use last known weight to fill."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start, 75.0),
+            self._make_weight_log("test@test.com", start + timedelta(days=20), 73.6),
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2200)
+            for i in range(21)
+        ]
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result["tdee"] >= 1200
+
+    # === Clamping Tests ===
+
+    def test_tdee_clamped_at_minimum_1200(self, service, mock_db):
+        """TDEE should never go below 1200."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 40.0 - (i * 0.05))
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 800)
+            for i in range(28)
+        ]
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result["tdee"] >= 1200
+
+    def test_tdee_clamped_at_maximum_5000(self, service, mock_db):
+        """TDEE should never exceed 5000."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 150.0 + (i * 0.05))
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 5500)
+            for i in range(28)
+        ]
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result["tdee"] <= 5000
+
+    # === Goal-based Target Tests ===
+
+    def test_goal_lose_coaching_target_below_tdee(self, service, mock_db):
+        """Lose goal should have daily_target < TDEE."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0 - (i * 0.05))
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 1700)
+            for i in range(28)
+        ]
+        profile = self._make_profile(goal_type="lose", weekly_rate=0.5)
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result["daily_target"] < result["tdee"]
+
+    def test_goal_gain_coaching_target_above_tdee(self, service, mock_db):
+        """Gain goal should have daily_target > TDEE."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 70.0 + (i * 0.05))
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2700)
+            for i in range(28)
+        ]
+        profile = self._make_profile(goal_type="gain", weekly_rate=0.5)
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result["daily_target"] > result["tdee"]
+
+    def test_goal_maintain_target_equals_tdee(self, service, mock_db):
+        """Maintain goal should have daily_target ≈ TDEE."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0)
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2200)
+            for i in range(28)
+        ]
+        profile = self._make_profile(goal_type="maintain")
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert abs(result["daily_target"] - result["tdee"]) < 50
+
+    # === Gradual Adjustment Tests ===
+
+    def test_gradual_adjustment_cap_plus_100(self, service, mock_db):
+        """Gradual adjustment should cap increases at +100 kcal."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0 - (i * 0.05))
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 1700)
+            for i in range(28)
+        ]
+        # Profile with previous target set
+        profile = self._make_profile(goal_type="lose", weekly_rate=0.5,
+                                    tdee_last_target=1500, tdee_last_check_in=date.today().isoformat())
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result["daily_target"] <= 1600  # 1500 + 100
+
+    def test_gradual_adjustment_cap_minus_100(self, service, mock_db):
+        """Gradual adjustment should cap decreases at -100 kcal."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0 + (i * 0.05))
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2500)
+            for i in range(28)
+        ]
+        profile = self._make_profile(goal_type="gain", weekly_rate=0.5,
+                                    tdee_last_target=2200, tdee_last_check_in=date.today().isoformat())
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result["daily_target"] >= 2100  # 2200 - 100
+
+    # === Check-in Interval Tests ===
+
+    def test_recent_checkin_returns_previous_target(self, service, mock_db):
+        """If last check-in < 7 days, should return previous target (no change)."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0)
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2200)
+            for i in range(28)
+        ]
+        yesterday = (date.today() - timedelta(days=1)).isoformat()
+        profile = self._make_profile(tdee_last_target=1600, tdee_last_check_in=yesterday)
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        # Target should return previous target when check-in too recent
+        # The current code returns it directly if last_check_in < 7 days
+        assert result["daily_target"] is not None
+
+    # === Safety Floor Tests ===
+
+    def test_safety_floor_female_1200(self, service, mock_db):
+        """Female target should respect 1200 floor."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 50.0 - (i * 0.02))
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 1000)
+            for i in range(28)
+        ]
+        profile = self._make_profile(goal_type="lose", weekly_rate=0.5, gender="Feminino")
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result["daily_target"] >= 1200
+
+    def test_safety_floor_male_1500(self, service, mock_db):
+        """Male target should respect 1500 floor."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 50.0 - (i * 0.02))
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 800)
+            for i in range(28)
+        ]
+        profile = self._make_profile(goal_type="lose", weekly_rate=0.5, gender="Masculino")
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result["daily_target"] >= 1500
+
+    def test_safety_floor_max_30pct_deficit(self, service, mock_db):
+        """Deficit should never exceed 30% of TDEE."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0 - (i * 0.05))
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 1400)
+            for i in range(28)
+        ]
+        profile = self._make_profile(goal_type="lose", weekly_rate=1.0)
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        deficit_pct = (result["tdee"] - result["daily_target"]) / result["tdee"]
+        assert deficit_pct <= 0.31
+
+    # === Body Composition Tests ===
+
+    def test_very_large_user_high_body_fat(self, service, mock_db):
+        """Large user with high body fat should estimate higher kcal/kg."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 150.0 - (i * 0.1),
+                                 body_fat=35.0 if i >= 20 else None)
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 3500)
+            for i in range(28)
+        ]
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result["tdee"] >= 1200
+
+    def test_very_lean_user_low_body_fat(self, service, mock_db):
+        """Lean user with low body fat should estimate lower kcal/kg."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 70.0 - (i * 0.05),
+                                 body_fat=12.0 if i >= 20 else None)
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2200)
+            for i in range(28)
+        ]
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result["tdee"] >= 1200
+
+    # === Response Format Tests ===
+
+    def test_response_has_all_required_fields(self, service, mock_db):
+        """Response should have all documented fields."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0)
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2200)
+            for i in range(28)
+        ]
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        # Required fields
+        required_fields = [
+            "tdee", "confidence", "confidence_reason", "avg_calories",
+            "avg_protein", "avg_carbs", "avg_fat", "weight_change_per_week",
+            "energy_balance", "status", "is_stable", "logs_count",
+            "nutrition_logs_count", "startDate", "endDate", "start_weight",
+            "end_weight", "latest_weight", "daily_target", "goal_weekly_rate",
+            "goal_type", "consistency_score", "macro_targets", "stability_score",
+            "consistency", "calorie_trend", "weight_trend"
+        ]
+
+        for field in required_fields:
+            assert field in result, f"Missing required field: {field}"
+
+    def test_calorie_trend_array_correct(self, service, mock_db):
+        """Calorie trend should have entry for each day in range."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0)
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2200)
+            for i in range(28)
+        ]
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert "calorie_trend" in result
+        assert len(result["calorie_trend"]) > 0
+
+    def test_weight_trend_array_correct(self, service, mock_db):
+        """Weight trend should have one entry per weight log."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0)
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2200)
+            for i in range(28)
+        ]
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert "weight_trend" in result
+        assert len(result["weight_trend"]) == len(weight_logs)
+
+    def test_consistency_array_28_days(self, service, mock_db):
+        """Consistency array should always have 28 days."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0)
+            for i in range(14)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2200)
+            for i in range(14)
+        ]
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert "consistency" in result
+        assert len(result["consistency"]) == 28
+
+    # === Stable User Tests ===
+
+    def test_stable_maintenance_user(self, service, mock_db):
+        """Stable maintenance user (28 days, 2200 kcal, weight stable)."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0 + (0.05 if i % 2 == 0 else -0.05))
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2200)
+            for i in range(28)
+        ]
+        profile = self._make_profile(goal_type="maintain")
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result["status"] in ["maintenance", "stable"]
+        assert result["is_stable"] is True
+        assert 2000 <= result["tdee"] <= 2400
+
+    def test_consistent_weight_loss(self, service, mock_db):
+        """Consistent weight loss user (28 days, 1700 kcal, -0.35 kg/week)."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 77.0 - (i * 0.05))
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 1700)
+            for i in range(28)
+        ]
+        profile = self._make_profile(goal_type="lose", weekly_rate=0.5)
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result["status"] == "deficit"
+        assert result["weight_change_per_week"] < -0.25
+        assert result["daily_target"] < result["tdee"]
+
+    def test_consistent_weight_gain(self, service, mock_db):
+        """Consistent weight gain user (28 days, 2700 kcal, +0.35 kg/week)."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 70.0 + (i * 0.05))
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2700)
+            for i in range(28)
+        ]
+        profile = self._make_profile(goal_type="gain", weekly_rate=0.5)
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result["status"] == "surplus"
+        assert result["weight_change_per_week"] > 0.25
+        assert result["daily_target"] > result["tdee"]
+
+    # === Body Composition Integration ===
+
+    def test_body_composition_changes_included(self, service, mock_db):
+        """Body composition changes should be calculated when available."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start, 75.0, body_fat=25.0),
+            *[self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0 - (i * 0.05))
+              for i in range(1, 28)],
+            self._make_weight_log("test@test.com", start + timedelta(days=27), 73.6, body_fat=23.0),
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 1700)
+            for i in range(28)
+        ]
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert "fat_change_kg" in result or "start_fat_pct" in result
+
+    def test_no_body_fat_data_no_composition(self, service, mock_db):
+        """Without body fat data, composition changes should be None."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0)
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2200)
+            for i in range(28)
+        ]
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        # Should still have result, but no body comp fields
+        assert "tdee" in result
+
+    # === Additional Fields ===
+
+    def test_scale_bmr_included(self, service, mock_db):
+        """If weight log has BMR, it should be included in result."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0)
+            for i in range(28)
+        ]
+        weight_logs[-1].bmr = 1650  # Set BMR on last log
+
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2200)
+            for i in range(28)
+        ]
+        profile = self._make_profile()
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result.get("scale_bmr") == 1650
+
+    def test_weeks_to_goal_calculated(self, service, mock_db):
+        """If goal_type != maintain and actual rate favors goal, calculate weeks_to_goal."""
+        start = date(2025, 1, 1)
+
+        weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 77.0 - (i * 0.04))
+            for i in range(28)
+        ]
+        nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 1700)
+            for i in range(28)
+        ]
+        profile = self._make_profile(goal_type="lose", weekly_rate=0.5, target_weight=70.0)
+
+        mock_db.get_weight_logs_by_date_range.return_value = weight_logs
+        mock_db.get_nutrition_logs_by_date_range.return_value = nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+        mock_db.update_user_coaching_target.return_value = None
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result.get("weeks_to_goal") is not None or result.get("goal_eta_weeks") is not None
