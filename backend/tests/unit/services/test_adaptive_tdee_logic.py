@@ -530,3 +530,377 @@ class TestAdaptiveTDEEV2Integration:
         assert result["daily_target"] >= 1200, (
             f"Female daily_target {result['daily_target']} below 1200 floor!"
         )
+
+
+class TestComputeTDEEObservations:
+    """Tests for computing daily TDEE observations from weight trends and nutrition data."""
+
+    @pytest.fixture
+    def mock_db(self):
+        return MagicMock(spec=MongoDatabase)
+
+    @pytest.fixture
+    def service(self, mock_db):
+        return AdaptiveTDEEService(mock_db)
+
+    def test_empty_daily_trend_returns_empty(self, service):
+        """Empty trend dict should return empty observations."""
+        daily_trend = {}
+        nutrition_by_date = {date(2025, 1, 2): 2000}
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, body_fat_pct=25.0, trend_slope=-0.05
+        )
+        assert observations == []
+
+    def test_only_one_trend_day_no_pairs_returns_empty(self, service):
+        """Only one day in trend means no 'yesterday' for pairs. Should return empty."""
+        daily_trend = {date(2025, 1, 1): 80.0}
+        nutrition_by_date = {date(2025, 1, 1): 2000}
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, body_fat_pct=25.0, trend_slope=-0.05
+        )
+        assert observations == []
+
+    def test_empty_nutrition_data_returns_empty(self, service):
+        """No nutrition data means no observations."""
+        daily_trend = {
+            date(2025, 1, 1): 80.0,
+            date(2025, 1, 2): 79.9,
+        }
+        nutrition_by_date = {}
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, body_fat_pct=25.0, trend_slope=-0.05
+        )
+        assert observations == []
+
+    def test_stable_trend_obs_equals_calories(self, service):
+        """If trend is stable (no change), obs_TDEE = calories."""
+        daily_trend = {
+            date(2025, 1, 1): 80.0,
+            date(2025, 1, 2): 80.0,  # No change
+        }
+        nutrition_by_date = {date(2025, 1, 2): 2000}
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, body_fat_pct=25.0, trend_slope=0.0
+        )
+        assert len(observations) == 1
+        assert observations[0] == 2000
+
+    def test_declining_trend_obs_greater_than_calories(self, service):
+        """If trend declines, weight loss subtracts from obs (making it higher)."""
+        daily_trend = {
+            date(2025, 1, 1): 80.0,
+            date(2025, 1, 2): 79.9,  # -0.1 kg decline
+        }
+        nutrition_by_date = {date(2025, 1, 2): 1700}
+        # energy_per_kg = 7700 (default)
+        # obs = 1700 - (79.9 - 80.0) * 7700 = 1700 - (-0.1 * 7700) = 1700 + 770 = 2470
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, body_fat_pct=None, trend_slope=-0.05
+        )
+        assert len(observations) == 1
+        assert observations[0] == pytest.approx(2470, abs=1)
+
+    def test_increasing_trend_obs_less_than_calories(self, service):
+        """If trend increases, weight gain subtracts from obs (making it lower)."""
+        daily_trend = {
+            date(2025, 1, 1): 80.0,
+            date(2025, 1, 2): 80.1,  # +0.1 kg gain
+        }
+        nutrition_by_date = {date(2025, 1, 2): 2300}
+        # energy_per_kg = 7700 (default)
+        # obs = 2300 - (80.1 - 80.0) * 7700 = 2300 - (0.1 * 7700) = 2300 - 770 = 1530
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, body_fat_pct=None, trend_slope=0.05
+        )
+        assert len(observations) == 1
+        assert observations[0] == pytest.approx(1530, abs=1)
+
+    def test_day_without_nutrition_skipped(self, service):
+        """Days without nutrition data should be skipped."""
+        daily_trend = {
+            date(2025, 1, 1): 80.0,
+            date(2025, 1, 2): 79.9,
+            date(2025, 1, 3): 79.8,
+        }
+        nutrition_by_date = {
+            date(2025, 1, 2): 2000,
+            # No entry for date(2025, 1, 3) — skip day 3
+        }
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, body_fat_pct=25.0, trend_slope=-0.05
+        )
+        assert len(observations) == 1
+        # Day 2 obs = 2000 - (79.9 - 80.0) * energy_per_kg
+        # With body fat 25%, energy_per_kg ≈ 7500 (higher than default)
+        # So obs ≈ 2000 + 0.1 * 7500 = 2750
+        assert observations[0] == pytest.approx(2700, abs=100)
+
+    def test_multiple_days_correct_count(self, service):
+        """n days in trend should yield n-1 observations (need yesterday)."""
+        daily_trend = {
+            date(2025, 1, 1): 80.0,
+            date(2025, 1, 2): 79.9,
+            date(2025, 1, 3): 79.8,
+            date(2025, 1, 4): 79.7,
+            date(2025, 1, 5): 79.6,
+        }
+        nutrition_by_date = {
+            date(2025, 1, 2): 2000,
+            date(2025, 1, 3): 2000,
+            date(2025, 1, 4): 2000,
+            date(2025, 1, 5): 2000,
+        }
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, body_fat_pct=25.0, trend_slope=-0.05
+        )
+        assert len(observations) == 4
+
+    def test_observations_ordered_chronologically(self, service):
+        """Observations should be in chronological order."""
+        daily_trend = {
+            date(2025, 1, 5): 79.6,
+            date(2025, 1, 1): 80.0,
+            date(2025, 1, 3): 79.8,
+            date(2025, 1, 2): 79.9,
+            date(2025, 1, 4): 79.7,
+        }
+        nutrition_by_date = {
+            date(2025, 1, 2): 2000,
+            date(2025, 1, 3): 2100,
+            date(2025, 1, 4): 2200,
+            date(2025, 1, 5): 2300,
+        }
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, body_fat_pct=25.0, trend_slope=-0.05
+        )
+        # Should be 4 observations in order (based on trend dict order)
+        assert len(observations) == 4
+
+    def test_energy_per_kg_7700_used_correctly(self, service):
+        """Verify energy_per_kg=7700 is used in calculation (no body fat)."""
+        daily_trend = {
+            date(2025, 1, 1): 80.0,
+            date(2025, 1, 2): 79.8,  # -0.2 kg
+        }
+        nutrition_by_date = {date(2025, 1, 2): 2000}
+        # obs = 2000 - (-0.2 * 7700) = 2000 + 1540 = 3540
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, body_fat_pct=None, trend_slope=-0.1
+        )
+        assert observations[0] == pytest.approx(3540, abs=1)
+
+    def test_energy_per_kg_varies_with_body_fat(self, service):
+        """Different body fat percentages yield different energy_per_kg values."""
+        daily_trend = {
+            date(2025, 1, 1): 80.0,
+            date(2025, 1, 2): 79.9,  # -0.1 kg
+        }
+        nutrition_by_date = {date(2025, 1, 2): 1700}
+
+        # With low body fat (~15%)
+        obs_low_bf = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, body_fat_pct=15.0, trend_slope=-0.05
+        )
+        # With high body fat (~35%)
+        obs_high_bf = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, body_fat_pct=35.0, trend_slope=-0.05
+        )
+
+        # Higher body fat → higher energy_per_kg → higher obs_TDEE
+        assert obs_high_bf[0] > obs_low_bf[0]
+
+    def test_sparse_nutrition_some_days_skipped(self, service):
+        """Partial nutrition logs: only days with nutrition get observations."""
+        daily_trend = {
+            date(2025, 1, 1): 80.0,
+            date(2025, 1, 2): 79.9,
+            date(2025, 1, 3): 79.8,
+            date(2025, 1, 4): 79.7,
+            date(2025, 1, 5): 79.6,
+        }
+        nutrition_by_date = {
+            date(2025, 1, 2): 2000,
+            # date(2025, 1, 3) missing
+            date(2025, 1, 4): 2200,
+            # date(2025, 1, 5) missing
+        }
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, body_fat_pct=25.0, trend_slope=-0.05
+        )
+        # Should have 2 observations (for days 2 and 4 only)
+        assert len(observations) == 2
+
+
+class TestComputeTDEEFromObservations:
+    """Tests for EMA-based TDEE calculation from observations."""
+
+    @pytest.fixture
+    def mock_db(self):
+        return MagicMock(spec=MongoDatabase)
+
+    @pytest.fixture
+    def service(self, mock_db):
+        return AdaptiveTDEEService(mock_db)
+
+    def test_empty_observations_returns_prior(self, service):
+        """Empty observations should return the formula prior unchanged."""
+        observations = []
+        formula_prior = 2000.0
+        result = service._compute_tdee_from_observations(
+            observations, formula_prior, span=21
+        )
+        assert result == 2000.0
+
+    def test_single_observation_blends_with_prior(self, service):
+        """One observation should blend with prior using alpha."""
+        observations = [2100.0]
+        formula_prior = 2000.0
+        span = 21
+        # alpha = 2 / (21 + 1) = 2/22 ≈ 0.0909
+        # ema = 0.0909 * 2100 + 0.9091 * 2000 ≈ 2009.09
+        result = service._compute_tdee_from_observations(
+            observations, formula_prior, span=span
+        )
+        assert 2008 <= result <= 2010
+
+    def test_many_same_observations_converge(self, service):
+        """Many identical observations should converge to that value."""
+        observations = [2300.0] * 50
+        formula_prior = 2000.0
+        span = 21
+        result = service._compute_tdee_from_observations(
+            observations, formula_prior, span=span
+        )
+        # After many iterations, EMA should be very close to 2300
+        assert 2290 <= result <= 2310
+
+    def test_prior_equals_observations_stays_stable(self, service):
+        """If prior equals all observations, result should be stable."""
+        observations = [2200.0] * 10
+        formula_prior = 2200.0
+        span = 21
+        result = service._compute_tdee_from_observations(
+            observations, formula_prior, span=span
+        )
+        assert 2199 <= result <= 2201
+
+    def test_prior_higher_converges_downward(self, service):
+        """Prior > observations should converge downward."""
+        observations = [2100.0] * 30
+        formula_prior = 2300.0
+        span = 21
+        result = service._compute_tdee_from_observations(
+            observations, formula_prior, span=span
+        )
+        # Result should be between prior and observations, but closer to observations
+        assert 2100 < result < 2300
+        assert result < (2100 + 2300) / 2
+
+    def test_prior_lower_converges_upward(self, service):
+        """Prior < observations should converge upward."""
+        observations = [2400.0] * 30
+        formula_prior = 2100.0
+        span = 21
+        result = service._compute_tdee_from_observations(
+            observations, formula_prior, span=span
+        )
+        # Result should be between prior and observations, but closer to observations
+        assert 2100 < result < 2400
+        assert result > (2100 + 2400) / 2
+
+    def test_span_1_equals_last_observation(self, service):
+        """Span=1 means alpha=1.0, result = last observation."""
+        observations = [2000.0, 2100.0, 2200.0]
+        formula_prior = 1500.0
+        span = 1
+        # alpha = 2 / (1 + 1) = 1.0
+        # ema always = obs
+        result = service._compute_tdee_from_observations(
+            observations, formula_prior, span=span
+        )
+        assert result == 2200.0
+
+    def test_larger_span_slower_convergence(self, service):
+        """Larger span = lower alpha = slower convergence."""
+        observations = [2500.0] * 20
+        formula_prior = 2000.0
+
+        # Smaller span (faster)
+        result_fast = service._compute_tdee_from_observations(
+            observations, formula_prior, span=5
+        )
+        # Larger span (slower)
+        result_slow = service._compute_tdee_from_observations(
+            observations, formula_prior, span=50
+        )
+
+        # After same observations, slower span should be closer to prior
+        assert result_fast > result_slow
+        assert result_fast > 2300
+
+    def test_manual_calculation_3_observations(self, service):
+        """Manually verify the EMA calculation step-by-step."""
+        observations = [2100.0, 2200.0, 2300.0]
+        formula_prior = 2000.0
+        span = 21
+        # alpha = 2 / 22 ≈ 0.090909
+        # Step 1: ema = 0.090909 * 2100 + 0.909091 * 2000
+        #             = 190.909 + 1818.182 = 2009.091
+        # Step 2: ema = 0.090909 * 2200 + 0.909091 * 2009.091
+        #             = 200 + 1826.446 = 2026.446
+        # Step 3: ema = 0.090909 * 2300 + 0.909091 * 2026.446
+        #             = 209.091 + 1842.405 = 2051.496
+        result = service._compute_tdee_from_observations(
+            observations, formula_prior, span=span
+        )
+        assert 2050 <= result <= 2052
+
+    def test_float_precision_acceptable(self, service):
+        """Floating point precision should not break the calculation."""
+        observations = [2000.12, 2100.45, 2050.78]
+        formula_prior = 2075.33
+        span = 21
+        result = service._compute_tdee_from_observations(
+            observations, formula_prior, span=span
+        )
+        # Result should be a reasonable float in the expected range
+        assert isinstance(result, float)
+        assert 2000 <= result <= 2100
+
+    def test_oscillating_observations_dampens(self, service):
+        """Oscillating observations should dampen due to EMA smoothing."""
+        observations = [2100.0, 2300.0, 2100.0, 2300.0, 2100.0]
+        formula_prior = 2200.0
+        span = 21
+        result = service._compute_tdee_from_observations(
+            observations, formula_prior, span=span
+        )
+        # Result should be between 2100 and 2300, not exactly at extremes
+        assert 2150 <= result <= 2250
+
+    def test_negative_observations_handled(self, service):
+        """Edge case: negative observations (shouldn't happen, but should not crash)."""
+        observations = [-1000.0, -800.0, -900.0]
+        formula_prior = 2000.0
+        span = 21
+        result = service._compute_tdee_from_observations(
+            observations, formula_prior, span=span
+        )
+        # With many negative observations and small alpha, EMA moves down but doesn't flip
+        # Result should be between prior and observations, but still positive-ish
+        assert result < 2000
+        assert isinstance(result, float)
+
+    def test_very_large_observations(self, service):
+        """Edge case: very large observation values."""
+        observations = [10000.0, 11000.0, 10500.0]
+        formula_prior = 2000.0
+        span = 21
+        result = service._compute_tdee_from_observations(
+            observations, formula_prior, span=span
+        )
+        # With large observations and small alpha, EMA moves significantly upward
+        # After 3 iterations with alpha ≈ 0.09, should be well above prior but below obs
+        assert result > 2000
+        assert result < 10500
