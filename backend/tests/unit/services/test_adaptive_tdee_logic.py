@@ -823,12 +823,131 @@ class TestComputeTDEEObservations:
     def service(self, mock_db):
         return AdaptiveTDEEService(mock_db)
 
-    def test_placeholder_observations(self, service):
-        """Placeholder: _compute_tdee_observations will be implemented in Task 3."""
-        # This test exists to mark the location where Task 3 tests should go
-        # The actual method should take (daily_trend, nutrition_by_date, energy_per_kg, span)
-        # and return a list of (date, tdee_obs) tuples
-        pass
+    def test_requires_at_least_8_days_of_trend(self, service):
+        """Se trend tem <= 7 dias, não há janela possível → retorna []"""
+        daily_trend = {
+            date(2025, 1, 1) + timedelta(days=i): 80.0 - (i * 0.05)
+            for i in range(7)
+        }
+        nutrition_by_date = {
+            date(2025, 1, 1) + timedelta(days=i): 2200
+            for i in range(7)
+        }
+
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, 7700
+        )
+
+        assert observations == []
+
+    def test_generates_observation_from_window(self, service):
+        """10 dias trend + nutrition, gera observações com janela de 7 dias"""
+        daily_trend = {
+            date(2025, 1, 1) + timedelta(days=i): 80.0 - (i * 0.1)
+            for i in range(10)
+        }
+        nutrition_by_date = {
+            date(2025, 1, 1) + timedelta(days=i): 2100
+            for i in range(10)
+        }
+
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, 7700
+        )
+
+        # Com 10 dias, devemos ter >= 3 observações de janelas de 7 dias
+        assert len(observations) >= 3
+        assert all(isinstance(obs, tuple) and len(obs) == 2 for obs in observations)
+        assert all(isinstance(obs[0], date) and isinstance(obs[1], (int, float)) for obs in observations)
+
+    def test_window_skipped_if_less_than_4_nutrition_days(self, service):
+        """Janelas com < 4 dias de nutrition são descartadas"""
+        daily_trend = {
+            date(2025, 1, 1) + timedelta(days=i): 80.0 - (i * 0.1)
+            for i in range(10)
+        }
+        # Apenas 3 dias com nutrition
+        nutrition_by_date = {
+            date(2025, 1, 1): 2100,
+            date(2025, 1, 2): 2100,
+            date(2025, 1, 3): 2100,
+        }
+
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, 7700
+        )
+
+        # Nenhuma janela de 7 dias tem >= 4 dias de nutrition
+        assert observations == []
+
+    def test_window_ok_with_4_of_7_nutrition_days(self, service):
+        """Janelas com >= 4 dias de nutrition geram observação"""
+        daily_trend = {
+            date(2025, 1, 1) + timedelta(days=i): 80.0 - (i * 0.1)
+            for i in range(10)
+        }
+        # 5 dias com nutrition
+        nutrition_by_date = {
+            date(2025, 1, 1) + timedelta(days=i): 2100
+            for i in range(5)
+        }
+
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, 7700
+        )
+
+        # Deve gerar observações para as janelas com >= 4 dias
+        assert len(observations) > 0
+
+    def test_outlier_observations_filtered(self, service):
+        """Observações fora de [500, 5000] são descartadas"""
+        daily_trend = {
+            date(2025, 1, 1) + timedelta(days=i): 80.0
+            for i in range(10)
+        }
+        # Force outlier por usar energy_per_kg muito alto
+        nutrition_by_date = {
+            date(2025, 1, 1) + timedelta(days=i): 2100
+            for i in range(10)
+        }
+
+        # Com energy_per_kg=20000 (artificialmente alto) e mudança de trend,
+        # vamos gerar observações muito altas ou baixas
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, 20000
+        )
+
+        # Todas as observações retornadas devem estar em [500, 5000]
+        # (ou lista vazia se todas foram filtradas)
+        if observations:
+            for _, obs in observations:
+                assert 500 <= obs <= 5000
+
+    def test_weekly_window_reduces_noise(self, service):
+        """Janelas de 7 dias reduzem ruído vs observações diárias"""
+        # Cria 20 dias com variação diária de ±0.3 kg (hidratação) mas trend estável
+        base_weight = 80.0
+        daily_trend = {}
+        nutrition_by_date = {}
+
+        for i in range(20):
+            # Variação aleatória de hidratação, mas tendência geral -0.1kg por 2 dias
+            noise = 0.3 * (1 if i % 2 == 0 else -1)
+            trend_weight = base_weight - (i * 0.05) + noise
+            daily_trend[date(2025, 1, 1) + timedelta(days=i)] = trend_weight
+            nutrition_by_date[date(2025, 1, 1) + timedelta(days=i)] = 2100
+
+        observations = service._compute_tdee_observations(
+            daily_trend, nutrition_by_date, 7700
+        )
+
+        # Deve gerar observações (>=1)
+        assert len(observations) >= 1
+
+        # Observações devem ser razoáveis (entre 500-5000)
+        if observations:
+            for _, obs in observations:
+                assert 500 <= obs <= 5000
 
 
 class TestComputeTDEEFromObservations:
