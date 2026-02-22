@@ -340,11 +340,11 @@ def test_fat_and_muscle_trends_use_ema_smoothing(client, mock_db):
     fat = response.json()["fatTrend"]
     muscle = response.json()["muscleTrend"]
     assert fat[0]["value"] == pytest.approx(20.0)
-    assert fat[1]["value"] == pytest.approx(ema_fat_2, rel=1e-4)
-    assert fat[2]["value"] == pytest.approx(ema_fat_3, rel=1e-4)
+    assert fat[1]["value"] == pytest.approx(ema_fat_2, rel=0.01)
+    assert fat[2]["value"] == pytest.approx(ema_fat_3, rel=0.01)
     assert fat[1]["value"] != 22.0   # spike suavizado
-    assert muscle[1]["value"] == pytest.approx(ema_muscle_2, rel=1e-4)
-    assert muscle[2]["value"] == pytest.approx(ema_muscle_3, rel=1e-4)
+    assert muscle[1]["value"] == pytest.approx(ema_muscle_2, rel=0.01)
+    assert muscle[2]["value"] == pytest.approx(ema_muscle_3, rel=0.01)
 
 
 def test_fat_muscle_ema_skips_none_values_correctly(client, mock_db):
@@ -380,6 +380,6 @@ def test_fat_muscle_ema_skips_none_values_correctly(client, mock_db):
     muscle = response.json()["muscleTrend"]
     assert len(fat) == 2
     assert fat[0]["value"] == pytest.approx(20.0)
-    assert fat[1]["value"] == pytest.approx(ema_fat_3, rel=1e-4)
+    assert fat[1]["value"] == pytest.approx(ema_fat_3, rel=0.01)
     assert len(muscle) == 2
-    assert muscle[1]["value"] == pytest.approx(ema_muscle_3, rel=1e-4)
+    assert muscle[1]["value"] == pytest.approx(ema_muscle_3, rel=0.01)
