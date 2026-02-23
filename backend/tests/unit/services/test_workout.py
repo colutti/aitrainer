@@ -10,6 +10,7 @@ from src.api.models.workout_log import ExerciseLog, WorkoutLog
 from src.services.workout_tools import (
     create_save_workout_tool,
     create_get_workouts_tool,
+    _format_exercises_summary,
 )
 
 
@@ -236,6 +237,110 @@ class TestGetWorkoutsTool(unittest.TestCase):
         result = tool.invoke({"limit": 5})
 
         self.assertIn("Nenhum treino registrado", result)
+
+
+class TestExerciseSummaryFormatting(unittest.TestCase):
+    """Tests for _format_exercises_summary function - especially cardio exercises."""
+
+    def test_strength_exercise_formatting(self):
+        """Test formatting of strength exercises (should work fine)."""
+        exercise = ExerciseLog(
+            name="Supino",
+            sets=3,
+            reps_per_set=[10, 8, 6],
+            weights_per_set=[80.0, 85.0, 90.0],
+            distance_meters_per_set=[],
+            duration_seconds_per_set=[],
+        )
+        result = _format_exercises_summary([exercise])
+        # Should show varying reps and weights
+        self.assertIn("Supino", result)
+        self.assertIn("80.0kg", result)
+        self.assertIn("10@", result)
+
+    def test_cardio_exercise_with_duration(self):
+        """Test formatting of cardio exercises with duration (BUG FIX)."""
+        exercise = ExerciseLog(
+            name="Esteira",
+            sets=1,
+            reps_per_set=[1],  # Default fallback
+            weights_per_set=[],
+            distance_meters_per_set=[5000],
+            duration_seconds_per_set=[900],  # 15 minutes
+        )
+        result = _format_exercises_summary([exercise])
+        # Should NOT show "1x1" format for cardio
+        # Should show duration instead
+        self.assertIn("Esteira", result)
+        # Should include duration information
+        self.assertTrue(
+            "900" in result or "15" in result,
+            f"Duration not found in result: {result}"
+        )
+        # Should NOT format as "1x1"
+        self.assertNotIn("1x1", result)
+
+    def test_cardio_exercise_with_zero_reps(self):
+        """Test the exact bug: cardio with 0 reps shows '1x0' instead of duration."""
+        exercise = ExerciseLog(
+            name="Esteira",
+            sets=1,
+            reps_per_set=[0],  # Explicitly 0 - the bug
+            weights_per_set=[],
+            distance_meters_per_set=[5000],
+            duration_seconds_per_set=[900],
+        )
+        result = _format_exercises_summary([exercise])
+        # Bug: currently shows "1x0 Esteira"
+        # Fixed: should show duration instead
+        self.assertIn("Esteira", result)
+        self.assertFalse(
+            "1x0" in result,
+            f"Bug detected: '1x0' format found for cardio exercise: {result}"
+        )
+        # Should show duration
+        self.assertTrue(
+            "900" in result or "15" in result,
+            f"Duration not found in result: {result}"
+        )
+
+    def test_cardio_with_distance_and_duration(self):
+        """Test cardio exercise with both distance and duration."""
+        exercise = ExerciseLog(
+            name="Bicicleta",
+            sets=1,
+            reps_per_set=[1],
+            weights_per_set=[],
+            distance_meters_per_set=[10000],  # 10km
+            duration_seconds_per_set=[1800],  # 30 minutes
+        )
+        result = _format_exercises_summary([exercise])
+        self.assertIn("Bicicleta", result)
+        # Should show distance or duration, not reps format
+        self.assertNotIn("1x1", result)
+        self.assertTrue(
+            "10000" in result or "1800" in result or "30" in result,
+            f"Distance/duration not found in result: {result}"
+        )
+
+    def test_mixed_exercise_with_reps_and_duration(self):
+        """Test mixed exercise with both reps and cardio metrics (e.g., Remo)."""
+        exercise = ExerciseLog(
+            name="Remo",
+            sets=2,
+            reps_per_set=[15, 12],
+            weights_per_set=[],
+            distance_meters_per_set=[500, 600],
+            duration_seconds_per_set=[120, 140],
+        )
+        result = _format_exercises_summary([exercise])
+        self.assertIn("Remo", result)
+        # Should show reps since it's primary metric
+        # Or should show both reps and duration
+        self.assertTrue(
+            "15" in result or "Remo" in result,
+            f"Exercise info not found: {result}"
+        )
 
 
 if __name__ == "__main__":

@@ -151,22 +151,63 @@ def _format_exercises_summary(exercises: list[ExerciseLog]) -> str:
     """Helper to format exercise list into a readable summary string."""
     ex_details = []
     for e in exercises:
-        # Se todos os reps e pesos são iguais, formato simplificado
-        uniform_reps = all(r == e.reps_per_set[0] for r in e.reps_per_set)
-        uniform_weights = not e.weights_per_set or all(
-            w == e.weights_per_set[0] for w in e.weights_per_set
-        )
+        # Check if this is a cardio exercise (has duration or distance)
+        is_cardio = bool(e.duration_seconds_per_set or e.distance_meters_per_set)
 
-        if uniform_reps and uniform_weights:
-            weight_str = f" @ {e.weights_per_set[0]}kg" if e.weights_per_set else ""
-            ex_details.append(f"{e.sets}x{e.reps_per_set[0]} {e.name}{weight_str}")
-        else:
-            series = []
-            for idx, reps in enumerate(e.reps_per_set):
-                if e.weights_per_set and idx < len(e.weights_per_set):
-                    series.append(f"{reps}@{e.weights_per_set[idx]}kg")
+        if is_cardio:
+            # Format cardio exercises with duration/distance, not reps
+            cardio_parts = [e.name]
+
+            # Add distance if available
+            if e.distance_meters_per_set:
+                # Check if uniform distance
+                if all(
+                    d == e.distance_meters_per_set[0]
+                    for d in e.distance_meters_per_set
+                ):
+                    distance_km = e.distance_meters_per_set[0] / 1000
+                    cardio_parts.append(f"{distance_km:.1f}km")
                 else:
-                    series.append(f"{reps} reps")
-            ex_details.append(f"{e.name}: {', '.join(series)}")
+                    distances = [f"{d/1000:.1f}km" for d in e.distance_meters_per_set]
+                    cardio_parts.append(f"distances: {', '.join(distances)}")
+
+            # Add duration if available
+            if e.duration_seconds_per_set:
+                # Check if uniform duration
+                if all(
+                    d == e.duration_seconds_per_set[0]
+                    for d in e.duration_seconds_per_set
+                ):
+                    duration_sec = e.duration_seconds_per_set[0]
+                    duration_min = duration_sec / 60
+                    if duration_min == int(duration_min):
+                        cardio_parts.append(f"{int(duration_min)}min")
+                    else:
+                        cardio_parts.append(f"{duration_min:.1f}min")
+                else:
+                    durations = [f"{d/60:.1f}min" for d in e.duration_seconds_per_set]
+                    cardio_parts.append(f"times: {', '.join(durations)}")
+
+            ex_details.append(" ".join(cardio_parts))
+        else:
+            # Strength exercises: use original logic with reps and weights
+            uniform_reps = all(r == e.reps_per_set[0] for r in e.reps_per_set)
+            uniform_weights = not e.weights_per_set or all(
+                w == e.weights_per_set[0] for w in e.weights_per_set
+            )
+
+            if uniform_reps and uniform_weights:
+                weight_str = f" @ {e.weights_per_set[0]}kg" if e.weights_per_set else ""
+                ex_details.append(
+                    f"{e.sets}x{e.reps_per_set[0]} {e.name}{weight_str}"
+                )
+            else:
+                series = []
+                for idx, reps in enumerate(e.reps_per_set):
+                    if e.weights_per_set and idx < len(e.weights_per_set):
+                        series.append(f"{reps}@{e.weights_per_set[idx]}kg")
+                    else:
+                        series.append(f"{reps} reps")
+                ex_details.append(f"{e.name}: {', '.join(series)}")
 
     return "; ".join(ex_details)
