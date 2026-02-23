@@ -94,6 +94,13 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
     "delete_memories_batch": ToolMetadata(
         "delete_memories_batch", ToolMemoryType.MEMORABLE, "Delete multiple memories"
     ),
+    # Metabolism (adaptive TDEE and parameters)
+    "get_metabolism_data": ToolMetadata(
+        "get_metabolism_data", ToolMemoryType.EPHEMERAL, "Get adaptive TDEE data"
+    ),
+    "update_tdee_params": ToolMetadata(
+        "update_tdee_params", ToolMemoryType.MEMORABLE, "Update TDEE parameters (activity_factor)"
+    ),
 }
 
 
