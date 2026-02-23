@@ -431,7 +431,12 @@ class AdaptiveTDEEService:
             except Exception:
                 pass
         base_bmr = scale_bmr or calc_bmr or (latest_weight * 22) or 1500
-        formula_tdee = base_bmr * 1.45
+        activity_factor = 1.45
+        if profile and hasattr(profile, "tdee_activity_factor"):
+            af = getattr(profile, "tdee_activity_factor", None)
+            if af is not None and isinstance(af, (int, float)):
+                activity_factor = af
+        formula_tdee = base_bmr * activity_factor
 
         # Step 3: Minimal data check
         if len(weight_logs) < 2:
@@ -836,7 +841,12 @@ class AdaptiveTDEEService:
             except Exception:
                 pass
         base_bmr = scale_bmr or calc_bmr or (latest_weight * 22) or 1500
-        tdee_est = base_bmr * 1.45
+        activity_factor = 1.45
+        if profile and hasattr(profile, "tdee_activity_factor"):
+            af = getattr(profile, "tdee_activity_factor", None)
+            if af is not None and isinstance(af, (int, float)):
+                activity_factor = af
+        tdee_est = base_bmr * activity_factor
         days = (
             (weight_logs[-1].date - weight_logs[0].date).days
             if weight_logs and len(weight_logs) >= 2
