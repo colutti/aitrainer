@@ -110,6 +110,14 @@ class UserProfile(UserProfileInput):
     tdee_last_check_in: str | None = Field(
         default=None, description="ISO date of last coaching check-in"
     )
+    tdee_activity_factor: float | None = Field(
+        default=None,
+        ge=1.2,
+        le=1.9,
+        description="Activity factor for TDEE prior (AI-adjustable). "
+                    "None = use system default (1.45). "
+                    "Range: 1.2 (sedentary) to 1.9 (extremely active)."
+    )
 
     def _goal_type_label(self) -> str:
         labels = {
