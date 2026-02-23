@@ -1,7 +1,6 @@
 """Test TDEE activity factor retrieval from profile."""
-import pytest
 from datetime import date, timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from src.services.adaptive_tdee import AdaptiveTDEEService
 from src.api.models.user_profile import UserProfile
 from src.api.models.weight_log import WeightLog
