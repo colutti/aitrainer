@@ -25,6 +25,10 @@ from src.services.composition_tools import (
     create_save_composition_tool,
     create_get_composition_tool,
 )
+from src.services.metabolism_tools import (
+    create_get_metabolism_tool,
+    create_update_tdee_params_tool,
+)
 from src.services.memory_tools import (
     create_save_memory_tool,
     create_search_memory_tool,
@@ -468,6 +472,12 @@ class AITrainerBrain:
         delete_memory_tool = create_delete_memory_tool(self._qdrant_client, user_email)
         delete_memories_batch_tool = create_delete_memories_batch_tool(self._qdrant_client, user_email)
 
+        # Metabolism tools (TDEE and activity_factor)
+        get_metabolism_tool = create_get_metabolism_tool(self._database, user_email)
+        update_tdee_params_tool = create_update_tdee_params_tool(
+            self._database, user_email
+        )
+
         tools = [
             save_workout_tool,
             get_workouts_tool,
@@ -484,6 +494,8 @@ class AITrainerBrain:
             set_routine_rest_and_ranges_tool,
             get_user_goal_tool,
             update_user_goal_tool,
+            get_metabolism_tool,
+            update_tdee_params_tool,
             save_memory_tool,
             search_memory_tool,
             list_raw_memories_tool,
