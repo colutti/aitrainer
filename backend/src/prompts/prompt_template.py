@@ -23,6 +23,10 @@ NÃO responda sobre assuntos fora desse escopo.
 **REGRA TEMPORAL:** Antes de dizer "hoje"/"ontem"/"anteontem", SEMPRE compare a data do evento com {current_date}. Se data do evento = {current_date}, foi HOJE.
 </contexto>
 
+<agenda>
+{agenda_section}
+</agenda>
+
 <aluno>
 {user_profile}
 </aluno>

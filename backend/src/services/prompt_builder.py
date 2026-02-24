@@ -19,6 +19,28 @@ class PromptBuilder:
     """Builds and constructs chat prompt templates with defensive injection."""
 
     @staticmethod
+    def _format_agenda_section(agenda_events: list) -> str:
+        """
+        Format scheduled events into a readable agenda section.
+
+        Args:
+            agenda_events: List of ScheduledEventWithId objects
+
+        Returns:
+            Formatted string for agenda section, or empty string if no events
+        """
+        if not agenda_events:
+            return ""
+
+        lines = ["Eventos/planos ativos:"]
+        for event in agenda_events:
+            date_str = f"[{event.date}]" if event.date else "[sem prazo]"
+            recur_str = f" (recorrente: {event.recurrence})" if event.recurrence != "none" else ""
+            lines.append(f"- {date_str} {event.title}{recur_str}")
+
+        return "\n".join(lines)
+
+    @staticmethod
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def build_input_data(
         profile,
@@ -29,6 +51,7 @@ class PromptBuilder:
         formatted_history_msgs,
         user_input: str,
         current_date: str | None = None,
+        agenda_events: list | None = None,
     ) -> dict:
         """
         Constructs the input data dictionary for prompt template injection.
@@ -42,6 +65,7 @@ class PromptBuilder:
             formatted_history_msgs: List[BaseMessage] for MessagesPlaceholder
             user_input: Current user message
             current_date: Current date string (YYYY-MM-DD)
+            agenda_events: List of ScheduledEventWithId for agenda section
 
         Returns:
             dict: Input data ready for prompt template
@@ -60,6 +84,9 @@ class PromptBuilder:
         time_str = now.strftime('%H:%M')
         user_message_with_tag = f'<msg data="{date_str}" hora="{time_str}">{user_input}</msg>'
 
+        # Format agenda section
+        agenda_section = PromptBuilder._format_agenda_section(agenda_events or [])
+
         return {
             "trainer_profile": trainer_profile_summary,
             "user_profile": user_profile_summary,
@@ -68,6 +95,7 @@ class PromptBuilder:
             "chat_history_summary": chat_history_summary,  # Legacy (removed from template V3)
             "chat_history": formatted_history_msgs,  # For MessagesPlaceholder
             "user_message": user_message_with_tag,
+            "agenda_section": agenda_section,  # Agenda section for dynamic context
             "current_date": current_date,
             "day_of_week": DIAS_PT[now.weekday()],
             "current_time": now.strftime("%H:%M"),
@@ -113,6 +141,14 @@ class PromptBuilder:
         # 3. Remove legacy chat_history_summary placeholder
         # We use MessagesPlaceholder instead
         system_content = system_content.replace("{chat_history_summary}", "")
+
+        # 3b. Remove empty agenda block when no events exist
+        # Avoids injecting <agenda>\n\n</agenda> for users with no planned events
+        if not input_data.get("agenda_section"):
+            system_content = system_content.replace(
+                "<agenda>\n{agenda_section}\n</agenda>\n\n", ""
+            )
+            input_data.setdefault("agenda_section", "")
 
         # 4. Add Telegram format if needed
         if is_telegram:

@@ -37,6 +37,13 @@ from src.services.memory_tools import (
     create_delete_memory_tool,
     create_delete_memories_batch_tool,
 )
+from src.services.event_tools import (
+    create_create_event_tool,
+    create_list_events_tool,
+    create_delete_event_tool,
+    create_update_event_tool,
+)
+from src.repositories.event_repository import EventRepository
 from src.core.logs import logger
 from src.api.models.chat_history import ChatHistory
 from src.api.models.user_profile import UserProfile
@@ -389,6 +396,12 @@ class AITrainerBrain:
         trainer_profile_summary = trainer_profile_obj.get_trainer_profile_summary()
         user_profile_summary = profile.get_profile_summary()
 
+        # Fetch active events for agenda injection (async to avoid blocking event loop)
+        event_repo = EventRepository(self._database)
+        agenda_events = await asyncio.to_thread(
+            event_repo.get_active_events, user_email
+        )
+
         # Build input data using PromptBuilder
         input_data = self.prompt_builder.build_input_data(
             profile=profile,
@@ -399,6 +412,7 @@ class AITrainerBrain:
             formatted_history_msgs=formatted_history_msgs,
             user_input=user_input,
             current_date=datetime.now().strftime("%Y-%m-%d"),
+            agenda_events=agenda_events,
         )
 
         # Get prompt template using PromptBuilder
@@ -478,6 +492,12 @@ class AITrainerBrain:
             self._database, user_email
         )
 
+        # Event management tools (persistent agenda for AI)
+        create_event_tool = create_create_event_tool(self._database, user_email)
+        list_events_tool = create_list_events_tool(self._database, user_email)
+        delete_event_tool = create_delete_event_tool(self._database, user_email)
+        update_event_tool = create_update_event_tool(self._database, user_email)
+
         tools = [
             save_workout_tool,
             get_workouts_tool,
@@ -502,6 +522,10 @@ class AITrainerBrain:
             update_memory_tool,
             delete_memory_tool,
             delete_memories_batch_tool,
+            create_event_tool,
+            list_events_tool,
+            delete_event_tool,
+            update_event_tool,
         ]
 
         # Create log callback

@@ -101,6 +101,19 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
     "update_tdee_params": ToolMetadata(
         "update_tdee_params", ToolMemoryType.MEMORABLE, "Update TDEE parameters (activity_factor)"
     ),
+    # Events and planned reminders (persistent agenda for AI)
+    "create_event": ToolMetadata(
+        "create_event", ToolMemoryType.MEMORABLE, "Create scheduled event or plan"
+    ),
+    "list_events": ToolMetadata(
+        "list_events", ToolMemoryType.EPHEMERAL, "List active events and plans"
+    ),
+    "delete_event": ToolMetadata(
+        "delete_event", ToolMemoryType.MEMORABLE, "Delete scheduled event"
+    ),
+    "update_event": ToolMetadata(
+        "update_event", ToolMemoryType.MEMORABLE, "Update scheduled event"
+    ),
 }
 
 
