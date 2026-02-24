@@ -47,23 +47,23 @@ const CONVERSATIONS: Conversation[] = [
     messages: [
       {
         role: 'user',
-        text: 'Tenho 68kg, 32 anos, às vezes me sinto cansada apesar de dormir bem. Posso melhorar com nutrição?',
-        delay: 500,
+        text: 'Tenho 32 anos, me cuido bastante, mas ultimamente me sinto cansada. Pode ser nutrição?',
+        delay: 800,
       },
       {
         role: 'trainer',
-        text: 'Ótimo trazer isso! Cansaço crônico apesar do sono pode ter várias raízes — hormonal, nutricional, estilo de vida. Com 68kg, seu metabolismo base é um valor, mas como você come, quando treina, seu ciclo menstrual... tudo isso muda seu TDEE semanalmente. Primeira coisa que preciso entender: qual seu ciclo menstrual? Regular? Seu padrão de energia ao longo do mês é consistente ou muda muito?',
-        delay: 4500,
+        text: 'Cansaço crônico é sempre multi-causal. Vamos desembrulhar junto. Você dorme bem normalmente? E como está sua rotina — trabalho estressante, exercícios, como você come durante o dia?',
+        delay: 6000,
       },
       {
         role: 'user',
-        text: 'Meu ciclo é bem regular, me sinto mais cansada na primeira semana',
-        delay: 8000,
+        text: 'Durmo 7-8h toda noite. Trabalho é stressante mesmo. Como direitinho mas pulso café sem comer, e no final do dia fico exausta',
+        delay: 11000,
       },
       {
         role: 'trainer',
-        text: 'Perfeito! Essa queda de energia na primeira semana é textbook hormonal — estrogênio cai, ferro sai pelo sangramento. Tudo conectado. Aqui na plataforma, vamos registrar seu ciclo, seu sono, treino, alimentação. Com esses dados eu construo um TDEE adaptativo que entende suas flutuações reais. Ferro, magnésio, proteína — vão dançar junto com seus ciclos. Começa a fazer sentido agora?',
-        delay: 12500,
+        text: 'Achei o primeiro culpado. Café em jejum bota cortisol no teto, queima energia que você não repõe. Seu corpo fica em modo "fuga ou luta" o dia todo. Aí quando chega a tarde, você COLAPSA. Isso ressoa? Aqui na plataforma, você vai registrar seu padrão de sono, estresse, alimentação real. Meu TDEE adaptativo entende cortisol dinâmico — não é número fixo, é fluido. A partir dos seus dados, eu calibro refeições que estabilizam sua energia. Faz sentido?',
+        delay: 16000,
       },
     ],
   },
@@ -72,23 +72,23 @@ const CONVERSATIONS: Conversation[] = [
     messages: [
       {
         role: 'user',
-        text: 'Nunca malhei, tenho 82kg e quero ganhar músculo. Por onde começo?',
-        delay: 500,
+        text: 'Nunca malhei antes. Quero começar do zero e ganhar músculo. Mas não sei por onde começo.',
+        delay: 800,
       },
       {
         role: 'trainer',
-        text: 'Caramba! Bora sim monstro! 🔥 Primeira coisa: relaxa, você tá no lugar certo! Vamos começar coletando seus dados aqui pra eu montar algo estratégico pra você. Preciso saber: qual sua altura? Quanto você treina por semana no momento? E como tá sua alimentação — come bastante proteína ou come qualquer coisa mesmo?',
-        delay: 4000,
+        text: 'Irmão, melhor hora pra começar é AGORA! 🔥 Primeira coisa: relaxa, você tá no lugar certo. Não é complicado. Preciso entender seu ponto de partida. Me fala: qual sua altura? Quanto você pesa? E no momento, você consegue treinar 3x por semana ou fica difícil?',
+        delay: 6500,
       },
       {
         role: 'user',
-        text: 'Tenho 1,78m, não treino nada no momento, e como bem desordenado',
-        delay: 7500,
+        text: 'Tenho 1,78m, peso 82kg. Consigo treinar 3x por semana fácil, mas minha alimentação é bem bagunçada',
+        delay: 12000,
       },
       {
         role: 'trainer',
-        text: 'Beleza! Com 82kg e 1,78m você tem potencial IMENSO pra ganhar massa! A nutrição desordenada? A gente vai arrumar isso junto. Mas antes de calcular seu plano exato, vamos registrar alguns dados seu aqui na plataforma — sua rotina atual, quantas horas você dorme, se tem alguma lesão. Só assim meu algoritmo vai entender SEU contexto real e criar um plano que funcione pra você de verdade. Vamo começar? Prometo que não é complicado!',
-        delay: 10500,
+        text: 'ISSO! 3x/semana é PERFEITO pro começo! Com seus dados aqui na plataforma — sua rotina, sono, alimentação real — meu sistema vai entender tudo. Não vou chutar números aleatório. Vou ver que você dorme quanto, que treina quando, aí sim construo um plano que funciona PRO SEU CONTEXTO. Nutrição bagunçada? A gente organiza junto, dia a dia. Vamo começar a registrar seus dados e EVOLUIR de verdade, mano! 💪',
+        delay: 18000,
       },
     ],
   },
@@ -155,13 +155,20 @@ const CarouselIndicator = ({
   </div>
 );
 
+const getConversation = (index: number): Conversation => {
+  const convo = CONVERSATIONS[index];
+  if (convo) return convo;
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  return CONVERSATIONS[0]!;
+};
+
 export const ChatCarousel = () => {
   const [currentConvo, setCurrentConvo] = useState(0);
   const [visibleIndices, setVisibleIndices] = useState<Set<number>>(
     new Set()
   );
 
-  const conversation: Conversation = CONVERSATIONS[currentConvo] ?? (CONVERSATIONS[0] as Conversation);
+  const conversation = getConversation(currentConvo);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
