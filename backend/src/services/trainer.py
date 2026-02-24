@@ -396,9 +396,11 @@ class AITrainerBrain:
         trainer_profile_summary = trainer_profile_obj.get_trainer_profile_summary()
         user_profile_summary = profile.get_profile_summary()
 
-        # Fetch active events for agenda injection
+        # Fetch active events for agenda injection (async to avoid blocking event loop)
         event_repo = EventRepository(self._database)
-        agenda_events = event_repo.get_active_events(user_email)
+        agenda_events = await asyncio.to_thread(
+            event_repo.get_active_events, user_email
+        )
 
         # Build input data using PromptBuilder
         input_data = self.prompt_builder.build_input_data(

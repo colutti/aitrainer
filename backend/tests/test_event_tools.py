@@ -50,6 +50,22 @@ class TestCreateEventTool:
         assert "event-123" in result or "sucesso" in result.lower() or "criado" in result.lower()
 
     @patch("src.services.event_tools.EventRepository")
+    def test_create_event_tool_rejects_invalid_date(self, mock_repo_class, mock_db, user_email):
+        """Test that create_event_tool returns error for invalid date format."""
+        mock_repo = MagicMock()
+        mock_repo_class.return_value = mock_repo
+
+        tool = create_create_event_tool(mock_db, user_email)
+        result = tool.invoke({
+            "title": "Test",
+            "date": "01/12/2025",  # wrong format
+        })
+
+        assert isinstance(result, str)
+        assert "❌" in result or "erro" in result.lower() or "inválid" in result.lower()
+        mock_repo.save_event.assert_not_called()
+
+    @patch("src.services.event_tools.EventRepository")
     def test_create_event_tool_passes_title_to_repo(self, mock_repo_class, mock_db, user_email):
         """Test that create_event_tool passes all fields to repository."""
         mock_repo = MagicMock()
@@ -195,3 +211,33 @@ class TestUpdateEventTool:
         assert user == user_email
         assert "title" in update_data
         assert update_data["title"] == "New Title"
+
+    @patch("src.services.event_tools.EventRepository")
+    def test_update_event_tool_rejects_invalid_date(self, mock_repo_class, mock_db, user_email):
+        """Test that update_event_tool rejects invalid date format."""
+        mock_repo = MagicMock()
+        mock_repo_class.return_value = mock_repo
+
+        tool = create_update_event_tool(mock_db, user_email)
+        result = tool.invoke({"event_id": "event-123", "date": "01/12/2025"})
+
+        assert isinstance(result, str)
+        assert "❌" in result or "inválid" in result.lower()
+        # Should NOT call repository
+        mock_repo.update_event.assert_not_called()
+
+    @patch("src.services.event_tools.EventRepository")
+    def test_update_event_tool_clears_date_with_flag(self, mock_repo_class, mock_db, user_email):
+        """Test that update_event_tool can clear date with clear_date=True."""
+        mock_repo = MagicMock()
+        mock_repo.update_event.return_value = True
+        mock_repo_class.return_value = mock_repo
+
+        tool = create_update_event_tool(mock_db, user_email)
+        tool.invoke({"event_id": "event-123", "clear_date": True})
+
+        call_args = mock_repo.update_event.call_args
+        _, _, update_data = call_args[0]
+
+        assert "date" in update_data
+        assert update_data["date"] is None

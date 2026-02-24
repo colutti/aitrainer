@@ -13,6 +13,17 @@ from src.repositories.event_repository import EventRepository
 from src.core.logs import logger
 
 
+def _validate_date_format(date: str | None) -> str | None:
+    """Validate YYYY-MM-DD format, return error string if invalid."""
+    if date is None:
+        return None
+    try:
+        datetime.strptime(date, "%Y-%m-%d")
+        return None
+    except ValueError:
+        return f"❌ Data inválida: '{date}'. Use o formato YYYY-MM-DD (ex: '2025-12-01')"
+
+
 def create_create_event_tool(database: Database, user_email: str):
     """
     Factory function to create a create_event tool with injected dependencies.
@@ -185,6 +196,7 @@ def create_update_event_tool(database: Database, user_email: str):
         description: str | None = None,
         date: str | None = None,
         recurrence: str | None = None,
+        clear_date: bool = False,
     ) -> str:
         """
         Atualiza um evento, plano ou meta existente.
@@ -195,6 +207,7 @@ def create_update_event_tool(database: Database, user_email: str):
         - description: Nova descrição (opcional)
         - date: Nova data em YYYY-MM-DD (opcional)
         - recurrence: Nova recorrência (opcional)
+        - clear_date: True para remover o prazo (tornar meta sem data)
 
         Retorna: String com confirmação ou erro
         """
@@ -204,7 +217,12 @@ def create_update_event_tool(database: Database, user_email: str):
                 update_data["title"] = title
             if description is not None:
                 update_data["description"] = description
-            if date is not None:
+            if clear_date:
+                update_data["date"] = None
+            elif date is not None:
+                date_err = _validate_date_format(date)
+                if date_err:
+                    return date_err
                 update_data["date"] = date
             if recurrence is not None:
                 update_data["recurrence"] = recurrence

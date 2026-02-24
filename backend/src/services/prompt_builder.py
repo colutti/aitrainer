@@ -142,6 +142,14 @@ class PromptBuilder:
         # We use MessagesPlaceholder instead
         system_content = system_content.replace("{chat_history_summary}", "")
 
+        # 3b. Remove empty agenda block when no events exist
+        # Avoids injecting <agenda>\n\n</agenda> for users with no planned events
+        if not input_data.get("agenda_section"):
+            system_content = system_content.replace(
+                "<agenda>\n{agenda_section}\n</agenda>\n\n", ""
+            )
+            input_data.setdefault("agenda_section", "")
+
         # 4. Add Telegram format if needed
         if is_telegram:
             system_content += (
