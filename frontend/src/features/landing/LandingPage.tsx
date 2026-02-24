@@ -97,7 +97,7 @@ const LandingPage = (): React.ReactNode => {
             <a
               href="#planos"
               data-anchor
-              className="text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors"
+              className="hidden text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors"
             >
               Planos
             </a>
@@ -326,8 +326,8 @@ const LandingPage = (): React.ReactNode => {
         </div>
       </section>
 
-      {/* Planos Section */}
-      <section id="planos" className="py-20 px-4 sm:px-6 lg:px-8">
+      {/* Planos Section - HIDDEN PENDING CLARITY */}
+      <section id="planos" className="hidden py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-black text-white mb-4">
