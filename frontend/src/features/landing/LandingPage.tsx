@@ -1,3 +1,5 @@
+import { Button } from '@shared/components/ui/Button';
+import { useAuthStore } from '@shared/hooks/useAuth';
 import {
   Zap,
   Brain,
@@ -11,13 +13,11 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { Button } from '@shared/components/ui/Button';
-import { useAuthStore } from '@shared/hooks/useAuth';
 
 const LandingPage = (): React.ReactNode => {
   const navigate = useNavigate();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-  const isAuthenticated = (useAuthStore((state: any) => state.isAuthenticated) as boolean) ?? false;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
+  const isAuthenticated = Boolean(useAuthStore((state: any) => state.isAuthenticated));
   const [navScrolled, setNavScrolled] = useState(false);
 
   // Redirect if already authenticated
@@ -103,7 +103,9 @@ const LandingPage = (): React.ReactNode => {
 
           {/* CTA Button */}
           <Button
-            onClick={() => navigate('/login')}
+            onClick={() => {
+              void navigate('/login');
+            }}
             variant="primary"
             size="sm"
           >
@@ -142,7 +144,9 @@ const LandingPage = (): React.ReactNode => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16 animate-slide-in-fade"
             style={{ animationDelay: '0.2s' }}>
             <Button
-              onClick={() => navigate('/login')}
+              onClick={() => {
+                void navigate('/login');
+              }}
               variant="primary"
               size="lg"
               fullWidth
@@ -156,7 +160,9 @@ const LandingPage = (): React.ReactNode => {
               size="lg"
               fullWidth
               className="sm:w-auto"
-              onClick={() => navigate('/login')}
+              onClick={() => {
+                void navigate('/login');
+              }}
             >
               Conhecer Mais
             </Button>
@@ -399,7 +405,9 @@ const LandingPage = (): React.ReactNode => {
                     </span>
                   </div>
                   <Button
-                    onClick={() => navigate('/login')}
+                    onClick={() => {
+                      void navigate('/login');
+                    }}
                     variant={plan.highlight ? 'primary' : 'secondary'}
                     fullWidth
                     className="mb-8"
@@ -436,7 +444,9 @@ const LandingPage = (): React.ReactNode => {
             Junte-se a milhares de pessoas que já estão alcançando seus objetivos com um treinador IA personalizado.
           </p>
           <Button
-            onClick={() => navigate('/login')}
+            onClick={() => {
+              void navigate('/login');
+            }}
             variant="primary"
             size="lg"
           >
@@ -549,7 +559,7 @@ const RevealOnScroll = ({
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries: IntersectionObserverEntry[]) => {
-        if (entries[0] && entries[0].isIntersecting) {
+        if (entries[0]?.isIntersecting) {
           setIsVisible(true);
           observer.unobserve(entries[0].target);
         }
