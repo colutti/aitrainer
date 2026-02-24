@@ -13,6 +13,8 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { ChatShowcase } from './ChatShowcase';
+
 
 const LandingPage = (): React.ReactNode => {
   const navigate = useNavigate();
@@ -186,6 +188,9 @@ const LandingPage = (): React.ReactNode => {
           </div>
         </div>
       </section>
+
+      {/* Chat Showcase Section */}
+      <ChatShowcase />
 
       {/* Diferenciais Section */}
       <section id="diferenciais" className="py-20 px-4 sm:px-6 lg:px-8 relative">
