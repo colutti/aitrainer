@@ -2,8 +2,8 @@ import {
   Zap,
   Brain,
   Users,
-  Zest,
-  MemorySquare,
+  Zap as Zest,
+  Share2 as MemorySquare,
   Clock,
   ChevronDown,
   ExternalLink,
@@ -11,13 +11,13 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { Button } from '@/shared/components/ui/Button';
-import { useAuthStore } from '@/shared/hooks/useAuth';
+import { Button } from '@shared/components/ui/Button';
+import { useAuthStore } from '@shared/hooks/useAuth';
 
 const LandingPage = (): React.ReactNode => {
   const navigate = useNavigate();
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated) ?? false;
+  const isAuthenticated = (useAuthStore((state: any) => state.isAuthenticated) as boolean) ?? false;
   const [navScrolled, setNavScrolled] = useState(false);
 
   // Redirect if already authenticated
@@ -548,10 +548,10 @@ const RevealOnScroll = ({
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
+      (entries: IntersectionObserverEntry[]) => {
+        if (entries[0] && entries[0].isIntersecting) {
           setIsVisible(true);
-          observer.unobserve(entry.target);
+          observer.unobserve(entries[0].target);
         }
       },
       { threshold: 0.1 },
