@@ -67,10 +67,10 @@ export function Sidebar() {
       {/* Main Navigation */}
       <nav className="flex-1 flex flex-col gap-1 overflow-y-auto hide-scrollbar">
         <NavItem to="/dashboard" icon={LayoutDashboard} label="Início" />
-        <NavItem to="/chat" icon={MessageSquare} label="Treinador" />
-        <NavItem to="/workouts" icon={Dumbbell} label="Meus Treinos" />
-        <NavItem to="/body/weight" icon={Scale} label="Peso e Corpo" />
-        <NavItem to="/body/nutrition" icon={Flame} label="Dieta e Macros" />
+        <NavItem to="/dashboard/chat" icon={MessageSquare} label="Treinador" />
+        <NavItem to="/dashboard/workouts" icon={Dumbbell} label="Meus Treinos" />
+        <NavItem to="/dashboard/body/weight" icon={Scale} label="Peso e Corpo" />
+        <NavItem to="/dashboard/body/nutrition" icon={Flame} label="Dieta e Macros" />
       </nav>
 
       {/* User Info Section */}
@@ -88,10 +88,10 @@ export function Sidebar() {
 
       {/* Bottom Actions / Settings Section */}
       <div className="pt-6 border-t border-border flex flex-col gap-1">
-        <NavItem to="/settings" icon={SettingsIcon} label="Configurações" />
-        
+        <NavItem to="/dashboard/settings" icon={SettingsIcon} label="Configurações" />
+
         {isAdmin && (
-          <NavItem to="/admin" icon={ShieldAlert} label="Painel Admin" />
+          <NavItem to="/dashboard/admin" icon={ShieldAlert} label="Painel Admin" />
         )}
 
         <button

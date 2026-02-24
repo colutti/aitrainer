@@ -59,39 +59,39 @@ export function BottomNav() {
           testId="nav-home"
         />
         <NavItem
-          to="/workouts"
+          to="/dashboard/workouts"
           icon={<Dumbbell size={20} />}
           label="Treinos"
           testId="nav-workouts"
         />
         <NavItem
-          to="/body/nutrition"
+          to="/dashboard/body/nutrition"
           icon={<Utensils size={20} />}
           label="Nutrição"
           testId="nav-nutrition"
         />
         <NavItem
-          to="/body"
+          to="/dashboard/body"
           icon={<User size={20} />}
           label="Corpo"
           testId="nav-body"
           end={true}
         />
         <NavItem
-          to="/chat"
+          to="/dashboard/chat"
           icon={<MessageSquare size={20} />}
           label="Chat"
           testId="nav-chat"
         />
         <NavItem
-          to="/settings"
+          to="/dashboard/settings"
           icon={<Settings size={20} />}
           label="Configurações"
           testId="nav-settings"
         />
         {isAdmin && (
           <NavItem
-            to="/admin"
+            to="/dashboard/admin"
             icon={<ShieldAlert size={20} />}
             label="Admin"
             testId="nav-admin"
