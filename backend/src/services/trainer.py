@@ -397,7 +397,7 @@ class AITrainerBrain:
         user_profile_summary = profile.get_profile_summary()
 
         # Fetch active events for agenda injection (async to avoid blocking event loop)
-        event_repo = EventRepository(self._database)
+        event_repo = EventRepository(self._database.database)
         agenda_events = await asyncio.to_thread(
             event_repo.get_active_events, user_email
         )
@@ -493,10 +493,10 @@ class AITrainerBrain:
         )
 
         # Event management tools (persistent agenda for AI)
-        create_event_tool = create_create_event_tool(self._database, user_email)
-        list_events_tool = create_list_events_tool(self._database, user_email)
-        delete_event_tool = create_delete_event_tool(self._database, user_email)
-        update_event_tool = create_update_event_tool(self._database, user_email)
+        create_event_tool = create_create_event_tool(self._database.database, user_email)
+        list_events_tool = create_list_events_tool(self._database.database, user_email)
+        delete_event_tool = create_delete_event_tool(self._database.database, user_email)
+        update_event_tool = create_update_event_tool(self._database.database, user_email)
 
         tools = [
             save_workout_tool,

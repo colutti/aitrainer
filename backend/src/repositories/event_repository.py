@@ -79,6 +79,7 @@ class EventRepository(BaseRepository):
 
         events = []
         for doc in cursor:
+            doc["_id"] = str(doc["_id"])
             events.append(ScheduledEventWithId(**doc))
 
         self.logger.debug(
@@ -105,6 +106,7 @@ class EventRepository(BaseRepository):
 
         events = []
         for doc in cursor:
+            doc["_id"] = str(doc["_id"])
             events.append(ScheduledEventWithId(**doc))
 
         self.logger.debug(
