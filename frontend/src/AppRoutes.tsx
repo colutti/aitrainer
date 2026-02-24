@@ -10,6 +10,7 @@ import { LoginPage } from './features/auth/LoginPage';
 import { BodyPage } from './features/body/BodyPage';
 import { ChatPage } from './features/chat/ChatPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
+import LandingPage from './features/landing/LandingPage';
 import { MemoriesPage } from './features/memories/MemoriesPage';
 import { NutritionPage } from './features/nutrition/NutritionPage';
 import { OnboardingPage } from './features/onboarding/components/OnboardingPage';
@@ -33,6 +34,7 @@ export function AppRoutes() {
   return (
     <Routes>
       {/* Public Routes */}
+      <Route path="/" element={<LandingPage />} />
       <Route
         path="/login"
         element={
@@ -52,7 +54,7 @@ export function AppRoutes() {
 
       {/* Protected Routes - Main Layout */}
       <Route
-        path="/"
+        path="/dashboard"
         element={
           <ProtectedRoute>
             <MainLayout />
@@ -102,8 +104,8 @@ export function AppRoutes() {
         </Route>
       </Route>
 
-      {/* Catch-all - Redirect to home */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Catch-all - Redirect to dashboard */}
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }

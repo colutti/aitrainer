@@ -53,7 +53,7 @@ export function BottomNav() {
     <nav className="fixed bottom-0 left-0 right-0 bg-dark-card border-t border-border flex items-center justify-center lg:hidden z-40 safe-area-bottom h-14 md:h-16">
       <div className="flex items-center justify-center w-full h-full">
         <NavItem
-          to="/"
+          to="/dashboard"
           icon={<LayoutDashboard size={20} />}
           label="Home"
           testId="nav-home"

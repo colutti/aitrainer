@@ -37,7 +37,7 @@ describe('ProtectedRoute', () => {
     expect(screen.getByTestId('protected-content')).toBeInTheDocument();
   });
 
-  it('should redirect to login when not authenticated', () => {
+  it('should redirect to landing when not authenticated', () => {
     vi.mocked(useAuthStore).mockReturnValue({
       isAuthenticated: false,
       isAdmin: false,
@@ -55,16 +55,16 @@ describe('ProtectedRoute', () => {
               </ProtectedRoute>
             }
           />
-          <Route path="/login" element={<div data-testid="login-page">Login</div>} />
+          <Route path="/" element={<div data-testid="landing-page">Landing</div>} />
         </Routes>
       </MemoryRouter>
     );
 
     expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument();
-    expect(screen.getByTestId('login-page')).toBeInTheDocument();
+    expect(screen.getByTestId('landing-page')).toBeInTheDocument();
   });
 
-  it('should redirect to home when admin is required but user is not admin', () => {
+  it('should redirect to dashboard when admin is required but user is not admin', () => {
     vi.mocked(useAuthStore).mockReturnValue({
       isAuthenticated: true,
       isAdmin: false,
@@ -82,13 +82,13 @@ describe('ProtectedRoute', () => {
               </ProtectedRoute>
             }
           />
-          <Route path="/" element={<div data-testid="home-page">Home</div>} />
+          <Route path="/dashboard" element={<div data-testid="dashboard-page">Dashboard</div>} />
         </Routes>
       </MemoryRouter>
     );
 
     expect(screen.queryByTestId('admin-content')).not.toBeInTheDocument();
-    expect(screen.getByTestId('home-page')).toBeInTheDocument();
+    expect(screen.getByTestId('dashboard-page')).toBeInTheDocument();
   });
 
   it('should render children when admin is required and user is admin', () => {

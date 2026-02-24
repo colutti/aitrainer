@@ -66,7 +66,7 @@ export function Sidebar() {
 
       {/* Main Navigation */}
       <nav className="flex-1 flex flex-col gap-1 overflow-y-auto hide-scrollbar">
-        <NavItem to="/" icon={LayoutDashboard} label="Início" />
+        <NavItem to="/dashboard" icon={LayoutDashboard} label="Início" />
         <NavItem to="/chat" icon={MessageSquare} label="Treinador" />
         <NavItem to="/workouts" icon={Dumbbell} label="Meus Treinos" />
         <NavItem to="/body/weight" icon={Scale} label="Peso e Corpo" />

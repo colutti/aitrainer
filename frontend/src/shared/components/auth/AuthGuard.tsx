@@ -21,9 +21,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
   }
 
   if (isAuthenticated) {
-    // If user is already authenticated, redirect to home or the page they was trying to access
+    // If user is already authenticated, redirect to dashboard or the page they was trying to access
     const state = location.state as { from?: { pathname: string } } | null;
-    const from = state?.from?.pathname ?? '/';
+    const from = state?.from?.pathname ?? '/dashboard';
     return <Navigate to={from} replace />;
   }
 

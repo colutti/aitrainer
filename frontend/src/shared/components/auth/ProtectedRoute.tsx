@@ -23,13 +23,13 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
   }
 
   if (!isAuthenticated) {
-    // Redirect to login but save the current location to redirect back after login
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    // Redirect to landing page but save the current location to redirect back after login
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   if (requireAdmin && !isAdmin) {
-    // If admin is required but user is not admin, redirect to dashboard/home
-    return <Navigate to="/" replace />;
+    // If admin is required but user is not admin, redirect to dashboard
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;

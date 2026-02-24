@@ -36,7 +36,7 @@ describe('AuthGuard', () => {
     expect(screen.getByTestId('login-content')).toBeInTheDocument();
   });
 
-  it('should redirect to home when already authenticated', () => {
+  it('should redirect to dashboard when already authenticated', () => {
     vi.mocked(useAuthStore).mockReturnValue({
       isAuthenticated: true,
       isLoading: false,
@@ -53,12 +53,12 @@ describe('AuthGuard', () => {
               </AuthGuard>
             }
           />
-          <Route path="/" element={<div data-testid="home-page">Home</div>} />
+          <Route path="/dashboard" element={<div data-testid="dashboard-page">Dashboard</div>} />
         </Routes>
       </MemoryRouter>
     );
 
     expect(screen.queryByTestId('login-content')).not.toBeInTheDocument();
-    expect(screen.getByTestId('home-page')).toBeInTheDocument();
+    expect(screen.getByTestId('dashboard-page')).toBeInTheDocument();
   });
 });
