@@ -1,4 +1,4 @@
-.PHONY: up down build restart logs init-db api front front-admin api-admin clean-pod db db-down db-logs test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov e2e e2e-ui e2e-report ci-test ci-fast
+.PHONY: up down build restart logs init-db api front front-admin api-admin clean-pod db db-down db-logs debug-rebuild debug-rebuild-admin test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov e2e e2e-ui e2e-report ci-test ci-fast
 
 up:
 	podman-compose up -d
@@ -37,7 +37,14 @@ restart:
 	podman-compose build
 	podman-compose up -d
 
+# Debug rebuild (without admin - recommended for main app testing)
 debug-rebuild:
+	podman-compose down
+	podman-compose build backend frontend mongo qdrant mongo-express
+	podman-compose up
+
+# Debug rebuild with admin services (full stack)
+debug-rebuild-admin:
 	podman-compose down
 	podman-compose build
 	podman-compose up
