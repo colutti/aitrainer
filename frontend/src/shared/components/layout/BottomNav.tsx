@@ -4,19 +4,9 @@ import {
   Utensils,
   User,
   MessageSquare,
-  ShieldAlert,
   Settings
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-
-import { useAuthStore } from '../../hooks/useAuth';
-
-interface NavItemProps {
-  to: string;
-  icon: React.ReactNode;
-  label: string;
-  testId: string;
-}
 
 interface NavItemProps {
   to: string;
@@ -47,7 +37,6 @@ function NavItem({ to, icon, label, testId, end = false }: NavItemProps) {
  * BottomNav component for Mobile navigation
  */
 export function BottomNav() {
-  const { isAdmin } = useAuthStore();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-dark-card border-t border-border flex items-center justify-center lg:hidden z-40 safe-area-bottom h-14 md:h-16">
@@ -90,14 +79,6 @@ export function BottomNav() {
           label="Configurações"
           testId="nav-settings"
         />
-        {isAdmin && (
-          <NavItem
-            to="/dashboard/admin"
-            icon={<ShieldAlert size={20} />}
-            label="Admin"
-            testId="nav-admin"
-          />
-        )}
       </div>
     </nav>
   );

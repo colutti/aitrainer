@@ -2,7 +2,6 @@ import {
   LayoutDashboard,
   MessageSquare,
   Dumbbell,
-  ShieldAlert,
   LogOut,
   Scale,
   Flame,
@@ -44,7 +43,7 @@ function NavItem({ to, icon: Icon, label, end = false }: NavItemProps) {
  * Sidebar component for Desktop navigation
  */
 export function Sidebar() {
-  const { isAdmin, logout, userInfo } = useAuthStore();
+  const { logout, userInfo } = useAuthStore();
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-72 bg-dark-card border-r border-white/5 hidden lg:flex flex-col p-6 z-50 shadow-2xl">
@@ -91,10 +90,6 @@ export function Sidebar() {
       {/* Bottom Actions / Settings Section */}
       <div className="pt-6 border-t border-border flex flex-col gap-1">
         <NavItem to="/dashboard/settings" icon={SettingsIcon} label="Configurações" />
-
-        {isAdmin && (
-          <NavItem to="/dashboard/admin" icon={ShieldAlert} label="Painel Admin" />
-        )}
 
         <button
           onClick={() => { logout(); }}

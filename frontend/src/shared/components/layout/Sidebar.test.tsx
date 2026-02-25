@@ -52,42 +52,6 @@ describe('Sidebar', () => {
     expect(screen.getByText(/Configurações/i)).toBeInTheDocument();
   });
 
-  it('should render Admin link only for admin users', () => {
-    // Non-admin
-    vi.mocked(useAuthStore).mockReturnValue({
-      isAuthenticated: true,
-      isLoading: false,
-      userInfo: { email: 'user@example.com', is_admin: false, id: '1', name: 'User' },
-      isAdmin: false,
-      logout: vi.fn(),
-    } as unknown as AuthStore);
-
-    const { rerender } = render(
-      <MemoryRouter>
-        <Sidebar />
-      </MemoryRouter>
-    );
-
-    expect(screen.queryByText(/Painel Admin/i)).not.toBeInTheDocument();
-
-    // Admin
-    vi.mocked(useAuthStore).mockReturnValue({
-      isAuthenticated: true,
-      isLoading: false,
-      userInfo: { email: 'admin@example.com', is_admin: true, id: '2', name: 'Admin' },
-      isAdmin: true,
-      logout: vi.fn(),
-    } as unknown as AuthStore);
-
-    rerender(
-      <MemoryRouter>
-        <Sidebar />
-      </MemoryRouter>
-    );
-
-    expect(screen.getByText(/Painel Admin/i)).toBeInTheDocument();
-  });
-
   it('should call logout when logout button is clicked', () => {
     const logout = vi.fn();
     vi.mocked(useAuthStore).mockReturnValue({
