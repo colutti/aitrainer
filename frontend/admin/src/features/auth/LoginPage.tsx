@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment */
-import { useAdminLogin, useAdminIsLoading, useAdminLoginError } from '../../shared/hooks/useAdminAuth';
+import { Lock, Mail, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Mail, Loader2 } from 'lucide-react';
+
+import { useAdminLogin, useAdminIsLoading, useAdminLoginError } from '../../shared/hooks/useAdminAuth';
 
 export function LoginPage() {
   const navigate = useNavigate();
