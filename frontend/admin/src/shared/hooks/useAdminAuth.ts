@@ -47,7 +47,7 @@ export const useAdminAuthStore = create<AdminAuthStore>((set, get) => ({
         body: JSON.stringify({ email, password }),
       });
 
-      if (!response?.token) {
+      if (!response.token) {
         throw new Error('Invalid response from server');
       }
 
@@ -75,10 +75,6 @@ export const useAdminAuthStore = create<AdminAuthStore>((set, get) => ({
 
   loadUserInfo: async () => {
     const data = await httpClient<UserMeResponse>('/user/me');
-
-    if (!data) {
-      throw new Error('Failed to load user info');
-    }
 
     // Only admin users can access the admin app
     if (data.role !== 'admin') {
@@ -122,3 +118,8 @@ export const useAdminAuthStore = create<AdminAuthStore>((set, get) => ({
 export function getAdminToken(): string | null {
   return useAdminAuthStore.getState().getToken();
 }
+
+// Type-safe selector helpers
+export const useAdminLogin = () => useAdminAuthStore((state) => state.login);
+export const useAdminIsLoading = () => useAdminAuthStore((state) => state.isLoading);
+export const useAdminLoginError = () => useAdminAuthStore((state) => state.loginError);

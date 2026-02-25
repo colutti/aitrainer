@@ -1,8 +1,11 @@
 // Admin API HTTP client
 // Points to the separate admin backend
 
-export const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL ?? 'http://localhost:8001';
-const ADMIN_SECRET_KEY = import.meta.env.VITE_ADMIN_SECRET_KEY ?? '';
+const VITE_ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL as string | undefined;
+const VITE_ADMIN_SECRET_KEY = import.meta.env.VITE_ADMIN_SECRET_KEY as string | undefined;
+
+export const API_BASE_URL: string = VITE_ADMIN_API_URL ?? 'http://localhost:8001';
+const ADMIN_SECRET_KEY: string = VITE_ADMIN_SECRET_KEY ?? '';
 
 export interface HttpClientOptions extends RequestInit {
   body?: string;
@@ -48,7 +51,7 @@ export async function httpClient<T = unknown>(
   }
 
   if (response.status === 204) {
-    return null as T;
+    return null as unknown as T;
   }
 
   const contentType = response.headers.get('content-type');
@@ -56,5 +59,5 @@ export async function httpClient<T = unknown>(
     return (await response.json()) as T;
   }
 
-  return null as T;
+  throw new Error(`Unexpected response content type: ${contentType}`);
 }

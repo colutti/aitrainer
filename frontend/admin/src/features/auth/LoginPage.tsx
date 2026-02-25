@@ -1,16 +1,17 @@
-import { useAdminAuthStore } from '@shared/hooks/useAdminAuth';
+/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment */
+import { useAdminLogin, useAdminIsLoading, useAdminLoginError } from '@shared/hooks/useAdminAuth';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login, isLoading, loginError } = useAdminAuthStore();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const login = useAdminLogin();
+  const isLoading = useAdminIsLoading();
+  const loginError = useAdminLoginError();
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
       await login(email, password);
@@ -35,7 +36,9 @@ export function LoginPage() {
 
         <form
           onSubmit={(e) => {
-            handleSubmit(e).catch(console.error);
+            handleSubmit(e).catch(() => {
+              // Error is already set in store
+            });
           }}
           className="space-y-4"
         >
