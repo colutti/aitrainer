@@ -22,7 +22,7 @@ export function AdminLogsPage() {
           // Verify betterstack return
           const res = await adminApi.getBetterStackLogs(100);
           // Assuming result.data matches Angular logic (array of objects with message)
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+           
           if (res && Array.isArray(res.data)) {
             setLogs(res.data.map((l) => {
               const item = l as { message?: string };

@@ -228,7 +228,7 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
               )}
 
               {/* Chat History Section */}
-              {/* eslint-disable-next-line @typescript-eslint/no-unnecessary-condition */}
+              { }
               {hasMessages && (
                 <div className="bg-black/40 rounded-lg border border-white/5 overflow-hidden">
                   <button
