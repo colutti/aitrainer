@@ -23,8 +23,8 @@ const TRAINERS: TrainerData[] = [
     catchphrase: 'Seus músculos são máquinas biológicas. Vamos otimizá-las.',
     specialties: ['#biomecânica', '#dados', '#hipertrofia'],
     style: 'Científico & Precisionista',
-    gradient: 'from-amber-600 to-red-700',
-    borderHover: 'hover:border-amber-500/60',
+    gradient: 'from-sky-600 to-slate-700',
+    borderHover: 'hover:border-sky-500/60',
   },
   {
     id: 'luna',
@@ -67,8 +67,8 @@ const TRAINERS: TrainerData[] = [
     catchphrase: 'Bora, monstro! Hoje é dia de EVOLUIR! 🔥',
     specialties: ['#parceria', '#motivação', '#lifestyle'],
     style: 'Parceiro do Ginásio',
-    gradient: 'from-pink-500 to-rose-600',
-    borderHover: 'hover:border-pink-400/60',
+    gradient: 'from-violet-600 to-purple-800',
+    borderHover: 'hover:border-violet-500/60',
   },
 ];
 
