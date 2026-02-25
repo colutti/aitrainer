@@ -18,12 +18,14 @@ interface NavItemProps {
   to: string;
   icon: React.ElementType; // Better way to pass icons
   label: string;
+  end?: boolean;
 }
 
-function NavItem({ to, icon: Icon, label }: NavItemProps) {
+function NavItem({ to, icon: Icon, label, end = false }: NavItemProps) {
   return (
     <NavLink
       to={to}
+      end={end}
       className={({ isActive }) => cn(
         "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
         isActive 
@@ -66,7 +68,7 @@ export function Sidebar() {
 
       {/* Main Navigation */}
       <nav className="flex-1 flex flex-col gap-1 overflow-y-auto hide-scrollbar">
-        <NavItem to="/dashboard" icon={LayoutDashboard} label="Início" />
+        <NavItem to="/dashboard" icon={LayoutDashboard} label="Início" end={true} />
         <NavItem to="/dashboard/chat" icon={MessageSquare} label="Treinador" />
         <NavItem to="/dashboard/workouts" icon={Dumbbell} label="Meus Treinos" />
         <NavItem to="/dashboard/body/weight" icon={Scale} label="Peso e Corpo" />
@@ -88,10 +90,10 @@ export function Sidebar() {
 
       {/* Bottom Actions / Settings Section */}
       <div className="pt-6 border-t border-border flex flex-col gap-1">
-        <NavItem to="/dashboard/settings" icon={SettingsIcon} label="Configurações" />
+        <NavItem to="/dashboard/settings" icon={SettingsIcon} label="Configurações" end={true} />
 
         {isAdmin && (
-          <NavItem to="/dashboard/admin" icon={ShieldAlert} label="Painel Admin" />
+          <NavItem to="/dashboard/admin" icon={ShieldAlert} label="Painel Admin" end={true} />
         )}
 
         <button

@@ -57,6 +57,7 @@ export function BottomNav() {
           icon={<LayoutDashboard size={20} />}
           label="Home"
           testId="nav-home"
+          end={true}
         />
         <NavItem
           to="/dashboard/workouts"
@@ -88,6 +89,7 @@ export function BottomNav() {
           icon={<Settings size={20} />}
           label="Configurações"
           testId="nav-settings"
+          end={true}
         />
         {isAdmin && (
           <NavItem
@@ -95,6 +97,7 @@ export function BottomNav() {
             icon={<ShieldAlert size={20} />}
             label="Admin"
             testId="nav-admin"
+            end={true}
           />
         )}
       </div>
