@@ -1,11 +1,11 @@
 import { Search, Eye, Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { Button } from '../../../shared/components/ui/Button';
-import { Input } from '../../../shared/components/ui/Input';
-import { useConfirmation } from '../../../shared/hooks/useConfirmation';
-import { useNotificationStore } from '../../../shared/hooks/useNotification';
-import type { AdminUser } from '../../../shared/types/admin';
+import { Button } from '../../../../../src/shared/components/ui/Button';
+import { Input } from '../../../../../src/shared/components/ui/Input';
+import { useConfirmation } from '../../../../../src/shared/hooks/useConfirmation';
+import { useNotificationStore } from '../../../../../src/shared/hooks/useNotification';
+import type { AdminUser } from '../../../../../src/shared/types/admin';
 import { adminApi } from '../api/admin-api';
 
 export function AdminUsersPage() {

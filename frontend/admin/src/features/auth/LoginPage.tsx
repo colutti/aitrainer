@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment */
-import { useAdminLogin, useAdminIsLoading, useAdminLoginError } from '@shared/hooks/useAdminAuth';
+import { useAdminLogin, useAdminIsLoading, useAdminLoginError } from '../../shared/hooks/useAdminAuth';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 

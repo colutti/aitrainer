@@ -3,9 +3,9 @@ import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-import { Button } from '../../../shared/components/ui/Button';
-import { useNotificationStore } from '../../../shared/hooks/useNotification';
-import type { PromptLog } from '../../../shared/types/admin';
+import { Button } from '../../../../../src/shared/components/ui/Button';
+import { useNotificationStore } from '../../../../../src/shared/hooks/useNotification';
+import type { PromptLog } from '../../../../../src/shared/types/admin';
 
 interface PromptDetailModalProps {
   selectedPrompt: PromptLog | null;

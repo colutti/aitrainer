@@ -1,4 +1,4 @@
-.PHONY: up down build restart logs init-db api front front-admin api-admin clean-pod db db-down db-logs debug-rebuild debug-rebuild-admin test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov e2e e2e-ui e2e-report ci-test ci-fast
+.PHONY: up down build restart logs init-db api front front-admin api-admin admin clean-pod db db-down db-logs debug-rebuild debug-rebuild-admin test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov e2e e2e-ui e2e-report ci-test ci-fast
 
 up:
 	podman-compose up -d
@@ -22,6 +22,16 @@ front-admin:
 # Admin Backend (porta 8001, dev only)
 api-admin:
 	cd backend-admin && export PYTHONPATH=$$PYTHONPATH:. && .venv/bin/python src/main.py
+
+# Admin Frontend + Backend (dev only)
+admin:
+	@echo "🚀 Iniciando Admin (frontend + backend)..."
+	@echo "Frontend: http://localhost:3001"
+	@echo "Backend: http://localhost:8001"
+	@echo ""
+	@(cd backend-admin && export PYTHONPATH=$$PYTHONPATH:. && .venv/bin/python src/main.py) & \
+	(cd frontend/admin && npm run dev) & \
+	wait
 
 # Build padrão (development)
 build:

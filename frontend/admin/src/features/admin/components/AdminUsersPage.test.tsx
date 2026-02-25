@@ -1,8 +1,8 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-import { useConfirmation } from '../../../shared/hooks/useConfirmation';
-import { useNotificationStore } from '../../../shared/hooks/useNotification';
+import { useConfirmation } from '../../../../../src/shared/hooks/useConfirmation';
+import { useNotificationStore } from '../../../../../src/shared/hooks/useNotification';
 import { adminApi } from '../api/admin-api';
 
 import { AdminUsersPage } from './AdminUsersPage';
@@ -15,11 +15,11 @@ vi.mock('../api/admin-api', () => ({
   },
 }));
 
-vi.mock('../../../shared/hooks/useConfirmation', () => ({
+vi.mock('../../../../../src/shared/hooks/useConfirmation', () => ({
   useConfirmation: vi.fn(),
 }));
 
-vi.mock('../../../shared/hooks/useNotification', () => ({
+vi.mock('../../../../../src/shared/hooks/useNotification', () => ({
   useNotificationStore: vi.fn(),
 }));
 

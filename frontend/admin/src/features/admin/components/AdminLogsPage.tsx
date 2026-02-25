@@ -1,7 +1,7 @@
 import { Terminal, Cloud, FileText, AlertTriangle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { Button } from '../../../shared/components/ui/Button';
+import { Button } from '../../../../../src/shared/components/ui/Button';
 import { adminApi } from '../api/admin-api';
 
 export function AdminLogsPage() {

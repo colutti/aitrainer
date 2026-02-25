@@ -1,7 +1,7 @@
 import { LayoutDashboard, Users, FileText, AlignLeft, BarChart3 } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 
-import { cn } from '../../../shared/utils/cn';
+import { cn } from '../../../../../src/shared/utils/cn';
 
 export function AdminLayout() {
   const tabs = [

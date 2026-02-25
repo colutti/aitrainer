@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-import { useNotificationStore } from '../../../shared/hooks/useNotification';
-import type { TokenSummary, TokenTimeseries } from '../../../shared/types/admin';
+import { useNotificationStore } from '../../../../../src/shared/hooks/useNotification';
+import type { TokenSummary, TokenTimeseries } from '../../../../../src/shared/types/admin';
 import { adminApi } from '../api/admin-api';
 
 export function AdminTokensPage() {

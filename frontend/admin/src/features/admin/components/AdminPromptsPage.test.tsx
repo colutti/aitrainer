@@ -1,8 +1,8 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-import { useNotificationStore } from '../../../shared/hooks/useNotification';
-import type { PromptLog, PromptListResponse } from '../../../shared/types/admin';
+import { useNotificationStore } from '../../../../../src/shared/hooks/useNotification';
+import type { PromptLog, PromptListResponse } from '../../../../../src/shared/types/admin';
 import { adminApi } from '../api/admin-api';
 
 import { AdminPromptsPage } from './AdminPromptsPage';
@@ -14,7 +14,7 @@ vi.mock('../api/admin-api', () => ({
   },
 }));
 
-vi.mock('../../../shared/hooks/useNotification', () => ({
+vi.mock('../../../../../src/shared/hooks/useNotification', () => ({
   useNotificationStore: vi.fn(),
 }));
 

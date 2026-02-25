@@ -1,8 +1,8 @@
 import { Users, Activity, MessageSquare, Dumbbell, AlertTriangle, TrendingUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { StatsCard } from '../../../shared/components/ui/StatsCard';
-import type { AdminOverview, QualityMetrics } from '../../../shared/types/admin';
+import { StatsCard } from '../../../../../src/shared/components/ui/StatsCard';
+import type { AdminOverview, QualityMetrics } from '../../../../../src/shared/types/admin';
 import { adminApi } from '../api/admin-api';
 
 export function AdminDashboardPage() {

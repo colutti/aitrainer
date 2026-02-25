@@ -1,10 +1,10 @@
 import { Eye, Search, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { Button } from '../../../shared/components/ui/Button';
-import { Input } from '../../../shared/components/ui/Input';
-import { useNotificationStore } from '../../../shared/hooks/useNotification';
-import type { PromptLog } from '../../../shared/types/admin';
+import { Button } from '../../../../../src/shared/components/ui/Button';
+import { Input } from '../../../../../src/shared/components/ui/Input';
+import { useNotificationStore } from '../../../../../src/shared/hooks/useNotification';
+import type { PromptLog } from '../../../../../src/shared/types/admin';
 import { adminApi } from '../api/admin-api';
 
 import { PromptDetailModal } from './PromptDetailModal';
