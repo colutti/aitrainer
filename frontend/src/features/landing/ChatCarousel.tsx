@@ -47,22 +47,22 @@ const CONVERSATIONS: Conversation[] = [
     messages: [
       {
         role: 'user',
-        text: 'Tenho 32 anos, me cuido bastante, mas ultimamente me sinto cansada. Pode ser nutrição?',
+        text: 'Tô na dieta faz 3 semanas, mas o peso não sai do lugar. O que tá errado?',
         delay: 800,
       },
       {
         role: 'trainer',
-        text: 'Cansaço crônico é sempre multi-causal. Vamos desembrulhar junto. Você dorme bem normalmente? E como está sua rotina — trabalho estressante, exercícios, como você come durante o dia?',
+        text: 'Olhei seus registros aqui. Nos últimos 7 dias você comeu em média 1.640 kcal — mas sua meta atual é 1.580. Não é isso. O problema está na quinta e no sábado: você compensou depois do treino e foi pra 2.100 kcal nos dois dias. Isso zerou seu déficit da semana.',
         delay: 6000,
       },
       {
         role: 'user',
-        text: 'Durmo 7-8h toda noite. Trabalho é stressante mesmo. Como direitinho mas pulso café sem comer, e no final do dia fico exausta',
+        text: 'Nossa, não tinha percebido isso. Por que eu fico com tanta fome nesses dias?',
         delay: 11000,
       },
       {
         role: 'trainer',
-        text: 'Achei o primeiro culpado. Café em jejum sem comer manda um sinal de alerta pro seu corpo — ele começa a economizar energia desde de manhã. Aí quando chega a tarde, você DESABA. Isso ressoa? Aqui na plataforma, você registra sono, estresse, alimentação real. A partir dos seus dados eu descubro quantas calorias você realmente precisa — e calibro um plano que estabiliza sua energia ao longo do dia. Faz sentido?',
+        text: 'Seu treino de quinta queima bastante — vi que você faz HIIT. Proteína nesse dia ficou em 89g, mas você precisaria de pelo menos 130g pra não chegar com fome no jantar. Não é falta de força de vontade. É só ajustar a distribuição das refeições nos dias de treino. Quer que eu monte isso pra você?',
         delay: 16000,
       },
     ],
