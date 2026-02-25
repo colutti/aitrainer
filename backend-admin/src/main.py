@@ -61,8 +61,9 @@ async def admin_auth_middleware(request: Request, call_next):
             detail="Invalid admin credentials"
         )
 
-    # TODO: Verify JWT token has is_admin: true
-    # For now, assuming key provides sufficient protection
+    # TODO: Verify JWT email exists in admin_users collection
+    # Future enhancement: Extract email from JWT and check admin_users
+    # Currently: X-Admin-Key header provides sufficient protection for isolated admin service
 
     return await call_next(request)
 
