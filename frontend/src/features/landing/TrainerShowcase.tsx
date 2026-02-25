@@ -98,7 +98,7 @@ export const TrainerShowcase = (): React.ReactNode => {
               <button
                 key={trainer.id}
                 onClick={() => { setSelectedId(isSelected ? null : trainer.id); }}
-                className={`group relative snap-center min-w-[240px] md:min-w-0 flex-shrink-0 text-left p-5 rounded-2xl border transition-all duration-300 cursor-pointer ${
+                className={`group relative snap-center min-w-[240px] md:min-w-0 flex-shrink-0 text-left p-5 rounded-2xl border transition-all duration-300 cursor-pointer h-full flex flex-col ${
                   isSelected
                     ? `border-transparent bg-gradient-to-br ${trainer.gradient} opacity-100 scale-[1.02]`
                     : `border-white/10 bg-[rgba(18,18,20,0.8)] ${trainer.borderHover} hover:scale-[1.03]`
@@ -106,7 +106,7 @@ export const TrainerShowcase = (): React.ReactNode => {
               >
                 {/* Avatar with gradient border */}
                 <div
-                  className={`w-16 h-16 rounded-xl mb-3 p-0.5 bg-gradient-to-br ${trainer.gradient}`}
+                  className={`w-16 h-16 rounded-xl mb-3 p-0.5 bg-gradient-to-br ${trainer.gradient} shrink-0`}
                 >
                   <img
                     src={trainer.avatar}
@@ -121,16 +121,16 @@ export const TrainerShowcase = (): React.ReactNode => {
                 <h3 className="font-display font-bold text-white text-base mb-1 leading-tight">
                   {trainer.name}
                 </h3>
-                <p className={`text-xs mb-3 leading-snug ${isSelected ? 'text-white/80' : 'text-[#a1a1aa]'}`}>
+                <p className={`text-xs mb-3 leading-snug min-h-[2.5rem] ${isSelected ? 'text-white/80' : 'text-[#a1a1aa]'}`}>
                   {trainer.tagline}
                 </p>
 
                 {/* Specialties */}
-                <div className="flex flex-wrap gap-1 mb-3">
+                <div className="flex flex-wrap gap-1 mb-3 min-h-[2rem]">
                   {trainer.specialties.map((spec) => (
                     <span
                       key={spec}
-                      className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                      className={`text-[10px] px-1.5 py-0.5 rounded font-medium self-start ${
                         isSelected
                           ? 'bg-white/20 text-white'
                           : 'bg-white/5 text-[#a1a1aa]'
@@ -141,9 +141,9 @@ export const TrainerShowcase = (): React.ReactNode => {
                   ))}
                 </div>
 
-                {/* Catchphrase — visible on hover */}
+                {/* Catchphrase — visible on hover, pushed to bottom */}
                 <p
-                  className={`text-xs italic leading-snug transition-all duration-300 ${
+                  className={`text-xs italic leading-snug transition-all duration-300 mt-auto ${
                     isSelected
                       ? 'text-white/90 opacity-100'
                       : 'text-[#a1a1aa] opacity-0 group-hover:opacity-100'
