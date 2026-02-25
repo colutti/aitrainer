@@ -272,76 +272,29 @@ const LandingPage = (): React.ReactNode => {
             </p>
           </div>
 
-          {/* Bento grid */}
+          {/* Grid uniforme de 3 colunas */}
           <div className="grid md:grid-cols-3 gap-4">
-
-            {/* TDEE — col-span-2, large */}
-            <RevealOnScroll delay={0}>
-              <div className="group relative p-8 rounded-2xl border border-[var(--color-border)] bg-[rgba(18,18,20,0.8)] backdrop-blur-sm hover:border-[var(--color-primary)]/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[var(--color-primary)]/10 transition-all duration-300 md:col-span-2 h-full">
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[var(--color-primary)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="relative z-10 flex flex-col sm:flex-row gap-8 items-start">
-                  <div className="flex-1">
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center mb-4">
-                      <Zap className="w-6 h-6 text-white" />
-                    </div>
-                    <h3 className="font-display text-2xl font-bold text-white mb-3">TDEE Adaptativo</h3>
-                    <p className="text-[var(--color-text-secondary)] text-base leading-relaxed">
-                      Cálculo metabólico que evolui com seus dados reais de treino, sono, estresse e composição corporal. Não é tabela genérica — é inteligência metabólica personalizada.
-                    </p>
-                  </div>
-                  {/* Mini chart decoration */}
-                  <div className="shrink-0 hidden sm:block">
-                    <svg width="120" height="64" viewBox="0 0 120 64" fill="none" className="opacity-60">
-                      <polyline
-                        points="0,52 20,44 40,48 60,32 80,24 100,16 120,8"
-                        stroke="url(#grad)"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        fill="none"
-                      />
-                      <defs>
-                        <linearGradient id="grad" x1="0" y1="0" x2="120" y2="0">
-                          <stop offset="0%" stopColor="#6366f1" />
-                          <stop offset="100%" stopColor="#22d3ee" />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-                    <p className="text-xs text-[var(--color-text-secondary)] text-center mt-1">TDEE ao longo do tempo</p>
-                  </div>
-                </div>
-              </div>
-            </RevealOnScroll>
-
-            {/* IA Contextual */}
-            <RevealOnScroll delay={0.05}>
-              <div className="group relative p-8 rounded-2xl border border-[var(--color-border)] bg-[rgba(18,18,20,0.8)] backdrop-blur-sm hover:border-[var(--color-accent)]/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[var(--color-accent)]/10 transition-all duration-300 h-full">
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[var(--color-accent)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="relative z-10">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center mb-4">
-                    <Brain className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="font-display text-xl font-bold text-white mb-2">IA Contextual</h3>
-                  <p className="text-[var(--color-text-secondary)]">
-                    Acesso completo ao seu histórico de treinos, nutrição, peso e composição corporal. A IA vê o quadro completo.
-                  </p>
-                </div>
-              </div>
-            </RevealOnScroll>
-
-            {/* 5 Treinadores */}
-            <RevealOnScroll delay={0.1}>
-              <div className="group relative p-6 rounded-2xl border border-[var(--color-border)] bg-[rgba(18,18,20,0.8)] backdrop-blur-sm hover:border-pink-500/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-pink-500/10 transition-all duration-300 h-full">
-                <div className="relative z-10">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center mb-4">
-                    <Users className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="font-display text-xl font-bold text-white mb-2">5 Treinadores</h3>
-                  <p className="text-[var(--color-text-secondary)] text-sm mb-4">
-                    Atlas, Luna, Sofia, Sargento e GymBro. Cada um com personalidade única.
-                  </p>
-                  {/* Overlapping avatars */}
-                  <div className="flex items-center">
+            {[
+              {
+                icon: Zap as React.ElementType,
+                title: 'TDEE Adaptativo',
+                description: 'Cálculo metabólico que evolui com seus dados reais de treino, sono e composição corporal. Não é tabela genérica.',
+                extra: null as React.ReactNode,
+                delay: 0,
+              },
+              {
+                icon: Brain as React.ElementType,
+                title: 'IA Contextual',
+                description: 'Acesso completo ao seu histórico de treinos, nutrição, peso e composição corporal. A IA vê o quadro completo.',
+                extra: null as React.ReactNode,
+                delay: 0.05,
+              },
+              {
+                icon: Users as React.ElementType,
+                title: '5 Treinadores',
+                description: 'Atlas, Luna, Sofia, Sargento e GymBro. Cada um com personalidade única.',
+                extra: (
+                  <div className="flex items-center mt-4">
                     {['atlas', 'luna', 'sofia', 'sargento', 'gymbro'].map((trainer, i) => (
                       <img
                         key={trainer}
@@ -355,43 +308,30 @@ const LandingPage = (): React.ReactNode => {
                       />
                     ))}
                   </div>
-                </div>
-              </div>
-            </RevealOnScroll>
-
-            {/* Integrações */}
-            <RevealOnScroll delay={0.15}>
-              <div className="group relative p-6 rounded-2xl border border-[var(--color-border)] bg-[rgba(18,18,20,0.8)] backdrop-blur-sm hover:border-amber-500/40 hover:-translate-y-0.5 transition-all duration-300 h-full">
-                <div className="relative z-10">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center mb-4">
-                    <Zest className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="font-display text-xl font-bold text-white mb-2">Integrações</h3>
-                  <p className="text-[var(--color-text-secondary)] text-sm mb-3">
-                    Sincroniza com os apps que você já usa:
-                  </p>
-                  <div className="flex flex-col gap-1">
+                ),
+                delay: 0.1,
+              },
+              {
+                icon: Zest as React.ElementType,
+                title: 'Integrações',
+                description: 'Sincroniza com Hevy, MyFitnessPal e Zepp Life. Seus dados já estão lá — a IA só precisa acessá-los.',
+                extra: (
+                  <div className="flex flex-wrap gap-1 mt-4">
                     {['Hevy', 'MyFitnessPal', 'Zepp Life'].map((app) => (
-                      <span key={app} className="text-xs font-semibold text-[var(--color-accent)] bg-[var(--color-accent)]/10 rounded px-2 py-0.5 w-fit">
+                      <span key={app} className="text-xs font-semibold text-[var(--color-accent)] bg-[var(--color-accent)]/10 rounded px-2 py-0.5">
                         {app}
                       </span>
                     ))}
                   </div>
-                </div>
-              </div>
-            </RevealOnScroll>
-
-            {/* Memória Longa */}
-            <RevealOnScroll delay={0.2}>
-              <div className="group relative p-6 rounded-2xl border border-[var(--color-border)] bg-[rgba(18,18,20,0.8)] backdrop-blur-sm hover:border-indigo-400/40 hover:-translate-y-0.5 transition-all duration-300 h-full">
-                <div className="relative z-10">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center mb-4">
-                    <MemorySquare className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="font-display text-xl font-bold text-white mb-2">Memória Longa</h3>
-                  <p className="text-[var(--color-text-secondary)] text-sm mb-4">A IA lembra da sua jornada completa.</p>
-                  {/* Mini timeline */}
-                  <div className="space-y-2">
+                ),
+                delay: 0.15,
+              },
+              {
+                icon: MemorySquare as React.ElementType,
+                title: 'Memória Longa',
+                description: 'A IA lembra da sua jornada completa: objetivos, evolução, preferências e histórico.',
+                extra: (
+                  <div className="space-y-2 mt-4">
                     {[
                       { label: 'Iniciou treino', dot: 'bg-indigo-400' },
                       { label: 'Atingiu meta de peso', dot: 'bg-cyan-400' },
@@ -403,33 +343,39 @@ const LandingPage = (): React.ReactNode => {
                       </div>
                     ))}
                   </div>
-                </div>
-              </div>
-            </RevealOnScroll>
-
-            {/* 24/7 — full width */}
-            <RevealOnScroll delay={0.25}>
-              <div className="group relative p-6 rounded-2xl border border-[var(--color-border)] bg-[rgba(18,18,20,0.8)] backdrop-blur-sm hover:border-green-500/40 hover:-translate-y-0.5 transition-all duration-300 md:col-span-3">
-                <div className="relative z-10 flex items-center gap-6 flex-wrap">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center shrink-0">
-                    <Clock className="w-6 h-6 text-white" />
+                ),
+                delay: 0.2,
+              },
+              {
+                icon: Clock as React.ElementType,
+                title: 'Disponível 24/7',
+                description: 'Seu treinador está sempre lá. Às 3 da manhã, no fim de semana, ou quando você mais precisar.',
+                extra: (
+                  <div className="flex items-center gap-1.5 mt-4">
+                    <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                    <span className="text-xs text-green-400 font-medium">Online agora</span>
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h3 className="font-display text-xl font-bold text-white">Disponível 24/7</h3>
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                        <span className="text-xs text-green-400 font-medium">Online agora</span>
+                ),
+                delay: 0.25,
+              },
+            ].map((feature, idx) => {
+              const Icon = feature.icon;
+              return (
+                <RevealOnScroll key={idx} delay={feature.delay}>
+                  <div className="group relative p-6 rounded-2xl border border-[var(--color-border)] bg-[rgba(18,18,20,0.8)] backdrop-blur-sm hover:border-[var(--color-primary)]/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[var(--color-primary)]/10 transition-all duration-300 h-full">
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[var(--color-primary)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="relative z-10">
+                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                        <Icon className="w-6 h-6 text-white" />
                       </div>
+                      <h3 className="font-display text-xl font-bold text-white mb-2">{feature.title}</h3>
+                      <p className="text-[var(--color-text-secondary)] text-sm">{feature.description}</p>
+                      {feature.extra}
                     </div>
-                    <p className="text-[var(--color-text-secondary)]">
-                      Seu treinador está sempre lá. Às 3 da manhã, no fim de semana, ou quando você mais precisar.
-                    </p>
                   </div>
-                </div>
-              </div>
-            </RevealOnScroll>
-
+                </RevealOnScroll>
+              );
+            })}
           </div>
         </div>
       </section>
