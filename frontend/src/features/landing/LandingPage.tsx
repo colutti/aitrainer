@@ -18,7 +18,6 @@ import { useNavigate } from 'react-router-dom';
 import { ChatCarousel } from './ChatCarousel';
 import { HeroProductPreview } from './HeroProductPreview';
 import { ProductShowcase } from './ProductShowcase';
-import { SocialProof } from './SocialProof';
 import { TrainerShowcase } from './TrainerShowcase';
 
 
@@ -379,14 +378,6 @@ const LandingPage = (): React.ReactNode => {
           </div>
         </div>
       </section>
-
-      {/* Section divider */}
-      <div className="w-full h-px bg-gradient-to-r from-transparent via-[var(--color-primary)]/20 to-transparent" />
-
-      {/* Social Proof */}
-      <div className="relative z-10">
-        <SocialProof />
-      </div>
 
       {/* Section divider */}
       <div className="w-full h-px bg-gradient-to-r from-transparent via-[var(--color-primary)]/20 to-transparent" />
