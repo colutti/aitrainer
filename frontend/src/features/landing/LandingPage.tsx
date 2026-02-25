@@ -8,7 +8,6 @@ import {
   Share2 as MemorySquare,
   Clock,
   ChevronRight,
-  ExternalLink,
   Menu,
   X,
 } from 'lucide-react';
@@ -588,88 +587,17 @@ const LandingPage = (): React.ReactNode => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-[var(--color-border)] bg-[rgba(10,10,11,0.5)] py-12 px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <img src="/logo_icon.png" alt="FityQ" className="h-8 w-8" />
-                <span className="font-display text-lg font-bold text-white">FityQ</span>
-              </div>
-              <p className="text-[var(--color-text-secondary)] text-sm">
-                Treinador pessoal com IA que evolui com você.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-display text-white font-bold mb-4">Produto</h4>
-              <ul className="space-y-2">
-                <li>
-                  <a
-                    href="#treinadores"
-                    data-anchor
-                    className="text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors text-sm"
-                  >
-                    Treinadores
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#diferenciais"
-                    data-anchor
-                    className="text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors text-sm"
-                  >
-                    Recursos
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-display text-white font-bold mb-4">Legal</h4>
-              <ul className="space-y-2">
-                <li>
-                  <a
-                    href="#"
-                    className="text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors text-sm"
-                  >
-                    Privacidade
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors text-sm"
-                  >
-                    Termos
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-display text-white font-bold mb-4">Social</h4>
-              <ul className="space-y-2">
-                <li>
-                  <a
-                    href="#"
-                    className="text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors flex items-center gap-2 text-sm"
-                  >
-                    Twitter <ExternalLink className="w-3 h-3" />
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors flex items-center gap-2 text-sm"
-                  >
-                    Instagram <ExternalLink className="w-3 h-3" />
-                  </a>
-                </li>
-              </ul>
-            </div>
+      <footer className="border-t border-[var(--color-border)] bg-[rgba(10,10,11,0.5)] py-8 px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <img src="/logo_icon.png" alt="FityQ" className="h-7 w-7" />
+            <span className="font-display text-base font-bold text-white">FityQ</span>
           </div>
-          <div className="border-t border-[var(--color-border)] pt-8 text-center text-[var(--color-text-secondary)] text-sm">
-            <p>© {new Date().getFullYear()} FityQ. Todos os direitos reservados.</p>
-          </div>
+          <p className="text-[var(--color-text-secondary)] text-sm">
+            © {new Date().getFullYear()} FityQ. Todos os direitos reservados.
+          </p>
         </div>
+        {/* TODO: Restore footer columns when Produto/Legal/Social links are ready */}
       </footer>
     </div>
   );
