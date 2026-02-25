@@ -213,7 +213,7 @@ export const ChatCarousel = () => {
             />
             <span className="text-white font-bold text-lg">FityQ</span>
           </div>
-          <h2 className="text-4xl md:text-5xl font-bold text-white">
+          <h2 className="font-display text-4xl md:text-5xl font-bold text-white">
             Converse com Seu Treinador Agora
           </h2>
           <p className="text-lg text-zinc-400">
