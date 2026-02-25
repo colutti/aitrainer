@@ -19,23 +19,23 @@ app.add_middleware(
 
 # Initialize admin_users collection on startup
 @app.on_event("startup")
-async def startup_event():
+def startup_event():
     """Initialize admin_users collection"""
-    from motor.motor_asyncio import AsyncIOMotorClient
+    import pymongo
 
     mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017")
     db_name = os.getenv("DB_NAME", "aitrainer")
 
     try:
-        client = AsyncIOMotorClient(mongo_uri)
+        client = pymongo.MongoClient(mongo_uri)
         db = client[db_name]
 
         # Create collection if missing
-        if "admin_users" not in await db.list_collection_names():
-            await db.create_collection("admin_users")
+        if "admin_users" not in db.list_collection_names():
+            db.create_collection("admin_users")
 
         # Ensure unique index
-        await db.admin_users.create_index("email", unique=True)
+        db.admin_users.create_index("email", unique=True)
         print("✅ Admin collection initialized")
 
         client.close()
