@@ -47,6 +47,52 @@ services:
     networks:
       - aitrainer-network
 
+  frontend-admin:
+    build:
+      context: ./frontend/admin
+      args:
+        BUILD_MODE: ${BUILD_MODE:-development}
+      target: build
+    ports:
+      - "3001:5173"
+    volumes:
+      - ./frontend/admin:/app
+      - /app/node_modules
+    environment:
+      - VITE_ADMIN_API_URL=http://backend-admin:8001
+    command: npm run dev -- --host
+    depends_on:
+      - backend-admin
+    networks:
+      - aitrainer-network
+
+  backend-admin:
+    build:
+      context: ./backend-admin
+    ports:
+      - "8001:8000"
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend-admin:/app
+    env_file:
+      - ./backend-admin/.env
+    environment:
+      - MONGO_URI=mongodb://aitrainer:aitrainerpass@mongo:27017/aitrainerdb?authSource=admin
+      - DB_NAME=aitrainerdb
+      - QDRANT_HOST=qdrant
+      - RUNNING_IN_CONTAINER=true
+      - ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY:-dev-secret-key}
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - mongo
+      - qdrant
+    networks:
+      - aitrainer-network
+
   mongo:
     image: docker.io/library/mongo:latest
     restart: always

@@ -1,0 +1,17 @@
+.git
+.gitignore
+.DS_Store
+.vscode
+.idea
+.pytest_cache
+.coverage
+.env.local
+.env.*.local
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+.venv
+venv
+*.log
+.c8

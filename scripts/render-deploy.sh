@@ -2,12 +2,17 @@
 
 # Script de Deploy Automático no Render com Streaming de Logs
 # Uso: ./scripts/render-deploy.sh [backend|frontend|all] [--clear-cache] [--no-logs]
+#
+# ⚠️  SECURITY: Admin services (frontend-admin, backend-admin) are NOT included
+#     in this production deployment script. Admin services must be deployed
+#     separately or not deployed at all. See render.yaml for details.
 
 set -e
 
-# IDs dos serviços
+# IDs dos serviços (PRODUCTION ONLY - admin services excluded)
 BACKEND_ID="srv-d5f2utqli9vc73dak390"
 FRONTEND_ID="srv-d5f3e8u3jp1c73bkjbf0"
+# NOTE: No admin service IDs - admin deployment is handled separately or manually
 
 # Cores para output
 RED='\033[0;31m'

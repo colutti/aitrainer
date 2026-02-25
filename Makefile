@@ -1,4 +1,4 @@
-.PHONY: up down build restart logs init-db api front clean-pod db db-down db-logs test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov e2e e2e-ui e2e-report ci-test ci-fast
+.PHONY: up down build restart logs init-db api front front-admin api-admin clean-pod db db-down db-logs test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov e2e e2e-ui e2e-report ci-test ci-fast
 
 up:
 	podman-compose up -d
@@ -14,6 +14,14 @@ api:
 
 front:
 	podman-compose --in-pod 0 up -d --no-deps frontend
+
+# Admin Frontend (porta 3001, dev only)
+front-admin:
+	podman-compose --in-pod 0 up -d --no-deps frontend-admin
+
+# Admin Backend (porta 8001, dev only)
+api-admin:
+	cd backend-admin && export PYTHONPATH=$$PYTHONPATH:. && .venv/bin/python src/main.py
 
 # Build padrão (development)
 build:
@@ -105,8 +113,18 @@ test-frontend-watch:
 test-frontend-cov:
 	cd frontend && npm test -- --coverage
 
+## Admin Frontend Tests
+test-admin:
+	cd frontend/admin && npm test
+
+test-admin-watch:
+	cd frontend/admin && npm test -- --watch
+
+test-admin-cov:
+	cd frontend/admin && npm test -- --coverage
+
 ## All Tests
-test: test-backend test-frontend
+test: test-backend test-frontend test-admin
 
 test-cov: test-backend-cov test-frontend-cov
 
@@ -138,6 +156,14 @@ ci-fast: test-backend test-frontend
 ## - Frontend: unit tests + build + playwright
 ci-test: test-backend test-frontend e2e
 	@echo "✅ CI Full Test Suite Passed!"
+
+# ⚠️  ADMIN DEPLOYMENT WARNING ⚠️
+# Admin services are NOT included in production deployment.
+# Use 'make front-admin' and 'make api-admin' for local development only.
+# For production admin deployment:
+#   1. Create separate Render services manually via dashboard
+#   2. Set up separate authentication (X-Admin-Key)
+#   3. Use different DNS/subdomain to isolate from main app
 
 # Render Deployment Commands
 
