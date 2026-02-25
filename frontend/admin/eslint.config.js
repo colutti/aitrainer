@@ -8,7 +8,7 @@ import tseslint from 'typescript-eslint';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
-  globalIgnores(['dist', 'node_modules', 'coverage', 'playwright-report', 'admin']),
+  globalIgnores(['dist', 'node_modules', 'coverage']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -22,7 +22,7 @@ export default defineConfig([
       ecmaVersion: 2022,
       globals: globals.browser,
       parserOptions: {
-        project: ['./tsconfig.eslint.json', './tsconfig.node.json'],
+        project: ['./tsconfig.app.json'],
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -36,12 +36,9 @@ export default defineConfig([
       },
     },
     rules: {
-      // React rules
       'react/jsx-uses-react': 'off',
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
-
-      // TypeScript rules
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
@@ -63,8 +60,6 @@ export default defineConfig([
       '@typescript-eslint/require-await': 'warn',
       '@typescript-eslint/no-confusing-void-expression': 'warn',
       '@typescript-eslint/no-redundant-type-constituents': 'warn',
-
-      // Import rules
       'import/order': [
         'error',
         {
@@ -73,13 +68,11 @@ export default defineConfig([
           alphabetize: { order: 'asc', caseInsensitive: true },
         },
       ],
-
-      // General rules
       'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
   },
   {
-    files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', 'src/shared/utils/cn.test.ts'],
+    files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',
@@ -103,4 +96,3 @@ export default defineConfig([
     },
   },
 ]);
-

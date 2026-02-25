@@ -24,12 +24,6 @@ from src.api.endpoints import (
     hevy,
     onboarding,
     telegram,
-    admin_users,
-    admin_logs,
-    admin_prompts,
-    admin_tokens,
-    admin_memory,
-    admin_analytics,
     dashboard,
 )
 from src.core.config import settings
@@ -107,13 +101,7 @@ app.include_router(hevy.router, prefix="/integrations/hevy", tags=["integrations
 app.include_router(onboarding.router, prefix="/onboarding", tags=["onboarding"])
 app.include_router(telegram.router, prefix="/telegram", tags=["telegram"])
 
-# Admin routers (require admin role)
-app.include_router(admin_users.router, tags=["admin"])
-app.include_router(admin_logs.router, tags=["admin"])
-app.include_router(admin_prompts.router, tags=["admin"])
-app.include_router(admin_tokens.router, tags=["admin"])
-app.include_router(admin_memory.router, tags=["admin"])
-app.include_router(admin_analytics.router, tags=["admin"])
+# Admin routers moved to separate backend-admin service
 
 
 @app.get("/health")

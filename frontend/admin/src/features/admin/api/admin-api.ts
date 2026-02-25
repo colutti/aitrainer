@@ -12,11 +12,11 @@ import type {
 
 export const adminApi = {
   getOverview: async (): Promise<AdminOverview> => {
-    return httpClient<AdminOverview>('/admin/analytics/overview') as Promise<AdminOverview>;
+    return httpClient<AdminOverview>('/admin/analytics/overview');
   },
 
   getQualityMetrics: async (): Promise<QualityMetrics> => {
-    return httpClient<QualityMetrics>('/admin/analytics/quality-metrics') as Promise<QualityMetrics>;
+    return httpClient<QualityMetrics>('/admin/analytics/quality-metrics');
   },
 
   listUsers: async (page = 1, pageSize = 20, search = ''): Promise<UserListResponse> => {
@@ -25,18 +25,18 @@ export const adminApi = {
       page_size: pageSize.toString(),
     });
     if (search) params.append('search', search);
-    return httpClient<UserListResponse>(`/admin/users/?${params.toString()}`) as Promise<UserListResponse>;
+    return httpClient<UserListResponse>(`/admin/users/?${params.toString()}`);
   },
 
   getUser: async (email: string): Promise<AdminUser> => {
-    return httpClient<AdminUser>(`/admin/users/${email}`) as Promise<AdminUser>;
+    return httpClient<AdminUser>(`/admin/users/${email}`);
   },
 
   updateUser: async (email: string, data: Partial<AdminUser>): Promise<AdminUser> => {
     return httpClient<AdminUser>(`/admin/users/${email}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
-    }) as Promise<AdminUser>;
+    });
   },
 
   deleteUser: async (email: string): Promise<{ success: boolean }> => {
@@ -63,11 +63,11 @@ export const adminApi = {
       page_size: pageSize.toString(),
     });
     if (userId) params.append('user_id', userId);
-    return httpClient<PromptListResponse>(`/admin/prompts/?${params.toString()}`) as Promise<PromptListResponse>;
+    return httpClient<PromptListResponse>(`/admin/prompts/?${params.toString()}`);
   },
 
   getPrompt: async (id: string): Promise<PromptLog> => {
-    return httpClient<PromptLog>(`/admin/prompts/${id}`) as Promise<PromptLog>;
+    return httpClient<PromptLog>(`/admin/prompts/${id}`);
   },
 
   getTokenSummary: async (days = 30): Promise<{ data: TokenSummary[]; total_users_with_tokens: number }> => {

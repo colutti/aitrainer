@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "admin-backend"
+version = "0.1.0"
+description = "Admin backend service"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.115.0",
+    "uvicorn[standard]==0.30.0",
+    "python-jose[cryptography]==3.3.0",
+    "motor==3.5.0",
+    "pymongo==4.9.0",
+    "pydantic==2.9.1",
+    "pydantic-settings==2.6.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==7.4.4",
+    "pytest-asyncio==0.24.0",
+    "httpx==0.28.1",
+]
