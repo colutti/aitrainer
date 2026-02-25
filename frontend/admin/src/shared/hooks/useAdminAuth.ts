@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import type { LoginResponse, UserMeResponse } from '../../types/admin-api';
 import { httpClient } from '../api/http-client';
 
 const ADMIN_TOKEN_KEY = 'admin_auth_token';
@@ -41,7 +42,7 @@ export const useAdminAuthStore = create<AdminAuthStore>((set, get) => ({
     set({ isLoading: true, loginError: null });
 
     try {
-      const response = await httpClient<{ token: string }>('/user/login', {
+      const response = await httpClient<LoginResponse>('/user/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
@@ -73,11 +74,7 @@ export const useAdminAuthStore = create<AdminAuthStore>((set, get) => ({
   },
 
   loadUserInfo: async () => {
-    const data = await httpClient<{
-      email: string;
-      role: string;
-      name?: string;
-    }>('/user/me');
+    const data = await httpClient<UserMeResponse>('/user/me');
 
     if (!data) {
       throw new Error('Failed to load user info');

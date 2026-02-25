@@ -2,13 +2,15 @@ import { httpClient } from '../../../shared/api/http-client';
 import type {
   AdminOverview,
   AdminUser,
+  ApplicationLogResponse,
+  BetterStackLogResponse,
   PromptListResponse,
   PromptLog,
   QualityMetrics,
+  TokenSummaryResponse,
+  TokenTimeseriesResponse,
   UserListResponse,
-  TokenSummary,
-  TokenTimeseries,
-} from '../../../shared/types/admin';
+} from '../../../types/admin-api';
 
 export const adminApi = {
   getOverview: async (): Promise<AdminOverview> => {
@@ -42,19 +44,19 @@ export const adminApi = {
   deleteUser: async (email: string): Promise<{ success: boolean }> => {
     return httpClient<{ success: boolean }>(`/admin/users/${email}`, {
       method: 'DELETE',
-    }) as Promise<{ success: boolean }>;
+    });
   },
 
-  getApplicationLogs: async (limit = 100, level?: string): Promise<{ logs: string[]; source: string; total: number }> => {
+  getApplicationLogs: async (limit = 100, level?: string): Promise<ApplicationLogResponse> => {
     const params = new URLSearchParams({ limit: limit.toString() });
     if (level) params.append('level', level);
-    return httpClient<{ logs: string[]; source: string; total: number }>(`/admin/logs/application?${params.toString()}`) as Promise<{ logs: string[]; source: string; total: number }>;
+    return httpClient<ApplicationLogResponse>(`/admin/logs/application?${params.toString()}`);
   },
 
-  getBetterStackLogs: async (limit = 100, query?: string): Promise<{ data: unknown[]; total: number }> => {
+  getBetterStackLogs: async (limit = 100, query?: string): Promise<BetterStackLogResponse> => {
     const params = new URLSearchParams({ limit: limit.toString() });
     if (query) params.append('query', query);
-    return httpClient<{ data: unknown[]; total: number }>(`/admin/logs/betterstack?${params.toString()}`) as Promise<{ data: unknown[]; total: number }>;
+    return httpClient<BetterStackLogResponse>(`/admin/logs/betterstack?${params.toString()}`);
   },
 
   listPrompts: async (page = 1, pageSize = 20, userId?: string): Promise<PromptListResponse> => {
@@ -70,14 +72,14 @@ export const adminApi = {
     return httpClient<PromptLog>(`/admin/prompts/${id}`);
   },
 
-  getTokenSummary: async (days = 30): Promise<{ data: TokenSummary[]; total_users_with_tokens: number }> => {
+  getTokenSummary: async (days = 30): Promise<TokenSummaryResponse> => {
     const params = new URLSearchParams({ days: days.toString() });
-    return httpClient<{ data: TokenSummary[]; total_users_with_tokens: number }>(`/admin/tokens/summary?${params.toString()}`) as Promise<{ data: TokenSummary[]; total_users_with_tokens: number }>;
+    return httpClient<TokenSummaryResponse>(`/admin/tokens/summary?${params.toString()}`);
   },
 
-  getTokenTimeseries: async (days = 30, userEmail?: string): Promise<{ data: TokenTimeseries[]; data_points: number }> => {
+  getTokenTimeseries: async (days = 30, userEmail?: string): Promise<TokenTimeseriesResponse> => {
     const params = new URLSearchParams({ days: days.toString() });
     if (userEmail) params.append('user_email', userEmail);
-    return httpClient<{ data: TokenTimeseries[]; data_points: number }>(`/admin/tokens/timeseries?${params.toString()}`) as Promise<{ data: TokenTimeseries[]; data_points: number }>;
+    return httpClient<TokenTimeseriesResponse>(`/admin/tokens/timeseries?${params.toString()}`);
   },
 };
