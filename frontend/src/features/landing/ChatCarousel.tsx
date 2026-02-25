@@ -62,7 +62,7 @@ const CONVERSATIONS: Conversation[] = [
       },
       {
         role: 'trainer',
-        text: 'Achei o primeiro culpado. Café em jejum bota cortisol no teto, queima energia que você não repõe. Seu corpo fica em modo "fuga ou luta" o dia todo. Aí quando chega a tarde, você COLAPSA. Isso ressoa? Aqui na plataforma, você vai registrar seu padrão de sono, estresse, alimentação real. Meu TDEE adaptativo entende cortisol dinâmico — não é número fixo, é fluido. A partir dos seus dados, eu calibro refeições que estabilizam sua energia. Faz sentido?',
+        text: 'Achei o primeiro culpado. Café em jejum sem comer manda um sinal de alerta pro seu corpo — ele começa a economizar energia desde de manhã. Aí quando chega a tarde, você DESABA. Isso ressoa? Aqui na plataforma, você registra sono, estresse, alimentação real. A partir dos seus dados eu descubro quantas calorias você realmente precisa — e calibro um plano que estabiliza sua energia ao longo do dia. Faz sentido?',
         delay: 16000,
       },
     ],

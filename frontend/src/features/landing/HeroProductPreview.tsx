@@ -92,17 +92,17 @@ export const HeroProductPreview = (): React.ReactNode => {
       <div className="absolute -bottom-6 -left-6 max-w-[200px] rounded-xl border border-white/10 bg-[rgba(18,18,20,0.98)] p-3 shadow-lg">
         <div className="flex items-center gap-2 mb-2">
           <img
-            src="/assets/avatars/sofia.png"
-            alt="Sofia"
+            src="/assets/avatars/gymbro.png"
+            alt="Breno"
             className="w-6 h-6 rounded-full object-cover"
             loading="lazy"
             width="24"
             height="24"
           />
-          <span className="text-xs font-semibold text-white">Dra. Sofia</span>
+          <span className="text-xs font-semibold text-white">Breno</span>
         </div>
         <p className="text-xs text-[#a1a1aa] leading-relaxed">
-          Seu TDEE adaptou bem essa semana! 🎯
+          Mano, vi que você dormiu 8h hoje. Hoje é dia de ir pesado! 💪
         </p>
       </div>
     </div>

@@ -88,7 +88,7 @@ export const ProductShowcase = (): React.ReactNode => {
                 />
                 <div>
                   <p className="font-display text-sm font-bold text-white">Atlas Prime</p>
-                  <p className="text-[10px] text-[#a1a1aa]">#biomecânica #hipertrofia</p>
+                  <p className="text-[10px] text-[#a1a1aa]">#força #hipertrofia #dados</p>
                 </div>
                 <div className="ml-auto w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
               </div>
@@ -102,7 +102,7 @@ export const ProductShowcase = (): React.ReactNode => {
                 </div>
                 <div className="flex justify-start">
                   <div className="bg-white/5 text-[#fafafa] text-xs rounded-xl rounded-tl-sm px-3 py-2 max-w-[80%] leading-relaxed">
-                    Panturrilha ativa no agachamento indica dorsiflexão limitada. Vamos trabalhar mobilidade de tornozelo antes da próxima série.
+                    Sentiu a panturrilha puxando? Seu tornozelo precisa de mais mobilidade. Antes da próxima série, tenta 10 rotações lentas em cada pé — depois me conta.
                   </div>
                 </div>
                 <div className="flex justify-end">
@@ -132,7 +132,7 @@ export const ProductShowcase = (): React.ReactNode => {
           {/* Card 3: TDEE Analytics */}
           <div className="snap-center min-w-[280px] flex-shrink-0 md:min-w-0 flex flex-col">
             <div className="flex-1 rounded-2xl border border-white/10 bg-[rgba(18,18,20,0.9)] p-5 shadow-xl">
-              <p className="text-xs text-[#a1a1aa] mb-4">TDEE Adaptativo</p>
+              <p className="text-xs text-[#a1a1aa] mb-4">Meta Calórica Inteligente</p>
 
               {/* Large ring */}
               <div className="flex justify-center mb-4">
@@ -163,7 +163,7 @@ export const ProductShowcase = (): React.ReactNode => {
 
               <div className="text-center mb-4">
                 <p className="font-display text-2xl font-extrabold text-white">2.487 kcal</p>
-                <p className="text-xs text-[#a1a1aa] mt-0.5">TDEE calculado esta semana</p>
+                <p className="text-xs text-[#a1a1aa] mt-0.5">Sua meta desta semana</p>
               </div>
 
               {/* Confidence badge */}
@@ -186,7 +186,7 @@ export const ProductShowcase = (): React.ReactNode => {
                 ))}
               </div>
             </div>
-            <p className="text-center text-sm font-medium text-[#a1a1aa] mt-3">TDEE Adaptativo</p>
+            <p className="text-center text-sm font-medium text-[#a1a1aa] mt-3">Meta Inteligente</p>
           </div>
 
         </div>

@@ -185,7 +185,7 @@ const LandingPage = (): React.ReactNode => {
               className="text-lg sm:text-xl text-[var(--color-text-secondary)] mb-8 max-w-2xl leading-relaxed animate-slide-in-fade"
               style={{ animationDelay: '0.1s' }}
             >
-              TDEE adaptativo ao seu metabolismo real, IA com acesso ao seu histórico completo de treinos e nutrição, e 5 personalidades de treinadores disponíveis 24/7.
+              Uma IA que sabe exatamente quantas calorias você precisa hoje — e ajusta isso toda semana. Com acesso completo ao seu histórico, treinos e alimentação. E 5 treinadores com personalidade real, disponíveis a qualquer hora.
             </p>
 
             <div className="animate-slide-in-fade mb-4" style={{ animationDelay: '0.2s' }}>
@@ -277,15 +277,15 @@ const LandingPage = (): React.ReactNode => {
             {[
               {
                 icon: Zap as React.ElementType,
-                title: 'TDEE Adaptativo',
-                description: 'Cálculo metabólico que evolui com seus dados reais de treino, sono e composição corporal. Não é tabela genérica.',
+                title: 'Meta que Aprende com Você',
+                description: 'Nada de números genéricos de calculadora. O FityQ descobre quantas calorias você realmente precisa e recalibra toda semana conforme seus dados.',
                 extra: null as React.ReactNode,
                 delay: 0,
               },
               {
                 icon: Brain as React.ElementType,
-                title: 'IA Contextual',
-                description: 'Acesso completo ao seu histórico de treinos, nutrição, peso e composição corporal. A IA vê o quadro completo.',
+                title: 'IA que Enxerga Tudo',
+                description: 'Acesso completo ao seu histórico de treinos, alimentação, peso e evolução. Não é um chatbot genérico — é um treinador que conhece você.',
                 extra: null as React.ReactNode,
                 delay: 0.05,
               },
@@ -328,8 +328,8 @@ const LandingPage = (): React.ReactNode => {
               },
               {
                 icon: MemorySquare as React.ElementType,
-                title: 'Memória Longa',
-                description: 'A IA lembra da sua jornada completa: objetivos, evolução, preferências e histórico.',
+                title: 'Lembra da Sua Jornada',
+                description: 'A IA guarda tudo: seus objetivos, cada progresso, seus preferências e o que já funcionou pra você. Como um treinador de verdade faria.',
                 extra: (
                   <div className="space-y-2 mt-4">
                     {[
