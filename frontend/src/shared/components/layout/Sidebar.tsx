@@ -90,10 +90,10 @@ export function Sidebar() {
 
       {/* Bottom Actions / Settings Section */}
       <div className="pt-6 border-t border-border flex flex-col gap-1">
-        <NavItem to="/dashboard/settings" icon={SettingsIcon} label="Configurações" end={true} />
+        <NavItem to="/dashboard/settings" icon={SettingsIcon} label="Configurações" />
 
         {isAdmin && (
-          <NavItem to="/dashboard/admin" icon={ShieldAlert} label="Painel Admin" end={true} />
+          <NavItem to="/dashboard/admin" icon={ShieldAlert} label="Painel Admin" />
         )}
 
         <button

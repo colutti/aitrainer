@@ -89,7 +89,6 @@ export function BottomNav() {
           icon={<Settings size={20} />}
           label="Configurações"
           testId="nav-settings"
-          end={true}
         />
         {isAdmin && (
           <NavItem
@@ -97,7 +96,6 @@ export function BottomNav() {
             icon={<ShieldAlert size={20} />}
             label="Admin"
             testId="nav-admin"
-            end={true}
           />
         )}
       </div>
