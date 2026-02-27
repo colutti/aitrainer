@@ -126,10 +126,9 @@ def health_check() -> JSONResponse:
 
 
 if __name__ == "__main__":
-    # PORT is injected by Render in production (default 10000)
+    # Run the server
     port_env = int(os.environ.get("PORT", settings.API_SERVER_PORT))
-    # RENDER env var is automatically defined on Render
-    is_prod = os.environ.get("RENDER", "false").lower() == "true"
+    is_prod = settings.LOG_LEVEL.upper() == "INFO"
 
     uvicorn.run(
         "src.api.main:app",

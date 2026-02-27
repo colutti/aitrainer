@@ -1,44 +1,52 @@
 /**
  * Admin API Response Types
- * Defines all types returned by the admin backend API
+ * Synchronized with shared/types/admin.ts
  */
 
-// User types
 export interface AdminUser {
   email: string;
-  name: string;
+  name?: string;
+  display_name?: string;
   is_admin: boolean;
+  created_at?: string;
+  last_login?: string;
   photo_base64?: string;
 }
 
 export interface UserListResponse {
-  data: AdminUser[];
+  users: AdminUser[];
   total: number;
   page: number;
   page_size: number;
+  total_pages: number;
 }
 
-// Dashboard types
 export interface AdminOverview {
   total_users: number;
+  total_admins: number;
   active_users_7d: number;
   active_users_24h: number;
   total_messages: number;
   total_workouts: number;
+  total_nutrition_logs: number;
 }
 
 export interface QualityMetrics {
-  engagement_rate: number;
-  avg_session_duration: number;
-  user_retention: number;
+  avg_messages_per_user: number;
+  workout_engagement_rate: number;
+  nutrition_engagement_rate: number;
 }
 
-// Log types
 export interface ApplicationLog {
   timestamp: string;
-  level: 'DEBUG' | 'INFO' | 'WARNING' | 'ERROR';
+  level: string;
   message: string;
-  source?: string;
+  module?: string;
+}
+
+export interface LogListResponse {
+  logs: ApplicationLog[];
+  total: number;
 }
 
 export interface ApplicationLogResponse {
@@ -52,19 +60,25 @@ export interface BetterStackLogResponse {
   total: number;
 }
 
-export interface LogListResponse {
-  logs: ApplicationLog[];
-  total: number;
-}
-
-// Prompt types
 export interface PromptLog {
   id: string;
   user_email: string;
   timestamp: string;
+  prompt_name?: string;
   model: string;
-  tokens_used: number;
-  xml_content: string;
+  tokens_input: number;
+  tokens_output: number;
+  duration_ms: number;
+  status: 'success' | 'error';
+  prompt?: {
+    prompt?: string;
+    type?: string;
+    prompt_name?: string;
+    messages?: { role: string; content: string }[];
+    tools?: string[];
+  };
+  tokens_used?: number; // compat
+  xml_content?: string; // compat
 }
 
 export interface PromptListResponse {
@@ -72,18 +86,24 @@ export interface PromptListResponse {
   total: number;
   page: number;
   page_size: number;
+  total_pages: number;
 }
 
-// Token types
 export interface TokenSummary {
-  user_email: string;
-  total_tokens: number;
-  avg_tokens_per_message: number;
+  _id: string;
+  user_email?: string;
+  total_input: number;
+  total_output: number;
+  message_count: number;
+  last_activity: string;
+  model: string;
+  cost_usd?: number;
 }
 
 export interface TokenTimeseries {
-  timestamp: string;
-  tokens: number;
+  date: string;
+  tokens_input: number;
+  tokens_output: number;
 }
 
 export interface TokenSummaryResponse {
@@ -96,7 +116,6 @@ export interface TokenTimeseriesResponse {
   data_points: number;
 }
 
-// Auth types
 export interface LoginResponse {
   token: string;
 }

@@ -11,7 +11,7 @@ The admin panel has been **completely separated** from the main application:
 
 ## ⚠️ Production Safety
 
-**CRITICAL:** Admin services are **NOT** included in production deployment via Render.
+**CRITICAL:** Admin services are **NOT** included in production deployment via GCP by default.
 
 This is intentional for security:
 1. Admin code is completely isolated from client bundle
@@ -62,47 +62,35 @@ make build-prod
 podman-compose build frontend-admin backend-admin
 ```
 
-## Production Deployment
+## Production Deployment (Google Cloud Run)
 
-### For Main App (AUTOMATED via Render)
+All services are now deployed to Google Cloud Run in the `europe-southwest1` (Madrid) region.
+
+### Deployment Script
+
+To redeploy everything:
 
 ```bash
-make render-deploy-all
+./scripts/deploy-cloudrun.sh
 ```
 
-Deploys:
-- ✅ Backend to Render
-- ✅ Frontend to Render
-- ❌ Admin (NOT included intentionally)
+This script automates:
+1. Building images with Podman
+2. Pushing to Google Artifact Registry
+3. Deploying to Cloud Run with correct Env Vars
 
-### For Admin App (MANUAL setup)
+### Services
 
-Currently, admin deployment requires manual Render configuration. Here's how:
+- **Backend**: `https://aitrainer-backend-359890746855.europe-southwest1.run.app`
+- **Frontend**: `https://aitrainer-frontend-359890746855.europe-southwest1.run.app`
+- **Admin Backend**: `https://aitrainer-backend-admin-359890746855.europe-southwest1.run.app`
+- **Admin Frontend**: `https://aitrainer-frontend-admin-359890746855.europe-southwest1.run.app`
 
-#### Option 1: Deploy Admin to Separate Render Account
+#### Option 2: Deploy Admin to Separate Subdomain (Same GCP Project)
 
-1. Create separate Render account for admin
-2. Create `frontend-admin` service:
-   ```
-   Name: admin-frontend
-   Build: npm install && npm run build
-   Publish: dist/
-   Env: VITE_ADMIN_API_URL=https://admin-api.yourdomain.com
-   ```
-
-3. Create `backend-admin` service:
-   ```
-   Name: admin-backend
-   Build: pip install -r requirements.txt
-   Start: gunicorn src.main:app --worker-class uvicorn...
-   Env vars: MONGO_URI, DB_NAME, SECRET_KEY, ADMIN_SECRET_KEY, etc.
-   ```
-
-#### Option 2: Deploy Admin to Separate Subdomain (Same Render)
-
-1. In Render Dashboard, create two new services:
-   - Static site: `admin-frontend` → `frontend/admin/dist`
-   - Web service: `admin-backend` → `backend-admin/src.main:app`
+1. Create two new services in Cloud Run:
+   - `admin-frontend`
+   - `admin-backend`
 
 2. Set environment:
    ```
@@ -257,16 +245,16 @@ make admin-promote EMAIL=user@example.com
 
 ✅ Updated container config:
   - docker-compose.yml: added admin services
-  - render.yaml: documented production safety
-  - render-deploy.sh: excluded admin from prod
+  - GCP_DEPLOYMENT_GUIDE.md: documented production on GCP
+  - deploy-cloudrun.sh: added admin deployment logic
   - Makefile: new admin-specific commands
 ```
 
 ## Questions or Issues?
 
 Check:
-1. `/ADMIN_DEPLOYMENT.md` (this file)
-2. `/render.yaml` (deployment config)
-3. `/docker-compose.yml` (local development)
+  1. `/ADMIN_DEPLOYMENT.md` (this file)
+  2. `/GCP_DEPLOYMENT_GUIDE.md` (deployment guide)
+  3. `/docker-compose.yml` (local development)
 4. `frontend/admin/README.md` (if created)
 5. `backend-admin/README.md` (if created)

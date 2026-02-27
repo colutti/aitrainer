@@ -1,4 +1,16 @@
-.PHONY: up down build restart logs init-db api front front-admin api-admin admin clean-pod db db-down db-logs debug-rebuild debug-rebuild-admin test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov e2e e2e-ui e2e-report ci-test ci-fast
+# GCP Configuration
+GCP_PROJECT_ID=fityq-488619
+GCP_REGION=europe-southwest1
+GCP_REPO=aitrainer
+GCP_REGISTRY=$(GCP_REGION)-docker.pkg.dev/$(GCP_PROJECT_ID)/$(GCP_REPO)
+
+# Helper to load environment variables from .env.prod for Cloud Run
+# 1. Filters comments
+# 2. Removes quotes (needed for --set-env-vars)
+# 3. Joins with commas
+GCP_ENV_VARS=$(shell grep -v '^\#' backend/.env.prod | sed 's/"//g' | paste -sd "," -)
+
+.PHONY: up down build restart logs init-db api front front-admin api-admin admin clean-pod db db-down db-logs debug-rebuild debug-rebuild-admin test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov e2e e2e-ui e2e-report ci-test ci-fast gcp-full gcp-build gcp-push gcp-deploy gcp-list
 
 up:
 	podman-compose up -d
@@ -174,63 +186,58 @@ ci-fast: test-backend test-frontend
 ci-test: test-backend test-frontend e2e
 	@echo "✅ CI Full Test Suite Passed!"
 
-# ⚠️  ADMIN DEPLOYMENT WARNING ⚠️
-# Admin services are NOT included in production deployment.
-# Use 'make front-admin' and 'make api-admin' for local development only.
-# For production admin deployment:
-#   1. Create separate Render services manually via dashboard
-#   2. Set up separate authentication (X-Admin-Key)
-#   3. Use different DNS/subdomain to isolate from main app
+# -----------------------------------------------------------------------------
+# GCP Production Deployment (Google Cloud Run)
+# -----------------------------------------------------------------------------
 
-# Render Deployment Commands
+gcp-full: gcp-build gcp-push gcp-deploy
+	@echo "🚀 Full GCP Deployment Complete!"
 
-.PHONY: render-deploy render-deploy-backend render-deploy-frontend render-deploy-all render-logs render-list render-status
+gcp-build:
+	@echo "📦 Building production images..."
+	podman build -t $(GCP_REGISTRY)/backend:latest ./backend
+	podman build -t $(GCP_REGISTRY)/frontend:latest ./frontend
+	podman build -t $(GCP_REGISTRY)/backend-admin:latest ./backend-admin
+	podman build -t $(GCP_REGISTRY)/frontend-admin:latest -f ./frontend/admin/Dockerfile ./frontend
 
-## Deploy backend (com espera até conclusão)
-render-deploy-backend:
-	@./scripts/render-deploy.sh backend
+gcp-push:
+	@echo "⬆️  Pushing images to Artifact Registry..."
+	podman push $(GCP_REGISTRY)/backend:latest
+	podman push $(GCP_REGISTRY)/frontend:latest
+	podman push $(GCP_REGISTRY)/backend-admin:latest
+	podman push $(GCP_REGISTRY)/frontend-admin:latest
 
-## Deploy frontend (com espera até conclusão)
-render-deploy-frontend:
-	@./scripts/render-deploy.sh frontend
+gcp-deploy:
+	@echo "🚀 Deploying to Cloud Run in $(GCP_REGION)..."
+	# 1. Backend
+	gcloud run deploy aitrainer-backend \
+		--image $(GCP_REGISTRY)/backend:latest \
+		--region $(GCP_REGION) --platform managed --allow-unauthenticated --port 8000 \
+		--set-env-vars "$(GCP_ENV_VARS)"
+	
+	# 2. Frontend (using Backend URL)
+	@BACKEND_URL=$$(gcloud run services describe aitrainer-backend --region $(GCP_REGION) --format 'value(status.url)'); \
+	echo "🔗 Mapping Frontend to Backend at $$BACKEND_URL"; \
+	gcloud run deploy aitrainer-frontend \
+		--image $(GCP_REGISTRY)/frontend:latest \
+		--region $(GCP_REGION) --platform managed --allow-unauthenticated --port 80 \
+		--set-env-vars "BACKEND_URL=$$BACKEND_URL"
+	
+	# 3. Admin Backend
+	gcloud run deploy aitrainer-backend-admin \
+		--image $(GCP_REGISTRY)/backend-admin:latest \
+		--region $(GCP_REGION) --platform managed --allow-unauthenticated --port 8000 \
+		--set-env-vars "$(GCP_ENV_VARS)"
+	
+	# 4. Admin Frontend (using Admin Backend URL)
+	@ADMIN_BACKEND_URL=$$(gcloud run services describe aitrainer-backend-admin --region $(GCP_REGION) --format 'value(status.url)'); \
+	echo "🔗 Mapping Admin Frontend to Admin Backend at $$ADMIN_BACKEND_URL"; \
+	gcloud run deploy aitrainer-frontend-admin \
+		--image $(GCP_REGISTRY)/frontend-admin:latest \
+		--region $(GCP_REGION) --platform managed --allow-unauthenticated --port 80 \
+		--set-env-vars "ADMIN_BACKEND_URL=$$ADMIN_BACKEND_URL"
 
-## Deploy ambos backend e frontend (com espera até conclusão)
-render-deploy-all: render-deploy-backend render-deploy-frontend
+gcp-list:
+	@echo "🔍 Cloud Run Services:"
+	@gcloud run services list --region $(GCP_REGION)
 
-## Deploy com limpeza de cache (rebuild completo)
-render-deploy-clean:
-	@./scripts/render-deploy.sh all --clear-cache
-
-## Alias: render-deploy = render-deploy-all
-render-deploy:
-	@$(MAKE) render-deploy-all
-
-## List all Render services
-render-list:
-	@echo "🔍 Listando serviços no Render..."
-	@render services list --output json | jq -r '.[] | "\(.service.name) - \(.service.id) - \(.service.type)"'
-
-## Stream logs backend em tempo real
-render-logs-backend:
-	@./scripts/render-deploy.sh stream-logs-backend
-
-## Stream logs frontend em tempo real
-render-logs-frontend:
-	@./scripts/render-deploy.sh stream-logs-frontend
-
-## Alias: stream logs de ambos os serviços
-render-logs:
-	@echo "🔀 Para logs de um serviço específico, use:"
-	@echo "  make render-logs-backend    # Backend em tempo real"
-	@echo "  make render-logs-frontend   # Frontend em tempo real"
-
-## View deployment status
-render-status:
-	@render deploys list
-
-## Ver últimos logs (não streaming)
-render-logs-recent-backend:
-	@render logs --resources srv-d5f2utqli9vc73dak390 --limit 50 --output text
-
-render-logs-recent-frontend:
-	@render logs --resources srv-d5f3e8u3jp1c73bkjbf0 --limit 50 --output text

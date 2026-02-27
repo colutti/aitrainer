@@ -4,8 +4,7 @@
  */
 
 export const API_BASE_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) ??
-  (import.meta.env.PROD ? 'https://aitrainer-backend.onrender.com' : '/api');
+  (import.meta.env.VITE_API_URL as string | undefined) ?? '/api';
 const AUTH_TOKEN_KEY = 'auth_token';
 
 interface RequestConfig extends RequestInit {

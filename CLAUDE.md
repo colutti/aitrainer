@@ -107,15 +107,10 @@ make invite-list                                          # List invites
 make admin-promote EMAIL=user@example.com                 # Promote to admin
 ```
 
-### Render Deployment
+### GCP Deployment
 
 ```bash
-make render-deploy                # Deploy backend + frontend
-make render-deploy-backend        # Deploy backend only
-make render-deploy-frontend       # Deploy frontend only
-make render-deploy-clean          # Deploy with cache clear
-make render-logs-backend          # Stream backend logs
-make render-logs-frontend         # Stream frontend logs
+./scripts/deploy-cloudrun.sh       # Deploy all services to Cloud Run
 ```
 
 ## Architecture & Patterns
