@@ -198,7 +198,8 @@ gcp-build:
 	podman build -t $(GCP_REGISTRY)/backend:latest ./backend
 	podman build -t $(GCP_REGISTRY)/frontend:latest ./frontend
 	podman build -t $(GCP_REGISTRY)/backend-admin:latest ./backend-admin
-	podman build -t $(GCP_REGISTRY)/frontend-admin:latest -f ./frontend/admin/Dockerfile ./frontend
+	@ADMIN_KEY=$$(grep '^ADMIN_SECRET_KEY=' backend/.env.prod | cut -d'=' -f2) && \
+	podman build --build-arg VITE_ADMIN_SECRET_KEY=$$ADMIN_KEY -t $(GCP_REGISTRY)/frontend-admin:latest -f ./frontend/admin/Dockerfile ./frontend
 
 gcp-push:
 	@echo "⬆️  Pushing images to Artifact Registry..."
