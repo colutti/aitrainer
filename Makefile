@@ -10,7 +10,7 @@ GCP_REGISTRY=$(GCP_REGION)-docker.pkg.dev/$(GCP_PROJECT_ID)/$(GCP_REPO)
 # 3. Joins with commas
 GCP_ENV_VARS=$(shell grep -v '^\#' backend/.env.prod | grep -v '^$$' | sed 's/"//g' | paste -sd "," -)
 
-.PHONY: up down build restart logs init-db api front front-admin api-admin admin clean-pod db db-down db-logs debug-rebuild debug-rebuild-admin test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov e2e e2e-ui e2e-report ci-test ci-fast gcp-full gcp-build gcp-push gcp-deploy gcp-list gcp-setup-telegram
+.PHONY: up down build restart logs init-db api front front-admin api-admin admin clean-pod db db-down db-logs debug-rebuild debug-rebuild-admin test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov e2e e2e-ui e2e-report ci-test ci-fast gcp-full gcp-build gcp-push gcp-deploy gcp-list gcp-setup-telegram gcp-hosting
 
 up:
 	podman-compose up -d
@@ -239,6 +239,8 @@ gcp-deploy:
 		--set-env-vars "ADMIN_BACKEND_URL=$$ADMIN_BACKEND_URL"
 
 	@$(MAKE) gcp-setup-telegram
+	@$(MAKE) gcp-hosting
+
 
 gcp-setup-telegram:
 	@echo "🤖 Verificando configuração do Telegram..."
@@ -253,6 +255,11 @@ gcp-setup-telegram:
 	else \
 		echo "⚠️ Telegram não configurado em .env.prod. Pulando..."; \
 	fi
+
+gcp-hosting:
+	@echo "🌐 Atualizando Firebase Hosting (Custom Domain Proxy)..."
+	@npx -y firebase-tools deploy --only hosting --project $(GCP_PROJECT_ID) || echo "⚠️  Falha no deploy do Firebase (pode exigir login manual: firebase login)"
+
 
 gcp-list:
 	@echo "🔍 Cloud Run Services:"
