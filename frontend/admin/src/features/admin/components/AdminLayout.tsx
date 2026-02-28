@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, FileText, AlignLeft, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, Users, AlignLeft, BarChart3 } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 
 import { cn } from '../../../../../src/shared/utils/cn';
