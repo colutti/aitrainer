@@ -11,6 +11,10 @@ export default defineConfig({
     alias: {
       '@shared': path.resolve(__dirname, '../src/shared'),
       '@features': path.resolve(__dirname, './src/features'),
+      'react': path.resolve(__dirname, './node_modules/react'),
+      'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
+      'react-i18next': path.resolve(__dirname, './node_modules/react-i18next'),
+      'i18next': path.resolve(__dirname, './node_modules/i18next'),
     },
     dedupe: ['react', 'react-dom'],
   },
