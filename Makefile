@@ -8,7 +8,7 @@ GCP_REGISTRY=$(GCP_REGION)-docker.pkg.dev/$(GCP_PROJECT_ID)/$(GCP_REPO)
 # 1. Filters comments
 # 2. Removes quotes (needed for --set-env-vars)
 # 3. Joins with commas
-GCP_ENV_VARS=$(shell grep -v '^\#' backend/.env.prod | sed 's/"//g' | paste -sd "," -)
+GCP_ENV_VARS=$(shell grep -v '^\#' backend/.env.prod | grep -v '^$$' | sed 's/"//g' | paste -sd "," -)
 
 .PHONY: up down build restart logs init-db api front front-admin api-admin admin clean-pod db db-down db-logs debug-rebuild debug-rebuild-admin test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov e2e e2e-ui e2e-report ci-test ci-fast gcp-full gcp-build gcp-push gcp-deploy gcp-list gcp-setup-telegram
 
