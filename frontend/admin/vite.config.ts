@@ -12,6 +12,7 @@ export default defineConfig({
       '@shared': path.resolve(__dirname, '../src/shared'),
       '@features': path.resolve(__dirname, './src/features'),
     },
+    dedupe: ['react', 'react-dom'],
   },
   server: {
     port: 3001,

@@ -46,7 +46,7 @@ class Settings(BaseSettings):
         return init_settings, dotenv_settings, env_settings, file_secret_settings
 
     # ====== API CONFIGURATION ======
-    SECRET_KEY: str = Field(default="dummy_secret_key")
+    SECRET_KEY: str = Field(default="")
     API_SERVER_PORT: int = 8000
 
     MAX_SHORT_TERM_MEMORY_MESSAGES: int = 20
@@ -121,7 +121,7 @@ class Settings(BaseSettings):
     QDRANT_HOST: str = Field(default="localhost")
     QDRANT_PORT: int = Field(default=6333)
     QDRANT_COLLECTION_NAME: str = Field(default="aitrainer_memories")
-    QDRANT_API_KEY: str = Field(default="local_dummy_key")
+    QDRANT_API_KEY: str = Field(default="")
 
     # ====== MEM0 MEMORY OPTIMIZATION ======
     MEM0_CRITICAL_LIMIT: int = 4
@@ -196,7 +196,7 @@ class Settings(BaseSettings):
             "collection_name": self.QDRANT_COLLECTION_NAME,
             "embedding_model_dims": embedding_dims,
             "api_key": self.QDRANT_API_KEY
-            if self.QDRANT_API_KEY != "local_dummy_key"
+            if self.QDRANT_API_KEY
             else None,
         }
 

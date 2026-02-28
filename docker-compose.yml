@@ -11,7 +11,7 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      - MONGO_URI=mongodb://aitrainer:aitrainerpass@mongo:27017/aitrainerdb?authSource=admin
+      - MONGO_URI=${MONGO_URI:-mongodb://aitrainer:aitrainerpass@mongo:27017/aitrainerdb?authSource=admin}
       - DB_NAME=aitrainerdb
       - QDRANT_HOST=qdrant
       - RUNNING_IN_CONTAINER=true
@@ -81,8 +81,8 @@ services:
     environment:
       ME_CONFIG_MONGODB_URL: mongodb://${MONGO_INITDB_ROOT_USERNAME:-aitrainer}:${MONGO_INITDB_ROOT_PASSWORD:-aitrainerpass}@mongo:27017/
       ME_CONFIG_BASICAUTH_ENABLED: "true"
-      ME_CONFIG_BASICAUTH_USERNAME: mongoexpressuser
-      ME_CONFIG_BASICAUTH_PASSWORD: mongoexpresspass
+      ME_CONFIG_BASICAUTH_USERNAME: ${ME_CONFIG_BASICAUTH_USERNAME:-mongoexpressuser}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${ME_CONFIG_BASICAUTH_PASSWORD:-mongoexpresspass}
     depends_on:
       - mongo
     networks:

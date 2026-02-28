@@ -22,8 +22,14 @@ load_dotenv()
 app = FastAPI(title="Admin API", version="0.1.0")
 
 # Configuration
-SECRET_KEY = os.getenv("SECRET_KEY", "admin-secret-key-default-change-me")
-ADMIN_SECRET_KEY = os.getenv("ADMIN_SECRET_KEY", "super-secret-admin-key-123456789")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable is not set")
+
+ADMIN_SECRET_KEY = os.getenv("ADMIN_SECRET_KEY")
+if not ADMIN_SECRET_KEY:
+    raise ValueError("ADMIN_SECRET_KEY environment variable is not set")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours for admin
 
@@ -77,15 +83,19 @@ def startup_event():
 
         # Create default admin if none exists
         if db.admin_users.count_documents({}) == 0:
-            default_email = "rafacolucci@gmail.com"
-            default_password = "Let7hu118"
+            default_email = os.getenv("INITIAL_ADMIN_EMAIL", "rafacolucci@gmail.com")
+            default_password = os.getenv("INITIAL_ADMIN_PASSWORD")
+
+            if not default_password:
+                print("⚠️  INITIAL_ADMIN_PASSWORD not set. Skipping default admin creation.")
+                return
 
             hashed_pw = get_password_hash(default_password)
             db.admin_users.insert_one({
                 "email": default_email,
                 "password_hash": hashed_pw,
                 "role": "admin",
-                "name": "Rafael Colucci",
+                "name": os.getenv("INITIAL_ADMIN_NAME", "System Admin"),
                 "created_at": datetime.now(timezone.utc)
             })
             print(f"👤 Created default admin: {default_email}")
