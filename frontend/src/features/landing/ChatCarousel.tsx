@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface ChatMessage {
   role: 'user' | 'trainer';
@@ -20,79 +21,6 @@ interface Conversation {
   trainer: TrainerInfo;
   messages: ChatMessage[];
 }
-
-const SOFIA: TrainerInfo = {
-  id: 'sofia',
-  name: 'Dra. Sofia Pulse',
-  avatar: '/assets/avatars/sofia.png',
-  shortDescription: 'Saúde inteligente para mulheres modernas.',
-  specialties: ['#saúdefeminina', '#hormônios', '#metabolismo'],
-  catchphrase: 'Vamos hackear seu metabolismo com ciência e carinho.',
-  accentColor: 'from-indigo-600 to-cyan-500',
-};
-
-const GYMBRO: TrainerInfo = {
-  id: 'gymbro',
-  name: "Breno 'The Bro' Silva",
-  avatar: '/assets/avatars/gymbro.png',
-  shortDescription: 'Seu parceiro de treino que sempre te bota pra cima!',
-  specialties: ['#parceria', '#motivação', '#lifestyle'],
-  catchphrase: 'Bora, monstro! Hoje é dia de EVOLUIR! 🔥',
-  accentColor: 'from-cyan-500 to-indigo-600',
-};
-
-const CONVERSATIONS: Conversation[] = [
-  {
-    trainer: SOFIA,
-    messages: [
-      {
-        role: 'user',
-        text: 'Tô na dieta faz 3 semanas, mas o peso não sai do lugar. O que tá errado?',
-        delay: 800,
-      },
-      {
-        role: 'trainer',
-        text: 'Olhei seus registros aqui. Nos últimos 7 dias você comeu em média 1.640 kcal — mas sua meta atual é 1.580. Não é isso. O problema está na quinta e no sábado: você compensou depois do treino e foi pra 2.100 kcal nos dois dias. Isso zerou seu déficit da semana.',
-        delay: 6000,
-      },
-      {
-        role: 'user',
-        text: 'Nossa, não tinha percebido isso. Por que eu fico com tanta fome nesses dias?',
-        delay: 11000,
-      },
-      {
-        role: 'trainer',
-        text: 'Seu treino de quinta queima bastante — vi que você faz HIIT. Proteína nesse dia ficou em 89g, mas você precisaria de pelo menos 130g pra não chegar com fome no jantar. Não é falta de força de vontade. É só ajustar a distribuição das refeições nos dias de treino. Quer que eu monte isso pra você?',
-        delay: 16000,
-      },
-    ],
-  },
-  {
-    trainer: GYMBRO,
-    messages: [
-      {
-        role: 'user',
-        text: 'Nunca malhei antes. Quero começar do zero e ganhar músculo. Mas não sei por onde começo.',
-        delay: 800,
-      },
-      {
-        role: 'trainer',
-        text: 'Irmão, melhor hora pra começar é AGORA! 🔥 Primeira coisa: relaxa, você tá no lugar certo. Não é complicado. Preciso entender seu ponto de partida. Me fala: qual sua altura? Quanto você pesa? E no momento, você consegue treinar 3x por semana ou fica difícil?',
-        delay: 6500,
-      },
-      {
-        role: 'user',
-        text: 'Tenho 1,78m, peso 82kg. Consigo treinar 3x por semana fácil, mas minha alimentação é bem bagunçada',
-        delay: 12000,
-      },
-      {
-        role: 'trainer',
-        text: 'ISSO! 3x/semana é PERFEITO pro começo! Com seus dados aqui na plataforma — sua rotina, sono, alimentação real — meu sistema vai entender tudo. Não vou chutar números aleatório. Vou ver que você dorme quanto, que treina quando, aí sim construo um plano que funciona PRO SEU CONTEXTO. Nutrição bagunçada? A gente organiza junto, dia a dia. Vamo começar a registrar seus dados e EVOLUIR de verdade, mano! 💪',
-        delay: 18000,
-      },
-    ],
-  },
-];
 
 const TypingIndicator = () => (
   <div className="flex gap-1.5 items-center py-2">
@@ -155,20 +83,84 @@ const CarouselIndicator = ({
   </div>
 );
 
-const getConversation = (index: number): Conversation => {
-  const convo = CONVERSATIONS[index];
-  if (convo) return convo;
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  return CONVERSATIONS[0]!;
-};
-
 export const ChatCarousel = () => {
+  const { t } = useTranslation();
   const [currentConvo, setCurrentConvo] = useState(0);
   const [visibleIndices, setVisibleIndices] = useState<Set<number>>(
     new Set()
   );
 
-  const conversation = getConversation(currentConvo);
+  const CONVERSATIONS: Conversation[] = useMemo(() => [
+    {
+      trainer: {
+        id: 'sofia',
+        name: 'Dra. Sofia Pulse',
+        avatar: '/assets/avatars/sofia.png',
+        shortDescription: t('landing.trainers.profiles.sofia.tagline'),
+        specialties: t('landing.trainers.profiles.sofia.specialties', { returnObjects: true }) as string[],
+        catchphrase: t('landing.trainers.profiles.sofia.catchphrase'),
+        accentColor: 'from-indigo-600 to-cyan-500',
+      },
+      messages: [
+        {
+          role: 'user',
+          text: t('landing.conversations.sofia.user_1'),
+          delay: 800,
+        },
+        {
+          role: 'trainer',
+          text: t('landing.conversations.sofia.trainer_1'),
+          delay: 6000,
+        },
+        {
+          role: 'user',
+          text: t('landing.conversations.sofia.user_2'),
+          delay: 11000,
+        },
+        {
+          role: 'trainer',
+          text: t('landing.conversations.sofia.trainer_2'),
+          delay: 16000,
+        },
+      ],
+    },
+    {
+      trainer: {
+        id: 'gymbro',
+        name: "Breno 'The Bro' Silva",
+        avatar: '/assets/avatars/gymbro.png',
+        shortDescription: t('landing.trainers.profiles.gymbro.tagline'),
+        specialties: t('landing.trainers.profiles.gymbro.specialties', { returnObjects: true }) as string[],
+        catchphrase: t('landing.trainers.profiles.gymbro.catchphrase'),
+        accentColor: 'from-cyan-500 to-indigo-600',
+      },
+      messages: [
+        {
+          role: 'user',
+          text: t('landing.conversations.gymbro.user_1'),
+          delay: 800,
+        },
+        {
+          role: 'trainer',
+          text: t('landing.conversations.gymbro.trainer_1'),
+          delay: 6500,
+        },
+        {
+          role: 'user',
+          text: t('landing.conversations.gymbro.user_2'),
+          delay: 12000,
+        },
+        {
+          role: 'trainer',
+          text: t('landing.conversations.gymbro.trainer_2'),
+          delay: 18000,
+        },
+      ],
+    },
+  ], [t]);
+
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const conversation = (CONVERSATIONS[currentConvo] ?? CONVERSATIONS[0])!;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -196,7 +188,7 @@ export const ChatCarousel = () => {
       });
       clearTimeout(rotateTimeout);
     };
-  }, [conversation]);
+  }, [conversation, CONVERSATIONS.length]);
 
   return (
     <section className="relative py-20 px-6 overflow-hidden">
@@ -214,10 +206,10 @@ export const ChatCarousel = () => {
             <span className="text-white font-bold text-lg">FityQ</span>
           </div>
           <h2 className="font-display text-4xl md:text-5xl font-bold text-white">
-            Converse com Seu Treinador Agora
+            {t('landing.chat_carousel.title')}
           </h2>
           <p className="text-lg text-zinc-400">
-            Cada treinador tem personalidade, expertise e um jeito único de te guiar.
+            {t('landing.chat_carousel.subtitle')}
           </p>
         </div>
 
@@ -281,10 +273,11 @@ export const ChatCarousel = () => {
         {/* CTA hint */}
         <div className="text-center mt-12">
           <p className="text-sm text-zinc-500">
-            Cada conversa mostra a IA se adaptando ao seu contexto. Seus dados alimentam inteligência cada vez melhor.
+            {t('landing.chat_carousel.cta_hint')}
           </p>
         </div>
       </div>
     </section>
   );
 };
+

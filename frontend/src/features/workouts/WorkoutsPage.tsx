@@ -1,5 +1,6 @@
 import { Dumbbell, Plus, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '../../shared/components/ui/Button';
 import { DataList } from '../../shared/components/ui/DataList';
@@ -26,6 +27,7 @@ export function WorkoutsPage() {
   
   const { confirm } = useConfirmation();
   const notify = useNotificationStore();
+  const { t } = useTranslation();
   
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -35,24 +37,24 @@ export function WorkoutsPage() {
 
   const handleDelete = async (id: string) => {
     const isConfirmed = await confirm({
-      title: 'Excluir Treino',
-      message: 'Tem certeza que deseja excluir este registro de treino? Esta ação não pode ser desfeita.',
-      confirmText: 'Excluir',
+      title: t('workouts.delete_confirm_title'),
+      message: t('workouts.delete_confirm_message'),
+      confirmText: t('workouts.delete_confirm_btn'),
       type: 'danger',
     });
 
     if (isConfirmed) {
       try {
         await deleteWorkout(id);
-        notify.success('Treino excluído com sucesso!');
+        notify.success(t('workouts.delete_success'));
       } catch {
-        notify.error('Erro ao excluir treino.');
+        notify.error(t('workouts.delete_error'));
       }
     }
   };
 
   const filteredWorkouts = workouts.filter((w) => 
-    (w.workout_type ?? 'Treino Geral').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (w.workout_type ?? t('workouts.general_training')).toLowerCase().includes(searchTerm.toLowerCase()) ||
     w.exercises.some(ex => ex.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
@@ -63,15 +65,15 @@ export function WorkoutsPage() {
         <div>
           <h1 className="text-3xl font-bold text-text-primary flex items-center gap-3">
             <Dumbbell className="text-gradient-start" size={32} />
-            Meus Treinos
+            {t('workouts.title')}
           </h1>
           <p className="text-text-secondary mt-1">
-            Acompanhe sua evolução e mantenha a consistência.
+            {t('workouts.subtitle')}
           </p>
         </div>
         <Button variant="primary" size="lg" className="shadow-orange gap-2 hidden">
           <Plus size={20} />
-          Novo Treino
+          {t('workouts.new_workout')}
         </Button>
       </div>
 
@@ -92,13 +94,13 @@ export function WorkoutsPage() {
         layout="list"
         emptyState={{
           icon: <Dumbbell size={32} />,
-          title: "Nenhum treino encontrado",
+          title: t('workouts.empty_title'),
           description: searchTerm 
-            ? 'Não encontramos resultados para sua busca.' 
-            : 'Você ainda não registrou nenhum treino. Vamos começar hoje?',
+            ? t('workouts.empty_search_desc')
+            : t('workouts.empty_desc'),
           action: !searchTerm ? (
             <Button variant="primary">
-              Registrar Primeiro Treino
+              {t('workouts.register_first')}
             </Button>
           ) : undefined
         }}
@@ -111,7 +113,7 @@ export function WorkoutsPage() {
            <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="relative flex-1">
               <Input
-                placeholder="Buscar por tipo ou exercício..."
+                placeholder={t('workouts.search_placeholder')}
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);

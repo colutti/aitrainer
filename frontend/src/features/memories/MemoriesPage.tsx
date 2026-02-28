@@ -9,6 +9,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '../../shared/components/ui/Button';
 import { useConfirmation } from '../../shared/hooks/useConfirmation';
@@ -37,6 +38,7 @@ export function MemoriesPage() {
 
   const { confirm } = useConfirmation();
   const notify = useNotificationStore();
+  const { t, i18n } = useTranslation();
 
   useEffect(() => {
     void fetchMemories();
@@ -44,18 +46,18 @@ export function MemoriesPage() {
 
   const handleDelete = async (memoryId: string) => {
     const isConfirmed = await confirm({
-      title: 'Excluir Memória',
-      message: 'Esta informação será removida permanentemente do conhecimento do seu treinador. Deseja continuar?',
-      confirmText: 'Excluir',
+      title: t('memories.delete_confirm_title'),
+      message: t('memories.delete_confirm_message'),
+      confirmText: t('memories.delete_confirm_btn'),
       type: 'danger'
     });
 
     if (isConfirmed) {
       try {
         await deleteMemory(memoryId);
-        notify.success('Memória removida com sucesso!');
+        notify.success(t('memories.delete_success'));
       } catch {
-        notify.error('Erro ao remover memória.');
+        notify.error(t('memories.delete_error'));
       }
     }
   };
@@ -67,14 +69,14 @@ export function MemoriesPage() {
         <div>
           <h1 className="text-3xl font-bold text-text-primary flex items-center gap-3">
             <Brain className="text-gradient-start" size={32} />
-            Memórias do Treinador
+            {t('memories.title')}
           </h1>
-          <p className="text-text-secondary mt-1">Conhecimentos que seu treinador acumulou sobre você.</p>
+          <p className="text-text-secondary mt-1">{t('memories.subtitle')}</p>
         </div>
         
         <div className="bg-dark-card border border-border rounded-2xl px-6 py-3 flex items-center gap-4 shadow-sm">
           <div className="text-center md:text-left">
-            <p className="text-[10px] uppercase font-bold text-text-muted tracking-widest">Total de Insights</p>
+            <p className="text-[10px] uppercase font-bold text-text-muted tracking-widest">{t('memories.total_insights')}</p>
             <p className="text-2xl font-bold text-gradient-start">{totalMemories}</p>
           </div>
           <div className="w-px h-8 bg-border" />
@@ -86,10 +88,9 @@ export function MemoriesPage() {
       <div className="bg-gradient-start/5 border border-gradient-start/20 rounded-2xl p-6 flex items-start gap-4">
         <Database className="text-gradient-start mt-1 flex-shrink-0" size={24} />
         <div className="space-y-2">
-          <h3 className="font-bold text-text-primary">O que são memórias?</h3>
+          <h3 className="font-bold text-text-primary">{t('memories.what_are_memories')}</h3>
           <p className="text-sm text-text-secondary leading-relaxed">
-            Seu treinador utiliza estas informações para personalizar sugestões de treino, ajustar seus macros e entender seus objetivos. 
-            Elas são extraídas automaticamente das suas conversas e logs.
+            {t('memories.description')}
           </p>
         </div>
       </div>
@@ -103,7 +104,7 @@ export function MemoriesPage() {
         ) : memories.length === 0 ? (
           <div className="py-20 flex flex-col items-center justify-center opacity-40">
             <Search size={64} className="mb-4 text-text-muted" />
-            <p className="text-sm">Nenhuma memória encontrada.</p>
+            <p className="text-sm">{t('memories.empty_title')}</p>
           </div>
         ) : (
           memories.map((m) => (
@@ -123,9 +124,9 @@ export function MemoriesPage() {
                   <div className="flex items-center gap-4 text-[10px] text-text-muted font-bold uppercase tracking-wider">
                     <span className="flex items-center gap-1">
                       <Calendar size={12} />
-                      {m.created_at ? new Date(m.created_at).toLocaleDateString() : 'N/A'}
+                      {m.created_at ? new Date(m.created_at).toLocaleDateString(i18n.language) : 'N/A'}
                     </span>
-                    <span className="px-2 py-0.5 bg-dark-bg rounded-md border border-border/50">Memória AI</span>
+                    <span className="px-2 py-0.5 bg-dark-bg rounded-md border border-border/50">{t('memories.ai_memory')}</span>
                   </div>
                 </div>
 
@@ -159,7 +160,7 @@ export function MemoriesPage() {
             className="gap-2"
           >
             <ChevronLeft size={20} />
-            Anterior
+            {t('memories.previous')}
           </Button>
           
           <div className="flex gap-1">
@@ -189,7 +190,7 @@ export function MemoriesPage() {
             disabled={currentPage === totalPages || isLoading}
             className="gap-2"
           >
-            Próximo
+            {t('memories.next')}
             <ChevronRight size={20} />
           </Button>
         </div>
@@ -198,7 +199,7 @@ export function MemoriesPage() {
       {/* Limitations Warning */}
       <div className="flex items-center gap-2 p-4 bg-orange-500/5 text-orange-500/70 text-[10px] font-bold uppercase tracking-widest border border-orange-500/10 rounded-2xl justify-center">
         <AlertCircle size={14} />
-        As memórias são processadas de forma assíncrona e podem levar alguns minutos para aparecer após uma conversa.
+        {t('memories.processing_warning')}
       </div>
     </div>
   );

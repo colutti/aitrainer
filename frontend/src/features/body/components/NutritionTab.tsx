@@ -8,6 +8,7 @@ import {
   X
 } from 'lucide-react';
 import { Controller } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '../../../shared/components/ui/Button';
 import { DataList } from '../../../shared/components/ui/DataList';
@@ -35,6 +36,7 @@ export function NutritionTab() {
     editingId,
     changePage
   } = useNutritionTab();
+  const { t } = useTranslation();
 
   if (isLoading && logs.length === 0) {
     return (
@@ -56,7 +58,7 @@ export function NutritionTab() {
               <Flame className="text-orange-500" size={24} />
             )}
             <h2 className="text-xl font-bold text-text-primary">
-              {isEditing ? 'Editando Registro' : 'Registrar Dieta'}
+              {isEditing ? t('body.nutrition.edit_title') : t('body.nutrition.register_title')}
             </h2>
           </div>
           {isEditing && (
@@ -66,7 +68,7 @@ export function NutritionTab() {
               className="flex items-center gap-1 text-sm text-text-secondary hover:text-red-400 transition-colors"
             >
               <X size={16} />
-              Cancelar
+              {t('body.nutrition.cancel')}
             </button>
           )}
         </div>
@@ -78,7 +80,7 @@ export function NutritionTab() {
               control={control}
               render={({ field }) => (
                 <DateInput
-                  label="Data"
+                  label={t('body.nutrition.date')}
                   value={field.value}
                   onChange={field.onChange}
                   onBlur={field.onBlur}
@@ -88,16 +90,16 @@ export function NutritionTab() {
             />
             <Input 
               id="calories"
-              label="Calorias (kcal)" 
+              label={t('body.nutrition.calories')} 
               type="number" 
               step="0.1"
-              placeholder="Ex: 2100" 
+              placeholder={t('body.nutrition.calories_placeholder')} 
               error={errors.calories?.message}
               {...register('calories', { valueAsNumber: true })}
             />
             <Input 
               id="protein_grams"
-              label="Proteínas (g)" 
+              label={t('body.nutrition.protein')} 
               type="number" 
               step="0.1"
               error={errors.protein_grams?.message}
@@ -106,7 +108,7 @@ export function NutritionTab() {
             />
             <Input 
               id="carbs_grams"
-              label="Carboidratos (g)" 
+              label={t('body.nutrition.carbs')} 
               type="number" 
               step="0.1"
               error={errors.carbs_grams?.message}
@@ -115,7 +117,7 @@ export function NutritionTab() {
             />
             <Input 
               id="fat_grams"
-              label="Gorduras (g)" 
+              label={t('body.nutrition.fat')} 
               type="number" 
               step="0.1"
               error={errors.fat_grams?.message}
@@ -126,7 +128,7 @@ export function NutritionTab() {
 
           <div className="flex justify-end">
             <Button variant="primary" type="submit" isLoading={isSaving} className="shadow-orange w-full md:w-auto md:px-12">
-              Salvar Registro
+              {t('body.nutrition.save')}
             </Button>
           </div>
         </form>
@@ -136,7 +138,7 @@ export function NutritionTab() {
         title={
           <div className="flex items-center gap-2">
             <History className="text-gradient-start" size={24} />
-            <span>Histórico Recente</span>
+            <span>{t('body.nutrition.history_title')}</span>
           </div>
         }
         data={logs}
@@ -151,8 +153,8 @@ export function NutritionTab() {
         keyExtractor={(item: NutritionLog) => item.id}
         layout="list"
         emptyState={{
-          title: "Nenhum registro encontrado.",
-          description: "Seus registros nutricionais aparecerão aqui."
+          title: t('body.nutrition.empty_title'),
+          description: t('body.nutrition.empty_desc')
         }}
         pagination={{
           currentPage: currentPage,

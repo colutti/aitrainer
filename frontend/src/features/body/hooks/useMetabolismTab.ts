@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
 import type { MetabolismResponse } from '../../../shared/types/metabolism';
@@ -12,6 +13,7 @@ export function useMetabolismTab() {
   const [isLoading, setIsLoading] = useState(true);
   const [weeks, setWeeks] = useState(3);
   const notify = useNotificationStore();
+  const { t } = useTranslation();
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -19,11 +21,11 @@ export function useMetabolismTab() {
       const data = await bodyApi.getMetabolismSummary(weeks);
       setStats(data);
     } catch {
-      notify.error('Erro ao carregar dados metabólicos.');
+      notify.error(t('body.metabolism.notifications.load_error'));
     } finally {
       setIsLoading(false);
     }
-  }, [weeks, notify]);
+  }, [weeks, notify, t]);
 
   useEffect(() => {
     void loadData();

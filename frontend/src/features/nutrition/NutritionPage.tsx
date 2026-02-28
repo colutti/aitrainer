@@ -10,6 +10,7 @@ import {
   Wheat
 } from 'lucide-react';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '../../shared/components/ui/Button';
 import { DataList } from '../../shared/components/ui/DataList';
@@ -41,6 +42,7 @@ export function NutritionPage() {
   
   const { confirm } = useConfirmation();
   const notify = useNotificationStore();
+  const { t } = useTranslation();
 
   useEffect(() => {
     void fetchLogs();
@@ -49,18 +51,18 @@ export function NutritionPage() {
 
   const handleDelete = async (id: string) => {
     const isConfirmed = await confirm({
-      title: 'Excluir Registro',
-      message: 'Tem certeza que deseja excluir este registro nutricional? Os dados de hoje serão atualizados.',
-      confirmText: 'Excluir',
+      title: t('nutrition.delete_confirm_title'),
+      message: t('nutrition.delete_confirm_message'),
+      confirmText: t('nutrition.delete_confirm_btn'),
       type: 'danger',
     });
 
     if (isConfirmed) {
       try {
         await deleteLog(id);
-        notify.success('Registro excluído com sucesso!');
+        notify.success(t('nutrition.delete_success'));
       } catch {
-        notify.error('Erro ao excluir registro.');
+        notify.error(t('nutrition.delete_error'));
       }
     }
   };
@@ -76,20 +78,20 @@ export function NutritionPage() {
         <div>
           <h1 className="text-3xl font-bold text-text-primary flex items-center gap-3">
             <Utensils className="text-gradient-start" size={32} />
-            Nutrição
+            {t('nutrition.title')}
           </h1>
           <p className="text-text-secondary mt-1">
-            Abasteça seu corpo para o máximo desempenho.
+            {t('nutrition.subtitle')}
           </p>
         </div>
         <div className="flex gap-3">
           <Button variant="secondary" size="lg" className="gap-2">
-            <Upload size={20} />
-            Importar
+             <Upload size={20} />
+             {t('nutrition.import')}
           </Button>
           <Button variant="primary" size="lg" className="shadow-orange gap-2">
             <Plus size={20} />
-            Registrar Refeição
+            {t('nutrition.register_meal')}
           </Button>
         </div>
       </div>
@@ -98,12 +100,12 @@ export function NutritionPage() {
       <section className="space-y-4">
         <h2 className="text-xl font-bold text-text-primary flex items-center gap-2">
           <Flame className="text-orange-500" size={20} />
-          Progresso de Hoje
+          {t('nutrition.today_progress')}
         </h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MacroCard
-            label="Calorias"
+            label={t('nutrition.calories')}
             value={today?.calories ?? 0}
             unit="kcal"
             percent={((today?.calories ?? 0) / targets) * 100}
@@ -111,7 +113,7 @@ export function NutritionPage() {
             icon={<Flame size={20} />}
           />
           <MacroCard
-            label="Proteínas"
+            label={t('nutrition.proteins')}
             value={today?.protein_grams ?? 0}
             unit="g"
             percent={((today?.protein_grams ?? 0) / macroTargets.protein) * 100}
@@ -119,7 +121,7 @@ export function NutritionPage() {
             icon={<Beef size={20} />}
           />
           <MacroCard
-            label="Carboidratos"
+            label={t('nutrition.carbs')}
             value={today?.carbs_grams ?? 0}
             unit="g"
             percent={((today?.carbs_grams ?? 0) / macroTargets.carbs) * 100}
@@ -127,7 +129,7 @@ export function NutritionPage() {
             icon={<Wheat size={20} />}
           />
           <MacroCard
-            label="Gorduras"
+            label={t('nutrition.fats')}
             value={today?.fat_grams ?? 0}
             unit="g"
             percent={((today?.fat_grams ?? 0) / macroTargets.fat) * 100}
@@ -141,7 +143,7 @@ export function NutritionPage() {
         {/* History */}
         <div className="lg:col-span-2 space-y-4">
           <DataList
-            title="Histórico"
+            title={t('nutrition.history_title')}
             data={logs}
             isLoading={isLoading}
             renderItem={(log) => (
@@ -155,8 +157,8 @@ export function NutritionPage() {
             keyExtractor={(item) => item.id}
             layout="list"
             emptyState={{
-              title: "Nenhum registro encontrado.",
-              description: "Seus registros nutricionais aparecerão aqui."
+              title: t('nutrition.empty_history_title'),
+              description: t('nutrition.empty_history_desc')
             }}
             pagination={{
               currentPage: page,
@@ -165,7 +167,7 @@ export function NutritionPage() {
             }}
             actions={
               <Button variant="ghost" size="sm" className="gap-1">
-                Ver Gráficos <ChevronRight size={16} />
+                {t('nutrition.view_charts')} <ChevronRight size={16} />
               </Button>
             }
           />
@@ -175,7 +177,7 @@ export function NutritionPage() {
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <TrendingDown className="text-gradient-start" size={20} />
-            <h2 className="text-xl font-bold text-text-primary">Aderência</h2>
+            <h2 className="text-xl font-bold text-text-primary">{t('nutrition.adherence_title')}</h2>
           </div>
           
           <div className="bg-dark-card border border-border rounded-2xl p-6">
@@ -206,30 +208,33 @@ export function NutritionPage() {
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-3xl font-bold">{stats?.stability_score ?? 0}%</span>
-                  <span className="text-[10px] text-text-muted font-bold uppercase">Consistência</span>
+                  <span className="text-[10px] text-text-muted font-bold uppercase">{t('nutrition.consistency')}</span>
                 </div>
               </div>
               
               <div>
-                <h3 className="font-bold">Score de Estabilidade</h3>
+                <h3 className="font-bold">{t('nutrition.stability_score')}</h3>
                 <p className="text-sm text-text-secondary mt-1">
-                  Baseado na sua variação calórica dos últimos 14 dias. Manter estabilidade é chave para prever resultados.
+                  {t('nutrition.stability_description')}
                 </p>
               </div>
             </div>
             
             <div className="mt-8 pt-6 border-t border-border grid grid-cols-7 gap-1">
-              {stats?.weekly_adherence.map((adhered, i) => (
-                <div key={i} className="flex flex-col items-center gap-1">
-                  <div className={cn(
-                    "w-full aspect-square rounded-md",
-                    adhered ? "bg-gradient-start shadow-orange-sm" : "bg-dark-bg border border-border"
-                  )} />
-                  <span className="text-[10px] text-text-muted font-medium">
-                    {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'][i]}
-                  </span>
-                </div>
-              ))}
+              {stats?.weekly_adherence.map((adhered, i) => {
+                const weeklyDays = t('nutrition.weekly_days', { returnObjects: true }) as string[];
+                return (
+                  <div key={i} className="flex flex-col items-center gap-1">
+                    <div className={cn(
+                      "w-full aspect-square rounded-md",
+                      adhered ? "bg-gradient-start shadow-orange-sm" : "bg-dark-bg border border-border"
+                    )} />
+                    <span className="text-[10px] text-text-muted font-medium">
+                      {weeklyDays[i]}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

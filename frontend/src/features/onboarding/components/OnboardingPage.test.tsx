@@ -1,5 +1,4 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { onboardingApi } from '../api/onboarding-api';
@@ -42,19 +41,18 @@ describe('OnboardingPage', () => {
   });
 
   it('should navigate through steps and submit', async () => {
-    const user = userEvent.setup();
     vi.mocked(onboardingApi.validateToken).mockResolvedValue({ valid: true, email: 'test@example.com' });
     vi.mocked(onboardingApi.completeOnboarding).mockResolvedValue({ token: 'new-token' });
 
-    render(<OnboardingPage />);
+    const { container } = render(<OnboardingPage />);
     
     // Step 1: Password
     await screen.findByText('Criar Senha');
-    const passInput = screen.getByPlaceholderText('Senha');
-    const confirmInput = screen.getByPlaceholderText('Confirmar Senha');
+    const passInput = container.querySelector('#password')!;
+    const confirmInput = container.querySelector('#confirmPassword')!;
     
-    await user.type(passInput, 'Password123');
-    await user.type(confirmInput, 'Password123');
+    fireEvent.change(passInput, { target: { value: 'Password123' } });
+    fireEvent.change(confirmInput, { target: { value: 'Password123' } });
     
     // Check validation match (assuming button becomes enabled or exists)
     const nextBtn = screen.getByRole('button', { name: /próximo/i });
@@ -63,9 +61,9 @@ describe('OnboardingPage', () => {
     // Step 2: Profile
     expect(await screen.findByText('Seu Perfil')).toBeInTheDocument();
     // Fill profile
-    await user.type(screen.getByLabelText(/idade/i), '25');
-    await user.type(screen.getByLabelText(/peso/i), '70');
-    await user.type(screen.getByLabelText(/altura/i), '175');
+    fireEvent.change(screen.getByLabelText(/idade/i), { target: { value: '25' } });
+    fireEvent.change(screen.getByLabelText(/peso/i), { target: { value: '70' } });
+    fireEvent.change(screen.getByLabelText(/altura/i), { target: { value: '175' } });
     
     fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
 
@@ -80,8 +78,7 @@ describe('OnboardingPage', () => {
 
     await waitFor(() => {
       expect(onboardingApi.completeOnboarding).toHaveBeenCalled();
-      expect(window.location.href).toBe('http://localhost:3000/'); 
-      // Since we mock navigate, we check navigation or logic call
+      expect(window.location.pathname).toBe('/'); 
     });
   });
 });

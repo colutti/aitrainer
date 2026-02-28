@@ -150,60 +150,51 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto space-y-3 min-h-0">
-          {/* Fallback: Se não há messages, mostrar raw Markdown */}
-          {!hasMessages ? (
-            <div className="bg-black/40 rounded-lg border border-white/5 p-4">
-              <div className="prose prose-invert prose-sm max-w-none text-zinc-300 overflow-x-hidden">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {promptStr}
-                </ReactMarkdown>
-              </div>
-            </div>
-          ) : (
+          {/* Prompt / System Section */}
+          {hasXmlSections ? (
+            // Render individual XML sections with colors
             <>
-              {/* System Prompt Section with XML parsing */}
-              {hasXmlSections ? (
-                // Render individual XML sections with colors
-                <>
-                  {xmlSections.map((section) => {
-                    const colors = TAG_COLORS[section.tag] ?? {
-                      bg: 'bg-gray-500/10',
-                      text: 'text-gray-400',
-                      emoji: '⚪',
-                    };
-                    const isExpanded = expandedSections[section.tag] ?? true;
+              {xmlSections.map((section) => {
+                const colors = TAG_COLORS[section.tag] ?? {
+                  bg: 'bg-gray-500/10',
+                  text: 'text-gray-400',
+                  emoji: '⚪',
+                };
+                const isExpanded = expandedSections[section.tag] ?? true;
 
-                    return (
-                      <div key={section.tag} className={`${colors.bg} rounded-lg border border-white/5 overflow-hidden`}>
-                        <button
-                          onClick={() => { toggleSection(section.tag); }}
-                          className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
-                        >
-                          <h3 className={`font-semibold ${colors.text} text-sm`}>
-                            {colors.emoji} {section.tag.charAt(0).toUpperCase() + section.tag.slice(1)}
-                          </h3>
-                          {isExpanded ? (
-                            <ChevronUp size={16} className={colors.text} />
-                          ) : (
-                            <ChevronDown size={16} className={colors.text} />
-                          )}
-                        </button>
-                        {isExpanded && (
-                          <div className="border-t border-white/5 p-4 max-h-[300px] overflow-y-auto">
-                            <div className="prose prose-invert prose-sm max-w-none text-zinc-300">
-                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                {section.content}
-                              </ReactMarkdown>
-                            </div>
-                          </div>
-                        )}
+                return (
+                  <div key={section.tag} className={`${colors.bg} rounded-lg border border-white/5 overflow-hidden`}>
+                    <button
+                      onClick={() => { toggleSection(section.tag); }}
+                      className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+                    >
+                      <h3 className={`font-semibold ${colors.text} text-sm`}>
+                        {colors.emoji} {section.tag.charAt(0).toUpperCase() + section.tag.slice(1)}
+                      </h3>
+                      {isExpanded ? (
+                        <ChevronUp size={16} className={colors.text} />
+                      ) : (
+                        <ChevronDown size={16} className={colors.text} />
+                      )}
+                    </button>
+                    {isExpanded && (
+                      <div className="border-t border-white/5 p-4 max-h-[300px] overflow-y-auto">
+                        <div className="prose prose-invert prose-sm max-w-none text-zinc-300">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {section.content}
+                          </ReactMarkdown>
+                        </div>
                       </div>
-                    );
-                  })}
-                </>
-              ) : (
-                // Fallback: render raw prompt as markdown
-                <div className="bg-black/40 rounded-lg border border-white/5 overflow-hidden">
+                    )}
+                  </div>
+                );
+              })}
+            </>
+          ) : (
+            // Fallback: render raw prompt as markdown
+            <div className={`bg-black/40 rounded-lg border border-white/5 overflow-hidden ${!hasMessages ? 'p-4' : ''}`}>
+              {hasMessages ? (
+                <>
                   <button
                     onClick={() => { toggleSection('system'); }}
                     className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
@@ -224,12 +215,19 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
                       </div>
                     </div>
                   )}
+                </>
+              ) : (
+                <div className="prose prose-invert prose-sm max-w-none text-zinc-300 overflow-x-hidden">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {promptStr}
+                  </ReactMarkdown>
                 </div>
               )}
+            </div>
+          )}
 
-              {/* Chat History Section */}
-              { }
-              {hasMessages && (
+          {/* Chat History Section */}
+          {hasMessages && (
                 <div className="bg-black/40 rounded-lg border border-white/5 overflow-hidden">
                   <button
                     onClick={() => { toggleSection('history'); }}
@@ -308,8 +306,6 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
                   )}
                 </div>
               )}
-            </>
-          )}
         </div>
       </div>
     </div>

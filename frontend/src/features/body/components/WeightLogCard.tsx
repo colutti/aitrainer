@@ -1,4 +1,5 @@
 import { Trash2, TrendingUp, TrendingDown, Scale, Edit2, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '../../../shared/components/ui/Button';
 import { type WeightLog } from '../../../shared/types/body';
@@ -18,6 +19,7 @@ interface WeightLogCardProps {
  * Displays a weight entry with trend indicators and body composition details.
  */
 export function WeightLogCard({ log, onDelete, onEdit, onClick }: WeightLogCardProps) {
+  const { t } = useTranslation();
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onDelete) {
@@ -68,15 +70,15 @@ export function WeightLogCard({ log, onDelete, onEdit, onClick }: WeightLogCardP
           </div>
 
           {/* Body Stats Section - Precise Alignment */}
-          <div className="md:col-span-5 grid grid-cols-2 gap-0 md:border-l md:border-white/5 md:pl-6 h-10 items-center">
-               <div className="flex flex-col items-center md:items-end pr-4">
-                  <p className="text-[9px] uppercase font-black text-[#666] tracking-[0.15em] mb-1">Gordura</p>
+           <div className="md:col-span-5 grid grid-cols-2 gap-0 md:border-l md:border-white/5 md:pl-6 h-10 items-center">
+                <div className="flex flex-col items-center md:items-end pr-4">
+                   <p className="text-[9px] uppercase font-black text-[#666] tracking-[0.15em] mb-1">{t('body.weight.body_fat').split(' ')[0]}</p>
                   {log.body_fat_pct ? (
                     <p className="text-sm font-black text-white tabular-nums">{log.body_fat_pct.toFixed(1)}<span className="text-[10px] ml-0.5 opacity-50">%</span></p>
-                  ) : <span className="h-5 flex items-center"><div className="w-4 h-0.5 bg-white/5 rounded-full" /></span>}
-               </div>
-                <div className="flex flex-col items-center md:items-end border-l border-white/5 pl-4">
-                  <p className="text-[9px] uppercase font-black text-[#666] tracking-[0.15em] mb-1">Músculo</p>
+                   ) : <span className="h-5 flex items-center"><div className="w-4 h-0.5 bg-white/5 rounded-full" /></span>}
+                </div>
+                 <div className="flex flex-col items-center md:items-end border-l border-white/5 pl-4">
+                   <p className="text-[9px] uppercase font-black text-[#666] tracking-[0.15em] mb-1">{t('body.weight.muscle_mass').split(' ')[0]}</p>
                   {log.muscle_mass_kg ? (
                     <p className="text-sm font-black text-white tabular-nums">{log.muscle_mass_kg.toFixed(2)}<span className="text-[10px] ml-0.5 opacity-50">kg</span></p>
                   ) : log.muscle_mass_pct ? (
@@ -91,19 +93,19 @@ export function WeightLogCard({ log, onDelete, onEdit, onClick }: WeightLogCardP
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  onClick={(e) => { e.stopPropagation(); onEdit?.(log); }}
-                  className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all hover:bg-white/10"
-                  title="Editar registro"
-                >
+                   onClick={(e) => { e.stopPropagation(); onEdit?.(log); }}
+                   className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all hover:bg-white/10"
+                   title={t('shared.edit')}
+                 >
                   <Edit2 size={16} className="text-text-muted hover:text-white" />
                 </Button>
                 <Button 
                   variant="danger" 
                   size="icon" 
-                  onClick={handleDelete}
-                  className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all hover:scale-110 hover:shadow-red bg-red-500/10 border-red-500/20"
-                  title="Excluir registro"
-                >
+                   onClick={handleDelete}
+                   className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all hover:scale-110 hover:shadow-red bg-red-500/10 border-red-500/20"
+                   title={t('shared.delete')}
+                 >
                   <Trash2 size={16} />
                 </Button>
               </div>
@@ -123,36 +125,36 @@ export function WeightLogCard({ log, onDelete, onEdit, onClick }: WeightLogCardP
         </div>
       )}
 
-      {(log.neck_cm ?? log.chest_cm ?? log.waist_cm ?? log.hips_cm ?? log.bicep_r_cm ?? log.bicep_l_cm ?? log.thigh_r_cm ?? log.thigh_l_cm ?? log.calf_r_cm ?? log.calf_l_cm ?? log.body_water_pct ?? log.bone_mass_kg ?? log.visceral_fat ?? log.bmr) && (
-        <div className="mt-2 text-[10px] text-text-muted border-t border-white/5 pt-3 px-2 flex flex-wrap gap-x-6 gap-y-2">
-          <span className="font-black uppercase tracking-widest text-[#555] opacity-50">Detalhes:</span>
-          {log.body_water_pct && <span className="flex gap-1">Água <strong className="text-text-secondary">{log.body_water_pct}%</strong></span>}
-          {log.bone_mass_kg && <span className="flex gap-1">Óssea <strong className="text-text-secondary">{log.bone_mass_kg}kg</strong></span>}
-          {log.visceral_fat && <span className="flex gap-1">Visceral <strong className="text-text-secondary">{log.visceral_fat}</strong></span>}
-          {log.bmr && <span className="flex gap-1">TMB <strong className="text-text-secondary">{log.bmr}kcal</strong></span>}
-          
-          {log.neck_cm && <span className="flex gap-1">Pescoço <strong className="text-text-secondary">{log.neck_cm}cm</strong></span>}
-          {log.chest_cm && <span className="flex gap-1">Peito <strong className="text-text-secondary">{log.chest_cm}cm</strong></span>}
-          {log.waist_cm && <span className="flex gap-1">Cintura <strong className="text-text-secondary">{log.waist_cm}cm</strong></span>}
-          {log.hips_cm && <span className="flex gap-1">Quadril <strong className="text-text-secondary">{log.hips_cm}cm</strong></span>}
-          
-          {(log.bicep_r_cm ?? log.bicep_l_cm) && (
-             <span className="flex gap-1">
-               Bíceps <strong className="text-text-secondary">{log.bicep_r_cm && `D:${log.bicep_r_cm.toString()}cm`} {log.bicep_l_cm && `E:${log.bicep_l_cm.toString()}cm`}</strong>
-             </span>
-          )}
-          
-          {(log.thigh_r_cm ?? log.thigh_l_cm) && (
+       {(log.neck_cm ?? log.chest_cm ?? log.waist_cm ?? log.hips_cm ?? log.bicep_r_cm ?? log.bicep_l_cm ?? log.thigh_r_cm ?? log.thigh_l_cm ?? log.calf_r_cm ?? log.calf_l_cm ?? log.body_water_pct ?? log.bone_mass_kg ?? log.visceral_fat ?? log.bmr) && (
+         <div className="mt-2 text-[10px] text-text-muted border-t border-white/5 pt-3 px-2 flex flex-wrap gap-x-6 gap-y-2">
+           <span className="font-black uppercase tracking-widest text-[#555] opacity-50">{t('body.weight.details_title')}</span>
+           {log.body_water_pct && <span className="flex gap-1">{t('body.weight.water_short')} <strong className="text-text-secondary">{log.body_water_pct}%</strong></span>}
+           {log.bone_mass_kg && <span className="flex gap-1">{t('body.weight.bone_short')} <strong className="text-text-secondary">{log.bone_mass_kg}kg</strong></span>}
+           {log.visceral_fat && <span className="flex gap-1">{t('body.weight.visceral_short')} <strong className="text-text-secondary">{log.visceral_fat}</strong></span>}
+           {log.bmr && <span className="flex gap-1">{t('body.weight.bmr_short')} <strong className="text-text-secondary">{log.bmr}kcal</strong></span>}
+           
+           {log.neck_cm && <span className="flex gap-1">{t('body.weight.neck_short')} <strong className="text-text-secondary">{log.neck_cm}cm</strong></span>}
+           {log.chest_cm && <span className="flex gap-1">{t('body.weight.chest_short')} <strong className="text-text-secondary">{log.chest_cm}cm</strong></span>}
+           {log.waist_cm && <span className="flex gap-1">{t('body.weight.waist_short')} <strong className="text-text-secondary">{log.waist_cm}cm</strong></span>}
+           {log.hips_cm && <span className="flex gap-1">{t('body.weight.hips_short')} <strong className="text-text-secondary">{log.hips_cm}cm</strong></span>}
+           
+           {(log.bicep_r_cm ?? log.bicep_l_cm) && (
               <span className="flex gap-1">
-                Coxa <strong className="text-text-secondary">{log.thigh_r_cm && `D:${log.thigh_r_cm.toString()}cm`} {log.thigh_l_cm && `E:${log.thigh_l_cm.toString()}cm`}</strong>
+                {t('body.weight.bicep_short')} <strong className="text-text-secondary">{log.bicep_r_cm && `${t('body.weight.right_short')}:${log.bicep_r_cm.toString()}cm`} {log.bicep_l_cm && `${t('body.weight.left_short')}:${log.bicep_l_cm.toString()}cm`}</strong>
               </span>
            )}
            
-           {(log.calf_r_cm ?? log.calf_l_cm) && (
-              <span className="flex gap-1">
-                Panturrilha <strong className="text-text-secondary">{log.calf_r_cm && `D:${log.calf_r_cm.toString()}cm`} {log.calf_l_cm && `E:${log.calf_l_cm.toString()}cm`}</strong>
-              </span>
-           )}
+           {(log.thigh_r_cm ?? log.thigh_l_cm) && (
+               <span className="flex gap-1">
+                 {t('body.weight.thigh_short')} <strong className="text-text-secondary">{log.thigh_r_cm && `${t('body.weight.right_short')}:${log.thigh_r_cm.toString()}cm`} {log.thigh_l_cm && `${t('body.weight.left_short')}:${log.thigh_l_cm.toString()}cm`}</strong>
+               </span>
+            )}
+            
+            {(log.calf_r_cm ?? log.calf_l_cm) && (
+               <span className="flex gap-1">
+                 {t('body.weight.calf_short')} <strong className="text-text-secondary">{log.calf_r_cm && `${t('body.weight.right_short')}:${log.calf_r_cm.toString()}cm`} {log.calf_l_cm && `${t('body.weight.left_short')}:${log.calf_l_cm.toString()}cm`}</strong>
+               </span>
+            )}
         </div>
       )}
     </div>

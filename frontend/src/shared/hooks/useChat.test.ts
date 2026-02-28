@@ -41,6 +41,7 @@ describe('useChatStore', () => {
   });
 
   it('should handle fetch history error', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(httpClient).mockRejectedValue(new Error('API Error'));
 
     await useChatStore.getState().fetchHistory();
@@ -48,6 +49,7 @@ describe('useChatStore', () => {
     const state = useChatStore.getState();
     expect(state.isLoading).toBe(false);
     expect(state.error).toBe('Falha ao carregar histórico de mensagens.');
+    consoleSpy.mockRestore();
   });
 
   // Send Message
@@ -92,35 +94,16 @@ describe('useChatStore', () => {
   });
 
   it('should handle send message error', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockFetch.mockRejectedValue(new Error('Network Error'));
 
     await useChatStore.getState().sendMessage('Hello');
 
     const state = useChatStore.getState();
     expect(state.isStreaming).toBe(false);
-    // User message should still be there
     expect(state.messages).toHaveLength(1);
-    // Error state set? Implementation sets error string.
-    // console.error is called, verify side effect or error state if exposed
-     // Implementation sets error: 'Ocorreu um problema ao enviar sua mensagem.' 
-     // but the interface shows `error: string | null`.
-     // Let's check logic: `set({ isStreaming: false, error: '...' })`.
-     
-     // Note: implementation doesn't expose `error` in `useChatStore` selector return in the way we usually test, 
-     // but `useChatStore.getState()` returns the full state.
-     // Is `error` part of the state?
-     // Yes: `interface ChatState { ... error: string | null }`
-     
-    // Wait, the implementation sets error on catch block.
-    // However, TypeScript definition in `useChat.ts` -> `useChatStore = create<ChatStore>`
-    // The implementation might not be exposing error?
-    // Let's check `useChat.ts` line 30: `create<ChatStore>((set, _get) => ({ ... error: null ...`
-    // Yes it is exposed.
-    
-    // Wait for async execution? 
-    // `sendMessage` is async. We await it.
-    
     expect(state.error).toBe('Ocorreu um problema ao enviar sua mensagem.');
+    consoleSpy.mockRestore();
   });
 
   it('should clear history successfully', () => {

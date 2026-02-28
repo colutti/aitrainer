@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import type { TrendPoint } from '../../../shared/types/dashboard';
@@ -17,6 +18,7 @@ export function WidgetCompositionChart({
   unit = '',
   valueFormatter = (v) => v.toFixed(1)
 }: WidgetCompositionChartProps) {
+  const { i18n } = useTranslation();
   if (data.length === 0) return null;
 
   const values = data.map(d => d.value);
@@ -51,14 +53,15 @@ export function WidgetCompositionChart({
                   color: '#f8fafc',
                   fontSize: '12px'
                 }}
-                formatter={(value: number) => [
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                formatter={((value: number) => [
                   `${valueFormatter(value)} ${unit}`,
                   title
-                ]}
+                ]) as any} // eslint-disable-line @typescript-eslint/no-explicit-any
                 labelFormatter={(label: string | number) => {
                   const date = new Date(label);
                   if (isNaN(date.getTime())) return label.toString();
-                  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                  return date.toLocaleDateString(i18n.language, { day: '2-digit', month: '2-digit' });
                 }}
               />
               <Line

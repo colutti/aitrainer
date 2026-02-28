@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail, Lock, LogIn } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 
@@ -10,24 +11,25 @@ import { Input } from '../../shared/components/ui/Input';
 import { useAuthStore } from '../../shared/hooks/useAuth';
 import { useNotificationStore } from '../../shared/hooks/useNotification';
 
-// Validation schema
-const loginSchema = z.object({
-  email: z.string().email('Email inválido'),
-  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
-});
-
-type LoginForm = z.infer<typeof loginSchema>;
-
 /**
  * LoginPage component
  * 
  * Provides a premium login experience with validation and error handling.
  */
 export function LoginPage() {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const login = useAuthStore((state) => state.login);
   const notify = useNotificationStore();
   const navigate = useNavigate();
+
+  // Validation schema defined inside to allow for dynamic translations
+  const loginSchema = useMemo(() => z.object({
+    email: z.string().email(t('validation.email_invalid')),
+    password: z.string().min(6, t('validation.password_min')),
+  }), [t]);
+
+  type LoginForm = z.infer<typeof loginSchema>;
 
   const {
     register,
@@ -41,10 +43,10 @@ export function LoginPage() {
     setIsLoading(true);
     try {
       await login(data.email, data.password);
-      notify.success('Bem-vindo de volta!');
+      notify.success(t('login.welcome_back'));
       await navigate('/');
     } catch (error) {
-      notify.error('Falha no login. Verifique suas credenciais.');
+      notify.error(t('login.error_message'));
       console.error('Login error:', error);
     } finally {
       setIsLoading(false);
@@ -69,17 +71,22 @@ export function LoginPage() {
               <img src="/brand_icon_final.png" alt="FityQ" className="h-28 w-28 drop-shadow-2xl brightness-110" />
               <div>
                 <h1 className="text-4xl font-black text-white tracking-widest uppercase">FityQ</h1>
-                <p className="text-gradient-start font-bold uppercase tracking-[0.3em] text-xs">Intelligence x Fitness</p>
+                <p className="text-gradient-start font-bold uppercase tracking-[0.3em] text-xs">{t('login.brand_tagline')}</p>
               </div>
            </div>
         </div>
 
         <div className="absolute bottom-12 left-12 max-w-lg animate-in fade-in slide-in-from-bottom duration-1000 delay-300">
           <h2 className="text-5xl font-bold text-white leading-tight">
-            Eleve sua <span className="text-gradient-start">Performance</span> com Inteligência Artificial.
+            {t('login.marketing_title').split('Performance').map((part, i) => (
+              <span key={i}>
+                {part}
+                {i === 0 && <span className="text-gradient-start">Performance</span>}
+              </span>
+            ))}
           </h2>
           <p className="text-text-secondary mt-6 text-lg leading-relaxed">
-            Acompanhamento completo de dieta, treinos e metabolismo em uma única plataforma premium.
+            {t('login.marketing_subtitle')}
           </p>
         </div>
       </div>
@@ -93,8 +100,8 @@ export function LoginPage() {
           </div>
 
           <div className="space-y-4">
-            <h2 className="text-4xl font-extrabold text-white tracking-tight">Login</h2>
-            <p className="text-text-secondary text-lg">Seja bem-vindo ao futuro do treinamento.</p>
+            <h2 className="text-4xl font-extrabold text-white tracking-tight">{t('login.title')}</h2>
+            <p className="text-text-secondary text-lg">{t('login.subtitle')}</p>
           </div>
 
           <form 
@@ -105,10 +112,10 @@ export function LoginPage() {
           >
             <div className="space-y-4">
               <Input
-                label="Endereço de Email"
+                label={t('login.email_label')}
                 id="email"
                 type="email"
-                placeholder="nome@exemplo.com"
+                placeholder={t('login.email_placeholder')}
                 leftIcon={<Mail size={20} className="text-text-muted" />}
                 className="bg-white/5 border-white/10 h-14"
                 error={errors.email?.message}
@@ -116,10 +123,10 @@ export function LoginPage() {
               />
 
               <Input
-                label="Senha"
+                label={t('login.password_label')}
                 id="password"
                 type="password"
-                placeholder="Sua senha secreta"
+                placeholder={t('login.password_placeholder')}
                 leftIcon={<Lock size={20} className="text-text-muted" />}
                 className="bg-white/5 border-white/10 h-14"
                 error={errors.password?.message}
@@ -132,7 +139,7 @@ export function LoginPage() {
                 type="button"
                 className="text-sm font-semibold text-gradient-start hover:text-gradient-end transition-colors underline-offset-4 hover:underline"
               >
-                Esqueceu a senha?
+                {t('login.forgot_password')}
               </button>
             </div>
 
@@ -142,7 +149,7 @@ export function LoginPage() {
               isLoading={isLoading}
               className="h-14 text-xl font-bold bg-gradient-to-r from-gradient-start to-gradient-end shadow-orange hover:shadow-orange/40 transition-all rounded-xl"
             >
-              Entrar na Plataforma
+              {t('login.submit')}
               {!isLoading && <LogIn className="ml-3" size={22} />}
             </Button>
             

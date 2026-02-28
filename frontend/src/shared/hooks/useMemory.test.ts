@@ -47,6 +47,7 @@ describe('useMemoryStore', () => {
     });
 
     it('should handle fetch memories error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.mocked(httpClient).mockRejectedValue(new Error('failed'));
 
       await useMemoryStore.getState().fetchMemories(1);
@@ -54,6 +55,7 @@ describe('useMemoryStore', () => {
       const state = useMemoryStore.getState();
       expect(state.isLoading).toBe(false);
       expect(state.error).toBe('Falha ao carregar memórias.');
+      consoleSpy.mockRestore();
     });
   });
 
@@ -104,6 +106,7 @@ describe('useMemoryStore', () => {
     });
 
     it('should handle delete error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.mocked(httpClient).mockRejectedValue(new Error('failed'));
 
       await useMemoryStore.getState().deleteMemory('1');
@@ -111,6 +114,7 @@ describe('useMemoryStore', () => {
       const state = useMemoryStore.getState();
       expect(state.error).toBe('Falha ao excluir memória.');
       expect(state.isLoading).toBe(false);
+      consoleSpy.mockRestore();
     });
   });
 });

@@ -1,6 +1,8 @@
+import i18n from 'i18next';
+
 /**
  * Date formatting utilities using Intl.DateTimeFormat
- * All formats use pt-BR locale
+ * Locale is automatically detected from i18next
  */
 
 export type DateFormat =
@@ -13,48 +15,62 @@ export type DateFormat =
   | 'monthYear' // MMMM yyyy
   | 'dayMonth'; // dd/MM
 
-const formatters: Record<DateFormat, Intl.DateTimeFormat> = {
-  short: new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }),
-  medium: new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }),
-  long: new Intl.DateTimeFormat('pt-BR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }),
-  full: new Intl.DateTimeFormat('pt-BR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }),
-  time: new Intl.DateTimeFormat('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
-  }),
-  timeWithSeconds: new Intl.DateTimeFormat('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }),
-  monthYear: new Intl.DateTimeFormat('pt-BR', {
-    month: 'long',
-    year: 'numeric',
-  }),
-  dayMonth: new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-  }),
-};
+// Simple cache for formatters per locale
+const formatterCache = new Map<string, Record<DateFormat, Intl.DateTimeFormat>>();
+
+/**
+ * Get or create formatters for a specific locale
+ */
+function getFormatters(locale: string): Record<DateFormat, Intl.DateTimeFormat> {
+  const cached = formatterCache.get(locale);
+  if (cached) return cached;
+
+  const newFormatters: Record<DateFormat, Intl.DateTimeFormat> = {
+    short: new Intl.DateTimeFormat(locale, {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }),
+    medium: new Intl.DateTimeFormat(locale, {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    long: new Intl.DateTimeFormat(locale, {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }),
+    full: new Intl.DateTimeFormat(locale, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }),
+    time: new Intl.DateTimeFormat(locale, {
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    timeWithSeconds: new Intl.DateTimeFormat(locale, {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }),
+    monthYear: new Intl.DateTimeFormat(locale, {
+      month: 'long',
+      year: 'numeric',
+    }),
+    dayMonth: new Intl.DateTimeFormat(locale, {
+      day: '2-digit',
+      month: '2-digit',
+    }),
+  };
+
+  formatterCache.set(locale, newFormatters);
+  return newFormatters;
+}
 
 /**
  * Format a date using predefined formats
@@ -62,13 +78,6 @@ const formatters: Record<DateFormat, Intl.DateTimeFormat> = {
  * @param date - Date to format (Date object, ISO string, or null/undefined)
  * @param format - Format preset to use
  * @returns Formatted date string, or empty string if date is invalid
- *
- * @example
- * ```ts
- * formatDate(new Date(), 'short') // "15/03/2024"
- * formatDate('2024-03-15T14:30:00', 'medium') // "15/03/2024 14:30"
- * formatDate(new Date(), 'long') // "15 de março de 2024"
- * ```
  */
 export function formatDate(
   date: Date | string | null | undefined,
@@ -85,5 +94,8 @@ export function formatDate(
     return '';
   }
 
+  const locale = i18n.language || 'pt-BR';
+  const formatters = getFormatters(locale);
+  
   return formatters[format].format(dateObj);
 }

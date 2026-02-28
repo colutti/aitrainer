@@ -1,58 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
 import type { WeightLog, BodyCompositionStats } from '../../../shared/types/body';
 import { bodyApi } from '../api/body-api';
-
-const mandatoryNumberSchema = (min: number, max: number, label: string) => z.preprocess(
-  (val) => (val === "" || val === null || val === undefined || (typeof val === 'number' && isNaN(val))) ? undefined : Number(val),
-  z.number({ 
-    required_error: `${label} é obrigatório`,
-    invalid_type_error: `O ${label} deve ser um número` 
-  })
-  .min(min, `${label} deve ser ao menos ${min.toString()}`)
-  .max(max, `${label} deve ser no máximo ${max.toString()}`)
-);
-
-const optionalNumberSchema = (min: number, max: number, label: string) => z.preprocess(
-  (val) => (val === "" || val === null || val === undefined || (typeof val === 'number' && isNaN(val))) ? undefined : Number(val),
-  z.number({ 
-    invalid_type_error: `O ${label} deve ser um número` 
-  })
-  .min(min, `${label} deve ser ao menos ${min.toString()}`)
-  .max(max, `${label} deve ser no máximo ${max.toString()}`)
-  .optional()
-  .nullable()
-);
-
-const weightSchema = z.object({
-  date: z.string().min(1, "A data é obrigatória"),
-  weight_kg: mandatoryNumberSchema(30, 300, "Peso"),
-  body_fat_pct: mandatoryNumberSchema(2, 100, "Gordura corporal"),
-  muscle_mass_pct: optionalNumberSchema(2, 100, "Massa muscular (%)"),
-  muscle_mass_kg: optionalNumberSchema(10, 200, "Massa muscular (kg)"),
-  body_water_pct: optionalNumberSchema(2, 100, "Água corporal"),
-  bone_mass_kg: optionalNumberSchema(0, 20, "Massa óssea"),
-  visceral_fat: optionalNumberSchema(0, 50, "Gordura visceral"),
-  bmr: optionalNumberSchema(500, 5000, "TMB"),
-  notes: z.string().max(500, "Máximo de 500 caracteres").optional().nullable(),
-  // Measurements
-  neck_cm: optionalNumberSchema(20, 100, "Pescoço"),
-  chest_cm: optionalNumberSchema(40, 200, "Peito"),
-  waist_cm: optionalNumberSchema(40, 200, "Cintura"),
-  hips_cm: optionalNumberSchema(40, 200, "Quadril"),
-  bicep_r_cm: optionalNumberSchema(10, 100, "Bíceps (D)"),
-  bicep_l_cm: optionalNumberSchema(10, 100, "Bíceps (E)"),
-  thigh_r_cm: optionalNumberSchema(20, 150, "Coxa (D)"),
-  thigh_l_cm: optionalNumberSchema(20, 150, "Coxa (E)"),
-  calf_r_cm: optionalNumberSchema(10, 100, "Panturrilha (D)"),
-  calf_l_cm: optionalNumberSchema(10, 100, "Panturrilha (E)"),
-});
-
-type WeightFormData = z.infer<typeof weightSchema>;
 
 const WEIGHT_DEFAULTS = {
   date: new Date().toISOString().split('T')[0],
@@ -89,6 +43,57 @@ export function useWeightTab() {
   const [isSaving, setIsSaving] = useState(false);
   const [editingDate, setEditingDate] = useState<string | null>(null);
   const notify = useNotificationStore();
+  const { t } = useTranslation();
+  const muscleMassShort = t('body.weight.muscle_mass').split(' ')[0];
+
+  const mandatoryNumberSchema = (min: number, max: number, label: string) => z.preprocess(
+    (val) => (val === "" || val === null || val === undefined || (typeof val === 'number' && isNaN(val))) ? undefined : Number(val),
+    z.number({ 
+      required_error: t('validation.field_required', { field: label }),
+      invalid_type_error: t('validation.invalid_type_number', { field: label })
+    })
+    .min(min, t('validation.number_min', { field: label, min }))
+    .max(max, t('validation.number_max', { field: label, max }))
+  );
+
+  const optionalNumberSchema = (min: number, max: number, label: string) => z.preprocess(
+    (val) => (val === "" || val === null || val === undefined || (typeof val === 'number' && isNaN(val))) ? undefined : Number(val),
+    z.number({ 
+      invalid_type_error: t('validation.invalid_type_number', { field: label })
+    })
+    .min(min, t('validation.number_min', { field: label, min }))
+    .max(max, t('validation.number_max', { field: label, max }))
+    .optional()
+    .nullable()
+  );
+
+  const weightSchema = z.object({
+    date: z.string().min(1, t('validation.field_required', { field: t('body.nutrition.date') })),
+    weight_kg: mandatoryNumberSchema(30, 300, t('body.weight.weight').split(' ')[0] ?? ''),
+    body_fat_pct: mandatoryNumberSchema(2, 100, t('body.weight.body_fat').split(' ')[0] ?? ''),
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    muscle_mass_pct: optionalNumberSchema(2, 100, `${muscleMassShort!} (%)`),
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    muscle_mass_kg: optionalNumberSchema(10, 200, `${muscleMassShort!} (kg)`),
+    body_water_pct: optionalNumberSchema(2, 100, t('body.weight.body_water').split(' ')[0] ?? ''),
+    bone_mass_kg: optionalNumberSchema(0, 20, t('body.weight.bone_mass').split(' ')[0] ?? ''),
+    visceral_fat: optionalNumberSchema(0, 50, t('body.weight.visceral_fat').split(' ')[0] ?? ''),
+    bmr: optionalNumberSchema(500, 5000, t('body.weight.bmr').split(' ')[0] ?? ''),
+    notes: z.string().max(500, t('validation.max_chars', { max: 500 })).optional().nullable(),
+    // Measurements
+    neck_cm: optionalNumberSchema(20, 100, t('body.weight.neck')),
+    chest_cm: optionalNumberSchema(40, 200, t('body.weight.chest')),
+    waist_cm: optionalNumberSchema(40, 200, t('body.weight.waist')),
+    hips_cm: optionalNumberSchema(40, 200, t('body.weight.hips')),
+    bicep_r_cm: optionalNumberSchema(10, 100, t('body.weight.bicep_r')),
+    bicep_l_cm: optionalNumberSchema(10, 100, t('body.weight.bicep_l')),
+    thigh_r_cm: optionalNumberSchema(20, 150, t('body.weight.thigh_r')),
+    thigh_l_cm: optionalNumberSchema(20, 150, t('body.weight.thigh_l')),
+    calf_r_cm: optionalNumberSchema(10, 100, t('body.weight.calf_r')),
+    calf_l_cm: optionalNumberSchema(10, 100, t('body.weight.calf_l')),
+  });
+
+  type WeightFormData = z.infer<typeof weightSchema>;
 
   const {
     register,
@@ -112,16 +117,14 @@ export function useWeightTab() {
       setHistory(historyRes.logs);
       setPage(historyRes.page);
       setTotalPages(historyRes.total_pages);
-    } catch (_error) {
-      console.error('Failed to load weight data:', _error);
-      // Only notify if not already loading (which we set to true above, but meaningful for retries)
-      // Actually, create a toast ID to prevent duplicates if needed, but simpler:
+    } catch (error) {
       // Just notify once.
-      notify.error('Erro ao carregar dados de peso.');
+      console.error(error);
+      notify.error(t('body.weight.notifications.load_error'));
     } finally {
       setIsLoading(false);
     }
-  }, [notify]);
+  }, [notify, t]);
 
   // Initial load
   useEffect(() => {
@@ -141,12 +144,12 @@ export function useWeightTab() {
       );
       
       await bodyApi.logWeight(data.weight_kg, payload as Partial<WeightLog>);
-      notify.success('Registro de peso salvo!');
+      notify.success(t('body.weight.notifications.save_success'));
       setEditingDate(null);
       reset({ ...WEIGHT_DEFAULTS, date: new Date().toISOString().split('T')[0] });
       await loadData(1); // Reload first page on new entry
     } catch {
-      notify.error('Erro ao salvar registro de peso.');
+      notify.error(t('body.weight.notifications.save_error'));
     } finally {
       setIsSaving(false);
     }
@@ -155,10 +158,10 @@ export function useWeightTab() {
   const deleteEntry = async (date: string) => {
     try {
       await bodyApi.deleteWeight(date);
-      notify.success('Registro removido.');
+      notify.success(t('body.weight.notifications.delete_success'));
       await loadData(page); // Reload current page
     } catch {
-      notify.error('Erro ao remover registro.');
+      notify.error(t('body.weight.notifications.delete_error'));
     }
   };
 

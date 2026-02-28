@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 /**
  * HeroProductPreview
  * Decorative component for the landing page hero section.
@@ -5,6 +7,7 @@
  * no real data, no store imports.
  */
 export const HeroProductPreview = (): React.ReactNode => {
+  const { t } = useTranslation();
   return (
     <div className="relative animate-float">
       {/* Glow behind card */}
@@ -15,7 +18,7 @@ export const HeroProductPreview = (): React.ReactNode => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <p className="text-xs text-[#a1a1aa] mb-0.5">Meta Diária</p>
+            <p className="text-xs text-[#a1a1aa] mb-0.5">{t('landing.hero.daily_goal')}</p>
             <p className="text-3xl font-display font-extrabold text-white">2.150 <span className="text-base font-normal text-[#a1a1aa]">kcal</span></p>
           </div>
           {/* Consistency ring */}
@@ -46,9 +49,9 @@ export const HeroProductPreview = (): React.ReactNode => {
         {/* Macro bars */}
         <div className="space-y-3 mb-6">
           {[
-            { name: 'Proteína', current: 145, target: 165, color: 'bg-emerald-500', pct: 88 },
-            { name: 'Gordura', current: 58, target: 72, color: 'bg-yellow-500', pct: 80 },
-            { name: 'Carboidrato', current: 180, target: 230, color: 'bg-blue-500', pct: 78 },
+            { name: t('landing.hero.macro_protein'), current: 145, target: 165, color: 'bg-emerald-500', pct: 88 },
+            { name: t('landing.hero.macro_fat'), current: 58, target: 72, color: 'bg-yellow-500', pct: 80 },
+            { name: t('landing.hero.macro_carbs'), current: 180, target: 230, color: 'bg-blue-500', pct: 78 },
           ].map((macro) => (
             <div key={macro.name}>
               <div className="flex justify-between text-xs mb-1">
@@ -67,7 +70,7 @@ export const HeroProductPreview = (): React.ReactNode => {
 
         {/* Mini weight trend chart */}
         <div className="rounded-xl bg-white/[0.03] border border-white/5 p-3">
-          <p className="text-xs text-[#a1a1aa] mb-2">Tendência de peso</p>
+          <p className="text-xs text-[#a1a1aa] mb-2">{t('landing.hero.weight_trend')}</p>
           <svg width="100%" height="40" viewBox="0 0 200 40" preserveAspectRatio="none">
             <polyline
               points="0,32 30,28 60,30 90,22 120,18 150,14 180,10 200,8"
@@ -102,9 +105,10 @@ export const HeroProductPreview = (): React.ReactNode => {
           <span className="text-xs font-semibold text-white">Breno</span>
         </div>
         <p className="text-xs text-[#a1a1aa] leading-relaxed">
-          Mano, vi que você dormiu 8h hoje. Hoje é dia de ir pesado! 💪
+          {t('landing.hero.gymbro_message')}
         </p>
       </div>
     </div>
   );
 };
+

@@ -7,7 +7,6 @@ export function AdminLayout() {
   const tabs = [
     { to: '.', end: true, label: 'Dashboard', icon: LayoutDashboard },
     { to: 'users', label: 'Usuários', icon: Users },
-    { to: 'logs', label: 'Logs', icon: FileText }, // or Terminal
     { to: 'prompts', label: 'Prompts', icon: AlignLeft },
     { to: 'tokens', label: 'Tokens', icon: BarChart3 },
   ];

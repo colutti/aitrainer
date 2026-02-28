@@ -1,4 +1,5 @@
 import { Button } from '@shared/components/ui/Button';
+import { LanguageSelector } from '@shared/components/ui/LanguageSelector';
 import { useAuthStore } from '@shared/hooks/useAuth';
 import {
   Zap,
@@ -12,6 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 import { ChatCarousel } from './ChatCarousel';
@@ -26,6 +28,7 @@ const LandingPage = (): React.ReactNode => {
   const isAuthenticated = Boolean(useAuthStore((state: any) => state.isAuthenticated));
   const [navScrolled, setNavScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { t } = useTranslation();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -65,9 +68,9 @@ const LandingPage = (): React.ReactNode => {
   }, []);
 
   const navLinks = [
-    { href: '#treinadores', label: 'Treinadores' },
-    { href: '#diferenciais', label: 'Diferenciais' },
-    { href: '#como-funciona', label: 'Como Funciona' },
+    { href: '#treinadores', label: t('landing.nav.trainers') },
+    { href: '#diferenciais', label: t('landing.nav.differentiators') },
+    { href: '#como-funciona', label: t('landing.nav.how_it_works') },
   ];
 
   return (
@@ -116,6 +119,9 @@ const LandingPage = (): React.ReactNode => {
 
           {/* Right side */}
           <div className="flex items-center gap-3">
+            <div className="hidden md:block">
+              <LanguageSelector />
+            </div>
             <Button
               onClick={() => {
                 void navigate('/login');
@@ -123,7 +129,7 @@ const LandingPage = (): React.ReactNode => {
               variant="primary"
               size="sm"
             >
-              Entrar
+              {t('landing.nav.login')}
             </Button>
             {/* Mobile hamburger */}
             <button
@@ -154,6 +160,9 @@ const LandingPage = (): React.ReactNode => {
                 {link.label}
               </a>
             ))}
+            <div className="pt-4 border-t border-[var(--color-border)]">
+              <LanguageSelector />
+            </div>
           </div>
         </div>
       </nav>
@@ -168,14 +177,14 @@ const LandingPage = (): React.ReactNode => {
           <div>
             <div className="mb-6 inline-block">
               <span className="px-4 py-2 rounded-full text-sm font-semibold text-[var(--color-accent)] bg-[rgba(34,211,238,0.1)] border border-[var(--color-accent)]/20">
-                Nutrição & Treino Inteligente
+                {t('landing.hero.badge')}
               </span>
             </div>
 
             <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-tight mb-6 text-white animate-slide-in-fade">
-              Seu personal trainer com IA{' '}
+              {t('landing.hero.title')}{' '}
               <span className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] bg-clip-text text-transparent">
-                que realmente te conhece
+                {t('landing.hero.title_gradient')}
               </span>
             </h1>
 
@@ -183,7 +192,7 @@ const LandingPage = (): React.ReactNode => {
               className="text-lg sm:text-xl text-[var(--color-text-secondary)] mb-8 max-w-2xl leading-relaxed animate-slide-in-fade"
               style={{ animationDelay: '0.1s' }}
             >
-              Uma IA que sabe exatamente quantas calorias você precisa hoje — e ajusta isso toda semana. Com acesso completo ao seu histórico, treinos e alimentação. E 5 treinadores com personalidade real, disponíveis a qualquer hora.
+              {t('landing.hero.description')}
             </p>
 
             <div className="animate-slide-in-fade mb-4" style={{ animationDelay: '0.2s' }}>
@@ -195,13 +204,13 @@ const LandingPage = (): React.ReactNode => {
                 size="lg"
                 className="animate-pulse-glow"
               >
-                Experimentar Grátis
+                {t('landing.hero.cta')}
                 <ChevronRight className="w-5 h-5" />
               </Button>
             </div>
 
             <p className="text-xs text-[var(--color-text-secondary)] mb-10 animate-slide-in-fade" style={{ animationDelay: '0.25s' }}>
-              Sem cartão de crédito. Comece em 2 minutos.
+              {t('landing.hero.trial_desc')}
             </p>
 
             {/* Feature badges */}
@@ -211,15 +220,15 @@ const LandingPage = (): React.ReactNode => {
             >
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-[var(--color-accent)]" />
-                24/7 Disponível
+                {t('landing.hero.feature_247')}
               </div>
               <div className="flex items-center gap-2">
                 <Brain className="w-4 h-4 text-[var(--color-accent)]" />
-                IA Contextual
+                {t('landing.hero.feature_ai')}
               </div>
               <div className="flex items-center gap-2">
                 <Zest className="w-4 h-4 text-[var(--color-accent)]" />
-                Integrações
+                {t('landing.hero.feature_integrations')}
               </div>
             </div>
           </div>
@@ -263,10 +272,10 @@ const LandingPage = (): React.ReactNode => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="font-display text-4xl sm:text-5xl font-bold text-white mb-4">
-              O que torna FityQ diferente
+              {t('landing.diff.title')}
             </h2>
             <p className="text-lg text-[var(--color-text-secondary)] max-w-2xl mx-auto">
-              Combinação única de tecnologia, personalização e acesso real aos seus dados
+              {t('landing.diff.subtitle')}
             </p>
           </div>
 
@@ -275,22 +284,22 @@ const LandingPage = (): React.ReactNode => {
             {[
               {
                 icon: Zap as React.ElementType,
-                title: 'Meta que Aprende com Você',
-                description: 'Nada de números genéricos de calculadora. O FityQ descobre quantas calorias você realmente precisa e recalibra toda semana conforme seus dados.',
+                title: t('landing.diff.features.meta.title'),
+                description: t('landing.diff.features.meta.description'),
                 extra: null as React.ReactNode,
                 delay: 0,
               },
               {
                 icon: Brain as React.ElementType,
-                title: 'IA que Enxerga Tudo',
-                description: 'Acesso completo ao seu histórico de treinos, alimentação, peso e evolução. Não é um chatbot genérico — é um treinador que conhece você.',
+                title: t('landing.diff.features.vision.title'),
+                description: t('landing.diff.features.vision.description'),
                 extra: null as React.ReactNode,
                 delay: 0.05,
               },
               {
                 icon: Users as React.ElementType,
-                title: '5 Treinadores',
-                description: 'Atlas, Luna, Sofia, Sargento e GymBro. Cada um com personalidade única.',
+                title: t('landing.diff.features.trainers.title'),
+                description: t('landing.diff.features.trainers.description'),
                 extra: (
                   <div className="flex items-center mt-4">
                     {['atlas', 'luna', 'sofia', 'sargento', 'gymbro'].map((trainer, i) => (
@@ -311,8 +320,8 @@ const LandingPage = (): React.ReactNode => {
               },
               {
                 icon: Zest as React.ElementType,
-                title: 'Integrações',
-                description: 'Sincroniza com Hevy, MyFitnessPal e Zepp Life. Seus dados já estão lá — a IA só precisa acessá-los.',
+                title: t('landing.diff.features.integrations.title'),
+                description: t('landing.diff.features.integrations.description'),
                 extra: (
                   <div className="flex flex-wrap gap-1 mt-4">
                     {['Hevy', 'MyFitnessPal', 'Zepp Life'].map((app) => (
@@ -326,32 +335,31 @@ const LandingPage = (): React.ReactNode => {
               },
               {
                 icon: MemorySquare as React.ElementType,
-                title: 'Lembra da Sua Jornada',
-                description: 'A IA guarda tudo: seus objetivos, cada progresso, seus preferências e o que já funcionou pra você. Como um treinador de verdade faria.',
+                title: t('landing.diff.features.journey.title'),
+                description: t('landing.diff.features.journey.description'),
                 extra: (
                   <div className="space-y-2 mt-4">
-                    {[
-                      { label: 'Iniciou treino', dot: 'bg-indigo-400' },
-                      { label: 'Atingiu meta de peso', dot: 'bg-cyan-400' },
-                      { label: 'Novo PR pessoal', dot: 'bg-green-400' },
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${item.dot} shrink-0`} />
-                        <span className="text-xs text-[var(--color-text-secondary)]">{item.label}</span>
-                      </div>
-                    ))}
+                    {(t('landing.diff.features.journey.items', { returnObjects: true }) as string[]).map((label, i) => {
+                      const dots = ['bg-indigo-400', 'bg-cyan-400', 'bg-green-400'];
+                      return (
+                        <div key={i} className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${dots[i % dots.length] ?? ''} shrink-0`} />
+                          <span className="text-xs text-[var(--color-text-secondary)]">{label}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 ),
                 delay: 0.2,
               },
               {
                 icon: Clock as React.ElementType,
-                title: 'Disponível 24/7',
-                description: 'Seu treinador está sempre lá. Às 3 da manhã, no fim de semana, ou quando você mais precisar.',
+                title: t('landing.diff.features.available.title'),
+                description: t('landing.diff.features.available.description'),
                 extra: (
                   <div className="flex items-center gap-1.5 mt-4">
                     <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                    <span className="text-xs text-green-400 font-medium">Online agora</span>
+                    <span className="text-xs text-green-400 font-medium">{t('landing.diff.features.available.online')}</span>
                   </div>
                 ),
                 delay: 0.25,
@@ -389,38 +397,19 @@ const LandingPage = (): React.ReactNode => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="font-display text-4xl sm:text-5xl font-bold text-white mb-4">
-              Como Funciona
+              {t('landing.how.title')}
             </h2>
             <p className="text-lg text-[var(--color-text-secondary)] max-w-2xl mx-auto">
-              Começar é simples. Três passos e você está em ação.
+              {t('landing.how.subtitle')}
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                step: '01',
-                title: 'Crie sua Conta',
-                description:
-                  'Registre-se com email em segundos. Leva menos de 2 minutos.',
-              },
-              {
-                step: '02',
-                title: 'Escolha seu Treinador',
-                description:
-                  'Conheça Atlas, Luna, Sofia, Sargento ou GymBro. Cada um tem uma abordagem única.',
-              },
-              {
-                step: '03',
-                title: 'Converse e Evolua',
-                description:
-                  'Chat com seu treinador, registre treinos e nutrição, acompanhe progresso em tempo real.',
-              },
-            ].map((item, idx) => (
+            {(t('landing.how.steps', { returnObjects: true }) as { title: string; description: string }[]).map((item, idx) => (
               <RevealOnScroll key={idx} delay={idx * 0.15}>
                 <div className="relative">
                   <div className="font-display text-8xl font-extrabold text-[var(--color-primary)]/10 mb-4 leading-none">
-                    {item.step}
+                    {`0${(idx + 1).toString()}`}
                   </div>
                   <h3 className="font-display text-2xl font-bold text-white mb-3">
                     {item.title}
@@ -445,110 +434,92 @@ const LandingPage = (): React.ReactNode => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="font-display text-4xl sm:text-5xl font-bold text-white mb-4">
-              Escolha seu Plano
+              {t('landing.plans.title')}
             </h2>
             <p className="text-lg text-[var(--color-text-secondary)] max-w-2xl mx-auto">
-              Todos os planos incluem suporte e atualizações. Cancele quando quiser.
+              {t('landing.plans.subtitle')}
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
             {[
               {
-                name: 'Básico',
+                id: 'basic',
                 price: 29,
-                description: 'Perfeito para começar',
-                features: [
-                  '1 Treinador',
-                  'Chat Limitado (50/mês)',
-                  'Tracking Básico',
-                  'TDEE Padrão',
-                  'Suporte por Email',
-                ],
                 highlight: false,
               },
               {
-                name: 'Pro',
+                id: 'pro',
                 price: 59,
-                description: 'Recomendado para resultados',
-                features: [
-                  'Todos os 5 Treinadores',
-                  'Chat Ilimitado',
-                  'TDEE Adaptativo',
-                  'Integrações (Hevy, MyFitnessPal, Zepp)',
-                  'Memória Ilimitada',
-                  'Suporte Prioritário',
-                ],
                 highlight: true,
               },
               {
-                name: 'Premium',
+                id: 'premium',
                 price: 99,
-                description: 'Para máximo impacto',
-                features: [
-                  'Tudo do Pro',
-                  'Chat com Prioridade',
-                  'Relatórios Avançados',
-                  'Análise de Composição Corporal',
-                  'Suporte 24/7',
-                  'Customizações Personalizadas',
-                ],
                 highlight: false,
               },
-            ].map((plan, idx) => (
-              <RevealOnScroll key={idx} delay={idx * 0.1}>
-                <div
-                  className={`relative rounded-2xl p-8 transition-all duration-300 ${
-                    plan.highlight
-                      ? 'border border-[var(--color-accent)] bg-[rgba(34,211,238,0.05)] scale-105 md:scale-110'
-                      : 'border border-[var(--color-border)] bg-[rgba(18,18,20,0.8)]'
-                  } hover:border-[var(--color-accent)]/50`}
-                >
-                  {plan.highlight && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] text-white text-sm font-bold">
-                      Recomendado
-                    </div>
-                  )}
-                  <h3 className="font-display text-2xl font-bold text-white mb-2">
-                    {plan.name}
-                  </h3>
-                  <p className="text-[var(--color-text-secondary)] mb-6">
-                    {plan.description}
-                  </p>
-                  <div className="mb-6">
-                    <span className="font-display text-4xl font-extrabold text-white">
-                      R${plan.price}
-                    </span>
-                    <span className="text-[var(--color-text-secondary)] ml-2">
-                      /mês
-                    </span>
-                  </div>
-                  <Button
-                    onClick={() => {
-                      void navigate('/login');
-                    }}
-                    variant={plan.highlight ? 'primary' : 'secondary'}
-                    fullWidth
-                    className="mb-8"
+            ].map((plan, idx) => {
+              const planData = t(`landing.plans.items.${plan.id}`, { returnObjects: true }) as {
+                name: string;
+                description: string;
+                features: string[];
+              };
+
+              return (
+                <RevealOnScroll key={idx} delay={idx * 0.1}>
+                  <div
+                    className={`relative rounded-2xl p-8 transition-all duration-300 ${
+                      plan.highlight
+                        ? 'border border-[var(--color-accent)] bg-[rgba(34,211,238,0.05)] scale-105 md:scale-110'
+                        : 'border border-[var(--color-border)] bg-[rgba(18,18,20,0.8)]'
+                    } hover:border-[var(--color-accent)]/50`}
                   >
-                    Experimentar Grátis
-                  </Button>
-                  <ul className="space-y-3">
-                    {plan.features.map((feature, fidx) => (
-                      <li
-                        key={fidx}
-                        className="flex items-start gap-3 text-[var(--color-text-secondary)]"
-                      >
-                        <span className="text-[var(--color-accent)] font-bold mt-1">
-                          ✓
-                        </span>
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </RevealOnScroll>
-            ))}
+                    {plan.highlight && (
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] text-white text-sm font-bold">
+                        {t('landing.plans.recommended')}
+                      </div>
+                    )}
+                    <h3 className="font-display text-2xl font-bold text-white mb-2">
+                      {planData.name}
+                    </h3>
+                    <p className="text-[var(--color-text-secondary)] mb-6">
+                      {planData.description}
+                    </p>
+                    <div className="mb-6">
+                      <span className="font-display text-4xl font-extrabold text-white">
+                        R${plan.price}
+                      </span>
+                      <span className="text-[var(--color-text-secondary)] ml-2">
+                        {t('landing.plans.per_month')}
+                      </span>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        void navigate('/login');
+                      }}
+                      variant={plan.highlight ? 'primary' : 'secondary'}
+                      fullWidth
+                      className="mb-8"
+                    >
+                      {t('landing.plans.button')}
+                    </Button>
+                    <ul className="space-y-3">
+                      {planData.features.map((feature, fidx) => (
+                        <li
+                          key={fidx}
+                          className="flex items-start gap-3 text-[var(--color-text-secondary)]"
+                        >
+                          <span className="text-[var(--color-accent)] font-bold mt-1">
+                            ✓
+                          </span>
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </RevealOnScroll>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -564,10 +535,10 @@ const LandingPage = (): React.ReactNode => {
         </div>
         <div className="max-w-3xl mx-auto text-center relative z-10">
           <h2 className="font-display text-4xl sm:text-5xl font-bold text-white mb-6">
-            Pronto para ter um treinador que realmente entende você?
+            {t('landing.cta.title')}
           </h2>
           <p className="text-lg text-[var(--color-text-secondary)] mb-8">
-            Tecnologia que se adapta ao seu metabolismo, treinadores com personalidade, e IA que lembra da sua jornada.
+            {t('landing.cta.subtitle')}
           </p>
           <Button
             onClick={() => {
@@ -577,11 +548,11 @@ const LandingPage = (): React.ReactNode => {
             size="lg"
             className="animate-pulse-glow"
           >
-            Experimentar Grátis
+            {t('landing.cta.button')}
             <ChevronRight className="w-5 h-5" />
           </Button>
           <p className="text-xs text-[var(--color-text-secondary)] mt-4">
-            Sem cartão de crédito. Comece em 2 minutos.
+            {t('landing.cta.trial')}
           </p>
         </div>
       </section>
@@ -594,7 +565,7 @@ const LandingPage = (): React.ReactNode => {
             <span className="font-display text-base font-bold text-white">FityQ</span>
           </div>
           <p className="text-[var(--color-text-secondary)] text-sm">
-            © {new Date().getFullYear()} FityQ. Todos os direitos reservados.
+            {t('landing.footer.rights', { year: new Date().getFullYear() })}
           </p>
         </div>
         {/* TODO: Restore footer columns when Produto/Legal/Social links are ready */}

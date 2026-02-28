@@ -2,8 +2,6 @@ import { httpClient } from '../../../shared/api/http-client';
 import type {
   AdminOverview,
   AdminUser,
-  ApplicationLogResponse,
-  BetterStackLogResponse,
   PromptListResponse,
   PromptLog,
   QualityMetrics,
@@ -47,17 +45,6 @@ export const adminApi = {
     });
   },
 
-  getApplicationLogs: async (limit = 100, level?: string): Promise<ApplicationLogResponse> => {
-    const params = new URLSearchParams({ limit: limit.toString() });
-    if (level) params.append('level', level);
-    return httpClient<ApplicationLogResponse>(`/admin/logs/application?${params.toString()}`);
-  },
-
-  getBetterStackLogs: async (limit = 100, query?: string): Promise<BetterStackLogResponse> => {
-    const params = new URLSearchParams({ limit: limit.toString() });
-    if (query) params.append('query', query);
-    return httpClient<BetterStackLogResponse>(`/admin/logs/betterstack?${params.toString()}`);
-  },
 
   listPrompts: async (page = 1, pageSize = 20, userId?: string): Promise<PromptListResponse> => {
     const params = new URLSearchParams({

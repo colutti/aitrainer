@@ -88,6 +88,7 @@ describe('useWorkoutStore', () => {
     });
 
     it('should handle fetch workouts error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.mocked(httpClient).mockRejectedValue(new Error('failed'));
 
       await useWorkoutStore.getState().fetchWorkouts();
@@ -95,6 +96,7 @@ describe('useWorkoutStore', () => {
       const state = useWorkoutStore.getState();
       expect(state.isLoading).toBe(false);
       expect(state.error).toBe('Falha ao carregar treinos. Tente novamente mais tarde.');
+      consoleSpy.mockRestore();
     });
   });
 
@@ -113,6 +115,7 @@ describe('useWorkoutStore', () => {
     });
 
     it('should handle delete workout error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.mocked(httpClient).mockRejectedValue(new Error('failed'));
 
       await expect(useWorkoutStore.getState().deleteWorkout('1'))
@@ -121,6 +124,7 @@ describe('useWorkoutStore', () => {
       const state = useWorkoutStore.getState();
       expect(state.error).toBe('Falha ao excluir treino. Tente novamente.');
       expect(state.isLoading).toBe(false);
+      consoleSpy.mockRestore();
     });
   });
 

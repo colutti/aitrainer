@@ -1,4 +1,5 @@
 import { Trophy, ArrowUpRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import type { PRRecord } from '../../../shared/types/dashboard';
 
@@ -7,13 +8,15 @@ interface WidgetRecentPRsProps {
 }
 
 export function WidgetRecentPRs({ prs }: WidgetRecentPRsProps) {
+  const { t, i18n } = useTranslation();
+
   if (!prs.length) return null;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
         <Trophy className="text-yellow-500" size={20} />
-        <h2 className="text-lg font-bold text-text-primary">Recordes Recentes</h2>
+        <h2 className="text-lg font-bold text-text-primary">{t('dashboard.recent_prs_title')}</h2>
       </div>
       
       <div className="grid gap-3">
@@ -27,24 +30,24 @@ export function WidgetRecentPRs({ prs }: WidgetRecentPRsProps) {
 
             <div className="flex items-center gap-4 relative z-10">
               <div className="h-10 w-10 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500 font-bold text-xs ring-1 ring-yellow-500/20 group-hover:ring-yellow-500/40 transition-all">
-                PR
+                {t('dashboard.pr_label')}
               </div>
               <div>
                 <h4 className="font-bold text-text-primary group-hover:text-yellow-400 transition-colors">{pr.exercise}</h4>
                 <p className="text-xs text-text-secondary">
-                  {new Date(pr.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} • {pr.reps} reps
+                  {new Date(pr.date).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })} • {t('dashboard.reps', { count: pr.reps })}
                 </p>
               </div>
             </div>
 
             <div className="text-right relative z-10">
               <div className="flex items-center gap-1 justify-end">
-                <span className="text-xl font-black text-white tracking-tight">{pr.weight}<span className="text-sm font-medium text-text-muted ml-0.5">kg</span></span>
+                <span className="text-xl font-black text-white tracking-tight">{pr.weight}<span className="text-sm font-medium text-text-muted ml-0.5">{t('dashboard.weight_unit')}</span></span>
               </div>
               {pr.previous_weight && (
                  <div className="flex items-center justify-end gap-1 text-xs text-emerald-400 font-medium">
                     <ArrowUpRight size={12} />
-                    <span>+{((pr.weight - pr.previous_weight)).toFixed(2)}kg</span>
+                    <span>+{((pr.weight - pr.previous_weight)).toFixed(2)}{t('dashboard.weight_unit')}</span>
                  </div>
               )}
             </div>

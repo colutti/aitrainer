@@ -1,4 +1,5 @@
 import { Scale, Flame } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 
 import { NutritionTab } from './components/NutritionTab';
@@ -16,6 +17,7 @@ import { WeightTab } from './components/WeightTab';
 export function BodyPage() {
   const location = useLocation();
   const isNutrition = location.pathname.includes('nutrition');
+  const { t } = useTranslation();
   
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
@@ -26,19 +28,19 @@ export function BodyPage() {
             {isNutrition ? (
               <>
                 <Flame className="text-orange-500" size={32} />
-                Dieta & Macros
+                {t('body.nutrition_title')}
               </>
             ) : (
               <>
                 <Scale className="text-blue-400" size={32} />
-                Peso & Corpo
+                {t('body.weight_title')}
               </>
             )}
           </h1>
           <p className="text-text-secondary mt-1 md:ml-11">
             {isNutrition 
-              ? "Acompanhe sua ingestão calórica e macronutrientes diários."
-              : "Gerencie seu histórico de peso e composição corporal."
+              ? t('body.nutrition_subtitle')
+              : t('body.weight_subtitle')
             }
           </p>
         </div>

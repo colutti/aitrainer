@@ -1,5 +1,6 @@
 import { Bot, Send } from 'lucide-react';
 import { useEffect, useRef, useState, useMemo, useLayoutEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useAuthStore } from '../../shared/hooks/useAuth';
 import { useChatStore } from '../../shared/hooks/useChat';
@@ -18,6 +19,7 @@ export function ChatPage() {
   const { messages, isStreaming, error, fetchHistory, sendMessage, loadMore, hasMore, isLoading } = useChatStore();
   const { trainer, availableTrainers, fetchTrainer, fetchAvailableTrainers } = useSettingsStore();
   const { userInfo } = useAuthStore();
+  const { t } = useTranslation();
   
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -36,7 +38,7 @@ export function ChatPage() {
     return availableTrainers.find(t => t.trainer_id === trainer.trainer_type) ?? null;
   }, [trainer, availableTrainers]);
 
-  const trainerName = currentTrainer?.name ?? 'Treinador AI';
+  const trainerName = currentTrainer?.name ?? t('chat.default_trainer_name');
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prevScrollHeightRef = useRef<number>(0);
@@ -148,7 +150,7 @@ export function ChatPage() {
               <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-4">
                   <Bot size={32} className="text-white/50" />
               </div>
-              <p className="text-base font-medium text-text-secondary">Inicie sua conversa</p>
+              <p className="text-base font-medium text-text-secondary">{t('chat.start_conversation')}</p>
             </div>
           ) : (
             <>
@@ -184,7 +186,7 @@ export function ChatPage() {
                   <span className="w-1 h-1 bg-gradient-start rounded-full animate-bounce [animation-duration:0.6s] [animation-delay:0.4s]" />
                 </div>
                 <span className="text-[10px] font-medium text-text-secondary uppercase tracking-widest">
-                  {trainerName} digitando...
+                  {t('chat.typing', { name: trainerName })}
                 </span>
               </div>
             )}
@@ -197,7 +199,7 @@ export function ChatPage() {
             >
               <textarea
                 ref={textareaRef}
-                placeholder={`Mensagem para ${trainerName.split(' ')[0] ?? ''}...`}
+                placeholder={t('chat.input_placeholder', { name: trainerName.split(' ')[0] ?? '' })}
                 className="w-full bg-transparent py-4 pl-5 pr-14 text-base text-text-primary placeholder:text-text-muted focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none max-h-[200px] overflow-y-auto"
                 value={inputValue}
                 onChange={(e) => { setInputValue(e.target.value); }} 
@@ -224,7 +226,7 @@ export function ChatPage() {
               </button>
             </form>
             <p className="mt-3 text-[10px] text-center text-text-muted/40">
-              O Treinador pode cometer erros. Considere verificar informações importantes.
+              {t('chat.disclaimer')}
             </p>
         </div>
       </div>

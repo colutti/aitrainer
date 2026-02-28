@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 interface WidgetVolumeTrendProps {
@@ -6,11 +7,12 @@ interface WidgetVolumeTrendProps {
 }
 
 export function WidgetVolumeTrend({ data, className }: WidgetVolumeTrendProps) {
+  const { t } = useTranslation();
   if (!data.length) return null;
 
   // Transform data for Recharts: [val, val, ...] -> [{ name: 'Semana X', volume: val }, ...]
   const chartData = data.map((volume, index) => ({
-    name: `S${(index + 1).toString()}`,
+    name: t('dashboard.week_short', { count: index + 1 }),
     volume: Math.round(volume),
   }));
 
@@ -18,8 +20,8 @@ export function WidgetVolumeTrend({ data, className }: WidgetVolumeTrendProps) {
     <div className={className}>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h4 className="text-sm font-bold text-text-primary">Tendência de Volume</h4>
-          <p className="text-[10px] text-text-muted uppercase font-bold tracking-wider">Últimas 8 semanas</p>
+          <h4 className="text-sm font-bold text-text-primary">{t('dashboard.volume_trend_title')}</h4>
+          <p className="text-[10px] text-text-muted uppercase font-bold tracking-wider">{t('dashboard.volume_trend_subtitle')}</p>
         </div>
       </div>
       
@@ -30,7 +32,8 @@ export function WidgetVolumeTrend({ data, className }: WidgetVolumeTrendProps) {
             <Tooltip 
               contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }}
               cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
-              formatter={(value: number) => [`${value.toString()} kg`, 'Volume']}
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              formatter={((value: number) => [`${value.toFixed(2)} kg`, t('dashboard.volume_label')]) as any} // eslint-disable-line @typescript-eslint/no-explicit-any
             />
             <Bar 
               dataKey="volume" 

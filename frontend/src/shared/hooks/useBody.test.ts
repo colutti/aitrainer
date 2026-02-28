@@ -42,6 +42,7 @@ describe('useBodyStore', () => {
     });
 
     it('should handle fetch logs error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.mocked(httpClient).mockRejectedValue(new Error('Network error'));
       
       await useBodyStore.getState().fetchLogs();
@@ -49,6 +50,7 @@ describe('useBodyStore', () => {
       const state = useBodyStore.getState();
       expect(state.isLoading).toBe(false);
       expect(state.error).toBe('Falha ao carregar histórico de peso.');
+      consoleSpy.mockRestore();
     });
   });
 
@@ -94,6 +96,7 @@ describe('useBodyStore', () => {
     });
 
     it('should handle log weight error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.mocked(httpClient).mockRejectedValue(new Error('Failed'));
       
       await expect(useBodyStore.getState().logWeight({ weight_kg: 81 }))
@@ -102,6 +105,7 @@ describe('useBodyStore', () => {
       const state = useBodyStore.getState();
       expect(state.error).toBe('Falha ao registrar peso.');
       expect(state.isLoading).toBe(false);
+      consoleSpy.mockRestore();
     });
   });
 
@@ -119,6 +123,7 @@ describe('useBodyStore', () => {
     });
 
     it('should handle delete log error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.mocked(httpClient).mockRejectedValue(new Error('Failed'));
       
       await expect(useBodyStore.getState().deleteLog('2024-01-01'))
@@ -127,6 +132,7 @@ describe('useBodyStore', () => {
       const state = useBodyStore.getState();
       expect(state.error).toBe('Falha ao excluir registro.');
       expect(state.isLoading).toBe(false);
+      consoleSpy.mockRestore();
     });
   });
 

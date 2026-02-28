@@ -108,8 +108,9 @@ describe('WeightTab', () => {
   });
 
   it('should submit form', () => {
-    render(<WeightTab />);
-    fireEvent.click(screen.getByText('Salvar Registro'));
+    const { container } = render(<WeightTab />);
+    const form = container.querySelector('form');
+    if (form) fireEvent.submit(form);
     expect(mockHandleSubmit).toHaveBeenCalled();
   });
 

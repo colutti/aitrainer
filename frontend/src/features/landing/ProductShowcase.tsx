@@ -1,18 +1,21 @@
+import { useTranslation } from 'react-i18next';
+
 /**
  * ProductShowcase
  * Decorative section showing 3 stylized CSS-only mockups of the FityQ product.
  * All data is hardcoded/fake — no store imports, no API calls.
  */
 export const ProductShowcase = (): React.ReactNode => {
+  const { t } = useTranslation();
   return (
     <section className="py-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="font-display text-4xl sm:text-5xl font-bold text-white mb-4">
-            Veja o FityQ em Ação
+            {t('landing.showcase.title')}
           </h2>
           <p className="text-lg text-[#a1a1aa] max-w-2xl mx-auto">
-            Dashboard inteligente, chat contextual e análise metabólica — tudo em um só lugar.
+            {t('landing.showcase.description')}
           </p>
         </div>
 
@@ -29,7 +32,7 @@ export const ProductShowcase = (): React.ReactNode => {
                 <div className="w-2 h-2 rounded-full bg-green-500/60" />
               </div>
 
-              <p className="text-xs text-[#a1a1aa] mb-1">Meta Diária</p>
+              <p className="text-xs text-[#a1a1aa] mb-1">{t('landing.hero.daily_goal')}</p>
               <p className="font-display text-2xl font-extrabold text-white mb-4">
                 2.150 <span className="text-sm font-normal text-[#a1a1aa]">kcal</span>
               </p>
@@ -37,9 +40,9 @@ export const ProductShowcase = (): React.ReactNode => {
               {/* Macro bars */}
               <div className="space-y-2.5 mb-4">
                 {[
-                  { name: 'Proteína', pct: 88, color: 'bg-emerald-500' },
-                  { name: 'Gordura', pct: 80, color: 'bg-yellow-500' },
-                  { name: 'Carbo', pct: 78, color: 'bg-blue-500' },
+                  { name: t('landing.hero.macro_protein'), pct: 88, color: 'bg-emerald-500' },
+                  { name: t('landing.hero.macro_fat'), pct: 80, color: 'bg-yellow-500' },
+                  { name: t('landing.hero.macro_carbs'), pct: 78, color: 'bg-blue-500' },
                 ].map((m) => (
                   <div key={m.name}>
                     <div className="flex justify-between text-[10px] text-[#a1a1aa] mb-1">
@@ -55,7 +58,7 @@ export const ProductShowcase = (): React.ReactNode => {
 
               {/* Mini chart */}
               <div className="rounded-lg bg-white/[0.03] p-2.5">
-                <p className="text-[10px] text-[#a1a1aa] mb-1.5">Peso (30 dias)</p>
+                <p className="text-[10px] text-[#a1a1aa] mb-1.5">{t('landing.showcase.weight_30d')}</p>
                 <svg width="100%" height="32" viewBox="0 0 160 32" preserveAspectRatio="none">
                   <polyline
                     points="0,26 25,22 50,24 75,16 100,12 130,8 160,4"
@@ -70,7 +73,7 @@ export const ProductShowcase = (): React.ReactNode => {
                 </svg>
               </div>
             </div>
-            <p className="text-center text-sm font-medium text-[#a1a1aa] mt-3">Dashboard Inteligente</p>
+            <p className="text-center text-sm font-medium text-[#a1a1aa] mt-3">{t('landing.showcase.dashboard_title')}</p>
           </div>
 
           {/* Card 2: Chat */}
@@ -97,17 +100,17 @@ export const ProductShowcase = (): React.ReactNode => {
               <div className="space-y-3">
                 <div className="flex justify-end">
                   <div className="bg-indigo-600/80 text-white text-xs rounded-xl rounded-tr-sm px-3 py-2 max-w-[75%]">
-                    Fiz agachamento ontem, senti muito a panturrilha
+                    {t('landing.conversations.sofia.user_1')}
                   </div>
                 </div>
                 <div className="flex justify-start">
                   <div className="bg-white/5 text-[#fafafa] text-xs rounded-xl rounded-tl-sm px-3 py-2 max-w-[80%] leading-relaxed">
-                    Sentiu a panturrilha puxando? Seu tornozelo precisa de mais mobilidade. Antes da próxima série, tenta 10 rotações lentas em cada pé — depois me conta.
+                    {t('landing.conversations.sofia.trainer_1')}
                   </div>
                 </div>
                 <div className="flex justify-end">
                   <div className="bg-indigo-600/80 text-white text-xs rounded-xl rounded-tr-sm px-3 py-2 max-w-[75%]">
-                    Qual exercício você recomenda?
+                    {t('onboarding.tokens.validation_error')}
                   </div>
                 </div>
                 {/* Typing indicator */}
@@ -126,13 +129,13 @@ export const ProductShowcase = (): React.ReactNode => {
                 </div>
               </div>
             </div>
-            <p className="text-center text-sm font-medium text-[#a1a1aa] mt-3">Chat com IA</p>
+            <p className="text-center text-sm font-medium text-[#a1a1aa] mt-3">{t('landing.showcase.chat_title')}</p>
           </div>
 
           {/* Card 3: TDEE Analytics */}
           <div className="snap-center min-w-[280px] flex-shrink-0 md:min-w-0 flex flex-col">
             <div className="flex-1 rounded-2xl border border-white/10 bg-[rgba(18,18,20,0.9)] p-5 shadow-xl">
-              <p className="text-xs text-[#a1a1aa] mb-4">Meta Calórica Inteligente</p>
+              <p className="text-xs text-[#a1a1aa] mb-4">{t('landing.showcase.meta_calorie_title')}</p>
 
               {/* Large ring */}
               <div className="flex justify-center mb-4">
@@ -156,28 +159,28 @@ export const ProductShowcase = (): React.ReactNode => {
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className="font-display text-xl font-extrabold text-white">87%</span>
-                    <span className="text-[9px] text-[#a1a1aa]">precisão</span>
+                    <span className="text-[9px] text-[#a1a1aa]">{t('landing.showcase.accuracy')}</span>
                   </div>
                 </div>
               </div>
 
               <div className="text-center mb-4">
                 <p className="font-display text-2xl font-extrabold text-white">2.487 kcal</p>
-                <p className="text-xs text-[#a1a1aa] mt-0.5">Sua meta desta semana</p>
+                <p className="text-xs text-[#a1a1aa] mt-0.5">{t('landing.showcase.weekly_target_title')}</p>
               </div>
 
               {/* Confidence badge */}
               <div className="flex justify-center mb-4">
                 <span className="text-xs font-semibold bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/30">
-                  Confiança Alta
+                  {t('landing.showcase.high_confidence')}
                 </span>
               </div>
 
               {/* Stats */}
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { label: 'Vs. semana anterior', value: '+87 kcal', color: 'text-orange-400' },
-                  { label: 'Dados usados', value: '14 dias', color: 'text-cyan-400' },
+                  { label: t('landing.showcase.vs_previous'), value: '+87 kcal', color: 'text-orange-400' },
+                  { label: t('landing.showcase.data_used'), value: t('landing.showcase.days_count', { count: 14 }), color: 'text-cyan-400' },
                 ].map((s) => (
                   <div key={s.label} className="rounded-lg bg-white/[0.03] p-2.5 text-center">
                     <p className={`text-sm font-bold font-display ${s.color}`}>{s.value}</p>
@@ -186,14 +189,14 @@ export const ProductShowcase = (): React.ReactNode => {
                 ))}
               </div>
             </div>
-            <p className="text-center text-sm font-medium text-[#a1a1aa] mt-3">Meta Inteligente</p>
+            <p className="text-center text-sm font-medium text-[#a1a1aa] mt-3">{t('landing.showcase.meta_title')}</p>
           </div>
 
         </div>
 
         {/* Mobile scroll hint */}
         <p className="text-center text-xs text-[#a1a1aa] mt-2 md:hidden">
-          Deslize para ver mais →
+          {t('landing.showcase.scroll_hint')}
         </p>
       </div>
     </section>

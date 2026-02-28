@@ -1,43 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
 import type { NutritionLog, NutritionStats } from '../../../shared/types/nutrition';
 import { bodyApi } from '../api/body-api';
-
-const mandatoryNumberSchema = (min: number, max: number, label: string) => z.preprocess(
-  (val) => (val === "" || val === null || (typeof val === 'number' && isNaN(val))) ? undefined : Number(val),
-  z.number({ 
-    required_error: `${label} é obrigatório`,
-    invalid_type_error: `O ${label} deve ser um número` 
-  })
-  .min(min, `${label} deve ser ao menos ${min.toString()}`)
-  .max(max, `${label} deve ser no máximo ${max.toString()}`)
-);
-
-const optionalNumberSchema = (min: number, max: number, label: string) => z.preprocess(
-  (val) => (val === "" || val === null || (typeof val === 'number' && isNaN(val))) ? undefined : Number(val),
-  z.number({ 
-    invalid_type_error: `O ${label} deve ser um número` 
-  })
-  .min(min, `${label} deve ser ao menos ${min.toString()}`)
-  .max(max, `${label} deve ser no máximo ${max.toString()}`)
-  .optional()
-  .nullable()
-);
-
-const nutritionSchema = z.object({
-  date: z.string().min(1, "A data é obrigatória"),
-  source: z.string().min(1),
-  calories: mandatoryNumberSchema(0, 10000, "Calorias"),
-  protein_grams: optionalNumberSchema(0, 1000, "Proteína"),
-  carbs_grams: optionalNumberSchema(0, 2000, "Carboidrato"),
-  fat_grams: optionalNumberSchema(0, 500, "Gordura"),
-});
-
-type NutritionFormData = z.infer<typeof nutritionSchema>;
 
 const NUTRITION_DEFAULTS = {
   date: new Date().toISOString().split('T')[0],
@@ -62,6 +31,39 @@ export function useNutritionTab() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const notify = useNotificationStore();
+  const { t } = useTranslation();
+
+  const mandatoryNumberSchema = (min: number, max: number, label: string) => z.preprocess(
+    (val) => (val === "" || val === null || (typeof val === 'number' && isNaN(val))) ? undefined : Number(val),
+    z.number({ 
+      required_error: t('validation.field_required', { field: label }),
+      invalid_type_error: t('validation.invalid_type_number', { field: label })
+    })
+    .min(min, t('validation.number_min', { field: label, min }))
+    .max(max, t('validation.number_max', { field: label, max }))
+  );
+
+  const optionalNumberSchema = (min: number, max: number, label: string) => z.preprocess(
+    (val) => (val === "" || val === null || (typeof val === 'number' && isNaN(val))) ? undefined : Number(val),
+    z.number({ 
+      invalid_type_error: t('validation.invalid_type_number', { field: label })
+    })
+    .min(min, t('validation.number_min', { field: label, min }))
+    .max(max, t('validation.number_max', { field: label, max }))
+    .optional()
+    .nullable()
+  );
+
+  const nutritionSchema = z.object({
+    date: z.string().min(1, t('validation.field_required', { field: t('body.nutrition.date') })),
+    source: z.string().min(1),
+    calories: mandatoryNumberSchema(0, 10000, t('body.nutrition.calories').split(' ')[0] ?? ''),
+    protein_grams: optionalNumberSchema(0, 1000, t('body.nutrition.protein').split(' ')[0] ?? ''),
+    carbs_grams: optionalNumberSchema(0, 2000, t('body.nutrition.carbs').split(' ')[0] ?? ''),
+    fat_grams: optionalNumberSchema(0, 500, t('body.nutrition.fat').split(' ')[0] ?? ''),
+  });
+
+  type NutritionFormData = z.infer<typeof nutritionSchema>;
 
   const {
     register,
@@ -81,18 +83,18 @@ export function useNutritionTab() {
       setTotalPages(res.total_pages);
       setCurrentPage(res.page);
     } catch {
-      notify.error('Erro ao carregar logs nutricionais.');
+      notify.error(t('body.nutrition.notifications.load_logs_error'));
     }
-  }, [daysFilter, notify]);
+  }, [daysFilter, notify, t]);
 
   const loadStats = useCallback(async () => {
     try {
       const statsRes = await bodyApi.getNutritionStats();
       setStats(statsRes);
     } catch {
-      notify.error('Erro ao carregar estatísticas nutricionais.');
+      notify.error(t('body.nutrition.notifications.load_stats_error'));
     }
-  }, [notify]);
+  }, [notify, t]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -111,12 +113,12 @@ export function useNutritionTab() {
         Object.entries(data).filter(([_, v]) => v !== null)
       );
       await bodyApi.logNutrition(payload as Partial<NutritionLog>);
-      notify.success('Registro nutricional salvo!');
+      notify.success(t('body.nutrition.notifications.save_success'));
       setEditingId(null);
       reset({ ...NUTRITION_DEFAULTS, date: new Date().toISOString().split('T')[0] });
       await loadData();
     } catch {
-      notify.error('Erro ao salvar registro nutricional.');
+      notify.error(t('body.nutrition.notifications.save_error'));
     } finally {
       setIsSaving(false);
     }
@@ -125,10 +127,10 @@ export function useNutritionTab() {
   const deleteEntry = async (id: string) => {
     try {
       await bodyApi.deleteNutritionLog(id);
-      notify.success('Registro removido.');
+      notify.success(t('body.nutrition.notifications.delete_success'));
       await loadData();
     } catch {
-      notify.error('Erro ao remover registro.');
+      notify.error(t('body.nutrition.notifications.delete_error'));
     }
   };
 

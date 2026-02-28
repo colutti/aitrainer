@@ -237,8 +237,9 @@ class LLMClient:
                 chain_before_parser = prompt_template | self._llm
                 async for chunk in chain_before_parser.astream(input_data):
                     # Capture usage_metadata from AIMessage (only once - the first chunk with valid tokens)
-                    if not usage_metadata_captured and isinstance(chunk, AIMessage):
-                        if hasattr(chunk, "usage_metadata") and chunk.usage_metadata:
+                    if isinstance(chunk, AIMessage):
+                        # Capture usage_metadata if not captured yet
+                        if not usage_metadata_captured and hasattr(chunk, "usage_metadata") and chunk.usage_metadata:
                             tokens = chunk.usage_metadata.get("input_tokens", 0) + chunk.usage_metadata.get("output_tokens", 0)
                             if tokens > 0:
                                 usage_metadata = chunk.usage_metadata
@@ -248,9 +249,17 @@ class LLMClient:
                                     chunk.usage_metadata.get("input_tokens", 0),
                                     chunk.usage_metadata.get("output_tokens", 0),
                                 )
-                        # Yield just the text content
+                        
+                        # Always yield the text content
                         if chunk.content:
-                            yield chunk.content
+                            if isinstance(chunk.content, str):
+                                yield chunk.content
+                            elif isinstance(chunk.content, list):
+                                for block in chunk.content:
+                                    if isinstance(block, str):
+                                        yield block
+                                    elif isinstance(block, dict) and "text" in block:
+                                        yield block["text"]
                     elif isinstance(chunk, str):
                         yield chunk
             except (AttributeError, TypeError):

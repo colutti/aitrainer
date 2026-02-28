@@ -37,28 +37,6 @@ export interface QualityMetrics {
   nutrition_engagement_rate: number;
 }
 
-export interface ApplicationLog {
-  timestamp: string;
-  level: string;
-  message: string;
-  module?: string;
-}
-
-export interface LogListResponse {
-  logs: ApplicationLog[];
-  total: number;
-}
-
-export interface ApplicationLogResponse {
-  logs: string[];
-  source: string;
-  total: number;
-}
-
-export interface BetterStackLogResponse {
-  data: Record<string, unknown>[];
-  total: number;
-}
 
 export interface PromptLog {
   id: string;

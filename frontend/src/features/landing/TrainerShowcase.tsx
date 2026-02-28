@@ -1,80 +1,71 @@
 import { Button } from '@shared/components/ui/Button';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-interface TrainerData {
-  id: string;
-  name: string;
-  avatar: string;
-  tagline: string;
-  catchphrase: string;
-  specialties: string[];
-  style: string;
-  gradient: string;
-  borderHover: string;
-}
-
-const TRAINERS: TrainerData[] = [
-  {
-    id: 'atlas',
-    name: 'Atlas Prime',
-    avatar: '/assets/avatars/atlas.png',
-    tagline: 'A eficiência é a única métrica que importa.',
-    catchphrase: 'Seus músculos são máquinas biológicas. Vamos otimizá-las.',
-    specialties: ['#biomecânica', '#dados', '#hipertrofia'],
-    style: 'Científico & Precisionista',
-    gradient: 'from-sky-600 to-slate-700',
-    borderHover: 'hover:border-sky-500/60',
-  },
-  {
-    id: 'luna',
-    name: 'Luna Stardust',
-    avatar: '/assets/avatars/luna.png',
-    tagline: 'Seu corpo é um templo estelar.',
-    catchphrase: 'Respire o universo, expire as tensões.',
-    specialties: ['#yoga', '#mindfulness', '#fluxo'],
-    style: 'Holística & Telúrica',
-    gradient: 'from-indigo-500 to-purple-600',
-    borderHover: 'hover:border-indigo-400/60',
-  },
-  {
-    id: 'sofia',
-    name: 'Dra. Sofia Pulse',
-    avatar: '/assets/avatars/sofia.png',
-    tagline: 'Saúde inteligente para mulheres modernas.',
-    catchphrase: 'Vamos hackear seu metabolismo com ciência e carinho.',
-    specialties: ['#saúdefeminina', '#hormônios', '#metabolismo'],
-    style: 'Especialista Empática',
-    gradient: 'from-blue-500 to-cyan-600',
-    borderHover: 'hover:border-blue-400/60',
-  },
-  {
-    id: 'sargento',
-    name: 'Major Steel',
-    avatar: '/assets/avatars/sargento.png',
-    tagline: 'A dor é a fraqueza saindo do corpo!',
-    catchphrase: 'Sem desculpas, recruta. VAMOS EMBORA!',
-    specialties: ['#disciplina', '#força', '#semdesculpas'],
-    style: 'Bootcamp Militar',
-    gradient: 'from-emerald-600 to-teal-800',
-    borderHover: 'hover:border-emerald-500/60',
-  },
-  {
-    id: 'gymbro',
-    name: "Breno 'The Bro' Silva",
-    avatar: '/assets/avatars/gymbro.png',
-    tagline: 'Seu parceiro de treino que sempre te bota pra cima!',
-    catchphrase: 'Bora, monstro! Hoje é dia de EVOLUIR! 🔥',
-    specialties: ['#parceria', '#motivação', '#lifestyle'],
-    style: 'Parceiro do Ginásio',
-    gradient: 'from-violet-600 to-purple-800',
-    borderHover: 'hover:border-violet-500/60',
-  },
-];
 
 export const TrainerShowcase = (): React.ReactNode => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const TRAINERS = [
+    {
+      id: 'atlas',
+      name: 'Atlas Prime',
+      avatar: '/assets/avatars/atlas.png',
+      tagline: t('landing.trainers.profiles.atlas.tagline'),
+      catchphrase: t('landing.trainers.profiles.atlas.catchphrase'),
+      specialties: t('landing.trainers.profiles.atlas.specialties', { returnObjects: true }) as string[],
+      style: t('landing.trainers.profiles.atlas.style'),
+      gradient: 'from-sky-600 to-slate-700',
+      borderHover: 'hover:border-sky-500/60',
+    },
+    {
+      id: 'luna',
+      name: 'Luna Stardust',
+      avatar: '/assets/avatars/luna.png',
+      tagline: t('landing.trainers.profiles.luna.tagline'),
+      catchphrase: t('landing.trainers.profiles.luna.catchphrase'),
+      specialties: t('landing.trainers.profiles.luna.specialties', { returnObjects: true }) as string[],
+      style: t('landing.trainers.profiles.luna.style'),
+      gradient: 'from-indigo-500 to-purple-600',
+      borderHover: 'hover:border-indigo-400/60',
+    },
+    {
+      id: 'sofia',
+      name: 'Dra. Sofia Pulse',
+      avatar: '/assets/avatars/sofia.png',
+      tagline: t('landing.trainers.profiles.sofia.tagline'),
+      catchphrase: t('landing.trainers.profiles.sofia.catchphrase'),
+      specialties: t('landing.trainers.profiles.sofia.specialties', { returnObjects: true }) as string[],
+      style: t('landing.trainers.profiles.sofia.style'),
+      gradient: 'from-blue-500 to-cyan-600',
+      borderHover: 'hover:border-blue-400/60',
+    },
+    {
+      id: 'sargento',
+      name: 'Major Steel',
+      avatar: '/assets/avatars/sargento.png',
+      tagline: t('landing.trainers.profiles.sargento.tagline'),
+      catchphrase: t('landing.trainers.profiles.sargento.catchphrase'),
+      specialties: t('landing.trainers.profiles.sargento.specialties', { returnObjects: true }) as string[],
+      style: t('landing.trainers.profiles.sargento.style'),
+      gradient: 'from-emerald-600 to-teal-800',
+      borderHover: 'hover:border-emerald-500/60',
+    },
+    {
+      id: 'gymbro',
+      name: "Breno 'The Bro' Silva",
+      avatar: '/assets/avatars/gymbro.png',
+      tagline: t('landing.trainers.profiles.gymbro.tagline'),
+      catchphrase: t('landing.trainers.profiles.gymbro.catchphrase'),
+      specialties: t('landing.trainers.profiles.gymbro.specialties', { returnObjects: true }) as string[],
+      style: t('landing.trainers.profiles.gymbro.style'),
+      gradient: 'from-violet-600 to-purple-800',
+      borderHover: 'hover:border-violet-500/60',
+    },
+  ];
 
   const selectedTrainer = TRAINERS.find((t) => t.id === selectedId) ?? null;
 
@@ -83,10 +74,10 @@ export const TrainerShowcase = (): React.ReactNode => {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="font-display text-4xl sm:text-5xl font-bold text-white mb-4">
-            Conheça Seus Treinadores
+            {t('landing.trainers.title')}
           </h2>
           <p className="text-lg text-[#a1a1aa] max-w-2xl mx-auto">
-            5 personalidades únicas, cada uma com estilo, expertise e abordagem própria. Escolha quem combina com você.
+            {t('landing.trainers.description')}
           </p>
         </div>
 
@@ -158,7 +149,7 @@ export const TrainerShowcase = (): React.ReactNode => {
 
         {/* Mobile scroll hint */}
         <p className="text-center text-xs text-[#a1a1aa] mt-2 md:hidden">
-          Deslize para ver mais treinadores →
+          {t('landing.trainers.scroll_hint')}
         </p>
 
         {/* Expanded detail panel */}
@@ -194,7 +185,7 @@ export const TrainerShowcase = (): React.ReactNode => {
                     variant="primary"
                     size="sm"
                   >
-                    Conversar com {selectedTrainer.name.split(' ')[0]}
+                    {t('landing.trainers.talk_with', { name: selectedTrainer.name.split(' ')[0] })}
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-2">

@@ -832,3 +832,321 @@ def test_compaction_threshold_gap_new_user(mock_db, mock_llm_client):
     new_lines = call_kwargs["input_data"]["new_lines"]
     assert "Mensagem numero 0" in new_lines
     assert "Mensagem numero 4" in new_lines
+
+
+@pytest.mark.asyncio
+async def test_regression_compaction_never_fires_when_window_exceeds_threshold(
+    mock_db, mock_llm_client
+):
+    """
+    REGRESSION TEST — Bug: compaction never fires when active_window_size > compaction_threshold.
+
+    Production config had:
+        MAX_SHORT_TERM_MEMORY_MESSAGES=40  (.env)
+        COMPACTION_THRESHOLD=25            (code default, missing from .env)
+
+    The condition in _get_summary_candidates was:
+        if total_msgs < compaction_threshold OR total_msgs <= active_window_size:
+            return []  # abort
+
+    With threshold=25 and window=40:
+    - A user with 45 messages passes `total_msgs < 25` (False)
+    - BUT fails `total_msgs <= 40` (True for 45 > 40... wait, 45 > 40, so this is also False)
+    - Wait — actual failing case: any user with <= 40 messages is always blocked.
+    - And COMPACTION_THRESHOLD must always be > active_window_size to have any compactable candidates.
+
+    This test verifies that compaction fires correctly when:
+        total_msgs=55, window=40, threshold=50 (valid: threshold > window)
+    """
+    async def async_gen(*args, **kwargs):
+        yield json.dumps({"preferences": ["[28/02] Treino 3x/semana"]})
+
+    mock_llm_client.stream_simple = MagicMock(side_effect=async_gen)
+
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    profile = UserProfile(
+        email="regression@test.com",
+        goal="test",
+        gender="Masculino",
+        age=30,
+        weight=70.0,
+        height=175,
+        goal_type="maintain",
+        weekly_rate=0.5,
+    )
+    mock_db.get_user_profile.return_value = profile
+
+    # Simulate production scenario: 55 messages, window=40, threshold=50
+    # Should compact: messages 0-14 (55 - 40 = 15 candidates)
+    base_ts = datetime(2026, 2, 28, 9, 0)
+    messages = []
+    for i in range(55):
+        ts = base_ts + timedelta(minutes=i)
+        msg = ChatHistory(
+            sender=Sender.STUDENT,
+            text=f"Mensagem de treino numero {i} com conteudo relevante",
+            timestamp=ts.isoformat(),
+        )
+        messages.append(msg)
+
+    mock_db.get_chat_history.return_value = messages
+
+    # Use corrected production values: threshold=50 > window=40
+    await compactor.compact_history(
+        "regression@test.com",
+        active_window_size=40,
+        compaction_threshold=50,
+    )
+
+    # Compaction MUST fire
+    mock_llm_client.stream_simple.assert_called_once()
+    mock_db.update_user_profile_fields.assert_called_once()
+
+    # Verify content: only the 15 oldest messages (0-14) should be candidates
+    call_kwargs = mock_llm_client.stream_simple.call_args[1]
+    new_lines = call_kwargs["input_data"]["new_lines"]
+    assert "numero 0" in new_lines
+    assert "numero 14" in new_lines
+    # Messages in the active window must NOT be compacted
+    assert "numero 15" not in new_lines
+
+
+# =============================================================================
+# COVERAGE TESTS — 100% coverage for history_compactor.py
+# =============================================================================
+
+
+def test_merge_summary_with_corrupted_existing_json(mock_db, mock_llm_client):
+    """Lines 89-91: _merge_summary falls back gracefully when existing JSON is invalid."""
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    # Pass invalid JSON string as existing summary
+    corrupted = "not_a_json{[invalid"
+    new_data = {"goals": ["[28/02] Nova meta"]}
+
+    # Should NOT raise; should treat existing as empty and use new_data only
+    merged = compactor._merge_summary(corrupted, new_data)
+
+    assert merged["goals"] == ["[28/02] Nova meta"]
+    # Other categories should default to empty
+    assert merged["health"] == []
+    assert merged["preferences"] == []
+
+
+@pytest.mark.asyncio
+async def test_compact_history_aborts_when_profile_not_found(mock_db, mock_llm_client):
+    """Lines 109-110: compact_history returns early when user profile doesn't exist."""
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    mock_db.get_user_profile.return_value = None
+
+    await compactor.compact_history("missing@test.com", active_window_size=40, compaction_threshold=60)
+
+    mock_llm_client.stream_simple.assert_not_called()
+    mock_db.update_user_profile_fields.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_compact_history_aborts_when_no_messages(mock_db, mock_llm_client):
+    """Line 117: compact_history returns early when the user has no messages."""
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    profile = UserProfile(
+        email="empty@test.com",
+        goal="test",
+        gender="Masculino",
+        age=30,
+        weight=70.0,
+        height=175,
+        goal_type="maintain",
+        weekly_rate=0.5,
+    )
+    mock_db.get_user_profile.return_value = profile
+    mock_db.get_chat_history.return_value = []
+
+    await compactor.compact_history("empty@test.com", active_window_size=40, compaction_threshold=60)
+
+    mock_llm_client.stream_simple.assert_not_called()
+    mock_db.update_user_profile_fields.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_compact_history_handles_invalid_last_compaction_timestamp(mock_db, mock_llm_client):
+    """Lines 158-159: compact_history handles corrupted last_compaction_timestamp gracefully."""
+    async def async_gen(*args, **kwargs):
+        yield json.dumps({"preferences": ["[28/02] Treino 3x/semana"]})
+
+    mock_llm_client.stream_simple = MagicMock(side_effect=async_gen)
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    # Profile has a corrupted timestamp
+    profile = UserProfile(
+        email="test@test.com",
+        goal="test",
+        gender="Masculino",
+        age=30,
+        weight=70.0,
+        height=175,
+        goal_type="maintain",
+        weekly_rate=0.5,
+        last_compaction_timestamp="NOT_A_VALID_ISO_TIMESTAMP",
+    )
+    mock_db.get_user_profile.return_value = profile
+
+    base_ts = datetime(2026, 2, 28, 9, 0)
+    messages = [
+        ChatHistory(
+            sender=Sender.STUDENT,
+            text=f"Mensagem de treino {i} com conteudo relevante",
+            timestamp=(base_ts + timedelta(minutes=i)).isoformat(),
+        )
+        for i in range(65)
+    ]
+    mock_db.get_chat_history.return_value = messages
+
+    # Should NOT raise; corrupted timestamp treated as datetime.min → all messages are "new"
+    await compactor.compact_history("test@test.com", active_window_size=40, compaction_threshold=60)
+
+    mock_llm_client.stream_simple.assert_called_once()
+    mock_db.update_user_profile_fields.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_compact_history_handles_message_with_invalid_timestamp(mock_db, mock_llm_client):
+    """Lines 168-169: compact_history treats messages with invalid timestamps as min date."""
+    async def async_gen(*args, **kwargs):
+        yield json.dumps({"preferences": ["[28/02] Treino 3x/semana"]})
+
+    mock_llm_client.stream_simple = MagicMock(side_effect=async_gen)
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    profile = UserProfile(
+        email="test@test.com",
+        goal="test",
+        gender="Masculino",
+        age=30,
+        weight=70.0,
+        height=175,
+        goal_type="maintain",
+        weekly_rate=0.5,
+    )
+    mock_db.get_user_profile.return_value = profile
+
+    base_ts = datetime(2026, 2, 28, 9, 0)
+    messages = []
+    for i in range(65):
+        ts = "CORRUPT_TIMESTAMP" if i == 0 else (base_ts + timedelta(minutes=i)).isoformat()
+        messages.append(
+            ChatHistory(
+                sender=Sender.STUDENT,
+                text=f"Mensagem {i} com conteudo relevante pra nao ser filtrada",
+                timestamp=ts,
+            )
+        )
+    mock_db.get_chat_history.return_value = messages
+
+    # Should NOT raise; corrupted-timestamp messages fall back to datetime.min and are included
+    await compactor.compact_history("test@test.com", active_window_size=40, compaction_threshold=60)
+
+    mock_llm_client.stream_simple.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_compact_history_aborts_when_llm_returns_empty_string(mock_db, mock_llm_client):
+    """Line 189: compact_history returns early if LLM produces no response text."""
+    async def async_gen(*args, **kwargs):
+        # Yield nothing — empty async generator
+        return
+        yield  # make it a generator
+
+    mock_llm_client.stream_simple = MagicMock(side_effect=async_gen)
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    profile = UserProfile(
+        email="test@test.com",
+        goal="test",
+        gender="Masculino",
+        age=30,
+        weight=70.0,
+        height=175,
+        goal_type="maintain",
+        weekly_rate=0.5,
+    )
+    mock_db.get_user_profile.return_value = profile
+
+    base_ts = datetime(2026, 2, 28, 9, 0)
+    messages = [
+        ChatHistory(
+            sender=Sender.STUDENT,
+            text=f"Mensagem de treino {i} com conteudo",
+            timestamp=(base_ts + timedelta(minutes=i)).isoformat(),
+        )
+        for i in range(65)
+    ]
+    mock_db.get_chat_history.return_value = messages
+
+    await compactor.compact_history("test@test.com", active_window_size=40, compaction_threshold=60)
+
+    # LLM was called but returned nothing → no DB update
+    mock_db.update_user_profile_fields.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_compact_history_aborts_when_llm_returns_invalid_json(mock_db, mock_llm_client):
+    """Line 193: compact_history returns early if LLM returns non-parseable JSON."""
+    async def async_gen(*args, **kwargs):
+        yield "esta resposta nao é json valido{"
+
+    mock_llm_client.stream_simple = MagicMock(side_effect=async_gen)
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    profile = UserProfile(
+        email="test@test.com",
+        goal="test",
+        gender="Masculino",
+        age=30,
+        weight=70.0,
+        height=175,
+        goal_type="maintain",
+        weekly_rate=0.5,
+    )
+    mock_db.get_user_profile.return_value = profile
+
+    base_ts = datetime(2026, 2, 28, 9, 0)
+    messages = [
+        ChatHistory(
+            sender=Sender.STUDENT,
+            text=f"Mensagem de treino {i} com conteudo suficiente",
+            timestamp=(base_ts + timedelta(minutes=i)).isoformat(),
+        )
+        for i in range(65)
+    ]
+    mock_db.get_chat_history.return_value = messages
+
+    await compactor.compact_history("test@test.com", active_window_size=40, compaction_threshold=60)
+
+    # LLM returned invalid JSON → _parse_json_response returns None → no update
+    mock_db.update_user_profile_fields.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_generate_summary_llm_handles_exception_gracefully(mock_db, mock_llm_client):
+    """Lines 225-227: _generate_summary_llm logs error and returns empty string on exception."""
+    async def async_gen_raises(*args, **kwargs):
+        raise RuntimeError("LLM API failed")
+        yield  # make it a generator
+
+    mock_llm_client.stream_simple = MagicMock(side_effect=async_gen_raises)
+    compactor = HistoryCompactor(mock_db, mock_llm_client)
+
+    result = await compactor._generate_summary_llm(
+        user_email="test@test.com",
+        current_summary="",
+        new_lines="Aluno: Quero treinar mais",
+        log_callback=None,
+    )
+
+    # Should return empty string, not raise
+    assert result == ""
+

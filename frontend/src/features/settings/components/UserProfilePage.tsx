@@ -1,45 +1,51 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { User, Save } from 'lucide-react';
+import { User, Save, Globe } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import { Button } from '../../../shared/components/ui/Button';
 import { Input } from '../../../shared/components/ui/Input';
 import { useAuthStore } from '../../../shared/hooks/useAuth';
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
+import { cn } from '../../../shared/utils/cn';
 import { settingsApi } from '../api/settings-api';
 
 import { PhotoUpload } from './PhotoUpload';
 
-const WEEKLY_RATE_OPTIONS = [
-  { value: 0.25, label: '0.25 kg/semana' },
-  { value: 0.5,  label: '0.5 kg/semana (recomendado)' },
-  { value: 0.75, label: '0.75 kg/semana' },
-  { value: 1,    label: '1.0 kg/semana' },
-  { value: 1.5,  label: '1.5 kg/semana' },
-  { value: 2,    label: '2.0 kg/semana (máximo)' },
-] as const;
 
-const profileSchema = z.object({
-  display_name: z.string().max(50).optional(),
-  email: z.string().email(),
-  age: z.coerce.number().min(1, 'Idade inválida'),
-  height: z.coerce.number().min(1, 'Altura inválida'),
-  gender: z.string().min(1, 'Gênero obrigatório'),
-  goal_type: z.enum(['lose', 'gain', 'maintain']),
-  weekly_rate: z.coerce.number(),
-  target_weight: z.preprocess(
-    (val) => (val === '' || val === null || val === undefined) ? undefined : Number(val),
-    z.number().positive('Peso alvo deve ser positivo').optional()
-  )
-});
-
-type ProfileForm = z.infer<typeof profileSchema>;
 
 export function UserProfilePage() {
   const notify = useNotificationStore();
   const { userInfo, loadUserInfo } = useAuthStore();
+  const { t, i18n } = useTranslation();
+
+  const profileSchema = z.object({
+    display_name: z.string().max(50).optional(),
+    email: z.string().email(),
+    age: z.coerce.number().min(1, { message: t('validation.invalid_age') }),
+    height: z.coerce.number().min(1),
+    gender: z.string().min(1),
+    goal_type: z.enum(['lose', 'gain', 'maintain']),
+    weekly_rate: z.coerce.number(),
+    target_weight: z.preprocess(
+      (val) => (val === '' || val === null || val === undefined) ? undefined : Number(val),
+      z.number().positive().optional()
+    )
+  });
+
+  type ProfileForm = z.infer<typeof profileSchema>;
+
+  const WEEKLY_RATE_OPTIONS = [
+    { value: 0.25, label: `0.25 ${t('settings.kg_week')}` },
+    { value: 0.5,  label: `0.5 ${t('settings.kg_week')} (${t('settings.recommended')})` },
+    { value: 0.75, label: `0.75 ${t('settings.kg_week')}` },
+    { value: 1,    label: `1.0 ${t('settings.kg_week')}` },
+    { value: 1.5,  label: `1.5 ${t('settings.kg_week')}` },
+    { value: 2,    label: `2.0 ${t('settings.kg_week')} (${t('settings.maximum')})` },
+  ] as const;
+
   const [photo, setPhoto] = useState<string | null | undefined>(userInfo?.photo_base64);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -96,12 +102,16 @@ export function UserProfilePage() {
       // Refresh auth store to update sidebar/dashboard with new name/photo
       await loadUserInfo();
 
-      notify.success('Perfil atualizado com sucesso!');
+      notify.success(t('settings.update_success'));
     } catch {
-      notify.error('Erro ao atualizar perfil');
+      notify.error(t('settings.update_error'));
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const changeLanguage = (lng: string) => {
+    void i18n.changeLanguage(lng);
   };
 
   const isMaintain = goalType === 'maintain';
@@ -113,93 +123,139 @@ export function UserProfilePage() {
             <User className="text-gradient-start" size={24} />
         </div>
         <div>
-            <h1 className="text-2xl font-bold text-text-primary">Perfil do Usuário</h1>
-            <p className="text-text-secondary">Gerencie suas informações pessoais e objetivos</p>
+            <h1 className="text-2xl font-bold text-text-primary">{t('settings.profile_title')}</h1>
+            <p className="text-text-secondary">{t('settings.profile_subtitle')}</p>
         </div>
       </div>
 
-      <form onSubmit={(e) => {
-        void handleSubmit(onSubmit)(e);
-      }} className="space-y-6 bg-dark-card p-6 rounded-xl border border-border shadow-sm">
+      <div className="space-y-6 bg-dark-card p-6 rounded-xl border border-border shadow-sm">
         {/* Identity Section */}
-        <div className="border-b border-border pb-6">
-          <h3 className="text-lg font-semibold text-text-primary mb-4">Identidade</h3>
-          <div className="space-y-4">
-            <PhotoUpload
-              currentPhoto={photo}
-              displayName={userInfo?.name}
-              email={userInfo?.email ?? 'user@example.com'}
-              onPhotoChange={(newPhoto) => {
-                setPhoto(newPhoto);
-              }}
-              isLoading={isSaving}
-            />
-            <Input
-              id="profile-display-name"
-              label="Nome Exibido"
-              placeholder="Seu nome para o app e treinador"
-              maxLength={50}
-              {...register('display_name')}
-              error={errors.display_name?.message}
-            />
+        <form onSubmit={(e) => {
+          void handleSubmit(onSubmit)(e);
+        }} className="space-y-6">
+          <div className="border-b border-border pb-6">
+            <h3 className="text-lg font-semibold text-text-primary mb-4">{t('settings.identity')}</h3>
+            <div className="space-y-4">
+              <PhotoUpload
+                currentPhoto={photo}
+                displayName={userInfo?.name}
+                email={userInfo?.email ?? 'user@example.com'}
+                onPhotoChange={(newPhoto) => {
+                  setPhoto(newPhoto);
+                }}
+                isLoading={isSaving}
+              />
+              <Input
+                id="profile-display-name"
+                label={t('settings.display_name')}
+                placeholder={t('settings.display_name_placeholder')}
+                maxLength={50}
+                {...register('display_name')}
+                error={errors.display_name?.message}
+              />
+            </div>
+          </div>
+
+          <Input id="profile-email" label={t('settings.email')} {...register('email')} disabled className="opacity-60 cursor-not-allowed" />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input id="profile-age" label={t('settings.age')} type="number" {...register('age')} error={errors.age?.message} />
+              <Input id="profile-gender" label={t('settings.gender')} {...register('gender')} error={errors.gender?.message} />
+          </div>
+
+          <Input id="profile-height" label={t('settings.height')} type="number" {...register('height')} error={errors.height?.message} />
+
+          <div className="border-t border-border pt-4 mt-6">
+              <h3 className="text-lg font-semibold text-text-primary mb-4">{t('settings.goals_title')}</h3>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                      <label htmlFor="profile-goal-type" className="text-sm font-medium text-text-secondary px-1 block mb-1.5">{t('settings.goal_type')}</label>
+                      <select
+                        id="profile-goal-type"
+                        {...register('goal_type')}
+                        className="flex h-11 w-full rounded-lg bg-dark-card border border-border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-gradient-start/20 focus:border-gradient-start text-white"
+                      >
+                          <option value="lose">{t('settings.goal_lose')}</option>
+                          <option value="gain">{t('settings.goal_gain')}</option>
+                          <option value="maintain">{t('settings.goal_maintain')}</option>
+                      </select>
+                  </div>
+
+                  <div>
+                      <label htmlFor="profile-weekly-rate" className="text-sm font-medium text-text-secondary px-1 block mb-1.5">{t('settings.weekly_rate')}</label>
+                      <select
+                        id="profile-weekly-rate"
+                        {...register('weekly_rate')}
+                        disabled={isMaintain}
+                        className="flex h-11 w-full rounded-lg bg-dark-card border border-border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-gradient-start/20 focus:border-gradient-start text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {WEEKLY_RATE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.weekly_rate && (
+                        <p className="text-red-400 text-xs mt-1 px-1">{errors.weekly_rate.message}</p>
+                      )}
+                  </div>
+              </div>
+
+              <Input id="profile-target-weight" label={t('settings.target_weight')} type="number" step="0.1" {...register('target_weight')} error={errors.target_weight?.message} />
+          </div>
+
+          <div className="flex justify-end pt-6">
+              <Button type="submit" disabled={isSubmitting || isSaving} className="w-full md:w-auto">
+                  <Save className="mr-2 h-4 w-4" /> {isSaving ? t('settings.saving') : t('settings.save_changes')}
+              </Button>
+          </div>
+        </form>
+
+        {/* Language Section */}
+        <div className="border-t border-border pt-6 mt-6">
+          <div className="flex items-center gap-2 mb-4">
+             <Globe className="text-gradient-start" size={20} />
+             <h3 className="text-lg font-semibold text-text-primary">{t('settings.language')}</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+             <button
+               onClick={() => { changeLanguage('pt-BR'); }}
+               className={cn(
+                 "p-4 rounded-xl border text-sm font-medium transition-all text-center",
+                 i18n.language === 'pt-BR' 
+                  ? "bg-gradient-start/10 border-gradient-start text-gradient-start" 
+                  : "bg-dark-bg border-border text-text-secondary hover:border-white/20"
+               )}
+             >
+               {t('settings.language_pt')}
+             </button>
+             <button
+               onClick={() => { changeLanguage('es-ES'); }}
+               className={cn(
+                 "p-4 rounded-xl border text-sm font-medium transition-all text-center",
+                 i18n.language === 'es-ES' 
+                  ? "bg-gradient-start/10 border-gradient-start text-gradient-start" 
+                  : "bg-dark-bg border-border text-text-secondary hover:border-white/20"
+               )}
+             >
+               {t('settings.language_es')}
+             </button>
+             <button
+               onClick={() => { changeLanguage('en-US'); }}
+               className={cn(
+                 "p-4 rounded-xl border text-sm font-medium transition-all text-center",
+                 i18n.language === 'en-US' 
+                  ? "bg-gradient-start/10 border-gradient-start text-gradient-start" 
+                  : "bg-dark-bg border-border text-text-secondary hover:border-white/20"
+               )}
+             >
+               {t('settings.language_en')}
+             </button>
           </div>
         </div>
-
-        <Input id="profile-email" label="Email" {...register('email')} disabled className="opacity-60 cursor-not-allowed" />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input id="profile-age" label="Idade" type="number" {...register('age')} error={errors.age?.message} />
-            <Input id="profile-gender" label="Gênero" {...register('gender')} error={errors.gender?.message} />
-        </div>
-
-        <Input id="profile-height" label="Altura (cm)" type="number" {...register('height')} error={errors.height?.message} />
-
-        <div className="border-t border-border pt-4 mt-6">
-            <h3 className="text-lg font-semibold text-text-primary mb-4">Metas & Objetivos</h3>
-
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                    <label htmlFor="profile-goal-type" className="text-sm font-medium text-text-secondary px-1 block mb-1.5">Tipo de Objetivo</label>
-                    <select
-                      id="profile-goal-type"
-                      {...register('goal_type')}
-                      className="flex h-11 w-full rounded-lg bg-dark-card border border-border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-gradient-start/20 focus:border-gradient-start text-white"
-                    >
-                        <option value="lose">Perder Peso</option>
-                        <option value="gain">Ganhar Massa</option>
-                        <option value="maintain">Manter Peso</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label htmlFor="profile-weekly-rate" className="text-sm font-medium text-text-secondary px-1 block mb-1.5">Meta Semanal</label>
-                    <select
-                      id="profile-weekly-rate"
-                      {...register('weekly_rate')}
-                      disabled={isMaintain}
-                      className="flex h-11 w-full rounded-lg bg-dark-card border border-border px-3 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-gradient-start/20 focus:border-gradient-start text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {WEEKLY_RATE_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.weekly_rate && (
-                      <p className="text-red-400 text-xs mt-1 px-1">{errors.weekly_rate.message}</p>
-                    )}
-                </div>
-            </div>
-
-            <Input id="profile-target-weight" label="Peso Alvo (kg)" type="number" step="0.1" {...register('target_weight')} error={errors.target_weight?.message} />
-        </div>
-
-        <div className="flex justify-end pt-6">
-            <Button type="submit" disabled={isSubmitting || isSaving} className="w-full md:w-auto">
-                <Save className="mr-2 h-4 w-4" /> {isSaving ? 'Salvando...' : 'Salvar Alterações'}
-            </Button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 }

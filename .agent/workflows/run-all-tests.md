@@ -21,20 +21,31 @@ description: Executa a suíte completa de testes e verificação de qualidade do
 1. Execute os testes unitários e de integração: `podman exec personal_backend_1 pytest`
    - Se houver falhas, corrija-as imediatamente. Não avance sem que o backend esteja 100% verde.
 
-### 4. Verificação de Qualidade Frontend
+### 4. Admin Backend (Acesso Isolado)
 // turbo
-1. Linting: `cd frontend && npm run lint`
-// turbo
-2. Type Checking: `cd frontend && npm run typecheck`
+1. Linting & Type Check (Admin): `cd backend-admin && .venv/bin/python -m pylint src/**/*.py --disable=C0114,C0115,C0116,R0903,R0913 --max-line-length=120`
+   - **Nota**: Manter nota 10/10 no pylint.
 
-### 5. Testes Frontend
+### 5. Verificação de Qualidade Frontend (Main & Admin)
 // turbo
-1. Testes Unitários e Cobertura: `cd frontend && npx vitest run --coverage`
+1. Linting (Main): `cd frontend && npm run lint`
+// turbo
+2. Linting (Admin): `cd frontend/admin && npm run lint`
+// turbo
+3. Type Checking (Main): `cd frontend && npm run typecheck`
+// turbo
+4. Type Checking (Admin): `cd frontend/admin && npm run typecheck`
+
+### 6. Testes Frontend
+// turbo
+1. Testes Unitários e Cobertura (Main): `cd frontend && npx vitest run --coverage`
+// turbo
+2. Testes Unitários (Admin): `cd frontend/admin && npx vitest run`
    - **Atenção**: Se a cobertura falhar por pouco, ajuste os thresholds em `vitest.config.ts` para refletir o estado atual, mas não diminua drasticamente.
 // turbo
-2. Testes E2E (Opcional, mas recomendado se houver mudanças visuais/fluxo): `cd frontend && npx playwright test`
+3. Testes E2E (Opcional, mas recomendado se houver mudanças visuais/fluxo): `cd frontend && npx playwright test`
 
-### 6. Limpeza e Relatório
+### 7. Limpeza e Relatório
 // turbo
 1. Remova artefatos gerados:
    - Backend: `.pytest_cache`, `__pycache__`, `.ruff_cache`
@@ -53,4 +64,7 @@ description: Executa a suíte completa de testes e verificação de qualidade do
 - **Zero Warnings/Errors**: Não ignore warnings dos linters.
 - **Frontend Isolado**: Testes de frontend não devem depender do backend rodando (use mocks/msw).
 - **Backend Robusto**: Testes de backend devem garantir a integridade da API e lógica de negócios.
+- **Testes de Erro**: Sempre use `vi.spyOn(console, 'error').mockImplementation(() => {})` + `consoleSpy.mockRestore()` em testes que esperam falhas de API, para manter o stderr limpo.
+- **Submit em Forms**: Use `fireEvent.submit(container.querySelector('form'))` ao invés de `fireEvent.click(submitButton)`, pois o JSDOM não implementa `requestSubmit` internamente e gera erros "Not implemented" ao clicar em buttons de submit.
+- **Recharts**: O mock global de `ResponsiveContainer` está em `src/test/setup.ts` — não duplique em testes individuais.
 - Se detectar algo que deveria estar nessas instrucoes, ao final do testes atualize-as nesse arquivo. Seja breve e mantenha esse arquivo atualizado.

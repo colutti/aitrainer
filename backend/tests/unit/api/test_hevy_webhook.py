@@ -237,6 +237,7 @@ async def test_webhook_end_to_end_with_ai_analysis(mock_brain):
 
     # Mock hevy service to return a fake but realistic workout
     mock_hevy_service = AsyncMock()
+    mock_hevy_service.workout_repository.save_log = MagicMock()
     mock_hevy_service.fetch_workout_by_id.return_value = {
         "id": "hevy-workout-123",
         "title": "Peito e Tríceps",

@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 
 import { AdminDashboardPage } from './features/admin/components/AdminDashboardPage';
 import { AdminLayout } from './features/admin/components/AdminLayout';
-import { AdminLogsPage } from './features/admin/components/AdminLogsPage';
 import { AdminPromptsPage } from './features/admin/components/AdminPromptsPage';
 import { AdminTokensPage } from './features/admin/components/AdminTokensPage';
 import { AdminUsersPage } from './features/admin/components/AdminUsersPage';
@@ -32,7 +31,6 @@ export default function App() {
         >
           <Route index element={<AdminDashboardPage />} />
           <Route path="users" element={<AdminUsersPage />} />
-          <Route path="logs" element={<AdminLogsPage />} />
           <Route path="prompts" element={<AdminPromptsPage />} />
           <Route path="tokens" element={<AdminTokensPage />} />
         </Route>

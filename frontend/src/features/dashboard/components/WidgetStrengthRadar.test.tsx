@@ -28,7 +28,7 @@ describe('WidgetStrengthRadar', () => {
   it('should render title and subtitle', () => {
     render(<WidgetStrengthRadar data={mockData} />);
     expect(screen.getByText('Balanço de Força')).toBeInTheDocument();
-    expect(screen.getByText('Análise relativa (0-1)')).toBeInTheDocument();
+    expect(screen.getByText('Equilíbrio por Categoria')).toBeInTheDocument();
   });
 
   it('should apply custom className', () => {

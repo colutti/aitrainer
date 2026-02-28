@@ -8,6 +8,7 @@ from src.repositories.base import BaseRepository
 @pytest.fixture
 def mock_db():
     """Create mock MongoDB database."""
+    from unittest.mock import MagicMock
     db_mock = MagicMock()
     collection_mock = MagicMock()
     db_mock.__getitem__.return_value = collection_mock
@@ -184,7 +185,8 @@ class TestBaseRepositoryChaining:
 
     def test_chained_find_operations(self, base_repo, mock_db):
         """Test chained find operations."""
-        mock_cursor = MagicMock()
+        from unittest.mock import Mock
+        mock_cursor = Mock()
         mock_cursor.sort.return_value = mock_cursor
         mock_cursor.limit.return_value = []
 
@@ -197,7 +199,8 @@ class TestBaseRepositoryChaining:
 
     def test_chained_operations_return_types(self, base_repo, mock_db):
         """Test that chained operations return appropriate types."""
-        mock_cursor = MagicMock()
+        from unittest.mock import Mock
+        mock_cursor = Mock()
         mock_cursor.sort.return_value = mock_cursor
         mock_cursor.limit.return_value = mock_cursor
 

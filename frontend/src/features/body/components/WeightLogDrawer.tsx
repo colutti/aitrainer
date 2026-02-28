@@ -1,4 +1,5 @@
 import { X, Scale, Activity, Ruler, FileText, Droplets, Zap, Target, Bone, Flame } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '../../../shared/components/ui/Button';
 import type { WeightLog } from '../../../shared/types/body';
@@ -16,6 +17,7 @@ interface WeightLogDrawerProps {
  * Slides in from the right side of the screen
  */
 export function WeightLogDrawer({ log, isOpen, onClose }: WeightLogDrawerProps) {
+  const { t } = useTranslation();
   if (!log) return null;
 
   return (
@@ -42,7 +44,7 @@ export function WeightLogDrawer({ log, isOpen, onClose }: WeightLogDrawerProps) 
           <div>
             <h2 className="text-xl font-bold text-text-primary flex items-center gap-2">
               <Scale className="text-gradient-start" size={24} />
-              Detalhes do Registro
+              {t('body.weight.record_details')}
             </h2>
             <p className="text-sm text-text-secondary mt-1 capitalize">
               {formatDate(log.date)}
@@ -64,7 +66,7 @@ export function WeightLogDrawer({ log, isOpen, onClose }: WeightLogDrawerProps) 
           {/* Main Weight Display */}
           <div className="flex items-center justify-between bg-zinc-900/50 p-6 rounded-2xl border border-white/5">
             <div>
-              <p className="text-sm text-text-muted mb-1 font-medium uppercase tracking-wider">Peso Registrado</p>
+              <p className="text-sm text-text-muted mb-1 font-medium uppercase tracking-wider">{t('body.weight.registered_weight')}</p>
               <div className="flex items-baseline gap-2">
                 <span className="text-4xl font-black text-white">{log.weight_kg.toFixed(2)}</span>
                 <span className="text-xl text-text-secondary font-medium">kg</span>
@@ -72,7 +74,7 @@ export function WeightLogDrawer({ log, isOpen, onClose }: WeightLogDrawerProps) 
             </div>
             {log.trend_weight !== undefined && (
               <div className="text-right">
-                 <p className="text-xs text-text-muted mb-1 font-medium uppercase tracking-wider">Tendência</p>
+                 <p className="text-xs text-text-muted mb-1 font-medium uppercase tracking-wider">{t('body.weight.trend')}</p>
                  <div className={cn(
                    "text-lg font-bold flex items-center justify-end gap-1",
                    log.weight_kg > (log.trend_weight || 0) ? "text-red-400" : "text-emerald-400"
@@ -90,7 +92,7 @@ export function WeightLogDrawer({ log, isOpen, onClose }: WeightLogDrawerProps) 
               <div className="flex items-center gap-2 pb-2 border-b border-white/5">
                 <Activity className="text-blue-400" size={18} />
                 <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">
-                  Composição Corporal
+                  {t('body.weight.composition_title')}
                 </h3>
               </div>
               
@@ -99,7 +101,7 @@ export function WeightLogDrawer({ log, isOpen, onClose }: WeightLogDrawerProps) 
                   <div className="bg-zinc-900/30 p-3 rounded-xl border border-white/5">
                     <div className="flex items-center gap-2 mb-1">
                       <Target size={14} className="text-orange-400" />
-                      <p className="text-[10px] text-text-muted font-bold uppercase">Gordura</p>
+                      <p className="text-[10px] text-text-muted font-bold uppercase">{t('body.weight.body_fat').split(' ')[0]}</p>
                     </div>
                     <p className="text-xl font-bold text-text-primary">{log.body_fat_pct}%</p>
                   </div>
@@ -109,7 +111,7 @@ export function WeightLogDrawer({ log, isOpen, onClose }: WeightLogDrawerProps) 
                   <div className="bg-zinc-900/30 p-3 rounded-xl border border-white/5">
                     <div className="flex items-center gap-2 mb-1">
                       <Zap size={14} className="text-yellow-400" />
-                      <p className="text-[10px] text-text-muted font-bold uppercase">Massa Muscular</p>
+                      <p className="text-[10px] text-text-muted font-bold uppercase">{t('body.weight.muscle_mass')}</p>
                     </div>
                     {log.muscle_mass_kg != null ? (
                       <p className="text-xl font-bold text-text-primary">{log.muscle_mass_kg}kg</p>
@@ -123,7 +125,7 @@ export function WeightLogDrawer({ log, isOpen, onClose }: WeightLogDrawerProps) 
                   <div className="bg-zinc-900/30 p-3 rounded-xl border border-white/5">
                     <div className="flex items-center gap-2 mb-1">
                        <Droplets size={14} className="text-blue-400" />
-                       <p className="text-[10px] text-text-muted font-bold uppercase">Água Corporal</p>
+                       <p className="text-[10px] text-text-muted font-bold uppercase">{t('body.weight.body_water')}</p>
                     </div>
                     <p className="text-xl font-bold text-text-primary">{log.body_water_pct}%</p>
                   </div>
@@ -133,7 +135,7 @@ export function WeightLogDrawer({ log, isOpen, onClose }: WeightLogDrawerProps) 
                   <div className="bg-zinc-900/30 p-3 rounded-xl border border-white/5">
                     <div className="flex items-center gap-2 mb-1">
                        <Bone size={14} className="text-zinc-400" />
-                       <p className="text-[10px] text-text-muted font-bold uppercase">Massa Óssea</p>
+                       <p className="text-[10px] text-text-muted font-bold uppercase">{t('body.weight.bone_mass')}</p>
                     </div>
                     <p className="text-xl font-bold text-text-primary">{log.bone_mass_kg}kg</p>
                   </div>
@@ -143,7 +145,7 @@ export function WeightLogDrawer({ log, isOpen, onClose }: WeightLogDrawerProps) 
                   <div className="bg-zinc-900/30 p-3 rounded-xl border border-white/5">
                     <div className="flex items-center gap-2 mb-1">
                        <Activity size={14} className="text-red-400" />
-                       <p className="text-[10px] text-text-muted font-bold uppercase">Gordura Visceral</p>
+                       <p className="text-[10px] text-text-muted font-bold uppercase">{t('body.weight.visceral_fat')}</p>
                     </div>
                     <p className="text-xl font-bold text-text-primary">{log.visceral_fat}</p>
                   </div>
@@ -151,10 +153,10 @@ export function WeightLogDrawer({ log, isOpen, onClose }: WeightLogDrawerProps) 
 
                 {log.bmr != null && (
                    <div className="bg-zinc-900/30 p-3 rounded-xl border border-white/5">
-                    <div className="flex items-center gap-2 mb-1">
-                       <Flame className="text-orange-500" size={14} />
-                       <p className="text-[10px] text-text-muted font-bold uppercase">Taxa Metabólica</p>
-                    </div>
+                     <div className="flex items-center gap-2 mb-1">
+                        <Flame className="text-orange-500" size={14} />
+                        <p className="text-[10px] text-text-muted font-bold uppercase">{t('body.metabolism.metabolic_rate')}</p>
+                     </div>
                     <p className="text-xl font-bold text-text-primary">{log.bmr} kcal</p>
                   </div>
                 )}
@@ -167,22 +169,22 @@ export function WeightLogDrawer({ log, isOpen, onClose }: WeightLogDrawerProps) 
             <div className="flex items-center gap-2 pb-2 border-b border-white/5">
               <Ruler className="text-emerald-400" size={18} />
               <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">
-                Medidas (cm)
+                {t('body.weight.measurements_short_title')}
               </h3>
             </div>
 
              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {[
-                  { label: 'Pescoço', value: log.neck_cm },
-                  { label: 'Peito', value: log.chest_cm },
-                  { label: 'Cintura', value: log.waist_cm },
-                  { label: 'Quadril', value: log.hips_cm },
-                  { label: 'Bíceps (D)', value: log.bicep_r_cm },
-                  { label: 'Bíceps (E)', value: log.bicep_l_cm },
-                  { label: 'Coxa (D)', value: log.thigh_r_cm },
-                  { label: 'Coxa (E)', value: log.thigh_l_cm },
-                  { label: 'Panturrilha (D)', value: log.calf_r_cm },
-                  { label: 'Panturrilha (E)', value: log.calf_l_cm },
+                  { label: t('body.weight.neck'), value: log.neck_cm },
+                  { label: t('body.weight.chest'), value: log.chest_cm },
+                  { label: t('body.weight.waist'), value: log.waist_cm },
+                  { label: t('body.weight.hips'), value: log.hips_cm },
+                  { label: t('body.weight.bicep_r'), value: log.bicep_r_cm },
+                  { label: t('body.weight.bicep_l'), value: log.bicep_l_cm },
+                  { label: t('body.weight.thigh_r'), value: log.thigh_r_cm },
+                  { label: t('body.weight.thigh_l'), value: log.thigh_l_cm },
+                  { label: t('body.weight.calf_r'), value: log.calf_r_cm },
+                  { label: t('body.weight.calf_l'), value: log.calf_l_cm },
                 ].map((item) => (
                   <div key={item.label} className={cn(
                     "px-3 py-2 rounded-lg border flex justify-between items-center transition-colors",
@@ -208,7 +210,7 @@ export function WeightLogDrawer({ log, isOpen, onClose }: WeightLogDrawerProps) 
                <div className="flex items-center gap-2 pb-2 border-b border-white/5">
                 <FileText className="text-purple-400" size={18} />
                 <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">
-                  Observações
+                  {t('body.weight.notes')}
                 </h3>
               </div>
               <div className="bg-zinc-900/30 p-4 rounded-xl border border-white/5 text-sm text-text-secondary italic leading-relaxed">

@@ -57,11 +57,13 @@ describe('useSettingsStore', () => {
     });
 
     it('should handle fetch profile error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.mocked(httpClient).mockRejectedValue(new Error('error'));
       await useSettingsStore.getState().fetchProfile();
       const state = useSettingsStore.getState();
       expect(state.isLoading).toBe(false);
       expect(state.error).toBe('Falha ao carregar perfil.');
+      consoleSpy.mockRestore();
     });
   });
 
@@ -84,11 +86,13 @@ describe('useSettingsStore', () => {
     });
 
     it('should handle update profile error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.mocked(httpClient).mockRejectedValue(new Error('error'));
       await expect(useSettingsStore.getState().updateProfile({ goal: 'lose_weight' }))
         .rejects.toThrow('error');
       const state = useSettingsStore.getState();
       expect(state.error).toBe('Falha ao salvar perfil.');
+      consoleSpy.mockRestore();
     });
   });
 
@@ -165,11 +169,13 @@ describe('useSettingsStore', () => {
     });
 
     it('should handle update trainer error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.mocked(httpClient).mockRejectedValue(new Error('error'));
       await expect(useSettingsStore.getState().updateTrainer('expert'))
         .rejects.toThrow('error');
       const state = useSettingsStore.getState();
       expect(state.isSaving).toBe(false);
+      consoleSpy.mockRestore();
     });
   });
 

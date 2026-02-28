@@ -36,10 +36,14 @@ vi.mock('./components/WorkoutDrawer', () => ({
 }));
 
 vi.mock('../../shared/components/ui/DataList', () => ({
-    DataList: ({ data, renderItem, pagination, headerContent }: any) => (
+    DataList: ({ data, renderItem, keyExtractor, pagination, headerContent }: any) => (
         <div>
             {headerContent}
-            {data.map((item: any) => renderItem(item))}
+            {data.map((item: any) => (
+                <div key={keyExtractor ? keyExtractor(item) : item.id}>
+                    {renderItem(item)}
+                </div>
+            ))}
             {pagination && (
                 <button onClick={() => pagination.onPageChange(pagination.currentPage + 1)}>
                     Next Page

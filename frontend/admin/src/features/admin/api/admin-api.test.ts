@@ -54,17 +54,6 @@ describe('adminApi', () => {
     });
   });
 
-  it('getApplicationLogs handles params', async () => {
-    vi.mocked(httpClient).mockResolvedValue({});
-    await adminApi.getApplicationLogs(50, 'error');
-    expect(httpClient).toHaveBeenCalledWith('/admin/logs/application?limit=50&level=error');
-  });
-
-  it('getBetterStackLogs handles params', async () => {
-    vi.mocked(httpClient).mockResolvedValue({});
-    await adminApi.getBetterStackLogs(30, 'query');
-    expect(httpClient).toHaveBeenCalledWith('/admin/logs/betterstack?limit=30&query=query');
-  });
 
   it('listPrompts handles user_id param', async () => {
     vi.mocked(httpClient).mockResolvedValue({});

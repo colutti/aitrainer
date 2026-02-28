@@ -103,6 +103,7 @@ describe('useNutritionStore', () => {
     });
 
     it('should handle fetch logs error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.mocked(httpClient).mockRejectedValue(new Error('error'));
 
       await useNutritionStore.getState().fetchLogs();
@@ -110,6 +111,7 @@ describe('useNutritionStore', () => {
       const state = useNutritionStore.getState();
       expect(state.isLoading).toBe(false);
       expect(state.error).toBe('Falha ao carregar histórico nutricional.');
+      consoleSpy.mockRestore();
     });
   });
 
@@ -171,6 +173,7 @@ describe('useNutritionStore', () => {
     });
 
     it('should handle create log error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.mocked(httpClient).mockRejectedValue(new Error('failed'));
 
       await expect(useNutritionStore.getState().createLog({} as CreateNutritionLogRequest))
@@ -179,6 +182,7 @@ describe('useNutritionStore', () => {
       const state = useNutritionStore.getState();
       expect(state.error).toBe('Falha ao salvar registro nutricional.');
       expect(state.isLoading).toBe(false);
+      consoleSpy.mockRestore();
     });
   });
 
@@ -202,6 +206,7 @@ describe('useNutritionStore', () => {
     });
 
     it('should handle delete log error', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.mocked(httpClient).mockRejectedValue(new Error('failed'));
 
       await expect(useNutritionStore.getState().deleteLog('1'))
@@ -210,6 +215,7 @@ describe('useNutritionStore', () => {
       const state = useNutritionStore.getState();
       expect(state.error).toBe('Falha ao excluir registro.');
       expect(state.isLoading).toBe(false);
+      consoleSpy.mockRestore();
     });
   });
 

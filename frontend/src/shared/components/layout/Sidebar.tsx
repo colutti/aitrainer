@@ -7,6 +7,7 @@ import {
   Flame,
   Settings as SettingsIcon
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router-dom';
 
 import { useAuthStore } from '../../hooks/useAuth';
@@ -44,6 +45,7 @@ function NavItem({ to, icon: Icon, label, end = false }: NavItemProps) {
  */
 export function Sidebar() {
   const { logout, userInfo } = useAuthStore();
+  const { t } = useTranslation();
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-72 bg-dark-card border-r border-white/5 hidden lg:flex flex-col p-6 z-50 shadow-2xl">
@@ -60,18 +62,18 @@ export function Sidebar() {
             FityQ
           </span>
           <span className="text-[10px] uppercase tracking-[0.4em] text-gradient-start font-bold">
-            Inteligência
+            {t('nav.brand_tagline')}
           </span>
         </div>
       </div>
 
       {/* Main Navigation */}
       <nav className="flex-1 flex flex-col gap-1 overflow-y-auto hide-scrollbar">
-        <NavItem to="/dashboard" icon={LayoutDashboard} label="Início" end={true} />
-        <NavItem to="/dashboard/chat" icon={MessageSquare} label="Treinador" />
-        <NavItem to="/dashboard/workouts" icon={Dumbbell} label="Meus Treinos" />
-        <NavItem to="/dashboard/body/weight" icon={Scale} label="Peso e Corpo" />
-        <NavItem to="/dashboard/body/nutrition" icon={Flame} label="Dieta e Macros" />
+        <NavItem to="/dashboard" icon={LayoutDashboard} label={t('nav.home')} end={true} />
+        <NavItem to="/dashboard/chat" icon={MessageSquare} label={t('nav.trainer')} />
+        <NavItem to="/dashboard/workouts" icon={Dumbbell} label={t('nav.workouts')} />
+        <NavItem to="/dashboard/body/weight" icon={Scale} label={t('nav.body')} />
+        <NavItem to="/dashboard/body/nutrition" icon={Flame} label={t('nav.nutrition')} />
       </nav>
 
       {/* User Info Section */}
@@ -89,14 +91,14 @@ export function Sidebar() {
 
       {/* Bottom Actions / Settings Section */}
       <div className="pt-6 border-t border-border flex flex-col gap-1">
-        <NavItem to="/dashboard/settings" icon={SettingsIcon} label="Configurações" />
+        <NavItem to="/dashboard/settings" icon={SettingsIcon} label={t('nav.settings')} />
 
         <button
           onClick={() => { logout(); }}
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-text-muted hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 mt-2"
         >
           <LogOut size={20} className="shrink-0" />
-          <span className="font-medium">Sair</span>
+          <span className="font-medium">{t('common.logout')}</span>
         </button>
       </div>
     </aside>

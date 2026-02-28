@@ -14,7 +14,6 @@ describe('AdminLayout', () => {
 
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
     expect(screen.getByText('Usuários')).toBeInTheDocument();
-    expect(screen.getByText('Logs')).toBeInTheDocument();
     expect(screen.getByText('Prompts')).toBeInTheDocument();
   });
 });

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import type { WeightHistoryPoint } from '../../../shared/types/dashboard';
@@ -8,6 +9,7 @@ interface WidgetWeightChartProps {
 }
 
 export function WidgetWeightChart({ data }: WidgetWeightChartProps) {
+  const { t, i18n } = useTranslation();
   if (data.length === 0) return null;
 
   // Calculate domain for better visualization
@@ -29,11 +31,12 @@ export function WidgetWeightChart({ data }: WidgetWeightChartProps) {
           <XAxis dataKey="date" hide />
           <Tooltip 
             contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }}
-            formatter={(value: number) => [`${value.toString()} kg`, 'Peso']}
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            formatter={((value: number) => [`${value.toFixed(2)} kg`, t('dashboard.chart.weight')]) as any} // eslint-disable-line @typescript-eslint/no-explicit-any
             labelFormatter={(label: string | number) => {
               const date = new Date(label);
               if (isNaN(date.getTime())) return label.toString();
-              return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+              return date.toLocaleDateString(i18n.language, { day: '2-digit', month: '2-digit' });
             }}
           />
           <Area 

@@ -1,0 +1,244 @@
+
+ RUN  v3.2.4 /home/colutti/projects/personal/frontend
+      Coverage enabled with istanbul
+
+ ✓ src/features/body/hooks/useNutritionTab.test.ts (9 tests) 276ms
+ ✓ src/shared/components/ui/Pagination.test.tsx (6 tests) 170ms
+ ✓ src/features/body/components/WeightLogDrawer.test.tsx (4 tests) 190ms
+ ✓ src/features/settings/components/TrainerSettingsPage.test.tsx (9 tests) 348ms
+ ✓ src/features/workouts/components/WorkoutDrawer.test.tsx (5 tests) 260ms
+ ✓ src/features/body/components/NutritionTab.test.tsx (7 tests) 248ms
+ ✓ src/features/nutrition/NutritionPage.test.tsx (5 tests) 323ms
+ ✓ src/features/dashboard/DashboardPage.test.tsx (5 tests) 327ms
+ ✓ src/features/body/components/WeightTab.test.tsx (8 tests) 393ms
+ ✓ src/features/settings/components/IntegrationsPage.test.tsx (9 tests) 604ms
+ ✓ src/features/settings/components/UserProfilePage.test.tsx (12 tests) 908ms
+ ✓ src/features/auth/LoginPage.test.tsx (4 tests) 903ms
+   ✓ LoginPage > should call login store action on valid submit  327ms
+ ✓ src/features/body/hooks/useMetabolismTab.test.tsx (3 tests) 180ms
+ ✓ src/shared/components/ui/Button.test.tsx (6 tests) 145ms
+ ✓ src/features/body/hooks/useWeightTab.test.ts (6 tests) 174ms
+ ✓ src/features/memories/MemoriesPage.test.tsx (4 tests) 205ms
+ ✓ src/features/settings/SettingsPage.test.tsx (2 tests) 133ms
+ ✓ src/shared/components/ui/Input.test.tsx (6 tests) 152ms
+ ✓ src/shared/components/ui/ConfirmationProvider.test.tsx (4 tests) 161ms
+ ✓ src/features/chat/ChatPage.test.tsx (7 tests) 206ms
+ ✓ admin/src/features/admin/components/AdminUsersPage.test.tsx (2 tests) 1695ms
+   ✓ AdminUsersPage > should render and search users  1105ms
+   ✓ AdminUsersPage > should handle deletion success  588ms
+ ✓ src/features/workouts/components/WorkoutCard.test.tsx (5 tests) 154ms
+ ✓ src/features/workouts/WorkoutsPage.test.tsx (3 tests) 152ms
+ ✓ admin/src/features/admin/components/AdminPromptsPage.test.tsx (2 tests) 1742ms
+   ✓ AdminPromptsPage > should render and search prompts  1096ms
+   ✓ AdminPromptsPage > should handle prompt details and copy  643ms
+ ✓ admin/src/features/admin/components/AdminLogsPage.test.tsx (3 tests) 130ms
+ ✓ src/shared/components/layout/Sidebar.test.tsx (3 tests) 131ms
+ ✓ src/features/nutrition/components/NutritionLogCard.test.tsx (2 tests) 105ms
+ ✓ admin/src/features/admin/components/AdminDashboardPage.test.tsx (2 tests) 115ms
+ ✓ src/shared/components/ui/ConfirmationModal.test.tsx (8 tests) 101ms
+ ✓ src/shared/components/layout/MainLayout.test.tsx (1 test) 100ms
+ ✓ src/shared/components/ui/Toast.test.tsx (8 tests) 88ms
+ ✓ src/features/body/components/WeightLogCard.test.tsx (3 tests) 128ms
+ ✓ src/shared/components/ui/ToastContainer.test.tsx (3 tests) 140ms
+ ✓ src/features/onboarding/components/OnboardingPage.test.tsx (3 tests) 274ms
+ ✓ src/features/body/components/MetabolismTab.test.tsx (3 tests) 176ms
+ ✓ src/features/dashboard/components/WidgetRecentPRs.test.tsx (3 tests) 97ms
+ ✓ src/shared/hooks/useAuth.test.ts (19 tests) 78ms
+ ✓ admin/src/features/admin/components/AdminLayout.test.tsx (1 test) 107ms
+ ✓ src/shared/components/ui/StatsCard.test.tsx (4 tests) 80ms
+ ✓ src/shared/components/ui/DateInput.test.tsx (5 tests) 433ms
+ ✓ src/features/chat/components/MessageBubble.test.tsx (4 tests) 163ms
+ ✓ src/features/body/BodyPage.test.tsx (2 tests) 74ms
+ ✓ src/features/dashboard/components/WidgetWeeklyFrequency.test.tsx (4 tests) 65ms
+ ✓ src/shared/components/ui/DataList.test.tsx (6 tests) 84ms
+ ✓ src/shared/hooks/useInactivityLogout.test.ts (8 tests) 65ms
+ ✓ src/features/dashboard/components/WidgetVolumeTrend.test.tsx (3 tests) 56ms
+ ✓ src/features/nutrition/components/MacroCard.test.tsx (3 tests) 80ms
+ ✓ src/features/dashboard/components/WidgetStreak.test.tsx (3 tests) 59ms
+ ✓ src/shared/components/auth/ProtectedRoute.test.tsx (5 tests) 66ms
+ ✓ src/shared/hooks/useNotification.test.ts (11 tests) 59ms
+ ✓ src/shared/components/layout/BottomNav.test.tsx (1 test) 57ms
+ ✓ src/features/dashboard/components/WidgetWeightChart.test.tsx (2 tests) 45ms
+ ✓ src/shared/components/ui/Skeleton.test.tsx (4 tests) 48ms
+ ✓ src/shared/hooks/useConfirmation.test.ts (6 tests) 41ms
+ ✓ src/shared/components/auth/AuthGuard.test.tsx (2 tests) 49ms
+ ✓ src/features/dashboard/components/WidgetStrengthRadar.test.tsx (2 tests) 261ms
+ ✓ src/shared/utils/format-number.test.ts (14 tests) 32ms
+ ✓ src/shared/utils/format-date.test.ts (12 tests) 28ms
+ ✓ src/features/body/api/body-api.test.ts (18 tests) 25ms
+ ✓ src/shared/hooks/useMemory.test.ts (9 tests) 12ms
+ ✓ src/shared/hooks/useBody.test.ts (9 tests) 17ms
+ ✓ src/features/settings/api/integrations-api.test.ts (12 tests) 21ms
+ ✓ src/shared/api/http-client.test.ts (13 tests) 19ms
+ ✓ src/shared/hooks/useWorkout.test.ts (9 tests) 10ms
+ ✓ src/shared/hooks/useSettings.test.ts (17 tests) 19ms
+ ✓ src/shared/hooks/useChat.test.ts (6 tests) 15ms
+ ✓ src/shared/hooks/useNutrition.test.ts (13 tests) 21ms
+ ✓ admin/src/features/admin/api/admin-api.test.ts (10 tests) 13ms
+ ✓ src/shared/utils/cn.test.ts (4 tests) 11ms
+ ✓ src/features/memories/api/memories-api.test.ts (3 tests) 13ms
+ ✓ src/features/nutrition/api/nutrition-api.test.ts (4 tests) 10ms
+ ✓ src/features/settings/api/settings-api.test.ts (4 tests) 4ms
+ ✓ src/shared/hooks/useDashboard.test.ts (3 tests) 5ms
+ ✓ src/features/workouts/api/workouts-api.test.ts (3 tests) 4ms
+ ✓ src/features/onboarding/api/onboarding-api.test.ts (2 tests) 6ms
+ ✓ src/shared/utils/workout-mapper.test.ts (5 tests) 3ms
+ ✓ src/shared/hooks/useTokenRefresh.test.ts (3 tests) 3ms
+ ✓ src/shared/utils/jwt.test.ts (7 tests) 5ms
+
+ Test Files  78 passed (78)
+      Tests  450 passed (450)
+   Start at  23:33:33
+   Duration  7.70s (transform 5.82s, setup 6.47s, collect 25.55s, tests 13.90s, environment 34.47s, prepare 7.30s)
+
+ % Coverage report from istanbul
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   69.16 |    56.63 |   65.46 |   69.98 |                   
+ frontend          |       0 |        0 |       0 |       0 |                   
+  ...ght.config.ts |       0 |        0 |       0 |       0 |                   
+  vite.config.ts   |       0 |        0 |       0 |       0 | 23                
+ frontend/admin    |       0 |        0 |       0 |       0 |                   
+  vite.config.ts   |       0 |        0 |       0 |       0 | 23                
+ ...tend/admin/src |       0 |      100 |       0 |       0 |                   
+  App.tsx          |       0 |      100 |       0 |       0 | 15-21             
+  main.tsx         |       0 |      100 |     100 |       0 | 7                 
+ ...ures/admin/api |   79.31 |    21.05 |   83.33 |   79.16 |                   
+  admin-api.ts     |   79.31 |    21.05 |   83.33 |   79.16 | 76-83             
+ ...min/components |   62.33 |    35.67 |   49.31 |   63.25 |                   
+  ...boardPage.tsx |     100 |       90 |     100 |     100 | 82                
+  AdminLayout.tsx  |     100 |      100 |     100 |     100 |                   
+  ...nLogsPage.tsx |      92 |    88.88 |   85.71 |      92 | 32,55             
+  ...omptsPage.tsx |   80.95 |     37.5 |   69.23 |   80.48 | ...-49,60,156-171 
+  ...okensPage.tsx |       0 |        0 |       0 |       0 | 9-191             
+  ...UsersPage.tsx |   66.66 |    48.57 |   52.94 |   66.03 | ...88,153,183-214 
+  ...tailModal.tsx |   51.11 |    12.12 |   33.33 |   52.38 | ...,78,89,169-300 
+ .../features/auth |       0 |        0 |       0 |       0 |                   
+  LoginPage.tsx    |       0 |        0 |       0 |       0 | 8-101             
+ ...src/shared/api |       0 |        0 |       0 |       0 |                   
+  http-client.ts   |       0 |        0 |       0 |       0 | 4-62              
+ ...red/components |       0 |        0 |       0 |       0 |                   
+  ...ctedRoute.tsx |       0 |        0 |       0 |       0 | 10-20             
+ ...c/shared/hooks |       0 |        0 |       0 |       0 |                   
+  useAdminAuth.ts  |       0 |        0 |       0 |       0 | 6-125             
+ ...admin/src/test |       0 |        0 |       0 |       0 |                   
+  setup.ts         |       0 |        0 |       0 |       0 | 10-45             
+ frontend/src      |       0 |        0 |       0 |       0 |                   
+  App.tsx          |       0 |      100 |       0 |       0 | 15-22             
+  AppRoutes.tsx    |       0 |      100 |       0 |       0 | 28                
+  i18n.ts          |       0 |        0 |       0 |       0 | 9-43              
+ .../features/auth |     100 |      100 |     100 |     100 |                   
+  LoginPage.tsx    |     100 |      100 |     100 |     100 |                   
+ .../features/body |     100 |      100 |     100 |     100 |                   
+  BodyPage.tsx     |     100 |      100 |     100 |     100 |                   
+ ...tures/body/api |     100 |    88.88 |     100 |     100 |                   
+  body-api.ts      |     100 |    88.88 |     100 |     100 | 47,109            
+ ...ody/components |   94.11 |    58.57 |      88 |   93.87 |                   
+  ...bolismTab.tsx |     100 |    73.21 |     100 |     100 | 63-77,118-147,200 
+  NutritionTab.tsx |    90.9 |      100 |   85.71 |    90.9 | 162               
+  ...htLogCard.tsx |     100 |    32.05 |     100 |     100 | ...,58-84,122-155 
+  ...LogDrawer.tsx |     100 |       64 |     100 |     100 | ...,80-87,107-134 
+  WeightTab.tsx    |   84.61 |    92.85 |      75 |   84.61 | 209-217           
+ ...res/body/hooks |   87.33 |    74.72 |   82.35 |   86.98 |                   
+  ...abolismTab.ts |     100 |      100 |     100 |     100 |                   
+  ...tritionTab.ts |   85.33 |    57.14 |   77.77 |   84.93 | ...67,172-173,178 
+  useWeightTab.ts  |   86.66 |    82.53 |   84.61 |    86.2 | ...23,135,159-164 
+ .../features/chat |   75.38 |    68.25 |   83.33 |    75.4 |                   
+  ChatPage.tsx     |   75.38 |    68.25 |   83.33 |    75.4 | ...8,81-82,85,158 
+ ...hat/components |     100 |       95 |     100 |     100 |                   
+  ...ageBubble.tsx |     100 |       95 |     100 |     100 | 31                
+ ...ures/dashboard |   41.66 |    29.78 |    40.9 |   42.22 |                   
+  ...boardPage.tsx |   41.66 |    29.78 |    40.9 |   42.22 | ...67-194,409-631 
+ ...ard/components |   58.49 |    52.77 |   52.63 |   58.13 |                   
+  ...tionChart.tsx |       0 |        0 |       0 |       0 | 19-64             
+  ...RecentPRs.tsx |     100 |      100 |     100 |     100 |                   
+  WidgetStreak.tsx |     100 |      100 |     100 |     100 |                   
+  ...ngthRadar.tsx |     100 |       50 |     100 |     100 | 19                
+  ...lumeTrend.tsx |      75 |       50 |      50 |   66.66 | 36-56             
+  ...Frequency.tsx |     100 |      100 |     100 |     100 |                   
+  ...ightChart.tsx |   64.28 |       50 |      50 |   63.63 | 35-39             
+ ...atures/landing |       0 |        0 |       0 |       0 |                   
+  ChatCarousel.tsx |       0 |        0 |       0 |       0 | 25-250            
+  ...ctPreview.tsx |       0 |      100 |       0 |       0 | 9-56              
+  LandingPage.tsx  |       0 |        0 |       0 |       0 | 24-599            
+  ...tShowcase.tsx |       0 |      100 |       0 |       0 | 8-185             
+  ...rShowcase.tsx |       0 |        0 |       0 |       0 | 7-193             
+ ...tures/memories |   81.81 |    72.22 |   72.72 |   81.81 |                   
+  MemoriesPage.tsx |   81.81 |    72.22 |   72.72 |   81.81 | 60,102,157,171    
+ ...s/memories/api |     100 |      100 |     100 |     100 |                   
+  memories-api.ts  |     100 |      100 |     100 |     100 |                   
+ ...ures/nutrition |   91.66 |    57.14 |    87.5 |   91.66 |                   
+  ...itionPage.tsx |   91.66 |    57.14 |    87.5 |   91.66 | 65,166            
+ .../nutrition/api |     100 |    33.33 |     100 |     100 |                   
+  nutrition-api.ts |     100 |    33.33 |     100 |     100 | 20-28             
+ ...ion/components |      80 |       50 |      75 |   88.88 |                   
+  MacroCard.tsx    |     100 |      100 |     100 |     100 |                   
+  ...onLogCard.tsx |   71.42 |       50 |   66.66 |   83.33 | 69                
+ ...onboarding/api |     100 |      100 |     100 |     100 |                   
+  ...arding-api.ts |     100 |      100 |     100 |     100 |                   
+ ...ing/components |   85.71 |     82.6 |   88.23 |   88.67 |                   
+  ...rdingPage.tsx |   85.71 |     82.6 |   88.23 |   88.67 | 41-42,57,68,93-94 
+ ...tures/settings |     100 |       50 |     100 |     100 |                   
+  SettingsPage.tsx |     100 |       50 |     100 |     100 | 43                
+ ...s/settings/api |   90.32 |     62.5 |   88.23 |   90.32 |                   
+  ...ations-api.ts |      92 |     62.5 |   91.66 |      92 | 85,102            
+  settings-api.ts  |   83.33 |      100 |      80 |   83.33 | 18                
+ ...ngs/components |   65.07 |    66.44 |   64.06 |   65.71 |                   
+  ...tionsPage.tsx |   74.13 |    68.51 |   72.41 |   74.33 | ...89-190,277-347 
+  PhotoUpload.tsx  |   16.12 |    38.88 |    9.09 |   16.66 | ...09,116-118,122 
+  ...tingsPage.tsx |   96.96 |     93.1 |     100 |     100 | 45,120            
+  ...ofilePage.tsx |    87.8 |    69.69 |   61.53 |    87.8 | 114,144,224-246   
+ ...tures/workouts |      88 |       75 |   83.33 |    87.5 |                   
+  WorkoutsPage.tsx |      88 |       75 |   83.33 |    87.5 | 51,90,131         
+ ...s/workouts/api |     100 |       25 |     100 |     100 |                   
+  workouts-api.ts  |     100 |       25 |     100 |     100 | 14-21             
+ ...uts/components |     100 |    76.59 |     100 |     100 |                   
+  WorkoutCard.tsx  |     100 |       65 |     100 |     100 | 23-33,77-84       
+  ...outDrawer.tsx |     100 |    85.18 |     100 |     100 | 69-82,106-111     
+ ...src/shared/api |     100 |    80.95 |     100 |     100 |                   
+  http-client.ts   |     100 |    80.95 |     100 |     100 | 7,61,75,83        
+ ...omponents/auth |   94.44 |    93.33 |     100 |   94.44 |                   
+  AuthGuard.tsx    |   88.88 |    83.33 |     100 |   88.88 | 20                
+  ...ctedRoute.tsx |     100 |      100 |     100 |     100 |                   
+ ...ponents/layout |     100 |       75 |     100 |     100 |                   
+  BottomNav.tsx    |     100 |    66.66 |     100 |     100 | 28                
+  MainLayout.tsx   |     100 |      100 |     100 |     100 |                   
+  Sidebar.tsx      |     100 |       80 |     100 |     100 | 31                
+ .../components/ui |    90.8 |    82.43 |     100 |   96.15 |                   
+  Button.tsx       |     100 |      100 |     100 |     100 |                   
+  ...tionModal.tsx |     100 |      100 |     100 |     100 |                   
+  ...nProvider.tsx |     100 |      100 |     100 |     100 |                   
+  DataList.tsx     |     100 |    69.23 |     100 |     100 | 60-84,126,151-160 
+  DateInput.tsx    |   85.41 |    81.81 |     100 |      95 | 73-74             
+  Input.tsx        |     100 |      100 |     100 |     100 |                   
+  Pagination.tsx   |     100 |      100 |     100 |     100 |                   
+  Skeleton.tsx     |     100 |      100 |     100 |     100 |                   
+  StatsCard.tsx    |     100 |       80 |     100 |     100 | 66-67             
+  Toast.tsx        |     100 |      100 |     100 |     100 |                   
+  ...Container.tsx |     100 |      100 |     100 |     100 |                   
+  UserAvatar.tsx   |      80 |       40 |     100 |      80 | 26                
+ ...c/shared/hooks |    90.5 |    68.04 |   93.18 |   90.99 |                   
+  useAuth.ts       |    91.3 |    86.66 |     100 |   91.11 | 182-183,189-190   
+  useBody.ts       |   97.05 |    66.66 |     100 |   96.96 | 45                
+  useChat.ts       |   71.18 |     40.9 |      80 |   73.07 | 50,71-95,124      
+  ...nfirmation.ts |   83.33 |    66.66 |      75 |    87.5 | 108-109           
+  useDashboard.ts  |     100 |      100 |     100 |     100 |                   
+  ...vityLogout.ts |   97.67 |    73.33 |     100 |   97.56 | 64                
+  useMemory.ts     |   95.65 |    71.42 |     100 |   95.45 | 56                
+  ...tification.ts |     100 |      100 |     100 |     100 |                   
+  useNutrition.ts  |     100 |      100 |     100 |     100 |                   
+  useSettings.ts   |     100 |      100 |     100 |     100 |                   
+  ...kenRefresh.ts |   63.15 |     12.5 |   71.42 |   53.33 | 29-38             
+  useWorkout.ts    |     100 |      100 |     100 |     100 |                   
+ ...c/shared/utils |   93.18 |    91.22 |     100 |   95.12 |                   
+  cn.ts            |     100 |      100 |     100 |     100 |                   
+  format-date.ts   |     100 |      100 |     100 |     100 |                   
+  format-number.ts |   91.66 |    78.94 |     100 |   91.66 | 75                
+  jwt.ts           |   84.61 |    88.88 |     100 |    90.9 | 17                
+  ...out-mapper.ts |     100 |      100 |     100 |     100 |                   
+-------------------|---------|----------|---------|---------|-------------------
+ERROR: Coverage for lines (69.98%) does not meet global threshold (88%)
+ERROR: Coverage for functions (65.46%) does not meet global threshold (85%)
+ERROR: Coverage for statements (69.16%) does not meet global threshold (88%)
+ERROR: Coverage for branches (56.63%) does not meet global threshold (70%)

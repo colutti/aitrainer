@@ -53,13 +53,15 @@ describe('useMetabolismTab', () => {
     const { result } = renderHook(() => useMetabolismTab());
     await waitFor(() => { expect(result.current.isLoading).toBe(false); });
 
-    act(() => {
+    await act(async () => {
       result.current.setWeeks(4);
     });
 
     expect(result.current.weeks).toBe(4);
     // useEffect should trigger loadData
-    expect(bodyApi.getMetabolismSummary).toHaveBeenCalledWith(4);
+    await waitFor(() => {
+      expect(bodyApi.getMetabolismSummary).toHaveBeenCalledWith(4);
+    });
   });
   
   it('should handle load error', async () => {

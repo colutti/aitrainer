@@ -1,5 +1,6 @@
 import { Check, AlertTriangle } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 
 import { Button } from '../../../shared/components/ui/Button';
@@ -7,15 +8,17 @@ import { Input } from '../../../shared/components/ui/Input';
 import { cn } from '../../../shared/utils/cn';
 import { onboardingApi, type OnboardingPayload } from '../api/onboarding-api';
 
-const TRAINERS = [
-  { id: 'atlas', name: 'Atlas', description: 'Treinador focado em força e intensidade brutal.', color: 'from-orange-500 to-red-600' },
-  { id: 'luna', name: 'Luna', description: 'Foco em bem-estar, yoga e equilíbrio mental.', color: 'from-purple-500 to-pink-600' },
-  { id: 'sargento', name: 'Sargento', description: 'Disciplina militar. Sem desculpas.', color: 'from-green-600 to-emerald-800' },
-  { id: 'sofia', name: 'Sofia', description: 'Abordagem científica e baseada em dados.', color: 'from-blue-500 to-cyan-600' },
-];
-
 export function OnboardingPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
+  
+  const TRAINERS = [
+    { id: 'atlas', name: 'Atlas', description: t('onboarding.trainers.atlas'), color: 'from-orange-500 to-red-600' },
+    { id: 'luna', name: 'Luna', description: t('onboarding.trainers.luna'), color: 'from-indigo-400 to-purple-600' },
+    { id: 'sargento', name: 'Sargento', description: t('onboarding.trainers.sargento'), color: 'from-slate-600 to-slate-800' },
+    { id: 'sofia', name: 'Sofia', description: t('onboarding.trainers.sofia'), color: 'from-rose-400 to-pink-600' },
+    { id: 'gymbro', name: 'GymBro', description: t('onboarding.trainers.gymbro'), color: 'from-yellow-400 to-orange-500' },
+  ];
   const token = searchParams.get('token');
 
   const [step, setStep] = useState(0); // 0: Validating, 1: Password, 2: Profile, 3: Trainer
@@ -23,7 +26,7 @@ export function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
   
   const [formData, setFormData] = useState<Partial<OnboardingPayload>>({
-    gender: 'Masculino',
+    gender: t('onboarding.genders.male'),
     goal_type: 'maintain',
     weekly_rate: 0.5,
     trainer_type: 'atlas'
@@ -35,7 +38,7 @@ export function OnboardingPage() {
   useEffect(() => {
     async function validate() {
       if (!token) {
-        setError('Token de convite não encontrado.');
+        setError(t('onboarding.tokens.not_found'));
         return;
       }
       
@@ -45,17 +48,17 @@ export function OnboardingPage() {
           setStep(1);
         } else {
           setError(
-            res.reason === 'expired' ? 'O convite expirou.' :
-            res.reason === 'already_used' ? 'Convite já utilizado.' :
-            'Convite inválido.'
+            res.reason === 'expired' ? t('onboarding.tokens.expired') :
+            res.reason === 'already_used' ? t('onboarding.tokens.already_used') :
+            t('onboarding.tokens.invalid')
           );
         }
       } catch {
-        setError('Erro ao validar convite.');
+        setError(t('onboarding.tokens.validation_error'));
       }
     }
     void validate();
-  }, [token]);
+  }, [token, t]);
 
   const handleNext = () => {
     setStep(s => s + 1);
@@ -72,7 +75,7 @@ export function OnboardingPage() {
       const payload: OnboardingPayload = {
         token,
         password,
-        gender: formData.gender ?? 'Masculino',
+        gender: formData.gender ?? t('onboarding.genders.male'),
         age: Number(formData.age),
         weight: Number(formData.weight),
         height: Number(formData.height),
@@ -87,7 +90,7 @@ export function OnboardingPage() {
       localStorage.setItem('auth_token', res.token);
       window.location.href = '/'; // Hard redirect
     } catch {
-      setError('Erro ao criar conta.');
+      setError(t('onboarding.tokens.creation_error'));
       setLoading(false);
     }
   };
@@ -105,7 +108,7 @@ export function OnboardingPage() {
           <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto text-red-500">
              <AlertTriangle size={32} />
           </div>
-          <h1 className="text-xl font-bold text-text-primary">Erro no Cadastro</h1>
+          <h1 className="text-xl font-bold text-text-primary">{t('onboarding.error_title')}</h1>
           <p className="text-text-secondary">{error}</p>
         </div>
       </div>
@@ -115,7 +118,7 @@ export function OnboardingPage() {
   if (step === 0) {
     return (
        <div className="min-h-screen flex items-center justify-center bg-dark-bg text-text-secondary">
-          Validando convite...
+          {t('onboarding.validating')}
        </div>
     );
   }
@@ -142,26 +145,30 @@ export function OnboardingPage() {
         {/* Step 1: Password */}
         {step === 1 && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-text-primary text-center">Criar Senha</h2>
+            <h2 className="text-2xl font-bold text-text-primary text-center">{t('onboarding.step_1_title')}</h2>
             <div className="space-y-4">
               <Input
+                id="password"
+                label={t('onboarding.password_placeholder')}
                 type="password"
-                placeholder="Senha"
+                placeholder={t('onboarding.password_placeholder')}
                 value={password}
                 onChange={e => { setPassword(e.target.value); }}
               />
               <Input
+                id="confirmPassword"
+                label={t('onboarding.confirm_password_placeholder')}
                 type="password"
-                placeholder="Confirmar Senha"
+                placeholder={t('onboarding.confirm_password_placeholder')}
                 value={confirmPassword}
                 onChange={e => { setConfirmPassword(e.target.value); }}
               />
               <p className="text-xs text-text-muted">
-                Min. 8 caracteres, números e letras.
+                {t('onboarding.password_hint')}
               </p>
             </div>
             <Button fullWidth onClick={handleNext} disabled={!canProceedStep1}>
-               Próximo
+               {t('onboarding.next')}
             </Button>
           </div>
         )}
@@ -169,33 +176,33 @@ export function OnboardingPage() {
         {/* Step 2: Profile */}
         {step === 2 && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-text-primary text-center">Seu Perfil</h2>
+            <h2 className="text-2xl font-bold text-text-primary text-center">{t('onboarding.step_2_title')}</h2>
             <div className="grid grid-cols-2 gap-4">
                <div className="col-span-2">
-                 <label htmlFor="age" className="text-sm text-text-secondary">Idade</label>
-                 <Input id="age" type="number" placeholder="Anos" 
+                 <label htmlFor="age" className="text-sm text-text-secondary">{t('onboarding.age')}</label>
+                 <Input id="age" type="number" placeholder={t('onboarding.age_placeholder')} 
                     value={formData.age ?? ''} 
                     onChange={e => { setFormData({...formData, age: Number(e.target.value)}); }} 
                  />
                </div>
                <div>
-                 <label htmlFor="weight" className="text-sm text-text-secondary">Peso (kg)</label>
-                 <Input id="weight" type="number" placeholder="kg"
+                 <label htmlFor="weight" className="text-sm text-text-secondary">{t('body.weight.weight').split(' ')[0]}</label>
+                 <Input id="weight" type="number" placeholder={t('onboarding.weight_placeholder')}
                      value={formData.weight ?? ''}
                     onChange={e => { setFormData({...formData, weight: Number(e.target.value)}); }}
                  />
                </div>
                <div>
-                  <label htmlFor="height" className="text-sm text-text-secondary">Altura (cm)</label>
-                  <Input id="height" type="number" placeholder="cm"
+                  <label htmlFor="height" className="text-sm text-text-secondary">{t('settings.height').split(' ')[0]}</label>
+                  <Input id="height" type="number" placeholder={t('onboarding.height_placeholder')}
                      value={formData.height ?? ''}
                     onChange={e => { setFormData({...formData, height: Number(e.target.value)}); }}
                   />
                </div>
             </div>
             <div className="flex gap-4">
-               <Button variant="secondary" onClick={handleBack}>Voltar</Button>
-               <Button className="flex-1" onClick={handleNext} disabled={!canProceedStep2}>Próximo</Button>
+               <Button variant="secondary" onClick={handleBack}>{t('onboarding.back')}</Button>
+               <Button className="flex-1" onClick={handleNext} disabled={!canProceedStep2}>{t('onboarding.next')}</Button>
             </div>
           </div>
         )}
@@ -203,7 +210,7 @@ export function OnboardingPage() {
         {/* Step 3: Trainer */}
         {step === 3 && (
           <div className="space-y-6">
-             <h2 className="text-2xl font-bold text-text-primary text-center">Escolha seu Treinador</h2>
+             <h2 className="text-2xl font-bold text-text-primary text-center">{t('onboarding.step_3_title')}</h2>
              <div className="grid grid-cols-1 gap-3">
                {TRAINERS.map(t => (
                  <button
@@ -227,9 +234,9 @@ export function OnboardingPage() {
              </div>
              
              <div className="flex gap-4 mt-6">
-                <Button variant="secondary" onClick={handleBack} disabled={loading}>Voltar</Button>
+                <Button variant="secondary" onClick={handleBack} disabled={loading}>{t('onboarding.back')}</Button>
                 <Button className="flex-1" onClick={() => void handleSubmit()} isLoading={loading}>
-                   Finalizar Cadastro
+                   {t('onboarding.finish')}
                 </Button>
              </div>
           </div>

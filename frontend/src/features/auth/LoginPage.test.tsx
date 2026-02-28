@@ -111,6 +111,7 @@ describe('LoginPage', () => {
   });
 
   it('should show error notification when login fails', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const user = userEvent.setup();
     const loginMock = vi.fn().mockRejectedValue(new Error('Invalid credentials'));
     const errorNotificationMock = vi.fn();
@@ -145,5 +146,6 @@ describe('LoginPage', () => {
     await waitFor(() => {
       expect(errorNotificationMock).toHaveBeenCalledWith(expect.stringContaining('Falha no login'));
     });
+    consoleSpy.mockRestore();
   });
 });

@@ -96,8 +96,9 @@ describe('NutritionTab', () => {
   });
 
   it('should submit form', () => {
-    render(<NutritionTab />);
-    fireEvent.click(screen.getByText('Salvar Registro'));
+    const { container } = render(<NutritionTab />);
+    const form = container.querySelector('form');
+    if (form) fireEvent.submit(form);
     expect(mockHandleSubmit).toHaveBeenCalled();
   });
 

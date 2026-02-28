@@ -4,12 +4,16 @@ Este documento descreve a arquitetura atualizada, os serviços utilizados e como
 
 ## 🌍 URLs de Produção
 
-| Serviço                | URL                                                                                                                  | Status                       |
-| :--------------------- | :------------------------------------------------------------------------------------------------------------------- | :--------------------------- |
-| **Frontend Principal** | [https://fityq.com](https://fityq.com)                                                                               | Ativo (via Firebase Hosting) |
-| **Backend API**        | [https://aitrainer-backend-ufyggn7wzq-no.a.run.app](https://aitrainer-backend-ufyggn7wzq-no.a.run.app)               | Ativo (Cloud Run)            |
-| **Admin Frontend**     | [https://aitrainer-frontend-admin-ufyggn7wzq-no.a.run.app](https://aitrainer-frontend-admin-ufyggn7wzq-no.a.run.app) | Ativo (Cloud Run)            |
-| **Admin Backend**      | [https://aitrainer-backend-admin-ufyggn7wzq-no.a.run.app](https://aitrainer-backend-admin-ufyggn7wzq-no.a.run.app)   | Ativo (Cloud Run)            |
+| Serviço                | URL                                                                                                                                                | Status                       |
+| :--------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------- |
+| **Frontend Principal** | [https://fityq.com](https://fityq.com)                                                                                                             | Ativo (via Firebase Hosting) |
+| **Backend API**        | [https://aitrainer-backend-ufyggn7wzq-no.a.run.app](https://aitrainer-backend-ufyggn7wzq-no.a.run.app)                                             | Ativo (Cloud Run)            |
+| **Admin Frontend**     | [https://aitrainer-frontend-admin-359890746855.europe-southwest1.run.app](https://aitrainer-frontend-admin-359890746855.europe-southwest1.run.app) | Ativo (Cloud Run)            |
+| **Admin Backend**      | [https://aitrainer-backend-admin-359890746855.europe-southwest1.run.app](https://aitrainer-backend-admin-359890746855.europe-southwest1.run.app)   | Ativo (Cloud Run)            |
+
+> [!NOTE]
+> O bot do Telegram utiliza webhooks. Após o deploy do backend, o webhook deve ser atualizado para a URL do Cloud Run (terminada em `/telegram/webhook`).
+
 
 ---
 

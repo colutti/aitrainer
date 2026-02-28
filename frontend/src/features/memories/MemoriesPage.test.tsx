@@ -107,7 +107,7 @@ describe('MemoriesPage', () => {
   it('should handle pagination', () => {
      vi.mocked(useMemoryStore).mockReturnValue({
       ...defaultStore,
-      memories: [{}], // Just to not be empty
+      memories: [{ id: 'memory-1', memory: 'Test memory', created_at: '2024-01-01' }],
       currentPage: 1,
       totalPages: 2,
     });

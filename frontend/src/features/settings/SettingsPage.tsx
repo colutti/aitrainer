@@ -5,16 +5,19 @@ import {
   Target,
   Brain
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { NavLink, Outlet } from 'react-router-dom';
 
 import { cn } from '../../shared/utils/cn';
 
 export function SettingsPage() {
+  const { t } = useTranslation();
+  
   const tabs = [
-    { to: 'profile', label: 'Perfil Pessoal', icon: User },
-    { to: 'memories', label: 'Memórias', icon: Brain },
-    { to: 'trainer', label: 'Treinador AI', icon: Target },
-    { to: 'integrations', label: 'Integrações', icon: Database },
+    { to: 'profile', label: t('settings.tabs.profile'), icon: User },
+    { to: 'memories', label: t('settings.tabs.memories'), icon: Brain },
+    { to: 'trainer', label: t('settings.tabs.trainer'), icon: Target },
+    { to: 'integrations', label: t('settings.tabs.integrations'), icon: Database },
   ];
 
   return (
@@ -23,9 +26,9 @@ export function SettingsPage() {
       <div className="flex-shrink-0">
         <h1 className="text-3xl font-bold text-text-primary flex items-center gap-3">
           <SettingsIcon className="text-gradient-start" size={32} />
-          Configurações
+          {t('settings.title')}
         </h1>
-        <p className="text-text-secondary mt-1">Gerencie seu perfil e preferências do app.</p>
+        <p className="text-text-secondary mt-1">{t('settings.subtitle')}</p>
       </div>
 
       {/* Horizontal Tab Navigation */}

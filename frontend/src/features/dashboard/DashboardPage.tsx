@@ -9,6 +9,7 @@ import {
   TrendingDown
 } from 'lucide-react';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { StatsCard } from '../../shared/components/ui/StatsCard';
@@ -34,6 +35,7 @@ import { WidgetWeeklyFrequency } from './components/WidgetWeeklyFrequency';
 export function DashboardPage() {
   const { data, isLoading, fetchData } = useDashboardStore();
   const { userInfo } = useAuthStore();
+  const { t, i18n } = useTranslation();
 
   useEffect(() => {
     void fetchData();
@@ -197,18 +199,15 @@ export function DashboardPage() {
   const mergedFatData = getMergedFatData();
   const mergedMuscleData = getMergedMuscleData();
 
-  const goalLabels: Record<string, string> = {
-    'lose': 'Perda de Peso',
-    'gain': 'Ganho de Massa',
-    'maintain': 'Manutenção'
-  };
-
   const confidenceColor = {
     'high': 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
     'medium': 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
     'low': 'text-orange-400 bg-orange-400/10 border-orange-400/20',
     'none': 'text-text-muted bg-white/5 border-white/10'
   }[metabolism.confidence] ?? 'text-text-muted';
+
+  const confidenceLevel = metabolism.confidence === 'none' ? t('dashboard.confidence_level.none') :
+    t(`dashboard.confidence_level.${metabolism.confidence.toLowerCase()}`, { defaultValue: t('dashboard.confidence_level.unknown') });
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -217,10 +216,10 @@ export function DashboardPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-text-primary">
-            Bom dia, <span className="text-gradient-start">{userInfo?.name ?? 'Atleta'}!</span>
+            {t('dashboard.greeting', { name: userInfo?.name ?? t('common.athlete', { defaultValue: 'Athlete' }) })}
           </h1>
           <p className="text-text-secondary mt-1">
-            Aqui está o resumo do seu desempenho metabólico e físico.
+            {t('dashboard.summary_subtitle')}
           </p>
         </div>
         
@@ -231,16 +230,9 @@ export function DashboardPage() {
           <div className={cn("px-4 py-2 rounded-xl border text-[9px] font-bold uppercase tracking-widest h-[46px] flex items-center gap-2.5 shadow-sm backdrop-blur-sm transition-all", confidenceColor)}>
             <Activity size={18} className="opacity-80" />
             <div className="flex flex-col justify-center">
-              <span className="text-text-muted/70 leading-none mb-1">Confiança</span>
+              <span className="text-text-muted/70 leading-none mb-1">{t('dashboard.confidence')}</span>
               <span className="text-sm font-black leading-none">
-               TDEE: {
-                 metabolism.confidence === 'none' ? '---' :
-                 ({
-                   'high': 'Alta',
-                   'medium': 'Média',
-                   'low': 'Baixa'
-                 }[metabolism.confidence.toLowerCase()] ?? 'Desconhecida')
-               }
+               TDEE: {confidenceLevel}
               </span>
             </div>
           </div>
@@ -258,8 +250,8 @@ export function DashboardPage() {
                   <Target size={24} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-text-primary">Meta Diária</h2>
-                  <p className="text-sm text-text-secondary">Foco: {goalLabels[metabolism.goal_type]}</p>
+                  <h2 className="text-lg font-bold text-text-primary">{t('dashboard.daily_target')}</h2>
+                  <p className="text-sm text-text-secondary">{t('dashboard.focus', { goal: t(`dashboard.goals.${metabolism.goal_type}`) })}</p>
                 </div>
               </div>
               
@@ -272,14 +264,14 @@ export function DashboardPage() {
 
               <div className="flex gap-6 pt-2">
                  <div>
-                    <p className="text-xs text-text-muted uppercase font-bold tracking-wider mb-1">TDEE Real</p>
+                    <p className="text-xs text-text-muted uppercase font-bold tracking-wider mb-1">{t('dashboard.tdee_real')}</p>
                     <p className="text-xl font-bold text-emerald-400 flex items-center gap-1">
                        <Zap size={16} /> {metabolism.tdee}
                     </p>
                  </div>
                  <div className="w-px bg-border h-10" />
                  <div>
-                    <p className="text-xs text-text-muted uppercase font-bold tracking-wider mb-1">Tendência Semanal</p>
+                    <p className="text-xs text-text-muted uppercase font-bold tracking-wider mb-1">{t('dashboard.weekly_trend')}</p>
                     <p className={cn("text-xl font-bold flex items-center gap-1", metabolism.weekly_change > 0 ? "text-orange-400" : "text-blue-400")}>
                        <TrendingDown size={16} className={metabolism.weekly_change > 0 ? "rotate-180" : undefined} />
                        {Math.abs(metabolism.weekly_change).toFixed(2)} kg
@@ -288,17 +280,17 @@ export function DashboardPage() {
               </div>
               
               <p className="text-[10px] text-text-muted italic mt-4 opacity-70 max-w-sm">
-                * A tendência usa algoritmos para filtrar flutuações diárias de peso, garantindo maior precisão na sua meta.
+                {t('dashboard.trend_disclaimer')}
               </p>
             </div>
 
             {/* Macro Preview (if available) */}
             {metabolism.macro_targets && (
               <div className="bg-white/5 rounded-2xl p-6 min-w-0 border border-white/5 backdrop-blur-sm">
-                <h3 className="text-sm font-bold text-text-secondary mb-4 uppercase tracking-wider">Macros Sugeridos</h3>
+                <h3 className="text-sm font-bold text-text-secondary mb-4 uppercase tracking-wider">{t('dashboard.suggested_macros')}</h3>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                     <span className="text-sm text-text-primary">Proteína</span>
+                     <span className="text-sm text-text-primary">{t('dashboard.protein')}</span>
                      <span className="font-bold text-emerald-400">{metabolism.macro_targets.protein}g</span>
                   </div>
                   <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
@@ -306,7 +298,7 @@ export function DashboardPage() {
                   </div>
                   
                   <div className="flex justify-between items-center">
-                     <span className="text-sm text-text-primary">Gordura</span>
+                     <span className="text-sm text-text-primary">{t('dashboard.fat')}</span>
                      <span className="font-bold text-yellow-400">{metabolism.macro_targets.fat}g</span>
                   </div>
                    <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
@@ -314,7 +306,7 @@ export function DashboardPage() {
                   </div>
 
                   <div className="flex justify-between items-center">
-                     <span className="text-sm text-text-primary">Carboidrato</span>
+                     <span className="text-sm text-text-primary">{t('dashboard.carbs')}</span>
                      <span className="font-bold text-blue-400">{metabolism.macro_targets.carbs}g</span>
                   </div>
                    <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
@@ -343,8 +335,8 @@ export function DashboardPage() {
                 </div>
              </div>
              <div>
-               <h3 className="font-bold text-lg text-text-primary">Consistência</h3>
-               <p className="text-xs text-text-secondary mt-1">Qualidade dos seus registros recentes.</p>
+               <h3 className="font-bold text-lg text-text-primary">{t('dashboard.consistency')}</h3>
+               <p className="text-xs text-text-secondary mt-1">{t('dashboard.consistency_subtitle')}</p>
              </div>
         </div>
       </div>
@@ -353,7 +345,7 @@ export function DashboardPage() {
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <Activity className="text-gradient-start" size={20} />
-          <h2 className="text-xl font-bold text-text-primary">Composição Corporal</h2>
+          <h2 className="text-xl font-bold text-text-primary">{t('dashboard.body_composition')}</h2>
         </div>
 
         {/* Composition Charts - Grid: Weight + Fat on first row */}
@@ -363,7 +355,7 @@ export function DashboardPage() {
             <div className="bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden group">
               <div className="relative z-10 flex flex-col h-full">
                 <div className="mb-4">
-                  <p className="text-text-secondary text-sm font-medium mb-1">Peso Atual</p>
+                  <p className="text-text-secondary text-sm font-medium mb-1">{t('dashboard.current_weight')}</p>
                   <h3 className="text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
                     {body.weight_current.toFixed(2)} <span className="text-lg text-text-muted">kg</span>
                     <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
@@ -412,13 +404,15 @@ export function DashboardPage() {
                             fontSize: '11px',
                             padding: '6px'
                           }}
-                          formatter={(value: number, name: string) => {
-                            if (name === 'Tendência') return [value.toFixed(2), name];
-                            return [value.toFixed(2), name];
-                          }}
+                          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                          formatter={((value: number, _name: string, props: { dataKey: string }) => {
+                            const dataKey = props.dataKey;
+                            if (dataKey === 'trend') return [value.toFixed(2), t('dashboard.chart.trend')];
+                            return [value.toFixed(2), t('dashboard.chart.weight')];
+                          }) as any} // eslint-disable-line @typescript-eslint/no-explicit-any
                           labelFormatter={(label) => {
                             const date = new Date(label as string);
-                            return isNaN(date.getTime()) ? String(label) : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                            return isNaN(date.getTime()) ? String(label) : date.toLocaleDateString(i18n.language, { day: '2-digit', month: '2-digit' });
                           }}
                         />
                         {/* Peso Real - linha mais grossa azul (destaque) */}
@@ -429,7 +423,7 @@ export function DashboardPage() {
                           strokeWidth={2.5}
                           dot={false}
                           isAnimationActive={false}
-                          name="Peso"
+                          name={t('dashboard.chart.weight')}
                         />
                         {/* Tendência EMA (backend) - linha fina verde */}
                         <Line
@@ -439,7 +433,7 @@ export function DashboardPage() {
                           strokeWidth={1}
                           dot={false}
                           isAnimationActive={false}
-                          name="Tendência"
+                          name={t('dashboard.chart.trend')}
                         />
                       </LineChart>
                     </ResponsiveContainer>
@@ -450,11 +444,11 @@ export function DashboardPage() {
                 <div className="flex gap-4 mt-3 text-xs">
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full bg-blue-400" />
-                    <span className="text-text-muted">Peso (30d)</span>
+                    <span className="text-text-muted">{t('dashboard.chart.weight')} (30d)</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="text-text-muted">Tendência (30d)</span>
+                    <span className="text-text-muted">{t('dashboard.chart.trend')} (30d)</span>
                   </div>
                 </div>
               </div>
@@ -468,7 +462,7 @@ export function DashboardPage() {
             <div className="bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden group">
               <div className="relative z-10 flex flex-col h-full">
                 <div className="mb-4">
-                  <p className="text-text-secondary text-sm font-medium mb-1">Gordura Corporal</p>
+                  <p className="text-text-secondary text-sm font-medium mb-1">{t('dashboard.body_fat')}</p>
                   <h3 className="text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
                     {body.body_fat_pct?.toFixed(1) ?? '--'} <span className="text-lg text-text-muted">%</span>
                     <div className="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-500 flex items-center justify-center">
@@ -518,13 +512,14 @@ export function DashboardPage() {
                           fontSize: '11px',
                           padding: '6px'
                         }}
-                        formatter={(value: number, name: string) => {
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                        formatter={((value: number, name: string) => {
                           if (name === 'Tendência') return [value.toFixed(2), name];
                           return [value.toFixed(1), name];
-                        }}
+                        }) as any} // eslint-disable-line @typescript-eslint/no-explicit-any
                         labelFormatter={(label) => {
                           const date = new Date(label as string);
-                          return isNaN(date.getTime()) ? String(label) : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                          return isNaN(date.getTime()) ? String(label) : date.toLocaleDateString(i18n.language, { day: '2-digit', month: '2-digit' });
                         }}
                       />
                       {/* Gordura Real - linha mais grossa laranja (destaque) */}
@@ -535,7 +530,7 @@ export function DashboardPage() {
                         strokeWidth={2.5}
                         dot={false}
                         isAnimationActive={false}
-                        name="Gordura"
+                        name={t('dashboard.chart.fat')}
                       />
                       {/* Tendência EMA (backend) - linha fina verde */}
                       <Line
@@ -545,7 +540,7 @@ export function DashboardPage() {
                         strokeWidth={1}
                         dot={false}
                         isAnimationActive={false}
-                        name="Tendência"
+                        name={t('dashboard.chart.trend')}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -555,11 +550,11 @@ export function DashboardPage() {
                 <div className="flex gap-4 mt-3 text-xs">
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full bg-orange-500" />
-                    <span className="text-text-muted">Gordura (30d)</span>
+                    <span className="text-text-muted">{t('dashboard.chart.fat')} (30d)</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="text-text-muted">Tendência (30d)</span>
+                    <span className="text-text-muted">{t('dashboard.chart.trend')} (30d)</span>
                   </div>
                 </div>
               </div>
@@ -576,7 +571,7 @@ export function DashboardPage() {
             <div className="bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden group">
               <div className="relative z-10 flex flex-col h-full">
                 <div className="mb-4">
-                  <p className="text-text-secondary text-sm font-medium mb-1">Massa Muscular</p>
+                  <p className="text-text-secondary text-sm font-medium mb-1">{t('dashboard.muscle_mass')}</p>
                   <h3 className="text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
                     {body.muscle_mass_kg?.toFixed(1) ?? '--'} <span className="text-lg text-text-muted">kg</span>
                     <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
@@ -626,13 +621,14 @@ export function DashboardPage() {
                           fontSize: '11px',
                           padding: '6px'
                         }}
-                        formatter={(value: number, name: string) => {
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                        formatter={((value: number, name: string) => {
                           if (name === 'Tendência') return [value.toFixed(2), name];
                           return [value.toFixed(1), name];
-                        }}
+                        }) as any} // eslint-disable-line @typescript-eslint/no-explicit-any
                         labelFormatter={(label) => {
                           const date = new Date(label as string);
-                          return isNaN(date.getTime()) ? String(label) : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+                          return isNaN(date.getTime()) ? String(label) : date.toLocaleDateString(i18n.language, { day: '2-digit', month: '2-digit' });
                         }}
                       />
                       {/* Músculo Real - linha mais grossa azul (destaque) */}
@@ -643,7 +639,7 @@ export function DashboardPage() {
                         strokeWidth={2.5}
                         dot={false}
                         isAnimationActive={false}
-                        name="Músculo"
+                        name={t('dashboard.chart.muscle')}
                       />
                       {/* Tendência EMA (backend) - linha fina verde */}
                       <Line
@@ -653,7 +649,7 @@ export function DashboardPage() {
                         strokeWidth={1}
                         dot={false}
                         isAnimationActive={false}
-                        name="Tendência"
+                        name={t('dashboard.chart.trend')}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -663,11 +659,11 @@ export function DashboardPage() {
                 <div className="flex gap-4 mt-3 text-xs">
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full bg-blue-500" />
-                    <span className="text-text-muted">Músculo (30d)</span>
+                    <span className="text-text-muted">{t('dashboard.chart.muscle')} (30d)</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="text-text-muted">Tendência (30d)</span>
+                    <span className="text-text-muted">{t('dashboard.chart.trend')} (30d)</span>
                   </div>
                 </div>
               </div>
@@ -683,7 +679,7 @@ export function DashboardPage() {
          <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2">
               <History className="text-gradient-start" size={20} />
-              <h2 className="text-xl font-bold text-text-primary">Atividade Recente</h2>
+              <h2 className="text-xl font-bold text-text-primary">{t('dashboard.recent_activity')}</h2>
             </div>
             <div className="bg-dark-card border border-border rounded-2xl overflow-hidden">
             {data?.recentActivities.length ? (
@@ -707,7 +703,7 @@ export function DashboardPage() {
               </div>
             ) : (
               <div className="p-12 text-center">
-                <p className="text-text-muted">Nenhuma atividade registrada.</p>
+                <p className="text-text-muted">{t('dashboard.no_activity')}</p>
               </div>
             )}
           </div>
@@ -726,7 +722,7 @@ export function DashboardPage() {
                <WidgetStrengthRadar data={strengthRadar} className="h-full w-full" />
              ) : (
                 <div className="h-full flex items-center justify-center text-text-muted">
-                   <p>Dados de força insuficientes</p>
+                   <p>{t('dashboard.insufficient_strength_data')}</p>
                 </div>
              )}
           </div>
@@ -737,7 +733,7 @@ export function DashboardPage() {
                <WidgetVolumeTrend data={volumeTrend} className="h-full w-full flex flex-col justify-between" />
              ) : (
                 <div className="h-full flex items-center justify-center text-text-muted">
-                   <p>Histórico de volume indisponível</p>
+                   <p>{t('dashboard.volume_history_unavailable')}</p>
                 </div>
              )}
           </div>
@@ -750,16 +746,16 @@ export function DashboardPage() {
                       <Dumbbell size={20} />
                    </div>
                    <div className="text-right">
-                      <p className="text-xs text-text-secondary font-medium lowercase">Metas: {workouts.completed}/{workouts.target}</p>
+                      <p className="text-xs text-text-secondary font-medium lowercase">{t('dashboard.goals_status', { completed: workouts.completed, target: workouts.target })}</p>
                    </div>
                 </div>
                 {weeklyFrequency && <WidgetWeeklyFrequency days={weeklyFrequency} />}
              </div>
 
               <StatsCard
-               title="Calorias Hoje"
+               title={t('dashboard.calories_today')}
                value={`${calories.consumed.toString()} kcal`}
-               subtitle={`Meta: ${calories.target.toString()} kcal`}
+               subtitle={t('dashboard.target_kcal', { target: calories.target })}
                icon={<Flame size={24} />}
                trend={calories.percent > 110 ? 'up' : calories.percent < 90 ? 'down' : 'stable'}
                trendValue={`${Math.round(calories.percent).toString()}%`}

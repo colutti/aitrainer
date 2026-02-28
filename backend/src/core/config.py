@@ -5,7 +5,7 @@ This module contains the configuration settings for the application.
 import logging
 import os
 
-from pydantic import ValidationError, field_validator, Field
+from pydantic import ValidationError, field_validator, model_validator, Field
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     API_SERVER_PORT: int = 8000
 
     MAX_SHORT_TERM_MEMORY_MESSAGES: int = 20
-    COMPACTION_THRESHOLD: int = 25  # Must be > MAX_SHORT_TERM_MEMORY_MESSAGES to catch new users
+    COMPACTION_THRESHOLD: int = 60  # Must be > MAX_SHORT_TERM_MEMORY_MESSAGES (the active window size)
     MAX_LONG_TERM_MEMORY_MESSAGES: int = Field(default=50)
     SUMMARY_MAX_TOKEN_LIMIT: int = 200
     ALLOWED_ORIGINS: str | list[str] = Field(default="*")
@@ -71,6 +71,17 @@ class Settings(BaseSettings):
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]
         return v  # type: ignore
+
+    @model_validator(mode="after")
+    def validate_compaction_config(self) -> "Settings":
+        """Ensures COMPACTION_THRESHOLD is always above the active window size."""
+        if self.COMPACTION_THRESHOLD <= self.MAX_SHORT_TERM_MEMORY_MESSAGES:
+            raise ValueError(
+                f"COMPACTION_THRESHOLD ({self.COMPACTION_THRESHOLD}) must be greater than "
+                f"MAX_SHORT_TERM_MEMORY_MESSAGES ({self.MAX_SHORT_TERM_MEMORY_MESSAGES}). "
+                "Compaction would never fire otherwise."
+            )
+        return self
 
     # ====== AI PROVIDER SELECTION ======
     AI_PROVIDER: str = "gemini"

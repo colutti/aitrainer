@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 import { cn } from '../../utils/cn';
 
 interface StatsCardProps {
@@ -25,6 +27,7 @@ export function StatsCard({
   trendValue,
   variant = 'primary'
 }: StatsCardProps) {
+  const { t } = useTranslation();
   const variants = {
     primary: 'from-gradient-start/10 to-gradient-end/10 text-gradient-start',
     orange: 'from-orange-500/10 to-orange-600/10 text-orange-500',
@@ -64,7 +67,7 @@ export function StatsCard({
               trend === 'up' ? 'bg-emerald-500/10 text-emerald-500' : 
               'bg-blue-500/10 text-blue-500'
             )}>
-              {trend === 'up' ? 'Subindo' : trend === 'down' ? 'Descendo' : 'Estável'}
+              {t(`common.trends.${trend}`)}
             </span>
           )}
           {trendValue && (

@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { cn } from '../../../shared/utils/cn';
 
 interface WidgetWeeklyFrequencyProps {
@@ -6,16 +8,17 @@ interface WidgetWeeklyFrequencyProps {
 }
 
 export function WidgetWeeklyFrequency({ days, className }: WidgetWeeklyFrequencyProps) {
+  const { t } = useTranslation();
   if (days.length !== 7) return null;
 
-  const dayLabels = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
+  const dayLabels = t('dashboard.weekly_days', { returnObjects: true }) as string[];
 
   return (
     <div className={className}>
        <div className="flex items-center justify-between mb-4">
         <div>
-          <h4 className="text-sm font-bold text-text-primary">Frequência Semanal</h4>
-          <p className="text-[10px] text-text-muted uppercase font-bold tracking-wider">Distribuição atual</p>
+          <h4 className="text-sm font-bold text-text-primary">{t('dashboard.frequency_title')}</h4>
+          <p className="text-[10px] text-text-muted uppercase font-bold tracking-wider">{t('dashboard.frequency_subtitle')}</p>
         </div>
       </div>
 

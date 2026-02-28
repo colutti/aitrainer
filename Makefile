@@ -10,7 +10,7 @@ GCP_REGISTRY=$(GCP_REGION)-docker.pkg.dev/$(GCP_PROJECT_ID)/$(GCP_REPO)
 # 3. Joins with commas
 GCP_ENV_VARS=$(shell grep -v '^\#' backend/.env.prod | sed 's/"//g' | paste -sd "," -)
 
-.PHONY: up down build restart logs init-db api front front-admin api-admin admin clean-pod db db-down db-logs debug-rebuild debug-rebuild-admin test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov e2e e2e-ui e2e-report ci-test ci-fast gcp-full gcp-build gcp-push gcp-deploy gcp-list
+.PHONY: up down build restart logs init-db api front front-admin api-admin admin clean-pod db db-down db-logs debug-rebuild debug-rebuild-admin test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov e2e e2e-ui e2e-report ci-test ci-fast gcp-full gcp-build gcp-push gcp-deploy gcp-list gcp-setup-telegram
 
 up:
 	podman-compose up -d
@@ -236,6 +236,22 @@ gcp-deploy:
 		--image $(GCP_REGISTRY)/frontend-admin:latest \
 		--region $(GCP_REGION) --platform managed --allow-unauthenticated --port 80 \
 		--set-env-vars "ADMIN_BACKEND_URL=$$ADMIN_BACKEND_URL"
+
+	@$(MAKE) gcp-setup-telegram
+
+gcp-setup-telegram:
+	@echo "🤖 Verificando configuração do Telegram..."
+	@TOKEN=$$(grep TELEGRAM_BOT_TOKEN backend/.env.prod | cut -d'=' -f2 | sed 's/"//g'); \
+	SECRET=$$(grep TELEGRAM_WEBHOOK_SECRET backend/.env.prod | cut -d'=' -f2 | sed 's/"//g'); \
+	URL=$$(gcloud run services describe aitrainer-backend --region $(GCP_REGION) --format 'value(status.url)'); \
+	if [ -n "$$TOKEN" ] && [ "$$TOKEN" != '""' ]; then \
+		echo "🚀 Atualizando Webhook para $$URL/telegram/webhook..."; \
+		curl -s -X POST "https://api.telegram.org/bot$$TOKEN/setWebhook" \
+			-d "url=$$URL/telegram/webhook" \
+			-d "secret_token=$$SECRET" | jq .; \
+	else \
+		echo "⚠️ Telegram não configurado em .env.prod. Pulando..."; \
+	fi
 
 gcp-list:
 	@echo "🔍 Cloud Run Services:"
