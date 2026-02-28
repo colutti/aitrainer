@@ -2,6 +2,7 @@
 This module contains the repository for user profiles.
 """
 
+from datetime import datetime
 from pymongo.database import Database
 import bcrypt
 from src.api.models.user_profile import UserProfile
@@ -94,3 +95,23 @@ class UserRepository(BaseRepository):
             return None
         self.logger.debug("Found user %s for webhook token", user_data.get("email"))
         return UserProfile(**user_data)
+
+    def increment_message_counts(self, email: str, new_cycle_start: datetime | None = None) -> None:
+        """
+        Atomically increments message counts for a user.
+        If new_cycle_start is provided, it resets the monthly count and updates the cycle start.
+        """
+        if new_cycle_start:
+            update_doc = {
+                "$inc": {"total_messages_sent": 1},
+                "$set": {
+                    "current_billing_cycle_start": new_cycle_start,
+                    "messages_sent_this_month": 1,
+                },
+            }
+        else:
+            update_doc = {
+                "$inc": {"messages_sent_this_month": 1, "total_messages_sent": 1},
+            }
+
+        self.collection.update_one({"email": email}, update_doc)

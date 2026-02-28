@@ -106,6 +106,23 @@ describe('useChatStore', () => {
     consoleSpy.mockRestore();
   });
 
+  it('should handle limit exceeded error', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 403,
+      json: async () => ({ detail: 'LIMITE_MENSAGENS_MES' }),
+    });
+
+    await useChatStore.getState().sendMessage('Hello Limit');
+
+    const state = useChatStore.getState();
+    expect(state.isStreaming).toBe(false);
+    expect(state.error).toBe('Você atingiu o limite de mensagens do seu plano. Atualize sua assinatura ou aguarde o próximo mês.');
+    consoleSpy.mockRestore();
+  });
+
   it('should clear history successfully', () => {
     // Setup state
     useChatStore.setState({ messages: [{ text: 'Hi', sender: 'Student', timestamp: 'now' }] });

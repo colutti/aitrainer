@@ -3,12 +3,13 @@ This module contains the AI trainer brain, which is responsible for interacting 
 """
 
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
-from fastapi import BackgroundTasks
+from fastapi import BackgroundTasks, HTTPException
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 
 from src.core.config import settings
+from src.core.subscription import SUBSCRIPTION_PLANS, SubscriptionPlan
 from src.services.database import MongoDatabase
 from src.services.llm_client import LLMClient
 from src.services.history_compactor import HistoryCompactor
@@ -63,6 +64,78 @@ class AITrainerBrain:
         self.compactor = HistoryCompactor(database, llm_client)
         self.prompt_builder = PromptBuilder()
         self._executor = ThreadPoolExecutor(max_workers=10)
+
+    def _check_message_limits(self, profile: UserProfile) -> bool:
+        """
+        Verifies if the user has reached their message limit.
+        Returns True if a cycle reset is needed.
+        Raises HTTPException(status_code=403) if limit is exceeded.
+        """
+        # Determine plan name and details
+        try:
+            plan_name = SubscriptionPlan(profile.subscription_plan)
+        except (ValueError, AttributeError):
+            plan_name = SubscriptionPlan.FREE
+
+        plan = SUBSCRIPTION_PLANS[plan_name]
+
+        # Check cycle reset
+        now = datetime.now()
+        needs_cycle_reset = False
+        if profile.current_billing_cycle_start is None:
+            needs_cycle_reset = True
+        else:
+            cycle_start = profile.current_billing_cycle_start
+            if isinstance(cycle_start, str):
+                try:
+                    cycle_start = datetime.fromisoformat(cycle_start)
+                except ValueError:
+                    cycle_start = now
+            
+            # Simple 30-day billing cycle
+            if now - cycle_start >= timedelta(days=30):
+                needs_cycle_reset = True
+
+        # Fetch current counts (taking reset into account)
+        current_monthly = (
+            0 if needs_cycle_reset else getattr(profile, "messages_sent_this_month", 0)
+        )
+        current_total = getattr(profile, "total_messages_sent", 0)
+
+        # Determine effective limits
+        if profile.custom_message_limit is not None:
+            # Custom limit overrides the plan limit
+            if plan.monthly_limit is not None:
+                if current_monthly >= profile.custom_message_limit:
+                    raise HTTPException(
+                        status_code=403, detail="LIMITE_MENSAGENS_MES"
+                    )
+            elif plan.total_limit is not None:
+                if current_total >= profile.custom_message_limit:
+                    raise HTTPException(
+                        status_code=403, detail="LIMITE_MENSAGENS_TOTAL"
+                    )
+        else:
+            # Regular plan limits
+            if plan.monthly_limit is not None:
+                if current_monthly >= plan.monthly_limit:
+                    raise HTTPException(
+                        status_code=403, detail="LIMITE_MENSAGENS_MES"
+                    )
+            if plan.total_limit is not None:
+                if current_total >= plan.total_limit:
+                    raise HTTPException(
+                        status_code=403, detail="LIMITE_MENSAGENS_TOTAL"
+                    )
+
+        return needs_cycle_reset
+
+    def _increment_counts(self, user_email: str, needs_cycle_reset: bool):
+        """
+        Background task to increment message counts.
+        """
+        new_cycle_start = datetime.now() if needs_cycle_reset else None
+        self._database.increment_user_message_counts(user_email, new_cycle_start)
 
     @property
     def database(self) -> MongoDatabase:
@@ -367,6 +440,9 @@ class AITrainerBrain:
         profile = await asyncio.wrap_future(future_user)
         trainer_profile_obj = await asyncio.wrap_future(future_trainer)
 
+        # Check message limits before proceeding
+        needs_cycle_reset = self._check_message_limits(profile)
+
         # POC: Remove automatic memory injection. AI now manages memories explicitly via tools.
         # Mem0 background task still runs for comparison.
         relevant_memories_str = ""
@@ -441,6 +517,7 @@ class AITrainerBrain:
             create_replace_hevy_exercise_tool,
             create_get_hevy_routine_detail_tool,
             create_set_routine_rest_and_ranges_tool,
+            create_trigger_hevy_import_tool,
         )
         from src.services.hevy_service import HevyService
 
@@ -465,6 +542,9 @@ class AITrainerBrain:
             hevy_service, self._database, user_email
         )
         set_routine_rest_and_ranges_tool = create_set_routine_rest_and_ranges_tool(
+            hevy_service, self._database, user_email
+        )
+        trigger_hevy_import_tool = create_trigger_hevy_import_tool(
             hevy_service, self._database, user_email
         )
 
@@ -512,6 +592,7 @@ class AITrainerBrain:
             replace_hevy_exercise_tool,
             get_hevy_routine_detail_tool,
             set_routine_rest_and_ranges_tool,
+            trigger_hevy_import_tool,
             get_user_goal_tool,
             update_user_goal_tool,
             get_metabolism_tool,
@@ -581,6 +662,11 @@ class AITrainerBrain:
             return
 
         if background_tasks:
+            # Increment message counts
+            background_tasks.add_task(
+                self._increment_counts, user_email, needs_cycle_reset
+            )
+
             # Move DB saving to background to avoid blocking the generator completion
             background_tasks.add_task(
                 self._add_to_mongo_history,
@@ -605,6 +691,7 @@ class AITrainerBrain:
             )
         else:
             # Fallback for sync callers (like Telegram)
+            self._increment_counts(user_email, needs_cycle_reset)
             self._add_to_mongo_history(
                 user_email, user_input, final_response, current_trainer_type
             )

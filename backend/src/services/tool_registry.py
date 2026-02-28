@@ -75,6 +75,9 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
     "set_routine_rest_and_ranges": ToolMetadata(
         "set_routine_rest_and_ranges", ToolMemoryType.MEMORABLE, "Update rest times and rep ranges"
     ),
+    "trigger_hevy_import": ToolMetadata(
+        "trigger_hevy_import", ToolMemoryType.MEMORABLE, "Trigger Hevy workouts import"
+    ),
     # Memory management (AI-driven, replacing Mem0 extraction)
     "save_memory": ToolMetadata(
         "save_memory", ToolMemoryType.MEMORABLE, "Save memory"

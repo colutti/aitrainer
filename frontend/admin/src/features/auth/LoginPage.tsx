@@ -76,7 +76,7 @@ export function LoginPage() {
 
           <form
             onSubmit={(e) => {
-              handleSubmit(e).catch(() => {});
+              void handleSubmit(e);
             }}
             className="space-y-6"
           >
@@ -89,7 +89,7 @@ export function LoginPage() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); }}
                 required
                 placeholder="admin@fityq.com"
                 className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-[#3f3f46] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#6366f1]/30 focus:border-[#6366f1]/50 hover:bg-black/60 shadow-inner"
@@ -105,7 +105,7 @@ export function LoginPage() {
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); }}
                 required
                 placeholder="••••••••"
                 className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-[#3f3f46] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#6366f1]/30 focus:border-[#6366f1]/50 hover:bg-black/60 shadow-inner"
@@ -116,8 +116,8 @@ export function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
+              onMouseEnter={() => { setIsHovered(true); }}
+              onMouseLeave={() => { setIsHovered(false); }}
               className="w-full mt-4 relative group/btn h-14 bg-gradient-to-r from-[#6366f1] to-[#22d3ee] rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed shadow-[0_10px_30px_rgba(99,102,241,0.3)]"
             >
               <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/btn:opacity-100 transition-opacity" />

@@ -103,6 +103,12 @@ class MongoDatabase:
         """Validates user credentials."""
         return self.users.validate_credentials(email, password)
 
+    def increment_user_message_counts(
+        self, email: str, new_cycle_start: datetime | None = None
+    ) -> None:
+        """Atomically increments message counts for a user."""
+        return self.users.increment_message_counts(email, new_cycle_start)
+
     def save_trainer_profile(self, trainer_profile: TrainerProfile) -> None:
         """Saves trainer profile."""
         return self.trainers.save_profile(trainer_profile)

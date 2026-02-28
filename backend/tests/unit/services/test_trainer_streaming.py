@@ -26,7 +26,11 @@ async def test_send_message_ai_streaming_error(mock_deps):
 
     # Mock user and trainer profiles
     db.get_user_profile.return_value = MagicMock(
-        get_profile_summary=lambda: "User Summary"
+        get_profile_summary=lambda: "User Summary",
+        current_billing_cycle_start=None,
+        subscription_plan="Free",
+        total_messages_sent=0,
+        custom_message_limit=None
     )
     db.get_trainer_profile.return_value = MagicMock(
         trainer_type="atlas", get_trainer_profile_summary=lambda: "Trainer Summary"

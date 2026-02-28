@@ -43,3 +43,21 @@ beforeEach(() => {
 
 // Mock fetch globally
 global.fetch = vi.fn();
+
+// Mock react-i18next to suppress "NO_I18NEXT_INSTANCE" warnings
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: {
+      changeLanguage: () => Promise.resolve(),
+      language: 'pt-BR',
+      on: vi.fn(),
+      off: vi.fn(),
+    },
+  }),
+  initReactI18next: {
+    type: '3rdParty',
+    init: vi.fn(),
+  },
+  Trans: ({ children }: any) => children,
+}));

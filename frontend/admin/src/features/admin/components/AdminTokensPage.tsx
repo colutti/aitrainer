@@ -1,3 +1,4 @@
+import { RotateCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -57,7 +58,18 @@ export function AdminTokensPage() {
     <div className="space-y-6 h-full flex flex-col animate-in fade-in duration-700">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h1 className="text-3xl font-bold text-text-primary">Token Analytics</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-bold text-text-primary">Token Analytics</h1>
+          <button 
+            onClick={() => { void fetchTokenData(days); }}
+            disabled={isLoading}
+            className="p-2 hover:bg-white/5 rounded-full transition-colors disabled:opacity-50"
+            title="Atualizar"
+            aria-label="Atualizar tokens"
+          >
+            <RotateCw size={20} className={`text-text-secondary ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
 
         {/* Period Selector */}
         <div className="flex gap-2">

@@ -121,6 +121,18 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
       });
 
       if (!response.ok) {
+        if (response.status === 403) {
+          try {
+            const errorData = await response.json() as { detail?: string };
+            if (errorData?.detail?.includes('LIMITE')) {
+              throw new Error('LIMIT_EXCEEDED');
+            }
+          } catch (e: unknown) {
+            if (e instanceof Error && e.message === 'LIMIT_EXCEEDED') {
+               throw e;
+            }
+          }
+        }
         throw new Error(`Cloud error: ${response.status.toString()}`);
       }
 
@@ -164,9 +176,15 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
       set({ isStreaming: false });
     } catch (error) {
       console.error('Error sending message:', error);
+      let errorMessage = 'Ocorreu um problema ao enviar sua mensagem.';
+      
+      if (error instanceof Error && error.message === 'LIMIT_EXCEEDED') {
+        errorMessage = 'Você atingiu o limite de mensagens do seu plano. Atualize sua assinatura ou aguarde o próximo mês.';
+      }
+      
       set({ 
         isStreaming: false, 
-        error: 'Ocorreu um problema ao enviar sua mensagem.' 
+        error: errorMessage 
       });
     }
   },

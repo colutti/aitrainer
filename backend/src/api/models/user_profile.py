@@ -103,6 +103,15 @@ class UserProfile(UserProfileInput):
         default=None, max_length=700_000, description="Profile photo as base64 data URI (max ~500KB)"
     )
 
+    # Subscription and Limits
+    subscription_plan: str = Field(default="Free", description="Current subscription plan")
+    custom_message_limit: int | None = Field(default=None, description="Custom limit override")
+    messages_sent_this_month: int = Field(default=0, description="Messages sent in current billing cycle")
+    total_messages_sent: int = Field(default=0, description="Total messages sent by user ever")
+    current_billing_cycle_start: datetime | None = Field(
+        default=None, description="ISO timestamp of cycle start"
+    )
+
     # Coaching Check-in (TDEE)
     tdee_last_target: int | None = Field(
         default=None, description="Last recommended daily calorie target"

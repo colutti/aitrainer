@@ -35,7 +35,7 @@ export type AdminAuthStore = AdminAuthState & AdminAuthActions;
 export const useAdminAuthStore = create<AdminAuthStore>((set, get) => ({
   isAuthenticated: false,
   userInfo: null,
-  isLoading: false,
+  isLoading: true,
   loginError: null,
 
   login: async (email: string, password: string) => {
@@ -70,6 +70,7 @@ export const useAdminAuthStore = create<AdminAuthStore>((set, get) => ({
       isAuthenticated: false,
       userInfo: null,
       loginError: null,
+      isLoading: false,
     });
   },
 
@@ -98,6 +99,7 @@ export const useAdminAuthStore = create<AdminAuthStore>((set, get) => ({
     const token = get().getToken();
 
     if (!token) {
+      set({ isLoading: false });
       return;
     }
 

@@ -16,7 +16,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
-    exclude: ['node_modules', 'dist', '.idea', '.git', '.cache', 'e2e/**/*'],
+    exclude: ['node_modules', 'dist', '.idea', '.git', '.cache', 'e2e/**/*', 'admin/**'],
     coverage: {
       provider: 'istanbul',
       reporter: ['text', 'json', 'html', 'json-summary'],

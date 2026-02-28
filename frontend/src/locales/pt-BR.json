@@ -37,7 +37,8 @@
       "differentiators": "Diferenciais",
       "how_it_works": "Como Funciona",
       "login": "Entrar",
-      "get_started": "Começar Agora"
+      "get_started": "Começar Agora",
+      "plans": "Planos"
     },
     "hero": {
       "badge": "A Nova Era do Fitness",
@@ -45,7 +46,7 @@
       "title_gradient": "Deixe a IA Otimizá-lo.",
       "description": "Esqueça planilhas e palpites. Tenha um treinador de elite que analisa seus dados em tempo real para entregar o plano perfeito.",
       "cta": "Garantir meu Acesso",
-      "trial_desc": "Teste grátis por 7 dias. Sem compromisso.",
+      "trial_desc": "Comece com 20 mensagens grátis. Sem compromisso.",
       "feature_247": "Suporte 24/7",
       "feature_ai": "IA Pessoal",
       "feature_integrations": "Integrações",
@@ -139,8 +140,8 @@
           "description": "Calculamos seu TDEE real baseado no seu histórico, não em fórmulas genéricas."
         },
         "vision": {
-          "title": "Visão Computacional",
-          "description": "Analise sua execução em tempo real para evitar lesões e maximizar ganhos."
+          "title": "Análise de Treino e Dieta",
+          "description": "Analisamos seu histórico de treinos e alimentação para ajustar seu progresso com precisão."
         },
         "trainers": {
           "title": "Treinadores Diversos",
@@ -188,7 +189,7 @@
       "title": "Pronto para sua melhor versão?",
       "subtitle": "Junte-se a milhares de atletas que já otimizaram seus resultados com o FityQ.",
       "button": "Começar Jornada Agora",
-      "trial": "Teste grátis por 7 dias. Cancele quando quiser."
+      "trial": "Comece com 20 mensagens grátis. Teste agora."
     },
     "footer": {
       "rights": "© {{year}} FityQ. Todos os direitos reservados."
@@ -214,47 +215,53 @@
     },
     "plans": {
       "title": "Escolha seu Plano",
-      "subtitle": "Todos os planos incluem suporte e atualizações. Cancele quando quiser.",
+      "subtitle": "Planos flexíveis para todos. Cancele quando quiser.",
       "button": "Experimentar Grátis",
       "recommended": "Recomendado",
       "per_month": "/mês",
       "items": {
-        "basic": {
-          "name": "Básico",
-          "description": "Perfeito para começar",
+        "free": {
+          "name": "Gratuito",
+          "description": "Para conhecer a plataforma",
+          "button": "Começar Grátis",
           "features": [
-            "1 Treinador",
-            "Chat Limitado (50/mês)",
-            "Tracking Básico",
-            "TDEE Padrão",
-            "Suporte por Email"
+            "Acesso a todos os treinadores",
+            "Treinos e Análises",
+            "20 mensagens no total"
+          ]
+        },
+        "basic": {
+          "name": "Basic",
+          "description": "Para quem quer iniciar seriamente",
+          "button": "Em Breve",
+          "features": [
+            "Acesso a todos os treinadores",
+            "Treinos e Análises",
+            "100 mensagens por mês"
           ]
         },
         "pro": {
           "name": "Pro",
-          "description": "Recomendado para resultados",
+          "description": "Para resultados consistentes",
+          "button": "Em Breve",
           "features": [
-            "Todos os 5 Treinadores",
-            "Chat Ilimitado",
-            "TDEE Adaptativo",
-            "Integrações (Hevy, MyFitnessPal, Zepp)",
-            "Memória Ilimitada",
-            "Suporte Prioritário"
+            "Acesso a todos os treinadores",
+            "Treinos e Análises",
+            "300 mensagens por mês"
           ]
         },
         "premium": {
           "name": "Premium",
-          "description": "Para máximo impacto",
+          "description": "Para atletas mais exigentes",
+          "button": "Em Breve",
           "features": [
-            "Tudo do Pro",
-            "Chat com Prioridade",
-            "Relatórios Avançados",
-            "Análise de Composição Corporal",
-            "Suporte 24/7",
-            "Customizações Personalizadas"
+            "Acesso a todos os treinadores",
+            "Treinos e Análises",
+            "1000 mensagens por mês"
           ]
         }
-      }
+      },
+      "total": "/total"
     }
   },
   "settings": {

@@ -47,6 +47,10 @@ async def message_ai(
     """
     logger.info("Received message from user %s: %s", user_email, message.user_message)
     try:
+        # Pre-flight limits check to avoid StreamingResponse generator crash
+        profile = brain._get_or_create_user_profile(user_email)
+        brain._check_message_limits(profile)
+        
         response_generator = brain.send_message_ai(
             user_email=user_email,
             user_input=message.user_message,

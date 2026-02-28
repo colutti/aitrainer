@@ -1,4 +1,4 @@
-import { Eye, Search, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Eye, Search, ArrowLeft, ArrowRight, RotateCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { Button } from '../../../../../src/shared/components/ui/Button';
@@ -63,8 +63,18 @@ export function AdminPromptsPage() {
 
   return (
     <div className="space-y-6 h-full flex flex-col animate-in fade-in duration-700">
-      <div>
+      <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-text-primary">Logs de Prompts</h1>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => { void fetchPrompts(page, searchEmail); }}
+          disabled={loading}
+          title="Atualizar"
+          aria-label="Atualizar prompts"
+        >
+          <RotateCw size={20} className={loading ? 'animate-spin' : ''} />
+        </Button>
       </div>
 
       <div>

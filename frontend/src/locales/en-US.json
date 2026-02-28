@@ -30,10 +30,11 @@
   "landing": {
     "nav": {
       "trainers": "Trainers",
-      "differentiators": "Features",
-      "how_it_works": "How It Works",
+      "differentiators": "Differentiators",
+      "how_it_works": "How it works",
       "login": "Login",
-      "get_started": "Get Started"
+      "get_started": "Get Started",
+      "plans": "Plans"
     },
     "hero": {
       "badge": "A New Era of Fitness",
@@ -41,7 +42,7 @@
       "title_gradient": "Let AI Optimize It.",
       "description": "Forget spreadsheets and guesswork. Have an elite trainer analyzing your data in real-time to deliver the perfect plan.",
       "cta": "Secure My Access",
-      "trial_desc": "7-day free trial. No commitment.",
+      "trial_desc": "Start with 20 free messages. No commitment.",
       "feature_247": "24/7 Support",
       "feature_ai": "Personal AI",
       "feature_integrations": "Integrations",
@@ -135,8 +136,8 @@
           "description": "We calculate your real TDEE based on your history, not generic formulas."
         },
         "vision": {
-          "title": "Computer Vision",
-          "description": "Analyze your form in real-time to prevent injuries and maximize gains."
+          "title": "Workout & Diet Analysis",
+          "description": "We analyze your training history and nutrition patterns to provide accurate progress adjustments."
         },
         "trainers": {
           "title": "Diverse Trainers",
@@ -184,7 +185,7 @@
       "title": "Ready for your best version?",
       "subtitle": "Join thousands of athletes who have already optimized their results with FityQ.",
       "button": "Start Journey Now",
-      "trial": "7-day free trial. Cancel anytime."
+      "trial": "Start with 20 free messages. Try it now."
     },
     "footer": {
       "rights": "© {{year}} FityQ. All rights reserved."
@@ -209,48 +210,54 @@
       }
     },
     "plans": {
-      "title": "Choose Your Plan",
-      "subtitle": "All plans include support and updates. Cancel anytime.",
+      "title": "Choose your plan",
+      "subtitle": "Flexible plans for everyone. Cancel at any time.",
       "button": "Try for Free",
       "recommended": "Recommended",
       "per_month": "/month",
       "items": {
+        "free": {
+          "name": "Free",
+          "description": "To try out the platform",
+          "button": "Get Started Free",
+          "features": [
+            "Access to all AI trainers",
+            "Workouts and Analytics",
+            "20 messages total"
+          ]
+        },
         "basic": {
           "name": "Basic",
-          "description": "Perfect to get started",
+          "description": "For serious starters",
+          "button": "Coming Soon",
           "features": [
-            "1 Trainer",
-            "Limited Chat (50/month)",
-            "Basic Tracking",
-            "Standard TDEE",
-            "Email Support"
+            "Access to all AI trainers",
+            "Workouts and Analytics",
+            "100 messages per month"
           ]
         },
         "pro": {
           "name": "Pro",
-          "description": "Recommended for results",
+          "description": "For consistent results",
+          "button": "Coming Soon",
           "features": [
-            "All 5 Trainers",
-            "Unlimited Chat",
-            "Adaptive TDEE",
-            "Integrations (Hevy, MyFitnessPal, Zepp)",
-            "Unlimited Memory",
-            "Priority Support"
+            "Access to all AI trainers",
+            "Workouts and Analytics",
+            "300 messages per month"
           ]
         },
         "premium": {
           "name": "Premium",
-          "description": "For maximum impact",
+          "description": "For athletes wanting proactive AI",
+          "button": "Coming Soon",
           "features": [
-            "Everything in Pro",
-            "Priority Chat",
-            "Advanced Reports",
-            "Body Composition Analysis",
-            "24/7 Support",
-            "Custom Personalized Items"
+            "Access to all AI trainers",
+            "Workouts and Analytics",
+            "1000 messages per month"
           ]
         }
-      }
+      },
+      "total": "/total"
     }
   },
   "settings": {

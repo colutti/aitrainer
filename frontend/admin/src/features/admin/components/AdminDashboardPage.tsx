@@ -1,6 +1,7 @@
-import { Users, Activity, MessageSquare, Dumbbell, AlertTriangle, TrendingUp } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Users, Activity, MessageSquare, Dumbbell, AlertTriangle, TrendingUp, RotateCw } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 
+import { Button } from '../../../../../src/shared/components/ui/Button';
 import { StatsCard } from '../../../../../src/shared/components/ui/StatsCard';
 import type { AdminOverview, QualityMetrics } from '../../../../../src/shared/types/admin';
 import { adminApi } from '../api/admin-api';
@@ -11,36 +12,45 @@ export function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        setIsLoading(true);
-        const [overviewData, metricsData] = await Promise.all([
-          adminApi.getOverview(),
-          adminApi.getQualityMetrics()
-        ]);
-        setOverview(overviewData);
-        setMetrics(metricsData);
-      } catch {
-        // console.error(err);
-        setError('Erro ao carregar dados do dashboard.');
-      } finally {
-        setIsLoading(false);
-      }
+  const loadData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const [overviewData, metricsData] = await Promise.all([
+        adminApi.getOverview(),
+        adminApi.getQualityMetrics()
+      ]);
+      setOverview(overviewData);
+      setMetrics(metricsData);
+    } catch {
+      setError('Erro ao carregar dados do dashboard.');
+    } finally {
+      setIsLoading(false);
     }
-    void loadData();
   }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   if (error) {
     return (
-      <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl flex items-center gap-2">
-        <AlertTriangle size={20} />
-        {error}
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-text-primary">Admin Dashboard</h1>
+          <Button variant="ghost" size="icon" onClick={() => { void loadData(); }} title="Tentar novamente">
+            <RotateCw size={20} />
+          </Button>
+        </div>
+        <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl flex items-center gap-2">
+          <AlertTriangle size={20} />
+          {error}
+        </div>
       </div>
     );
   }
 
-  if (isLoading) {
+  if (isLoading && !overview) {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="h-8 bg-dark-card rounded-lg w-1/3" />
@@ -54,9 +64,21 @@ export function AdminDashboardPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div>
-        <h1 className="text-3xl font-bold text-text-primary">Admin Dashboard</h1>
-        <p className="text-text-secondary mt-1">Sistema de gestão e monitoramento</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-text-primary">Admin Dashboard</h1>
+          <p className="text-text-secondary mt-1">Sistema de gestão e monitoramento</p>
+        </div>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => { void loadData(); }} 
+          disabled={isLoading}
+          title="Atualizar"
+          aria-label="Atualizar dashboard"
+        >
+          <RotateCw size={20} className={isLoading ? 'animate-spin' : ''} />
+        </Button>
       </div>
 
       {/* Overview Grid */}

@@ -11,7 +11,13 @@ export interface AdminUser {
   created_at?: string;
   last_login?: string;
   photo_base64?: string;
+  subscription_plan?: string;
+  custom_message_limit?: number | null;
+  messages_sent_this_month?: number;
+  total_messages_sent?: number;
+  current_billing_cycle_start?: string;
 }
+
 
 export interface UserListResponse {
   users: AdminUser[];

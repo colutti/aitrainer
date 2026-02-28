@@ -28,7 +28,10 @@ const LandingPage = (): React.ReactNode => {
   const isAuthenticated = Boolean(useAuthStore((state: any) => state.isAuthenticated));
   const [navScrolled, setNavScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  const isPt = i18n.language.startsWith('pt');
+  const currencySymbol = isPt ? 'R$' : (i18n.language.startsWith('es') ? '€' : 'US$');
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -71,6 +74,7 @@ const LandingPage = (): React.ReactNode => {
     { href: '#treinadores', label: t('landing.nav.trainers') },
     { href: '#diferenciais', label: t('landing.nav.differentiators') },
     { href: '#como-funciona', label: t('landing.nav.how_it_works') },
+    { href: '#planos', label: t('landing.nav.plans', 'Planos') },
   ];
 
   return (
@@ -429,8 +433,8 @@ const LandingPage = (): React.ReactNode => {
         </div>
       </section>
 
-      {/* Planos Section - HIDDEN PENDING CLARITY */}
-      <section id="planos" className="hidden py-20 px-4 sm:px-6 lg:px-8">
+      {/* Planos Section */}
+      <section id="planos" className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="font-display text-4xl sm:text-5xl font-bold text-white mb-4">
@@ -441,75 +445,92 @@ const LandingPage = (): React.ReactNode => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             {[
               {
+                id: 'free',
+                price: 0,
+                suffix: t('landing.plans.total', 'total'),
+                highlight: true,
+                isFree: true,
+              },
+              {
                 id: 'basic',
-                price: 29,
+                price: isPt ? 24.90 : 4.99,
+                suffix: t('landing.plans.per_month', '/mês'),
                 highlight: false,
+                isFree: false,
               },
               {
                 id: 'pro',
-                price: 59,
-                highlight: true,
+                price: isPt ? 49.90 : 9.99,
+                suffix: t('landing.plans.per_month', '/mês'),
+                highlight: false,
+                isFree: false,
               },
               {
                 id: 'premium',
-                price: 99,
+                price: isPt ? 99.90 : 19.99,
+                suffix: t('landing.plans.per_month', '/mês'),
                 highlight: false,
+                isFree: false,
               },
             ].map((plan, idx) => {
               const planData = t(`landing.plans.items.${plan.id}`, { returnObjects: true }) as {
                 name: string;
                 description: string;
                 features: string[];
+                button: string;
               };
 
               return (
                 <RevealOnScroll key={idx} delay={idx * 0.1}>
                   <div
-                    className={`relative rounded-2xl p-8 transition-all duration-300 ${
+                    className={`relative rounded-2xl p-6 transition-all duration-300 h-full flex flex-col ${
                       plan.highlight
-                        ? 'border border-[var(--color-accent)] bg-[rgba(34,211,238,0.05)] scale-105 md:scale-110'
+                        ? 'border border-[var(--color-accent)] bg-[rgba(34,211,238,0.05)] md:scale-105 shadow-xl shadow-[var(--color-accent)]/10 z-10'
                         : 'border border-[var(--color-border)] bg-[rgba(18,18,20,0.8)]'
                     } hover:border-[var(--color-accent)]/50`}
                   >
                     {plan.highlight && (
-                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] text-white text-sm font-bold">
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] text-white text-xs font-bold whitespace-nowrap">
                         {t('landing.plans.recommended')}
                       </div>
                     )}
-                    <h3 className="font-display text-2xl font-bold text-white mb-2">
-                      {planData.name}
+                    <h3 className="font-display text-xl font-bold text-white mb-2">
+                       {planData?.name || plan.id}
                     </h3>
-                    <p className="text-[var(--color-text-secondary)] mb-6">
-                      {planData.description}
+                    <p className="text-[var(--color-text-secondary)] mb-6 text-sm flex-grow">
+                      {planData?.description}
                     </p>
                     <div className="mb-6">
-                      <span className="font-display text-4xl font-extrabold text-white">
-                        R${plan.price}
+                      <span className="font-display text-3xl font-extrabold text-white">
+                        {plan.price === 0 ? (isPt ? 'Grátis' : t('landing.plans.items.free.name', 'Free')) : `${currencySymbol}${plan.price.toFixed(2).replace('.', isPt ? ',' : '.')}`}
                       </span>
-                      <span className="text-[var(--color-text-secondary)] ml-2">
-                        {t('landing.plans.per_month')}
-                      </span>
+                      {plan.price !== 0 && (
+                          <span className="text-[var(--color-text-secondary)] ml-1 text-sm">
+                            {plan.suffix}
+                          </span>
+                      )}
                     </div>
                     <Button
                       onClick={() => {
                         void navigate('/login');
                       }}
                       variant={plan.highlight ? 'primary' : 'secondary'}
+                      disabled={!plan.isFree}
                       fullWidth
                       className="mb-8"
                     >
-                      {t('landing.plans.button')}
+                      {planData?.button || 'Em Breve'}
                     </Button>
                     <ul className="space-y-3">
-                      {planData.features.map((feature, fidx) => (
+                      {planData?.features?.map((feature, fidx) => (
                         <li
                           key={fidx}
-                          className="flex items-start gap-3 text-[var(--color-text-secondary)]"
+                          className="flex items-start gap-3 text-[var(--color-text-secondary)] text-sm"
                         >
-                          <span className="text-[var(--color-accent)] font-bold mt-1">
+                          <span className="text-[var(--color-accent)] font-bold">
                             ✓
                           </span>
                           <span>{feature}</span>
