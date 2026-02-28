@@ -14,8 +14,15 @@ setup('authenticate', async ({ page }) => {
   const passwordInput = page.locator('input[type="password"]');
 
   if (await emailInput.isVisible()) {
-    await emailInput.fill('rafacolucci@gmail.com');
-    await passwordInput.fill('Let7hu118');
+    const email = process.env.E2E_USER_EMAIL || 'rafacolucci@gmail.com';
+    const password = process.env.E2E_USER_PASSWORD;
+    
+    if (!password) {
+        console.warn('⚠️  E2E_USER_PASSWORD environment variable not set. E2E authentication may fail.');
+    }
+    
+    await emailInput.fill(email);
+    await passwordInput.fill(password || '');
 
     // Submit form
     await page.click('button[type="submit"]');
