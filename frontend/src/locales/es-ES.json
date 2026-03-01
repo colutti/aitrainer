@@ -293,7 +293,75 @@
       "integrations": "Integraciones"
     },
     "title": "Configuraciones",
-    "subtitle": "Administra tu perfil y preferencias de la aplicación."
+    "subtitle": "Administra tu perfil y preferencias de la aplicación.",
+    "trainer": {
+      "title": "Entrenador Personal IA",
+      "subtitle": "Elige la personalidad de tu entrenador virtual",
+      "update_success": "¡Entrenador actualizado con éxito!",
+      "update_error": "Error al actualizar el entrenador",
+      "load_error": "No se pudieron cargar los entrenadores disponibles.",
+      "retry": "Reintentar",
+      "save_button": "Actualizar Entrenador",
+      "saving": "Guardando..."
+    },
+    "integrations": {
+      "hevy": {
+        "title": "Hevy",
+        "subtitle": "Sincronización automática de entrenamientos.",
+        "hevy_placeholder": "Pega tu clave API de Hevy aquí",
+        "save_success": "¡Clave API de Hevy guardada con éxito!",
+        "save_error": "Error al guardar la clave API de Hevy.",
+        "sync_success": "¡Sincronización completada! Importados: {{imported}}, Omitidos: {{skipped}}",
+        "sync_error": "Error al sincronizar Hevy.",
+        "remove_success": "¡Integración de Hevy eliminada con éxito!",
+        "remove_error": "Error al eliminar la integración de Hevy.",
+        "sync_button": "Sincronizar Ahora",
+        "last_sync": "Última sincronización: {{date}}",
+        "webhook_title": "Webhook para Sincronización Automática",
+        "webhook_setup": "Configurar Webhook",
+        "webhook_url": "URL del Webhook",
+        "webhook_auth": "Encabezado de Autenticación",
+        "webhook_warning": "⚠️ Copia ahora - no se volverá a mostrar",
+        "webhook_revoke": "Revocar Webhook",
+        "webhook_success": "¡Webhook generado con éxito!",
+        "webhook_revoke_success": "¡Webhook revocado con éxito!",
+        "webhook_error": "Error al generar el webhook.",
+        "webhook_revoke_error": "Error al revocar el webhook."
+      },
+      "telegram": {
+        "title": "Bot de Telegram",
+        "subtitle": "Recibe notificaciones y registros rápidos por chat.",
+        "connected": "Conectado como @{{username}}",
+        "ready": "El bot está listo para enviar alertas.",
+        "notifications_title": "Recibir análisis de entrenamientos:",
+        "notifications_item_title": "Análisis Automático de Entrenamientos",
+        "notifications_item_desc": "Recibe análisis de la IA al sincronizar entrenamientos de Hevy",
+        "notification_update_success": "¡Preferencia de notificación actualizada!",
+        "notification_update_error": "Error al actualizar la preferencia de notificación.",
+        "send_code": "Envía este código a nuestro bot:",
+        "open_bot": "Abrir Bot en Telegram",
+        "generate_code": "Generar Código de Conexión",
+        "generate_error": "Error al generar el código de Telegram."
+      },
+      "imports": {
+        "title": "Importación de Datos",
+        "subtitle": "Importa historiales de otras aplicaciones.",
+        "mfp_desc": "Importa tus registros de nutrición exportados de MFP.",
+        "zepp_desc": "Importa historial de peso y composición corporal.",
+        "click_to_select": "Haz clic para seleccionar CSV",
+        "processing": "Procesando archivo...",
+        "success": "¡Importación completada! Creados: {{created}}, Actualizados: {{updated}}",
+        "errors_found": "{{count}} errores encontrados durante la importación.",
+        "error": "Error al importar el archivo."
+      },
+      "shared": {
+        "active": "Integración activa. Clave: {{key}}",
+        "remove": "Eliminar",
+        "connected": "Conectado",
+        "copy_success": "¡Copiado al portapapeles!",
+        "copy_error": "Error al copiar."
+      }
+    }
   },
   "dashboard": {
     "greeting": "¡Buenos días, {{name}}!",

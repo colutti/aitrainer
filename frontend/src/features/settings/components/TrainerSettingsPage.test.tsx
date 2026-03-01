@@ -15,6 +15,13 @@ vi.mock('../../../shared/hooks/useNotification', () => ({
   useNotificationStore: vi.fn(),
 }));
 
+// Mock react-i18next
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
+}));
+
 describe('TrainerSettingsPage', () => {
   const mockNotify = {
     success: vi.fn(),
@@ -60,7 +67,7 @@ describe('TrainerSettingsPage', () => {
     const lunaCard = screen.getByText('Luna').closest('div[class*="cursor-pointer"]');
     if (lunaCard) fireEvent.click(lunaCard);
 
-    expect(screen.getByRole('button', { name: /Atualizar Treinador/i })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /settings.trainer.save_button/i })).not.toBeDisabled();
   });
 
   it('should handle image error and show fallback', () => {
@@ -80,12 +87,12 @@ describe('TrainerSettingsPage', () => {
     mockStore.updateTrainer.mockResolvedValue({});
     render(<TrainerSettingsPage />);
 
-    const saveButton = screen.getByRole('button', { name: /Atualizar Treinador/i });
+    const saveButton = screen.getByRole('button', { name: /settings.trainer.save_button/i });
     fireEvent.click(saveButton);
 
     await waitFor(() => {
       expect(mockStore.updateTrainer).toHaveBeenCalledWith('atlas');
-      expect(mockNotify.success).toHaveBeenCalledWith('Treinador atualizado com sucesso!');
+      expect(mockNotify.success).toHaveBeenCalledWith('settings.trainer.update_success');
     });
   });
 
@@ -107,7 +114,7 @@ describe('TrainerSettingsPage', () => {
         isSaving: true
     });
     render(<TrainerSettingsPage />);
-    expect(screen.getByText('Salvando...')).toBeInTheDocument();
+    expect(screen.getByText('settings.trainer.saving')).toBeInTheDocument();
   });
 
   it('should show empty state if no trainers and allow retry', () => {
@@ -118,9 +125,9 @@ describe('TrainerSettingsPage', () => {
     });
 
     render(<TrainerSettingsPage />);
-    expect(screen.getByText(/Não foi possível carregar os treinadores disponíveis/i)).toBeInTheDocument();
+    expect(screen.getByText(/settings.trainer.load_error/i)).toBeInTheDocument();
     
-    const retryBtn = screen.getByRole('button', { name: /Tentar Novamente/i });
+    const retryBtn = screen.getByRole('button', { name: /settings.trainer.retry/i });
     fireEvent.click(retryBtn);
     expect(mockStore.fetchAvailableTrainers).toHaveBeenCalled();
   });
@@ -129,11 +136,11 @@ describe('TrainerSettingsPage', () => {
     mockStore.updateTrainer.mockRejectedValue(new Error('error'));
     render(<TrainerSettingsPage />);
 
-    const saveButton = screen.getByRole('button', { name: /Atualizar Treinador/i });
+    const saveButton = screen.getByRole('button', { name: /settings.trainer.save_button/i });
     fireEvent.click(saveButton);
 
     await waitFor(() => {
-      expect(mockNotify.error).toHaveBeenCalledWith('Erro ao atualizar treinador');
+      expect(mockNotify.error).toHaveBeenCalledWith('settings.trainer.update_error');
     });
   });
 
@@ -148,7 +155,8 @@ describe('TrainerSettingsPage', () => {
     render(<TrainerSettingsPage />);
     
     // If no selection, button should be disabled based on Component logic: disabled={isSaving || !selectedTrainerId}
-    const saveButton = screen.getByRole('button', { name: /Atualizar Treinador/i });
+    const saveButton = screen.getByRole('button', { name: /settings.trainer.save_button/i });
     expect(saveButton).toBeDisabled();
   });
 });
+

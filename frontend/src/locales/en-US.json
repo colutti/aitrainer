@@ -293,7 +293,75 @@
       "integrations": "Integrations"
     },
     "title": "Settings",
-    "subtitle": "Manage your profile and app preferences."
+    "subtitle": "Manage your profile and app preferences.",
+    "trainer": {
+      "title": "AI Personal Trainer",
+      "subtitle": "Choose your virtual trainer's personality",
+      "update_success": "Trainer updated successfully!",
+      "update_error": "Error updating trainer",
+      "load_error": "Could not load available trainers.",
+      "retry": "Try Again",
+      "save_button": "Update Trainer",
+      "saving": "Saving..."
+    },
+    "integrations": {
+      "hevy": {
+        "title": "Hevy",
+        "subtitle": "Automatic workout synchronization.",
+        "hevy_placeholder": "Paste your Hevy API key here",
+        "save_success": "Hevy API Key saved successfully!",
+        "save_error": "Error saving Hevy API Key.",
+        "sync_success": "Sync completed! Imported: {{imported}}, Skipped: {{skipped}}",
+        "sync_error": "Error syncing Hevy.",
+        "remove_success": "Hevy integration removed successfully!",
+        "remove_error": "Error removing Hevy integration.",
+        "sync_button": "Sync Now",
+        "last_sync": "Last sync: {{date}}",
+        "webhook_title": "Webhook for Automatic Sync",
+        "webhook_setup": "Setup Webhook",
+        "webhook_url": "Webhook URL",
+        "webhook_auth": "Auth Header",
+        "webhook_warning": "⚠️ Copy now - it won't be shown again",
+        "webhook_revoke": "Revoke Webhook",
+        "webhook_success": "Webhook generated successfully!",
+        "webhook_revoke_success": "Webhook revoked successfully!",
+        "webhook_error": "Error generating webhook.",
+        "webhook_revoke_error": "Error revoking webhook."
+      },
+      "telegram": {
+        "title": "Telegram Bot",
+        "subtitle": "Receive notifications and quick logs via chat.",
+        "connected": "Connected as @{{username}}",
+        "ready": "The bot is ready to send alerts.",
+        "notifications_title": "Receive workout analysis:",
+        "notifications_item_title": "Automatic Workout Analysis",
+        "notifications_item_desc": "Receive AI analysis when syncing Hevy workouts",
+        "notification_update_success": "Notification preference updated!",
+        "notification_update_error": "Error updating notification preference.",
+        "send_code": "Send this code to our bot:",
+        "open_bot": "Open Bot in Telegram",
+        "generate_code": "Generate Connection Code",
+        "generate_error": "Error generating Telegram code."
+      },
+      "imports": {
+        "title": "Data Import",
+        "subtitle": "Import history from other apps.",
+        "mfp_desc": "Import your nutrition logs exported from MFP.",
+        "zepp_desc": "Import weight and body composition history.",
+        "click_to_select": "Click to select CSV",
+        "processing": "Processing file...",
+        "success": "Import completed! Created: {{created}}, Updated: {{updated}}",
+        "errors_found": "{{count}} errors found during import.",
+        "error": "Error importing file."
+      },
+      "shared": {
+        "active": "Integration active. Key: {{key}}",
+        "remove": "Remove",
+        "connected": "Connected",
+        "copy_success": "Copied to clipboard!",
+        "copy_error": "Error copying."
+      }
+    }
   },
   "dashboard": {
     "greeting": "Good morning, {{name}}!",

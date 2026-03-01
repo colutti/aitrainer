@@ -18,6 +18,7 @@ vi.mock('../api/integrations-api', () => ({
     revokeWebhook: vi.fn(),
     getTelegramStatus: vi.fn(),
     generateTelegramCode: vi.fn(),
+    updateTelegramNotifications: vi.fn(),
     uploadMfpCsv: vi.fn(),
     uploadZeppLifeCsv: vi.fn(),
   },
@@ -25,6 +26,13 @@ vi.mock('../api/integrations-api', () => ({
 
 vi.mock('../../../shared/hooks/useNotification', () => ({
   useNotificationStore: vi.fn(),
+}));
+
+// Mock react-i18next
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
 }));
 
 describe('IntegrationsPage', () => {
@@ -51,8 +59,8 @@ describe('IntegrationsPage', () => {
 
     render(<IntegrationsPage />);
 
-    expect(await screen.findByText(/Integração ativa. Chave: \*\*\*\*123/)).toBeInTheDocument();
-    expect(await screen.findByText(/Conectado como @my_bot/)).toBeInTheDocument();
+    expect(await screen.findByText(/settings.integrations.shared.active/)).toBeInTheDocument();
+    expect(await screen.findByText(/settings.integrations.telegram.connected/)).toBeInTheDocument();
   });
 
   it('should save Hevy key successfully', async () => {
@@ -65,12 +73,12 @@ describe('IntegrationsPage', () => {
     const input = await screen.findByLabelText(/API Key/i);
     await user.type(input, 'NEW_KEY');
     
-    const saveBtn = screen.getByRole('button', { name: /salvar/i });
+    const saveBtn = screen.getByRole('button', { name: /common.confirm/i });
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
       expect(integrationsApi.saveHevyKey).toHaveBeenCalledWith('NEW_KEY');
-      expect(mockNotify.success).toHaveBeenCalledWith('Chave da Hevy salva com sucesso!');
+      expect(mockNotify.success).toHaveBeenCalledWith('settings.integrations.hevy.save_success');
     });
   });
 
@@ -82,12 +90,12 @@ describe('IntegrationsPage', () => {
 
     render(<IntegrationsPage />);
 
-    const syncBtn = await screen.findByText(/Sincronizar Agora/);
+    const syncBtn = await screen.findByText(/settings.integrations.hevy.sync_button/);
     fireEvent.click(syncBtn);
 
     await waitFor(() => {
       expect(integrationsApi.syncHevy).toHaveBeenCalled();
-      expect(mockNotify.success).toHaveBeenCalledWith(expect.stringContaining('Importados: 5'));
+      expect(mockNotify.success).toHaveBeenCalledWith('settings.integrations.hevy.sync_success');
     });
   });
 
@@ -100,7 +108,7 @@ describe('IntegrationsPage', () => {
 
     render(<IntegrationsPage />);
 
-    const removeBtn = await screen.findByText(/Remover/);
+    const removeBtn = await screen.findByText(/settings.integrations.shared.remove/);
     fireEvent.click(removeBtn);
 
     await waitFor(() => {
@@ -123,7 +131,7 @@ describe('IntegrationsPage', () => {
 
     await waitFor(() => {
       expect(integrationsApi.uploadMfpCsv).toHaveBeenCalledWith(file);
-      expect(mockNotify.success).toHaveBeenCalledWith(expect.stringContaining('Criados: 10'));
+      expect(mockNotify.success).toHaveBeenCalledWith('settings.integrations.imports.success');
     });
   });
 
@@ -141,7 +149,7 @@ describe('IntegrationsPage', () => {
 
     await waitFor(() => {
       expect(integrationsApi.uploadZeppLifeCsv).toHaveBeenCalledWith(file);
-      expect(mockNotify.info).toHaveBeenCalledWith(expect.stringContaining('1 erros encontrados'));
+      expect(mockNotify.info).toHaveBeenCalledWith('settings.integrations.imports.errors_found');
     });
   });
 
@@ -151,11 +159,11 @@ describe('IntegrationsPage', () => {
 
     render(<IntegrationsPage />);
 
-    const genBtn = await screen.findByText(/Gerar Código/);
+    const genBtn = await screen.findByText(/settings.integrations.telegram.generate_code/);
     fireEvent.click(genBtn);
 
     await waitFor(() => {
-      expect(mockNotify.error).toHaveBeenCalledWith('Erro ao gerar código do Telegram.');
+      expect(mockNotify.error).toHaveBeenCalledWith('settings.integrations.telegram.generate_error');
     });
   });
 
@@ -170,7 +178,7 @@ describe('IntegrationsPage', () => {
 
     render(<IntegrationsPage />);
 
-    expect(await screen.findByText(/Webhook para Sincronização Automática/i)).toBeInTheDocument();
+    expect(await screen.findByText(/settings.integrations.hevy.webhook_title/i)).toBeInTheDocument();
     expect(await screen.findByText(/example.com\/webhook\/token123/)).toBeInTheDocument();
   });
 
@@ -190,12 +198,13 @@ describe('IntegrationsPage', () => {
 
     render(<IntegrationsPage />);
 
-    const configBtn = await screen.findByText(/Configurar Webhook/);
+    const configBtn = await screen.findByText(/settings.integrations.hevy.webhook_setup/);
     fireEvent.click(configBtn);
 
     await waitFor(() => {
       expect(integrationsApi.generateWebhook).toHaveBeenCalled();
-      expect(mockNotify.success).toHaveBeenCalledWith('Webhook gerado com sucesso!');
+      expect(mockNotify.success).toHaveBeenCalledWith('settings.integrations.hevy.webhook_success');
     });
   });
 });
+
