@@ -21,3 +21,4 @@ trigger: always_on
 - Sem erros de linting, seja pylint, eslint, ts lint. etc.
 - Nao existem testes para funcionalidade.
 - Existem erros ou warnings nos containers.
+- Voce vez um build dos containers para ver se nao existem erros ou warnings.

@@ -27,6 +27,11 @@ class TelegramBotService:
         # pylint: disable=no-member
         update = Update.de_json(update_data, self.bot)
 
+        # 0. Check for duplicate update_id (Telegram retries)
+        if not self.repository.try_record_update(update.update_id):
+            logger.info("Ignoring duplicate Telegram update: %s", update.update_id)
+            return
+
         if not update.message or not update.effective_chat:
             return
 

@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from src.services.auth import verify_token
@@ -290,14 +291,14 @@ def get_webhook_config(
     # Build webhook URL dynamically from request (works locally and in production)
     # Check for X-Forwarded-Proto header set by Cloud Run / Nginx
     proto = request.headers.get("x-forwarded-proto", "http")
-    
+
     # In production Cloud Run, request.base_url might be http, but we want to show https
     # Only force https if we're not on localhost
     base_url = str(request.base_url).rstrip("/")
     if "localhost" not in base_url and "127.0.0.1" not in base_url:
         base_url = base_url.replace("http://", "https://")
     elif proto == "https":
-         base_url = base_url.replace("http://", "https://")
+        base_url = base_url.replace("http://", "https://")
 
     webhook_url = f"{base_url}/integrations/hevy/webhook/{token}"
     masked_auth = f"Bearer ****{secret[-4:]}" if secret else None
@@ -384,11 +385,11 @@ async def receive_hevy_webhook(
     """
     client_host = request.client.host if request.client else "unknown"
     method = request.method
-    
+
     # Extensive logging for visibility
     logger.info("--- [Hevy Webhook Start] ---")
     logger.info("Method: %s | Client IP: %s | URL: %s", method, client_host, request.url)
-    
+
     # Log sanitized headers
     headers_to_log = {k: v for k, v in request.headers.items() if k.lower() not in ["authorization", "cookie"]}
     logger.info("Headers: %s", headers_to_log)
@@ -401,7 +402,7 @@ async def receive_hevy_webhook(
         if not user_profile:
             logger.warning("[Webhook] VERIFICATION FAILED: Invalid token %s", user_token[:8])
             return JSONResponse(status_code=404, content={"message": "Token not found"})
-        
+
         logger.info("[Webhook] VERIFICATION SUCCESS for user: %s", user_profile.email)
         return {"status": "ok", "message": "Hevy webhook endpoint is active"}
 
@@ -431,7 +432,7 @@ async def receive_hevy_webhook(
         expected = f"Bearer {user_profile.hevy_webhook_secret}"
         if authorization != expected:
             logger.warning(
-                "[Webhook] AUTH FAILED for %s (IP: %s). Expected secret present? %s", 
+                "[Webhook] AUTH FAILED for %s (IP: %s). Expected secret present? %s",
                 user_profile.email, client_host, bool(user_profile.hevy_webhook_secret)
             )
             # Log length comparison if they look similar to detect trailing spaces/encoding bugs

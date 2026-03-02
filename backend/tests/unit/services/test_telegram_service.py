@@ -151,3 +151,35 @@ class TestTelegramService(unittest.IsolatedAsyncioTestCase):
             
             # Check deletion of first message
             mock_processing_msg.delete.assert_called_once()
+
+    @patch("src.services.telegram_service.Bot")
+    @patch("src.services.telegram_service.Update")
+    async def test_handle_update_idempotency(self, MockUpdate, MockBot):
+        mock_bot_instance = MockBot.return_value
+        mock_bot_instance.send_message = AsyncMock()
+        service = TelegramBotService(self.mock_token, self.mock_repo, self.mock_brain)
+        
+        mock_update = MagicMock()
+        mock_update.update_id = 123
+        mock_update.message.text = "Hello"
+        mock_update.effective_chat.id = 555
+        MockUpdate.de_json.return_value = mock_update
+        
+        # First call: newly recorded
+        self.mock_repo.try_record_update.return_value = True
+        # Mock Repo: Linked
+        mock_link = MagicMock()
+        mock_link.user_email = "user@test.com"
+        self.mock_repo.get_link_by_chat_id.return_value = mock_link
+        self.mock_brain.send_message_sync.return_value = "Resp"
+
+        await service.handle_update({})
+        self.assertEqual(self.mock_brain.send_message_sync.call_count, 1)
+
+        # Second call: already recorded
+        self.mock_repo.try_record_update.return_value = False
+        await service.handle_update({})
+        
+        # Should still be 1
+        self.assertEqual(self.mock_brain.send_message_sync.call_count, 1)
+        self.assertEqual(self.mock_repo.try_record_update.call_count, 2)

@@ -63,3 +63,20 @@ class TestLinkingCode:
         mock_db["telegram_links"].delete_one.return_value = mock_result
         result = telegram_repo.delete_link("nonexistent@test.com")
         assert result is False
+
+class TestIdempotency:
+    """Test message idempotency tracking."""
+
+    def test_try_record_update_success(self, telegram_repo, mock_db):
+        """Test recording a new update_id returns True."""
+        mock_db["telegram_processed_updates"].insert_one.return_value = MagicMock()
+        result = telegram_repo.try_record_update(123)
+        assert result is True
+        mock_db["telegram_processed_updates"].insert_one.assert_called_once()
+
+    def test_try_record_update_duplicate_fails(self, telegram_repo, mock_db):
+        """Test recording a duplicate update_id returns False."""
+        # Use a real exception to simulate duplicate key error
+        mock_db["telegram_processed_updates"].insert_one.side_effect = Exception("Duplicate key")
+        result = telegram_repo.try_record_update(123)
+        assert result is False

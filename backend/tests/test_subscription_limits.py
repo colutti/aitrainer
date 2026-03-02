@@ -3,7 +3,6 @@ import pytest
 from fastapi import HTTPException
 from src.services.trainer import AITrainerBrain
 from src.api.models.user_profile import UserProfile
-from src.core.subscription import SubscriptionPlan
 
 class DummyDatabase:
     def __init__(self):

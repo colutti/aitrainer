@@ -17,6 +17,7 @@ class TelegramRepository(BaseRepository):
     def __init__(self, database: Database):
         super().__init__(database, "telegram_links")
         self.codes_collection = database["telegram_codes"]
+        self.processed_updates_collection = database["telegram_processed_updates"]
         self._ensure_indexes()
 
     def _ensure_indexes(self) -> None:
@@ -27,6 +28,12 @@ class TelegramRepository(BaseRepository):
         self.collection.create_index("chat_id", unique=True, sparse=True)
         # Index on user_email for quick lookups
         self.collection.create_index("user_email", sparse=True)
+        # TTL index for processed updates - keep for 1 hour
+        self.processed_updates_collection.create_index(
+            "processed_at", expireAfterSeconds=3600
+        )
+        # Unique index on update_id to prevent duplicates
+        self.processed_updates_collection.create_index("update_id", unique=True)
 
     def create_linking_code(self, user_email: str) -> str:
         """
@@ -110,3 +117,17 @@ class TelegramRepository(BaseRepository):
             self.logger.info("Deleted Telegram link for %s", user_email)
             return True
         return False
+
+    def try_record_update(self, update_id: int) -> bool:
+        """
+        Atomically try to record an update_id as processed.
+        Returns True if newly recorded, False if already exists.
+        """
+        try:
+            self.processed_updates_collection.insert_one(
+                {"update_id": update_id, "processed_at": datetime.now(timezone.utc)}
+            )
+            return True
+        except Exception:  # pylint: disable=broad-exception-caught
+            # Most likely a duplicate key error (update_id already processed)
+            return False
