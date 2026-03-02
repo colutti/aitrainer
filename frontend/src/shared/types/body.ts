@@ -48,3 +48,25 @@ export interface WeightListResponse {
   page_size: number;
   total_pages: number;
 }
+export interface WeightLogFormData {
+  date: string;
+  weight_kg: number;
+  body_fat_pct: number;
+  muscle_mass_pct?: number | null;
+  muscle_mass_kg?: number | null;
+  body_water_pct?: number | null;
+  bone_mass_kg?: number | null;
+  visceral_fat?: number | null;
+  bmr?: number | null;
+  notes?: string | null;
+  neck_cm?: number | null;
+  chest_cm?: number | null;
+  waist_cm?: number | null;
+  hips_cm?: number | null;
+  bicep_r_cm?: number | null;
+  bicep_l_cm?: number | null;
+  thigh_r_cm?: number | null;
+  thigh_l_cm?: number | null;
+  calf_r_cm?: number | null;
+  calf_l_cm?: number | null;
+}

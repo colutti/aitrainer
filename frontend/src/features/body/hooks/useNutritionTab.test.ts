@@ -77,7 +77,7 @@ describe('useNutritionTab hook', () => {
 
     await act(async () => {
       result.current.editEntry(mockLogEntry as Parameters<typeof result.current.editEntry>[0]);
-      await (result.current.handleSubmit as () => Promise<void>)();
+      await result.current.handleSubmit(result.current.onSubmit)();
     });
 
     expect(bodyApi.logNutrition).toHaveBeenCalled();
@@ -94,7 +94,7 @@ describe('useNutritionTab hook', () => {
 
     await act(async () => {
       result.current.editEntry(mockLogEntry as Parameters<typeof result.current.editEntry>[0]);
-      await (result.current.handleSubmit as () => Promise<void>)();
+      await result.current.handleSubmit(result.current.onSubmit)();
     });
 
     expect(mockNotify.error).toHaveBeenCalledWith('Erro ao salvar registro nutricional.');

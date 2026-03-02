@@ -37,7 +37,7 @@ export function BodyPage() {
               </>
             )}
           </h1>
-          <p className="text-text-secondary mt-1 md:ml-11">
+          <p className="text-text-secondary mt-3 md:ml-12 pr-4">
             {isNutrition 
               ? t('body.nutrition_subtitle')
               : t('body.weight_subtitle')

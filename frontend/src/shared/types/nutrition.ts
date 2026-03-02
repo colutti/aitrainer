@@ -59,3 +59,11 @@ export interface CreateNutritionLogRequest {
   fiber_grams?: number;
   sodium_mg?: number;
 }
+export interface NutritionFormData {
+  date: string;
+  source: string;
+  calories: number;
+  protein_grams?: number | null;
+  carbs_grams?: number | null;
+  fat_grams?: number | null;
+}

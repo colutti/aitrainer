@@ -14,7 +14,7 @@ describe('WidgetWeeklyFrequency', () => {
   it('should render 7 day labels', () => {
     const { container } = render(<WidgetWeeklyFrequency days={mockDays} />);
     // Select the rounded-full divs that contain the day letters
-    const dayBubbles = container.querySelectorAll('.rounded-full.w-8.h-8');
+    const dayBubbles = container.querySelectorAll('.rounded-full.flex.items-center.justify-center');
     expect(dayBubbles.length).toBe(7);
     expect(dayBubbles[0]).toHaveTextContent('S');
     expect(dayBubbles[6]).toHaveTextContent('D');

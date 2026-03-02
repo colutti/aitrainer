@@ -35,7 +35,7 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
       console.error('Error fetching dashboard data:', error);
       set({ 
         isLoading: false, 
-        error: 'Failed to fetch dashboard data' 
+        error: 'dashboard.errors.fetch_failed' 
       });
     }
   },

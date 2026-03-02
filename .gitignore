@@ -81,4 +81,4 @@ artifacts/
 artifacts/superpowers/
 
 # Git Worktrees
-.worktrees/
+.worktrees/tmp/
