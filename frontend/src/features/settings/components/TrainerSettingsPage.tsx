@@ -82,7 +82,7 @@ export function TrainerSettingsPage() {
         </div>
         <div>
             <h1 className="text-2xl font-bold text-text-primary">{t('settings.trainer.title')}</h1>
-            <p className="text-text-secondary">{t('settings.trainer.subtitle')}</p>
+            <p className="text-text-secondary mt-3">{t('settings.trainer.subtitle')}</p>
         </div>
       </div>
 

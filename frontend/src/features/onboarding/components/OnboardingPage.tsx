@@ -5,23 +5,25 @@ import { useSearchParams } from 'react-router-dom';
 
 import { Button } from '../../../shared/components/ui/Button';
 import { Input } from '../../../shared/components/ui/Input';
+import { useAuthStore } from '../../../shared/hooks/useAuth';
 import { cn } from '../../../shared/utils/cn';
 import { onboardingApi, type OnboardingPayload } from '../api/onboarding-api';
 
 export function OnboardingPage() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
+  const { userInfo } = useAuthStore();
   
   const TRAINERS = [
-    { id: 'atlas', name: 'Atlas', description: t('onboarding.trainers.atlas'), color: 'from-orange-500 to-red-600' },
-    { id: 'luna', name: 'Luna', description: t('onboarding.trainers.luna'), color: 'from-indigo-400 to-purple-600' },
-    { id: 'sargento', name: 'Sargento', description: t('onboarding.trainers.sargento'), color: 'from-slate-600 to-slate-800' },
-    { id: 'sofia', name: 'Sofia', description: t('onboarding.trainers.sofia'), color: 'from-rose-400 to-pink-600' },
-    { id: 'gymbro', name: 'GymBro', description: t('onboarding.trainers.gymbro'), color: 'from-yellow-400 to-orange-500' },
+    { id: 'atlas', name: 'Atlas', description: t('onboarding.trainers.atlas', 'Especialista em biomecânica e precisão baseada em dados.'), color: 'from-orange-500 to-red-600' },
+    { id: 'luna', name: 'Luna', description: t('onboarding.trainers.luna', 'Foco em bem-estar holístico, flexibilidade e atenção plena.'), color: 'from-indigo-400 to-purple-600' },
+    { id: 'sargento', name: 'Sargento', description: t('onboarding.trainers.sargento', 'Treinador estilo bootcamp militar. Sem desculpas.'), color: 'from-slate-600 to-slate-800' },
+    { id: 'sofia', name: 'Sofia', description: t('onboarding.trainers.sofia', 'Inteligência metabólica e saúde feminina empática.'), color: 'from-rose-400 to-pink-600' },
+    { id: 'gymbro', name: 'GymBro', description: t('onboarding.trainers.gymbro', 'Parceiro de academia empolgado e motivacional!'), color: 'from-yellow-400 to-orange-500' },
   ];
   const token = searchParams.get('token');
 
-  const [step, setStep] = useState(0); // 0: Validating, 1: Password, 2: Profile, 3: Trainer
+  const [step, setStep] = useState(0); // 0: Validating, 1: Password, 2: Profile, 3: Trainer, 4: Success
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -88,7 +90,7 @@ export function OnboardingPage() {
       const res = await onboardingApi.completeOnboarding(payload);
       
       localStorage.setItem('auth_token', res.token);
-      window.location.href = '/'; // Hard redirect
+      setStep(4);
     } catch {
       setError(t('onboarding.tokens.creation_error'));
       setLoading(false);
@@ -127,20 +129,22 @@ export function OnboardingPage() {
     <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
       <div className="w-full max-w-2xl bg-dark-card border border-border rounded-3xl p-8 md:p-12 shadow-2xl animate-in fade-in zoom-in-95 duration-500">
         {/* Progress */}
-        <div className="flex justify-between mb-8 relative">
-           <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-zinc-800 -z-10" />
-           {[1, 2, 3].map((s) => (
-             <div 
-               key={s} 
-               className={cn(
-                 "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors",
-                 step >= s ? "bg-gradient-start text-white" : "bg-zinc-800 text-text-secondary"
-               )}
-             >
-               {s}
-             </div>
-           ))}
-        </div>
+        {step < 4 && (
+          <div className="flex justify-between mb-8 relative">
+            <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-zinc-800 -z-10" />
+            {[1, 2, 3].map((s) => (
+              <div 
+                key={s} 
+                className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors",
+                  step >= s ? "bg-gradient-start text-white" : "bg-zinc-800 text-text-secondary"
+                )}
+              >
+                {s}
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Step 1: Password */}
         {step === 1 && (
@@ -163,7 +167,7 @@ export function OnboardingPage() {
                 value={confirmPassword}
                 onChange={e => { setConfirmPassword(e.target.value); }}
               />
-              <p className="text-xs text-text-muted">
+              <p className="text-xs text-zinc-400">
                 {t('onboarding.password_hint')}
               </p>
             </div>
@@ -212,23 +216,23 @@ export function OnboardingPage() {
           <div className="space-y-6">
              <h2 className="text-2xl font-bold text-text-primary text-center">{t('onboarding.step_3_title')}</h2>
              <div className="grid grid-cols-1 gap-3">
-               {TRAINERS.map(t => (
+               {TRAINERS.map(trainer => (
                  <button
-                   key={t.id}
-                   onClick={() => { setFormData({...formData, trainer_type: t.id}); }}
+                   key={trainer.id}
+                   onClick={() => { setFormData({...formData, trainer_type: trainer.id}); }}
                    className={cn(
                      "flex items-center gap-4 p-4 rounded-xl border text-left transition-all",
-                     formData.trainer_type === t.id
+                     formData.trainer_type === trainer.id
                        ? "bg-gradient-start/10 border-gradient-start shadow-orange-sm"
                        : "bg-dark-bg border-border hover:border-zinc-600"
                    )}
                  >
-                    <div className={cn("w-10 h-10 rounded-full bg-gradient-to-br", t.color)} />
+                    <img src={`/assets/avatars/${trainer.id}.png`} alt={trainer.name} className="w-12 h-12 rounded-full border-2 border-dark-bg object-cover bg-white/10" />
                     <div>
-                       <div className="font-bold text-text-primary">{t.name}</div>
-                       <div className="text-xs text-text-secondary">{t.description}</div>
+                       <div className="font-bold text-text-primary">{trainer.name}</div>
+                       <div className="text-xs text-text-secondary">{trainer.description}</div>
                     </div>
-                    {formData.trainer_type === t.id && <Check className="ml-auto text-gradient-start" size={20} />}
+                    {formData.trainer_type === trainer.id && <Check className="ml-auto text-gradient-start" size={20} />}
                  </button>
                ))}
              </div>
@@ -239,6 +243,36 @@ export function OnboardingPage() {
                    {t('onboarding.finish')}
                 </Button>
              </div>
+          </div>
+        )}
+
+        {/* Step 4: Success */}
+        {step === 4 && (
+          <div className="space-y-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center mx-auto text-emerald-500 mb-2">
+              <Check size={40} strokeWidth={3} />
+            </div>
+            
+            <div className="space-y-3">
+              <h1 className="text-3xl font-black text-white tracking-tight">
+                {t('onboarding.success_title')}
+              </h1>
+              <p className="text-text-secondary leading-relaxed max-w-sm mx-auto">
+                {t('onboarding.success_desc', { 
+                  name: userInfo?.name ?? '', 
+                  trainer: TRAINERS.find(t => t.id === formData.trainer_type)?.name ?? '' 
+                })}
+              </p>
+            </div>
+
+            <Button 
+              fullWidth 
+              size="lg" 
+              onClick={() => window.location.href = '/dashboard'}
+              className="mt-4 shadow-[0_20px_50px_rgba(249,115,22,0.3)] h-14 text-lg"
+            >
+              {t('onboarding.go_to_dashboard')}
+            </Button>
           </div>
         )}
       </div>

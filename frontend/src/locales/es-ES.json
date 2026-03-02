@@ -26,6 +26,14 @@
     "settings": "Ajustes",
     "brand_tagline": "Inteligencia x Performance"
   },
+  "errors": {
+    "network_failed": "Parece que no tienes internet. Revisa tu conexión e intenta de nuevo.",
+    "server_error": "Ups, tuvimos un problema en nuestro servidor. Inténtalo de nuevo en unos instantes.",
+    "unauthorized": "Tu sesión ha expirado. Por favor, inicia sesión de nuevo.",
+    "not_found": "El recurso que buscas no fue encontrado.",
+    "default": "Algo saiu mal. Si el problema persiste, contacta con soporte.",
+    "retry": "Intentar de Nuevo"
+  },
   "brand_tagline": "Inteligencia x Performance",
   "landing": {
     "nav": {
@@ -435,7 +443,41 @@
       "D"
     ],
     "week_short": "S{{count}}",
-    "pr_label": "RP"
+    "pr_label": "RP",
+    "tour": {
+      "home_title": "Centro de Comando",
+      "home_desc": "Dashboard es tu visión general. Ve aquí los análisis más valiosos y la constancia de tus avances.",
+      "trainer_title": "Tu Entrenador de IA (24/7)",
+      "trainer_desc": "Chatea con tu IA para pedir rutinas, consejos o charlar. ¡Tienen memoria de todo lo que has hecho!",
+      "workouts_title": "Análisis de Ejercicios",
+      "workouts_desc": "Explora tu volumen semanal y ve gráficos sobre tu progreso muscular paso a paso.",
+      "body_title": "Cuerpo y Nutrición",
+      "body_desc": "Visualiza la verdadera composición y registra alimentos. Tu metabolismo sale de todas estas interacciones.",
+      "settings_title": "Integraciones Mágicas",
+      "settings_desc": "Debes conectar sin falta tus Apps de Gym o un Apple Watch en Configuración para activar todo en automático.",
+      "next": "Siguiente",
+      "prev": "Anterior",
+      "skip": "Saltar Tour",
+      "finish": "Empezar"
+    },
+    "empty_states": {
+      "weight_title": "Registra tu Primer Peso",
+      "weight_desc": "Necesitamos tu peso inicial para que la IA empiece a entender tu metabolismo.",
+      "action_weight": "Registrar Peso",
+      "activity_title": "¿Entramos en acción?",
+      "activity_desc": "Sincroniza la app Hevy o añade un entrenamiento manualmente para ver tus análisis.",
+      "action_activity": "Conectar Apps",
+      "radar_title": "Radar de Fuerza",
+      "radar_desc": "Registra algunos entrenamientos para ver el equilibrio de tu fuerza muscular.",
+      "volume_title": "Tendencia de Volume",
+      "volume_desc": "Tu progreso de carga a lo largo de las semanas aparecerá aquí."
+    },
+    "ai_welcome": {
+      "title": "Mensaje del Entrenador",
+      "input_placeholder": "Responde a {{trainer}}...",
+      "daily_win": "¡Primera victoria del día! Sigue así.",
+      "setup_hint": "Conecta tu cuenta de Hevy para sincronizar entrenos automáticamente."
+    }
   },
   "login": {
     "title": "Iniciar Sesión",
@@ -531,6 +573,7 @@
     "processing_warning": "Las memorias se procesan de forma asíncrona y pueden tardar unos minutos en aparecer después de una conversación."
   },
   "chat": {
+    "welcome_message": "¡Bienvenido a FityQ! Soy tu entrenador y compañero en este viaje. Para armar el plan perfecto para ti, cuéntame: ¿Cuál es tu mayor obstáculo para mantener la constancia hoy? ¿Cuántos días a la semana planeas entrenar? ¡Estoy listo para comenzar!",
     "default_trainer_name": "Entrenador AI",
     "start_conversation": "Inicie su conversación",
     "typing": "{{name}} escribiendo...",
@@ -638,7 +681,10 @@
       "analysis_duration": "Duración del Análisis",
       "weeks": "{{count}} sem",
       "weeks_plural": "{{count}} semanas",
-      "info_desc": "El TDEE se calcula comparando tu ingesta calórica con la variación en la tendencia de tu peso corporal. Cuantos más días registres peso y calorías, más precisa será la estimación.",
+      "tdee_label": "Gasto Diario Real",
+      "trend_label": "Curva de Progresso Real",
+      "confidence_label": "Precisión del Análisis",
+      "info_desc": "Tu Gasto Diario Real se calcula comparando tu ingesta calórica con la variación en tu Curva de Progreso. Cuanto más consistente seas, más inteligente se vuelve la IA.",
       "plan_title": "Plan Sugerido",
       "insufficient_data": "Necesitamos al menos 7 días de registros consistentes para generar un plan sugerido.",
       "plan_desc": "Para alcanzar tu objetivo de {{goal}}, sugerimos mantener una ingesta de {{target}} kcal diarias.",
@@ -678,6 +724,9 @@
     "back": "Volver",
     "next": "Siguiente",
     "finish": "Finalizar Registro",
+    "success_title": "¡Todo Listo!",
+    "success_desc": "¡Bienvenido, {{name}}! Tu perfil ha sido configurado y el entrenador {{trainer}} ya te espera en el Dashboard para comenzar tu transformación.",
+    "go_to_dashboard": "Ir al Dashboard",
     "tokens": {
       "not_found": "No se encontró el token de invitación.",
       "expired": "La invitación ha expirado.",

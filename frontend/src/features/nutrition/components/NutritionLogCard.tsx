@@ -8,6 +8,7 @@ interface NutritionLogCardProps {
   log: NutritionLog;
   onDelete?: (id: string) => void;
   onEdit?: (log: NutritionLog) => void;
+  onClick?: (log: NutritionLog) => void;
 }
 
 /**
@@ -15,7 +16,7 @@ interface NutritionLogCardProps {
  * 
  * Displays a summary of a daily nutrition log in a list format.
  */
-export function NutritionLogCard({ log, onDelete, onEdit }: NutritionLogCardProps) {
+export function NutritionLogCard({ log, onDelete, onEdit, onClick }: NutritionLogCardProps) {
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onDelete) {
@@ -24,11 +25,14 @@ export function NutritionLogCard({ log, onDelete, onEdit }: NutritionLogCardProp
   };
 
   return (
-    <div className="bg-dark-card border border-border/50 rounded-2xl p-4 hover:border-gradient-start/40 transition-all duration-300 group flex items-center gap-5 w-full hover:bg-white/5 active:scale-[0.99] relative overflow-hidden">
+    <div 
+      className="bg-dark-card border border-border/50 rounded-2xl p-4 hover:border-gradient-start/40 transition-all duration-300 group flex items-center gap-5 w-full hover:bg-white/5 active:scale-[0.99] relative overflow-hidden cursor-pointer"
+      onClick={() => { onClick?.(log); }}
+    >
       {/* Accent Line */}
       <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-start opacity-0 group-hover:opacity-100 transition-opacity" />
 
-      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gradient-start/10 to-gradient-end/10 flex flex-shrink-0 items-center justify-center text-gradient-start group-hover:scale-110 transition-transform duration-500 shadow-inner">
+      <div className="w-12 h-12 rounded-xl bg-linear-to-br from-gradient-start/10 to-gradient-end/10 flex shrink-0 items-center justify-center text-gradient-start group-hover:scale-110 transition-transform duration-500 shadow-inner">
         <Utensils size={22} />
       </div>
       

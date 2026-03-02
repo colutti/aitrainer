@@ -1,31 +1,42 @@
+import { TrendingUp } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
+import { cn } from '../../../shared/utils/cn';
+
+import { NoDataOverlay } from './NoDataOverlay';
+
 interface WidgetVolumeTrendProps {
-  data: number[];
+  data?: number[] | null;
   className?: string;
 }
 
 export function WidgetVolumeTrend({ data, className }: WidgetVolumeTrendProps) {
   const { t } = useTranslation();
-  if (!data.length) return null;
+  const isEmpty = !data || data.length === 0;
+
+  // Use dummy data if empty
+  const displayData = (data && data.length > 0) ? data : [5000, 7000, 6500, 8000, 9500, 9000];
 
   // Transform data for Recharts: [val, val, ...] -> [{ name: 'Semana X', volume: val }, ...]
-  const chartData = data.map((volume, index) => ({
+  const chartData = displayData.slice(-6).map((volume, index) => ({
     name: t('dashboard.week_short', { count: index + 1 }),
     volume: Math.round(volume),
   }));
 
   return (
-    <div className={className}>
-      <div className="flex items-center justify-between mb-4">
+    <div className={cn("relative group transition-all duration-500 h-full flex flex-col", className)}>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-8 w-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
+          <TrendingUp size={16} />
+        </div>
         <div>
           <h4 className="text-sm font-bold text-text-primary">{t('dashboard.volume_trend_title')}</h4>
           <p className="text-[10px] text-text-muted uppercase font-bold tracking-wider">{t('dashboard.volume_trend_subtitle')}</p>
         </div>
       </div>
       
-      <div className="flex-1 w-full mt-2 min-h-[200px]">
+      <div className={cn("flex-1 w-full min-h-[200px] transition-all duration-700", isEmpty && "blur-sm grayscale opacity-30 select-none")}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.3} />
@@ -59,6 +70,8 @@ export function WidgetVolumeTrend({ data, className }: WidgetVolumeTrendProps) {
           </BarChart>
         </ResponsiveContainer>
       </div>
+      
+      {isEmpty && <NoDataOverlay message={t('dashboard.volume_history_unavailable')} />}
     </div>
   );
 }

@@ -172,11 +172,14 @@ async def process_webhook_async(
     Fetches workout, transforms and saves.
     """
     # pylint: disable=too-many-locals,too-many-branches,broad-exception-caught
-    logger.info("[Webhook BG] Processing workout %s for %s", workout_id, user_email)
+    logger.info(
+        "[Webhook BG] Starting background processing for user %s, workout %s",
+        user_email, workout_id
+    )
 
     if not api_key:
         logger.error(
-            "[Webhook BG] Missing Hevy API key for %s. Cannot fetch details.",
+            "[Webhook BG] FAILED: Missing Hevy API key for %s. Integration requires API Key to fetch details.",
             user_email,
         )
         return
@@ -211,7 +214,10 @@ async def process_webhook_async(
 
         # 3. Save
         hevy_service.workout_repository.save_log(workout_log)
-        logger.info("[Webhook BG] Successfully synced %s for %s", workout_id, user_email)
+        logger.info(
+            "[Webhook BG] SUCCESS: Workout %s synced for %s. Data saved to MongoDB.",
+            workout_id, user_email
+        )
 
         # === NOVA LÓGICA: Notificação Telegram ===
         try:
@@ -282,7 +288,17 @@ def get_webhook_config(
         }
 
     # Build webhook URL dynamically from request (works locally and in production)
+    # Check for X-Forwarded-Proto header set by Cloud Run / Nginx
+    proto = request.headers.get("x-forwarded-proto", "http")
+    
+    # In production Cloud Run, request.base_url might be http, but we want to show https
+    # Only force https if we're not on localhost
     base_url = str(request.base_url).rstrip("/")
+    if "localhost" not in base_url and "127.0.0.1" not in base_url:
+        base_url = base_url.replace("http://", "https://")
+    elif proto == "https":
+         base_url = base_url.replace("http://", "https://")
+
     webhook_url = f"{base_url}/integrations/hevy/webhook/{token}"
     masked_auth = f"Bearer ****{secret[-4:]}" if secret else None
 
@@ -314,7 +330,13 @@ def generate_webhook_credentials(
         brain.save_user_profile(profile)
 
         # Build webhook URL dynamically from request (works locally and in production)
+        proto = request.headers.get("x-forwarded-proto", "http")
         base_url = str(request.base_url).rstrip("/")
+        if "localhost" not in base_url and "127.0.0.1" not in base_url:
+            base_url = base_url.replace("http://", "https://")
+        elif proto == "https":
+            base_url = base_url.replace("http://", "https://")
+
         webhook_url = f"{base_url}/integrations/hevy/webhook/{token}"
 
         return {
@@ -344,38 +366,85 @@ def revoke_webhook(user_email: CurrentUser, brain: BrainDep):
     return {"message": "Webhook credentials revoked"}
 
 
-# pylint: disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+@router.get("/webhook/{user_token}", include_in_schema=False)
 @router.post("/webhook/{user_token}", include_in_schema=False)
 async def receive_hevy_webhook(
     user_token: str,
-    body: WebhookPayload,
+    request: Request,
     background_tasks: BackgroundTasks,
     brain: BrainDep,
     hevy_service: HevyServiceDep,
-    authorization: Optional[str] = Header(None),
+    body: Optional[WebhookPayload] = None,
+    authorization: Annotated[Optional[str], Header()] = None,
 ):
     """
     Receives webhook from Hevy. Identifies user by token and validates auth header.
+    Supports GET for verification and POST for payload.
     """
-    logger.info("[Webhook] Incoming request. Token: %s...", user_token[:8])
-    logger.info("[Webhook] Received webhook from Hevy. Payload: %s", body.model_dump())
+    client_host = request.client.host if request.client else "unknown"
+    method = request.method
+    
+    # Extensive logging for visibility
+    logger.info("--- [Hevy Webhook Start] ---")
+    logger.info("Method: %s | Client IP: %s | URL: %s", method, client_host, request.url)
+    
+    # Log sanitized headers
+    headers_to_log = {k: v for k, v in request.headers.items() if k.lower() not in ["authorization", "cookie"]}
+    logger.info("Headers: %s", headers_to_log)
+    if authorization:
+        logger.info("Authorization Header present (masked): %s...", authorization[:12])
+
+    if method == "GET":
+        logger.info("[Webhook] VERIFICATION attempt for token: %s...", user_token[:8])
+        user_profile = brain.database.users.find_by_webhook_token(user_token)
+        if not user_profile:
+            logger.warning("[Webhook] VERIFICATION FAILED: Invalid token %s", user_token[:8])
+            return JSONResponse(status_code=404, content={"message": "Token not found"})
+        
+        logger.info("[Webhook] VERIFICATION SUCCESS for user: %s", user_profile.email)
+        return {"status": "ok", "message": "Hevy webhook endpoint is active"}
+
+    # Handle POST (Payload)
+    if not body:
+        try:
+            body_bytes = await request.body()
+            body_str = body_bytes.decode()
+            logger.info("[Webhook] Raw body received: %s", body_str)
+            body_json = await request.json()
+            body = WebhookPayload(**body_json)
+        except Exception as e:
+            logger.error("[Webhook] MALFORMED PAYLOAD from %s: %s", client_host, e)
+            raise HTTPException(status_code=400, detail="Malformed JSON payload") from e
+
+    logger.info("[Webhook] Processing payload for token: %s...", user_token[:8])
+    logger.info("[Webhook] Payload Data: %s", body.model_dump())
 
     # 1. Find user by token
     user_profile = brain.database.users.find_by_webhook_token(user_token)
     if not user_profile:
-        logger.warning("[Webhook] Invalid token attempt: %s...", user_token[:8])
+        logger.warning("[Webhook] UNKNOWN TOKEN: %s... (IP: %s)", user_token[:8], client_host)
         raise HTTPException(status_code=404, detail="Invalid token")
 
     # 2. Validate Authorization
     if user_profile.hevy_webhook_secret:
         expected = f"Bearer {user_profile.hevy_webhook_secret}"
         if authorization != expected:
-            logger.warning("[Webhook] Unauthorized attempt for %s", user_profile.email)
+            logger.warning(
+                "[Webhook] AUTH FAILED for %s (IP: %s). Expected secret present? %s", 
+                user_profile.email, client_host, bool(user_profile.hevy_webhook_secret)
+            )
+            # Log length comparison if they look similar to detect trailing spaces/encoding bugs
+            if authorization:
+                logger.debug("Received len: %d, Expected len: %d", len(authorization), len(expected))
             raise HTTPException(status_code=401, detail="Invalid authorization")
+    else:
+        logger.warning("[Webhook] SECURITY: User %s has no webhook secret set, accepting any auth!", user_profile.email)
 
     # 3. Extract workout ID
     workout_id = body.payload.get("workoutId")
     if not workout_id:
+        logger.error("[Webhook] MISSING workoutId for user %s", user_profile.email)
         raise HTTPException(status_code=400, detail="Missing workoutId")
 
     # 4. Queue background task
@@ -387,4 +456,6 @@ async def receive_hevy_webhook(
         hevy_service=hevy_service,
     )
 
+    logger.info("[Webhook] SUCCESS: Queued processing for user %s, workout %s", user_profile.email, workout_id)
+    logger.info("--- [Hevy Webhook End] ---")
     return {"status": "queued"}

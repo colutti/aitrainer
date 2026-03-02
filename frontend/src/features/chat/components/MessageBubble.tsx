@@ -51,7 +51,7 @@ export function MessageBubble({ message, trainerId, userPhoto, userName }: Messa
 
       {/* Bubble */}
       <div className={cn(
-        "max-w-[85%] md:max-w-[70%] rounded-2xl p-4 shadow-sm text-sm leading-relaxed",
+        "max-w-[92%] md:max-w-[70%] rounded-2xl p-4 shadow-sm text-sm leading-relaxed",
         isUser 
           ? "bg-gradient-start text-white rounded-tr-none" 
           : "bg-dark-card border border-border text-text-primary rounded-tl-none"

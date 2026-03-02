@@ -26,6 +26,14 @@
     "settings": "Settings",
     "brand_tagline": "Intelligence x Performance"
   },
+  "errors": {
+    "network_failed": "It seems you're offline. Please check your internet connection.",
+    "server_error": "Oops, something went wrong on our server. Please try again in a moment.",
+    "unauthorized": "Your session has expired. Please log in again.",
+    "not_found": "The resource you are looking for was not found.",
+    "default": "Something went wrong. If the issue persists, please contact support.",
+    "retry": "Try Again"
+  },
   "brand_tagline": "Intelligence x Performance",
   "landing": {
     "nav": {
@@ -435,7 +443,44 @@
       "S"
     ],
     "week_short": "W{{count}}",
-    "pr_label": "PR"
+    "pr_label": "PR",
+    "no_prs_yet": "No records yet",
+    "no_workouts_yet": "No workouts this week",
+    "no_data_yet": "No data to display",
+    "tour": {
+      "home_title": "Command Center",
+      "home_desc": "Dashboard is your main overview. See the most valuable analyses and consistency here.",
+      "trainer_title": "Your AI Trainer (24/7)",
+      "trainer_desc": "Chat with your AI to adjust routines, get diet tips or just talk. They remember everything about your journey!",
+      "workouts_title": "Advanced Workout Intel",
+      "workouts_desc": "Explore weekly volume and see beautiful graphs showing your strength progression over time.",
+      "body_title": "Body & Nutrition",
+      "body_desc": "Analyze real body composition and nutrition logs. Your metabolism calculation happens here.",
+      "settings_title": "Magic Integrations",
+      "settings_desc": "You should definitely connect your fitness apps like Hevy or a smartwatch in Settings to unlock 100% automation.",
+      "next": "Next",
+      "prev": "Previous",
+      "skip": "Skip Tour",
+      "finish": "Start Now"
+    },
+    "empty_states": {
+      "weight_title": "Log your First Weight",
+      "weight_desc": "We need your initial weight so the AI can start understanding your metabolism.",
+      "action_weight": "Log Weight",
+      "activity_title": "Ready to take action?",
+      "activity_desc": "Sync the Hevy app or add a workout manually to see your analysis.",
+      "action_activity": "Connect Apps",
+      "radar_title": "Strength Radar",
+      "radar_desc": "Log a few workouts to see your muscular strength balance.",
+      "volume_title": "Volume Trend",
+      "volume_desc": "Your load progress over the weeks will appear here."
+    },
+    "ai_welcome": {
+      "title": "Trainer Message",
+      "input_placeholder": "Reply to {{trainer}}...",
+      "daily_win": "First win of the day! Keep it up.",
+      "setup_hint": "Connect your Hevy account to sync workouts automatically."
+    }
   },
   "login": {
     "title": "Login",
@@ -531,6 +576,7 @@
     "processing_warning": "Memories are processed asynchronously and may take a few minutes to appear after a conversation."
   },
   "chat": {
+    "welcome_message": "Welcome to FityQ! I am your trainer and partner on this journey. To assemble the perfect plan for you, tell me: What is your biggest struggle to stay focused today? How many days a week do you intend to train? I am ready to get started!",
     "default_trainer_name": "AI Trainer",
     "start_conversation": "Start your conversation",
     "typing": "{{name}} is typing...",
@@ -638,7 +684,10 @@
       "analysis_duration": "Analysis Duration",
       "weeks": "{{count}} wk",
       "weeks_plural": "{{count}} weeks",
-      "info_desc": "TDEE is calculated by comparing your calorie intake with the trend variation in your body weight. The more days you record weight and calories, the more accurate the estimate will be.",
+      "tdee_label": "Daily Expenditure",
+      "trend_label": "Progress Trend",
+      "confidence_label": "Analysis Precision",
+      "info_desc": "Your Real Daily Expenditure is calculated by comparing your calorie intake with the trend variation in your Progress Curve. The more consistent you are, the smarter the AI becomes.",
       "plan_title": "Suggested Plan",
       "insufficient_data": "We need at least 7 days of consistent logs to generate a suggested plan.",
       "plan_desc": "To reach your {{goal}} goal, we suggest maintaining an intake of {{target}} kcal per day.",
@@ -678,6 +727,9 @@
     "back": "Back",
     "next": "Next",
     "finish": "Finish Registration",
+    "success_title": "All Set!",
+    "success_desc": "Welcome, {{name}}! Your profile is configured and trainer {{trainer}} is waiting for you at the Dashboard to start your transformation.",
+    "go_to_dashboard": "Go to Dashboard",
     "tokens": {
       "not_found": "Invitation token not found.",
       "expired": "The invitation has expired.",

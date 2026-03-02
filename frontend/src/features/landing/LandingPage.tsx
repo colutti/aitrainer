@@ -498,10 +498,10 @@ const LandingPage = (): React.ReactNode => {
                       </div>
                     )}
                     <h3 className="font-display text-xl font-bold text-white mb-2">
-                       {planData?.name || plan.id}
+                       {planData.name}
                     </h3>
                     <p className="text-[var(--color-text-secondary)] mb-6 text-sm flex-grow">
-                      {planData?.description}
+                      {planData.description}
                     </p>
                     <div className="mb-6">
                       <span className="font-display text-3xl font-extrabold text-white">
@@ -522,12 +522,12 @@ const LandingPage = (): React.ReactNode => {
                       fullWidth
                       className="mb-8"
                     >
-                      {planData?.button || 'Em Breve'}
+                      {planData.button}
                     </Button>
                     <ul className="space-y-3">
-                      {planData?.features?.map((feature, fidx) => (
+                      {planData.features.map((feature, fidx) => (
                         <li
-                          key={fidx}
+                          key={fidx.toString()}
                           className="flex items-start gap-3 text-[var(--color-text-secondary)] text-sm"
                         >
                           <span className="text-[var(--color-accent)] font-bold">

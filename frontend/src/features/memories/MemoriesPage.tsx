@@ -71,7 +71,7 @@ export function MemoriesPage() {
             <Brain className="text-gradient-start" size={32} />
             {t('memories.title')}
           </h1>
-          <p className="text-text-secondary mt-1">{t('memories.subtitle')}</p>
+          <p className="text-text-secondary mt-3">{t('memories.subtitle')}</p>
         </div>
         
         <div className="bg-dark-card border border-border rounded-2xl px-6 py-3 flex items-center gap-4 shadow-sm">
@@ -86,7 +86,7 @@ export function MemoriesPage() {
 
       {/* Intro Info */}
       <div className="bg-gradient-start/5 border border-gradient-start/20 rounded-2xl p-6 flex items-start gap-4">
-        <Database className="text-gradient-start mt-1 flex-shrink-0" size={24} />
+        <Database className="text-gradient-start mt-1 shrink-0" size={24} />
         <div className="space-y-2">
           <h3 className="font-bold text-text-primary">{t('memories.what_are_memories')}</h3>
           <p className="text-sm text-text-secondary leading-relaxed">
@@ -113,7 +113,7 @@ export function MemoriesPage() {
               className="bg-dark-card border border-border rounded-2xl p-5 hover:border-gradient-start/30 transition-all group relative overflow-hidden"
             >
               <div className="flex gap-4">
-                <div className="flex-shrink-0 mt-1">
+                <div className="shrink-0 mt-1">
                   <div className="w-8 h-8 rounded-lg bg-dark-bg border border-border flex items-center justify-center text-gradient-start group-hover:bg-gradient-start group-hover:text-white transition-colors duration-300">
                     <Database size={16} />
                   </div>
@@ -130,7 +130,7 @@ export function MemoriesPage() {
                   </div>
                 </div>
 
-                <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button 
                     variant="ghost" 
                     size="icon" 

@@ -12,6 +12,8 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
+import { EmptyState } from '../../shared/components/ui/EmptyState';
+import { HelpTooltip } from '../../shared/components/ui/HelpTooltip';
 import { StatsCard } from '../../shared/components/ui/StatsCard';
 import { useAuthStore } from '../../shared/hooks/useAuth';
 import { useDashboardStore } from '../../shared/hooks/useDashboard';
@@ -210,7 +212,7 @@ export function DashboardPage() {
     t(`dashboard.confidence_level.${metabolism.confidence.toLowerCase()}`, { defaultValue: t('dashboard.confidence_level.unknown') });
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
+    <div className="space-y-12 animate-in fade-in duration-700">
       
       {/* 1. Header & Quick Status */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -218,7 +220,7 @@ export function DashboardPage() {
           <h1 className="text-3xl font-bold text-text-primary">
             {t('dashboard.greeting', { name: userInfo?.name ?? t('common.athlete', { defaultValue: 'Athlete' }) })}
           </h1>
-          <p className="text-text-secondary mt-1">
+          <p className="text-text-secondary mt-3">
             {t('dashboard.summary_subtitle')}
           </p>
         </div>
@@ -232,62 +234,70 @@ export function DashboardPage() {
             <div className="flex flex-col justify-center">
               <span className="text-text-muted/70 leading-none mb-1">{t('dashboard.confidence')}</span>
               <span className="text-sm font-black leading-none">
-               TDEE: {confidenceLevel}
+               Análise: {confidenceLevel}
               </span>
             </div>
           </div>
         </div>
       </div>
-
+      
       {/* 2. PRIORITY 1: METABOLISM & TDEE (The Engine) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div id="widget-metabolism" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Target Card */}
-        <div className="lg:col-span-2 bg-gradient-to-br from-dark-card to-dark-card/50 border border-border rounded-3xl p-8 relative overflow-hidden group">
-          <div className="relative z-10 flex flex-col md:flex-row justify-between gap-4 md:gap-8 h-full">
-            <div className="space-y-6 flex-1">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-gradient-start/10 text-gradient-start">
+        <div className="lg:col-span-2 bg-linear-to-br from-dark-card to-dark-card/50 border border-border rounded-3xl p-6 md:p-8 relative overflow-hidden group">
+          <div className="relative z-10 flex flex-col lg:flex-row justify-between gap-8 h-full">
+            <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left space-y-8 w-full">
+              <div className="flex flex-col md:flex-row items-center gap-4">
+                <div className="p-3 rounded-xl bg-gradient-start/10 text-gradient-start shrink-0">
                   <Target size={24} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-text-primary">{t('dashboard.daily_target')}</h2>
+                  <h2 className="text-lg font-bold text-text-primary leading-tight">{t('dashboard.daily_target')}</h2>
                   <p className="text-sm text-text-secondary">{t('dashboard.focus', { goal: t(`dashboard.goals.${metabolism.goal_type}`) })}</p>
                 </div>
               </div>
               
-              <div>
-                <span className="text-5xl md:text-6xl font-black text-white tracking-tight">
-                  {metabolism.daily_target}
-                </span>
-                <span className="text-text-secondary ml-2 text-xl">kcal</span>
+              <div className="flex flex-col items-center lg:items-start">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-6xl md:text-7xl font-black text-white tracking-tighter leading-none">
+                    {metabolism.daily_target}
+                  </span>
+                  <span className="text-text-muted text-lg font-bold uppercase tracking-widest">kcal</span>
+                </div>
               </div>
 
-              <div className="flex gap-6 pt-2">
-                 <div>
-                    <p className="text-xs text-text-muted uppercase font-bold tracking-wider mb-1">{t('dashboard.tdee_real')}</p>
-                    <p className="text-xl font-bold text-emerald-400 flex items-center gap-1">
-                       <Zap size={16} /> {metabolism.tdee}
-                    </p>
-                 </div>
-                 <div className="w-px bg-border h-10" />
-                 <div>
-                    <p className="text-xs text-text-muted uppercase font-bold tracking-wider mb-1">{t('dashboard.weekly_trend')}</p>
-                    <p className={cn("text-xl font-bold flex items-center gap-1", metabolism.weekly_change > 0 ? "text-orange-400" : "text-blue-400")}>
-                       <TrendingDown size={16} className={metabolism.weekly_change > 0 ? "rotate-180" : undefined} />
-                       {Math.abs(metabolism.weekly_change).toFixed(2)} kg
-                    </p>
-                 </div>
-              </div>
+               <div className="w-full max-w-md mx-auto grid grid-cols-2 lg:flex lg:max-w-none lg:gap-8 pt-6 border-t border-white/5 lg:border-t-0 px-6">
+                  <div className="flex flex-col items-start lg:items-start">
+                     <div className="flex items-center gap-1.5 mb-1 text-text-muted">
+                        <p className="text-[10px] uppercase font-bold tracking-widest whitespace-nowrap">{t('body.metabolism.tdee_label')}</p>
+                        <HelpTooltip content={t('body.metabolism.info_desc')} />
+                     </div>
+                     <p className="text-xl md:text-2xl font-black text-emerald-400 flex items-center gap-1">
+                        <Zap size={16} fill="currentColor" /> {metabolism.tdee}
+                     </p>
+                  </div>
+                  
+                  <div className="flex flex-col items-start lg:items-start border-l border-white/5 lg:border-l-0 pl-6 lg:pl-0">
+                     <div className="flex items-center lg:justify-start gap-1.5 mb-1 text-text-muted w-full">
+                        <p className="text-[10px] uppercase font-bold tracking-widest whitespace-nowrap">{t('body.metabolism.trend_label')}</p>
+                        <HelpTooltip content={t('dashboard.trend_disclaimer')} />
+                     </div>
+                     <p className={cn("text-xl md:text-2xl font-black flex items-center gap-1", metabolism.weekly_change > 0 ? "text-orange-400" : "text-blue-400")}>
+                        <TrendingDown size={18} className={metabolism.weekly_change > 0 ? "rotate-180" : undefined} />
+                        {Math.abs(metabolism.weekly_change).toFixed(2)} <span className="text-xs font-bold uppercase ml-0.5">kg</span>
+                     </p>
+                  </div>
+               </div>
               
-              <p className="text-[10px] text-text-muted italic mt-4 opacity-70 max-w-sm">
+              <p className="text-[10px] text-text-muted italic mt-4 opacity-70 max-w-sm hidden lg:block">
                 {t('dashboard.trend_disclaimer')}
               </p>
             </div>
 
             {/* Macro Preview (if available) */}
             {metabolism.macro_targets && (
-              <div className="bg-white/5 rounded-2xl p-6 min-w-0 border border-white/5 backdrop-blur-sm">
-                <h3 className="text-sm font-bold text-text-secondary mb-4 uppercase tracking-wider">{t('dashboard.suggested_macros')}</h3>
+              <div className="w-full lg:w-80 max-w-md bg-white/5 rounded-2xl p-6 min-w-0 border border-white/5 backdrop-blur-sm mx-auto lg:mx-0">
+                <h3 className="text-sm font-bold text-text-secondary mb-4 uppercase tracking-wider text-center lg:text-left">{t('dashboard.suggested_macros')}</h3>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                      <span className="text-sm text-text-primary">{t('dashboard.protein')}</span>
@@ -309,7 +319,7 @@ export function DashboardPage() {
                      <span className="text-sm text-text-primary">{t('dashboard.carbs')}</span>
                      <span className="font-bold text-blue-400">{metabolism.macro_targets.carbs}g</span>
                   </div>
-                   <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                  <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
                      <div className="h-full bg-blue-500 w-full" />
                   </div>
                 </div>
@@ -342,7 +352,7 @@ export function DashboardPage() {
       </div>
 
       {/* 3. PRIORITY 2: BODY COMPOSITION (The Result) */}
-      <div className="space-y-4">
+      <div id="widget-weight-chart" className="space-y-4">
         <div className="flex items-center gap-2">
           <Activity className="text-gradient-start" size={20} />
           <h2 className="text-xl font-bold text-text-primary">{t('dashboard.body_composition')}</h2>
@@ -351,8 +361,17 @@ export function DashboardPage() {
         {/* Composition Charts - Grid: Weight + Fat on first row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Weight Card */}
-          {data?.weightTrend && data.weightTrend.length > 0 && weightHistory && (
-            <div className="bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden group">
+          <div className="bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden group">
+            {(!weightHistory || weightHistory.length === 0) ? (
+              <EmptyState 
+                title={t('dashboard.empty_states.weight_title')}
+                description={t('dashboard.empty_states.weight_desc')}
+                icon={Scale}
+                actionLabel={t('dashboard.empty_states.action_weight')}
+                onAction={() => window.location.href = '/body?action=log-weight'}
+                className="h-full border-0 bg-transparent"
+              />
+            ) : (
               <div className="relative z-10 flex flex-col h-full">
                 <div className="mb-4">
                   <p className="text-text-secondary text-sm font-medium mb-1">{t('dashboard.current_weight')}</p>
@@ -439,7 +458,7 @@ export function DashboardPage() {
                     </ResponsiveContainer>
                   </div>
                 )}
-
+  
                 {/* Legend */}
                 <div className="flex gap-4 mt-3 text-xs">
                   <div className="flex items-center gap-1.5">
@@ -452,10 +471,10 @@ export function DashboardPage() {
                   </div>
                 </div>
               </div>
-              {/* Background glow */}
-              <div className="absolute right-0 top-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl" />
-            </div>
-          )}
+            )}
+            {/* Background glow */}
+            <div className="absolute right-0 top-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl" />
+          </div>
 
           {/* Fat Trend */}
           {data?.fatTrend && data.fatTrend.length > 0 && mergedFatData && (
@@ -676,12 +695,12 @@ export function DashboardPage() {
 
       {/* 4. PRIORITY 3: DAILY TRACKING (The Action) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-         <div className="lg:col-span-2 space-y-4">
+         <div id="widget-activity-list" className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2">
               <History className="text-gradient-start" size={20} />
               <h2 className="text-xl font-bold text-text-primary">{t('dashboard.recent_activity')}</h2>
             </div>
-            <div className="bg-dark-card border border-border rounded-2xl overflow-hidden">
+            <div className="bg-dark-card border border-border rounded-2xl overflow-hidden min-h-[200px]">
             {data?.recentActivities.length ? (
               <div className="divide-y divide-border">
                 {data.recentActivities.map((activity) => (
@@ -702,15 +721,20 @@ export function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <div className="p-12 text-center">
-                <p className="text-text-muted">{t('dashboard.no_activity')}</p>
-              </div>
+              <EmptyState 
+                title={t('dashboard.empty_states.activity_title')}
+                description={t('dashboard.empty_states.activity_desc')}
+                icon={History}
+                actionLabel={t('dashboard.empty_states.action_activity')}
+                onAction={() => window.location.href = '/dashboard/settings?tab=integrations'}
+                className="h-full border-0 bg-transparent py-12"
+              />
             )}
           </div>
          </div>
 
-         <div className="lg:col-span-1">
-            {recentPRs && <WidgetRecentPRs prs={recentPRs} />}
+         <div className="lg:col-span-1 bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden">
+            <WidgetRecentPRs prs={recentPRs} />
          </div>
       </div>
 
@@ -718,24 +742,12 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Strength Radar */}
           <div className="bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden min-h-[300px]">
-             {strengthRadar ? (
-               <WidgetStrengthRadar data={strengthRadar} className="h-full w-full" />
-             ) : (
-                <div className="h-full flex items-center justify-center text-text-muted">
-                   <p>{t('dashboard.insufficient_strength_data')}</p>
-                </div>
-             )}
+              <WidgetStrengthRadar data={strengthRadar} className="h-full w-full" />
           </div>
 
           {/* Volume Trend */}
           <div className="bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden min-h-[300px]">
-             {volumeTrend ? (
-               <WidgetVolumeTrend data={volumeTrend} className="h-full w-full flex flex-col justify-between" />
-             ) : (
-                <div className="h-full flex items-center justify-center text-text-muted">
-                   <p>{t('dashboard.volume_history_unavailable')}</p>
-                </div>
-             )}
+              <WidgetVolumeTrend data={volumeTrend} className="h-full w-full flex flex-col justify-between" />
           </div>
 
            {/* Distribution & Summary */}
@@ -749,7 +761,7 @@ export function DashboardPage() {
                       <p className="text-xs text-text-secondary font-medium lowercase">{t('dashboard.goals_status', { completed: workouts.completed, target: workouts.target })}</p>
                    </div>
                 </div>
-                {weeklyFrequency && <WidgetWeeklyFrequency days={weeklyFrequency} />}
+                <WidgetWeeklyFrequency days={weeklyFrequency} />
              </div>
 
               <StatsCard

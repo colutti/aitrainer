@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 
 import { AppRoutes } from './AppRoutes';
+import { GlobalErrorBoundary } from './shared/components/ui/GlobalErrorBoundary';
 import { ToastContainer } from './shared/components/ui/ToastContainer';
 import { useAuthStore } from './shared/hooks/useAuth';
 
@@ -21,8 +22,10 @@ function App() {
 
   return (
     <BrowserRouter>
-      <AppRoutes />
-      <ToastContainer />
+      <GlobalErrorBoundary>
+        <AppRoutes />
+        <ToastContainer />
+      </GlobalErrorBoundary>
     </BrowserRouter>
   );
 }

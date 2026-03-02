@@ -30,6 +30,14 @@
     "settings": "Configurações",
     "brand_tagline": "Inteligência x Performance"
   },
+  "errors": {
+    "network_failed": "Parece que você está sem internet. Verifique sua conexão e tente novamente.",
+    "server_error": "Ops, tivemos um problema no nosso servidor. Tente novamente em alguns instantes.",
+    "unauthorized": "Sua sessão expirou. Por favor, faça login novamente.",
+    "not_found": "O recurso que você procura não foi encontrado.",
+    "default": "Algo deu errado. Se o problema persistir, entre em contato com o suporte.",
+    "retry": "Tentar Novamente"
+  },
   "brand_tagline": "Inteligência x Performance",
   "landing": {
     "nav": {
@@ -51,7 +59,7 @@
       "feature_ai": "IA Pessoal",
       "feature_integrations": "Integrações",
       "daily_goal": "Meta Diária",
-      "weight_trend": "Tendência de peso",
+      "weight_trend": "Progresso Real",
       "gymbro_message": "Mano, vi que você dormiu 8h hoje. Hoje é dia de ir pesado! 💪",
       "macro_protein": "Proteína",
       "macro_fat": "Gordura",
@@ -125,7 +133,7 @@
       "meta_calorie_title": "Meta Calórica Inteligente",
       "accuracy": "precisão",
       "weekly_target_title": "Sua meta desta semana",
-      "high_confidence": "Confiança Alta",
+      "high_confidence": "Aprendizado Alto",
       "vs_previous": "Vs. semana anterior",
       "data_used": "Dados usados",
       "weight_30d": "Peso (30 dias)",
@@ -137,7 +145,7 @@
       "features": {
         "meta": {
           "title": "Análise Metabólica",
-          "description": "Calculamos seu TDEE real baseado no seu histórico, não em fórmulas genéricas."
+          "description": "Calculamos seu Gasto Diário Real baseado no seu histórico, não em fórmulas genéricas."
         },
         "vision": {
           "title": "Análise de Treino e Dieta",
@@ -372,7 +380,7 @@
   "dashboard": {
     "greeting": "Bom dia, {{name}}!",
     "summary_subtitle": "Aqui está o resumo do seu desempenho metabólico e físico.",
-    "confidence": "Confiança",
+    "confidence": "Aprendizado da IA",
     "confidence_level": {
       "none": "---",
       "high": "Alta",
@@ -382,9 +390,9 @@
     },
     "daily_target": "Meta Diária",
     "focus": "Foco: {{goal}}",
-    "tdee_real": "TDEE Real",
-    "weekly_trend": "Tendência Semanal",
-    "trend_disclaimer": "* A tendência usa algoritmos para filtrar flutuações diárias de peso, garantindo maior precisão na sua meta.",
+    "tdee_real": "Gasto Diário Real",
+    "weekly_trend": "Progresso Real",
+    "trend_disclaimer": "* O Progresso Real usa algoritmos para filtrar flutuações diárias de peso, garantindo maior precisão na sua meta.",
     "suggested_macros": "Macros Sugeridos",
     "protein": "Proteína",
     "fat": "Gordura",
@@ -397,7 +405,7 @@
     "muscle_mass": "Massa Muscular",
     "chart": {
       "weight": "Peso",
-      "trend": "Tendência",
+      "trend": "Progresso Real",
       "fat": "Gordura",
       "muscle": "Músculo"
     },
@@ -431,6 +439,10 @@
     "recent_prs_title": "Recordes Pessoais",
     "reps": "{{count}} reps",
     "weight_unit": "kg",
+    "no_prs_yet": "Nenhum recorde ainda",
+    "no_workouts_yet": "Nenhum treino esta semana",
+    "no_data_yet": "Sem dados para exibir",
+    "pr_label": "PR",
     "weekly_days": [
       "S",
       "T",
@@ -441,7 +453,41 @@
       "D"
     ],
     "week_short": "S{{count}}",
-    "pr_label": "PR"
+    "pr_label": "PR",
+    "tour": {
+      "home_title": "O Centro de Comando",
+      "home_desc": "O Dashboard é onde você acompanha seu resumo geral de saúde. Mostramos as análises mais valiosas e sua consistência.",
+      "trainer_title": "Seu Treinador IA (24/7)",
+      "trainer_desc": "Aba do Chat. Mande e-mails ou mensagens para ajustar sua rotina, pedir dicas alimentares ou simplesmente conversar. Ele tem memória da sua jornada!",
+      "workouts_title": "Análise de Treinos Avançada",
+      "workouts_desc": "Explore seu volume semanal e veja gráficos impressionantes da sua progressão em força ao longo do tempo.",
+      "body_title": "Corpo & Nutrição",
+      "body_desc": "Entenda sua verdadeira composição corporal e acompanhe seus diários alimentares. Seu metabolismo é o motor do processo!",
+      "settings_title": "Integrações Mágicas",
+      "settings_desc": "É crucial você conectar seus Apps (como o Hevy) ou relógios nas Configurações para que o FityQ trabalhe 100% no automático.",
+      "next": "Próximo",
+      "prev": "Anterior",
+      "skip": "Pular Tour",
+      "finish": "Começar"
+    },
+    "empty_states": {
+      "weight_title": "Registre seu Primeiro Peso",
+      "weight_desc": "Precisamos do seu peso inicial para que a IA comece a entender o seu metabolismo.",
+      "action_weight": "Registrar Peso",
+      "activity_title": "Vamos entrar em ação?",
+      "activity_desc": "Sincronize o app Hevy ou adicione um treino manualmente para ver suas análises.",
+      "action_activity": "Conectar Apps",
+      "radar_title": "Radar de Força",
+      "radar_desc": "Registre alguns treinos para ver o equilíbrio da sua força muscular.",
+      "volume_title": "Tendência de Volume",
+      "volume_desc": "Seu progresso de carga ao longo das semanas aparecerá aqui."
+    },
+    "ai_welcome": {
+      "title": "Mensagem do Treinador",
+      "input_placeholder": "Responda ao {{trainer}}...",
+      "daily_win": "Primeira vitória do dia! Continue assim.",
+      "setup_hint": "Conecte sua conta Hevy para sincronizar treinos automaticamente."
+    }
   },
   "login": {
     "title": "Login",
@@ -509,10 +555,9 @@
     "subtitle": "Acompanhe sua evolução e mantenha a consistência.",
     "new_workout": "Novo Treino",
     "search_placeholder": "Buscar por tipo ou exercício...",
-    "empty_title": "Nenhum treino encontrado",
-    "empty_desc": "Você ainda não registrou nenhum treino. Vamos começar hoje?",
+    "empty_title": "Nenhum registro encontrado.",
+    "empty_desc": "Seus treinos aparecerão aqui.",
     "empty_search_desc": "Não encontramos resultados para sua busca.",
-    "register_first": "Registrar Primeiro Treino",
     "delete_confirm_title": "Excluir Treino",
     "delete_confirm_message": "Tem certeza que deseja excluir este registro de treino? Esta ação não pode ser desfeita.",
     "delete_confirm_btn": "Excluir",
@@ -538,6 +583,7 @@
     "processing_warning": "As memórias são processadas de forma assíncrona e podem levar alguns minutos para aparecer após uma conversa."
   },
   "chat": {
+    "welcome_message": "Bem-vindo ao FityQ! Eu sou seu treinador e parceiro nessa jornada. Para montarmos o plano perfeito para você, me conte: Qual é a sua maior dificuldade para manter o foco hoje? Quantos dias na semana você pretende treinar? Estou pronto para começar!",
     "default_trainer_name": "Treinador AI",
     "start_conversation": "Inicie sua conversa",
     "typing": "{{name}} digitando...",
@@ -607,7 +653,7 @@
       "calf_l": "Panturrilha (E)",
       "record_details": "Detalhes do Registro",
       "registered_weight": "Peso Registrado",
-      "trend": "Tendência",
+      "trend": "Progresso Real",
       "composition_title": "Composição Corporal",
       "measurements_short_title": "Medidas (cm)",
       "details_title": "Detalhes:",
@@ -645,7 +691,10 @@
       "analysis_duration": "Duração da Análise",
       "weeks": "{{count}} sem",
       "weeks_plural": "{{count}} semanas",
-      "info_desc": "O TDEE é calculado comparando sua ingestão calórica com a variação na tendência do seu peso corporal. Quanto mais dias você registrar peso e calorias, mais precisa será a estimativa.",
+      "tdee_label": "Gasto Diário",
+      "trend_label": "Tendência",
+      "confidence_label": "Nível de Aprendizado da IA",
+      "info_desc": "Seu Gasto Diário Real é calculado comparando sua ingestão calórica com a variação na sua Curva de Progresso Real. Quanto mais consistente você for nos registros, mais inteligente a IA se torna.",
       "plan_title": "Plano Sugerido",
       "insufficient_data": "Precisamos de pelo menos 7 dias de registros consistentes para gerar um plano sugerido.",
       "plan_desc": "Para atingir seu objetivo de {{goal}}, sugerimos manter uma ingestão de {{target}} kcal diárias.",
@@ -685,6 +734,9 @@
     "back": "Voltar",
     "next": "Próximo",
     "finish": "Finalizar Cadastro",
+    "success_title": "Tudo Pronto!",
+    "success_desc": "Seja bem-vindo, {{name}}! Seu perfil foi configurado e o treinador {{trainer}} já está te aguardando no Dashboard para começar sua transformação.",
+    "go_to_dashboard": "Ir para o Dashboard",
     "tokens": {
       "not_found": "Token de convite não encontrado.",
       "expired": "O convite expirou.",

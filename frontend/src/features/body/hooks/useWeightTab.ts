@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
-import type { WeightLog, BodyCompositionStats } from '../../../shared/types/body';
+import type { WeightLog, BodyCompositionStats, WeightLogFormData } from '../../../shared/types/body';
 import { bodyApi } from '../api/body-api';
 
 const WEIGHT_DEFAULTS = {
@@ -71,10 +71,8 @@ export function useWeightTab() {
     date: z.string().min(1, t('validation.field_required', { field: t('body.nutrition.date') })),
     weight_kg: mandatoryNumberSchema(30, 300, t('body.weight.weight').split(' ')[0] ?? ''),
     body_fat_pct: mandatoryNumberSchema(2, 100, t('body.weight.body_fat').split(' ')[0] ?? ''),
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    muscle_mass_pct: optionalNumberSchema(2, 100, `${muscleMassShort!} (%)`),
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    muscle_mass_kg: optionalNumberSchema(10, 200, `${muscleMassShort!} (kg)`),
+    muscle_mass_pct: optionalNumberSchema(2, 100, `${muscleMassShort ?? ''} (%)`),
+    muscle_mass_kg: optionalNumberSchema(10, 200, `${muscleMassShort ?? ''} (kg)`),
     body_water_pct: optionalNumberSchema(2, 100, t('body.weight.body_water').split(' ')[0] ?? ''),
     bone_mass_kg: optionalNumberSchema(0, 20, t('body.weight.bone_mass').split(' ')[0] ?? ''),
     visceral_fat: optionalNumberSchema(0, 50, t('body.weight.visceral_fat').split(' ')[0] ?? ''),
@@ -93,17 +91,15 @@ export function useWeightTab() {
     calf_l_cm: optionalNumberSchema(10, 100, t('body.weight.calf_l')),
   });
 
-  type WeightFormData = z.infer<typeof weightSchema>;
-
   const {
     register,
     handleSubmit,
     reset,
     control,
     formState: { errors }
-  } = useForm<WeightFormData>({
+  } = useForm<WeightLogFormData>({
     resolver: zodResolver(weightSchema),
-    defaultValues: WEIGHT_DEFAULTS,
+    defaultValues: WEIGHT_DEFAULTS as unknown as WeightLogFormData,
   });
 
   const loadData = useCallback(async (targetPage = 1) => {
@@ -135,7 +131,7 @@ export function useWeightTab() {
     void loadData(newPage);
   };
 
-  const onSubmit = async (data: WeightFormData) => {
+  const onSubmit = async (data: WeightLogFormData) => {
     setIsSaving(true);
     try {
       // Clean up null values for API
@@ -206,7 +202,8 @@ export function useWeightTab() {
     totalPages,
     changePage,
     register,
-    handleSubmit: handleSubmit(onSubmit),
+    handleSubmit,
+    onSubmit,
     control,
     errors,
     loadData,

@@ -14,7 +14,7 @@ trigger: always_on
 - Sempre que voce executar testes, execute o workflow run-all-tests.md. Mantenha esse arquivo atualizado.
 - Os testes sao a fonte da verdade do codigo.
 - So deve haver 1 README na solucao inteira que devera estar na raiz do projeto e deve ser mantido atualizado.
-- Sempre apague arquivos temporarios criados e mantenha o projeto limpo. Arquivos de logs, coverage, scripts criados para POC, etc.
+- Sempre apague arquivos temporarios criados e mantenha o projeto limpo. Arquivos de logs, coverage, scripts criados para POC, etc. Arquivos temporarais, logs etc devem estar em uma pasta chamada tmp na raiz do projeto e esta pagina deve estar no gitignore. nao crie arquivos fora da pasta do projeto a nao ser que seja necessario.
 
 ## A tarefa so pode ser considerada terminada se:
 

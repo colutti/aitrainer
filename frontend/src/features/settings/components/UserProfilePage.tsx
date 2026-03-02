@@ -124,7 +124,7 @@ export function UserProfilePage() {
         </div>
         <div>
             <h1 className="text-2xl font-bold text-text-primary">{t('settings.profile_title')}</h1>
-            <p className="text-text-secondary">{t('settings.profile_subtitle')}</p>
+            <p className="text-text-secondary mt-3">{t('settings.profile_subtitle')}</p>
         </div>
       </div>
 

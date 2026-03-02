@@ -18,18 +18,20 @@ interface NavItemProps {
   to: string;
   icon: React.ElementType; // Better way to pass icons
   label: string;
+  dataTour?: string;
   end?: boolean;
 }
 
-function NavItem({ to, icon: Icon, label, end = false }: NavItemProps) {
+function NavItem({ to, icon: Icon, label, dataTour, end = false }: NavItemProps) {
   return (
     <NavLink
       to={to}
       end={end}
+      data-tour={dataTour}
       className={({ isActive }) => cn(
         "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
         isActive 
-          ? "bg-gradient-to-r from-gradient-start to-gradient-end text-white shadow-primary" 
+          ? "bg-linear-to-r from-gradient-start to-gradient-end text-white shadow-primary" 
           : "text-text-secondary hover:bg-white/5 hover:text-text-primary"
       )}
     >
@@ -51,14 +53,14 @@ export function Sidebar() {
     <aside className="fixed left-0 top-0 h-screen w-72 bg-dark-card border-r border-white/5 hidden lg:flex flex-col p-6 z-50 shadow-2xl">
       {/* Brand */}
       <div className="flex flex-col items-center gap-4 py-8 mb-8 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-gradient-start/5 to-transparent rounded-3xl -m-2 opacity-50" />
+        <div className="absolute inset-0 bg-linear-to-b from-gradient-start/5 to-transparent rounded-3xl -m-2 opacity-50" />
         <img 
           src="/brand_icon_final.png" 
           alt="FityQ"
           className="h-32 w-32 object-contain drop-shadow-[0_0_15px_rgba(235,93,29,0.4)] filter brightness-110 relative z-10"
         />
         <div className="text-center relative z-10">
-          <span className="text-2xl font-black bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent tracking-[0.2em] block">
+          <span className="text-2xl font-black bg-linear-to-r from-white to-white/60 bg-clip-text text-transparent tracking-[0.2em] block">
             FityQ
           </span>
           <span className="text-[10px] uppercase tracking-[0.4em] text-gradient-start font-bold">
@@ -69,11 +71,11 @@ export function Sidebar() {
 
       {/* Main Navigation */}
       <nav className="flex-1 flex flex-col gap-1 overflow-y-auto hide-scrollbar">
-        <NavItem to="/dashboard" icon={LayoutDashboard} label={t('nav.home')} end={true} />
-        <NavItem to="/dashboard/chat" icon={MessageSquare} label={t('nav.trainer')} />
-        <NavItem to="/dashboard/workouts" icon={Dumbbell} label={t('nav.workouts')} />
-        <NavItem to="/dashboard/body/weight" icon={Scale} label={t('nav.body')} />
-        <NavItem to="/dashboard/body/nutrition" icon={Flame} label={t('nav.nutrition')} />
+        <NavItem to="/dashboard" icon={LayoutDashboard} label={t('nav.home')} dataTour="tour-nav-home" end={true} />
+        <NavItem to="/dashboard/chat" icon={MessageSquare} label={t('nav.trainer')} dataTour="tour-nav-trainer" />
+        <NavItem to="/dashboard/workouts" icon={Dumbbell} label={t('nav.workouts')} dataTour="tour-nav-workouts" />
+        <NavItem to="/dashboard/body/weight" icon={Scale} label={t('nav.body')} dataTour="tour-nav-body" />
+        <NavItem to="/dashboard/body/nutrition" icon={Flame} label={t('nav.nutrition')} dataTour="tour-nav-nutrition" />
       </nav>
 
       {/* User Info Section */}
@@ -91,7 +93,7 @@ export function Sidebar() {
 
       {/* Bottom Actions / Settings Section */}
       <div className="pt-6 border-t border-border flex flex-col gap-1">
-        <NavItem to="/dashboard/settings" icon={SettingsIcon} label={t('nav.settings')} />
+        <NavItem to="/dashboard/settings" icon={SettingsIcon} label={t('nav.settings')} dataTour="tour-nav-settings" />
 
         <button
           onClick={() => { logout(); }}

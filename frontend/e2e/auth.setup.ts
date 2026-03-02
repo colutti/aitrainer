@@ -14,7 +14,7 @@ setup('authenticate', async ({ page }) => {
   const passwordInput = page.locator('input[type="password"]');
 
   if (await emailInput.isVisible()) {
-    const email = process.env.E2E_USER_EMAIL || 'rafacolucci@gmail.com';
+    const email = process.env.E2E_USER_EMAIL ?? 'rafacolucci@gmail.com';
     const password = process.env.E2E_USER_PASSWORD;
     
     if (!password) {
@@ -22,7 +22,7 @@ setup('authenticate', async ({ page }) => {
     }
     
     await emailInput.fill(email);
-    await passwordInput.fill(password || '');
+    await passwordInput.fill(password ?? '');
 
     // Submit form
     await page.click('button[type="submit"]');

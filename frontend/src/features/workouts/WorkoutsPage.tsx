@@ -67,7 +67,7 @@ export function WorkoutsPage() {
             <Dumbbell className="text-gradient-start" size={32} />
             {t('workouts.title')}
           </h1>
-          <p className="text-text-secondary mt-1">
+          <p className="text-text-secondary mt-3">
             {t('workouts.subtitle')}
           </p>
         </div>
@@ -98,11 +98,6 @@ export function WorkoutsPage() {
           description: searchTerm 
             ? t('workouts.empty_search_desc')
             : t('workouts.empty_desc'),
-          action: !searchTerm ? (
-            <Button variant="primary">
-              {t('workouts.register_first')}
-            </Button>
-          ) : undefined
         }}
         pagination={{
           currentPage,

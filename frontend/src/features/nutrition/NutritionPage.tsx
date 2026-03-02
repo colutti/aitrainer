@@ -80,7 +80,7 @@ export function NutritionPage() {
             <Utensils className="text-gradient-start" size={32} />
             {t('nutrition.title')}
           </h1>
-          <p className="text-text-secondary mt-1">
+          <p className="text-text-secondary mt-3">
             {t('nutrition.subtitle')}
           </p>
         </div>

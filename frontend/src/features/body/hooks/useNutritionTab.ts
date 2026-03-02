@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
-import type { NutritionLog, NutritionStats } from '../../../shared/types/nutrition';
+import type { NutritionLog, NutritionStats, NutritionFormData } from '../../../shared/types/nutrition';
 import { bodyApi } from '../api/body-api';
 
 const NUTRITION_DEFAULTS = {
@@ -63,8 +63,6 @@ export function useNutritionTab() {
     fat_grams: optionalNumberSchema(0, 500, t('body.nutrition.fat').split(' ')[0] ?? ''),
   });
 
-  type NutritionFormData = z.infer<typeof nutritionSchema>;
-
   const {
     register,
     handleSubmit,
@@ -73,7 +71,7 @@ export function useNutritionTab() {
     formState: { errors }
   } = useForm<NutritionFormData>({
     resolver: zodResolver(nutritionSchema),
-    defaultValues: NUTRITION_DEFAULTS,
+    defaultValues: NUTRITION_DEFAULTS as unknown as NutritionFormData,
   });
 
   const loadLogs = useCallback(async (page = 1, filter = daysFilter) => {
@@ -187,7 +185,8 @@ export function useNutritionTab() {
     totalPages,
     daysFilter,
     register,
-    handleSubmit: handleSubmit(onSubmit),
+    handleSubmit,
+    onSubmit,
     control,
     errors,
     loadData,

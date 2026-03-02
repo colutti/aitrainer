@@ -1,3 +1,4 @@
+import i18next from 'i18next';
 import { create } from 'zustand';
 
 import { httpClient, API_BASE_URL } from '../api/http-client';
@@ -49,7 +50,7 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
         // Welcome message if zero history
         set({ 
           messages: [{
-            text: 'Olá! Eu sou seu personal trainer virtual. Como posso te ajudar a atingir seus objetivos hoje?',
+            text: i18next.t('chat.welcome_message', 'Bem-vindo ao FityQ! Eu sou seu treinador e parceiro nessa jornada. Para montarmos o plano perfeito para você, me conte: Qual é a sua maior dificuldade para manter o foco hoje? Quantos dias na semana você pretende treinar? Estou pronto para começar!'),
             sender: 'Trainer',
             timestamp: new Date().toISOString()
           }], 
@@ -124,7 +125,7 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
         if (response.status === 403) {
           try {
             const errorData = await response.json() as { detail?: string };
-            if (errorData?.detail?.includes('LIMITE')) {
+            if (errorData.detail?.includes('LIMITE')) {
               throw new Error('LIMIT_EXCEEDED');
             }
           } catch (e: unknown) {
