@@ -6,9 +6,10 @@ import { WidgetWeeklyFrequency } from './WidgetWeeklyFrequency';
 describe('WidgetWeeklyFrequency', () => {
   const mockDays = [true, false, true, false, true, false, false];
 
-  it('should render nothing if days length is not 7', () => {
-    const { container } = render(<WidgetWeeklyFrequency days={[true]} />);
-    expect(container.firstChild).toBeNull();
+  it('should render with overlay if days array is empty', () => {
+    const { getByText } = render(<WidgetWeeklyFrequency days={[]} />);
+    expect(getByText('Frequência Semanal')).toBeInTheDocument();
+    expect(getByText('Nenhum treino esta semana')).toBeInTheDocument();
   });
 
   it('should render 7 day labels', () => {

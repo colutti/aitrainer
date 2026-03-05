@@ -24,9 +24,10 @@ describe('WidgetRecentPRs', () => {
     },
   ];
 
-  it('should render nothing if no PRs provided', () => {
-    const { container } = render(<WidgetRecentPRs prs={[]} />);
-    expect(container.firstChild).toBeNull();
+  it('should render with overlay if no PRs provided', () => {
+    render(<WidgetRecentPRs prs={[]} />);
+    expect(screen.getByText('Recordes Pessoais')).toBeInTheDocument();
+    expect(screen.getByText('Nenhum recorde ainda')).toBeInTheDocument();
   });
 
   it('should render list of PRs', () => {

@@ -58,7 +58,7 @@ export function WidgetRecentPRs({ prs }: WidgetRecentPRsProps) {
                 {pr.previous_weight && (
                   <div className="flex items-center justify-end gap-1 text-[10px] text-emerald-400 font-bold">
                       <ArrowUpRight size={10} />
-                      <span>+{((pr.weight - pr.previous_weight)).toFixed(1)}{t('dashboard.weight_unit')}</span>
+                      <span>+{((pr.weight - pr.previous_weight)).toFixed(2)}{t('dashboard.weight_unit')}</span>
                   </div>
                 )}
               </div>

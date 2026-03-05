@@ -46,7 +46,6 @@ class PromptBuilder:
         profile,
         trainer_profile_summary: str,
         user_profile_summary: str,
-        relevant_memories_str: str,
         chat_history_summary: str,
         formatted_history_msgs,
         user_input: str,
@@ -60,7 +59,6 @@ class PromptBuilder:
             profile: UserProfile object
             trainer_profile_summary: Trainer description string
             user_profile_summary: User profile description string
-            relevant_memories_str: Formatted memories string
             chat_history_summary: Legacy chat history string (for compatibility)
             formatted_history_msgs: List[BaseMessage] for MessagesPlaceholder
             user_input: Current user message
@@ -89,9 +87,11 @@ class PromptBuilder:
 
         return {
             "trainer_profile": trainer_profile_summary,
+            "trainer_name": PromptBuilder._extract_trainer_name(trainer_profile_summary),
             "user_profile": user_profile_summary,
             "user_profile_obj": profile,  # Passed for extraction
-            "relevant_memories": relevant_memories_str,
+            "user_name": profile.display_name or "Aluno",
+            "user_timezone": getattr(profile, "timezone", None) or "Europe/Madrid",
             "chat_history_summary": chat_history_summary,  # Legacy (removed from template V3)
             "chat_history": formatted_history_msgs,  # For MessagesPlaceholder
             "user_message": user_message_with_tag,
@@ -100,6 +100,15 @@ class PromptBuilder:
             "day_of_week": DIAS_PT[now.weekday()],
             "current_time": now.strftime("%H:%M"),
         }
+
+    @staticmethod
+    def _extract_trainer_name(trainer_profile_summary: str) -> str:
+        if "**Nome:**" in trainer_profile_summary:
+            try:
+                return trainer_profile_summary.split("**Nome:**")[1].split("\n")[0].strip()
+            except (IndexError, AttributeError):
+                pass
+        return "Treinador"
 
     @staticmethod
     def get_prompt_template(
@@ -138,9 +147,8 @@ class PromptBuilder:
         if "current_date" not in input_data:
             input_data["current_date"] = datetime.now().strftime("%Y-%m-%d")
 
-        # 3. Remove legacy chat_history_summary placeholder
-        # We use MessagesPlaceholder instead
-        system_content = system_content.replace("{chat_history_summary}", "")
+        # 3. Handle empty agenda block
+        # Avoids injecting <agenda>\n\n</agenda> for users with no planned events
 
         # 3b. Remove empty agenda block when no events exist
         # Avoids injecting <agenda>\n\n</agenda> for users with no planned events

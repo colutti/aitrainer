@@ -52,8 +52,8 @@ const ChatMessage = ({
       <div
         className={`max-w-xl rounded-2xl px-4 py-3 text-sm leading-relaxed ${
           isUser
-            ? 'bg-indigo-600 text-white'
-            : 'bg-zinc-800 text-zinc-100'
+            ? 'bg-primary text-white'
+            : 'bg-secondary text-text-primary'
         }`}
       >
         {message.text}
@@ -75,8 +75,8 @@ const CarouselIndicator = ({
         key={i}
         className={`h-2 rounded-full transition-all duration-500 ${
           i === current
-            ? 'bg-indigo-500 w-8'
-            : 'bg-zinc-700 w-2'
+            ? 'bg-primary w-8'
+            : 'bg-secondary w-2'
         }`}
       />
     ))}
@@ -192,7 +192,7 @@ export const ChatCarousel = () => {
 
   return (
     <section className="relative py-20 px-6 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-indigo-500/5 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-b from-transparent via-primary/5 to-transparent pointer-events-none" />
 
       <div className="relative z-10 max-w-5xl mx-auto">
         {/* Logo + Heading */}
@@ -203,21 +203,21 @@ export const ChatCarousel = () => {
               alt="FityQ"
               className="h-10 w-10"
             />
-            <span className="text-white font-bold text-lg">FityQ</span>
+            <span className="text-text-primary font-bold text-lg">FityQ</span>
           </div>
           <h2 className="font-display text-4xl md:text-5xl font-bold text-white">
             {t('landing.chat_carousel.title')}
           </h2>
-          <p className="text-lg text-zinc-400">
+          <p className="text-lg text-text-secondary">
             {t('landing.chat_carousel.subtitle')}
           </p>
         </div>
 
         {/* Chat container */}
-        <div className="bg-gradient-to-b from-zinc-900/50 to-zinc-950/50 backdrop-blur rounded-2xl border border-zinc-800 overflow-hidden">
+        <div className="bg-linear-to-b from-dark-bg/50 to-dark-card/50 backdrop-blur rounded-2xl border border-border overflow-hidden">
           {/* Trainer header with avatar */}
           <div
-            className={`bg-gradient-to-r ${conversation.trainer.accentColor} p-6 flex gap-4 items-start`}
+            className={`bg-linear-to-r ${conversation.trainer.accentColor} p-6 flex gap-4 items-start`}
           >
             <img
               src={conversation.trainer.avatar}
@@ -245,7 +245,7 @@ export const ChatCarousel = () => {
           </div>
 
           {/* Messages */}
-          <div className="p-8 space-y-4 min-h-96 flex flex-col justify-center">
+          <div className="p-4 sm:p-8 space-y-4 min-h-96 flex flex-col justify-center">
             {conversation.messages.map((msg, idx) => (
               <ChatMessage
                 key={idx}
@@ -256,7 +256,7 @@ export const ChatCarousel = () => {
 
             {visibleIndices.size < conversation.messages.length && (
               <div className="flex justify-start">
-                <div className="bg-zinc-800 rounded-2xl px-4">
+                <div className="bg-secondary rounded-2xl px-4">
                   <TypingIndicator />
                 </div>
               </div>
@@ -272,7 +272,7 @@ export const ChatCarousel = () => {
 
         {/* CTA hint */}
         <div className="text-center mt-12">
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-text-secondary/60">
             {t('landing.chat_carousel.cta_hint')}
           </p>
         </div>
@@ -280,4 +280,3 @@ export const ChatCarousel = () => {
     </section>
   );
 };
-

@@ -1,6 +1,6 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { renderHook } from '@testing-library/react';
+import { render, screen, fireEvent, renderHook } from '@testing-library/react';
 import { useForm } from 'react-hook-form';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { useNutritionTab } from '../hooks/useNutritionTab';
@@ -23,6 +23,24 @@ vi.mock('../../nutrition/components/NutritionLogCard', () => ({
       <button onClick={() => { onDelete(log.id); }}>Delete</button>
     </div>
   ),
+}));
+
+vi.mock('./NutritionLogDrawer', () => ({
+  NutritionLogDrawer: ({ isOpen, log, mode, handleSubmit, onSubmit, onClose, onCancelEdit }: any) => {
+    if (!isOpen) return <div data-testid={`nutrition-log-drawer-${mode}`} />;
+    return (
+      <div data-testid={`nutrition-log-drawer-${mode}`}>
+        <div data-testid="drawer-open">Open</div>
+        {mode === 'edit' && log && <div data-testid="edit-mode">Editando Registro</div>}
+        {mode === 'edit' && (
+          <form onSubmit={(e) => { if (handleSubmit && onSubmit) handleSubmit(onSubmit)(e); }}>
+            <button type="submit">Save</button>
+          </form>
+        )}
+        <button onClick={onCancelEdit ?? onClose}>Cancelar</button>
+      </div>
+    );
+  },
 }));
 
 describe('NutritionTab', () => {
@@ -52,6 +70,7 @@ describe('NutritionTab', () => {
       loadData: vi.fn(),
       deleteEntry: mockDeleteEntry,
       editEntry: vi.fn(),
+      onSubmit: vi.fn(),
       cancelEdit: mockCancelEdit,
       isEditing: false,
       editingId: null,
@@ -70,7 +89,7 @@ describe('NutritionTab', () => {
 
   it('should render loading state', () => {
     vi.mocked(useNutritionTab).mockReturnValue(makeMock({ isLoading: true }));
-    const { container } = render(<NutritionTab />);
+    const { container } = render(<MemoryRouter><NutritionTab /></MemoryRouter>);
     expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
@@ -78,9 +97,9 @@ describe('NutritionTab', () => {
     const mockLogs = [{ id: '1', date: '2024-01-01', calories: 2000 }] as unknown as ReturnType<typeof useNutritionTab>['logs'];
     vi.mocked(useNutritionTab).mockReturnValue(makeMock({ logs: mockLogs }));
 
-    render(<NutritionTab />);
+    render(<MemoryRouter><NutritionTab /></MemoryRouter>);
 
-    expect(screen.getByText('Registrar Dieta')).toBeInTheDocument();
+    expect(screen.getAllByText('Registrar Dieta')[0]!).toBeInTheDocument();
     expect(screen.getByText('Histórico Recente')).toBeInTheDocument();
     expect(screen.getByText('2000 kcal')).toBeInTheDocument();
   });
@@ -89,37 +108,45 @@ describe('NutritionTab', () => {
     const mockLogs = [{ id: '1', date: '2024-01-01', calories: 2000 }] as unknown as ReturnType<typeof useNutritionTab>['logs'];
     vi.mocked(useNutritionTab).mockReturnValue(makeMock({ logs: mockLogs, deleteEntry: mockDeleteEntry }));
 
-    render(<NutritionTab />);
+    render(<MemoryRouter><NutritionTab /></MemoryRouter>);
     fireEvent.click(screen.getByText('Delete'));
 
     expect(mockDeleteEntry).toHaveBeenCalledWith('1');
   });
 
   it('should submit form', () => {
-    const { container } = render(<NutritionTab />);
-    const form = container.querySelector('form');
+    render(<MemoryRouter><NutritionTab /></MemoryRouter>);
+    fireEvent.click(screen.getAllByText('Registrar Dieta')[0]!); // Open the drawer
+    const form = screen.getByTestId('nutrition-log-drawer-edit').querySelector('form'); // Get the form inside the drawer
     if (form) fireEvent.submit(form);
     expect(mockHandleSubmit).toHaveBeenCalled();
   });
 
   it('should render empty state', () => {
-    render(<NutritionTab />);
+    render(<MemoryRouter><NutritionTab /></MemoryRouter>);
     expect(screen.getByText('Nenhum registro encontrado.')).toBeInTheDocument();
   });
 
   it('should show editing indicator and cancel button when isEditing is true', () => {
-    vi.mocked(useNutritionTab).mockReturnValue(makeMock({ isEditing: true, editingId: 'abc123' }));
+    const mockLog = { id: 'abc123' };
+    vi.mocked(useNutritionTab).mockReturnValue(makeMock({ 
+      isEditing: true, 
+      editingId: 'abc123',
+      logs: [mockLog] as any
+    }));
 
-    render(<NutritionTab />);
+    render(<MemoryRouter><NutritionTab /></MemoryRouter>);
+    fireEvent.click(screen.getAllByText('Registrar Dieta')[0]!); // Open the drawer
 
-    expect(screen.getByText('Editando Registro')).toBeInTheDocument();
+    expect(screen.getByTestId('edit-mode')).toHaveTextContent('Editando Registro');
     expect(screen.getByText('Cancelar')).toBeInTheDocument();
   });
 
   it('should call cancelEdit when cancel button is clicked', () => {
     vi.mocked(useNutritionTab).mockReturnValue(makeMock({ isEditing: true, editingId: 'abc123' }));
 
-    render(<NutritionTab />);
+    render(<MemoryRouter><NutritionTab /></MemoryRouter>);
+    fireEvent.click(screen.getAllByText('Registrar Dieta')[0]!); // Open the drawer
     fireEvent.click(screen.getByText('Cancelar'));
 
     expect(mockCancelEdit).toHaveBeenCalled();

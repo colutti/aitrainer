@@ -8,14 +8,28 @@ import { useNotificationStore } from '../../../../../src/shared/hooks/useNotific
 import type { AdminUser } from '../../../../../src/shared/types/admin';
 import { adminApi } from '../api/admin-api';
 
+interface UserEditDetails {
+  subscription_plan: string;
+  custom_message_limit: number | null;
+}
+
+interface UserFullDetails {
+  profile: AdminUser & { 
+    photo_base64?: string;
+    total_messages_sent?: number;
+    messages_sent_this_month?: number;
+  };
+  stats: Record<string, unknown>;
+}
+
 export function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
-  const [selectedUser, setSelectedUser] = useState<any | null>(null);
-  const [editUser, setEditUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<UserFullDetails | null>(null);
+  const [editUser, setEditUser] = useState<UserEditDetails | null>(null);
 
   const { confirm } = useConfirmation();
   const notify = useNotificationStore();
@@ -82,7 +96,7 @@ export function AdminUsersPage() {
   const handleView = async (user: AdminUser) => {
     try {
       notify.info(`Buscando detalhes de ${user.email}...`);
-      const details = await adminApi.getUser(user.email) as any;
+      const details = (await adminApi.getUser(user.email)) as unknown as UserFullDetails;
       setSelectedUser(details);
       setEditUser({
         subscription_plan: details.profile?.subscription_plan || 'Free',
@@ -98,9 +112,11 @@ export function AdminUsersPage() {
     if (!selectedUser?.profile?.email) return;
     try {
       setIsLoading(true);
-      await adminApi.updateUser(selectedUser.profile.email, editUser);
-      notify.success('Usuário atualizado com sucesso');
-      void handleView({ email: selectedUser.profile.email } as AdminUser);
+      if (editUser) {
+        await adminApi.updateUser(selectedUser.profile.email, editUser);
+        notify.success('Usuário atualizado com sucesso');
+        void handleView({ email: selectedUser.profile.email } as AdminUser);
+      }
     } catch {
       notify.error('Erro ao atualizar usuário');
     } finally {
@@ -279,90 +295,102 @@ export function AdminUsersPage() {
             </div>
 
             <div className="flex-1 min-w-0 bg-zinc-900/50 p-4 md:p-6 rounded-lg border border-border">
-               <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-text-primary">Editar Assinatura</h2>
-                  <Button variant="ghost" size="sm" onClick={() => { setSelectedUser(null); }}>
-                    Fechar
-                  </Button>
-               </div>
-               
-               <div className="space-y-4">
-                 <div>
-                   <label className="block text-sm font-medium text-text-secondary mb-1">
-                     Plano
-                   </label>
-                   <select 
-                     className="w-full bg-dark-card border border-border rounded-lg p-2 text-text-primary"
-                     value={editUser.subscription_plan}
-                     onChange={(e) => setEditUser({ ...editUser, subscription_plan: e.target.value })}
-                   >
-                     <option value="Free">Free</option>
-                     <option value="Basic">Basic</option>
-                     <option value="Pro">Pro</option>
-                     <option value="Premium">Premium</option>
-                   </select>
+               {!editUser ? (
+                 <div className="flex items-center justify-center h-full">
+                    <p className="text-text-muted">Carregando formulário...</p>
                  </div>
-
-                 <div>
-                    <label className="block text-sm font-medium text-text-secondary mb-1">
-                      Limite customizado de mensagens (Opcional - null remove o limite customizado)
-                    </label>
-                    <div className="flex gap-2 mb-2 flex-wrap">
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        className="bg-white/5 hover:bg-white/10 text-xs"
-                        onClick={() => {
-                          const base = editUser.subscription_plan === 'Premium' ? 1000 : editUser.subscription_plan === 'Pro' ? 300 : editUser.subscription_plan === 'Basic' ? 100 : 20;
-                          const current = editUser.custom_message_limit ?? base;
-                          setEditUser({ ...editUser, custom_message_limit: Math.max(0, current - 10) });
-                        }}
-                      >- 10 Msg</Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        className="bg-white/5 hover:bg-white/10 text-xs"
-                        onClick={() => {
-                          const base = editUser.subscription_plan === 'Premium' ? 1000 : editUser.subscription_plan === 'Pro' ? 300 : editUser.subscription_plan === 'Basic' ? 100 : 20;
-                          const current = editUser.custom_message_limit ?? base;
-                          setEditUser({ ...editUser, custom_message_limit: current + 10 });
-                        }}
-                      >+ 10 Msg</Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        className="bg-white/5 hover:bg-white/10 text-xs"
-                        onClick={() => {
-                          const base = editUser.subscription_plan === 'Premium' ? 1000 : editUser.subscription_plan === 'Pro' ? 300 : editUser.subscription_plan === 'Basic' ? 100 : 20;
-                          const current = editUser.custom_message_limit ?? base;
-                          setEditUser({ ...editUser, custom_message_limit: current + 100 });
-                        }}
-                      >+ 100 Msg</Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        className="bg-white/5 hover:bg-white/10 text-xs text-red-400"
-                        onClick={() => {
-                          setEditUser({ ...editUser, custom_message_limit: null });
-                        }}
-                      >Remover Limite (Padrão)</Button>
-                    </div>
-                    <Input 
-                      type="number"
-                      placeholder="Ex: 50"
-                      value={editUser.custom_message_limit ?? ''}
-                      onChange={(e) => setEditUser({ ...editUser, custom_message_limit: e.target.value ? parseInt(e.target.value) : null })}
-                    />
-                 </div>
-
-                 <Button 
-                    className="w-full mt-4" 
-                    onClick={() => { void handleUpdate(); }}
-                    disabled={isLoading}
-                 >
-                   Salvar Alterações
-                 </Button>
-               </div>
+               ) : (
+                 <>
+                   <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-xl font-bold text-text-primary">Editar Assinatura</h2>
+                      <Button variant="ghost" size="sm" onClick={() => { setSelectedUser(null); }}>
+                        Fechar
+                      </Button>
+                   </div>
+                   
+                   <div className="space-y-4">
+                     <div>
+                       <label className="block text-sm font-medium text-text-secondary mb-1">
+                         Plano
+                       </label>
+                       <select 
+                         className="w-full bg-dark-card border border-border rounded-lg p-2 text-text-primary"
+                         value={editUser.subscription_plan}
+                         onChange={(e) => {
+                           setEditUser({ ...editUser, subscription_plan: e.target.value });
+                         }}
+                       >
+                         <option value="Free">Free</option>
+                         <option value="Basic">Basic</option>
+                         <option value="Pro">Pro</option>
+                         <option value="Premium">Premium</option>
+                       </select>
+                     </div>
+    
+                     <div>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">
+                          Limite customizado de mensagens (Opcional - null remove o limite customizado)
+                        </label>
+                        <div className="flex gap-2 mb-2 flex-wrap">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="bg-white/5 hover:bg-white/10 text-xs"
+                            onClick={() => {
+                              const base = editUser.subscription_plan === 'Premium' ? 1000 : editUser.subscription_plan === 'Pro' ? 300 : editUser.subscription_plan === 'Basic' ? 100 : 20;
+                              const current = editUser.custom_message_limit ?? base;
+                              setEditUser({ ...editUser, custom_message_limit: Math.max(0, current - 10) });
+                            }}
+                          >- 10 Msg</Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="bg-white/5 hover:bg-white/10 text-xs"
+                            onClick={() => {
+                              const base = editUser.subscription_plan === 'Premium' ? 1000 : editUser.subscription_plan === 'Pro' ? 300 : editUser.subscription_plan === 'Basic' ? 100 : 20;
+                              const current = editUser.custom_message_limit ?? base;
+                              setEditUser({ ...editUser, custom_message_limit: current + 10 });
+                            }}
+                          >+ 10 Msg</Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="bg-white/5 hover:bg-white/10 text-xs"
+                            onClick={() => {
+                              const base = editUser.subscription_plan === 'Premium' ? 1000 : editUser.subscription_plan === 'Pro' ? 300 : editUser.subscription_plan === 'Basic' ? 100 : 20;
+                              const current = editUser.custom_message_limit ?? base;
+                              setEditUser({ ...editUser, custom_message_limit: current + 100 });
+                            }}
+                          >+ 100 Msg</Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="bg-white/5 hover:bg-white/10 text-xs text-red-400"
+                            onClick={() => {
+                              setEditUser({ ...editUser, custom_message_limit: null });
+                            }}
+                          >Remover Limite (Padrão)</Button>
+                        </div>
+                        <Input 
+                          type="number"
+                          placeholder="Ex: 50"
+                          value={editUser.custom_message_limit ?? ''}
+                           onChange={(e) => {
+                             setEditUser({ ...editUser, custom_message_limit: e.target.value ? parseInt(e.target.value) : null });
+                           }}
+                        />
+                     </div>
+    
+                     <Button 
+                        className="w-full mt-4" 
+                        onClick={() => { void handleUpdate(); }}
+                        disabled={isLoading}
+                     >
+                       Salvar Alterações
+                     </Button>
+                   </div>
+                 </>
+               )}
             </div>
           </div>
         </div>

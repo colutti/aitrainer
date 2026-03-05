@@ -15,10 +15,8 @@ trigger: always_on
 - Os testes sao a fonte da verdade do codigo.
 - So deve haver 1 README na solucao inteira que devera estar na raiz do projeto e deve ser mantido atualizado.
 - Sempre apague arquivos temporarios criados e mantenha o projeto limpo. Arquivos de logs, coverage, scripts criados para POC, etc. Arquivos temporarais, logs etc devem estar em uma pasta chamada tmp na raiz do projeto e esta pagina deve estar no gitignore. nao crie arquivos fora da pasta do projeto a nao ser que seja necessario.
-
-## A tarefa so pode ser considerada terminada se:
-
-- Sem erros de linting, seja pylint, eslint, ts lint. etc.
-- Nao existem testes para funcionalidade.
-- Existem erros ou warnings nos containers.
-- Voce vez um build dos containers para ver se nao existem erros ou warnings.
+- Nao reinvente a roda. Se ja houver um padrao de mercado, um serviço ou uma biblioteca, recomende usar. Seu foco tem que ser em resolver o problema, nao perder tempo desenvolvendo o que ja esta pronto. 
+- Opensource e melhor que pago, a nao ser que justifique pagar pelo serviço.
+- Sem erros de linting, seja pylint, eslint, ts lint. etc. 
+- Sem erros ou warnings nos containers. Voce vez um build dos containers para ver se nao existem erros ou warnings.
+- Nunca deixe arquivos desnecessarios como logs de texto, pastas de screenshots, pasta de logs de testes, scripts temporarios, etc.

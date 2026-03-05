@@ -7,12 +7,12 @@
     "dev": "vite --port 3001",
     "build": "tsc -p tsconfig.app.json && vite build",
     "preview": "vite preview",
-    "test": "vitest",
-    "test:watch": "vitest --watch",
-    "test:coverage": "vitest --coverage",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "NODE_OPTIONS='--max-old-space-size=4096' tsc -b --noEmit",
     "check": "npm run lint && npm run typecheck && npm run test"
   },
   "dependencies": {

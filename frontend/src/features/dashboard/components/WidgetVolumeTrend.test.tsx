@@ -19,9 +19,10 @@ vi.mock('recharts', () => {
 describe('WidgetVolumeTrend', () => {
   const mockData = [1000, 2000, 1500, 2500];
 
-  it('should render nothing if no data provided', () => {
-    const { container } = render(<WidgetVolumeTrend data={[]} />);
-    expect(container.firstChild).toBeNull();
+  it('should render with overlay if no data provided', () => {
+    render(<WidgetVolumeTrend data={[]} />);
+    expect(screen.getByText('Tendência de Volume')).toBeInTheDocument();
+    expect(screen.getByText('Histórico de volume indisponível.')).toBeInTheDocument();
   });
 
   it('should render title and subtitle', () => {

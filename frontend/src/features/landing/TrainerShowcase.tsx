@@ -76,28 +76,28 @@ export const TrainerShowcase = (): React.ReactNode => {
           <h2 className="font-display text-4xl sm:text-5xl font-bold text-white mb-4">
             {t('landing.trainers.title')}
           </h2>
-          <p className="text-lg text-[#a1a1aa] max-w-2xl mx-auto">
+          <p className="text-lg text-text-secondary max-w-2xl mx-auto">
             {t('landing.trainers.description')}
           </p>
         </div>
 
-        {/* Desktop grid + Mobile scroll */}
-        <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 md:grid md:grid-cols-3 md:overflow-visible lg:grid-cols-5 -mx-4 px-4 md:mx-0 md:px-0">
+        {/* Cards — Vertical stack on mobile, grid on desktop */}
+        <div className="flex flex-col gap-6 md:grid md:grid-cols-3 md:gap-4 lg:grid-cols-5">
           {TRAINERS.map((trainer) => {
             const isSelected = selectedId === trainer.id;
             return (
               <button
                 key={trainer.id}
                 onClick={() => { setSelectedId(isSelected ? null : trainer.id); }}
-                className={`group relative snap-center min-w-[240px] md:min-w-0 flex-shrink-0 text-left p-5 rounded-2xl border transition-all duration-300 cursor-pointer h-full flex flex-col ${
+                className={`group relative text-left p-5 rounded-2xl border transition-all duration-300 cursor-pointer h-full flex flex-col ${
                   isSelected
-                    ? `border-transparent bg-gradient-to-br ${trainer.gradient} opacity-100 scale-[1.02]`
-                    : `border-white/10 bg-[rgba(18,18,20,0.8)] ${trainer.borderHover} hover:scale-[1.03]`
+                    ? `border-transparent bg-linear-to-br ${trainer.gradient} opacity-100 scale-[1.02]`
+                    : `border-white/10 bg-secondary/80 ${trainer.borderHover} hover:scale-[1.03]`
                 }`}
               >
                 {/* Avatar with gradient border */}
                 <div
-                  className={`w-16 h-16 rounded-xl mb-3 p-0.5 bg-gradient-to-br ${trainer.gradient} shrink-0`}
+                  className={`w-16 h-16 rounded-xl mb-3 p-0.5 bg-linear-to-br ${trainer.gradient} shrink-0`}
                 >
                   <img
                     src={trainer.avatar}
@@ -112,19 +112,19 @@ export const TrainerShowcase = (): React.ReactNode => {
                 <h3 className="font-display font-bold text-white text-base mb-1 leading-tight">
                   {trainer.name}
                 </h3>
-                <p className={`text-xs mb-3 leading-snug min-h-[2.5rem] ${isSelected ? 'text-white/80' : 'text-[#a1a1aa]'}`}>
+                <p className={`text-xs mb-3 leading-snug min-h-10 ${isSelected ? 'text-white/80' : 'text-text-secondary'}`}>
                   {trainer.tagline}
                 </p>
 
                 {/* Specialties */}
-                <div className="flex flex-wrap gap-1 mb-3 min-h-[2rem]">
+                <div className="flex flex-wrap gap-1 mb-3 min-h-8">
                   {trainer.specialties.map((spec) => (
                     <span
                       key={spec}
                       className={`text-[10px] px-1.5 py-0.5 rounded font-medium self-start ${
                         isSelected
                           ? 'bg-white/20 text-white'
-                          : 'bg-white/5 text-[#a1a1aa]'
+                          : 'bg-white/5 text-text-secondary'
                       }`}
                     >
                       {spec}
@@ -137,7 +137,7 @@ export const TrainerShowcase = (): React.ReactNode => {
                   className={`text-xs italic leading-snug transition-all duration-300 mt-auto ${
                     isSelected
                       ? 'text-white/90 opacity-100'
-                      : 'text-[#a1a1aa] opacity-0 group-hover:opacity-100'
+                      : 'text-text-secondary opacity-0 group-hover:opacity-100'
                   }`}
                 >
                   "{trainer.catchphrase}"
@@ -147,17 +147,12 @@ export const TrainerShowcase = (): React.ReactNode => {
           })}
         </div>
 
-        {/* Mobile scroll hint */}
-        <p className="text-center text-xs text-[#a1a1aa] mt-2 md:hidden">
-          {t('landing.trainers.scroll_hint')}
-        </p>
-
         {/* Expanded detail panel */}
         {selectedTrainer !== null && (
-          <div className="mt-6 rounded-2xl border border-white/10 bg-[rgba(18,18,20,0.9)] p-6 sm:p-8 transition-all duration-500">
+          <div className="mt-6 rounded-2xl border border-white/10 bg-dark-bg/90 p-6 sm:p-8 transition-all duration-500">
             <div className="flex flex-col sm:flex-row gap-6 items-start">
               <div
-                className={`shrink-0 w-20 h-20 rounded-xl p-0.5 bg-gradient-to-br ${selectedTrainer.gradient}`}
+                className={`shrink-0 w-20 h-20 rounded-xl p-0.5 bg-linear-to-br ${selectedTrainer.gradient}`}
               >
                 <img
                   src={selectedTrainer.avatar}
@@ -173,10 +168,10 @@ export const TrainerShowcase = (): React.ReactNode => {
                     <h3 className="font-display text-2xl font-bold text-white mb-1">
                       {selectedTrainer.name}
                     </h3>
-                    <p className="text-sm text-[#a1a1aa] mb-1">
+                    <p className="text-sm text-text-secondary mb-1">
                       {selectedTrainer.style}
                     </p>
-                    <p className="text-base italic text-[#fafafa]/80 mb-4">
+                    <p className="text-base italic text-text-primary/80 mb-4">
                       "{selectedTrainer.catchphrase}"
                     </p>
                   </div>
@@ -192,7 +187,7 @@ export const TrainerShowcase = (): React.ReactNode => {
                   {selectedTrainer.specialties.map((spec) => (
                     <span
                       key={spec}
-                      className="text-xs bg-white/10 text-[#fafafa]/80 px-2.5 py-1 rounded-full"
+                      className="text-xs bg-white/10 text-text-primary/80 px-2.5 py-1 rounded-full"
                     >
                       {spec}
                     </span>

@@ -53,7 +53,7 @@ describe('useDashboardStore', () => {
     const state = useDashboardStore.getState();
     expect(state.data).toBeNull();
     expect(state.isLoading).toBe(false);
-    expect(state.error).toBe('Failed to fetch dashboard data');
+    expect(state.error).toBe('dashboard.errors.fetch_failed');
     consoleSpy.mockRestore();
   });
 });

@@ -443,10 +443,6 @@ class AITrainerBrain:
         # Check message limits before proceeding
         needs_cycle_reset = self._check_message_limits(profile)
 
-        # POC: Remove automatic memory injection. AI now manages memories explicitly via tools.
-        # Mem0 background task still runs for comparison.
-        relevant_memories_str = ""
-
         current_trainer_type = trainer_profile_obj.trainer_type or "atlas"
 
         # Get conversation memory with fixed window (V3 Strategy)
@@ -483,7 +479,6 @@ class AITrainerBrain:
             profile=profile,
             trainer_profile_summary=trainer_profile_summary,
             user_profile_summary=user_profile_summary,
-            relevant_memories_str=relevant_memories_str,
             chat_history_summary="",  # Legacy (removed from template V3)
             formatted_history_msgs=formatted_history_msgs,
             user_input=user_input,

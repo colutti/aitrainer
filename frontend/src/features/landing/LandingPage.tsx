@@ -1,16 +1,14 @@
 import { Button } from '@shared/components/ui/Button';
-import { LanguageSelector } from '@shared/components/ui/LanguageSelector';
-import { useAuthStore } from '@shared/hooks/useAuth';
 import {
-  Zap,
   Brain,
-  Users,
-  Zap as Zest,
-  Share2 as MemorySquare,
-  Clock,
   ChevronRight,
+  Clock,
   Menu,
   X,
+  Zap,
+  LayoutGrid as Zest,
+  Users,
+  MessageSquare as MemorySquare,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -21,231 +19,204 @@ import { HeroProductPreview } from './HeroProductPreview';
 import { ProductShowcase } from './ProductShowcase';
 import { TrainerShowcase } from './TrainerShowcase';
 
-
-const LandingPage = (): React.ReactNode => {
-  const navigate = useNavigate();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-  const isAuthenticated = Boolean(useAuthStore((state: any) => state.isAuthenticated));
-  const [navScrolled, setNavScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+/**
+ * LandingPage
+ * O ponto de entrada principal para usuários não autenticados.
+ * Design premium, dark mode, focado em conversão e estética.
+ */
+const LandingPage = () => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   const isPt = i18n.language.startsWith('pt');
-  const currencySymbol = isPt ? 'R$' : (i18n.language.startsWith('es') ? '€' : 'US$');
+  const currencySymbol = isPt ? 'R$ ' : '$';
 
-  // Redirect if already authenticated
+  // Controle de scroll para mudar o estilo da navbar
   useEffect(() => {
-    if (isAuthenticated) {
-      void navigate('/dashboard');
-    }
-  }, [isAuthenticated, navigate]);
-
-  // Handle navbar scroll effect
-  useEffect(() => {
-    const handleScroll = (): void => {
-      setNavScrolled(window.scrollY > 50);
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
-
-  // Smooth scroll for anchor links
-  useEffect(() => {
-    const handleAnchorClick = (e: MouseEvent): void => {
-      const target = e.target as HTMLAnchorElement;
-      if (target.getAttribute('data-anchor')) {
-        e.preventDefault();
-        const id = target.getAttribute('href')?.slice(1);
-        if (id) {
-          const element = document.getElementById(id);
-          element?.scrollIntoView({ behavior: 'smooth' });
-        }
-      }
-    };
-    document.addEventListener('click', handleAnchorClick);
-    return () => {
-      document.removeEventListener('click', handleAnchorClick);
-    };
+    return () => { window.removeEventListener('scroll', handleScroll); };
   }, []);
 
   const navLinks = [
-    { href: '#treinadores', label: t('landing.nav.trainers') },
-    { href: '#diferenciais', label: t('landing.nav.differentiators') },
-    { href: '#como-funciona', label: t('landing.nav.how_it_works') },
-    { href: '#planos', label: t('landing.nav.plans', 'Planos') },
+    { name: t('landing.nav.differentiators'), href: '#diferenciais' },
+    { name: t('landing.nav.how_it_works'), href: '#como-funciona' },
+    { name: t('landing.nav.trainers'), href: '#treinadores' },
+    { name: t('landing.nav.plans'), href: '#planos' },
   ];
 
   return (
-    <div className="bg-[var(--color-dark-bg)] overflow-hidden">
-      {/* Dot grid background global */}
-      <div
-        className="fixed inset-0 pointer-events-none z-0 opacity-40"
-        style={{
-          backgroundImage: 'radial-gradient(rgba(99,102,241,0.06) 1px, transparent 1px)',
-          backgroundSize: '28px 28px',
-        }}
-      />
+    <div className="min-h-screen bg-dark-bg text-text-primary selection:bg-primary/30 selection:text-white font-sans overflow-x-hidden">
+      {/* Dynamic Background */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div
+          className="absolute inset-0 opacity-[0.15]"
+          style={{
+            backgroundImage: 'radial-gradient(rgba(139, 92, 246, 0.1) 1px, transparent 1px)',
+            backgroundSize: '32px 32px',
+          }}
+        />
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[100px] translate-y-1/3 -translate-x-1/4" />
+      </div>
 
       {/* Navbar */}
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          navScrolled
-            ? 'bg-[rgba(10,10,11,0.9)] backdrop-blur-md border-b border-[var(--color-border)]'
-            : 'bg-transparent'
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 px-4 sm:px-6 lg:px-8 ${
+          scrolled
+            ? 'py-3 bg-dark-bg/80 backdrop-blur-lg border-b border-border shadow-lg'
+            : 'py-6 bg-transparent'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center gap-2">
-            <img
-              src="/logo_icon.png"
-              alt="FityQ"
-              className="h-8 w-8"
-            />
-            <span className="text-xl font-bold text-white font-display">FityQ</span>
+          <div
+            className="flex items-center gap-2 cursor-pointer group"
+            onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          >
+            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-primary to-accent p-0.5 shadow-lg group-hover:scale-105 transition-transform duration-300">
+              <div className="w-full h-full rounded-[9px] bg-dark-bg flex items-center justify-center">
+                <img src="/logo_icon.png" alt="FityQ" className="w-6 h-6" />
+              </div>
+            </div>
+            <span className="font-display text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-white to-white/70">
+              FityQ
+            </span>
           </div>
 
-          {/* Desktop Links */}
-          <div className="hidden md:flex gap-8 items-center">
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
               <a
-                key={link.href}
+                key={link.name}
                 href={link.href}
-                data-anchor
-                className="text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors text-sm font-medium"
+                className="text-sm font-medium text-text-secondary hover:text-white transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.querySelector(link.href)?.scrollIntoView({ behavior: 'smooth' });
+                }}
               >
-                {link.label}
+                {link.name}
               </a>
             ))}
           </div>
 
-          {/* Right side */}
-          <div className="flex items-center gap-3">
-            <div className="hidden md:block">
-              <LanguageSelector />
-            </div>
+          <div className="hidden md:flex items-center gap-4">
             <Button
-              onClick={() => {
-                void navigate('/login');
-              }}
-              variant="primary"
+              onClick={() => { void navigate('/login'); }}
+              variant="secondary"
               size="sm"
             >
               {t('landing.nav.login')}
             </Button>
-            {/* Mobile hamburger */}
-            <button
-              className="md:hidden p-2 text-[var(--color-text-secondary)] hover:text-white transition-colors"
-              onClick={() => { setMobileMenuOpen(!mobileMenuOpen); }}
-              aria-label="Menu"
+            <Button
+              onClick={() => { void navigate('/login'); }}
+              variant="primary"
+              size="sm"
+              className="shadow-md shadow-primary/20"
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
+              {t('landing.nav.get_started')}
+            </Button>
           </div>
+
+          {/* Mobile menu toggle */}
+          <button
+            className="md:hidden text-white p-2"
+            onClick={() => { setIsMenuOpen(!isMenuOpen); }}
+            aria-label="Toggle menu"
+          >
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
 
-        {/* Mobile menu */}
-        <div
-          className={`md:hidden overflow-hidden transition-all duration-300 ${
-            mobileMenuOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
-          } bg-[rgba(10,10,11,0.95)] border-b border-[var(--color-border)]`}
-        >
-          <div className="px-4 py-4 flex flex-col gap-4">
+        {/* Mobile menu dropdown */}
+        {isMenuOpen && (
+          <div className="md:hidden absolute top-full left-0 right-0 bg-dark-bg/95 backdrop-blur-xl border-b border-border p-6 flex flex-col gap-6 animate-in slide-in-from-top duration-300">
             {navLinks.map((link) => (
               <a
-                key={link.href}
+                key={link.name}
                 href={link.href}
-                data-anchor
-                className="text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors text-base font-medium py-1"
-                onClick={() => { setMobileMenuOpen(false); }}
+                className="text-lg font-medium text-white/80"
+                onClick={() => { setIsMenuOpen(false); }}
               >
-                {link.label}
+                {link.name}
               </a>
             ))}
-            <div className="pt-4 border-t border-[var(--color-border)]">
-              <LanguageSelector />
-            </div>
+            <div className="h-px bg-border my-2" />
+            <Button
+              onClick={() => { void navigate('/login'); }}
+              variant="primary"
+              fullWidth
+            >
+              {t('landing.nav.get_started')}
+            </Button>
           </div>
-        </div>
+        )}
       </nav>
 
-      {/* Hero Section — Assimétrico */}
-      <section className="min-h-screen flex items-center px-4 sm:px-6 lg:px-8 pt-20 relative overflow-hidden z-10">
-        {/* Glow behind preview */}
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[var(--color-primary)] opacity-[0.06] rounded-full blur-3xl pointer-events-none" />
-
-        <div className="max-w-7xl w-full mx-auto grid lg:grid-cols-[55%_45%] gap-12 lg:gap-16 items-center relative z-10">
+      {/* Hero Section */}
+      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-4 sm:px-6 lg:px-8 z-10 overflow-hidden">
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-[55%_45%] gap-12 items-center">
           {/* Left: Text content */}
           <div>
             <div className="mb-6 inline-block">
-              <span className="px-4 py-2 rounded-full text-sm font-semibold text-[var(--color-accent)] bg-[rgba(34,211,238,0.1)] border border-[var(--color-accent)]/20">
+              <span className="px-4 py-2 rounded-full text-sm font-semibold text-accent bg-accent/10 border border-accent/20">
                 {t('landing.hero.badge')}
               </span>
             </div>
-
-            <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-tight mb-6 text-white animate-slide-in-fade">
+            <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-bold text-white leading-[1.1] mb-6 tracking-tight">
               {t('landing.hero.title')}{' '}
-              <span className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] bg-clip-text text-transparent">
+              <span className="bg-clip-text text-transparent bg-linear-to-r from-primary via-accent to-primary bg-size-[200%_auto] animate-shimmer">
                 {t('landing.hero.title_gradient')}
               </span>
             </h1>
-
-            <p
-              className="text-lg sm:text-xl text-[var(--color-text-secondary)] mb-8 max-w-2xl leading-relaxed animate-slide-in-fade"
-              style={{ animationDelay: '0.1s' }}
-            >
+            <p className="text-base sm:text-xl text-text-secondary mb-10 leading-relaxed max-w-xl">
               {t('landing.hero.description')}
             </p>
-
-            <div className="animate-slide-in-fade mb-4" style={{ animationDelay: '0.2s' }}>
+            <div className="flex flex-col sm:flex-row gap-4">
               <Button
-                onClick={() => {
-                  void navigate('/login');
-                }}
+                onClick={() => { void navigate('/login'); }}
                 variant="primary"
                 size="lg"
-                className="animate-pulse-glow"
+                className="h-14 px-8 text-lg group"
               >
                 {t('landing.hero.cta')}
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              <Button
+                onClick={() => {
+                  document.querySelector('#treinadores')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                variant="secondary"
+                size="lg"
+                className="h-14 px-8 text-lg"
+              >
+                {t('landing.nav.trainers')}
               </Button>
             </div>
 
-            <p className="text-xs text-[var(--color-text-secondary)] mb-10 animate-slide-in-fade" style={{ animationDelay: '0.25s' }}>
-              {t('landing.hero.trial_desc')}
-            </p>
-
-            {/* Feature badges */}
-            <div
-              className="flex flex-wrap gap-4 text-sm text-[var(--color-text-secondary)] animate-slide-in-fade"
-              style={{ animationDelay: '0.3s' }}
-            >
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-[var(--color-accent)]" />
-                {t('landing.hero.feature_247')}
-              </div>
-              <div className="flex items-center gap-2">
-                <Brain className="w-4 h-4 text-[var(--color-accent)]" />
-                {t('landing.hero.feature_ai')}
-              </div>
-              <div className="flex items-center gap-2">
-                <Zest className="w-4 h-4 text-[var(--color-accent)]" />
-                {t('landing.hero.feature_integrations')}
-              </div>
+            {/* Trusted elements */}
+            <div className="mt-12 flex flex-wrap items-center gap-6 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
+               {/* Could add mini icons of platforms like Apple Health, Google Fit, etc */}
             </div>
           </div>
 
-          {/* Right: Product preview — hidden on mobile */}
+          {/* Right: Visual preview */}
           <div className="hidden lg:block">
             <HeroProductPreview />
           </div>
         </div>
+        
+        {/* Abstract shape decoration */}
+        <div className="absolute top-32 right-0 w-96 h-96 bg-primary/6 rounded-full blur-[100px] -z-10" />
       </section>
 
       {/* Section divider */}
-      <div className="w-full h-px bg-gradient-to-r from-transparent via-[var(--color-primary)]/20 to-transparent" />
+      <div className="w-full h-px bg-linear-to-r from-transparent via-primary/20 to-transparent" />
 
       {/* Chat Carousel Section */}
       <div className="relative z-10">
@@ -253,7 +224,7 @@ const LandingPage = (): React.ReactNode => {
       </div>
 
       {/* Section divider */}
-      <div className="w-full h-px bg-gradient-to-r from-transparent via-[var(--color-primary)]/20 to-transparent" />
+      <div className="w-full h-px bg-linear-to-r from-transparent via-primary/20 to-transparent" />
 
       {/* Trainer Showcase */}
       <div className="relative z-10">
@@ -261,7 +232,7 @@ const LandingPage = (): React.ReactNode => {
       </div>
 
       {/* Section divider */}
-      <div className="w-full h-px bg-gradient-to-r from-transparent via-[var(--color-primary)]/20 to-transparent" />
+      <div className="w-full h-px bg-linear-to-r from-transparent via-primary/20 to-transparent" />
 
       {/* Product Showcase */}
       <div className="relative z-10">
@@ -269,7 +240,7 @@ const LandingPage = (): React.ReactNode => {
       </div>
 
       {/* Section divider */}
-      <div className="w-full h-px bg-gradient-to-r from-transparent via-[var(--color-primary)]/20 to-transparent" />
+      <div className="w-full h-px bg-linear-to-r from-transparent via-primary/20 to-transparent" />
 
       {/* Diferenciais Section — Bento Grid */}
       <section id="diferenciais" className="py-20 px-4 sm:px-6 lg:px-8 relative z-10">
@@ -278,7 +249,7 @@ const LandingPage = (): React.ReactNode => {
             <h2 className="font-display text-4xl sm:text-5xl font-bold text-white mb-4">
               {t('landing.diff.title')}
             </h2>
-            <p className="text-lg text-[var(--color-text-secondary)] max-w-2xl mx-auto">
+            <p className="text-lg text-text-secondary max-w-2xl mx-auto">
               {t('landing.diff.subtitle')}
             </p>
           </div>
@@ -311,7 +282,7 @@ const LandingPage = (): React.ReactNode => {
                         key={trainer}
                         src={`/assets/avatars/${trainer}.png`}
                         alt={trainer}
-                        className="w-8 h-8 rounded-full border-2 border-[var(--color-dark-bg)] object-cover"
+                        className="w-8 h-8 rounded-full border-2 border-dark-bg object-cover"
                         style={{ marginLeft: i === 0 ? 0 : '-8px', zIndex: 5 - i }}
                         loading="lazy"
                         width="32"
@@ -329,7 +300,7 @@ const LandingPage = (): React.ReactNode => {
                 extra: (
                   <div className="flex flex-wrap gap-1 mt-4">
                     {['Hevy', 'MyFitnessPal', 'Zepp Life'].map((app) => (
-                      <span key={app} className="text-xs font-semibold text-[var(--color-accent)] bg-[var(--color-accent)]/10 rounded px-2 py-0.5">
+                      <span key={app} className="text-xs font-semibold text-accent bg-accent/10 rounded px-2 py-0.5">
                         {app}
                       </span>
                     ))}
@@ -348,7 +319,7 @@ const LandingPage = (): React.ReactNode => {
                       return (
                         <div key={i} className="flex items-center gap-2">
                           <div className={`w-2 h-2 rounded-full ${dots[i % dots.length] ?? ''} shrink-0`} />
-                          <span className="text-xs text-[var(--color-text-secondary)]">{label}</span>
+                          <span className="text-xs text-text-secondary">{label}</span>
                         </div>
                       );
                     })}
@@ -372,14 +343,14 @@ const LandingPage = (): React.ReactNode => {
               const Icon = feature.icon;
               return (
                 <RevealOnScroll key={idx} delay={feature.delay}>
-                  <div className="group relative p-6 rounded-2xl border border-[var(--color-border)] bg-[rgba(18,18,20,0.8)] backdrop-blur-sm hover:border-[var(--color-primary)]/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[var(--color-primary)]/10 transition-all duration-300 h-full">
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[var(--color-primary)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="group relative p-6 rounded-2xl border border-border bg-secondary/80 backdrop-blur-sm hover:border-primary/40 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 h-full">
+                    <div className="absolute inset-0 rounded-2xl bg-linear-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <div className="relative z-10">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                      <div className="w-12 h-12 rounded-lg bg-linear-to-br from-primary to-accent flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                         <Icon className="w-6 h-6 text-white" />
                       </div>
                       <h3 className="font-display text-xl font-bold text-white mb-2">{feature.title}</h3>
-                      <p className="text-[var(--color-text-secondary)] text-sm">{feature.description}</p>
+                      <p className="text-text-secondary text-sm">{feature.description}</p>
                       {feature.extra}
                     </div>
                   </div>
@@ -391,7 +362,7 @@ const LandingPage = (): React.ReactNode => {
       </section>
 
       {/* Section divider */}
-      <div className="w-full h-px bg-gradient-to-r from-transparent via-[var(--color-primary)]/20 to-transparent" />
+      <div className="w-full h-px bg-linear-to-r from-transparent via-primary/20 to-transparent" />
 
       {/* Como Funciona Section */}
       <section
@@ -403,7 +374,7 @@ const LandingPage = (): React.ReactNode => {
             <h2 className="font-display text-4xl sm:text-5xl font-bold text-white mb-4">
               {t('landing.how.title')}
             </h2>
-            <p className="text-lg text-[var(--color-text-secondary)] max-w-2xl mx-auto">
+            <p className="text-lg text-text-secondary max-w-2xl mx-auto">
               {t('landing.how.subtitle')}
             </p>
           </div>
@@ -411,18 +382,18 @@ const LandingPage = (): React.ReactNode => {
           <div className="grid md:grid-cols-3 gap-8">
             {(t('landing.how.steps', { returnObjects: true }) as { title: string; description: string }[]).map((item, idx) => (
               <RevealOnScroll key={idx} delay={idx * 0.15}>
-                <div className="relative">
-                  <div className="font-display text-8xl font-extrabold text-[var(--color-primary)]/10 mb-4 leading-none">
+                <div className="relative p-6">
+                  <div className="font-display text-8xl font-extrabold text-primary/10 mb-4 leading-none">
                     {`0${(idx + 1).toString()}`}
                   </div>
                   <h3 className="font-display text-2xl font-bold text-white mb-3">
                     {item.title}
                   </h3>
-                  <p className="text-[var(--color-text-secondary)] text-lg">
+                  <p className="text-text-secondary text-lg">
                     {item.description}
                   </p>
                   {idx < 2 && (
-                    <div className="hidden md:block absolute top-16 -right-4 text-[var(--color-accent)]/40">
+                    <div className="hidden md:block absolute top-16 -right-4 text-accent/40">
                       <ChevronRight className="w-6 h-6" />
                     </div>
                   )}
@@ -440,7 +411,7 @@ const LandingPage = (): React.ReactNode => {
             <h2 className="font-display text-4xl sm:text-5xl font-bold text-white mb-4">
               {t('landing.plans.title')}
             </h2>
-            <p className="text-lg text-[var(--color-text-secondary)] max-w-2xl mx-auto">
+            <p className="text-lg text-text-secondary max-w-2xl mx-auto">
               {t('landing.plans.subtitle')}
             </p>
           </div>
@@ -488,27 +459,27 @@ const LandingPage = (): React.ReactNode => {
                   <div
                     className={`relative rounded-2xl p-6 transition-all duration-300 h-full flex flex-col ${
                       plan.highlight
-                        ? 'border border-[var(--color-accent)] bg-[rgba(34,211,238,0.05)] md:scale-105 shadow-xl shadow-[var(--color-accent)]/10 z-10'
-                        : 'border border-[var(--color-border)] bg-[rgba(18,18,20,0.8)]'
-                    } hover:border-[var(--color-accent)]/50`}
+                        ? 'border border-accent bg-accent/5 md:scale-105 shadow-xl shadow-accent/10 z-10'
+                        : 'border border-border bg-secondary/80'
+                    } hover:border-accent/50`}
                   >
                     {plan.highlight && (
-                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] text-white text-xs font-bold whitespace-nowrap">
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-linear-to-r from-primary to-accent text-white text-xs font-bold whitespace-nowrap">
                         {t('landing.plans.recommended')}
                       </div>
                     )}
                     <h3 className="font-display text-xl font-bold text-white mb-2">
                        {planData.name}
                     </h3>
-                    <p className="text-[var(--color-text-secondary)] mb-6 text-sm flex-grow">
+                    <p className="text-text-secondary mb-6 text-sm flex-grow">
                       {planData.description}
                     </p>
                     <div className="mb-6">
                       <span className="font-display text-3xl font-extrabold text-white">
-                        {plan.price === 0 ? (isPt ? 'Grátis' : t('landing.plans.items.free.name', 'Free')) : `${currencySymbol}${plan.price.toFixed(2).replace('.', isPt ? ',' : '.')}`}
+                        {plan.price === 0 ? (isPt ? t('landing.plans.items.free.price_free', 'Grátis') : t('landing.plans.items.free.price_free', 'Free')) : `${currencySymbol}${plan.price.toFixed(2).replace('.', isPt ? ',' : '.')}`}
                       </span>
                       {plan.price !== 0 && (
-                          <span className="text-[var(--color-text-secondary)] ml-1 text-sm">
+                          <span className="text-text-secondary ml-1 text-sm">
                             {plan.suffix}
                           </span>
                       )}
@@ -528,9 +499,9 @@ const LandingPage = (): React.ReactNode => {
                       {planData.features.map((feature, fidx) => (
                         <li
                           key={fidx.toString()}
-                          className="flex items-start gap-3 text-[var(--color-text-secondary)] text-sm"
+                          className="flex items-start gap-3 text-text-secondary text-sm"
                         >
-                          <span className="text-[var(--color-accent)] font-bold">
+                          <span className="text-accent font-bold">
                             ✓
                           </span>
                           <span>{feature}</span>
@@ -546,19 +517,19 @@ const LandingPage = (): React.ReactNode => {
       </section>
 
       {/* Section divider */}
-      <div className="w-full h-px bg-gradient-to-r from-transparent via-[var(--color-primary)]/20 to-transparent" />
+      <div className="w-full h-px bg-linear-to-r from-transparent via-primary/20 to-transparent" />
 
       {/* Final CTA */}
       <section className="py-24 px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Glow */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-[500px] h-[300px] bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] opacity-[0.04] rounded-full blur-3xl" />
+          <div className="w-[500px] h-[300px] bg-linear-to-r from-primary to-accent opacity-5 rounded-full blur-3xl" />
         </div>
         <div className="max-w-3xl mx-auto text-center relative z-10">
           <h2 className="font-display text-4xl sm:text-5xl font-bold text-white mb-6">
             {t('landing.cta.title')}
           </h2>
-          <p className="text-lg text-[var(--color-text-secondary)] mb-8">
+          <p className="text-lg text-text-secondary mb-8">
             {t('landing.cta.subtitle')}
           </p>
           <Button
@@ -572,20 +543,20 @@ const LandingPage = (): React.ReactNode => {
             {t('landing.cta.button')}
             <ChevronRight className="w-5 h-5" />
           </Button>
-          <p className="text-xs text-[var(--color-text-secondary)] mt-4">
+          <p className="text-xs text-text-secondary mt-4">
             {t('landing.cta.trial')}
           </p>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-[var(--color-border)] bg-[rgba(10,10,11,0.5)] py-8 px-4 sm:px-6 lg:px-8 relative z-10">
+      <footer className="border-t border-border bg-dark-bg/50 py-8 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <img src="/logo_icon.png" alt="FityQ" className="h-7 w-7" />
             <span className="font-display text-base font-bold text-white">FityQ</span>
           </div>
-          <p className="text-[var(--color-text-secondary)] text-sm">
+          <p className="text-text-secondary text-sm">
             {t('landing.footer.rights', { year: new Date().getFullYear() })}
           </p>
         </div>

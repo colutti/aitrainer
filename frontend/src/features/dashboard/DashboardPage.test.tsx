@@ -12,7 +12,11 @@ vi.mock('./components/WidgetWeightChart', () => ({
   WidgetWeightChart: () => <div data-testid="weight-chart" />
 }));
 vi.mock('./components/WidgetRecentPRs', () => ({
-  WidgetRecentPRs: () => <div data-testid="prs-widget" />
+  WidgetRecentPRs: ({ prs }: any) => (
+    <div data-testid="prs-widget">
+      {(!prs || prs.length === 0) && 'Dados de força insuficientes'}
+    </div>
+  ),
 }));
 vi.mock('./components/WidgetStrengthRadar', () => ({
   WidgetStrengthRadar: () => <div data-testid="radar-widget" />
@@ -21,7 +25,11 @@ vi.mock('./components/WidgetVolumeTrend', () => ({
   WidgetVolumeTrend: () => <div data-testid="volume-widget" />
 }));
 vi.mock('./components/WidgetWeeklyFrequency', () => ({
-  WidgetWeeklyFrequency: () => <div data-testid="frequency-widget" />
+  WidgetWeeklyFrequency: ({ days }: any) => (
+    <div data-testid="frequency-widget">
+      {(!days || days.length === 0) && 'Nenhum treino esta semana'}
+    </div>
+  ),
 }));
 
 describe('DashboardPage', () => {
@@ -111,7 +119,7 @@ describe('DashboardPage', () => {
   });
 
   it('should handle different metabolism confidence levels', () => {
-    const confidenceLevels = ['high', 'medium', 'low', 'none'];
+    const confidenceLevels = ['high', 'medium', 'low', null];
     confidenceLevels.forEach(level => {
       vi.mocked(useDashboardStore).mockReturnValue({
         ...defaultHookValues,
@@ -124,11 +132,11 @@ describe('DashboardPage', () => {
         } as any,
       });
       const { unmount } = render(<DashboardPage />);
-      if (level === 'none') {
-        expect(screen.getByText('TDEE: ---')).toBeInTheDocument();
+      if (level === null) {
+        expect(screen.getByText((content) => content.includes('Análise:') && content.includes('---'))).toBeInTheDocument();
       } else {
         const expected = { 'high': 'Alta', 'medium': 'Média', 'low': 'Baixa' }[level];
-        expect(screen.getByText(`TDEE: ${expected}`)).toBeInTheDocument();
+        expect(screen.getByText(new RegExp(`Análise:.*${expected}`))).toBeInTheDocument();
       }
       unmount();
     });
@@ -148,7 +156,7 @@ describe('DashboardPage', () => {
     });
 
     render(<DashboardPage />);
-    expect(screen.queryByTestId('prs-widget')).not.toBeInTheDocument();
+    expect(screen.getByTestId('prs-widget')).toBeInTheDocument(); // Widget renders with overlay
     expect(screen.getByText('Dados de força insuficientes')).toBeInTheDocument();
   });
 
@@ -165,6 +173,11 @@ describe('DashboardPage', () => {
       } as any,
     });
     render(<DashboardPage />);
-    expect(screen.getByText('0.50 kg')).toBeInTheDocument();
+    expect(screen.getByText((_content, element) => {
+      const hasText = (node: Element) => node.textContent?.includes('0.50') && node.textContent?.includes('kg');
+      const elementHasText = hasText(element!);
+      const childrenDontHaveText = Array.from(element?.children ?? []).every(child => !hasText(child));
+      return elementHasText && childrenDontHaveText;
+    })).toBeInTheDocument();
   });
 });

@@ -4,7 +4,7 @@ This module contains the API endpoints for messaging.
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from fastapi.responses import StreamingResponse
 
 from src.services.auth import verify_token
@@ -38,6 +38,7 @@ def get_history(
 @router.post("")
 async def message_ai(
     message: MessageRequest,
+    request: Request,
     user_email: CurrentUser,
     brain: AITrainerBrainDep,
     background_tasks: BackgroundTasks,
@@ -46,6 +47,14 @@ async def message_ai(
     Handles an AI messaging request for an authenticated user.
     """
     logger.info("Received message from user %s: %s", user_email, message.user_message)
+    
+    # Detect and save timezone from header
+    tz = request.headers.get("X-User-Timezone")
+    if tz:
+        profile = brain._get_or_create_user_profile(user_email)
+        if tz != profile.timezone:
+            logger.info("Updating timezone for %s to %s", user_email, tz)
+            brain.update_user_profile_fields(user_email, {"timezone": tz})
     try:
         # Pre-flight limits check to avoid StreamingResponse generator crash
         profile = brain._get_or_create_user_profile(user_email)

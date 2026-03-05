@@ -208,8 +208,9 @@ export function DashboardPage() {
     'none': 'text-text-muted bg-white/5 border-white/10'
   }[metabolism.confidence] ?? 'text-text-muted';
 
-  const confidenceLevel = metabolism.confidence === 'none' ? t('dashboard.confidence_level.none') :
-    t(`dashboard.confidence_level.${metabolism.confidence.toLowerCase()}`, { defaultValue: t('dashboard.confidence_level.unknown') });
+  const confidenceLevel = (metabolism.confidence === 'none' || !metabolism.confidence)
+    ? t('dashboard.confidence_level.none')
+    : t(`dashboard.confidence_level.${metabolism.confidence.toLowerCase()}`, { defaultValue: t('dashboard.confidence_level.unknown') });
 
   return (
     <div className="space-y-12 animate-in fade-in duration-700">

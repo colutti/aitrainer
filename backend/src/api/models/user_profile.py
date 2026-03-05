@@ -127,6 +127,9 @@ class UserProfile(UserProfileInput):
                     "None = use system default (1.45). "
                     "Range: 1.2 (sedentary) to 1.9 (extremely active)."
     )
+    timezone: str | None = Field(
+        default=None, max_length=50, description="IANA timezone e.g. Europe/Madrid"
+    )
 
     def _goal_type_label(self) -> str:
         labels = {

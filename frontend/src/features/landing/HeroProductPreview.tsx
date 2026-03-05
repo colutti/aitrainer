@@ -11,15 +11,15 @@ export const HeroProductPreview = (): React.ReactNode => {
   return (
     <div className="relative animate-float">
       {/* Glow behind card */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#6366f1]/20 to-[#22d3ee]/10 rounded-3xl blur-2xl scale-110 pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-br from-primary/20 to-accent/10 rounded-3xl blur-2xl scale-110 pointer-events-none" />
 
       {/* Main dashboard card */}
-      <div className="relative rounded-2xl border border-white/10 bg-[rgba(18,18,20,0.95)] p-6 shadow-2xl">
+      <div className="relative rounded-2xl border border-white/10 bg-dark-bg/95 p-6 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <p className="text-xs text-[#a1a1aa] mb-0.5">{t('landing.hero.daily_goal')}</p>
-            <p className="text-3xl font-display font-extrabold text-white">2.150 <span className="text-base font-normal text-[#a1a1aa]">kcal</span></p>
+            <p className="text-xs text-text-secondary mb-0.5">{t('landing.hero.daily_goal')}</p>
+            <p className="text-3xl font-display font-extrabold text-white">2.150 <span className="text-base font-normal text-text-secondary">kcal</span></p>
           </div>
           {/* Consistency ring */}
           <div className="relative w-16 h-16">
@@ -28,15 +28,15 @@ export const HeroProductPreview = (): React.ReactNode => {
               <circle
                 cx="32" cy="32" r="26"
                 fill="none"
-                stroke="url(#ringGrad)"
+                stroke="url(#ringGradHero)"
                 strokeWidth="6"
                 strokeLinecap="round"
                 strokeDasharray={`${(0.87 * 2 * Math.PI * 26).toString()} ${(2 * Math.PI * 26).toString()}`}
               />
               <defs>
-                <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#6366f1" />
-                  <stop offset="100%" stopColor="#22d3ee" />
+                <linearGradient id="ringGradHero" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="var(--color-primary)" />
+                  <stop offset="100%" stopColor="var(--color-accent)" />
                 </linearGradient>
               </defs>
             </svg>
@@ -55,8 +55,8 @@ export const HeroProductPreview = (): React.ReactNode => {
           ].map((macro) => (
             <div key={macro.name}>
               <div className="flex justify-between text-xs mb-1">
-                <span className="text-[#a1a1aa]">{macro.name}</span>
-                <span className="text-white font-medium">{macro.current}g <span className="text-[#a1a1aa]">/ {macro.target}g</span></span>
+                <span className="text-text-secondary">{macro.name}</span>
+                <span className="text-white font-medium">{macro.current}g <span className="text-text-secondary">/ {macro.target}g</span></span>
               </div>
               <div className="h-1.5 rounded-full bg-white/5">
                 <div
@@ -69,12 +69,12 @@ export const HeroProductPreview = (): React.ReactNode => {
         </div>
 
         {/* Mini weight trend chart */}
-        <div className="rounded-xl bg-white/[0.03] border border-white/5 p-3">
-          <p className="text-xs text-[#a1a1aa] mb-2">{t('landing.hero.weight_trend')}</p>
+        <div className="rounded-xl bg-white/3 border border-white/5 p-3">
+          <p className="text-xs text-text-secondary mb-2">{t('landing.hero.weight_trend')}</p>
           <svg width="100%" height="40" viewBox="0 0 200 40" preserveAspectRatio="none">
             <polyline
               points="0,32 30,28 60,30 90,22 120,18 150,14 180,10 200,8"
-              stroke="url(#weightGrad)"
+              stroke="url(#weightGradHero)"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -82,9 +82,9 @@ export const HeroProductPreview = (): React.ReactNode => {
               opacity="0.8"
             />
             <defs>
-              <linearGradient id="weightGrad" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#6366f1" />
-                <stop offset="100%" stopColor="#22d3ee" />
+              <linearGradient id="weightGradHero" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="var(--color-primary)" />
+                <stop offset="100%" stopColor="var(--color-accent)" />
               </linearGradient>
             </defs>
           </svg>
@@ -92,7 +92,7 @@ export const HeroProductPreview = (): React.ReactNode => {
       </div>
 
       {/* Floating chat bubble */}
-      <div className="absolute -bottom-6 -left-6 max-w-[200px] rounded-xl border border-white/10 bg-[rgba(18,18,20,0.98)] p-3 shadow-lg">
+      <div className="absolute -bottom-6 -left-6 max-w-[200px] rounded-xl border border-white/10 bg-dark-bg/98 p-3 shadow-lg">
         <div className="flex items-center gap-2 mb-2">
           <img
             src="/assets/avatars/gymbro.png"
@@ -104,11 +104,10 @@ export const HeroProductPreview = (): React.ReactNode => {
           />
           <span className="text-xs font-semibold text-white">Breno</span>
         </div>
-        <p className="text-xs text-[#a1a1aa] leading-relaxed">
+        <p className="text-xs text-text-secondary leading-relaxed">
           {t('landing.hero.gymbro_message')}
         </p>
       </div>
     </div>
   );
 };
-

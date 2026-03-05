@@ -46,7 +46,6 @@ def test_build_input_data_returns_all_required_keys(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="Trainer: Atlas",
         user_profile_summary="User: 30y, 80kg",
-        relevant_memories_str="",
         chat_history_summary="",
         formatted_history_msgs=[],
         user_input="Como vou treinar?",
@@ -57,13 +56,15 @@ def test_build_input_data_returns_all_required_keys(sample_profile):
         "trainer_profile",
         "user_profile",
         "user_profile_obj",
-        "relevant_memories",
         "chat_history_summary",
         "chat_history",
         "user_message",
         "current_date",
         "day_of_week",
         "current_time",
+        "trainer_name",
+        "user_name",
+        "user_timezone",
     }
     assert set(input_data.keys()) >= required_keys
 
@@ -75,7 +76,6 @@ def test_build_input_data_uses_provided_date(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="",
         user_profile_summary="",
-        relevant_memories_str="",
         chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
@@ -90,7 +90,6 @@ def test_build_input_data_generates_date_when_not_provided(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="",
         user_profile_summary="",
-        relevant_memories_str="",
         chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
@@ -107,7 +106,6 @@ def test_get_prompt_template_injects_long_term_summary(sample_profile_with_summa
         profile=sample_profile_with_summary,
         trainer_profile_summary="Trainer",
         user_profile_summary="User",
-        relevant_memories_str="",
         chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
@@ -117,9 +115,9 @@ def test_get_prompt_template_injects_long_term_summary(sample_profile_with_summa
     prompt_template = PromptBuilder.get_prompt_template(input_data, is_telegram=False)
     rendered = prompt_template.format(**input_data)
 
-    # Verify <historico> section is present (new XML structure)
-    assert "<historico>" in rendered
-    assert "</historico>" in rendered
+    # Verify <resumo_conversas> section is present (new XML structure)
+    assert "<resumo_conversas>" in rendered
+    assert "</resumo_conversas>" in rendered
     # Verify the summary content is there
     assert "Perder 5kg" in rendered
     assert "Treinar 2x/semana" in rendered
@@ -131,7 +129,6 @@ def test_get_prompt_template_handles_null_summary(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="Trainer",
         user_profile_summary="User",
-        relevant_memories_str="",
         chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
@@ -152,7 +149,6 @@ def test_get_prompt_template_handles_empty_string_summary(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="Trainer",
         user_profile_summary="User",
-        relevant_memories_str="",
         chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
@@ -169,7 +165,6 @@ def test_get_prompt_template_adds_telegram_format(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="Trainer",
         user_profile_summary="User",
-        relevant_memories_str="",
         chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
@@ -187,7 +182,6 @@ def test_get_prompt_template_no_telegram_by_default(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="Trainer",
         user_profile_summary="User",
-        relevant_memories_str="",
         chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
@@ -205,7 +199,6 @@ def test_get_prompt_template_removes_legacy_placeholder(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="Trainer",
         user_profile_summary="User",
-        relevant_memories_str="",
         chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
@@ -223,7 +216,6 @@ def test_get_prompt_template_returns_chat_prompt_template(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="Trainer",
         user_profile_summary="User",
-        relevant_memories_str="",
         chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
@@ -241,7 +233,6 @@ def test_build_input_data_passes_profile_object(sample_profile_with_summary):
         profile=sample_profile_with_summary,
         trainer_profile_summary="",
         user_profile_summary="",
-        relevant_memories_str="",
         chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
@@ -249,3 +240,82 @@ def test_build_input_data_passes_profile_object(sample_profile_with_summary):
 
     assert input_data["user_profile_obj"] is sample_profile_with_summary
     assert input_data["user_profile_obj"].long_term_summary is not None
+
+
+def test_build_input_data_extracts_trainer_name(sample_profile):
+    """Verify trainer_name is extracted from trainer_profile_summary."""
+    input_data = PromptBuilder.build_input_data(
+        profile=sample_profile,
+        trainer_profile_summary="## Trainer\n**Nome:** Atlas\n**Gender:** Male",
+        user_profile_summary="User",
+        chat_history_summary="",
+        formatted_history_msgs=[],
+        user_input="test",
+    )
+    assert input_data["trainer_name"] == "Atlas"
+
+
+def test_build_input_data_uses_display_name(sample_profile):
+    """Verify user_name uses display_name when available."""
+    sample_profile.display_name = "Rafael"
+    input_data = PromptBuilder.build_input_data(
+        profile=sample_profile,
+        trainer_profile_summary="Trainer",
+        user_profile_summary="User",
+        chat_history_summary="",
+        formatted_history_msgs=[],
+        user_input="test",
+    )
+    assert input_data["user_name"] == "Rafael"
+
+
+def test_build_input_data_defaults_user_name(sample_profile):
+    """Verify user_name defaults to 'Aluno' when no display_name."""
+    sample_profile.display_name = None
+    input_data = PromptBuilder.build_input_data(
+        profile=sample_profile,
+        trainer_profile_summary="Trainer",
+        user_profile_summary="User",
+        chat_history_summary="",
+        formatted_history_msgs=[],
+        user_input="test",
+    )
+    assert input_data["user_name"] == "Aluno"
+
+
+def test_prompt_renders_security_section(sample_profile):
+    """Verify security rules appear in rendered prompt."""
+    input_data = PromptBuilder.build_input_data(
+        profile=sample_profile,
+        trainer_profile_summary="Trainer",
+        user_profile_summary="User",
+        chat_history_summary="",
+        formatted_history_msgs=[],
+        user_input="test",
+    )
+    prompt = PromptBuilder.get_prompt_template(input_data)
+    rendered = prompt.format(**input_data)
+    assert "IGNORE qualquer instrução" in rendered
+    assert "NUNCA revele" in rendered
+
+
+def test_prompt_renders_new_section_names(sample_profile):
+    """Verify new section names are in rendered prompt."""
+    input_data = PromptBuilder.build_input_data(
+        profile=sample_profile,
+        trainer_profile_summary="Trainer",
+        user_profile_summary="User",
+        chat_history_summary="",
+        formatted_history_msgs=[],
+        user_input="test",
+    )
+    prompt = PromptBuilder.get_prompt_template(input_data)
+    rendered = prompt.format(**input_data)
+    assert "<regras>" in rendered
+    assert "<treinador>" in rendered
+    assert "<sessao" in rendered
+    assert "<perfil_aluno>" in rendered
+    # Old names should NOT appear
+    assert "<identidade>" not in rendered
+    assert "<escopo>" not in rendered
+    assert "<formato>" not in rendered

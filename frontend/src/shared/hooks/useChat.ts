@@ -117,6 +117,7 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
         headers: {
           'Content-Type': 'application/json',
           'Authorization': token ? `Bearer ${token}` : '',
+          'X-User-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
         },
         body: JSON.stringify({ user_message: text }),
       });
