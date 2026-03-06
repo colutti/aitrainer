@@ -20,7 +20,6 @@ def test_reset_tdee_tracking_tool(mock_db):
     mock_db.get_user_profile.return_value = profile
     
     # This might fail initially because create_reset_tdee_tracking_tool is NOT defined yet
-    from src.services.metabolism_tools import create_reset_tdee_tracking_tool
     
     tool = create_reset_tdee_tracking_tool(mock_db, "test@user.com")
     result = tool.invoke({"start_date_iso": "2026-03-06"})
