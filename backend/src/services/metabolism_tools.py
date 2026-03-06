@@ -116,15 +116,17 @@ def create_update_tdee_params_tool(database: MongoDatabase, user_email: str):
         - 1.725 → Muito ativo (trabalho físico pesado, muito movimento)
         - 1.9   → Extremamente ativo (atleta, trabalho extenuante)
 
-        IMPORTANTE: Não ajuste por causa de treinos (já capturados pelo adaptativo).
-        Ajuste apenas quando o ESTILO DE VIDA base mudar.
+        IMPORTANTE: Caso o aluno tenha iniciado um novo plano de treinos INTENSO (ex: HIIT 5x/semana)
+        ou esteja reclamando que a meta hoje é MUITO BAIXA em relação ao que ele está 
+        gastando de fato agora, você PODE usar esta tool para subir levemente o fator e, 
+        OBRIGATORIAMENTE, usar a tool 'reset_tdee_tracking' junto para resetar o passado.
 
         Exemplos válidos:
           - "Comecei a trabalhar em escritório" → 1.2
           - "Mudei de escritório para trabalho de pé" → 1.55
 
         Exemplos inválidos:
-          - "Comecei a treinar 3x/semana" → NÃO ajustar (adaptativo já captura)
+          - "Comecei a treinar 3x/semana" → NÃO ajustar (mude apenas para mudanças muito bruscas e permanentes)
         """
         try:
             if not isinstance(activity_factor, (int, float)):
