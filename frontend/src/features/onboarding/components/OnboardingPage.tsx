@@ -48,9 +48,11 @@ export function OnboardingPage() {
       
       try {
         const res = await onboardingApi.validateToken(token);
-        if (res.valid) {
+        if (res.valid && res.email) {
           setEmail(res.email);
           setStep(1);
+        } else if (res.valid) {
+          setError(t('onboarding.tokens.invalid_response'));
         } else {
           setError(
             res.reason === 'expired' ? t('onboarding.tokens.expired') :
@@ -83,10 +85,13 @@ export function OnboardingPage() {
       
       try {
         await createUserWithEmailAndPassword(auth, email, password);
-      } catch (err: any) {
+      } catch (err: unknown) {
         // If user already exists in Firebase, we might continue if they are 
         // finishing an incomplete onboarding, but typically this is an error
-        if (err.code !== 'auth/email-already-in-use') {
+        const errorCode = err instanceof Error && 'code' in err 
+          ? (err as { code: string }).code 
+          : '';
+        if (errorCode !== 'auth/email-already-in-use') {
           throw err;
         }
         // If email-already-in-use, we proceed because the user might have been migrated 
@@ -110,10 +115,13 @@ export function OnboardingPage() {
       
       localStorage.setItem('auth_token', res.token);
       setStep(4);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Onboarding completion error:', err);
+      const errorCode = err instanceof Error && 'code' in err 
+        ? (err as { code: string }).code 
+        : '';
       setError(
-        err.code === 'auth/weak-password' ? t('onboarding.errors.weak_password') :
+        errorCode === 'auth/weak-password' ? t('onboarding.errors.weak_password') :
         t('onboarding.tokens.creation_error')
       );
       setLoading(false);

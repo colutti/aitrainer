@@ -48,9 +48,12 @@ export function LoginPage() {
       await login(data.email, data.password);
       notify.success(t('login.welcome_back'));
       await navigate('/');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
-      const message = error.code === 'auth/invalid-credential' 
+      const errorCode = error instanceof Error && 'code' in error 
+        ? (error as { code: string }).code 
+        : '';
+      const message = errorCode === 'auth/invalid-credential' 
         ? t('login.invalid_credentials') 
         : t('login.error_message');
       notify.error(message);
@@ -69,7 +72,7 @@ export function LoginPage() {
       const { sendPasswordResetEmail } = await import('firebase/auth');
       await sendPasswordResetEmail(auth, email);
       notify.success(t('login.password_reset_sent'));
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Password reset error:', error);
       notify.error(t('login.error_message'));
     }

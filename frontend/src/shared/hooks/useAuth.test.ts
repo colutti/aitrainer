@@ -1,4 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
 import { httpClient } from '../api/http-client';
@@ -32,7 +33,6 @@ vi.mock('firebase/auth', () => ({
   OAuthProvider: vi.fn(),
 }));
 
-import { signInWithEmailAndPassword } from 'firebase/auth';
 
 // Mock localStorage with actual storage
 const mockStorage = new Map();
