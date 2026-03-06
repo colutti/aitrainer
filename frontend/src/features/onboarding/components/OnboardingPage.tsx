@@ -37,6 +37,8 @@ export function OnboardingPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  const [email, setEmail] = useState('');
+  
   useEffect(() => {
     async function validate() {
       if (!token) {
@@ -47,6 +49,7 @@ export function OnboardingPage() {
       try {
         const res = await onboardingApi.validateToken(token);
         if (res.valid) {
+          setEmail(res.email);
           setStep(1);
         } else {
           setError(
@@ -71,12 +74,28 @@ export function OnboardingPage() {
   };
 
   const handleSubmit = async () => {
-    if (!token) return;
+    if (!token || !email) return;
     setLoading(true);
     try {
+      // Step 1: Create user in Firebase if not exists (or handle error)
+      const { auth } = await import('../../../features/auth/firebase');
+      const { createUserWithEmailAndPassword } = await import('firebase/auth');
+      
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+      } catch (err: any) {
+        // If user already exists in Firebase, we might continue if they are 
+        // finishing an incomplete onboarding, but typically this is an error
+        if (err.code !== 'auth/email-already-in-use') {
+          throw err;
+        }
+        // If email-already-in-use, we proceed because the user might have been migrated 
+        // or created in a previous attempt that failed to save the profile.
+      }
+
       const payload: OnboardingPayload = {
         token,
-        password,
+        password, // Still sent but ignored or used as legacy by backend
         gender: formData.gender ?? t('onboarding.genders.male'),
         age: Number(formData.age),
         weight: Number(formData.weight),
@@ -91,8 +110,12 @@ export function OnboardingPage() {
       
       localStorage.setItem('auth_token', res.token);
       setStep(4);
-    } catch {
-      setError(t('onboarding.tokens.creation_error'));
+    } catch (err: any) {
+      console.error('Onboarding completion error:', err);
+      setError(
+        err.code === 'auth/weak-password' ? t('onboarding.errors.weak_password') :
+        t('onboarding.tokens.creation_error')
+      );
       setLoading(false);
     }
   };

@@ -17,6 +17,15 @@ vi.mock('../../shared/hooks/useNotification', () => ({
   useNotificationStore: vi.fn(),
 }));
 
+// Mock Firebase
+vi.mock('./firebase', () => ({
+  auth: {},
+}));
+
+vi.mock('firebase/auth', () => ({
+  sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
+}));
+
 describe('LoginPage', () => {
   const mockNotification = {
     success: vi.fn(),

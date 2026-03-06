@@ -12,6 +12,19 @@ vi.mock('../api/onboarding-api', () => ({
   },
 }));
 
+// Mock Firebase
+vi.mock('../../../features/auth/firebase', () => ({
+  auth: {},
+}));
+
+vi.mock('firebase/auth', () => ({
+  createUserWithEmailAndPassword: vi.fn().mockResolvedValue({
+    user: {
+      getIdToken: vi.fn().mockResolvedValue('fake-firebase-token'),
+    },
+  }),
+}));
+
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
