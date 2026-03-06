@@ -921,3 +921,28 @@ def test_coaching_target_floor_1000_kcal(service, mock_db):
     # ideal = 1500 - (0.5 * 1100) = 1500 - 550 = 950
     # Floor: max(1000, 950) = 1000
     assert result["daily_target"] >= 1000
+
+def test_compute_tdee_from_observations_with_start_date(service):
+    # Setup observations: 10 days of 2000 kcal, then user resets and eats 2500 kcal
+    obs = [
+        (date(2026, 3, i), 2000.0) for i in range(1, 11)
+    ] + [
+        (date(2026, 3, i), 2500.0) for i in range(11, 16)
+    ]
+    
+    prior_tdee = 2500.0 # BMR * new activity factor
+    
+    # Without start date, EMA averages everything, pulling it down
+    tdee_no_reset = service._compute_tdee_from_observations(
+        observations=obs, prior_tdee=prior_tdee
+    )
+    
+    # With start date on the 11th, it should completely ignore days 1-10
+    tdee_with_reset = service._compute_tdee_from_observations(
+        observations=obs, prior_tdee=prior_tdee, start_date=date(2026, 3, 11)
+    )
+    
+    # The reset TDEE should be exactly 2500 because it only saw 2500 kcal days
+    # starting from a 2500 prior. The no_reset will be dragged down by the 2000s.
+    assert tdee_with_reset > tdee_no_reset
+    assert pytest.approx(tdee_with_reset, 1) == 2500.0

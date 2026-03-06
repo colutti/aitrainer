@@ -349,10 +349,16 @@ class AdaptiveTDEEService:
         return observations
 
     def _compute_tdee_from_observations(
-        self, observations: list[tuple[date, float]], prior_tdee: float, span: int = 21
+        self,
+        observations: list[tuple[date, float]],
+        prior_tdee: float,
+        span: int = 21,
+        start_date: date | None = None,
     ) -> float:
         """
         Computes TDEE from daily observations using EMA with prior.
+        If start_date is provided, observations before it are ignored,
+        effectively acting as a soft-reset of the adaptive algorithm.
 
         Algorithm:
         1. Initialize EMA with prior_tdee (acting as a strong prior/anchor)
@@ -366,12 +372,21 @@ class AdaptiveTDEEService:
             observations: List of (date, tdee_obs) sorted by date
             prior_tdee: Formula-based TDEE estimate (fallback/anchor value)
             span: EMA window (default 21 days)
+            start_date: Optional date to start the TDEE calculation from.
 
         Returns:
             Smoothed TDEE estimate
         """
         if not observations:
             return prior_tdee
+
+        # Apply soft cut
+        if start_date:
+            valid_obs = [obs for obs in observations if obs[0] >= start_date]
+            if not valid_obs:
+                # If there are no observations after the reset, return the prior
+                return prior_tdee
+            observations = valid_obs
 
         alpha = 2 / (span + 1)
         ema_value = prior_tdee
@@ -412,6 +427,15 @@ class AdaptiveTDEEService:
 
         # Step 2: Calculate formula TDEE as prior/fallback
         profile = self.db.get_user_profile(user_email)
+        tdee_start_date_str = getattr(profile, "tdee_start_date", None)
+        tdee_start_date = None
+        if tdee_start_date_str:
+            try:
+                from datetime import date as date_obj
+
+                tdee_start_date = date_obj.fromisoformat(tdee_start_date_str)
+            except (ValueError, TypeError):
+                pass
         latest_weight = (
             sorted(weight_logs, key=lambda x: x.date)[-1].weight_kg
             if weight_logs
@@ -512,7 +536,10 @@ class AdaptiveTDEEService:
         # Step 11: Compute TDEE from observations (Task 3)
         if observations:
             tdee = self._compute_tdee_from_observations(
-                observations, formula_tdee, span=self.TDEE_OBS_EMA_SPAN
+                observations,
+                formula_tdee,
+                span=self.TDEE_OBS_EMA_SPAN,
+                start_date=tdee_start_date,
             )
         else:
             tdee = formula_tdee
