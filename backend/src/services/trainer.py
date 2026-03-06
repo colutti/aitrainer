@@ -29,6 +29,7 @@ from src.services.composition_tools import (
 from src.services.metabolism_tools import (
     create_get_metabolism_tool,
     create_update_tdee_params_tool,
+    create_reset_tdee_tracking_tool,
 )
 from src.services.memory_tools import (
     create_save_memory_tool,
@@ -566,6 +567,9 @@ class AITrainerBrain:
         update_tdee_params_tool = create_update_tdee_params_tool(
             self._database, user_email
         )
+        reset_tdee_tracking_tool = create_reset_tdee_tracking_tool(
+            self._database, user_email
+        )
 
         # Event management tools (persistent agenda for AI)
         create_event_tool = create_create_event_tool(self._database.database, user_email)
@@ -592,6 +596,7 @@ class AITrainerBrain:
             update_user_goal_tool,
             get_metabolism_tool,
             update_tdee_params_tool,
+            reset_tdee_tracking_tool,
             save_memory_tool,
             search_memory_tool,
             list_raw_memories_tool,
