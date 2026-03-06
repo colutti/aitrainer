@@ -53,39 +53,37 @@ def sample_user_profile():
 
 # Test: POST /login - Success Case
 def test_login_success():
-    """Test successful user login with valid credentials."""
-    with patch("src.api.endpoints.user.user_login") as mock_login:
-        mock_login.return_value = "mock_jwt_token"
+    """Test successful user login with valid Firebase token."""
+    with patch("src.api.endpoints.user.verify_id_token") as mock_verify:
+        mock_verify.return_value = {"email": "test@example.com"}
 
         payload = {
-            "email": "test@example.com",
-            "password": "correct_password"
+            "token": "valid_firebase_token"
         }
 
         response = client.post("/user/login", json=payload)
 
         assert response.status_code == 200
         data = response.json()
-        assert data["token"] == "mock_jwt_token"
-        mock_login.assert_called_once_with("test@example.com", "correct_password")
+        assert "token" in data
+        mock_verify.assert_called_once_with("valid_firebase_token")
 
 
-# Test: POST /login - Invalid Credentials
-def test_login_invalid_credentials():
-    """Test login failure with invalid credentials."""
-    with patch("src.api.endpoints.user.user_login") as mock_login:
-        mock_login.side_effect = ValueError("Invalid credentials")
+# Test: POST /login - Invalid Token
+def test_login_invalid_token():
+    """Test login failure with invalid Firebase token."""
+    with patch("src.api.endpoints.user.verify_id_token") as mock_verify:
+        mock_verify.side_effect = ValueError("Invalid token")
 
         payload = {
-            "email": "test@example.com",
-            "password": "wrong_password"
+            "token": "invalid_firebase_token"
         }
 
         response = client.post("/user/login", json=payload)
 
         assert response.status_code == 401
         data = response.json()
-        assert "Invalid credentials" in data["detail"]
+        assert "Invalid token" in data["detail"]
 
 
 # Test: POST /login - Missing Email

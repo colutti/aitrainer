@@ -13,7 +13,7 @@ from src.core.deps import get_ai_trainer_brain
 from src.core.logs import logger
 from src.core.config import settings
 from src.core.limiter import limiter, RATE_LIMITING_ENABLED
-from src.api.models.auth import LoginRequest
+from src.api.models.auth import FirebaseLoginRequest
 from src.api.models.user_profile import UserProfile, UserProfileInput
 from src.services.trainer import AITrainerBrain
 
@@ -31,19 +31,104 @@ def rate_limit_login(func):
     return func
 
 
+def verify_id_token(token: str) -> dict:
+    """
+    Verifies the Firebase ID token and returns the decoded payload.
+    Separated for easier testing.
+    """
+    import firebase_admin.auth
+    return firebase_admin.auth.verify_id_token(token)
+
+
 @router.post("/login")
 @rate_limit_login
-def login(request: Request, data: LoginRequest) -> dict:  # pylint: disable=unused-argument
+def login(request: Request, data: FirebaseLoginRequest, brain: AITrainerBrainDep) -> dict:  # pylint: disable=unused-argument
     """
-    Authenticates a user with the provided email and password.
+    Authenticates a user with a Firebase ID token.
+    This replaces both conventional and social login.
     """
+    from datetime import date
+    from src.api.models.trainer_profile import TrainerProfile
+    from src.api.models.weight_log import WeightLog
+    from src.core.deps import get_mongo_database
+    import firebase_admin.auth
+
     try:
-        token = user_login(data.email, data.password)
-        logger.info("User logged in successfully: %s", data.email)
+        # Verify the Firebase ID token
+        decoded_token = verify_id_token(data.token)
+        email = decoded_token.get("email")
+
+        if not email:
+            raise HTTPException(status_code=400, detail="Token does not contain an email")
+
+        display_name = decoded_token.get("name", "")
+        photo_base64 = decoded_token.get("picture", "")
+
+        # Check if user already exists
+        existing_profile = brain.get_user_profile(email)
+
+        if existing_profile:
+            # Update missing identity fields
+            updates = {}
+            if not existing_profile.display_name and display_name:
+                updates["display_name"] = display_name
+            if not existing_profile.photo_base64 and photo_base64:
+                updates["photo_base64"] = photo_base64
+
+            if updates:
+                brain.update_user_profile_fields(email, updates)
+
+            logger.info("User logged in (existing): %s", email)
+        else:
+            # Create a new user with default free plan settings
+            db = get_mongo_database()
+            user_profile = UserProfile(
+                email=email,
+                role="user",
+                gender="Masculino",
+                age=30,
+                weight=70.0,
+                height=170,
+                goal_type="maintain",
+                subscription_plan="Free",
+                display_name=display_name,
+                photo_base64=photo_base64,
+            )
+
+            trainer_profile = TrainerProfile(
+                user_email=email, trainer_type="atlas"
+            )
+            db.save_user_profile(user_profile)
+            db.save_trainer_profile(trainer_profile)
+
+            initial_log = WeightLog(
+                user_email=email,
+                date=date.today(),
+                weight_kg=70.0,
+                trend_weight=70.0,
+            )
+            db.weight.save_log(initial_log)
+
+            logger.info("User logged in (newly created): %s", email)
+
+        # Return standard JWT token
+        token = create_token(email)
         return {"token": token}
-    except ValueError as exc:
-        logger.info("Failed login attempt for email: %s", data.email)
-        raise HTTPException(status_code=401, detail="Invalid credentials") from exc
+
+    except (firebase_admin.auth.InvalidIdTokenError, ValueError) as exc:
+        logger.warning("Invalid Firebase ID token provided: %s", exc)
+        raise HTTPException(status_code=401, detail="Invalid token") from exc
+    except Exception as exc:
+        logger.error("Error during login: %s", exc)
+        raise HTTPException(status_code=500, detail="Internal server error") from exc
+
+
+@router.post("/social-login")
+@rate_limit_login
+def social_login(request: Request, data: FirebaseLoginRequest, brain: AITrainerBrainDep) -> dict:
+    """Legacy alias for /login using tokens."""
+    return login(request, data, brain)
+
 
 
 @router.get("/profile")
