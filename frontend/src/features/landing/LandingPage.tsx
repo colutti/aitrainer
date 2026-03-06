@@ -1,4 +1,5 @@
 import { Button } from '@shared/components/ui/Button';
+import { LanguageSelector } from '@shared/components/ui/LanguageSelector';
 import {
   Brain,
   ChevronRight,
@@ -14,9 +15,14 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
+import { AnimatedCounters } from './AnimatedCounters';
 import { ChatCarousel } from './ChatCarousel';
+import { ComparisonTable } from './ComparisonTable';
+import { FAQAccordion } from './FAQAccordion';
 import { HeroProductPreview } from './HeroProductPreview';
+import { IntegrationLogos } from './IntegrationLogos';
 import { ProductShowcase } from './ProductShowcase';
+import { StickyMobileCTA } from './StickyMobileCTA';
 import { TrainerShowcase } from './TrainerShowcase';
 
 /**
@@ -106,6 +112,7 @@ const LandingPage = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
+            <LanguageSelector />
             <Button
               onClick={() => { void navigate('/login'); }}
               variant="secondary"
@@ -147,6 +154,10 @@ const LandingPage = () => {
               </a>
             ))}
             <div className="h-px bg-border my-2" />
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-text-secondary">{t('settings.language')}</span>
+              <LanguageSelector />
+            </div>
             <Button
               onClick={() => { void navigate('/login'); }}
               variant="primary"
@@ -159,7 +170,7 @@ const LandingPage = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-4 sm:px-6 lg:px-8 z-10 overflow-hidden">
+      <section className="relative pt-32 pb-12 lg:pt-44 lg:pb-20 px-4 sm:px-6 lg:px-8 z-10 overflow-hidden">
         <div className="max-w-7xl mx-auto grid lg:grid-cols-[55%_45%] gap-12 items-center">
           {/* Left: Text content */}
           <div>
@@ -199,9 +210,18 @@ const LandingPage = () => {
               </Button>
             </div>
 
-            {/* Trusted elements */}
-            <div className="mt-12 flex flex-wrap items-center gap-6 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-               {/* Could add mini icons of platforms like Apple Health, Google Fit, etc */}
+            {/* Trust Badges */}
+            <div className="mt-6 flex flex-wrap gap-4">
+              <span className="flex items-center gap-1.5 text-sm text-text-secondary">
+                {t('landing.trust_badge_free')}
+              </span>
+              <span className="flex items-center gap-1.5 text-sm text-text-secondary">
+                {t('landing.trust_badge_card')}
+              </span>
+            </div>
+
+            {/* Trusted elements - Placeholder for future social proof */}
+            <div className="mt-8 empty:hidden">
             </div>
           </div>
 
@@ -214,6 +234,9 @@ const LandingPage = () => {
         {/* Abstract shape decoration */}
         <div className="absolute top-32 right-0 w-96 h-96 bg-primary/6 rounded-full blur-[100px] -z-10" />
       </section>
+
+      {/* Animated Counters */}
+      <AnimatedCounters />
 
       {/* Section divider */}
       <div className="w-full h-px bg-linear-to-r from-transparent via-primary/20 to-transparent" />
@@ -242,8 +265,14 @@ const LandingPage = () => {
       {/* Section divider */}
       <div className="w-full h-px bg-linear-to-r from-transparent via-primary/20 to-transparent" />
 
+      {/* Comparison Table */}
+      <ComparisonTable />
+
+      {/* Section divider */}
+      <div className="w-full h-px bg-linear-to-r from-transparent via-primary/20 to-transparent" />
+
       {/* Diferenciais Section — Bento Grid */}
-      <section id="diferenciais" className="py-20 px-4 sm:px-6 lg:px-8 relative z-10">
+      <section id="diferenciais" className="py-12 md:py-16 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="font-display text-4xl sm:text-5xl font-bold text-white mb-4">
@@ -254,7 +283,6 @@ const LandingPage = () => {
             </p>
           </div>
 
-          {/* Grid uniforme de 3 colunas */}
           <div className="grid md:grid-cols-3 gap-4">
             {[
               {
@@ -361,14 +389,14 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* Integration Logos */}
+      <IntegrationLogos />
+
       {/* Section divider */}
       <div className="w-full h-px bg-linear-to-r from-transparent via-primary/20 to-transparent" />
 
       {/* Como Funciona Section */}
-      <section
-        id="como-funciona"
-        className="py-20 px-4 sm:px-6 lg:px-8 relative z-10"
-      >
+      <section id="como-funciona" className="py-12 md:py-16 px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="font-display text-4xl sm:text-5xl font-bold text-white mb-4">
@@ -405,7 +433,7 @@ const LandingPage = () => {
       </section>
 
       {/* Planos Section */}
-      <section id="planos" className="py-20 px-4 sm:px-6 lg:px-8">
+      <section id="planos" className="py-12 md:py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="font-display text-4xl sm:text-5xl font-bold text-white mb-4">
@@ -519,8 +547,11 @@ const LandingPage = () => {
       {/* Section divider */}
       <div className="w-full h-px bg-linear-to-r from-transparent via-primary/20 to-transparent" />
 
+      {/* FAQ Accordion */}
+      <FAQAccordion />
+
       {/* Final CTA */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 relative z-10">
+      <section className="py-16 px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Glow */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-[500px] h-[300px] bg-linear-to-r from-primary to-accent opacity-5 rounded-full blur-3xl" />
@@ -548,6 +579,9 @@ const LandingPage = () => {
           </p>
         </div>
       </section>
+
+      {/* Sticky Mobile CTA */}
+      <StickyMobileCTA />
 
       {/* Footer */}
       <footer className="border-t border-border bg-dark-bg/50 py-8 px-4 sm:px-6 lg:px-8 relative z-10">

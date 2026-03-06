@@ -7,7 +7,7 @@ AI Personal Trainer - Full-stack web application for AI-powered fitness coaching
 - Frontend: React 19 + TypeScript + Vite 6 + TailwindCSS v4
 - AI/LLM: LangChain + LangGraph + Mem0 (memory management)
 - AI Providers: Google Gemini (primary), OpenAI, Ollama (local)
-- Container: Docker/Podman + podman-compose
+- Container: Podman + podman-compose
 - Testing: Pytest (Backend), Vitest (Frontend), Playwright (E2E)
 
 ## Development Methodology
@@ -30,6 +30,9 @@ cd frontend && npm run typecheck
 
 # Combined frontend check (lint + typecheck + tests)
 cd frontend && npm run check
+
+# Security: SAST + SCA + Secret Scanning
+make security-check
 ```
 
 These checks must pass with zero errors and zero warnings before considering any task complete.

@@ -38,6 +38,13 @@ COPY --from=builder /opt/venv /opt/venv
 # Copy source code
 COPY src/ ./src/
 
+# Create a non-privileged user and group
+RUN groupadd -r app && useradd -r -g app -s /sbin/nologin app
+RUN mkdir -p /home/app && chown app:app /home/app
+RUN chown -R app:app /app
+
+USER app
+
 EXPOSE 8000
 
 CMD ["sh", "-c", "gunicorn src.main:app --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000}"]

@@ -8,6 +8,7 @@ import { z } from 'zod';
 
 import { Button } from '../../shared/components/ui/Button';
 import { Input } from '../../shared/components/ui/Input';
+import { LanguageSelector } from '../../shared/components/ui/LanguageSelector';
 import { useAuthStore } from '../../shared/hooks/useAuth';
 import { useNotificationStore } from '../../shared/hooks/useNotification';
 
@@ -62,7 +63,7 @@ export function LoginPage() {
           alt="Professional Fitness Experience" 
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-[10s] group-hover:scale-110"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-dark-bg via-dark-bg/20 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-r from-dark-bg via-dark-bg/20 to-transparent" />
         <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
         
         {/* Brand Overlay */}
@@ -93,7 +94,10 @@ export function LoginPage() {
 
       {/* Right Side: Login Form */}
       <div className="w-full lg:w-2/5 flex items-center justify-center p-8 bg-dark-bg relative z-10 border-l border-white/5 shadow-[-20px_0_50px_rgba(0,0,0,0.5)]">
-        <div className="w-full max-w-md space-y-10 animate-in fade-in slide-in-from-right duration-700 bg-white/[0.02] p-10 rounded-[2.5rem] border border-white/5 backdrop-blur-xl">
+        <div className="w-full max-w-md space-y-10 animate-in fade-in slide-in-from-right duration-700 bg-white/2 p-10 rounded-[2.5rem] border border-white/5 backdrop-blur-xl relative">
+          <div className="absolute top-6 right-6 lg:top-8 lg:right-8">
+            <LanguageSelector />
+          </div>
           <div className="lg:hidden text-center mb-10">
             <img src="/brand_icon_final.png" alt="FityQ" className="h-36 w-auto mx-auto drop-shadow-2xl mb-4 brightness-110" />
             <h1 className="text-3xl font-bold text-white tracking-widest">FityQ</h1>
@@ -147,7 +151,7 @@ export function LoginPage() {
               type="submit"
               fullWidth
               isLoading={isLoading}
-              className="h-14 text-xl font-bold bg-gradient-to-r from-gradient-start to-gradient-end shadow-orange hover:shadow-orange/40 transition-all rounded-xl"
+              className="h-14 text-xl font-bold bg-linear-to-r from-gradient-start to-gradient-end shadow-orange hover:shadow-orange/40 transition-all rounded-xl"
             >
               {t('login.submit')}
               {!isLoading && <LogIn className="ml-3" size={22} />}

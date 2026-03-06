@@ -42,9 +42,7 @@ class InviteRepository(BaseRepository):
             DuplicateKeyError: If token already exists.
         """
         self.collection.insert_one(invite.model_dump())
-        self.logger.info(
-            "Created invite for email: %s, token: %s", invite.email, invite.token
-        )
+        self.logger.info("Created invite for user")
 
     def get_by_token(self, token: str) -> Optional[Invite]:
         """
@@ -58,7 +56,7 @@ class InviteRepository(BaseRepository):
         """
         invite_data = self.collection.find_one({"token": token})
         if not invite_data:
-            self.logger.debug("Invite not found for token: %s", token)
+            self.logger.debug("Invite not found for token")
             return None
         return Invite(**invite_data)
 

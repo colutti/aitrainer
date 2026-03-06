@@ -10,7 +10,7 @@ GCP_REGISTRY=$(GCP_REGION)-docker.pkg.dev/$(GCP_PROJECT_ID)/$(GCP_REPO)
 # 3. Joins with commas
 GCP_ENV_VARS=$(shell grep -v '^\#' backend/.env.prod | grep -v '^$$' | sed 's/"//g' | paste -sd "," -)
 
-.PHONY: up down build restart logs init-db api front front-admin api-admin admin clean-pod db db-down db-logs debug-rebuild debug-rebuild-admin test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov e2e e2e-ui e2e-report ci-test ci-fast gcp-full gcp-build gcp-push gcp-deploy gcp-list gcp-setup-telegram gcp-hosting
+.PHONY: up down build restart logs init-db api front front-admin api-admin admin clean-pod db db-down db-logs debug-rebuild debug-rebuild-admin test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov e2e e2e-ui e2e-report ci-test ci-fast gcp-full gcp-build gcp-push gcp-deploy gcp-list gcp-setup-telegram gcp-hosting security-sast security-sca security-check
 
 up:
 	podman-compose up -d
@@ -185,6 +185,23 @@ ci-fast: test-backend test-frontend
 ## - Frontend: unit tests + build + playwright
 ci-test: test-backend test-frontend e2e
 	@echo "✅ CI Full Test Suite Passed!"
+
+# -----------------------------------------------------------------------------
+# Security Scanning (ephemeral containers)
+# -----------------------------------------------------------------------------
+
+security-sast:
+	@echo "🔍 Running SAST (Semgrep)..."
+	podman run --rm -v $$(pwd):/src:ro docker.io/semgrep/semgrep:latest \
+		semgrep scan --config auto --error --severity ERROR --severity WARNING /src
+
+security-sca:
+	@echo "🔍 Running SCA + Secret Scanning (Trivy)..."
+	podman run --rm -v $$(pwd):/src:ro docker.io/aquasec/trivy:latest \
+		fs --exit-code 1 --severity HIGH,CRITICAL --scanners vuln,secret /src
+
+security-check: security-sast security-sca
+	@echo "✅ Security checks passed!"
 
 # -----------------------------------------------------------------------------
 # GCP Production Deployment (Google Cloud Run)

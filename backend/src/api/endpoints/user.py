@@ -200,7 +200,7 @@ def refresh(user_email: CurrentUser) -> dict[str, str]:
     ensuring active users are never disconnected due to token expiry.
     """
     new_token = create_token(user_email)
-    logger.info("Token refreshed for user: %s", user_email)
+    logger.info("Token refreshed for user")
     return {"token": new_token}
 
 

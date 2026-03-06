@@ -83,7 +83,7 @@ def verify_token(token: str = Depends(oauth2_scheme)) -> str:
         return str(email)
 
     except jwt.InvalidTokenError as exception:
-        logger.warning("Invalid JWT token provided: %s", exception)
+        logger.warning("Invalid JWT token provided")
         raise credentials_exception from exception
 
 

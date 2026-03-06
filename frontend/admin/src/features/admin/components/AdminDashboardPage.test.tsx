@@ -1,9 +1,34 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
+import { Button } from '@shared/components/ui/Button';
+import { StatsCard } from '@shared/components/ui/StatsCard';
 import { adminApi } from '../api/admin-api';
 
 import { AdminDashboardPage } from './AdminDashboardPage';
+
+// Mock components from shared to avoid i18next issues in test environment
+vi.mock('@shared/components/ui/Button', () => ({
+  Button: ({ children, onClick, disabled }: any) => (
+    <button onClick={onClick} disabled={disabled}>{children}</button>
+  ),
+}));
+
+vi.mock('@shared/components/ui/StatsCard', () => ({
+  StatsCard: ({ title, value }: any) => (
+    <div data-testid="stats-card">
+      <div>{title}</div>
+      <div>{value}</div>
+    </div>
+  ),
+}));
+
+// Mock react-i18next
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
+}));
 
 // Mock adminApi
 vi.mock('../api/admin-api', () => ({

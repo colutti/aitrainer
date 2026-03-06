@@ -82,3 +82,7 @@ artifacts/superpowers/
 
 # Git Worktrees
 .worktrees/tmp/
+
+# Security scan reports
+trivy-report.*
+semgrep-report.*

@@ -181,7 +181,7 @@
       "steps": [
         {
           "title": "Conecte seus Dados",
-          "description": "Importe seu histórico do Hevy, MyFitnessPal ou Apple Health."
+          "description": "Importe seu histórico do Hevy, MyFitnessPal ou Zepp Life."
         },
         {
           "title": "Escolha seu Mentor",
@@ -202,10 +202,89 @@
     "footer": {
       "rights": "© {{year}} FityQ. Todos os direitos reservados."
     },
+    "cta_trainers": "Escolha seu treinador agora",
+    "cta_product": "Experimente o FityQ grátis",
+    "trust_badge_free": "✓ Grátis para começar",
+    "trust_badge_card": "✓ Sem cartão de crédito",
+    "counters": {
+      "trainers": "Treinadores IA",
+      "availability": "Disponibilidade",
+      "integrations": "Integrações",
+      "memory": "Memória",
+      "availability_val": "24/7",
+      "integrations_val": "3+",
+      "memory_val": "∞"
+    },
+    "comparison": {
+      "title": "Compare e Escolha a Melhor Opção para Você",
+      "subtitle": "Alcance seus objetivos com eficiência e personalização.",
+      "headers": {
+        "fityq": "FityQ AI",
+        "personal": "Personal Trainer Tradicional",
+        "generic": "App Genérico"
+      },
+      "rows": {
+        "price": "Preço",
+        "availability": "Disponibilidade",
+        "memory": "Memória",
+        "personalization": "Personalização",
+        "integrations": "Integrações"
+      },
+      "values": {
+        "free": "Grátis",
+        "personal_price": "R$150-300/mês",
+        "generic_price": "Grátis-R$49",
+        "247": "24/7",
+        "scheduled": "Horário marcado",
+        "remembers_all": "Lembra tudo",
+        "depends": "Depende",
+        "doesnt_remember": "Não lembra",
+        "adaptive_ai": "IA adaptativa",
+        "high": "Alta",
+        "generic": "Genérica",
+        "all_apps": "Hevy, MFP, Zepp",
+        "none": "Nenhuma",
+        "limited": "Limitadas"
+      }
+    },
+    "integrations_section": {
+      "title": "Conecte suas ferramentas favoritas",
+      "subtitle": "O FityQ se integra aos apps que você já usa para centralizar seus dados.",
+      "hevy_desc": "Importe seus treinos automaticamente do Hevy.",
+      "mfp_desc": "Sincronize sua nutrição e macros do MyFitnessPal.",
+      "zepp_desc": "Conecte seus dados de saúde e sono do Zepp Life.",
+      "coming_soon": "Em breve"
+    },
+    "faq": {
+      "title": "Perguntas Frequentes",
+      "items": [
+        {
+          "q": "O FityQ é realmente grátis?",
+          "a": "Sim! Você pode começar gratuitamente com 20 mensagens para testar a experiência completa com qualquer treinador."
+        },
+        {
+          "q": "Como a IA funciona?",
+          "a": "Nossa IA analisa seus logs de treino, dieta e peso para entender seu metabolismo único e ajustar suas metas em tempo real."
+        },
+        {
+          "q": "Meus dados estão seguros?",
+          "a": "Totalmente. Seus dados são criptografados e usados apenas para personalizar sua experiência de treinamento."
+        },
+        {
+          "q": "Posso trocar de treinador?",
+          "a": "Sim, você pode trocar de treinador a qualquer momento para experimentar diferentes estilos de motivação e conhecimento."
+        },
+        {
+          "q": "Quais integrações estão disponíveis?",
+          "a": "Atualmente suportamos Hevy, MyFitnessPal e Zepp Life, com mais integrações a caminho."
+        }
+      ]
+    },
+    "sticky_cta": "Começar Grátis",
     "chat_carousel": {
       "title": "Converse com Seu Treinador Agora",
       "subtitle": "Cada treinador tem personalidade, expertise e um jeito único de te guiar.",
-      "cta_hint": "Cada conversa mostra a IA se adaptando ao seu contexto. Seus dados alimentam inteligência cada vez melhor."
+      "cta_hint": ""
     },
     "conversations": {
       "sofia": {
@@ -497,7 +576,7 @@
     "password_label": "Senha",
     "password_placeholder": "Sua senha secreta",
     "forgot_password": "Esqueceu a senha?",
-    "submit": "Entrar na Plataforma",
+    "submit": "Entrar",
     "marketing_title": "Eleve sua Performance com Inteligência Artificial.",
     "marketing_subtitle": "Acompanhamento completo de dieta, treinos e metabolismo em uma única plataforma premium.",
     "welcome_back": "Bem-vindo de volta!",

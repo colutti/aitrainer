@@ -1,4 +1,8 @@
+import { Button } from '@shared/components/ui/Button';
+import { ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+
 
 /**
  * ProductShowcase
@@ -7,8 +11,10 @@ import { useTranslation } from 'react-i18next';
  */
 export const ProductShowcase = (): React.ReactNode => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8">
+    <section className="py-12 md:py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="font-display text-4xl sm:text-5xl font-bold text-white mb-4">
@@ -194,6 +200,18 @@ export const ProductShowcase = (): React.ReactNode => {
 
         </div>
 
+        {/* CTA Button */}
+        <div className="mt-16 flex justify-center">
+          <Button
+            onClick={() => { void navigate('/login'); }}
+            variant="secondary"
+            size="lg"
+            className="group"
+          >
+            {t('landing.cta_product')}
+            <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </Button>
+        </div>
       </div>
     </section>
   );

@@ -177,7 +177,7 @@
       "steps": [
         {
           "title": "Conecta tus Datos",
-          "description": "Importa tu historial de Hevy, MyFitnessPal o Apple Health."
+          "description": "Importa tu historial de Hevy, MyFitnessPal o Zepp Life."
         },
         {
           "title": "Elige tu Mentor",
@@ -198,21 +198,99 @@
     "footer": {
       "rights": "© {{year}} FityQ. Todos los derechos reservados."
     },
+    "cta_trainers": "Elige a tu entrenador ahora",
+    "cta_product": "Prueba FityQ gratis",
+    "trust_badge_free": "✓ Gratis para empezar",
+    "trust_badge_card": "✓ Sin tarjeta de crédito",
+    "counters": {
+      "trainers": "Entrenadores IA",
+      "availability": "Disponibilidad",
+      "integrations": "Integraciones",
+      "memory": "Memoria",
+      "availability_val": "24/7",
+      "integrations_val": "3+",
+      "memory_val": "∞"
+    },
+    "comparison": {
+      "title": "Compara y Elige la Mejor Opción para Ti",
+      "subtitle": "Alcanza tus objetivos con eficiencia y personalización.",
+      "headers": {
+        "fityq": "FityQ AI",
+        "personal": "Entrenador Personal Tradicional",
+        "generic": "App Genérica"
+      },
+      "rows": {
+        "price": "Precio",
+        "availability": "Disponibilidad",
+        "memory": "Memoria",
+        "personalization": "Personalización",
+        "integrations": "Integraciones"
+      },
+      "values": {
+        "free": "Gratis",
+        "personal_price": "€150-300/mes",
+        "generic_price": "Gratis-€10",
+        "247": "24/7",
+        "scheduled": "Horario marcado",
+        "remembers_all": "Lo recuerda todo",
+        "depends": "Depende",
+        "doesnt_remember": "No recuerda",
+        "adaptive_ai": "IA adaptativa",
+        "high": "Alta",
+        "generic": "Genérica",
+        "all_apps": "Hevy, MFP, Zepp",
+        "none": "Ninguna",
+        "limited": "Limitadas"
+      }
+    },
+    "integrations_section": {
+      "title": "Conecta tus herramientas favoritas",
+      "subtitle": "FityQ se integra con las aplicaciones que ya usas para centralizar tus datos.",
+      "hevy_desc": "Importa tus entrenos automáticamente de Hevy.",
+      "mfp_desc": "Sincronice tu nutrición y macros de MyFitnessPal.",
+      "zepp_desc": "Conecta tus datos de salud y sueño de Zepp Life.",
+      "coming_soon": "Próximamente"
+    },
+    "faq": {
+      "title": "Preguntas Frecuentes",
+      "items": [
+        {
+          "q": "¿FityQ es realmente gratis?",
+          "a": "¡Sí! Puedes empezar gratis con 20 mensajes para probar la experiencia completa con cualquier entrenador."
+        },
+        {
+          "q": "¿Cómo funciona la IA?",
+          "a": "Nuestra IA analiza tus registros de entreno, dieta y peso para entender tu metabolismo único y ajustar tus metas en tiempo real."
+        },
+        {
+          "q": "¿Mis datos están seguros?",
+          "a": "Totalmente. Tus datos están encriptados y se usan solo para personalizar tu experiencia de entrenamiento."
+        },
+        {
+          "q": "¿Puedo cambiar de entrenador?",
+          "a": "Sí, puedes cambiar de entrenador en cualquier momento para experimentar diferentes estilos de motivación y conocimiento."
+        },
+        {
+          "q": "¿Qué integraciones están disponibles?",
+          "a": "Actualmente soportamos Hevy, MyFitnessPal y Zepp Life, con más integraciones en camino."
+        }
+      ]
+    },
+    "sticky_cta": "Empezar Gratis",
     "chat_carousel": {
       "title": "Habla con Tu Entrenador Ahora",
-      "subtitle": "Cada entrenador tiene una personalidad, experiencia y una forma única de guiarte.",
-      "cta_hint": "Cada conversación muestra a la IA adaptándose a tu contexto. Tus datos alimentan una inteligencia cada vez mejor."
+      "subtitle": "Cada entrenador tiene una personalidad, experiencia y una forma única de guiarte."
     },
     "conversations": {
       "sofia": {
         "user_1": "Llevo 3 semanas a dieta, pero el peso no se mueve. ¿Qué está mal?",
-        "trainer_1": "He revisado tus registros. En los últimos 7 días has consumido una media de 1.640 kcal — pero tu meta actual é 1.580. No es eso. El problema está el jueves y el sábado: compensaste después del entrenamiento y subiste a 2.100 kcal ambos días. Eso anuló tu déficit de la semana.",
+        "trainer_1": "He revisado tus registros. En los últimos 7 días has consumido una media de 1.640 kcal — pero tu meta actual es 1.580. No es eso. El problema está el jueves y el sábado: compensaste después del entrenamiento y subiste a 2.100 kcal ambos días. Eso anuló tu déficit de la semana.",
         "user_2": "Vaya, no me había dado cuenta. ¿Por qué tengo tanta hambre esos días?",
         "trainer_2": "Tu entrenamiento del jueves quema mucho — veo que haces HIIT. La proteína ese día fue de 89g, pero necesitarías al menos 130g para no llegar con hambre a la cena. No es falta de voluntad. Es solo ajustar la distribución de las comidas en los días de entrenamiento. ¿Quieres que lo organice por ti?"
       },
       "gymbro": {
         "user_1": "Nunca he entrenado antes. Quiero empezar de cero y ganar músculo. Pero no sé por dónde empezar.",
-        "trainer_1": "¡Hermano, el mejor momento para empezar é AHORA! 🔥 Primero: relájate, estás en el lugar correcto. No es complicado. Necesito entender tu punto de partida. Dime: ¿cuál es tu altura? ¿Cuánto pesas? Y de momento, ¿puedes entrenar 3 veces por semana o te resulta difícil?",
+        "trainer_1": "¡Hermano, el mejor momento para empezar es AHORA! 🔥 Primero: relájate, estás en el lugar correcto. No es complicado. Necesito entender tu punto de partida. Dime: ¿cuál es tu altura? ¿Cuánto pesas? Y de momento, ¿puedes entrenar 3 veces por semana o te resulta difícil?",
         "user_2": "Mido 1,78m, peso 82kg. Puedo entrenar 3 veces por semana fácil, pero mi alimentación es un desorden.",
         "trainer_2": "¡ESO ES! ¡3 veces por semana es PERFECTO para empezar! Con tus datos aquí en la plataforma — tu rutina, sueño, alimentación real — mi sistema lo entenderá todo. No voy a adivinar números al azar. Veré cuánto duermes, cuándo entrenas, y entonces construiré un plan que funcione PARA TU CONTEXTO. ¿Nutrición desordenada? La organizamos juntos, día a día. ¡Vamos a empezar a registrar tus datos y a EVOLUCIONAR de verdad, mano! 💪"
       }
@@ -487,7 +565,7 @@
     "password_label": "Contraseña",
     "password_placeholder": "Tu contraseña secreta",
     "forgot_password": "¿Olvidaste tu contraseña?",
-    "submit": "Entrar en la Plataforma",
+    "submit": "Entrar",
     "marketing_title": "Eleva tu Rendimiento con Inteligencia Artificial.",
     "marketing_subtitle": "Seguimiento completo de dieta, entrenamiento y metabolismo en una única plataforma premium.",
     "welcome_back": "¡Bienvenido de nuevo!",

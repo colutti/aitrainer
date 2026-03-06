@@ -177,7 +177,7 @@
       "steps": [
         {
           "title": "Connect Your Data",
-          "description": "Import your history from Hevy, MyFitnessPal, or Apple Health."
+          "description": "Import your history from Hevy, MyFitnessPal, or Zepp Life."
         },
         {
           "title": "Choose Your Mentor",
@@ -198,10 +198,89 @@
     "footer": {
       "rights": "© {{year}} FityQ. All rights reserved."
     },
+    "cta_trainers": "Choose your trainer now",
+    "cta_product": "Try FityQ for free",
+    "trust_badge_free": "✓ Free to start",
+    "trust_badge_card": "✓ No credit card required",
+    "counters": {
+      "trainers": "AI Trainers",
+      "availability": "Availability",
+      "integrations": "Integrations",
+      "memory": "Memory",
+      "availability_val": "24/7",
+      "integrations_val": "3+",
+      "memory_val": "∞"
+    },
+    "comparison": {
+      "title": "Compare and Choose the Best Option for You",
+      "subtitle": "Achieve your goals with efficiency and personalization.",
+      "headers": {
+        "fityq": "FityQ AI",
+        "personal": "Traditional Personal Trainer",
+        "generic": "Generic App"
+      },
+      "rows": {
+        "price": "Price",
+        "availability": "Availability",
+        "memory": "Memory",
+        "personalization": "Personalization",
+        "integrations": "Integrations"
+      },
+      "values": {
+        "free": "Free",
+        "personal_price": "$150-300/mo",
+        "generic_price": "Free-$10",
+        "247": "24/7",
+        "scheduled": "Scheduled time",
+        "remembers_all": "Remembers everything",
+        "depends": "Depends",
+        "doesnt_remember": "Doesn't remember",
+        "adaptive_ai": "Adaptive AI",
+        "high": "High",
+        "generic": "Generic",
+        "all_apps": "Hevy, MFP, Zepp",
+        "none": "None",
+        "limited": "Limited"
+      }
+    },
+    "integrations_section": {
+      "title": "Connect your favorite tools",
+      "subtitle": "FityQ integrates with the apps you already use to centralize your data.",
+      "hevy_desc": "Import your workouts automatically from Hevy.",
+      "mfp_desc": "Sync your nutrition and macros from MyFitnessPal.",
+      "zepp_desc": "Connect your health and sleep data from Zepp Life.",
+      "coming_soon": "Coming soon"
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "items": [
+        {
+          "q": "Is FityQ really free?",
+          "a": "Yes! You can start for free with 20 messages to test the full experience with any trainer."
+        },
+        {
+          "q": "How does the AI work?",
+          "a": "Our AI analyzes your workout, diet, and weight logs to understand your unique metabolism and adjust your goals in real-time."
+        },
+        {
+          "q": "Is my data secure?",
+          "a": "Absolutely. Your data is encrypted and used only to personalize your training experience."
+        },
+        {
+          "q": "Can I switch trainers?",
+          "a": "Yes, you can switch trainers at any time to experience different styles of motivation and expertise."
+        },
+        {
+          "q": "What integrations are available?",
+          "a": "We currently support Hevy, MyFitnessPal, and Zepp Life, with more integrations on the way."
+        }
+      ]
+    },
+    "sticky_cta": "Start for Free",
     "chat_carousel": {
       "title": "Chat with Your Trainer Now",
       "subtitle": "Each trainer has personality, expertise, and a unique way to guide you.",
-      "cta_hint": "Every conversation shows the AI adapting to your context. Your data feeds increasingly better intelligence."
+      "cta_hint": ""
     },
     "conversations": {
       "sofia": {
@@ -490,7 +569,7 @@
     "password_label": "Password",
     "password_placeholder": "Your secret password",
     "forgot_password": "Forgot password?",
-    "submit": "Enter Platform",
+    "submit": "Sign In",
     "marketing_title": "Elevate your Performance with Artificial Intelligence.",
     "marketing_subtitle": "Complete tracking of diet, workouts, and metabolism in a single premium platform.",
     "welcome_back": "Welcome back!",

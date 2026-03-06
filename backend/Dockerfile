@@ -38,6 +38,17 @@ COPY --from=builder /opt/venv /opt/venv
 # Copy source code
 COPY src/ ./src/
 COPY scripts/ ./scripts/
+# Create a non-privileged user and group
+RUN groupadd -r app && useradd -r -g app -s /sbin/nologin app
+
+# Create a home directory for the user and set permissions
+RUN mkdir -p /home/app && chown app:app /home/app
+
+# Change ownership of the app directory
+RUN chown -R app:app /app
+
+# Use the non-privileged user
+USER app
 
 EXPOSE 8000
 

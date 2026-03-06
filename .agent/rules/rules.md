@@ -2,21 +2,64 @@
 trigger: always_on
 ---
 
-## General
+## Metodologia
 
-- Os testes do frontend devem mockear o backend em todos os casos, exceto se o usuario disser ao contrario.
-- 0 tolerancia a warnings e hints, tanto do backend quanto do frontend e tambem dos containers. 
-- TDD: Primeiro implemente os testes depois a funcionalidade.
-- Quando um bug for reportado, crie um teste automatizado que simule o erro primeiro. Depois corrija o codigo e volte a executar o teste pra confirmar sucesso.
-- Para testes locais via navegador ou quando precisar de um usuario pergunte por ele. Nao assuma que exista nenhum usuario no sistema.
-- O sistema usa Podman, nao use Docker
-- Nao desative erros, hints ou warnings no codigo a nao ser que seja realmente necessario. De preferencia por corrigir o problema sempre.
-- Sempre que voce executar testes, execute o workflow run-all-tests.md. Mantenha esse arquivo atualizado.
-- Os testes sao a fonte da verdade do codigo.
-- So deve haver 1 README na solucao inteira que devera estar na raiz do projeto e deve ser mantido atualizado.
-- Sempre apague arquivos temporarios criados e mantenha o projeto limpo. Arquivos de logs, coverage, scripts criados para POC, etc. Arquivos temporarais, logs etc devem estar em uma pasta chamada tmp na raiz do projeto e esta pagina deve estar no gitignore. nao crie arquivos fora da pasta do projeto a nao ser que seja necessario.
-- Nao reinvente a roda. Se ja houver um padrao de mercado, um serviço ou uma biblioteca, recomende usar. Seu foco tem que ser em resolver o problema, nao perder tempo desenvolvendo o que ja esta pronto. 
-- Opensource e melhor que pago, a nao ser que justifique pagar pelo serviço.
-- Sem erros de linting, seja pylint, eslint, ts lint. etc. 
-- Sem erros ou warnings nos containers. Voce vez um build dos containers para ver se nao existem erros ou warnings.
-- Nunca deixe arquivos desnecessarios como logs de texto, pastas de screenshots, pasta de logs de testes, scripts temporarios, etc.
+- **TDD obrigatório:** Primeiro escreva os testes (que devem falhar), depois implemente o mínimo para passar, depois refatore. Sem exceções.
+- **Bug = Teste primeiro:** Quando um bug for reportado, crie um teste automatizado que reproduza o erro. Só então corrija o código e confirme que o teste passa.
+- **Os testes são a fonte da verdade** do comportamento do sistema.
+
+## Qualidade de Código
+
+### Zero Tolerância
+- **Zero** erros, warnings e hints em: Ruff, Pylint, Pyright, ESLint, TypeScript, builds de containers.
+- Nunca desabilite regras de linting (`# noqa`, `// eslint-disable`, `# type: ignore`, `# pylint: disable`) a não ser que seja genuinamente necessário e documentado com justificativa no comentário.
+- Prefira sempre corrigir o problema à raiz ao invés de silenciar o alerta.
+
+### Python (Backend)
+- Siga PEP 8, PEP 257 (docstrings), PEP 484 (type hints).
+- Todo código Python deve ter type hints completos.
+- Use os padrões do projeto: Repository Pattern, Service Layer, Dependency Injection.
+
+### TypeScript (Frontend)
+- Strict mode com `noUncheckedIndexedAccess`, `noUnusedLocals`, `noUnusedParameters`.
+- ESLint com `strictTypeChecked` + `stylisticTypeChecked`.
+- Testes de frontend devem mockear o backend em todos os casos, exceto se o usuário disser o contrário.
+
+## Segurança
+
+- **Tolerância zero para vulnerabilidades HIGH/CRITICAL** detectadas por Semgrep ou Trivy.
+- `make security-check` deve ser executado antes de qualquer commit, junto com lint e testes.
+- Nunca commite secrets, API keys, senhas ou tokens. O Trivy valida isso automaticamente.
+- Sempre valide inputs do usuário e sanitize outputs.
+
+## Containers & Infraestrutura
+
+- O sistema usa **Podman**, não Docker.
+- Sem erros ou warnings nos containers. Faça build dos containers para validar.
+- Ferramentas de segurança (Semgrep, Trivy) rodam como containers efêmeros (`podman run --rm`), nunca dentro dos containers de produção.
+
+## Documentação
+
+- Toda documentação deve ser mantida **atualizada e fidedigna** ao estado real do código.
+- Ao modificar funcionalidades, revise e atualize os documentos impactados: `README.md`, `GEMINI.md`, `CLAUDE.md`, docs de algoritmos, planos, etc.
+- Só deve haver 1 `README.md` na raiz do projeto.
+- Documentação mentirosa ou desatualizada é tratada como bug.
+
+## Workflow Obrigatório
+
+- Sempre que executar testes, execute o workflow `run-all-tests.md`. Mantenha esse arquivo atualizado.
+- O workflow `run-all-tests.md` inclui: lint, type check, testes unitários, testes E2E e security scanning.
+- Nenhuma tarefa é considerada concluída sem que TODO o workflow passe com zero erros.
+
+## Limpeza & Organização
+
+- Sempre apague arquivos temporários (logs, coverage, scripts de POC, screenshots).
+- Arquivos temporários devem ficar em `tmp/` na raiz do projeto (que está no `.gitignore`).
+- Nunca deixe arquivos desnecessários no repositório.
+- Não reinvente a roda: prefira bibliotecas e padrões de mercado. Open source > pago, a não ser que se justifique.
+
+## Testes
+
+- Para testes locais via navegador ou quando precisar de um usuário, pergunte. Não assuma que exista nenhum usuário no sistema.
+- Use `vi.spyOn(console, 'error').mockImplementation(() => {})` em testes que esperam erros de API.
+- Use `fireEvent.submit(form)` ao invés de `fireEvent.click(submitButton)` para forms no JSDOM.

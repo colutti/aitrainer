@@ -46,13 +46,13 @@ def validate_invite_token(
     invite = invite_repo.get_by_token(token)
 
     if not invite:
-        logger.info("Invite token not found: %s", token)
+        logger.info("Invite token not found")
         raise HTTPException(
             status_code=404, detail={"valid": False, "reason": "not_found"}
         )
 
     if invite.used:
-        logger.info("Invite token already used: %s", token)
+        logger.info("Invite token already used")
         raise HTTPException(
             status_code=409, detail={"valid": False, "reason": "already_used"}
         )
@@ -63,12 +63,12 @@ def validate_invite_token(
         invite_expires_at = invite_expires_at.replace(tzinfo=timezone.utc)
 
     if invite_expires_at < now:
-        logger.info("Invite token expired: %s", token)
+        logger.info("Invite token expired")
         raise HTTPException(
             status_code=410, detail={"valid": False, "reason": "expired"}
         )
 
-    logger.info("Invite token validated successfully: %s for %s", token, invite.email)
+    logger.info("Invite token validated successfully")
     return OnboardingValidateResponse(valid=True, email=invite.email, reason=None)
 
 
@@ -94,11 +94,11 @@ def complete_onboarding(request: OnboardingCompleteRequest):
     invite = invite_repo.get_by_token(request.token)
 
     if not invite:
-        logger.warning("Onboarding attempt with invalid token: %s", request.token)
+        logger.warning("Onboarding attempt with invalid token")
         raise HTTPException(status_code=404, detail="Invalid invite token")
 
     if invite.used:
-        logger.warning("Onboarding attempt with used token: %s", request.token)
+        logger.warning("Onboarding attempt with used token")
         raise HTTPException(status_code=409, detail="Invite already used")
 
     now = datetime.now(timezone.utc)
@@ -107,14 +107,14 @@ def complete_onboarding(request: OnboardingCompleteRequest):
         invite_expires_at = invite_expires_at.replace(tzinfo=timezone.utc)
 
     if invite_expires_at < now:
-        logger.warning("Onboarding attempt with expired token: %s", request.token)
+        logger.warning("Onboarding attempt with expired token")
         raise HTTPException(status_code=410, detail="Invite expired")
 
     email = invite.email
 
     # Check if user already exists (defensive)
     if db.get_user_profile(email):
-        logger.error("User already exists during onboarding: %s", email)
+        logger.error("User already exists during onboarding")
         raise HTTPException(status_code=409, detail="User already exists")
 
     # Hash password
@@ -158,7 +158,7 @@ def complete_onboarding(request: OnboardingCompleteRequest):
     # Mark invite as used
     invite_repo.mark_as_used(request.token)
 
-    logger.info("Onboarding completed successfully for: %s", email)
+    logger.info("Onboarding completed successfully")
 
     # Generate JWT token (auto-login)
     jwt_token = user_login(email, request.password)

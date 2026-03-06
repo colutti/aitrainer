@@ -1,4 +1,5 @@
 import { Button } from '@shared/components/ui/Button';
+import { ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -70,7 +71,7 @@ export const TrainerShowcase = (): React.ReactNode => {
   const selectedTrainer = TRAINERS.find((t) => t.id === selectedId) ?? null;
 
   return (
-    <section id="treinadores" className="py-24 px-4 sm:px-6 lg:px-8">
+    <section id="treinadores" className="py-12 md:py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="font-display text-4xl sm:text-5xl font-bold text-white mb-4">
@@ -197,6 +198,19 @@ export const TrainerShowcase = (): React.ReactNode => {
             </div>
           </div>
         )}
+
+        {/* CTA Button */}
+        <div className="mt-16 flex justify-center">
+          <Button
+            onClick={() => { void navigate('/login'); }}
+            variant="secondary"
+            size="lg"
+            className="group"
+          >
+            {t('landing.cta_trainers')}
+            <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </Button>
+        </div>
       </div>
     </section>
   );

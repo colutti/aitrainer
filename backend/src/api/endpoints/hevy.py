@@ -180,8 +180,7 @@ async def process_webhook_async(
 
     if not api_key:
         logger.error(
-            "[Webhook BG] FAILED: Missing Hevy API key for %s. Integration requires API Key to fetch details.",
-            user_email,
+            "[Webhook BG] FAILED: Missing Hevy API key. Integration requires API Key to fetch details.",
         )
         return
 
@@ -327,7 +326,7 @@ def generate_webhook_credentials(
         profile.hevy_webhook_token = token
         profile.hevy_webhook_secret = secret
 
-        logger.info("Generating webhook for %s. Token: %s...", user_email, token[:4])
+        logger.info("Generating webhook for user")
         brain.save_user_profile(profile)
 
         # Build webhook URL dynamically from request (works locally and in production)
@@ -397,10 +396,10 @@ async def receive_hevy_webhook(
         logger.info("Authorization Header present (masked): %s...", authorization[:12])
 
     if method == "GET":
-        logger.info("[Webhook] VERIFICATION attempt for token: %s...", user_token[:8])
+        logger.info("[Webhook] VERIFICATION attempt...")
         user_profile = brain.database.users.find_by_webhook_token(user_token)
         if not user_profile:
-            logger.warning("[Webhook] VERIFICATION FAILED: Invalid token %s", user_token[:8])
+            logger.warning("[Webhook] VERIFICATION FAILED: Invalid token")
             return JSONResponse(status_code=404, content={"message": "Token not found"})
 
         logger.info("[Webhook] VERIFICATION SUCCESS for user: %s", user_profile.email)
@@ -418,23 +417,20 @@ async def receive_hevy_webhook(
             logger.error("[Webhook] MALFORMED PAYLOAD from %s: %s", client_host, e)
             raise HTTPException(status_code=400, detail="Malformed JSON payload") from e
 
-    logger.info("[Webhook] Processing payload for token: %s...", user_token[:8])
+    logger.info("[Webhook] Processing payload...")
     logger.info("[Webhook] Payload Data: %s", body.model_dump())
 
     # 1. Find user by token
     user_profile = brain.database.users.find_by_webhook_token(user_token)
     if not user_profile:
-        logger.warning("[Webhook] UNKNOWN TOKEN: %s... (IP: %s)", user_token[:8], client_host)
+        logger.warning("[Webhook] UNKNOWN TOKEN")
         raise HTTPException(status_code=404, detail="Invalid token")
 
     # 2. Validate Authorization
     if user_profile.hevy_webhook_secret:
         expected = f"Bearer {user_profile.hevy_webhook_secret}"
         if authorization != expected:
-            logger.warning(
-                "[Webhook] AUTH FAILED for %s (IP: %s). Expected secret present? %s",
-                user_profile.email, client_host, bool(user_profile.hevy_webhook_secret)
-            )
+            logger.warning("[Webhook] AUTH FAILED")
             # Log length comparison if they look similar to detect trailing spaces/encoding bugs
             if authorization:
                 logger.debug("Received len: %d, Expected len: %d", len(authorization), len(expected))

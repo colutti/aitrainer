@@ -191,7 +191,7 @@ export const ChatCarousel = () => {
   }, [conversation, CONVERSATIONS.length]);
 
   return (
-    <section className="relative py-20 px-6 overflow-hidden">
+    <section className="relative py-12 md:py-16 px-6 overflow-hidden">
       <div className="absolute inset-0 bg-linear-to-b from-transparent via-primary/5 to-transparent pointer-events-none" />
 
       <div className="relative z-10 max-w-5xl mx-auto">

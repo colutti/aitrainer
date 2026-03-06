@@ -45,7 +45,13 @@ description: Executa a suíte completa de testes e verificação de qualidade do
 // turbo
 3. Testes E2E (Opcional, mas recomendado se houver mudanças visuais/fluxo): `cd frontend && npx playwright test`
 
-### 7. Limpeza e Relatório
+### 8. Security Scanning (SAST + SCA + Secrets)
+// turbo
+1. SAST (Semgrep): `podman run --rm -v $(pwd):/src:ro docker.io/semgrep/semgrep:latest semgrep scan --config auto --error --severity ERROR --severity WARNING /src`
+// turbo
+2. SCA + Secrets (Trivy): `podman run --rm -v $(pwd):/src:ro docker.io/aquasec/trivy:latest fs --exit-code 1 --severity HIGH,CRITICAL --scanners vuln,secret /src`
+
+### 9. Limpeza e Relatório
 // turbo
 1. Remova artefatos gerados:
    - Backend: `.pytest_cache`, `__pycache__`, `.ruff_cache`

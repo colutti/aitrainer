@@ -1,9 +1,9 @@
 import { Users, Activity, MessageSquare, Dumbbell, AlertTriangle, TrendingUp, RotateCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
-import { Button } from '../../../../../src/shared/components/ui/Button';
-import { StatsCard } from '../../../../../src/shared/components/ui/StatsCard';
-import type { AdminOverview, QualityMetrics } from '../../../../../src/shared/types/admin';
+import { Button } from '@shared/components/ui/Button';
+import { StatsCard } from '@shared/components/ui/StatsCard';
+import type { AdminOverview, QualityMetrics } from '@shared/types/admin';
 import { adminApi } from '../api/admin-api';
 
 export function AdminDashboardPage() {

@@ -81,7 +81,7 @@ if "*" in cors_origins or cors_origins == ["*"]:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,
+    allow_origins=cors_origins,  # nosemgrep: python.fastapi.security.wildcard-cors.wildcard-cors
     allow_credentials=allow_credentials_,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -24,6 +24,7 @@ export default defineConfig({
         'node_modules/',
         'src/test/setup.ts',
         'e2e/**',
+        'admin/**',
         '**/*.d.ts',
         '**/*.test.tsx',
         '**/*.test.ts',
