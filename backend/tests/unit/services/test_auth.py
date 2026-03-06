@@ -3,35 +3,11 @@ from unittest.mock import MagicMock, patch
 from datetime import datetime, timedelta, timezone
 import jwt
 from fastapi import HTTPException
-from src.services.auth import user_login, verify_token, user_logout
+from src.services.auth import verify_token, user_logout
 from src.core.config import settings
 
 
 class TestAuthService(unittest.TestCase):
-    @patch("src.services.auth.get_mongo_database")
-    def test_user_login_success(self, mock_get_db):
-        """Test successful login returns token."""
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.validate_user.return_value = True
-
-        token = user_login("test@test.com", "password")
-
-        self.assertIsInstance(token, str)
-        # Verify token content
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-        self.assertEqual(payload["sub"], "test@test.com")
-        self.assertIn("exp", payload)
-
-    @patch("src.services.auth.get_mongo_database")
-    def test_user_login_invalid(self, mock_get_db):
-        """Test login with invalid credentials."""
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.validate_user.return_value = False
-
-        with self.assertRaises(ValueError):
-            user_login("test@test.com", "wrong")
 
     @patch("src.services.auth.get_mongo_database")
     def test_verify_token_valid(self, mock_get_db):
@@ -100,34 +76,7 @@ class TestAuthService(unittest.TestCase):
 
         mock_db.add_token_to_blocklist.assert_called_once()
 
-    # Edge case tests for security hardening
-    @patch("src.services.auth.get_mongo_database")
-    def test_user_login_empty_password(self, mock_get_db):
-        """Test login attempt with empty password."""
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.validate_user.return_value = False
 
-        with self.assertRaises(ValueError):
-            user_login("test@test.com", "")
-
-        mock_db.validate_user.assert_called_once_with("test@test.com", "")
-
-    @patch("src.services.auth.get_mongo_database")
-    def test_user_login_sql_injection_attempt(self, mock_get_db):
-        """Test login with SQL injection-like payload."""
-        mock_db = MagicMock()
-        mock_get_db.return_value = mock_db
-        mock_db.validate_user.return_value = False
-
-        malicious_email = "test@test.com' OR '1'='1"
-        malicious_password = "pass' OR '1'='1"
-
-        with self.assertRaises(ValueError):
-            user_login(malicious_email, malicious_password)
-
-        # Should pass malicious input as-is (parameterized queries protect)
-        mock_db.validate_user.assert_called_once_with(malicious_email, malicious_password)
 
     @patch("src.services.auth.get_mongo_database")
     def test_verify_token_missing_sub_claim(self, mock_get_db):

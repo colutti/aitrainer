@@ -3,7 +3,6 @@ Onboarding API endpoints.
 """
 
 from datetime import date, datetime, timezone
-import bcrypt
 from fastapi import APIRouter, HTTPException, Query
 from src.api.models.onboarding import (
     OnboardingCompleteRequest,
@@ -15,7 +14,7 @@ from src.api.models.trainer_profile import TrainerProfile
 from src.api.models.weight_log import WeightLog
 from src.core.deps import get_mongo_database
 from src.core.logs import logger
-from src.services.auth import user_login
+from src.services.auth import create_token
 
 router = APIRouter()
 
@@ -117,13 +116,10 @@ def complete_onboarding(request: OnboardingCompleteRequest):
         logger.error("User already exists during onboarding")
         raise HTTPException(status_code=409, detail="User already exists")
 
-    # Hash password
-    password_hash = bcrypt.hashpw(request.password.encode(), bcrypt.gensalt()).decode()
 
     # Create user profile
     user_profile = UserProfile(
         email=email,
-        password_hash=password_hash,
         role="user",
         gender=request.gender,
         age=request.age,
@@ -161,7 +157,7 @@ def complete_onboarding(request: OnboardingCompleteRequest):
     logger.info("Onboarding completed successfully")
 
     # Generate JWT token (auto-login)
-    jwt_token = user_login(email, request.password)
+    jwt_token = create_token(email)
 
     return OnboardingCompleteResponse(
         token=jwt_token, message="Conta criada com sucesso!"

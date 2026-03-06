@@ -7,19 +7,19 @@ client = TestClient(app)
 
 
 @pytest.fixture
-def mock_auth():
-    with patch("src.api.endpoints.user.user_login") as mock:
-        mock.return_value = "fake_token"
+def mock_verify():
+    with patch("src.api.endpoints.user.verify_id_token") as mock:
+        mock.return_value = {"email": "test@test.com"}
         yield mock
 
 
-def test_login_rate_limit(mock_auth):
+def test_login_rate_limit(mock_verify):
     """
     Test that login endpoint respects rate limits.
     """
-    payload = {"email": "test@test.com", "password": "password"}
+    payload = {"token": "fake_firebase_token"}
 
-    # We don't need to mock DB here because user_login is mocked
+    # We don't need to mock DB here because verify_id_token is mocked
 
     response = client.post("/user/login", json=payload)
     assert response.status_code in [200, 429]

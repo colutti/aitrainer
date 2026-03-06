@@ -99,9 +99,6 @@ class MongoDatabase:
         """Retrieves user profile."""
         return self.users.get_profile(email)
 
-    def validate_user(self, email: str, password: str) -> bool:
-        """Validates user credentials."""
-        return self.users.validate_credentials(email, password)
 
     def increment_user_message_counts(
         self, email: str, new_cycle_start: datetime | None = None

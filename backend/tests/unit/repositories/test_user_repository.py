@@ -1,7 +1,6 @@
 """Tests for user repository (user profile management)."""
 
 import pytest
-import bcrypt
 from unittest.mock import MagicMock
 from src.repositories.user_repository import UserRepository
 from src.api.models.user_profile import UserProfile
@@ -27,7 +26,7 @@ def sample_user_profile():
     """Create a sample user profile for testing."""
     return UserProfile(
         email="test@example.com",
-        password_hash=bcrypt.hashpw(b"password123", bcrypt.gensalt()).decode(),
+        password_hash=None,
         gender="Masculino",
         age=30,
         weight=80.0,
@@ -243,94 +242,6 @@ class TestUserRepositoryUpdateProfileFields:
         assert call_args[0][1]["$set"] == fields
 
 
-class TestUserRepositoryValidateCredentials:
-    """Test validate_credentials method."""
-
-    def test_validate_credentials_success(self, user_repo, mock_db):
-        """Test successful password validation."""
-        password = "correct_password"
-        hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-
-        mock_db.__getitem__.return_value.find_one.return_value = {
-            "email": "test@example.com",
-            "password_hash": hashed
-        }
-
-        result = user_repo.validate_credentials("test@example.com", password)
-
-        assert result is True
-
-    def test_validate_credentials_wrong_password(self, user_repo, mock_db):
-        """Test failed validation with wrong password."""
-        correct_password = "correct_password"
-        wrong_password = "wrong_password"
-        hashed = bcrypt.hashpw(correct_password.encode(), bcrypt.gensalt()).decode()
-
-        mock_db.__getitem__.return_value.find_one.return_value = {
-            "email": "test@example.com",
-            "password_hash": hashed
-        }
-
-        result = user_repo.validate_credentials("test@example.com", wrong_password)
-
-        assert result is False
-
-    def test_validate_credentials_user_not_found(self, user_repo, mock_db):
-        """Test validation when user doesn't exist."""
-        mock_db.__getitem__.return_value.find_one.return_value = None
-
-        result = user_repo.validate_credentials("nonexistent@example.com", "password")
-
-        assert result is False
-
-    def test_validate_credentials_no_password_hash(self, user_repo, mock_db):
-        """Test validation when password_hash is missing."""
-        mock_db.__getitem__.return_value.find_one.return_value = {
-            "email": "test@example.com",
-            "password_hash": None
-        }
-
-        result = user_repo.validate_credentials("test@example.com", "password")
-
-        assert result is False
-
-    def test_validate_credentials_empty_password(self, user_repo, mock_db):
-        """Test validation with empty password."""
-        hashed = bcrypt.hashpw(b"real_password", bcrypt.gensalt()).decode()
-        mock_db.__getitem__.return_value.find_one.return_value = {
-            "email": "test@example.com",
-            "password_hash": hashed
-        }
-
-        result = user_repo.validate_credentials("test@example.com", "")
-
-        assert result is False
-
-    def test_validate_credentials_invalid_hash_format(self, user_repo, mock_db):
-        """Test validation with invalid hash format."""
-        mock_db.__getitem__.return_value.find_one.return_value = {
-            "email": "test@example.com",
-            "password_hash": "not_a_valid_hash"
-        }
-
-        result = user_repo.validate_credentials("test@example.com", "password")
-
-        # Should handle gracefully and return False
-        assert result is False
-
-    def test_validate_credentials_numeric_password(self, user_repo, mock_db):
-        """Test validation with numeric password."""
-        password = "12345"
-        hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-
-        mock_db.__getitem__.return_value.find_one.return_value = {
-            "email": "test@example.com",
-            "password_hash": hashed
-        }
-
-        result = user_repo.validate_credentials("test@example.com", password)
-
-        assert result is True
 
 
 class TestUserRepositoryFindByWebhookToken:
@@ -433,11 +344,3 @@ class TestUserRepositoryEdgeCases:
 
         assert "DB Error" in str(exc_info.value)
 
-    def test_database_error_on_validate(self, user_repo, mock_db):
-        """Test handling database error on validate credentials."""
-        mock_db.__getitem__.return_value.find_one.side_effect = Exception("DB Error")
-
-        with pytest.raises(Exception) as exc_info:
-            user_repo.validate_credentials("test@example.com", "password")
-
-        assert "DB Error" in str(exc_info.value)

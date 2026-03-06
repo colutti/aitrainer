@@ -88,7 +88,7 @@ def test_complete_onboarding_success(valid_invite):
     """Test completing onboarding successfully."""
     with (
         patch("src.api.endpoints.onboarding.get_mongo_database") as mock_db,
-        patch("src.api.endpoints.onboarding.user_login") as mock_login,
+        patch("src.api.endpoints.onboarding.create_token") as mock_create_token,
     ):
         mock_invites = MagicMock()
         mock_invites.get_by_token.return_value = valid_invite
@@ -99,7 +99,7 @@ def test_complete_onboarding_success(valid_invite):
         mock_db_instance.get_user_profile.return_value = None
         mock_db.return_value = mock_db_instance
 
-        mock_login.return_value = "fake-jwt-token"
+        mock_create_token.return_value = "fake-jwt-token"
 
         request_data = {
             "token": valid_invite.token,
@@ -126,13 +126,13 @@ def test_complete_onboarding_success(valid_invite):
 def test_complete_onboarding_various_trainers(trainer_type, valid_invite):
     """Test onboarding with different trainer types."""
     with patch("src.api.endpoints.onboarding.get_mongo_database") as mock_get_db, \
-         patch("src.api.endpoints.onboarding.user_login") as mock_login:
+         patch("src.api.endpoints.onboarding.create_token") as mock_create_token:
 
         mock_db = MagicMock()
         mock_db.invites.get_by_token.return_value = valid_invite
         mock_db.get_user_profile.return_value = None
         mock_get_db.return_value = mock_db
-        mock_login.return_value = "jwt_token"
+        mock_create_token.return_value = "jwt_token"
 
         payload = {
             "token": valid_invite.token,
@@ -158,7 +158,7 @@ def test_complete_onboarding_creates_weight_log(valid_invite):
     """Confirma que o onboarding cria um WeightLog inicial com o peso informado."""
     with (
         patch("src.api.endpoints.onboarding.get_mongo_database") as mock_db,
-        patch("src.api.endpoints.onboarding.user_login") as mock_login,
+        patch("src.api.endpoints.onboarding.create_token") as mock_create_token,
     ):
         mock_invites = MagicMock()
         mock_invites.get_by_token.return_value = valid_invite
@@ -167,7 +167,7 @@ def test_complete_onboarding_creates_weight_log(valid_invite):
         mock_db_instance.invites = mock_invites
         mock_db_instance.get_user_profile.return_value = None
         mock_db.return_value = mock_db_instance
-        mock_login.return_value = "fake-jwt-token"
+        mock_create_token.return_value = "fake-jwt-token"
 
         request_data = {
             "token": valid_invite.token,

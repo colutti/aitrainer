@@ -31,23 +31,6 @@ def create_token(email: str) -> str:
     return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
 
-def user_login(email: str, password: str) -> str:
-    """
-    Authenticates a user and generates a JWT token upon successful login.
-
-    Args:
-        email (str): The user's email address.
-        password (str): The user's password.
-
-    Returns:
-        str: A JWT token valid for 2 hours.
-
-    Raises:
-        ValueError: If the provided credentials are invalid.
-    """
-    if not get_mongo_database().validate_user(email, password):
-        raise ValueError("Invalid credentials")
-    return create_token(email)
 
 
 def verify_token(token: str = Depends(oauth2_scheme)) -> str:

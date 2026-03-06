@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from src.services.auth import user_login, user_logout, oauth2_scheme, verify_token, create_token
+from src.services.auth import user_logout, oauth2_scheme, verify_token, create_token
 from src.core.deps import get_ai_trainer_brain
 from src.core.logs import logger
 from src.core.config import settings

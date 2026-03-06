@@ -36,39 +36,39 @@ class TestEndpoints(unittest.TestCase):
         """
         self.client = TestClient(app)
 
-    @patch("src.api.endpoints.user.user_login")
-    def test_login_success(self, mock_user_login):
+    @patch("src.api.endpoints.user.verify_id_token")
+    def test_login_success(self, mock_verify):
         """
-        Test successful user login.
+        Test successful user login with token.
         """
         # Arrange
-        mock_user_login.return_value = "test_token"
+        mock_verify.return_value = {"email": "test@test.com"}
 
         # Act
         response = self.client.post(
-            "/user/login", json={"email": "test@test.com", "password": "password"}
+            "/user/login", json={"token": "valid_token"}
         )
 
         # Assert
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"token": "test_token"})
+        self.assertIn("token", response.json())
 
-    @patch("src.api.endpoints.user.user_login")
-    def test_login_failure(self, mock_user_login):
+    @patch("src.api.endpoints.user.verify_id_token")
+    def test_login_failure(self, mock_verify):
         """
-        Test failed user login with invalid credentials.
+        Test failed user login with invalid token.
         """
         # Arrange
-        mock_user_login.side_effect = ValueError("Invalid credentials")
+        mock_verify.side_effect = ValueError("Invalid token")
 
         # Act
         response = self.client.post(
-            "/user/login", json={"email": "test@test.com", "password": "password"}
+            "/user/login", json={"token": "invalid_token"}
         )
 
         # Assert
         self.assertEqual(response.status_code, 401)
-        self.assertEqual(response.json(), {"detail": "Invalid credentials"})
+        self.assertEqual(response.json(), {"detail": "Invalid token"})
 
     def test_get_profile_success(self):
         """

@@ -191,34 +191,6 @@ def test_get_user_profile_not_found(mock_settings):
         assert result is None
 
 
-def test_validate_user_not_found(mock_settings):
-    """Test validating non-existent user."""
-    with patch("pymongo.MongoClient") as mock_client:
-        db_mock = MagicMock()
-        mock_client.return_value.__getitem__.return_value = db_mock
-
-        mongo = MongoDatabase()
-        mongo.users.collection = MagicMock()
-        mongo.users.collection.find_one.return_value = None
-
-        assert mongo.validate_user("email", "pass") is False
-
-
-def test_validate_user_wrong_password(mock_settings):
-    """Test validating user with wrong password."""
-    with patch("pymongo.MongoClient") as mock_client:
-        db_mock = MagicMock()
-        mock_client.return_value.__getitem__.return_value = db_mock
-
-        mongo = MongoDatabase()
-        # Fake bcrypt hash
-        mongo.users.collection = MagicMock()
-        mongo.users.collection.find_one.return_value = {
-            "password_hash": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxwKc.6q.1"
-        }
-
-        with patch("bcrypt.checkpw", return_value=False):
-            assert mongo.validate_user("email", "wrongpass") is False
 
 
 def test_get_trainer_profile_not_found(mock_settings):
