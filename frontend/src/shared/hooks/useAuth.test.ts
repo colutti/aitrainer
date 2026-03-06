@@ -8,6 +8,32 @@ import { useAuthStore } from './useAuth';
 // Mock the http-client module
 vi.mock('../api/http-client');
 
+// Mock Firebase
+vi.mock('../../features/auth/firebase', () => ({
+  auth: {
+    currentUser: {
+      getIdToken: vi.fn().mockResolvedValue('fake-id-token'),
+    },
+  },
+}));
+
+vi.mock('firebase/auth', () => ({
+  signInWithEmailAndPassword: vi.fn().mockResolvedValue({
+    user: {
+      getIdToken: vi.fn().mockResolvedValue('fake-id-token'),
+    },
+  }),
+  signInWithPopup: vi.fn().mockResolvedValue({
+    user: {
+      getIdToken: vi.fn().mockResolvedValue('fake-id-token'),
+    },
+  }),
+  GoogleAuthProvider: vi.fn(),
+  OAuthProvider: vi.fn(),
+}));
+
+import { signInWithEmailAndPassword } from 'firebase/auth';
+
 // Mock localStorage with actual storage
 const mockStorage = new Map();
 
@@ -63,6 +89,7 @@ describe('useAuth', () => {
          email: 'test@example.com',
          name: 'Test User',
          is_admin: false,
+         photo_base64: undefined,
       };
 
       // Mock login response
@@ -76,11 +103,11 @@ describe('useAuth', () => {
         await result.current.login('test@example.com', 'password123');
       });
 
+      expect(signInWithEmailAndPassword).toHaveBeenCalled();
       expect(httpClient).toHaveBeenNthCalledWith(1, '/user/login', {
         method: 'POST',
         body: JSON.stringify({
-          email: 'test@example.com',
-          password: 'password123',
+          token: 'fake-id-token',
         }),
       });
 
@@ -92,7 +119,7 @@ describe('useAuth', () => {
     });
 
     it('should throw error with invalid credentials', async () => {
-      vi.mocked(httpClient).mockRejectedValueOnce(new Error('Invalid credentials'));
+      vi.mocked(signInWithEmailAndPassword).mockRejectedValueOnce(new Error('Invalid credentials'));
 
       const { result } = renderHook(() => useAuthStore());
 

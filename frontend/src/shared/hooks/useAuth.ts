@@ -20,6 +20,7 @@ export interface AuthState {
 
 export interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
+  socialLogin: (provider: 'google' | 'apple') => Promise<void>;
   logout: () => void;
   loadUserInfo: () => Promise<void>;
   getToken: () => string | null;
@@ -63,12 +64,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true });
 
     try {
+      const { auth } = await import('../../features/auth/firebase');
+      const { signInWithEmailAndPassword } = await import('firebase/auth');
+      
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      const token = await result.user.getIdToken();
+
       const response = await httpClient<{ token: string }>('/user/login', {
         method: 'POST',
-        body: JSON.stringify({
-          email,
-          password,
-        }),
+        body: JSON.stringify({ token }),
       });
 
       if (!response?.token) {
@@ -79,6 +83,45 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       set({ isAuthenticated: true });
 
       await get().loadUserInfo();
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  /**
+   * Login with a social provider (Google, Apple) using Firebase
+   * Stores the JWT token in localStorage and loads user info
+   */
+  socialLogin: async (providerName: 'google' | 'apple') => {
+    set({ isLoading: true });
+
+    try {
+      const { auth } = await import('../../features/auth/firebase');
+      const { signInWithPopup, GoogleAuthProvider, OAuthProvider } = await import('firebase/auth');
+      
+      const provider = providerName === 'google' 
+        ? new GoogleAuthProvider() 
+        : new OAuthProvider('apple.com');
+        
+      const result = await signInWithPopup(auth, provider);
+      const token = await result.user.getIdToken();
+      
+      const response = await httpClient<{ token: string }>('/user/login', {
+        method: 'POST',
+        body: JSON.stringify({ token }),
+      });
+
+      if (!response?.token) {
+        throw new Error('Invalid response from server');
+      }
+
+      localStorage.setItem(AUTH_TOKEN_KEY, response.token);
+      set({ isAuthenticated: true });
+
+      await get().loadUserInfo();
+    } catch (error) {
+      console.error('Social login error:', error);
+      throw error;
     } finally {
       set({ isLoading: false });
     }
