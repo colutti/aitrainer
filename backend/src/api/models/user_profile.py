@@ -130,6 +130,9 @@ class UserProfile(UserProfileInput):
     timezone: str | None = Field(
         default=None, max_length=50, description="IANA timezone e.g. Europe/Madrid"
     )
+    tdee_start_date: str | None = Field(
+        default=None, description="ISO Date string to start TDEE EMA calculation from (format: YYYY-MM-DD)"
+    )
 
     def _goal_type_label(self) -> str:
         labels = {
