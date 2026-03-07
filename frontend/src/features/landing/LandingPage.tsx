@@ -1,5 +1,6 @@
 import { Button } from '@shared/components/ui/Button';
 import { LanguageSelector } from '@shared/components/ui/LanguageSelector';
+import { useAuthStore } from '@shared/hooks/useAuth';
 import {
   Brain,
   ChevronRight,
@@ -38,6 +39,15 @@ const LandingPage = () => {
 
   const isPt = i18n.language.startsWith('pt');
   const currencySymbol = isPt ? 'R$ ' : '$';
+
+  const { isAuthenticated, isLoading } = useAuthStore();
+
+  // Se já estiver autenticado, redireciona para o dashboard
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      void navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, isLoading, navigate]);
 
   // Controle de scroll para mudar o estilo da navbar
   useEffect(() => {
@@ -499,7 +509,7 @@ const LandingPage = () => {
                     <h3 className="font-display text-xl font-bold text-white mb-2">
                        {planData.name}
                     </h3>
-                    <p className="text-text-secondary mb-6 text-sm flex-grow">
+                    <p className="text-text-secondary mb-6 text-sm grow">
                       {planData.description}
                     </p>
                     <div className="mb-6">

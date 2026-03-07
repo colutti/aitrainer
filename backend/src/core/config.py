@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     BETTERSTACK_API_TOKEN: str = ""
     BETTERSTACK_SOURCE_ID: str = ""
 
+    # ====== FIREBASE INTEGRATION ======
+    FIREBASE_CREDENTIALS: str | None = None
+
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v: str | list[str]) -> list[str]:

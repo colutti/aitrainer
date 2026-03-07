@@ -570,6 +570,10 @@
     "marketing_subtitle": "Seguimiento completo de dieta, entrenamiento y metabolismo en una única plataforma premium.",
     "welcome_back": "¡Bienvenido de nuevo!",
     "error_message": "Error al iniciar sesión. Verifica tus credenciales.",
+    "invalid_credentials": "Email o contraseña incorrectos.",
+    "enter_email_first": "Por favor, introduce tu correo primero.",
+    "password_reset_sent": "¡Correo de restablecimiento de contraseña enviado con éxito!",
+    "or_continue_with": "O continuar con",
     "brand_tagline": "I.A. x Fitness"
   },
   "validation": {

@@ -86,3 +86,6 @@ artifacts/superpowers/
 # Security scan reports
 trivy-report.*
 semgrep-report.*
+
+# Firebase Credentials
+backend/firebase-admin*.json

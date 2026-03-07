@@ -41,11 +41,18 @@ def setup_logging(log_file="api.log", max_bytes=10 * 1024 * 1024, backup_count=5
     brain_logger.addHandler(console_handler)
 
     # File Handler with rotation
-    file_handler = RotatingFileHandler(
-        log_file, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8"
-    )
-    file_handler.setFormatter(formatter)
-    brain_logger.addHandler(file_handler)
+    try:
+        file_handler = RotatingFileHandler(
+            log_file, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8"
+        )
+        file_handler.setFormatter(formatter)
+        brain_logger.addHandler(file_handler)
+    except PermissionError as e:
+        brain_logger.warning(
+            "Permission denied writing to %s. File logging disabled. Error: %s",
+            log_file,
+            e,
+        )
 
     return brain_logger
 

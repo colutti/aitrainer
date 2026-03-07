@@ -1,8 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-import { Button } from '@shared/components/ui/Button';
-import { StatsCard } from '@shared/components/ui/StatsCard';
 import { adminApi } from '../api/admin-api';
 
 import { AdminDashboardPage } from './AdminDashboardPage';

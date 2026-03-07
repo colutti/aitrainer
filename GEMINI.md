@@ -94,15 +94,13 @@ make ci-test         # Full suite: backend + frontend + e2e
 ### User & Admin Management
 
 ```bash
-make init-db USUARIO=email@example.com SENHA=password    # Init DB with first user
-make user-create EMAIL=user@example.com PASSWORD=pass123  # Create user
+# Migration & Maintenance
+cd backend && .venv/bin/python scripts/migrate_users_to_firebase.py  # Sync DB users to Firebase
+
+# Admin Actions
 make user-list                                            # List all users
 make user-get EMAIL=user@example.com                      # Get user details
-make user-password EMAIL=user@example.com PASSWORD=new123 # Update password
 make user-nuke EMAIL=user@example.com                     # Delete user completely
-make user-nuke-force EMAIL=user@example.com               # Delete without confirmation
-make invite-create EMAIL=newuser@example.com              # Create invite (48h)
-make invite-list                                          # List invites
 make admin-promote EMAIL=user@example.com                 # Promote to admin
 ```
 
@@ -127,7 +125,7 @@ Request -> API Endpoint -> Service Layer -> Repository Layer -> Database
 **Key Patterns:**
 
 1. **Repository Pattern** (`backend/src/repositories/`) - All DB access through `BaseRepository` subclasses
-2. **Service Layer** (`backend/src/services/`) - Business logic separated from endpoints
+2. **Service Layer** (`backend/src/services/`) - Business logic separated from endpoints (incl. Firebase Auth verify)
 3. **Dependency Injection** (`backend/src/core/deps.py`) - DB connections, current user, settings via `Depends()`
 4. **AI Provider Abstraction** (`backend/src/core/config.py`) - `AI_PROVIDER` switches between gemini/openai/ollama
 5. **Trainer Registry** (`backend/src/trainers/registry.py`) - Singleton managing trainer personalities (Atlas, Luna, Sofia, Sargento, GymBro)
@@ -136,10 +134,11 @@ Request -> API Endpoint -> Service Layer -> Repository Layer -> Database
 
 - **Architecture**: Feature-based folder structure (`src/features/`)
 - **State Management**: Zustand stores (`useAuth`, `useChat`, etc.)
+- **Authentication**: Firebase Client SDK for login/social/password-reset
 - **Styling**: TailwindCSS v4 with CSS variables theme
 - **Routing**: React Router v7
 - **Forms**: React Hook Form + Zod validation
-- **API**: Centralized `httpClient` + specialized API modules per feature
+- **API**: Centralized `httpClient` (injects Firebase ID Token)
 - **Linting**: ESLint with `tseslint.configs.strictTypeChecked` + `stylisticTypeChecked`
 - **TypeScript**: Strict mode with `noUncheckedIndexedAccess`, `noUnusedLocals`, `noUnusedParameters`
 
@@ -157,6 +156,10 @@ User Message -> Trainer Service -> LangGraph Agent -> Tools -> Response
 
 ## Configuration & Environment
 
+### Environment Separation
+- **Development**: Local MongoDB + Firebase Project `fityq-dev-colutti`
+- **Production**: Cloud Run + Firebase Project `fityq-488619`
+
 ### Backend `.env`
 
 ```bash
@@ -167,6 +170,7 @@ DB_NAME=aitrainer
 QDRANT_HOST=http://qdrant
 QDRANT_PORT=6333
 SECRET_KEY=your-secret-key
+FIREBASE_CREDENTIALS="firebase-admin-dev.json"  # Dev credentials file
 API_SERVER_PORT=8000
 ALLOWED_ORIGINS=http://localhost:3000
 ```
@@ -177,7 +181,7 @@ All AI providers use 768-dimensional embeddings for Qdrant compatibility.
 
 All in `backend/src/api/endpoints/`: `/user`, `/message`, `/trainer`, `/memory`, `/workout`, `/nutrition`, `/weight`, `/metabolism`, `/integrations/hevy`, `/onboarding`, `/telegram`, `/health`, `/admin`
 
-**Authentication:** JWT tokens via `/user/login`
+**Authentication:** Firebase ID Token verified in `/user/login` -> Platform JWT
 
 ## Database
 
