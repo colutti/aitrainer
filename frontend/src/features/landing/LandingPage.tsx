@@ -130,14 +130,6 @@ const LandingPage = () => {
             >
               {t('landing.nav.login')}
             </Button>
-            <Button
-              onClick={() => { void navigate('/login'); }}
-              variant="primary"
-              size="sm"
-              className="shadow-md shadow-primary/20"
-            >
-              {t('landing.nav.get_started')}
-            </Button>
           </div>
 
           {/* Mobile menu toggle */}
@@ -173,7 +165,7 @@ const LandingPage = () => {
               variant="primary"
               fullWidth
             >
-              {t('landing.nav.get_started')}
+              {t('landing.nav.login')}
             </Button>
           </div>
         )}
@@ -200,7 +192,7 @@ const LandingPage = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button
-                onClick={() => { void navigate('/login'); }}
+                onClick={() => { void navigate('/login?mode=register'); }}
                 variant="primary"
                 size="lg"
                 className="h-14 px-8 text-lg group"
@@ -524,7 +516,7 @@ const LandingPage = () => {
                     </div>
                     <Button
                       onClick={() => {
-                        void navigate('/login');
+                        void navigate('/login?mode=register');
                       }}
                       variant={plan.highlight ? 'primary' : 'secondary'}
                       disabled={!plan.isFree}
@@ -575,7 +567,7 @@ const LandingPage = () => {
           </p>
           <Button
             onClick={() => {
-              void navigate('/login');
+              void navigate('/login?mode=register');
             }}
             variant="primary"
             size="lg"

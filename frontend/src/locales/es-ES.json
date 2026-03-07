@@ -574,7 +574,15 @@
     "enter_email_first": "Por favor, introduce tu correo primero.",
     "password_reset_sent": "¡Correo de restablecimiento de contraseña enviado con éxito!",
     "or_continue_with": "O continuar con",
-    "brand_tagline": "I.A. x Fitness"
+    "brand_tagline": "I.A. x Fitness",
+    "register_tab": "Registrarse",
+    "register_title": "Crea tu Cuenta",
+    "register_subtitle": "Comienza tu viaje fitness hoy mismo.",
+    "register_submit": "Crear Cuenta",
+    "account_created": "¡Cuenta creada con éxito!",
+    "email_already_in_use": "Este correo electrónico ya está en uso.",
+    "weak_password": "La contraseña es demasiado débil.",
+    "confirm_password_label": "Confirmar Contraseña"
   },
   "validation": {
     "email_invalid": "Email inválido",
@@ -583,7 +591,8 @@
     "invalid_type_number": "El {{field}} debe ser un número",
     "number_min": "{{field}} debe ser al menos {{min}}",
     "number_max": "{{field}} debe ser como máximo {{max}}",
-    "max_chars": "Máximo de {{max}} caracteres"
+    "max_chars": "Máximo de {{max}} caracteres",
+    "passwords_dont_match": "Las contraseñas no coinciden"
   },
   "nutrition": {
     "title": "Nutrición",
@@ -796,6 +805,13 @@
     "step_1_title": "Crear Contraseña",
     "step_2_title": "Tu Perfil",
     "step_3_title": "Elige tu Entrenador",
+    "integrations_title": "Potencia tu Evolución",
+    "integrations_desc": "Conecta tus apps para que tu entrenador conozca tu historial real y optimice teus resultados.",
+    "integrations_hevy_desc": "Sincroniza tus entrenamientos automáticamente.",
+    "integrations_hevy_hint": "En Hevy app: Perfil > Ajustes > Hevy API.",
+    "integrations_csv_title": "Outras APPs (MFP, Zepp Life)",
+    "integrations_csv_desc": "Puedes importar tu historial de macros y peso vía CSV.",
+    "integrations_settings_hint": "Puedes configurar todo esto luego en: Configuraciones > Integraciones.",
     "password_placeholder": "Contraseña",
     "confirm_password_placeholder": "Confirmar Contraseña",
     "password_hint": "Mínimo 8 caracteres, números y letras.",

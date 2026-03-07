@@ -578,7 +578,15 @@
     "enter_email_first": "Please enter your email first.",
     "password_reset_sent": "Password reset email sent successfully!",
     "or_continue_with": "Or continue with",
-    "brand_tagline": "A.I. x Fitness"
+    "brand_tagline": "A.I. x Fitness",
+    "register_tab": "Sign Up",
+    "register_title": "Create Account",
+    "register_subtitle": "Start your fitness journey today.",
+    "register_submit": "Create Account",
+    "account_created": "Account created successfully!",
+    "email_already_in_use": "This email is already in use.",
+    "weak_password": "The password is too weak.",
+    "confirm_password_label": "Confirm Password"
   },
   "validation": {
     "email_invalid": "Invalid email",
@@ -587,7 +595,10 @@
     "invalid_type_number": "{{field}} must be a number",
     "number_min": "{{field}} must be at least {{min}}",
     "number_max": "{{field}} must be at most {{max}}",
-    "max_chars": "Maximum of {{max}} characters"
+    "number_min": "{{field}} must be at least {{min}}",
+    "number_max": "{{field}} must be at most {{max}}",
+    "max_chars": "Maximum of {{max}} characters",
+    "passwords_dont_match": "Passwords don't match"
   },
   "nutrition": {
     "title": "Nutrition",
@@ -800,6 +811,13 @@
     "step_1_title": "Create Password",
     "step_2_title": "Your Profile",
     "step_3_title": "Choose your Trainer",
+    "integrations_title": "Boost Your Evolution",
+    "integrations_desc": "Connect your apps so your trainer knows your real history and can optimize your results.",
+    "integrations_hevy_desc": "Sync your workouts automatically.",
+    "integrations_hevy_hint": "In Hevy app: Profile > Settings > Hevy API.",
+    "integrations_csv_title": "Other APPs (MFP, Zepp Life)",
+    "integrations_csv_desc": "You can import your macro and weight history via CSV.",
+    "integrations_settings_hint": "You can configure all of this later in: Settings > Integrations.",
     "password_placeholder": "Password",
     "confirm_password_placeholder": "Confirm Password",
     "password_hint": "Min. 8 characters, numbers and letters.",

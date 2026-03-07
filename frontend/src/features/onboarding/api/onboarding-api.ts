@@ -35,5 +35,12 @@ export const onboardingApi = {
       method: 'POST',
       body: JSON.stringify(data)
     }) as Promise<CompleteResponse>;
+  },
+
+  completePublicOnboarding: async (data: Omit<OnboardingPayload, 'token' | 'password'>): Promise<CompleteResponse> => {
+    return httpClient<CompleteResponse>('/onboarding/profile', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }) as Promise<CompleteResponse>;
   }
 };

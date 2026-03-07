@@ -73,6 +73,8 @@ describe('OnboardingPage', () => {
 
     // Step 2: Profile
     expect(await screen.findByText('Seu Perfil')).toBeInTheDocument();
+    // Select Gender
+    fireEvent.click(screen.getByText('Masculino'));
     // Fill profile
     fireEvent.change(screen.getByLabelText(/idade/i), { target: { value: '25' } });
     fireEvent.change(screen.getByLabelText(/peso/i), { target: { value: '70' } });
@@ -82,16 +84,21 @@ describe('OnboardingPage', () => {
 
     // Step 3: Trainer
     expect(await screen.findByText('Escolha seu Treinador')).toBeInTheDocument();
-    // Select Atlas (default usually, or click one)
     const trainerCard = screen.getByText('Atlas');
     fireEvent.click(trainerCard);
     
+    // Agora o botão é "Próximo" para ir para Integrações
+    const nextToIntegrationsBtn = screen.getByRole('button', { name: /próximo/i });
+    fireEvent.click(nextToIntegrationsBtn);
+
+    // Passo adicional: Integrações
+    expect(await screen.findByText(/Turbine sua Evolução/i)).toBeInTheDocument();
     const finishBtn = screen.getByRole('button', { name: /finalizar/i });
     fireEvent.click(finishBtn);
 
     await waitFor(() => {
       expect(onboardingApi.completeOnboarding).toHaveBeenCalled();
-      expect(window.location.pathname).toBe('/'); 
+      expect(screen.getByText(/Tudo Pronto/i)).toBeInTheDocument();
     });
   });
 });

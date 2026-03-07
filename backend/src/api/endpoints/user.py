@@ -47,9 +47,6 @@ def login(request: Request, data: FirebaseLoginRequest, brain: AITrainerBrainDep
     Authenticates a user with a Firebase ID token.
     This replaces both conventional and social login.
     """
-    from datetime import date
-    from src.api.models.trainer_profile import TrainerProfile
-    from src.api.models.weight_log import WeightLog
     from src.core.deps import get_mongo_database
     import firebase_admin.auth
 
@@ -93,21 +90,10 @@ def login(request: Request, data: FirebaseLoginRequest, brain: AITrainerBrainDep
                 subscription_plan="Free",
                 display_name=display_name,
                 photo_base64=photo_base64,
-            )
-
-            trainer_profile = TrainerProfile(
-                user_email=email, trainer_type="atlas"
+                onboarding_completed=False,
             )
             db.save_user_profile(user_profile)
-            db.save_trainer_profile(trainer_profile)
-
-            initial_log = WeightLog(
-                user_email=email,
-                date=date.today(),
-                weight_kg=70.0,
-                trend_weight=70.0,
-            )
-            db.weight.save_log(initial_log)
+            logger.info("New user created via login: %s", email)
 
             logger.info("User logged in (newly created): %s", email)
 
@@ -159,6 +145,7 @@ def get_current_user(user_email: CurrentUser, brain: AITrainerBrainDep) -> dict:
         "role": user_profile.role,
         "name": user_profile.display_name,
         "photo_base64": user_profile.photo_base64,
+        "onboarding_completed": getattr(user_profile, "onboarding_completed", True),
     }
 
 

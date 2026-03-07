@@ -9,6 +9,7 @@ export interface UserInfo {
   name: string;
   is_admin: boolean;
   photo_base64?: string;
+  onboarding_completed: boolean;
 }
 
 export interface AuthState {
@@ -145,7 +146,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
    * Sets userInfo and isAdmin based on response
    */
   loadUserInfo: async () => {
-    const data = await httpClient<{ email: string; role: string; name?: string; photo_base64?: string }>('/user/me');
+    const data = await httpClient<{ 
+      email: string; 
+      role: string; 
+      name?: string; 
+      photo_base64?: string;
+      onboarding_completed: boolean;
+    }>('/user/me');
 
     if (!data) {
       throw new Error('Failed to load user info');
@@ -157,6 +164,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         name: data.name ?? data.email.split('@')[0] ?? 'User',
         is_admin: data.role === 'admin',
         photo_base64: data.photo_base64,
+        onboarding_completed: data.onboarding_completed,
       },
       isAdmin: data.role === 'admin',
     });

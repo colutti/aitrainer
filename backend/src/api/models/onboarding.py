@@ -12,7 +12,7 @@ class OnboardingCompleteRequest(BaseModel):
 
     token: str = Field(..., description="Invite token")
     password: str = Field(..., min_length=8, description="User password")
-    gender: str = Field(..., pattern="^(Masculino|Feminino)$")
+    gender: str = Field(..., pattern="^([Mm]asculino|[Ff]eminino|[Mm]ale|[Ff]emale|[Ff]emenino|[Oo]tro|[Oo]ther)$")
     age: int = Field(..., ge=18, le=100)
     weight: float = Field(..., ge=30.0, le=500.0, description="Weight in kg")
     height: int = Field(..., ge=100, le=250, description="Height in cm")
@@ -50,6 +50,26 @@ class OnboardingCompleteRequest(BaseModel):
             raise ValueError("Password must contain at least one digit")
 
         return self
+
+
+class PublicOnboardingRequest(BaseModel):
+    """
+    Request model for completing onboarding for a user already authenticated.
+    """
+
+    gender: str = Field(..., pattern="^([Mm]asculino|[Ff]eminino|[Mm]ale|[Ff]emale|[Ff]emenino|[Oo]tro|[Oo]ther)$")
+    age: int = Field(..., ge=18, le=100)
+    weight: float = Field(..., ge=30.0, le=500.0, description="Weight in kg")
+    height: int = Field(..., ge=100, le=250, description="Height in cm")
+    goal_type: str = Field(..., pattern="^(lose|gain|maintain)$")
+    weekly_rate: float = Field(
+        0.5, ge=0.0, le=2.0, description="Weekly change rate in kg"
+    )
+    trainer_type: str = Field(
+        default="atlas",
+        pattern="^(atlas|luna|sargento|sofia|gymbro)$",
+        description="Selected trainer type",
+    )
 
 
 class OnboardingValidateResponse(BaseModel):

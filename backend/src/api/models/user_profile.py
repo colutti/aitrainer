@@ -12,7 +12,7 @@ class UserProfileInput(BaseModel):
     """
 
     gender: str = Field(
-        ..., description="User's gender", pattern="^(Masculino|Feminino)$"
+        ..., description="User's gender", pattern="^([Mm]asculino|[Ff]eminino|[Mm]ale|[Ff]emale|[Ff]emenino|[Oo]tro|[Oo]ther)$"
     )
     age: int = Field(..., ge=18, le=100, description="Age between 18 and 100 years")
     weight: float | None = Field(
@@ -110,6 +110,9 @@ class UserProfile(UserProfileInput):
     total_messages_sent: int = Field(default=0, description="Total messages sent by user ever")
     current_billing_cycle_start: datetime | None = Field(
         default=None, description="ISO timestamp of cycle start"
+    )
+    onboarding_completed: bool = Field(
+        default=True, description="Whether the user has completed the onboarding flow"
     )
 
     # Coaching Check-in (TDEE)

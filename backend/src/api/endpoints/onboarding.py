@@ -3,20 +3,24 @@ Onboarding API endpoints.
 """
 
 from datetime import date, datetime, timezone
-from fastapi import APIRouter, HTTPException, Query
+from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException, Query
 from src.api.models.onboarding import (
     OnboardingCompleteRequest,
     OnboardingCompleteResponse,
     OnboardingValidateResponse,
+    PublicOnboardingRequest,
 )
 from src.api.models.user_profile import UserProfile
 from src.api.models.trainer_profile import TrainerProfile
 from src.api.models.weight_log import WeightLog
 from src.core.deps import get_mongo_database
 from src.core.logs import logger
-from src.services.auth import create_token
+from src.services.auth import create_token, verify_token
 
 router = APIRouter()
+
+CurrentUser = Annotated[str, Depends(verify_token)]
 
 
 @router.get("/validate", response_model=OnboardingValidateResponse)
@@ -162,3 +166,51 @@ def complete_onboarding(request: OnboardingCompleteRequest):
     return OnboardingCompleteResponse(
         token=jwt_token, message="Conta criada com sucesso!"
     )
+
+
+@router.post("/profile", response_model=OnboardingCompleteResponse)
+def complete_public_onboarding(
+    request: PublicOnboardingRequest, user_email: CurrentUser
+):
+    """
+    Completes onboarding for a user that is already authenticated (open registration).
+    Does NOT require an invite token.
+    """
+    db = get_mongo_database()
+    profile = db.get_user_profile(user_email)
+
+    if not profile:
+        logger.error("User profile not found during public onboarding: %s", user_email)
+        raise HTTPException(status_code=404, detail="User profile not found")
+
+    # Update profile fields
+    profile.gender = request.gender
+    profile.age = request.age
+    profile.weight = request.weight
+    profile.height = request.height
+    profile.goal_type = request.goal_type
+    profile.weekly_rate = request.weekly_rate
+    profile.onboarding_completed = True
+
+    # Create trainer profile
+    trainer_profile = TrainerProfile(user_email=user_email, trainer_type=request.trainer_type)
+
+    # Save to database
+    db.save_user_profile(profile)
+    db.save_trainer_profile(trainer_profile)
+
+    # Create initial weight log
+    initial_log = WeightLog(
+        user_email=user_email,
+        date=date.today(),
+        weight_kg=request.weight,
+        trend_weight=request.weight,
+    )
+    db.weight.save_log(initial_log)
+
+    logger.info("Public onboarding completed successfully for %s", user_email)
+
+    # Generate fresh JWT token
+    jwt_token = create_token(user_email)
+
+    return OnboardingCompleteResponse(token=jwt_token, message="Perfil configurado com sucesso!")

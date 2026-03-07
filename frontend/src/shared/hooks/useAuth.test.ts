@@ -83,6 +83,7 @@ describe('useAuth', () => {
         email: 'test@example.com',
         role: 'user',
         name: 'Test User',
+        onboarding_completed: true,
       };
       
       const expectedUserInfo = {
@@ -90,6 +91,7 @@ describe('useAuth', () => {
          name: 'Test User',
          is_admin: false,
          photo_base64: undefined,
+         onboarding_completed: true,
       };
 
       // Mock login response
@@ -157,7 +159,7 @@ describe('useAuth', () => {
       act(() => {
         useAuthStore.setState({
           isAuthenticated: true,
-          userInfo: { email: 'test@example.com', name: 'Test User', is_admin: true },
+          userInfo: { email: 'test@example.com', name: 'Test User', is_admin: true, onboarding_completed: true },
           isAdmin: true,
           isLoading: false // Add isLoading mandatory field
         });
@@ -180,12 +182,14 @@ describe('useAuth', () => {
         email: 'admin@example.com',
         role: 'admin',
         name: 'Admin User',
+        onboarding_completed: true,
       };
       
       const expectedUserInfo = {
         email: 'admin@example.com',
         name: 'Admin User',
         is_admin: true,
+        onboarding_completed: true,
       };
 
       vi.mocked(httpClient).mockResolvedValueOnce(mockUserApiData);
@@ -206,12 +210,14 @@ describe('useAuth', () => {
         email: 'user@example.com',
         role: 'user',
         name: 'Regular User',
+        onboarding_completed: true,
       };
       
       const expectedUserInfo = {
         email: 'user@example.com',
         name: 'Regular User',
         is_admin: false,
+        onboarding_completed: true,
       };
 
       vi.mocked(httpClient).mockResolvedValueOnce(mockUserApiData);
@@ -230,12 +236,14 @@ describe('useAuth', () => {
         const mockUserApiData = {
           email: 'user@example.com',
           role: 'user',
+          onboarding_completed: true,
         };
         
         const expectedUserInfo = {
           email: 'user@example.com',
           name: 'user', // extracted from email
           is_admin: false,
+          onboarding_completed: true,
         };
   
         vi.mocked(httpClient).mockResolvedValueOnce(mockUserApiData);
@@ -301,12 +309,14 @@ describe('useAuth', () => {
         email: 'user@example.com',
         role: 'user',
         name: 'Test User',
+        onboarding_completed: true,
       };
       
       const expectedUserInfo = {
         email: 'user@example.com',
         name: 'Test User',
         is_admin: false,
+        onboarding_completed: true,
       };
 
       vi.mocked(httpClient).mockResolvedValueOnce(mockUserApiData);

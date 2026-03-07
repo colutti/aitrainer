@@ -14,7 +14,7 @@ interface AuthGuardProps {
  * Redirects to the home page (or intended destination) if already authenticated.
  */
 export function AuthGuard({ children }: AuthGuardProps) {
-  const { isAuthenticated, isLoading, logout } = useAuthStore();
+  const { isAuthenticated, userInfo, isLoading, logout } = useAuthStore();
   const location = useLocation();
 
   const isInviteLink = location.pathname === '/onboarding' && new URLSearchParams(location.search).has('token');
@@ -34,6 +34,12 @@ export function AuthGuard({ children }: AuthGuardProps) {
       // Waiting for logout to complete
       return null;
     }
+
+    // Allow authenticated users to stay on onboarding if they haven't completed it
+    if (location.pathname === '/onboarding' && userInfo && !userInfo.onboarding_completed) {
+      return <>{children}</>;
+    }
+
     // If user is already authenticated, redirect to dashboard or the page they was trying to access
     const state = location.state as { from?: { pathname: string } } | null;
     const from = state?.from?.pathname ?? '/dashboard';

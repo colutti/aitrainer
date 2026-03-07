@@ -25,7 +25,7 @@ export const StickyMobileCTA = () => {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-60 p-4 bg-dark-bg/80 backdrop-blur-lg border-t border-white/10 flex animate-in slide-in-from-bottom duration-300">
       <Button
-        onClick={() => { void navigate('/login'); }}
+        onClick={() => { void navigate('/login?mode=register'); }}
         variant="primary"
         fullWidth
         className="h-12 shadow-lg shadow-primary/20"

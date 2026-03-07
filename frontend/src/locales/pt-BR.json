@@ -585,7 +585,15 @@
     "enter_email_first": "Por favor, digite seu e-mail primeiro.",
     "password_reset_sent": "E-mail de redefinição de senha enviado com sucesso!",
     "or_continue_with": "Ou continue com",
-    "brand_tagline": "I.A. x Fitness"
+    "brand_tagline": "I.A. x Fitness",
+    "register_tab": "Cadastrar",
+    "register_title": "Crie sua Conta",
+    "register_subtitle": "Comece sua jornada fitness hoje mesmo.",
+    "register_submit": "Criar Conta",
+    "account_created": "Conta criada com sucesso!",
+    "email_already_in_use": "Este email já está em uso por outra conta.",
+    "weak_password": "A senha digitada é muito fraca.",
+    "confirm_password_label": "Confirmar Senha"
   },
   "validation": {
     "email_invalid": "Email inválido",
@@ -595,7 +603,10 @@
     "invalid_type_number": "O {{field}} deve ser um número",
     "number_min": "{{field}} deve ser ao menos {{min}}",
     "number_max": "{{field}} deve ser no máximo {{max}}",
-    "max_chars": "Máximo de {{max}} caracteres"
+    "number_min": "{{field}} deve ser ao menos {{min}}",
+    "number_max": "{{field}} deve ser no máximo {{max}}",
+    "max_chars": "Máximo de {{max}} caracteres",
+    "passwords_dont_match": "As senhas não coincidem"
   },
   "nutrition": {
     "title": "Nutrição",
@@ -807,6 +818,13 @@
     "step_1_title": "Criar Senha",
     "step_2_title": "Seu Perfil",
     "step_3_title": "Escolha seu Treinador",
+    "integrations_title": "Turbine sua Evolução",
+    "integrations_desc": "Conecte seus apps para que seu treinador conheça seu histórico real e otimize seus resultados.",
+    "integrations_hevy_desc": "Sincronize seus treinos automaticamente.",
+    "integrations_hevy_hint": "No app Hevy: Perfil > Configurações > Hevy API.",
+    "integrations_csv_title": "Outros APPs (MFP, Zepp Life)",
+    "integrations_csv_desc": "Você pode importar seu histórico de macros e peso via CSV.",
+    "integrations_settings_hint": "Tudo isso pode ser configurado depois em: Configurações > Integrações.",
     "password_placeholder": "Senha",
     "confirm_password_placeholder": "Confirmar Senha",
     "password_hint": "Mínimo 8 caracteres, números e letras.",

@@ -1,9 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Mail, Lock, LogIn } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { Mail, Lock, LogIn, Zap } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 
 import { Button } from '../../shared/components/ui/Button';
@@ -11,6 +11,7 @@ import { Input } from '../../shared/components/ui/Input';
 import { LanguageSelector } from '../../shared/components/ui/LanguageSelector';
 import { useAuthStore } from '../../shared/hooks/useAuth';
 import { useNotificationStore } from '../../shared/hooks/useNotification';
+import { cn } from '../../shared/utils/cn';
 
 /**
  * LoginPage component
@@ -24,12 +25,35 @@ export function LoginPage() {
   const socialLogin = useAuthStore((state) => state.socialLogin);
   const notify = useNotificationStore();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [mode, setMode] = useState<'login' | 'register'>(searchParams.get('mode') === 'register' ? 'register' : 'login');
+
+  useEffect(() => {
+    const m = searchParams.get('mode');
+    if (m === 'login' || m === 'register') {
+      setMode(m);
+    }
+  }, [searchParams]);
+
+  const handleModeChange = (newMode: 'login' | 'register') => {
+    setMode(newMode);
+    setSearchParams({ mode: newMode }, { replace: true });
+  };
 
   // Validation schema defined inside to allow for dynamic translations
   const loginSchema = useMemo(() => z.object({
     email: z.string().email(t('validation.email_invalid')),
     password: z.string().min(6, t('validation.password_min')),
-  }), [t]);
+    confirmPassword: z.string().optional(),
+  }).refine((data) => {
+    if (mode === 'register' && data.password !== data.confirmPassword) {
+      return false;
+    }
+    return true;
+  }, {
+    message: t('validation.passwords_dont_match', 'As senhas não coincidem'),
+    path: ['confirmPassword'],
+  }), [t, mode]);
 
   type LoginForm = z.infer<typeof loginSchema>;
 
@@ -43,19 +67,35 @@ export function LoginPage() {
   });
 
   const onSubmit = async (data: LoginForm) => {
-    setIsLoading(false); // Reset just in case, but usually handled by isSubmitting
+    setIsLoading(true);
     try {
-      await login(data.email, data.password);
-      notify.success(t('login.welcome_back'));
+      if (mode === 'login') {
+        await login(data.email, data.password);
+        notify.success(t('login.welcome_back'));
+      } else {
+        const { auth } = await import('../../features/auth/firebase');
+        const { createUserWithEmailAndPassword } = await import('firebase/auth');
+        await createUserWithEmailAndPassword(auth, data.email, data.password);
+        // After firebase creation, we call login to sync with our backend
+        await login(data.email, data.password);
+        notify.success(t('login.account_created', 'Conta criada com sucesso!'));
+      }
       await navigate('/');
     } catch (error: unknown) {
       console.error('Login error:', error);
       const errorCode = error instanceof Error && 'code' in error 
         ? (error as { code: string }).code 
         : '';
-      const message = errorCode === 'auth/invalid-credential' 
-        ? t('login.invalid_credentials') 
-        : t('login.error_message');
+      
+      let message = t('login.error_message');
+      
+      if (mode === 'login') {
+        if (errorCode === 'auth/invalid-credential') message = t('login.invalid_credentials');
+      } else {
+        if (errorCode === 'auth/email-already-in-use') message = t('login.email_already_in_use', 'Este email já está em uso.');
+        if (errorCode === 'auth/weak-password') message = t('login.weak_password', 'A senha é muito fraca.');
+      }
+      
       notify.error(message);
     }
   };
@@ -118,18 +158,45 @@ export function LoginPage() {
 
       {/* Right Side: Login Form */}
       <div className="w-full lg:w-2/5 flex items-center justify-center p-8 bg-dark-bg relative z-10 border-l border-white/5 shadow-[-20px_0_50px_rgba(0,0,0,0.5)]">
+        {/* Language Selector in Corner */}
+        <div className="absolute top-8 right-8 z-50">
+          <LanguageSelector />
+        </div>
+
         <div className="w-full max-w-md space-y-10 animate-in fade-in slide-in-from-right duration-700 bg-white/2 p-10 rounded-[2.5rem] border border-white/5 backdrop-blur-xl relative">
-          <div className="absolute top-6 right-6 lg:top-8 lg:right-8">
-            <LanguageSelector />
-          </div>
           <div className="lg:hidden text-center mb-10">
             <img src="/brand_icon_final.png" alt="FityQ" className="h-36 w-auto mx-auto drop-shadow-2xl mb-4 brightness-110" />
             <h1 className="text-3xl font-bold text-white tracking-widest">FityQ</h1>
           </div>
 
+          <div className="flex bg-white/5 p-1 rounded-2xl">
+            <button 
+              onClick={() => { handleModeChange('login'); }}
+              className={cn(
+                "flex-1 py-3 text-sm font-bold rounded-xl transition-all",
+                mode === 'login' ? "bg-linear-to-r from-gradient-start to-gradient-end text-white shadow-lg" : "text-text-secondary hover:text-white"
+              )}
+            >
+              {t('login.title')}
+            </button>
+            <button 
+              onClick={() => { handleModeChange('register'); }}
+              className={cn(
+                "flex-1 py-3 text-sm font-bold rounded-xl transition-all",
+                mode === 'register' ? "bg-linear-to-r from-gradient-start to-gradient-end text-white shadow-lg" : "text-text-secondary hover:text-white"
+              )}
+            >
+              {t('login.register_tab', 'Cadastrar')}
+            </button>
+          </div>
+
           <div className="space-y-4">
-            <h2 className="text-4xl font-extrabold text-white tracking-tight">{t('login.title')}</h2>
-            <p className="text-text-secondary text-lg">{t('login.subtitle')}</p>
+            <h2 className="text-4xl font-extrabold text-white tracking-tight">
+              {mode === 'login' ? t('login.title') : t('login.register_title', 'Crie sua Conta')}
+            </h2>
+            <p className="text-text-secondary text-lg">
+              {mode === 'login' ? t('login.subtitle') : t('login.register_subtitle', 'Comece sua jornada fitness hoje mesmo.')}
+            </p>
           </div>
 
           <form 
@@ -160,17 +227,32 @@ export function LoginPage() {
                 error={errors.password?.message}
                 {...register('password')}
               />
+
+              {mode === 'register' && (
+                <Input
+                  label={t('login.confirm_password_label', 'Confirmar Senha')}
+                  id="confirmPassword"
+                  type="password"
+                  placeholder={t('onboarding.confirm_password_placeholder')}
+                  leftIcon={<Lock size={20} className="text-text-muted" />}
+                  className="bg-white/5 border-white/10 h-14"
+                  error={errors.confirmPassword?.message}
+                  {...register('confirmPassword')}
+                />
+              )}
             </div>
 
-            <div className="flex items-center justify-end">
-              <button
-                type="button"
-                onClick={() => void handleForgotPassword()}
-                className="text-sm font-semibold text-gradient-start hover:text-gradient-end transition-colors underline-offset-4 hover:underline"
-              >
-                {t('login.forgot_password')}
-              </button>
-            </div>
+            {mode === 'login' && (
+              <div className="flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={() => void handleForgotPassword()}
+                  className="text-sm font-semibold text-gradient-start hover:text-gradient-end transition-colors underline-offset-4 hover:underline"
+                >
+                  {t('login.forgot_password')}
+                </button>
+              </div>
+            )}
 
             <Button
               type="submit"
@@ -178,8 +260,8 @@ export function LoginPage() {
               isLoading={isLoading}
               className="h-14 text-xl font-bold bg-linear-to-r from-gradient-start to-gradient-end shadow-orange hover:shadow-orange/40 transition-all rounded-xl"
             >
-              {t('login.submit')}
-              {!isLoading && <LogIn className="ml-3" size={22} />}
+              {mode === 'login' ? t('login.submit') : t('login.register_submit', 'Criar Conta')}
+              {!isLoading && (mode === 'login' ? <LogIn className="ml-3" size={22} /> : <Zap className="ml-3" size={22} />)}
             </Button>
           </form>
 

@@ -15,7 +15,7 @@ interface ProtectedRouteProps {
  * Redirects to / if authenticated but lacks admin privileges (when required).
  */
 export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
-  const { isAuthenticated, isAdmin, isLoading } = useAuthStore();
+  const { isAuthenticated, isAdmin, isLoading, userInfo } = useAuthStore();
   const location = useLocation();
 
   if (isLoading) {
@@ -25,6 +25,11 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
   if (!isAuthenticated) {
     // Redirect to landing page but save the current location to redirect back after login
     return <Navigate to="/" state={{ from: location }} replace />;
+  }
+
+  if (userInfo && !userInfo.onboarding_completed) {
+    // If onboarding is not completed, redirect to onboarding page
+    return <Navigate to="/onboarding" replace />;
   }
 
   if (requireAdmin && !isAdmin) {
