@@ -3,7 +3,7 @@ This module contains the models for user profiles and preferences.
 """
 
 from datetime import datetime
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, computed_field
 
 
 class UserProfileInput(BaseModel):
@@ -140,6 +140,47 @@ class UserProfile(UserProfileInput):
     tdee_start_date: str | None = Field(
         default=None, description="ISO Date string to start TDEE EMA calculation from (format: YYYY-MM-DD)"
     )
+
+    @computed_field
+    @property
+    def trial_remaining_days(self) -> int | None:
+        """Calculates remaining days in the trial period."""
+        from src.core.subscription import SUBSCRIPTION_PLANS, SubscriptionPlan
+        try:
+            plan_name = SubscriptionPlan(self.subscription_plan)
+        except (ValueError, AttributeError):
+            plan_name = SubscriptionPlan.FREE
+        
+        plan = SUBSCRIPTION_PLANS[plan_name]
+        if plan.validity_days is None:
+            return None
+        
+        if not self.current_billing_cycle_start:
+            return plan.validity_days
+            
+        now = datetime.now()
+        cycle_start = self.current_billing_cycle_start
+        if isinstance(cycle_start, str):
+            cycle_start = datetime.fromisoformat(cycle_start)
+            
+        elapsed = (now - cycle_start).days
+        remaining = plan.validity_days - elapsed
+        return max(0, remaining)
+
+    @computed_field
+    @property
+    def current_daily_limit(self) -> int | None:
+        """Returns the daily message limit for the current plan."""
+        from src.core.subscription import SUBSCRIPTION_PLANS, SubscriptionPlan
+        if self.custom_message_limit is not None:
+            return None # Custom limit overrides daily limits
+        
+        try:
+            plan_name = SubscriptionPlan(self.subscription_plan)
+        except (ValueError, AttributeError):
+            plan_name = SubscriptionPlan.FREE
+            
+        return SUBSCRIPTION_PLANS[plan_name].daily_limit
 
     def _goal_type_label(self) -> str:
         labels = {

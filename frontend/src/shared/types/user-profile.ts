@@ -16,6 +16,8 @@ export interface UserProfile {
   current_billing_cycle_start?: string;
   messages_sent_today?: number;
   last_message_date?: string;
+  trial_remaining_days?: number | null;
+  current_daily_limit?: number | null;
 }
 
 export type OnboardingData = Partial<UserProfile>;

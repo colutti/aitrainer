@@ -76,18 +76,54 @@ class UserRepository(BaseRepository):
         """
         Atomically increments message counts for a user.
         If new_cycle_start is provided, it resets the monthly count and updates the cycle start.
+        Also handles daily message limits and daily resets.
         """
+        now = datetime.now()
+        today_str = now.strftime("%Y-%m-%d")
+
+        # Get existing last_message_date to check for reset
+        # Note: In a high-concurrency environment, we'd use a more complex $cond in the update,
+        # but here we'll do a simple fetch or rely on the $set behavior.
+        # Actually, let's use a single atomic update with $cond if possible, but pymongo/mongo 4.2+ needed.
+        # We'll use a simpler approach: check if we need to reset today's count based on a separate query or 
+        # just use $set if we pass the current date.
+        
+        # We will use the fact that we can do conditional updates using aggregation pipelines in update_one (Mongo 4.2+).
+        # pipeline = [
+        #     { "$set": {
+        #         "messages_sent_today": { "$cond": { "if": { "$ne": ["$last_message_date", today_str] }, "then": 1, "else": { "$add": ["$messages_sent_today", 1] } } },
+        #         "last_message_date": today_str,
+        #         "total_messages_sent": { "$add": ["$total_messages_sent", 1] },
+        #         ...
+        #     }}
+        # ]
+        
+        # But for simplicity and compatibility with standard project patterns:
+        existing = self.collection.find_one({"email": email}, {"last_message_date": 1})
+        is_new_day = (existing and existing.get("last_message_date") != today_str) if existing else True
+
         if new_cycle_start:
             update_doc = {
                 "$inc": {"total_messages_sent": 1},
                 "$set": {
                     "current_billing_cycle_start": new_cycle_start,
                     "messages_sent_this_month": 1,
+                    "last_message_date": today_str,
+                    "messages_sent_today": 1
                 },
             }
         else:
+            inc_fields = {"total_messages_sent": 1, "messages_sent_this_month": 1}
+            set_fields = {"last_message_date": today_str}
+            
+            if is_new_day:
+                set_fields["messages_sent_today"] = 1
+            else:
+                inc_fields["messages_sent_today"] = 1
+                
             update_doc = {
-                "$inc": {"messages_sent_this_month": 1, "total_messages_sent": 1},
+                "$inc": inc_fields,
+                "$set": set_fields
             }
 
         self.collection.update_one({"email": email}, update_doc)

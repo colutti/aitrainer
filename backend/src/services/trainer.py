@@ -79,9 +79,10 @@ class AITrainerBrain:
             plan_name = SubscriptionPlan.FREE
 
         plan = SUBSCRIPTION_PLANS[plan_name]
-
-        # Check cycle reset
         now = datetime.now()
+        today_str = now.strftime("%Y-%m-%d")
+
+        # Check cycle reset (billing cycle)
         needs_cycle_reset = False
         if profile.current_billing_cycle_start is None:
             needs_cycle_reset = True
@@ -93,31 +94,58 @@ class AITrainerBrain:
                 except ValueError:
                     cycle_start = now
             
-            # Simple 30-day billing cycle
+            # Simple 30-day billing cycle for paid plans
             if now - cycle_start >= timedelta(days=30):
                 needs_cycle_reset = True
 
-        # Fetch current counts (taking reset into account)
-        current_monthly = (
-            0 if needs_cycle_reset else getattr(profile, "messages_sent_this_month", 0)
-        )
-        current_total = getattr(profile, "total_messages_sent", 0)
+        # Check Trial Expiration (Free Plan restricted to 7 days)
+        if profile.custom_message_limit is None and plan.validity_days is not None:
+            if profile.current_billing_cycle_start:
+                cycle_start = profile.current_billing_cycle_start
+                if isinstance(cycle_start, str):
+                    cycle_start = datetime.fromisoformat(cycle_start)
+                if now - cycle_start >= timedelta(days=plan.validity_days):
+                    raise HTTPException(
+                        status_code=403, detail="TRIAL_EXPIRED"
+                    )
 
-        # Determine effective limits
+        # Check Daily Limits (e.g., 20/day for Free)
+        current_today_count = profile.messages_sent_today
+        if profile.last_message_date != today_str:
+            current_today_count = 0  # Atomic reset happens in _increment_counts, but we simulate it here for check
+
+        if profile.custom_message_limit is None and plan.daily_limit is not None:
+            if current_today_count >= plan.daily_limit:
+                raise HTTPException(
+                    status_code=403, detail="DAILY_LIMIT_REACHED"
+                )
+
+        # Admin Override Logic: custom_message_limit overrides daily/validity
         if profile.custom_message_limit is not None:
-            # Custom limit overrides the plan limit
+            current_monthly = (
+                0 if needs_cycle_reset else getattr(profile, "messages_sent_this_month", 0)
+            )
+            current_total = getattr(profile, "total_messages_sent", 0)
+            
+            # If the plan has a monthly limit (Paid), use monthly count
             if plan.monthly_limit is not None:
                 if current_monthly >= profile.custom_message_limit:
                     raise HTTPException(
                         status_code=403, detail="LIMITE_MENSAGENS_MES"
                     )
-            elif plan.total_limit is not None:
+            else:
+                # Default to total count for Free or plans without monthly limits
                 if current_total >= profile.custom_message_limit:
                     raise HTTPException(
                         status_code=403, detail="LIMITE_MENSAGENS_TOTAL"
                     )
         else:
-            # Regular plan limits
+            # Regular plan limits (Paid plans)
+            current_monthly = (
+                0 if needs_cycle_reset else getattr(profile, "messages_sent_this_month", 0)
+            )
+            current_total = getattr(profile, "total_messages_sent", 0)
+
             if plan.monthly_limit is not None:
                 if current_monthly >= plan.monthly_limit:
                     raise HTTPException(

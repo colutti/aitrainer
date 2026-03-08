@@ -23,7 +23,9 @@ def create_profile(
     custom_limit=None, 
     monthly=0, 
     total=0,
-    cycle_start=None
+    cycle_start=None,
+    sent_today=0,
+    last_date=None
 ):
     profile = UserProfile(
         email="test@test.com",
@@ -39,19 +41,31 @@ def create_profile(
     profile.messages_sent_this_month = monthly
     profile.total_messages_sent = total
     profile.current_billing_cycle_start = cycle_start
+    profile.messages_sent_today = sent_today
+    profile.last_message_date = last_date
     return profile
 
 def test_free_plan_under_limit(trainer_brain):
-    profile = create_profile(plan="Free", total=19)
+    profile = create_profile(plan="Free", sent_today=19, cycle_start=datetime.now())
     needs_reset = trainer_brain._check_message_limits(profile)
-    assert needs_reset is True # Since cycle_start is None
+    assert needs_reset is False
 
 def test_free_plan_over_limit(trainer_brain):
-    profile = create_profile(plan="Free", total=20)
+    # Daily limit reached
+    profile = create_profile(plan="Free", sent_today=20, last_date=datetime.now().strftime("%Y-%m-%d"), cycle_start=datetime.now())
     with pytest.raises(HTTPException) as exc:
         trainer_brain._check_message_limits(profile)
     assert exc.value.status_code == 403
-    assert exc.value.detail == "LIMITE_MENSAGENS_TOTAL"
+    assert exc.value.detail == "DAILY_LIMIT_REACHED"
+
+def test_free_plan_trial_expired(trainer_brain):
+    # Trial expired (8 days ago)
+    past_8_days = datetime.now() - timedelta(days=8)
+    profile = create_profile(plan="Free", cycle_start=past_8_days)
+    with pytest.raises(HTTPException) as exc:
+        trainer_brain._check_message_limits(profile)
+    assert exc.value.status_code == 403
+    assert exc.value.detail == "TRIAL_EXPIRED"
 
 def test_basic_plan_under_limit(trainer_brain):
     now = datetime.now()
