@@ -11,6 +11,7 @@ export interface UserProfile {
   photo_base64?: string;
   subscription_plan?: string;
   custom_message_limit?: number | null;
+  custom_trial_days?: number | null;
   messages_sent_this_month?: number;
   total_messages_sent?: number;
   current_billing_cycle_start?: string;
@@ -18,6 +19,7 @@ export interface UserProfile {
   last_message_date?: string;
   trial_remaining_days?: number | null;
   current_daily_limit?: number | null;
+  effective_remaining_messages?: number | null;
 }
 
 export type OnboardingData = Partial<UserProfile>;

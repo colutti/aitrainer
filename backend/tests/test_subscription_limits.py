@@ -89,15 +89,18 @@ def test_basic_plan_cycle_reset(trainer_brain):
     assert needs_reset is True
 
 def test_custom_limit_override(trainer_brain):
-    profile = create_profile(plan="Free", total=30, custom_limit=50) # Limit overridden -> OK
+    today = datetime.now().strftime("%Y-%m-%d")
+    profile = create_profile(plan="Free", sent_today=30, last_date=today, custom_limit=50) # Limit overridden -> OK
     trainer_brain._check_message_limits(profile)
 
     profile = create_profile(plan="Basic", monthly=200, custom_limit=300, cycle_start=datetime.now())
     trainer_brain._check_message_limits(profile)
 
-    profile = create_profile(plan="Free", total=60, custom_limit=50)
-    with pytest.raises(HTTPException):
+    profile = create_profile(plan="Free", sent_today=60, last_date=today, custom_limit=50)
+    with pytest.raises(HTTPException) as exc:
         trainer_brain._check_message_limits(profile)
+    assert exc.value.status_code == 403
+    assert exc.value.detail == "DAILY_LIMIT_REACHED"
 
 def test_increment_counts(trainer_brain):
     trainer_brain._increment_counts("test@test.com", True)

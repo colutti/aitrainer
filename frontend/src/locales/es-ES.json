@@ -9,6 +9,7 @@
     "loading": "Cargando...",
     "error": "Error",
     "success": "Éxito",
+    "connect": "Conectar",
     "trends": {
       "up": "Subiendo",
       "down": "Bajando",
@@ -50,7 +51,7 @@
       "title_gradient": "Deja que la IA lo Optimice.",
       "description": "Olvídate de hojas de cálculo y suposiciones. Ten un entrenador de élite que analiza tus datos en tiempo real para entregar el plan perfecto.",
       "cta": "Garantizar mi Acceso",
-      "trial_desc": "Comienza con 20 mensajes gratis. Sin compromiso.",
+      "trial_desc": "Comienza con 20 mensajes gratis/día por 7 días. Sin compromiso.",
       "feature_247": "Soporte 24/7",
       "feature_ai": "IA Personal",
       "feature_integrations": "Integraciones",
@@ -193,7 +194,7 @@
       "title": "¿Listo para tu mejor versión?",
       "subtitle": "Únete a miles de atletas que ya han optimizado sus resultados con FityQ.",
       "button": "Empezar Viaje Ahora",
-      "trial": "Comienza con 20 mensajes gratis. Pruébalo ahora."
+      "trial": "Comienza con 20 mensajes al día durante 7 días. Pruébalo ahora."
     },
     "footer": {
       "rights": "© {{year}} FityQ. Todos los derechos reservados."
@@ -256,7 +257,7 @@
       "items": [
         {
           "q": "¿FityQ es realmente gratis?",
-          "a": "¡Sí! Puedes empezar gratis con 20 mensajes para probar la experiencia completa con cualquier entrenador."
+          "a": "¡Sí! Puedes empezar gratis con 20 mensajes por día durante 7 días para probar la experiencia con el entrenador Gymbro."
         },
         {
           "q": "¿Cómo funciona la IA?",
@@ -307,9 +308,9 @@
           "description": "Para probar la plataforma",
           "button": "Empezar Gratis",
           "features": [
-            "Acceso a todos los entrenadores IA",
+            "Acceso al Entrenador Gymbro",
             "Entrenamientos y Análisis",
-            "20 mensajes en total"
+            "20 mensajes por día (7 días)"
           ]
         },
         "basic": {
@@ -804,6 +805,10 @@
     "error_title": "Error en el Registro",
     "step_1_title": "Crear Contraseña",
     "step_2_title": "Tu Perfil",
+    "step_plan_title": "Elige tu Plan",
+    "plan_free_badge": "Gratis",
+    "plan_free_desc": "Comienza con 20 mensajes al día durante 7 días para probar la plataforma.",
+    "free_plan_trainer_hint": "En el plan gratuito, el acceso está limitado al entrenador Gymbro. Cambia tu plan para desbloquear otros entrenadores después del Onboarding en la configuración.",
     "step_3_title": "Elige tu Entrenador",
     "integrations_title": "Potencia tu Evolución",
     "integrations_desc": "Conecta tus apps para que tu entrenador conozca tu historial real y optimice teus resultados.",
@@ -814,7 +819,7 @@
     "integrations_settings_hint": "Puedes configurar todo esto luego en: Configuraciones > Integraciones.",
     "password_placeholder": "Contraseña",
     "confirm_password_placeholder": "Confirmar Contraseña",
-    "password_hint": "Mínimo 8 caracteres, números y letras.",
+    "password_hint": "Mínimo 8 caracteres, números y letras (incluidas mayúsculas y minúsculas).",
     "age": "Edad",
     "age_placeholder": "Anos",
     "weight_placeholder": "kg",

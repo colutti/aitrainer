@@ -13,6 +13,7 @@
     "loading": "Carregando...",
     "error": "Erro",
     "success": "Sucesso",
+    "connect": "Conectar",
     "trends": {
       "up": "Subindo",
       "down": "Descendo",
@@ -36,7 +37,9 @@
     "unauthorized": "Sua sessão expirou. Por favor, faça login novamente.",
     "not_found": "O recurso que você procura não foi encontrado.",
     "default": "Algo deu errado. Se o problema persistir, entre em contato com o suporte.",
-    "retry": "Tentar Novamente"
+    "retry": "Tentar Novamente",
+    "TRIAL_EXPIRED": "Seu período gratuito de 7 dias acabou.",
+    "DAILY_LIMIT_REACHED": "Limite diário atingido. Você pode enviar até 20 mensagens por dia no plano grátis."
   },
   "brand_tagline": "Inteligência x Performance",
   "landing": {
@@ -54,7 +57,7 @@
       "title_gradient": "Deixe a IA Otimizá-lo.",
       "description": "Esqueça planilhas e palpites. Tenha um treinador de elite que analisa seus dados em tempo real para entregar o plano perfeito.",
       "cta": "Garantir meu Acesso",
-      "trial_desc": "Comece com 20 mensagens grátis. Sem compromisso.",
+      "trial_desc": "20 mensagens por dia, durante 7 dias. Grátis.",
       "feature_247": "Suporte 24/7",
       "feature_ai": "IA Pessoal",
       "feature_integrations": "Integrações",
@@ -197,7 +200,7 @@
       "title": "Pronto para sua melhor versão?",
       "subtitle": "Junte-se a milhares de atletas que já otimizaram seus resultados com o FityQ.",
       "button": "Começar Jornada Agora",
-      "trial": "Comece com 20 mensagens grátis. Teste agora."
+      "trial": "20 mensagens/dia por 7 dias grátis. Teste agora."
     },
     "footer": {
       "rights": "© {{year}} FityQ. Todos os direitos reservados."
@@ -260,7 +263,7 @@
       "items": [
         {
           "q": "O FityQ é realmente grátis?",
-          "a": "Sim! Você pode começar gratuitamente com 20 mensagens para testar a experiência completa com qualquer treinador."
+          "a": "Sim! Você pode começar gratuitamente com 20 mensagens diárias durante 7 dias para testar a experiência com o treinador Breno."
         },
         {
           "q": "Como a IA funciona?",
@@ -312,9 +315,10 @@
           "description": "Para conhecer a plataforma",
           "button": "Começar Grátis",
           "features": [
-            "Acesso a todos os treinadores",
+            "Acesso apenas ao treinador Breno",
             "Treinos e Análises",
-            "20 mensagens no total"
+            "20 mensagens por dia",
+            "Válido por 7 dias"
           ]
         },
         "basic": {
@@ -812,11 +816,33 @@
       }
     }
   },
+  "chat": {
+    "default_trainer_name": "Treinador AI",
+    "start_conversation": "Inicie sua conversa",
+    "typing": "{{name}} está digitando...",
+    "input_placeholder": "Mensagem para {{name}}...",
+    "disclaimer": "O treinador pode cometer erros. Considere consultar um profissional de saúde.",
+    "messages_remaining": "{{count}} mensagens restantes hoje",
+    "trial_ended": {
+      "title": "Seu período gratuito acabou",
+      "description": "Você aproveitou seus 7 dias de teste. Para continuar recebendo orientações personalizadas, faça o upgrade para o Pro."
+    },
+    "daily_limit": {
+      "title": "Limite diário atingido",
+      "description": "Você atingiu o limite de 20 mensagens diárias. Amanhã você terá mais 20, ou remova os limites agora com o plano Pro."
+    },
+    "upgrade_button": "Fazer Upgrade Agora",
+    "wait_tomorrow": "Voltar Amanhã"
+  },
   "onboarding": {
     "validating": "Validando convite...",
     "error_title": "Erro no Cadastro",
     "step_1_title": "Criar Senha",
     "step_2_title": "Seu Perfil",
+    "step_plan_title": "Escolha seu Plano",
+    "plan_free_badge": "Gratuito",
+    "plan_free_desc": "Inicie com 20 mensagens por dia durante 7 dias para testar a plataforma.",
+    "free_plan_trainer_hint": "No plano gratuito o acesso é limitado ao treinador Gymbro. Mude seu plano para liberar outros treinadores após o Onboarding nas configurações.",
     "step_3_title": "Escolha seu Treinador",
     "integrations_title": "Turbine sua Evolução",
     "integrations_desc": "Conecte seus apps para que seu treinador conheça seu histórico real e otimize seus resultados.",
@@ -827,7 +853,7 @@
     "integrations_settings_hint": "Tudo isso pode ser configurado depois em: Configurações > Integrações.",
     "password_placeholder": "Senha",
     "confirm_password_placeholder": "Confirmar Senha",
-    "password_hint": "Mínimo 8 caracteres, números e letras.",
+    "password_hint": "Mínimo 8 caracteres, números e letras (maiúsculas e minúsculas).",
     "age": "Idade",
     "age_placeholder": "Anos",
     "weight_placeholder": "kg",

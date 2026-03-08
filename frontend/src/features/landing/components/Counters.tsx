@@ -38,7 +38,7 @@ const Counter = ({ end, suffix = '', duration = 2000 }: CounterProps) => {
   );
 };
 
-export const AnimatedCounters = () => {
+export const Counters = () => {
   const { t } = useTranslation();
 
   const stats = [
@@ -65,15 +65,15 @@ export const AnimatedCounters = () => {
   ];
 
   return (
-    <section className="pt-4 pb-12 bg-secondary/30 backdrop-blur-sm border-y border-white/5">
+    <section className="py-12 border-y border-border bg-dark-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {stats.map((stat, idx) => (
-            <div key={idx} className="text-center group">
-              <div className="font-display text-4xl md:text-5xl font-extrabold bg-clip-text text-transparent bg-linear-to-r from-primary to-accent group-hover:scale-110 transition-transform duration-300">
+            <div key={idx} className="text-center">
+              <div className="font-display text-4xl font-bold text-text-primary mb-2">
                 <Counter end={stat.value} suffix={stat.suffix} />
               </div>
-              <div className="text-sm font-medium text-text-secondary uppercase tracking-widest">
+              <div className="text-xs font-semibold text-text-muted uppercase tracking-wider">
                 {stat.label}
               </div>
             </div>

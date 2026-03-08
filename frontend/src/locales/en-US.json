@@ -9,6 +9,7 @@
     "loading": "Loading...",
     "error": "Error",
     "success": "Success",
+    "connect": "Connect",
     "trends": {
       "up": "Rising",
       "down": "Falling",
@@ -50,7 +51,7 @@
       "title_gradient": "Let AI Optimize It.",
       "description": "Forget spreadsheets and guesswork. Have an elite trainer analyzing your data in real-time to deliver the perfect plan.",
       "cta": "Secure My Access",
-      "trial_desc": "Start with 20 free messages. No commitment.",
+      "trial_desc": "Start with 20 free messages/day for 7 days. No commitment.",
       "feature_247": "24/7 Support",
       "feature_ai": "Personal AI",
       "feature_integrations": "Integrations",
@@ -193,7 +194,7 @@
       "title": "Ready for your best version?",
       "subtitle": "Join thousands of athletes who have already optimized their results with FityQ.",
       "button": "Start Journey Now",
-      "trial": "Start with 20 free messages. Try it now."
+      "trial": "Start with 20 messages a day for 7 days. Try it now."
     },
     "footer": {
       "rights": "© {{year}} FityQ. All rights reserved."
@@ -256,7 +257,7 @@
       "items": [
         {
           "q": "Is FityQ really free?",
-          "a": "Yes! You can start for free with 20 messages to test the full experience with any trainer."
+          "a": "Yes! You can start for free with 20 messages per day for 7 days to test the experience with the Gymbro trainer."
         },
         {
           "q": "How does the AI work?",
@@ -308,9 +309,9 @@
           "description": "To try out the platform",
           "button": "Get Started Free",
           "features": [
-            "Access to all AI trainers",
+            "Access to Gymbro AI",
             "Workouts and Analytics",
-            "20 messages total"
+            "20 messages per day for 7 days"
           ]
         },
         "basic": {
@@ -810,6 +811,10 @@
     "error_title": "Registration Error",
     "step_1_title": "Create Password",
     "step_2_title": "Your Profile",
+    "step_plan_title": "Choose your Plan",
+    "plan_free_badge": "Free",
+    "plan_free_desc": "Start with 20 messages per day for 7 days to test the platform.",
+    "free_plan_trainer_hint": "In the free plan, access is limited to the Gymbro trainer. Change your plan to unlock other trainers after Onboarding in the settings.",
     "step_3_title": "Choose your Trainer",
     "integrations_title": "Boost Your Evolution",
     "integrations_desc": "Connect your apps so your trainer knows your real history and can optimize your results.",
@@ -820,7 +825,7 @@
     "integrations_settings_hint": "You can configure all of this later in: Settings > Integrations.",
     "password_placeholder": "Password",
     "confirm_password_placeholder": "Confirm Password",
-    "password_hint": "Min. 8 characters, numbers and letters.",
+    "password_hint": "Min. 8 characters, numbers, and upper/lowercase letters.",
     "age": "Age",
     "age_placeholder": "Years",
     "weight_placeholder": "kg",

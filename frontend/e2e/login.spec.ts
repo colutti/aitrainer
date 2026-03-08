@@ -31,16 +31,17 @@ test.describe('Login Flow', () => {
         body: JSON.stringify({ 
           email: 'test@example.com', 
           role: 'user',
-          name: 'Test User'
+          name: 'Test User',
+          onboarding_completed: true
         }),
       });
     });
 
     // Submit form
-    await page.getByRole('button', { name: /Entrar na Plataforma/i }).click();
+    await page.locator('button[type="submit"]').first().click();
 
-    // Should redirect to dashboard (root path)
-    await expect(page).toHaveURL('/');
+    // Should redirect to dashboard
+    await expect(page).toHaveURL('/dashboard', { timeout: 10000 });
   });
 
   test('should show error with invalid credentials', async ({ page }) => {
@@ -58,7 +59,7 @@ test.describe('Login Flow', () => {
       });
     });
 
-    await page.getByRole('button', { name: /Entrar na Plataforma/i }).click();
+    await page.locator('button[type="submit"]').first().click();
 
     // Should show error message from notify.error
     await expect(page.getByTestId('toast').first()).toBeVisible();
@@ -73,7 +74,7 @@ test.describe('Login Flow', () => {
 
     await page.getByLabel('Endereço de Email').fill('test@example.com');
     await page.getByLabel('Senha').fill('password123');
-    await page.getByRole('button', { name: /Entrar na Plataforma/i }).click();
+    await page.locator('button[type="submit"]').first().click();
 
     // Should show error toast
     await expect(page.getByTestId('toast').first()).toBeVisible();
@@ -84,7 +85,7 @@ test.describe('Login Flow', () => {
 
     // Only fill password, leave email empty
     await page.getByLabel('Senha').fill('password123');
-    await page.getByRole('button', { name: /Entrar na Plataforma/i }).click();
+    await page.locator('button[type="submit"]').first().click();
 
     // Should show email validation error
     await expect(page.getByText(/Email inválido/i).or(page.getByText(/obrigatório/i))).toBeVisible();
@@ -101,19 +102,19 @@ test.describe('Login Flow', () => {
     await page.goto('/login');
 
     // 1. Empty fields
-    await page.getByRole('button', { name: /Entrar na Plataforma/i }).click();
+    await page.locator('button[type="submit"]').first().click();
     await expect(page.getByText(/Email inválido/i).or(page.getByText(/obrigatório/i))).toBeVisible();
 
     // 2. Invalid email format
     await page.getByLabel('Endereço de Email').fill('not-an-email');
     await page.getByLabel('Senha').fill('123456');
-    await page.getByRole('button', { name: /Entrar na Plataforma/i }).click();
+    await page.locator('button[type="submit"]').first().click();
     await expect(page.getByText(/Email inválido/i)).toBeVisible();
 
     // 3. Short password
     await page.getByLabel('Endereço de Email').fill('test@example.com');
     await page.getByLabel('Senha').fill('123');
-    await page.getByRole('button', { name: /Entrar na Plataforma/i }).click();
+    await page.locator('button[type="submit"]').first().click();
     await expect(page.getByText(/pelo menos 6 caracteres/i)).toBeVisible();
   });
 });

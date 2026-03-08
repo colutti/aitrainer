@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
+import { useAuthStore } from '../../../shared/hooks/useAuth';
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
 import { useSettingsStore } from '../../../shared/hooks/useSettings';
 
@@ -13,6 +14,10 @@ vi.mock('../../../shared/hooks/useSettings', () => ({
 
 vi.mock('../../../shared/hooks/useNotification', () => ({
   useNotificationStore: vi.fn(),
+}));
+
+vi.mock('../../../shared/hooks/useAuth', () => ({
+  useAuthStore: vi.fn(),
 }));
 
 // Mock react-i18next
@@ -30,6 +35,7 @@ describe('TrainerSettingsPage', () => {
 
   const mockAvailableTrainers = [
     { trainer_id: 'atlas', name: 'Atlas', short_description: 'Força bruta', catchphrase: 'Não para!' },
+    { trainer_id: 'gymbro', name: 'Breno', short_description: 'Brother', catchphrase: 'Tamo junto!' },
     { trainer_id: 'luna', name: 'Luna', short_description: 'Zen', catchphrase: 'Respira.' },
     { trainer_id: 'unknown', name: 'Unknown', short_description: 'Test' }
   ];
@@ -50,6 +56,9 @@ describe('TrainerSettingsPage', () => {
     vi.clearAllMocks();
     (useNotificationStore as any).mockReturnValue(mockNotify);
     (useSettingsStore as any).mockReturnValue(mockStore);
+    (useAuthStore as any).mockReturnValue({
+      userInfo: { subscription_plan: 'Basic' }
+    });
   });
 
   it('should render available trainers', async () => {
@@ -157,6 +166,24 @@ describe('TrainerSettingsPage', () => {
     // If no selection, button should be disabled based on Component logic: disabled={isSaving || !selectedTrainerId}
     const saveButton = screen.getByRole('button', { name: /settings.trainer.save_button/i });
     expect(saveButton).toBeDisabled();
+  });
+
+  it('should lock non-gymbro trainers on Free plan', () => {
+    (useAuthStore as any).mockReturnValue({
+      userInfo: { subscription_plan: 'Free' }
+    });
+
+    render(<TrainerSettingsPage />);
+
+    // Atlas should be locked
+    const atlasText = screen.getByText('Atlas');
+    // Find the container that has the border (which is the card)
+    const atlasCard = atlasText.closest('div[class*="border-2"]');
+    const lockIcons = screen.getAllByTestId('lock-icon');
+    expect(atlasCard).toContainElement(lockIcons[0]!);
+    
+    // Clicking locked trainer should not update selection if we implement it that way
+    // or we can just test that the lock icon is present.
   });
 });
 

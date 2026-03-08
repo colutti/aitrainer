@@ -15,7 +15,8 @@ test.describe('Navigation', () => {
         body: JSON.stringify({ 
           email: 'test@example.com', 
           role: 'user',
-          name: 'Test User'
+          name: 'Test User',
+          onboarding_completed: true
         }),
       });
     });
@@ -27,7 +28,7 @@ test.describe('Navigation', () => {
       await route.fulfill({ status: 401 });
     });
 
-    await page.goto('/');
+    await page.goto('/dashboard');
     // Should redirect to login
     await expect(page).toHaveURL('/login');
   });
@@ -41,8 +42,8 @@ test.describe('Navigation', () => {
 
     test('should navigate between main pages', async ({ page }) => {
       // Dashboard
-      await page.goto('/');
-      await expect(page).toHaveURL('/');
+      await page.goto('/dashboard');
+      await expect(page).toHaveURL('/dashboard');
       await expect(page.getByRole('heading', { name: 'Bom dia, Atleta!' }).or(page.getByRole('heading', { level: 1 }))).toBeVisible();
 
       // Chat
@@ -67,8 +68,8 @@ test.describe('Navigation', () => {
       await page.goto('/admin/users');
       await page.waitForLoadState('networkidle');
 
-      // Non-admin should be redirected to /
-      await expect(page).toHaveURL('/');
+      // Non-admin should be redirected to dashboard
+      await expect(page).toHaveURL('/dashboard');
     });
 
     test('should allow admin access to /admin/users', async ({ page }) => {
@@ -77,7 +78,7 @@ test.describe('Navigation', () => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ email: 'admin@example.com', role: 'admin', name: 'Admin' }),
+          body: JSON.stringify({ email: 'admin@example.com', role: 'admin', name: 'Admin', onboarding_completed: true }),
         });
       });
 
@@ -97,7 +98,7 @@ test.describe('Navigation', () => {
     });
 
     test('should use browser back button correctly', async ({ page }) => {
-      await page.goto('/');
+      await page.goto('/dashboard');
       await page.goto('/chat');
       await page.goto('/body/weight');
 
@@ -106,7 +107,7 @@ test.describe('Navigation', () => {
       await expect(page).toHaveURL('/chat');
 
       await page.goBack();
-      await expect(page).toHaveURL('/');
+      await expect(page).toHaveURL('/dashboard');
     });
   });
 });

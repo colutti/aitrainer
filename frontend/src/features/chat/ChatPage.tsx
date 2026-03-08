@@ -172,9 +172,9 @@ export function ChatPage() {
       {/* Input Area - Fixed Bottom */}
       <div className="flex-none p-4 w-full bg-linear-to-t from-dark-bg via-dark-bg to-transparent z-50">
         <div className="max-w-6xl mx-auto w-full relative">
-            {error && (
+            {error && !['TRIAL_EXPIRED', 'DAILY_LIMIT_REACHED'].includes(error) && (
               <div className="absolute -top-12 left-0 right-0 bg-red-500/10 text-red-400 text-xs px-4 py-2 rounded-lg border border-red-500/20 text-center mb-2 animate-in slide-in-from-bottom-2">
-                {error}
+                {t(`errors.${error}`, error)}
               </div>
             )}
 
@@ -191,43 +191,95 @@ export function ChatPage() {
               </div>
             )}
 
-            <form 
-              onSubmit={(e) => { 
-                void handleSend(e); 
-              }} 
-              className="relative shadow-2xl rounded-2xl bg-dark-card border border-white/10 focus-within:border-gradient-start/50 focus-within:ring-1 focus-within:ring-gradient-start/20 transition-all overflow-hidden"
-            >
-              <textarea
-                ref={textareaRef}
-                placeholder={t('chat.input_placeholder', { name: trainerName.split(' ')[0] ?? '' })}
-                className="w-full bg-transparent py-4 pl-5 pr-14 text-base text-text-primary placeholder:text-text-muted focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none max-h-[200px] overflow-y-auto"
-                value={inputValue}
-                onChange={(e) => { setInputValue(e.target.value); }} 
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    void handleSend();
-                  }
-                }}
-                disabled={isStreaming}
-                rows={1}
-              />
-              <button
-                type="submit"
-                disabled={!inputValue.trim() || isStreaming}
-                className={cn(
-                  "absolute right-2 bottom-3 p-2 rounded-xl transition-all",
-                  inputValue.trim() && !isStreaming
-                    ? "bg-gradient-start text-white hover:bg-gradient-start/90"
-                    : "text-text-muted/50 cursor-not-allowed"
-                )}
-              >
-                <Send size={18} className={cn(isStreaming && "animate-pulse")} />
-              </button>
-            </form>
-            <p className="mt-3 text-[10px] text-center text-text-muted/40">
-              {t('chat.disclaimer')}
-            </p>
+            {!['TRIAL_EXPIRED', 'DAILY_LIMIT_REACHED'].includes(error ?? '') ? (
+              <>
+                <form 
+                  onSubmit={(e) => { 
+                    void handleSend(e); 
+                  }} 
+                  className="relative shadow-2xl rounded-2xl bg-dark-card border border-white/10 focus-within:border-gradient-start/50 focus-within:ring-1 focus-within:ring-gradient-start/20 transition-all overflow-hidden"
+                >
+                  <textarea
+                    ref={textareaRef}
+                    placeholder={t('chat.input_placeholder', { name: trainerName.split(' ')[0] ?? '' })}
+                    className="w-full bg-transparent py-4 pl-5 pr-14 text-base text-text-primary placeholder:text-text-muted focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none max-h-[200px] overflow-y-auto"
+                    value={inputValue}
+                    onChange={(e) => { setInputValue(e.target.value); }} 
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        void handleSend();
+                      }
+                    }}
+                    disabled={isStreaming}
+                    rows={1}
+                  />
+                  <button
+                    type="submit"
+                    disabled={!inputValue.trim() || isStreaming}
+                    className={cn(
+                      "absolute right-2 bottom-3 p-2 rounded-xl transition-all",
+                      inputValue.trim() && !isStreaming
+                        ? "bg-gradient-start text-white hover:bg-gradient-start/90"
+                        : "text-text-muted/50 cursor-not-allowed"
+                    )}
+                  >
+                    <Send size={18} className={cn(isStreaming && "animate-pulse")} />
+                  </button>
+                </form>
+                <div className="mt-3 flex items-center justify-between px-1">
+                  <div className="flex items-center gap-4">
+                    {typeof userInfo?.effective_remaining_messages === 'number' && (
+                      <span className="text-[10px] text-text-muted/60 font-medium">
+                        {t('chat.messages_remaining', { 
+                          count: userInfo.effective_remaining_messages 
+                        })}
+                      </span>
+                    )}
+                    {typeof userInfo?.trial_remaining_days === 'number' && (
+                      <span className="text-[10px] text-text-muted/60 font-medium">
+                        {userInfo.trial_remaining_days} dias de teste restantes
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-text-muted/40">
+                    {t('chat.disclaimer')}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="shadow-2xl rounded-2xl bg-dark-card border border-gradient-start/30 p-6 animate-in zoom-in-95 duration-300">
+                <div className="flex flex-col items-center text-center space-y-4">
+                  <div className="w-12 h-12 bg-gradient-start/10 rounded-full flex items-center justify-center">
+                    <Bot size={24} className="text-gradient-start" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-text-primary">
+                      {error === 'TRIAL_EXPIRED' ? t('chat.trial_ended.title') : t('chat.daily_limit.title')}
+                    </h3>
+                    <p className="mt-2 text-sm text-text-secondary leading-relaxed">
+                      {error === 'TRIAL_EXPIRED' ? t('chat.trial_ended.description') : t('chat.daily_limit.description')}
+                    </p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
+                    <button 
+                      onClick={() => window.location.href = '#plans'}
+                      className="flex-1 bg-gradient-to-r from-gradient-start to-gradient-end hover:opacity-90 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-gradient-start/20"
+                    >
+                      {t('chat.upgrade_button')}
+                    </button>
+                    {error === 'DAILY_LIMIT_REACHED' && (
+                      <button 
+                        onClick={() => { window.location.reload(); }}
+                        className="flex-1 bg-white/5 hover:bg-white/10 text-text-primary font-medium py-3 px-6 rounded-xl transition-all border border-white/10"
+                      >
+                        {t('chat.wait_tomorrow')}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
         </div>
       </div>
     </div>

@@ -7,6 +7,7 @@ trigger: always_on
 - **TDD obrigatório:** Primeiro escreva os testes (que devem falhar), depois implemente o mínimo para passar, depois refatore. Sem exceções.
 - **Bug = Teste primeiro:** Quando um bug for reportado, crie um teste automatizado que reproduza o erro. Só então corrija o código e confirme que o teste passa.
 - **Os testes são a fonte da verdade** do comportamento do sistema.
+- **Adicione logs corretos: warnings, info, error, critical, etc. Use de forma sistema pra ajudar a identificar problemas
 
 ## Qualidade de Código
 

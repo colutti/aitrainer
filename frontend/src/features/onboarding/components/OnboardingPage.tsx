@@ -1,4 +1,4 @@
-import { Check, AlertTriangle, Dumbbell, Database, ArrowRight, Upload, Info, RefreshCw as RefreshIcon } from 'lucide-react';
+import { Check, AlertTriangle, Dumbbell, Database, ArrowRight, Upload, Info, RefreshCw as RefreshIcon, Lock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
@@ -26,7 +26,7 @@ export function OnboardingPage() {
   ];
   const token = searchParams.get('token');
 
-  const [step, setStep] = useState(0); // 0: Validating, 1: Password, 2: Profile, 3: Trainer, 4: Integrations, 5: Success
+  const [step, setStep] = useState(0); // 0: Validating, 1: Password, 2: Profile, 3: Plan, 4: Trainer, 5: Integrations, 6: Success
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -104,7 +104,7 @@ export function OnboardingPage() {
         // Fluxo Público (já logado)
         const res = await onboardingApi.completePublicOnboarding(payload);
         localStorage.setItem('auth_token', res.token);
-        setStep(4); // Vai para Integrações
+        setStep(5); // Vai para Integrações
       } else {
         // Fluxo por Convite
         if (!token || !email) return;
@@ -122,7 +122,7 @@ export function OnboardingPage() {
         const fullPayload = { ...payload, token, password };
         const res = await onboardingApi.completeOnboarding(fullPayload);
         localStorage.setItem('auth_token', res.token);
-        setStep(4); // Vai para Integrações
+        setStep(5); // Vai para Integrações
       }
     } catch (err: unknown) {
       console.error('Onboarding completion error:', err);
@@ -169,7 +169,7 @@ export function OnboardingPage() {
     }
   };
 
-  const isPasswordValid = password.length >= 8 && /[0-9]/.test(password) && /[a-zA-Z]/.test(password);
+  const isPasswordValid = password.length >= 8 && /[0-9]/.test(password) && /[a-z]/.test(password) && /[A-Z]/.test(password);
   const passwordsMatch = password === confirmPassword;
   const canProceedStep1 = isPasswordValid && passwordsMatch;
 
@@ -201,10 +201,10 @@ export function OnboardingPage() {
     <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
       <div className="w-full max-w-2xl bg-dark-card border border-border rounded-3xl p-8 md:p-12 shadow-2xl animate-in fade-in zoom-in-95 duration-500">
         {/* Progress */}
-        {step < 5 && step > 1 && (
+        {step < 6 && step > 1 && (
           <div className="flex justify-between mb-8 relative">
             <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-zinc-800 -z-10" />
-            {[2, 3, 4].map((s) => (
+            {[2, 3, 4, 5].map((s) => (
               <div 
                 key={s} 
                 className={cn(
@@ -212,7 +212,7 @@ export function OnboardingPage() {
                   step >= s ? "bg-gradient-start text-white" : "bg-zinc-800 text-text-secondary"
                 )}
               >
-                {s === 2 ? 1 : s === 3 ? 2 : 3}
+                {s - 1}
               </div>
             ))}
           </div>
@@ -309,30 +309,87 @@ export function OnboardingPage() {
           </div>
         )}
 
-        {/* Step 3: Trainer */}
+        {/* Step 3: Plan */}
         {step === 3 && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+             <h2 className="text-2xl font-bold text-text-primary text-center">{t('onboarding.step_plan_title', 'Escolha seu Plano')}</h2>
+             <div className="space-y-4">
+                <button
+                   onClick={() => { /* Already selected */ }}
+                   className={cn(
+                     "w-full flex flex-col p-6 rounded-2xl border transition-all text-left",
+                     "bg-gradient-start/10 border-gradient-start shadow-orange-sm ring-1 ring-gradient-start"
+                   )}
+                >
+                   <div className="flex justify-between items-center w-full mb-2">
+                      <span className="font-bold text-xl text-text-primary">Free</span>
+                      <span className="text-gradient-start font-bold uppercase text-xs tracking-wider">{t('onboarding.plan_free_badge', 'Gratuito')}</span>
+                   </div>
+                   <p className="text-sm text-text-secondary mb-4">{t('onboarding.plan_free_desc', 'Inicie com 20 mensagens por dia durante 7 dias para testar a plataforma.')}</p>
+                   <div className="space-y-2 mt-auto">
+                      <div className="flex items-center gap-2 text-sm text-text-secondary"><Check size={16} className="text-emerald-500" /> Acesso ao Gymbro AI</div>
+                      <div className="flex items-center gap-2 text-sm text-text-secondary"><Check size={16} className="text-emerald-500" /> Dashboard & Análises Musculares</div>
+                      <div className="flex items-center gap-2 text-sm text-text-secondary"><Check size={16} className="text-emerald-500" /> Integrações com Hevy / Outros</div>
+                   </div>
+                </button>
+             </div>
+             
+             <div className="flex gap-4 mt-6">
+                <Button variant="secondary" onClick={handleBack}>{t('onboarding.back')}</Button>
+                <Button className="flex-1" onClick={() => {
+                   if (formData.trainer_type !== 'gymbro') {
+                       setFormData({ ...formData, trainer_type: 'gymbro' });
+                   }
+                   handleNext();
+                }}>
+                   {t('onboarding.next')}
+                </Button>
+             </div>
+          </div>
+        )}
+
+        {/* Step 4: Trainer */}
+        {step === 4 && (
           <div className="space-y-6">
              <h2 className="text-2xl font-bold text-text-primary text-center">{t('onboarding.step_3_title')}</h2>
              <div className="grid grid-cols-1 gap-3">
-               {TRAINERS.map(trainer => (
+               {TRAINERS.map(trainer => {
+                 const isLocked = trainer.id !== 'gymbro';
+                 
+                 return (
                  <button
                    key={trainer.id}
-                   onClick={() => { setFormData({...formData, trainer_type: trainer.id}); }}
+                   type="button"
+                   disabled={isLocked}
+                   onClick={() => { if (!isLocked) setFormData({...formData, trainer_type: trainer.id}); }}
                    className={cn(
-                     "flex items-center gap-4 p-4 rounded-xl border text-left transition-all",
+                     "flex items-center gap-4 p-4 rounded-xl border text-left transition-all relative overflow-hidden",
                      formData.trainer_type === trainer.id
                        ? "bg-gradient-start/10 border-gradient-start shadow-orange-sm"
-                       : "bg-dark-bg border-border hover:border-zinc-600"
+                       : "bg-dark-bg border-border hover:border-zinc-600",
+                     trainer.id !== 'gymbro' && "opacity-60 grayscale hover:border-border cursor-not-allowed"
                    )}
                  >
-                    <img src={`/assets/avatars/${trainer.id}.png`} alt={trainer.name} className="w-12 h-12 rounded-full border-2 border-dark-bg object-cover bg-white/10" />
-                    <div>
-                       <div className="font-bold text-text-primary">{trainer.name}</div>
-                       <div className="text-xs text-text-secondary">{trainer.description}</div>
+                    <img src={`/assets/avatars/${trainer.id}.png`} alt={trainer.name} className="w-12 h-12 rounded-full border-2 border-dark-bg object-cover bg-white/10 relative z-10" />
+                    <div className="relative z-10 flex-1">
+                       <div className="font-bold text-text-primary flex items-center gap-2">
+                           {trainer.name}
+                           {isLocked && <Lock size={14} className="text-text-muted" />}
+                       </div>
+                       <div className="text-xs text-text-secondary pr-8">{trainer.description}</div>
                     </div>
-                    {formData.trainer_type === trainer.id && <Check className="ml-auto text-gradient-start" size={20} />}
+                    {formData.trainer_type === trainer.id && <Check className="ml-auto text-gradient-start relative z-10" size={20} />}
+                    {isLocked && (
+                       <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                          <span className="text-[10px] font-bold uppercase tracking-wider bg-zinc-800 text-zinc-400 px-2 py-1 rounded-full">Pro</span>
+                       </div>
+                    )}
                  </button>
-               ))}
+               );
+               })}
+             </div>
+             <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-xs text-blue-200 text-center">
+                 {t('onboarding.free_plan_trainer_hint', 'No plano gratuito o acesso é limitado ao treinador Gymbro. Mude seu plano para liberar outros treinadores após o Onboarding nas configurações.')}
              </div>
              
               <div className="flex gap-4 mt-6">
@@ -344,8 +401,8 @@ export function OnboardingPage() {
           </div>
         )}
 
-        {/* Step 4: Integrations */}
-        {step === 4 && (
+        {/* Step 5: Integrations */}
+        {step === 5 && (
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-bold text-text-primary">{t('onboarding.integrations_title')}</h2>
@@ -480,19 +537,12 @@ export function OnboardingPage() {
                 {t('onboarding.finish', 'Finalizar Onboarding')}
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
-              <button 
-                onClick={handleNext}
-                className="text-xs text-text-secondary hover:text-white transition-colors"
-                disabled={loading}
-              >
-                {t('common.skip', 'Pular por enquanto')}
-              </button>
             </div>
           </div>
         )}
 
-        {/* Step 5: Success */}
-        {step === 5 && (
+        {/* Step 6: Success */}
+        {step === 6 && (
           <div className="space-y-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="w-20 h-20 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center mx-auto text-emerald-500 mb-2">
               <Check size={40} strokeWidth={3} />
@@ -513,7 +563,7 @@ export function OnboardingPage() {
             <Button 
               fullWidth 
               size="lg" 
-              onClick={() => window.location.href = '/dashboard'}
+              onClick={() => { window.location.href = '/dashboard'; }}
               className="mt-4 shadow-[0_20px_50px_rgba(249,115,22,0.3)] h-14 text-lg"
             >
               {t('onboarding.go_to_dashboard')}

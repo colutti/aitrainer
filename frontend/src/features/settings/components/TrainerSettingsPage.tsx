@@ -1,9 +1,10 @@
-import { Check, Dumbbell, AlertCircle } from 'lucide-react';
+import { Check, Dumbbell, AlertCircle, Lock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '../../../shared/components/ui/Button';
 import { Skeleton } from '../../../shared/components/ui/Skeleton';
+import { useAuthStore } from '../../../shared/hooks/useAuth';
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
 import { useSettingsStore } from '../../../shared/hooks/useSettings';
 import { cn } from '../../../shared/utils/cn';
@@ -29,7 +30,10 @@ export function TrainerSettingsPage() {
   } = useSettingsStore();
   
   const notify = useNotificationStore();
+  const { userInfo } = useAuthStore();
   const [selectedTrainerId, setSelectedTrainerId] = useState<string>('');
+
+  const isFreePlan = userInfo?.subscription_plan === 'Free' || userInfo?.subscription_plan === 'FREE';
 
   useEffect(() => {
     void fetchAvailableTrainers();
@@ -89,17 +93,31 @@ export function TrainerSettingsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {availableTrainers.map((t_data) => {
           const trainerId = t_data.trainer_id.toLowerCase();
+          const isLocked = isFreePlan && trainerId !== 'gymbro';
+
           return (
             <div
               key={t_data.trainer_id}
-              onClick={() => { setSelectedTrainerId(t_data.trainer_id); }}
+              onClick={() => { 
+                if (isLocked) {
+                  window.location.hash = 'plans';
+                  return;
+                }
+                setSelectedTrainerId(t_data.trainer_id); 
+              }}
               className={cn(
                 "relative cursor-pointer rounded-xl border-2 p-6 transition-all duration-300 hover:scale-[1.02]",
                 selectedTrainerId === t_data.trainer_id
                   ? "border-gradient-start bg-gradient-start/5 shadow-2xl shadow-primary/10"
-                  : "border-white/5 bg-dark-card/50 hover:border-white/10"
+                  : "border-white/5 bg-dark-card/50 hover:border-white/10",
+                isLocked && "opacity-60 grayscale-[0.5] hover:border-red-500/30"
               )}
             >
+              {isLocked && (
+                <div className="absolute top-3 left-3 z-20 bg-dark-bg/80 backdrop-blur-sm p-1.5 rounded-lg border border-white/10 animate-in fade-in zoom-in duration-300">
+                  <Lock size={14} className="text-gradient-start" data-testid="lock-icon" />
+                </div>
+              )}
               <div className={cn(
                 "absolute inset-0 opacity-0 transition-opacity duration-300 rounded-xl bg-gradient-to-br",
                 getTrainerColor(trainerId),

@@ -1,4 +1,4 @@
-import { Check, X, Minus } from 'lucide-react';
+import { Check, Minus, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export const ComparisonTable = () => {
@@ -19,9 +19,9 @@ export const ComparisonTable = () => {
     },
     {
       label: t('landing.comparison.rows.memory'),
-      fityq: <Check className="w-5 h-5 text-emerald-500 mx-auto" />,
-      personal: <Minus className="w-5 h-5 text-yellow-500 mx-auto" />,
-      generic: <X className="w-5 h-5 text-red-500 mx-auto" />,
+      fityq: <Check className="w-5 h-5 text-primary mx-auto" />,
+      personal: <Minus className="w-5 h-5 text-text-muted mx-auto" />,
+      generic: <X className="w-5 h-5 text-text-muted mx-auto" />,
     },
     {
       label: t('landing.comparison.rows.personalization'),
@@ -38,45 +38,45 @@ export const ComparisonTable = () => {
   ];
 
   return (
-    <section className="py-12 md:py-16 px-4 sm:px-6 lg:px-8 bg-dark-bg relative overflow-hidden">
-      <div className="max-w-5xl mx-auto relative z-10">
-        <div className="text-center mb-12">
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-white mb-4">
+    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-dark-bg border-t border-border">
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="font-display text-3xl font-bold text-text-primary mb-4">
             {t('landing.comparison.title')}
           </h2>
-          <p className="text-text-secondary max-w-2xl mx-auto">
+          <p className="text-lg text-text-secondary">
             {t('landing.comparison.subtitle')}
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-white/10 bg-secondary/30 backdrop-blur-xl">
+        <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-white/10">
-                <th className="p-6 text-sm font-semibold text-text-secondary"></th>
+              <tr className="bg-light-bg border-b border-border">
+                <th className="p-6 text-xs font-bold text-text-muted uppercase tracking-widest"></th>
                 <th className="p-6 text-center">
-                  <span className="font-display font-bold text-primary text-lg">
+                  <span className="font-bold text-primary">
                     {t('landing.comparison.headers.fityq')}
                   </span>
                 </th>
-                <th className="p-6 text-center text-sm font-semibold text-white/70">
+                <th className="p-6 text-center text-xs font-bold text-text-muted uppercase tracking-widest">
                   {t('landing.comparison.headers.personal')}
                 </th>
-                <th className="p-6 text-center text-sm font-semibold text-white/70">
+                <th className="p-6 text-center text-xs font-bold text-text-muted uppercase tracking-widest">
                   {t('landing.comparison.headers.generic')}
                 </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-border">
               {rows.map((row, idx) => (
                 <tr 
                   key={idx} 
-                  className={`border-b border-white/5 last:border-0 hover:bg-white/2 transition-colors`}
+                  className="bg-dark-bg hover:bg-secondary/50 transition-colors"
                 >
-                  <td className="p-6 text-sm font-medium text-white">
+                  <td className="p-6 text-sm font-medium text-text-primary">
                     {row.label}
                   </td>
-                  <td className="p-6 text-center text-sm font-bold text-white bg-primary/5">
+                  <td className="p-6 text-center text-sm font-bold text-text-primary bg-primary/5">
                     {row.fityq}
                   </td>
                   <td className="p-6 text-center text-sm text-text-secondary">
@@ -91,9 +91,6 @@ export const ComparisonTable = () => {
           </table>
         </div>
       </div>
-
-      {/* Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-primary/10 rounded-full blur-[120px] -z-10" />
     </section>
   );
 };

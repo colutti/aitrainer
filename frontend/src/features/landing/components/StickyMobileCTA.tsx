@@ -10,7 +10,6 @@ export const StickyMobileCTA = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      // Show after scrolling 500px, but only on mobile
       const scrollThreshold = 500;
       const isMobile = window.innerWidth < 768;
       setIsVisible(isMobile && window.scrollY > scrollThreshold);
@@ -23,12 +22,12 @@ export const StickyMobileCTA = () => {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-60 p-4 bg-dark-bg/80 backdrop-blur-lg border-t border-white/10 flex animate-in slide-in-from-bottom duration-300">
+    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-dark-bg border-t border-border flex md:hidden animate-fade-in">
       <Button
         onClick={() => { void navigate('/login?mode=register'); }}
         variant="primary"
         fullWidth
-        className="h-12 shadow-lg shadow-primary/20"
+        className="h-12 bg-primary bg-none hover:bg-primary-hover shadow-none rounded-md"
       >
         {t('landing.sticky_cta')}
       </Button>

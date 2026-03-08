@@ -98,11 +98,12 @@ describe('ChatPage', () => {
   it('should display error message', () => {
     vi.mocked(useChatStore).mockReturnValue({
       ...defaultChatStore,
-      error: 'Failed to send',
+      error: 'default',
     });
 
     render(<ChatPage />);
-    expect(screen.getByText('Failed to send')).toBeInTheDocument();
+    // errors.default in pt-BR.json is "Algo deu errado..."
+    expect(screen.getByText(/Algo deu errado/i)).toBeInTheDocument();
   });
 
   it('should handle multiline input with Shift+Enter and submit on Enter', () => {
@@ -120,9 +121,31 @@ describe('ChatPage', () => {
     // However, we just want to ensure it DOES NOT submit.
     
     // Simulate Enter (should submit)
-    fireEvent.keyDown(input, { key: 'Enter', shiftKey: false });
+    fireEvent.keyDown(input, { key: 'Enter', shiftKey: false, code: 'Enter' });
     expect(mockSendMessage).toHaveBeenCalledWith('Line1');
     expect(input).toHaveValue('');
+  });
+
+  it('should display paywall when trial expired', () => {
+    vi.mocked(useChatStore).mockReturnValue({
+      ...defaultChatStore,
+      error: 'TRIAL_EXPIRED',
+    });
+
+    render(<ChatPage />);
+    expect(screen.queryByPlaceholderText(/Mensagem/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Seu período gratuito acabou/i)).toBeInTheDocument();
+  });
+
+  it('should display paywall when daily limit reached', () => {
+    vi.mocked(useChatStore).mockReturnValue({
+      ...defaultChatStore,
+      error: 'DAILY_LIMIT_REACHED',
+    });
+
+    render(<ChatPage />);
+    expect(screen.queryByPlaceholderText(/Mensagem/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Limite diário atingido/i)).toBeInTheDocument();
   });
 });
 

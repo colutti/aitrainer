@@ -156,9 +156,14 @@ test.describe('Onboarding Flow', () => {
      await page.locator('#height').fill('180');
      await page.getByRole('button', { name: 'Próximo' }).click();
 
-     // 4. Step 3: Trainer
-     await expect(page.getByText('Escolha seu Treinador')).toBeVisible();
-     await page.getByText('Luna').click();
+     // 4. Step 3: Plan
+     await expect(page.getByText('Escolha seu Plano')).toBeVisible();
+     await page.getByRole('button', { name: 'Próximo' }).click();
+
+     // 5. Step 4: Trainer
+     await expect(page.getByText(/Escolha seu Treinador/i)).toBeVisible();
+     // Luna is disabled on free plan, so we click Gymbro
+     await page.getByText(/Gymbro/i).click();
      
      await page.route('**/api/onboarding/complete', async (route) => {
          await route.fulfill({ status: 200, body: JSON.stringify({ token: 'new-jwt-token' }) });
@@ -166,7 +171,7 @@ test.describe('Onboarding Flow', () => {
 
      await page.getByRole('button', { name: 'Finalizar Cadastro' }).click();
 
-     // 5. Success redirect
-     await expect(page).toHaveURL('/');
+     // 6. Success redirect
+     await expect(page).toHaveURL('/dashboard');
   });
 });

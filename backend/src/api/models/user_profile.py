@@ -105,7 +105,8 @@ class UserProfile(UserProfileInput):
 
     # Subscription and Limits
     subscription_plan: str = Field(default="Free", description="Current subscription plan")
-    custom_message_limit: int | None = Field(default=None, description="Custom limit override")
+    custom_message_limit: int | None = Field(default=None, description="Custom limit override (daily for Free, monthly for paid)")
+    custom_trial_days: int | None = Field(default=None, description="Custom validity days override")
     messages_sent_this_month: int = Field(default=0, description="Messages sent in current billing cycle")
     total_messages_sent: int = Field(default=0, description="Total messages sent by user ever")
     current_billing_cycle_start: datetime | None = Field(
@@ -152,11 +153,15 @@ class UserProfile(UserProfileInput):
             plan_name = SubscriptionPlan.FREE
         
         plan = SUBSCRIPTION_PLANS[plan_name]
-        if plan.validity_days is None:
+        
+        # Admin Override for validity
+        validity = self.custom_trial_days if self.custom_trial_days is not None else plan.validity_days
+        
+        if validity is None:
             return None
         
         if not self.current_billing_cycle_start:
-            return plan.validity_days
+            return validity
             
         now = datetime.now()
         cycle_start = self.current_billing_cycle_start
@@ -164,7 +169,7 @@ class UserProfile(UserProfileInput):
             cycle_start = datetime.fromisoformat(cycle_start)
             
         elapsed = (now - cycle_start).days
-        remaining = plan.validity_days - elapsed
+        remaining = validity - elapsed
         return max(0, remaining)
 
     @computed_field
@@ -172,15 +177,50 @@ class UserProfile(UserProfileInput):
     def current_daily_limit(self) -> int | None:
         """Returns the daily message limit for the current plan."""
         from src.core.subscription import SUBSCRIPTION_PLANS, SubscriptionPlan
-        if self.custom_message_limit is not None:
-            return None # Custom limit overrides daily limits
         
         try:
             plan_name = SubscriptionPlan(self.subscription_plan)
         except (ValueError, AttributeError):
             plan_name = SubscriptionPlan.FREE
             
-        return SUBSCRIPTION_PLANS[plan_name].daily_limit
+        plan = SUBSCRIPTION_PLANS[plan_name]
+        
+        # If it's a daily plan (Free), the custom limit overrides the daily limit
+        if plan.daily_limit is not None:
+            return self.custom_message_limit if self.custom_message_limit is not None else plan.daily_limit
+        
+        return None
+
+    @computed_field
+    @property
+    def effective_remaining_messages(self) -> int | None:
+        """Calculates how many messages the user can still send."""
+        from src.core.subscription import SUBSCRIPTION_PLANS, SubscriptionPlan
+        
+        try:
+            plan_name = SubscriptionPlan(self.subscription_plan)
+        except (ValueError, AttributeError):
+            plan_name = SubscriptionPlan.FREE
+            
+        plan = SUBSCRIPTION_PLANS[plan_name]
+        
+        # Check Validity / Trial Expiration
+        validity = self.custom_trial_days if self.custom_trial_days is not None else plan.validity_days
+        if validity is not None:
+            if self.trial_remaining_days is not None and self.trial_remaining_days <= 0:
+                return 0
+
+        # Daily Limit Logic (Overrides for Free)
+        if plan.daily_limit is not None:
+            daily_limit = self.custom_message_limit if self.custom_message_limit is not None else plan.daily_limit
+            return max(0, daily_limit - self.messages_sent_today)
+            
+        # Monthly Limit Logic (Overrides for Paid)
+        if plan.monthly_limit is not None:
+             monthly_limit = self.custom_message_limit if self.custom_message_limit is not None else plan.monthly_limit
+             return max(0, monthly_limit - self.messages_sent_this_month)
+
+        return None
 
     def _goal_type_label(self) -> str:
         labels = {

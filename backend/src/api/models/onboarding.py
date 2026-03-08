@@ -22,7 +22,7 @@ class OnboardingCompleteRequest(BaseModel):
     )
     trainer_type: str = Field(
         default="atlas",
-        pattern="^(atlas|luna|sargento|sofia)$",
+        pattern="^(atlas|luna|sargento|sofia|gymbro)$",
         description="Selected trainer type",
     )
 

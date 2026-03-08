@@ -37,7 +37,7 @@ describe('ProtectedRoute', () => {
     expect(screen.getByTestId('protected-content')).toBeInTheDocument();
   });
 
-  it('should redirect to landing when not authenticated', () => {
+  it('should redirect to login when not authenticated', () => {
     vi.mocked(useAuthStore).mockReturnValue({
       isAuthenticated: false,
       isAdmin: false,
@@ -55,14 +55,42 @@ describe('ProtectedRoute', () => {
               </ProtectedRoute>
             }
           />
-          <Route path="/" element={<div data-testid="landing-page">Landing</div>} />
+          <Route path="/login" element={<div data-testid="login-page">Login</div>} />
         </Routes>
       </MemoryRouter>
     );
 
     expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument();
-    expect(screen.getByTestId('landing-page')).toBeInTheDocument();
+    expect(screen.getByTestId('login-page')).toBeInTheDocument();
   });
+  it('should redirect to onboarding when onboarding is not completed', () => {
+    vi.mocked(useAuthStore).mockReturnValue({
+      isAuthenticated: true,
+      isAdmin: false,
+      isLoading: false,
+      userInfo: { onboarding_completed: false },
+    } as AuthStore);
+
+    render(
+      <MemoryRouter initialEntries={['/protected']}>
+        <Routes>
+          <Route
+            path="/protected"
+            element={
+              <ProtectedRoute>
+                <div data-testid="protected-content">Protected</div>
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/onboarding" element={<div data-testid="onboarding-page">Onboarding</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByTestId('protected-content')).not.toBeInTheDocument();
+    expect(screen.getByTestId('onboarding-page')).toBeInTheDocument();
+  });
+
 
   it('should redirect to dashboard when admin is required but user is not admin', () => {
     vi.mocked(useAuthStore).mockReturnValue({

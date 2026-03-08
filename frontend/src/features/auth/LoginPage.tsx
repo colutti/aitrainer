@@ -80,7 +80,7 @@ export function LoginPage() {
         await login(data.email, data.password);
         notify.success(t('login.account_created', 'Conta criada com sucesso!'));
       }
-      await navigate('/');
+      await navigate('/dashboard');
     } catch (error: unknown) {
       console.error('Login error:', error);
       const errorCode = error instanceof Error && 'code' in error 

@@ -82,9 +82,14 @@ describe('OnboardingPage', () => {
     
     fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
 
-    // Step 3: Trainer
+    // Step 3: Plan
+    expect(await screen.findByText('Escolha seu Plano')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Free'));
+    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+
+    // Step 4: Trainer
     expect(await screen.findByText('Escolha seu Treinador')).toBeInTheDocument();
-    const trainerCard = screen.getByText('Atlas');
+    const trainerCard = screen.getByText('GymBro');
     fireEvent.click(trainerCard);
     
     // Agora o botão é "Próximo" para ir para Integrações

@@ -10,6 +10,13 @@ export interface UserInfo {
   is_admin: boolean;
   photo_base64?: string;
   onboarding_completed: boolean;
+  subscription_plan?: string;
+  custom_message_limit?: number | null;
+  custom_trial_days?: number | null;
+  messages_sent_today?: number;
+  trial_remaining_days?: number | null;
+  current_daily_limit?: number | null;
+  effective_remaining_messages?: number | null;
 }
 
 export interface AuthState {
@@ -152,6 +159,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       name?: string; 
       photo_base64?: string;
       onboarding_completed: boolean;
+      subscription_plan: string;
+      custom_message_limit: number | null;
+      custom_trial_days: number | null;
+      messages_sent_today: number;
+      trial_remaining_days: number | null;
+      current_daily_limit: number | null;
+      effective_remaining_messages: number | null;
     }>('/user/me');
 
     if (!data) {
@@ -165,6 +179,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         is_admin: data.role === 'admin',
         photo_base64: data.photo_base64,
         onboarding_completed: data.onboarding_completed,
+        subscription_plan: data.subscription_plan,
+        custom_message_limit: data.custom_message_limit,
+        custom_trial_days: data.custom_trial_days,
+        messages_sent_today: data.messages_sent_today,
+        trial_remaining_days: data.trial_remaining_days,
+        current_daily_limit: data.current_daily_limit,
+        effective_remaining_messages: data.effective_remaining_messages,
       },
       isAdmin: data.role === 'admin',
     });

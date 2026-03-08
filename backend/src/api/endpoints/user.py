@@ -146,6 +146,13 @@ def get_current_user(user_email: CurrentUser, brain: AITrainerBrainDep) -> dict:
         "name": user_profile.display_name,
         "photo_base64": user_profile.photo_base64,
         "onboarding_completed": getattr(user_profile, "onboarding_completed", True),
+        "subscription_plan": user_profile.subscription_plan,
+        "custom_message_limit": user_profile.custom_message_limit,
+        "custom_trial_days": user_profile.custom_trial_days,
+        "messages_sent_today": user_profile.messages_sent_today,
+        "trial_remaining_days": user_profile.trial_remaining_days,
+        "current_daily_limit": user_profile.current_daily_limit,
+        "effective_remaining_messages": user_profile.effective_remaining_messages,
     }
 
 
