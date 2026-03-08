@@ -115,6 +115,10 @@ class UserProfile(UserProfileInput):
         default=True, description="Whether the user has completed the onboarding flow"
     )
 
+    # Message Tracking
+    messages_sent_today: int = Field(default=0, description="Messages sent today")
+    last_message_date: str | None = Field(default=None, description="ISO Date of last message sent")
+
     # Coaching Check-in (TDEE)
     tdee_last_target: int | None = Field(
         default=None, description="Last recommended daily calorie target"

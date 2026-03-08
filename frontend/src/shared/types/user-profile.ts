@@ -14,6 +14,8 @@ export interface UserProfile {
   messages_sent_this_month?: number;
   total_messages_sent?: number;
   current_billing_cycle_start?: string;
+  messages_sent_today?: number;
+  last_message_date?: string;
 }
 
 export type OnboardingData = Partial<UserProfile>;
