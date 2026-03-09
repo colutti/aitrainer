@@ -105,6 +105,9 @@ class UserProfile(UserProfileInput):
 
     # Subscription and Limits
     subscription_plan: str = Field(default="Free", description="Current subscription plan")
+    stripe_customer_id: str | None = Field(default=None, description="Stripe Customer ID")
+    stripe_subscription_id: str | None = Field(default=None, description="Active subscription ID")
+    stripe_subscription_status: str | None = Field(default=None, description="Subscription status from Stripe")
     custom_message_limit: int | None = Field(default=None, description="Custom limit override (daily for Free, monthly for paid)")
     custom_trial_days: int | None = Field(default=None, description="Custom validity days override")
     messages_sent_this_month: int = Field(default=0, description="Messages sent in current billing cycle")

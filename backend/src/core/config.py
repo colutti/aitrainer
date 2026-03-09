@@ -138,6 +138,10 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: str = ""
     TELEGRAM_WEBHOOK_SECRET: str = ""
 
+    # ====== STRIPE ======
+    STRIPE_API_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+
     def get_mem0_config(self) -> dict:
         """
         Generates the configuration dictionary for Mem0.
