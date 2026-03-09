@@ -74,20 +74,26 @@ async def stripe_webhook(
         status = subscription.get("status")
         price_id = subscription["items"]["data"][0]["price"]["id"]
         
-        # Map Price ID to Plan (In a real app, this should be a config)
-        # For now, let's assume a simple mapping or just store the status and price_id
-        # We need to find the user by stripe_customer_id
-        # brain.database should have a way to find by fields
+        # Map Price ID to Plan
+        plan = "Free"
+        if price_id == settings.STRIPE_PRICE_ID_BASIC:
+            plan = "Basic"
+        elif price_id == settings.STRIPE_PRICE_ID_PRO:
+            plan = "Pro"
+        elif price_id == settings.STRIPE_PRICE_ID_PREMIUM:
+            plan = "Premium"
+        else:
+            logger.warning(f"Unknown Stripe price ID received: {price_id}. Enforcing 'Free' fallback.")
+            
         user = brain.database.users.find_one({"stripe_customer_id": customer_id})
         if user:
-            # Determine plan based on price_id (logic to be refined with real IDs)
-            plan = "Pro" # Default for trial/paid for now
-            
+            # Note: We must be careful about trials here. If status == 'trialing', we might want 
+            # to handle trial expirations via Stripe instead of local Mongo custom_trial_days logic
             brain.update_user_profile_fields(user["email"], {
                 "stripe_subscription_id": subscription["id"],
                 "stripe_subscription_status": status,
                 "subscription_plan": plan,
-                "current_billing_cycle_start": datetime.now(timezone.utc),
+                "current_billing_cycle_start": datetime.now(timezone.utc).isoformat(),
                 "custom_message_limit": None # Clear custom limits when plan changes
             })
 

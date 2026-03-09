@@ -141,6 +141,9 @@ class Settings(BaseSettings):
     # ====== STRIPE ======
     STRIPE_API_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
+    STRIPE_PRICE_ID_BASIC: str = ""
+    STRIPE_PRICE_ID_PRO: str = ""
+    STRIPE_PRICE_ID_PREMIUM: str = ""
 
     def get_mem0_config(self) -> dict:
         """
