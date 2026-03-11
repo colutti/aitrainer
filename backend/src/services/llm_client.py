@@ -3,15 +3,18 @@ LLM Client abstraction layer for AI trainer.
 Provides a unified interface for different LLM providers (Gemini, Ollama, OpenAI).
 """
 
-from typing import AsyncGenerator, Any
+import warnings
 import time
+from typing import AsyncGenerator, Any
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import AIMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
-from langchain.agents import create_agent
-from langgraph.graph.state import CompiledStateGraph
-
-import warnings
+try:
+    from langchain.agents import create_agent
+    from langgraph.graph.state import CompiledStateGraph
+except ImportError:
+    create_agent = Any  # type: ignore  # pylint: disable=invalid-name
+    CompiledStateGraph = Any  # type: ignore
 
 # Suppress Pydantic V1/LangSmith warning as we cannot easily upgrade right now
 warnings.filterwarnings("ignore", message=".*Core Pydantic V1 functionality.*")
@@ -27,6 +30,7 @@ class LLMClient:
 
     _initialized = False
     _llm: Any = None
+    model_name: str = ""
 
     @classmethod
     def from_config(cls) -> "LLMClient":
@@ -104,66 +108,33 @@ class LLMClient:
         usage_metadata_captured = False  # Track if we already captured
 
         try:
-            # Format initial messages
             messages = list(prompt_template.format_messages(**input_data))
             prompt_str = prompt_template.format(**input_data)
-
-            # Create the ReAct agent
             agent: CompiledStateGraph = create_agent(self._llm, tools)
-
-            # Stream the agent execution with increased recursion limit
-            # Default is 25, but complex tool chains may need more
             config: RunnableConfig = {"recursion_limit": 50}
             async for item in agent.astream(
                 {"messages": messages}, stream_mode="messages", config=config
             ):
-                if isinstance(item, tuple) and len(item) == 2:
-                    event, _ = item
-                else:
-                    event = item
+                event = item[0] if isinstance(item, tuple) and len(item) == 2 else item
 
-                # Capture usage_metadata from AIMessage chunks
-                # Only capture ONCE - the first time we see real token values
                 if not usage_metadata_captured and isinstance(event, AIMessage):
-                    if hasattr(event, "usage_metadata") and event.usage_metadata:
-                        # Only capture if this has real token counts (not all zeros)
-                        tokens = event.usage_metadata.get("input_tokens", 0) + event.usage_metadata.get("output_tokens", 0)
-                        if tokens > 0:
-                            usage_metadata = event.usage_metadata
-                            usage_metadata_captured = True
-                            logger.info(
-                                "✓ Captured usage_metadata (FIRST TIME): input=%s, output=%s, total=%s",
-                                event.usage_metadata.get("input_tokens", 0),
-                                event.usage_metadata.get("output_tokens", 0),
-                                tokens
-                            )
+                    usage_metadata_captured, usage_metadata = self._capture_metadata(event)
 
-                # V3: Intercept Tool Outputs (System Feedback)
                 if isinstance(event, ToolMessage):
-                    tool_name = str(event.name) if event.name else "unknown"
-                    logger.debug("Intercepted ToolMessage: %s", tool_name)
-                    tools_called.append(tool_name)
+                    tools_called.append(str(event.name or "unknown"))
                     yield {
                         "type": "tool_result",
                         "content": event.content,
-                        "tool_name": tool_name,
+                        "tool_name": str(event.name or "unknown"),
                         "tool_call_id": event.tool_call_id,
                     }
                     continue
 
-                # Filter for AIMessageChunks (actual response content)
                 if isinstance(event, AIMessage) and event.content:
-                    if isinstance(event.content, str):
-                        yield event.content
-                    elif isinstance(event.content, list):
-                        # Handle complex content (e.g. text + tool_calls)
-                        for block in event.content:
-                            if isinstance(block, str):
-                                yield block
-                            elif isinstance(block, dict) and "text" in block:
-                                yield block["text"]
+                    for block in self._yield_content_blocks(event.content):
+                        yield block
 
-        except Exception as e:  # pylint: disable=broad-exception-caught
+        except (ValueError, TypeError, AttributeError, Exception) as e:  # pylint: disable=broad-exception-caught
             logger.error("Error in stream_with_tools: %s", e)
             yield f"Error processing request: {str(e)}"
         finally:
@@ -191,7 +162,7 @@ class LLMClient:
                             "status": "success",
                         },
                     )
-                except Exception as log_err:  # pylint: disable=broad-exception-caught
+                except (ValueError, TypeError, AttributeError, Exception) as log_err:  # pylint: disable=broad-exception-caught
                     logger.warning(
                         "Failed to log prompt in stream_with_tools: %s", log_err
                     )
@@ -206,6 +177,7 @@ class LLMClient:
         user_email: str | None = None,
         log_callback=None,
     ) -> AsyncGenerator[str, None]:
+        # pylint: disable=too-many-branches,too-many-locals
         """
         Simple streaming without tools.
 
@@ -236,20 +208,14 @@ class LLMClient:
             try:
                 chain_before_parser = prompt_template | self._llm
                 async for chunk in chain_before_parser.astream(input_data):
-                    # Capture usage_metadata from AIMessage (only once - the first chunk with valid tokens)
+                    # Capture usage_metadata from AIMessage (only once - first chunk with tokens)
                     if isinstance(chunk, AIMessage):
                         # Capture usage_metadata if not captured yet
-                        if not usage_metadata_captured and hasattr(chunk, "usage_metadata") and chunk.usage_metadata:
-                            tokens = chunk.usage_metadata.get("input_tokens", 0) + chunk.usage_metadata.get("output_tokens", 0)
-                            if tokens > 0:
-                                usage_metadata = chunk.usage_metadata
-                                usage_metadata_captured = True  # Mark as captured to prevent overwriting
-                                logger.info(
-                                    "✓ Captured usage_metadata (stream_simple): input=%s, output=%s",
-                                    chunk.usage_metadata.get("input_tokens", 0),
-                                    chunk.usage_metadata.get("output_tokens", 0),
-                                )
-                        
+                        if (not usage_metadata_captured and hasattr(chunk, "usage_metadata")
+                                and chunk.usage_metadata):
+                            usage_metadata_captured, usage_metadata = self._capture_metadata(
+                                chunk, "stream_simple"
+                            )
                         # Always yield the text content
                         if chunk.content:
                             if isinstance(chunk.content, str):
@@ -267,7 +233,7 @@ class LLMClient:
                 chain = prompt_template | self._llm | StrOutputParser()
                 async for chunk in chain.astream(input_data):
                     yield chunk
-        except Exception as e:  # pylint: disable=broad-exception-caught
+        except (ValueError, TypeError, AttributeError, Exception) as e:  # pylint: disable=broad-exception-caught
             logger.error("Error in stream_simple: %s", e)
             yield f"Error processing request: {str(e)}"
         finally:
@@ -288,8 +254,37 @@ class LLMClient:
                             "status": "success",
                         },
                     )
-                except Exception as log_err:  # pylint: disable=broad-exception-caught
+                except (ValueError, TypeError, AttributeError, Exception) as log_err:  # pylint: disable=broad-exception-caught
                     logger.warning("Failed to log prompt in stream_simple: %s", log_err)
+
+
+    def _capture_metadata(
+        self, event: AIMessage, source: str = "LangGraph"
+    ) -> tuple[bool, dict]:
+        """Helper to capture usage metadata from AI messages."""
+        if hasattr(event, "usage_metadata") and event.usage_metadata:
+            u_meta = event.usage_metadata
+            tokens = u_meta.get("input_tokens", 0) + u_meta.get("output_tokens", 0)
+            if tokens > 0:
+                logger.info(
+                    "✓ Captured usage_metadata (%s): input=%s, output=%s",
+                    source,
+                    u_meta.get("input_tokens", 0),
+                    u_meta.get("output_tokens", 0),
+                )
+                return True, u_meta
+        return False, {"input_tokens": 0, "output_tokens": 0}
+
+    def _yield_content_blocks(self, content: str | list):
+        """Helper to yield content blocks from AIMessage."""
+        if isinstance(content, str):
+            yield content
+        elif isinstance(content, list):
+            for block in content:
+                if isinstance(block, str):
+                    yield block
+                elif isinstance(block, dict) and "text" in block:
+                    yield block["text"]
 
 
 # Manual agent loop methods removed (refactoring to LangGraph)

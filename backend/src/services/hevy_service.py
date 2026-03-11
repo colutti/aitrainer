@@ -192,7 +192,9 @@ class HevyService:
                     name=exercise_data["title"],
                     sets=len(sets_data),
                     reps_per_set=reps_per_set,
-                    weights_per_set=weights_per_set if not has_cardio or any(w > 0 for w in weights_per_set) else [],
+                    weights_per_set=weights_per_set
+                    if not has_cardio or any(w > 0 for w in weights_per_set)
+                    else [],
                     distance_meters_per_set=distance_meters_per_set if has_cardio else [],
                     duration_seconds_per_set=duration_seconds_per_set if has_cardio else [],
                 )
@@ -485,7 +487,7 @@ class HevyService:
                         ex_idx,
                     )
 
-                    for set_idx, s in enumerate(ex["sets"]):
+                    for set_idx, s in enumerate(ex["sets"]):  # pylint: disable=unused-variable
                         if "index" in s:
                             del s["index"]
                             removed_fields["set_index"] += 1

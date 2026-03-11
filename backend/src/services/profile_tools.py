@@ -52,7 +52,8 @@ def create_update_user_goal_tool(database: MongoDatabase, user_email: str):
 
         Parâmetros:
         - goal_type: um de 'lose' (perda), 'gain' (ganho), 'maintain' (manutenção)
-        - weekly_rate: taxa semanal em kg (OBRIGATÓRIO para 'lose' ou 'gain', ignorado para 'maintain')
+        - weekly_rate: taxa semanal em kg (OBRIGATÓRIO para 'lose' ou 'gain',
+          ignorado para 'maintain')
 
         Exemplos de uso:
         - Aluno quer parar de perder peso: goal_type='maintain'

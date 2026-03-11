@@ -19,6 +19,10 @@ from qdrant_client.models import VectorParams, Distance, PointStruct
 from src.core.config import settings
 from src.core.logs import logger
 
+# pylint: disable=broad-exception-caught
+# Justificativa: Qdrant Client não expõe exceções específicas para todas as falhas,
+# precisamos evitar que erros de conexão/API quebrem as interações da IA.
+
 
 def _get_embedder() -> GoogleGenerativeAIEmbeddings:
     """Returns a Gemini embedder for generating 768-dim vectors."""
@@ -47,9 +51,8 @@ def _embed_text(text: str) -> list:
     return reduced.tolist()
 
 
-def _get_collection_name(user_email: str) -> str:
-    """Returns collection name (shared across all users, filtered by user_id in payload)."""
-    # Use base collection name - all memories are stored here with user_id filter
+def _get_collection_name(_user_email: str) -> str:
+    """Returns collection name (shared across all users)."""
     return settings.QDRANT_COLLECTION_NAME
 
 
@@ -57,7 +60,7 @@ def _ensure_collection(qdrant_client: QdrantClient, collection_name: str):
     """Creates collection if it doesn't exist."""
     try:
         qdrant_client.get_collection(collection_name)
-    except Exception:  # pylint: disable=broad-exception-caught
+    except (ValueError, TypeError, AttributeError, Exception):
         # Collection doesn't exist, create it
         logger.info("Creating Qdrant collection: %s", collection_name)
         try:
@@ -65,8 +68,8 @@ def _ensure_collection(qdrant_client: QdrantClient, collection_name: str):
                 collection_name=collection_name,
                 vectors_config=VectorParams(size=768, distance=Distance.COSINE),
             )
-        except Exception as create_error:  # pylint: disable=broad-exception-caught
-            # Handle race condition: collection may have been created by another request
+        except (ValueError, TypeError, AttributeError, Exception) as create_error:
+            # Handle race condition
             if "already exists" not in str(create_error):
                 logger.error("Failed to create collection %s: %s", collection_name, create_error)
                 raise
@@ -102,7 +105,8 @@ def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str):
 
         Argumentos:
         - content: O conteúdo da memória (ex: "Tem alergia a amendoim")
-        - category: Categoria da memória. Opções: "preference", "limitation", "goal", "health", "context"
+        - category: Categoria da memória. Opções:
+          "preference", "limitation", "goal", "health", "context"
 
         Exemplos:
         - save_memory(content="Prefere treinar de manhã", category="preference")
@@ -143,10 +147,11 @@ def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str):
                 existing = similar_results.points[0]
                 existing_id = existing.payload.get("id", existing.id)
                 existing_text = existing.payload.get("memory", "")[:80]
-                logger.info("Duplicate memory detected for %s (existing ID: %s)", user_email, existing_id)
+                logger.info("Duplicate memory found for %s: %s", user_email, existing_id)
                 return (
                     f"⚠️ Memória similar já existe (ID: {existing_id}): \"{existing_text}...\"\n"
-                    f"Use update_memory(memory_id='{existing_id}', new_content=...) para atualizar, "
+                    f"Use update_memory(memory_id='{existing_id}', "
+                    "new_content=...) para atualizar, "
                     "ou delete_memory para remover antes de criar uma nova."
                 )
 
@@ -168,14 +173,17 @@ def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str):
 
             # Upsert to Qdrant
             qdrant_client.upsert(collection_name, points=[point])
-            logger.info("Saved memory for %s (ID: %s, category: %s)", user_email, memory_id, category)
+            logger.info(
+                "Saved memory for %s (ID: %s, category: %s)",
+                user_email, memory_id, category
+            )
 
             return f"✅ Memória salva (ID: {memory_id}): {content[:60]}..."
 
         except ValueError as e:
             logger.error("Validation error in save_memory: %s", e)
             return f"Erro de validação: {str(e)}"
-        except Exception as e:  # pylint: disable=broad-exception-caught
+        except (TypeError, AttributeError, Exception) as e:
             logger.error("Failed to save memory for %s: %s", user_email, e)
             return "❌ Erro ao salvar memória. Tente novamente."
 
@@ -193,6 +201,7 @@ def create_search_memory_tool(qdrant_client: QdrantClient, user_email: str):
 
     @tool
     def search_memory(query: str, limit: int = 5) -> str:
+        # pylint: disable=too-many-locals
         """
         Busca memórias relacionadas a uma query.
 
@@ -217,7 +226,7 @@ def create_search_memory_tool(qdrant_client: QdrantClient, user_email: str):
             # Check if collection exists
             try:
                 qdrant_client.get_collection(collection_name)
-            except Exception:  # pylint: disable=broad-exception-caught
+            except (ValueError, TypeError, AttributeError, Exception):
                 return "Nenhuma memória encontrada (coleção vazia)."
 
             # Generate query embedding with Gemini + dimensionality reduction
@@ -260,16 +269,17 @@ def create_search_memory_tool(qdrant_client: QdrantClient, user_email: str):
                     try:
                         date_obj = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
                         date_str = date_obj.strftime("%d/%m/%Y")
-                    except Exception:  # pylint: disable=broad-exception-caught
+                    except (ValueError, TypeError, AttributeError):
                         pass
 
                 formatted_results.append(
-                    f"ID: {memory_id} | [{category}] {memory_text}" + (f" [{date_str}]" if date_str else "")
+                    f"ID: {memory_id} | [{category}] {memory_text}"
+                    + (f" [{date_str}]" if date_str else "")
                 )
 
             return "\n".join(formatted_results)
 
-        except Exception as e:  # pylint: disable=broad-exception-caught
+        except (ValueError, TypeError, AttributeError, Exception) as e:
             logger.error("Failed to search memories for %s: %s", user_email, e)
             return "❌ Erro ao buscar memórias. Tente novamente."
 
@@ -337,7 +347,7 @@ def create_update_memory_tool(qdrant_client: QdrantClient, user_email: str):
 
             return f"✅ Memória atualizada (ID: {memory_id}): {new_content[:60]}..."
 
-        except Exception as e:  # pylint: disable=broad-exception-caught
+        except (ValueError, TypeError, AttributeError, Exception) as e:
             logger.error("Failed to update memory %s for %s: %s", memory_id, user_email, e)
             return "❌ Erro ao atualizar memória. Tente novamente."
 
@@ -386,7 +396,7 @@ def create_delete_memory_tool(qdrant_client: QdrantClient, user_email: str):
 
             return f"✅ Memória deletada (ID: {memory_id})"
 
-        except Exception as e:  # pylint: disable=broad-exception-caught
+        except (ValueError, TypeError, AttributeError, Exception) as e:
             logger.error("Failed to delete memory %s for %s: %s", memory_id, user_email, e)
             return "❌ Erro ao deletar memória. Tente novamente."
 
@@ -404,6 +414,7 @@ def create_list_raw_memories_tool(qdrant_client: QdrantClient, user_email: str):
 
     @tool
     def list_raw_memories(limit: int = 50) -> str:
+        # pylint: disable=too-many-locals
         """
         Lista todas as memórias brutas do usuário (últimas X criadas).
 
@@ -428,7 +439,7 @@ def create_list_raw_memories_tool(qdrant_client: QdrantClient, user_email: str):
             # Check if collection exists
             try:
                 qdrant_client.get_collection(collection_name)
-            except Exception:  # pylint: disable=broad-exception-caught
+            except (ValueError, TypeError, AttributeError, Exception):  # pylint: disable=broad-exception-caught
                 return "Nenhuma memória encontrada."
 
             # Filter by user_id
@@ -440,21 +451,8 @@ def create_list_raw_memories_tool(qdrant_client: QdrantClient, user_email: str):
                 ]
             )
 
-            # Get all memories using scroll (not search, just retrieval)
-            all_points = []
-            next_offset = None
-
-            while True:
-                points, next_offset = qdrant_client.scroll(
-                    collection_name=collection_name,
-                    scroll_filter=user_filter,
-                    limit=100,  # Fetch in batches
-                    offset=next_offset,
-                    with_payload=True,
-                )
-                all_points.extend(points)
-                if next_offset is None:
-                    break
+            from src.utils.qdrant_utils import scroll_all_user_points  # pylint: disable=import-outside-toplevel
+            all_points = scroll_all_user_points(qdrant_client, collection_name, user_filter)
 
             # Sort by created_at descending (newest first)
             all_points.sort(
@@ -488,7 +486,7 @@ def create_list_raw_memories_tool(qdrant_client: QdrantClient, user_email: str):
                     if updated_at:
                         updated_obj = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
                         updated_str = updated_obj.strftime("%d/%m/%Y %H:%M")
-                except Exception:  # pylint: disable=broad-exception-caught
+                except (ValueError, TypeError, AttributeError):
                     pass
 
                 formatted_results.append(
@@ -501,7 +499,7 @@ def create_list_raw_memories_tool(qdrant_client: QdrantClient, user_email: str):
             result_str = "\n".join(formatted_results)
             return f"📋 Últimas {len(limited_points)} memórias:\n\n{result_str}"
 
-        except Exception as e:  # pylint: disable=broad-exception-caught
+        except (ValueError, TypeError, AttributeError, Exception) as e:
             logger.error("Failed to list raw memories for %s: %s", user_email, e)
             return "❌ Erro ao listar memórias. Tente novamente."
 
@@ -587,7 +585,7 @@ def create_delete_memories_batch_tool(qdrant_client: QdrantClient, user_email: s
 
             return " | ".join(msg_parts)
 
-        except Exception as e:  # pylint: disable=broad-exception-caught
+        except (ValueError, TypeError, AttributeError, Exception) as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to batch delete memories for %s: %s", user_email, e)
             return "❌ Erro ao deletar memórias. Tente novamente."
 

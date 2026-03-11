@@ -3,13 +3,15 @@ Service for calculating Adaptive TDEE based on weight and nutrition history.
 """
 
 from datetime import date, timedelta, datetime
-from typing import List, TYPE_CHECKING, cast
+from typing import List, TYPE_CHECKING
 
 import numpy as np
 
 from src.api.models.weight_log import WeightLog
 from src.api.models.nutrition_log import NutritionLog
+from src.services.tdee_outliers import filter_outliers
 from src.core.logs import logger
+from src.services.tdee_utils import calculate_macro_targets, calculate_body_composition_changes
 
 if TYPE_CHECKING:
     from src.services.database import MongoDatabase
@@ -56,100 +58,9 @@ class AdaptiveTDEEService:
     MIN_CALORIES_MALE = 1500
     MAX_DEFICIT_PCT = 0.30  # Never exceed 30% deficit
 
-    # Outlier detection
-    OUTLIER_MODIFIED_Z_THRESHOLD = 3.5
-
     def __init__(self, db: "MongoDatabase"):
         """Initialize the AdaptiveTDEEService with a database connection."""
         self.db = db
-
-    def _filter_outliers(self, logs: List[WeightLog]) -> tuple[List[WeightLog], int]:
-        """
-        Filters out weight anomalies using a two-pass approach:
-        1. Modified Z-Score (statistical) — catches extreme one-off values
-        2. Contextual (semantic) — handles step changes and transient spikes
-
-        Returns:
-            tuple: (filtered_logs, count_of_removed_logs)
-        """
-        if len(logs) < 3:
-            return logs, 0
-
-        sorted_logs = sorted(logs, key=lambda x: x.date)
-
-        # === Pass 1: Modified Z-Score ===
-        weights = np.array([log.weight_kg for log in sorted_logs])
-        median = np.median(weights)
-        mad = np.median(np.abs(weights - median))
-
-        statistical_clean = []
-        stat_removed = 0
-
-        if mad > 0:
-            modified_z_scores = 0.6745 * (weights - median) / mad
-            for i, log in enumerate(sorted_logs):
-                if abs(modified_z_scores[i]) > self.OUTLIER_MODIFIED_Z_THRESHOLD:
-                    logger.info(
-                        "Modified Z-Score outlier: %.1f kg on %s (z=%.2f)",
-                        log.weight_kg, log.date, modified_z_scores[i],
-                    )
-                    stat_removed += 1
-                else:
-                    statistical_clean.append(log)
-        else:
-            # MAD=0 means all values are the same (or very close), no outliers
-            statistical_clean = list(sorted_logs)
-
-        if len(statistical_clean) < 3:
-            return statistical_clean, stat_removed
-
-        # === Pass 2: Contextual (spike/step-change) ===
-        clean_logs = [statistical_clean[0]]
-        last_valid_log = statistical_clean[0]
-        contextual_removed = 0
-
-        i = 1
-        while i < len(statistical_clean):
-            curr = statistical_clean[i]
-            delta = abs(curr.weight_kg - last_valid_log.weight_kg)
-            days_diff = (curr.date - last_valid_log.date).days
-
-            if delta > self.MAX_DAILY_WEIGHT_CHANGE and days_diff <= 3:
-                if i + 1 < len(statistical_clean):
-                    next_log = statistical_clean[i + 1]
-                    dist_to_baseline = abs(next_log.weight_kg - last_valid_log.weight_kg)
-
-                    # Case A: Spike
-                    if dist_to_baseline < delta:
-                        logger.info(
-                            "Ignoring transient weight spike: %s kg on %s",
-                            curr.weight_kg, curr.date,
-                        )
-                        contextual_removed += 1
-                        i += 1
-                        continue
-
-                    # Case B: Step Change
-                    logger.info(
-                        "Detected Step Change: %s -> %s. Resetting baseline.",
-                        last_valid_log.weight_kg, curr.weight_kg,
-                    )
-                    contextual_removed += len(clean_logs)
-                    clean_logs = [curr]
-                    last_valid_log = curr
-                    i += 1
-                    continue
-
-                logger.info(
-                    "Last weight log shows large jump: %s -> %s",
-                    last_valid_log.weight_kg, curr.weight_kg,
-                )
-
-            clean_logs.append(curr)
-            last_valid_log = curr
-            i += 1
-
-        return clean_logs, stat_removed + contextual_removed
 
     def _estimate_energy_per_kg(self, body_fat_pct: float | None, slope: float) -> float:
         """
@@ -181,7 +92,9 @@ class AdaptiveTDEEService:
         # Clamp to physiological bounds
         fat_fraction = max(0.50, min(0.90, fat_fraction))
 
-        return fat_fraction * self.KCAL_PER_KG_FAT_MASS + (1 - fat_fraction) * self.KCAL_PER_KG_LEAN_MASS
+        fat_kcal = fat_fraction * self.KCAL_PER_KG_FAT_MASS
+        lean_kcal = (1 - fat_fraction) * self.KCAL_PER_KG_LEAN_MASS
+        return fat_kcal + lean_kcal
 
     def calculate_ema_trend(self, weight_kg: float, prev_trend: float | None) -> float:
         """
@@ -285,6 +198,39 @@ class AdaptiveTDEEService:
 
         return result
 
+    @staticmethod
+    def _compute_single_window_observation(
+        sorted_dates: list[date],
+        daily_trend: dict[date, float],
+        nutrition_by_date: dict[date, int],
+        energy_per_kg: float,
+        i: int,
+    ) -> tuple[date, float] | None:
+        """Helper to compute TDEE observation for a single 7-day window."""
+        window_end_date = sorted_dates[i]
+        window_start_date = sorted_dates[i - 6]
+
+        window_calories = [
+            nutrition_by_date[sorted_dates[j]]
+            for j in range(i - 6, i + 1)
+            if sorted_dates[j] in nutrition_by_date
+        ]
+
+        if len(window_calories) < 4:
+            return None
+
+        avg_calories = sum(window_calories) / len(window_calories)
+
+        trend_start = daily_trend[window_start_date]
+        trend_end = daily_trend[window_end_date]
+        trend_change_7d = trend_end - trend_start
+        daily_trend_change = trend_change_7d / 7
+        obs_tdee = avg_calories - (daily_trend_change * energy_per_kg)
+
+        if 500 <= obs_tdee <= 5000:
+            return (window_end_date, obs_tdee)
+        return None
+
     def _compute_tdee_observations(
         self,
         daily_trend: dict[date, float],
@@ -309,42 +255,21 @@ class AdaptiveTDEEService:
 
         sorted_dates = sorted(daily_trend.keys())
 
-        # Need at least 8 days to have a complete 7-day window
         if len(sorted_dates) < 8:
             return []
 
         observations = []
 
-        # For each date that is at least 7 days after start
-        for i in range(6, len(sorted_dates)):  # Start at index 6 (7th day)
-            window_end_date = sorted_dates[i]
-            window_start_date = sorted_dates[i - 6]  # 7 days before
-
-            # Collect calories from last 7 days
-            window_calories = []
-            for j in range(i - 6, i + 1):
-                d = sorted_dates[j]
-                if d in nutrition_by_date:
-                    window_calories.append(nutrition_by_date[d])
-
-            # Need minimum 4 days with nutrition data
-            if len(window_calories) < 4:
-                continue
-
-            avg_calories = sum(window_calories) / len(window_calories)
-
-            # Weight trend change over 7 days
-            trend_start = daily_trend[window_start_date]
-            trend_end = daily_trend[window_end_date]
-            trend_change_7d = trend_end - trend_start
-
-            # TDEE observation
-            daily_trend_change = trend_change_7d / 7
-            obs_tdee = avg_calories - (daily_trend_change * energy_per_kg)
-
-            # Filter outliers: [500, 5000] kcal
-            if 500 <= obs_tdee <= 5000:
-                observations.append((window_end_date, obs_tdee))
+        for i in range(6, len(sorted_dates)):
+            obs = self._compute_single_window_observation(
+                sorted_dates,
+                daily_trend,
+                nutrition_by_date,
+                energy_per_kg,
+                i
+            )
+            if obs:
+                observations.append(obs)
 
         return observations
 
@@ -431,9 +356,7 @@ class AdaptiveTDEEService:
         tdee_start_date = None
         if tdee_start_date_str:
             try:
-                from datetime import date as date_obj
-
-                tdee_start_date = date_obj.fromisoformat(tdee_start_date_str)
+                tdee_start_date = date.fromisoformat(tdee_start_date_str)
             except (ValueError, TypeError):
                 pass
         latest_weight = (
@@ -452,7 +375,7 @@ class AdaptiveTDEEService:
                     - (5 * profile.age)
                     + adj
                 )
-            except Exception:
+            except (ValueError, TypeError, AttributeError):
                 pass
         base_bmr = scale_bmr or calc_bmr or (latest_weight * 22) or 1500
         activity_factor = 1.45
@@ -465,7 +388,8 @@ class AdaptiveTDEEService:
         # Step 3: Minimal data check
         if len(weight_logs) < 2:
             logger.info(
-                "Insufficient weight logs for TDEE for user %s. Using fallback.", user_email
+                "Insufficient weight logs for TDEE for user %s. Using fallback.",
+                user_email,
             )
             return self._calculate_fallback_tdee(
                 user_email, weight_logs, nutrition_logs
@@ -477,7 +401,7 @@ class AdaptiveTDEEService:
         weight_logs_raw = list(weight_logs)
 
         # Step 4: Filter outliers
-        weight_logs, outliers_count = self._filter_outliers(weight_logs)
+        weight_logs, outliers_count = filter_outliers(weight_logs)
         weight_logs.sort(key=lambda x: x.date)
 
         days_elapsed = (weight_logs[-1].date - weight_logs[0].date).days
@@ -496,7 +420,9 @@ class AdaptiveTDEEService:
         complete_nutrition = [n for n in nutrition_logs if not n.partial_logged]
 
         if not complete_nutrition:
-            logger.info("No complete nutrition logs for user %s. Using fallback.", user_email)
+            logger.info(
+                "No complete nutrition logs for user %s. Using fallback.", user_email
+            )
             return self._calculate_fallback_tdee(
                 user_email, weight_logs, nutrition_logs
             )
@@ -523,7 +449,11 @@ class AdaptiveTDEEService:
 
         # Step 9: Estimate energy per kg (dynamic body composition)
         latest_body_fat = next(
-            (log.body_fat_pct for log in reversed(weight_logs) if log.body_fat_pct is not None),
+            (
+                log.body_fat_pct
+                for log in reversed(weight_logs)
+                if log.body_fat_pct is not None
+            ),
             None,
         )
         energy_per_kg = self._estimate_energy_per_kg(latest_body_fat, trend_slope)
@@ -577,15 +507,13 @@ class AdaptiveTDEEService:
         goal_rate, goal_type = 0.0, "maintain"
 
         # Use coaching check-in for daily_target
-        daily_target = self._calculate_coaching_target(
-            tdee, avg_calories_logged, weekly_change, profile
-        )
+        daily_target = self._calculate_coaching_target(tdee, profile)
 
         if profile:
             goal_rate, goal_type = profile.weekly_rate or 0.0, profile.goal_type
 
         # Step 15: Body Composition Analysis
-        comp_changes = self._calculate_body_composition_changes(weight_logs)
+        comp_changes = calculate_body_composition_changes(weight_logs)
 
         # Step 16: Projection & ETA
         weeks_to_goal, goal_eta_weeks = None, None
@@ -682,7 +610,7 @@ class AdaptiveTDEEService:
 
     def _map_result(self, p: dict) -> dict:
         """Helper to map results to the final dictionary."""
-        macro_targets = self._calculate_macro_targets(p["target"], p["lat_weight"])
+        macro_targets = calculate_macro_targets(p["target"], p["lat_weight"])
         stability = self._calculate_stability_score(p["target"], p["relevant_nut"])
 
         return {
@@ -758,42 +686,6 @@ class AdaptiveTDEEService:
             ],
         }
 
-    def _calculate_body_composition_changes(self, logs: List[WeightLog]) -> dict | None:
-        """Calculate fat and muscle mass changes using actual scale data."""
-        valid_logs = [log for log in logs if log.body_fat_pct is not None]
-        if len(valid_logs) < 2:
-            return None
-
-        first, last = valid_logs[0], valid_logs[-1]
-        fat_mass_start = first.weight_kg * (cast(float, first.body_fat_pct) / 100.0)
-        fat_mass_end = last.weight_kg * (cast(float, last.body_fat_pct) / 100.0)
-        fat_change = fat_mass_end - fat_mass_start
-
-        muscle_change = None
-        # Priority: muscle_mass_kg -> muscle_mass_pct -> fallback (LBM change)
-        if first.muscle_mass_kg is not None and last.muscle_mass_kg is not None:
-            muscle_change = last.muscle_mass_kg - first.muscle_mass_kg
-        elif first.muscle_mass_pct and last.muscle_mass_pct:
-            m_start = first.weight_kg * (first.muscle_mass_pct / 100.0)
-            m_end = last.weight_kg * (last.muscle_mass_pct / 100.0)
-            muscle_change = m_end - m_start
-        else:
-            muscle_change = (last.weight_kg - first.weight_kg) - fat_change
-
-        return {
-            "fat_change_kg": round(fat_change, 2),
-            "muscle_change_kg": round(muscle_change, 2),
-            "start_fat_pct": round(cast(float, first.body_fat_pct), 2),
-            "end_fat_pct": round(cast(float, last.body_fat_pct), 2),
-            "start_muscle_pct": round(cast(float, first.muscle_mass_pct), 2)
-            if first.muscle_mass_pct
-            else (round(first.muscle_mass_kg / first.weight_kg * 100, 2) if first.muscle_mass_kg else None),
-            "end_muscle_pct": round(cast(float, last.muscle_mass_pct), 2)
-            if last.muscle_mass_pct
-            else (round(last.muscle_mass_kg / last.weight_kg * 100, 2) if last.muscle_mass_kg else None),
-            "start_muscle_kg": round(first.muscle_mass_kg, 2) if first.muscle_mass_kg else None,
-            "end_muscle_kg": round(last.muscle_mass_kg, 2) if last.muscle_mass_kg else None,
-        }
 
     # pylint: disable=too-many-locals
     def _calculate_regression_trend(
@@ -818,8 +710,7 @@ class AdaptiveTDEEService:
             else:
                 r_val = np.corrcoef(x_arr, y_arr)[0, 1]
             return float(m), float(c), float(r_val)
-        # pylint: disable=broad-exception-caught
-        except Exception as e:
+        except (ValueError, TypeError, np.RankWarning) as e:
             logger.error("Regression calculation failed: %s", e)
             total_days = x_list[-1] - x_list[0]
             slope = (y_list[-1] - y_list[0]) / total_days if total_days > 0 else 0.0
@@ -864,8 +755,7 @@ class AdaptiveTDEEService:
                     - (5 * profile.age)
                     + adj
                 )
-            # pylint: disable=broad-exception-caught
-            except Exception:
+            except (ValueError, TypeError, AttributeError):
                 pass
         base_bmr = scale_bmr or calc_bmr or (latest_weight * 22) or 1500
         activity_factor = 1.45
@@ -915,47 +805,18 @@ class AdaptiveTDEEService:
             "goal_weekly_rate": goal_rate,
             "goal_type": goal_type,
             "consistency_score": int(round(adh * 100)),
-            "macro_targets": self._calculate_macro_targets(target, latest_weight),
+            "macro_targets": calculate_macro_targets(target, latest_weight),
             "weight_trend": [],
             "consistency": [],
             "calorie_trend": [],
             "confidence_reason": "Utilizando estimativa baseada em seu metabolismo basal (BMR) "
             "devido a histórico de dados insuficiente ou instável.",
         }
-        comp = self._calculate_body_composition_changes(weight_logs)
+        comp = calculate_body_composition_changes(weight_logs)
         if comp:
             res.update(comp)
         return res
 
-    def _calculate_macro_targets(self, daily_target: int, weight_kg: float) -> dict:
-        """
-        Calculates macro targets ensuring total calories = daily_target.
-
-        Strategy:
-        1. Protein: 1.6-2.0g per kg, but capped to max 40% of daily target
-        2. Fat: 25-30% of daily target
-        3. Carbs: Remaining calories
-
-        This prevents macro totals from exceeding the daily target in extreme cases
-        (e.g., high weight + low calorie target).
-        """
-        # Step 1: Calculate ideal protein (1.8g per kg of body weight)
-        ideal_protein_g = weight_kg * 1.8
-        protein_kcal_max = daily_target * 0.40  # Cap at 40% of target
-        ideal_protein_g = min(ideal_protein_g, protein_kcal_max / 4)  # Convert to grams
-        protein_g = int(round(ideal_protein_g))
-        protein_kcal = protein_g * 4
-
-        # Step 2: Calculate fat (27% of daily target - middle of 25-30% range)
-        fat_kcal = daily_target * 0.27
-        fat_g = int(round(fat_kcal / 9))
-        fat_kcal = fat_g * 9  # Recalculate based on rounded grams
-
-        # Step 3: Carbs get the remainder
-        remaining_kcal = daily_target - protein_kcal - fat_kcal
-        carb_g = int(round(max(0, remaining_kcal / 4)))
-
-        return {"protein": protein_g, "carbs": carb_g, "fat": fat_g}
 
     def _calculate_stability_score(
         self, target: int, nutrition_logs: list[NutritionLog]
@@ -974,8 +835,6 @@ class AdaptiveTDEEService:
     def _calculate_coaching_target(
         self,
         tdee: float,
-        avg_calories: float,
-        weekly_change: float,
         profile: "UserProfile | None",
     ) -> int:
         """
@@ -1060,14 +919,13 @@ class AdaptiveTDEEService:
             return max(self.MIN_TDEE, target)
 
         # Gender-specific minimum
-        is_female = profile.gender in ("Feminino", "female")
-        gender_min = self.MIN_CALORIES_FEMALE if is_female else self.MIN_CALORIES_MALE
+        gender_min = (
+            self.MIN_CALORIES_FEMALE
+            if profile.gender in ("Feminino", "female")
+            else self.MIN_CALORIES_MALE
+        )
 
-        # Max deficit percentage (only for deficit goals)
         if profile.goal_type == "lose":
-            min_by_deficit = int(round(tdee * (1 - self.MAX_DEFICIT_PCT)))
-            return max(gender_min, min_by_deficit, target)
+            return max(gender_min, int(round(tdee * (1 - self.MAX_DEFICIT_PCT))), target)
 
-        # For gain/maintain, only gender floor applies
         return max(gender_min, target)
-

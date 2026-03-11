@@ -52,8 +52,6 @@ def list_memories(
             user_id=user_email,
             page=page,
             page_size=page_size,
-            qdrant_client=qdrant,
-            collection_name=settings.QDRANT_COLLECTION_NAME,
         )
         logger.debug("Processing %d raw memories", len(raw_memories))
 
@@ -113,7 +111,7 @@ def delete_memory(
 
     try:
         # Validate ownership first
-        memory = brain.get_memory_by_id(memory_id, user_email)
+        memory = brain.get_memory_by_id(memory_id)
         if not memory:
             logger.warning("Memory not found: %s", memory_id)
             raise HTTPException(status_code=404, detail="Memory not found")

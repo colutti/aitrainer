@@ -1,6 +1,8 @@
 """
-This module contains the repository for user profiles.
+This module provides the UserRepository for managing user persistence.
 """
+# pylint: disable=line-too-long
+
 
 from datetime import datetime
 from pymongo.database import Database
@@ -57,6 +59,14 @@ class UserRepository(BaseRepository):
         self.logger.debug("User profile retrieved for email: %s", email)
         return UserProfile(**user_data)
 
+    def find_by_stripe_customer_id(self, customer_id: str) -> UserProfile | None:
+        """
+        Retrieves a user profile by Stripe Customer ID.
+        """
+        user_data = self.collection.find_one({"stripe_customer_id": customer_id})
+        if not user_data:
+            return None
+        return UserProfile(**user_data)
 
     def find_by_webhook_token(self, token: str) -> UserProfile | None:
         """
@@ -72,7 +82,9 @@ class UserRepository(BaseRepository):
         self.logger.debug("Found user %s for webhook token", user_data.get("email"))
         return UserProfile(**user_data)
 
-    def increment_message_counts(self, email: str, new_cycle_start: datetime | None = None) -> None:
+    def increment_message_counts(
+        self, email: str, new_cycle_start: datetime | None = None
+    ) -> None:
         """
         Atomically increments message counts for a user.
         If new_cycle_start is provided, it resets the monthly count and updates the cycle start.
@@ -85,9 +97,9 @@ class UserRepository(BaseRepository):
         # Note: In a high-concurrency environment, we'd use a more complex $cond in the update,
         # but here we'll do a simple fetch or rely on the $set behavior.
         # Actually, let's use a single atomic update with $cond if possible, but pymongo/mongo 4.2+ needed.
-        # We'll use a simpler approach: check if we need to reset today's count based on a separate query or 
+        # We'll use a simpler approach: check if we need to reset today's count based on a separate query or
         # just use $set if we pass the current date.
-        
+
         # We will use the fact that we can do conditional updates using aggregation pipelines in update_one (Mongo 4.2+).
         # pipeline = [
         #     { "$set": {
@@ -97,10 +109,14 @@ class UserRepository(BaseRepository):
         #         ...
         #     }}
         # ]
-        
+
         # But for simplicity and compatibility with standard project patterns:
         existing = self.collection.find_one({"email": email}, {"last_message_date": 1})
-        is_new_day = (existing and existing.get("last_message_date") != today_str) if existing else True
+        is_new_day = (
+            (existing and existing.get("last_message_date") != today_str)
+            if existing
+            else True
+        )
 
         if new_cycle_start:
             update_doc = {
@@ -109,21 +125,18 @@ class UserRepository(BaseRepository):
                     "current_billing_cycle_start": new_cycle_start,
                     "messages_sent_this_month": 1,
                     "last_message_date": today_str,
-                    "messages_sent_today": 1
+                    "messages_sent_today": 1,
                 },
             }
         else:
             inc_fields = {"total_messages_sent": 1, "messages_sent_this_month": 1}
             set_fields = {"last_message_date": today_str}
-            
+
             if is_new_day:
                 set_fields["messages_sent_today"] = 1
             else:
                 inc_fields["messages_sent_today"] = 1
-                
-            update_doc = {
-                "$inc": inc_fields,
-                "$set": set_fields
-            }
+
+            update_doc = {"$inc": inc_fields, "$set": set_fields}
 
         self.collection.update_one({"email": email}, update_doc)

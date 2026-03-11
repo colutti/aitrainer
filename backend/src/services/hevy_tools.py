@@ -511,7 +511,7 @@ def create_get_hevy_routine_detail_tool(hevy_service, database, user_email: str)
         if not profile or not profile.hevy_enabled or not profile.hevy_api_key:
             return "A integração com Hevy está desativada ou a chave API não está configurada."
 
-        try:
+        try:  # pylint: disable=too-many-nested-blocks
             logger.debug(
                 "[get_hevy_routine_detail] Request for routine: %s (user: %s)",
                 routine_title_or_id,
@@ -637,6 +637,7 @@ def create_get_hevy_routine_detail_tool(hevy_service, database, user_email: str)
 
 
 def create_set_routine_rest_and_ranges_tool(hevy_service, database, user_email: str):
+    # pylint: disable=too-many-nested-blocks
     @tool
     async def set_routine_rest_and_ranges(
         routine_title_or_id: str,
@@ -813,34 +814,34 @@ def create_trigger_hevy_import_tool(hevy_service, database, user_email: str):
         """
         Dispara a importação de treinos do Hevy para o sistema.
         Use esta ferramenta APENAS se a integração com o Hevy estiver ATIVA e o aluno pedir para sincronizar ou importar os treinos.
-        
+
         Args:
             days_back: Quantidade de dias para trás que os treinos devem ser buscados (padrão é 7).
         """
         profile = database.get_user_profile(user_email)
         if not profile or not profile.hevy_enabled or not profile.hevy_api_key:
             return "A integração com Hevy está desativada ou a chave API não está configurada. Por favor, ative-a nas configurações."
-            
+
         try:
-            from datetime import datetime, timezone, timedelta
+            from datetime import datetime, timezone, timedelta  # pylint: disable=import-outside-toplevel
             from_date = datetime.now(timezone.utc) - timedelta(days=days_back)
-            
+
             logger.info("[trigger_hevy_import] Starting import for user %s, %d days back", user_email, days_back)
-            
+
             result = await hevy_service.import_workouts(
                 user_email=user_email,
                 api_key=profile.hevy_api_key,
                 from_date=from_date
             )
-            
+
             imported = result.get("imported", 0)
             skipped = result.get("skipped", 0)
             failed = result.get("failed", 0)
-            
+
             return f"A importação do Hevy foi concluída com sucesso! Detalhes:\n- {imported} novos treinos importados\n- {skipped} treinos ignorados (já existiam)\n- {failed} importações falharam."
-            
-        except Exception as e:
+
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("[trigger_hevy_import] Error: %s", e, exc_info=True)
             return f"Erro ao disparar a importação do Hevy: {str(e)}"
-            
+
     return trigger_hevy_import

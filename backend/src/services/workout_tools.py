@@ -28,14 +28,9 @@ def create_save_workout_tool(database, user_email: str):
 
         Argumentos:
         - workout_type: Tipo de treino. Ex: "Pernas", "Peito"
-        - exercises: Lista de dicts com 'name', 'sets', 'reps_per_set', 'weights_per_set', 'distance_meters_per_set', 'duration_seconds_per_set'
-        - duration_minutes: Duração total em minutos (opcional)
-        - date: Data do treino no formato ISO (YYYY-MM-DD). Default: hoje.
-
-        Exemplos de exercises:
-        - Força: {name: "Supino", sets: 3, reps_per_set: [10, 8, 6], weights_per_set: [80, 85, 90]}
-        - Cardio: {name: "Esteira", sets: 1, distance_meters_per_set: [1000], duration_seconds_per_set: [900]}
-        - Misto: {name: "Remo", sets: 2, reps_per_set: [15, 12], distance_meters_per_set: [500, 600], duration_seconds_per_set: [120, 140]}
+        - Força: {name: "Supino", sets: 3, reps: [10, 8, 6], weights: [80, 85, 90]}
+        - Cardio: {name: "Esteira", sets: 1, dist: [1000], dur: [900]}
+        - Misto: {name: "Remo", sets: 2, reps: [15, 12], dist: [500, 600], dur: [120, 140]}
         """
         try:
             log_date = _parse_date(date)
@@ -54,12 +49,9 @@ def create_save_workout_tool(database, user_email: str):
             date_fmt = log_date.strftime('%d/%m/%Y')
             return f"Treino de {date_fmt} registrado com sucesso! (ID: {workout_id})"
 
-        except (ValueError, TypeError) as e:
-            logger.error("Input error saving workout for %s: %s", user_email, e)
-            return f"Erro nos dados: {str(e)}"
-        except Exception as e:  # pylint: disable=broad-exception-caught
-            logger.error("Failed to save workout for user %s: %s", user_email, e)
-            return "Erro ao registrar treino. Tente novamente."
+        except (ValueError, TypeError, AttributeError) as e:
+            logger.error("Failed to save/parse workout for %s: %s", user_email, e)
+            return f"Erro nos dados: {e}"
 
     return save_workout
 
@@ -140,7 +132,7 @@ def create_get_workouts_tool(database, user_email: str):
 
             logger.info("Retrieved %d workouts for user %s", len(workouts), user_email)
             return result
-        except Exception as e:  # pylint: disable=broad-exception-caught
+        except (ValueError, TypeError, AttributeError) as e:
             logger.error("Failed to get workouts for user %s: %s", user_email, e)
             return "Erro ao buscar treinos. Tente novamente."
 
@@ -151,63 +143,53 @@ def _format_exercises_summary(exercises: list[ExerciseLog]) -> str:
     """Helper to format exercise list into a readable summary string."""
     ex_details = []
     for e in exercises:
-        # Check if this is a cardio exercise (has duration or distance)
         is_cardio = bool(e.duration_seconds_per_set or e.distance_meters_per_set)
-
         if is_cardio:
-            # Format cardio exercises with duration/distance, not reps
-            cardio_parts = [e.name]
-
-            # Add distance if available
-            if e.distance_meters_per_set:
-                # Check if uniform distance
-                if all(
-                    d == e.distance_meters_per_set[0]
-                    for d in e.distance_meters_per_set
-                ):
-                    distance_km = e.distance_meters_per_set[0] / 1000
-                    cardio_parts.append(f"{distance_km:.1f}km")
-                else:
-                    distances = [f"{d/1000:.1f}km" for d in e.distance_meters_per_set]
-                    cardio_parts.append(f"distances: {', '.join(distances)}")
-
-            # Add duration if available
-            if e.duration_seconds_per_set:
-                # Check if uniform duration
-                if all(
-                    d == e.duration_seconds_per_set[0]
-                    for d in e.duration_seconds_per_set
-                ):
-                    duration_sec = e.duration_seconds_per_set[0]
-                    duration_min = duration_sec / 60
-                    if duration_min == int(duration_min):
-                        cardio_parts.append(f"{int(duration_min)}min")
-                    else:
-                        cardio_parts.append(f"{duration_min:.1f}min")
-                else:
-                    durations = [f"{d/60:.1f}min" for d in e.duration_seconds_per_set]
-                    cardio_parts.append(f"times: {', '.join(durations)}")
-
-            ex_details.append(" ".join(cardio_parts))
+            ex_details.append(_format_cardio_exercise(e))
         else:
-            # Strength exercises: use original logic with reps and weights
-            uniform_reps = all(r == e.reps_per_set[0] for r in e.reps_per_set)
-            uniform_weights = not e.weights_per_set or all(
-                w == e.weights_per_set[0] for w in e.weights_per_set
-            )
-
-            if uniform_reps and uniform_weights:
-                weight_str = f" @ {e.weights_per_set[0]}kg" if e.weights_per_set else ""
-                ex_details.append(
-                    f"{e.sets}x{e.reps_per_set[0]} {e.name}{weight_str}"
-                )
-            else:
-                series = []
-                for idx, reps in enumerate(e.reps_per_set):
-                    if e.weights_per_set and idx < len(e.weights_per_set):
-                        series.append(f"{reps}@{e.weights_per_set[idx]}kg")
-                    else:
-                        series.append(f"{reps} reps")
-                ex_details.append(f"{e.name}: {', '.join(series)}")
-
+            ex_details.append(_format_strength_exercise(e))
     return "; ".join(ex_details)
+
+
+def _format_cardio_exercise(e: ExerciseLog) -> str:
+    """Helper to format a single cardio exercise."""
+    cardio_parts = [e.name]
+    if e.distance_meters_per_set:
+        if all(d == e.distance_meters_per_set[0] for d in e.distance_meters_per_set):
+            cardio_parts.append(f"{e.distance_meters_per_set[0] / 1000:.1f}km")
+        else:
+            distances = [f"{d/1000:.1f}km" for d in e.distance_meters_per_set]
+            cardio_parts.append(f"distances: {', '.join(distances)}")
+
+    if e.duration_seconds_per_set:
+        if all(d == e.duration_seconds_per_set[0] for d in e.duration_seconds_per_set):
+            duration_min = e.duration_seconds_per_set[0] / 60
+            if duration_min.is_integer():
+                fmt = f"{int(duration_min)}min"
+            else:
+                fmt = f"{duration_min:.1f}min"
+            cardio_parts.append(fmt)
+        else:
+            durations = [f"{d/60:.1f}min" for d in e.duration_seconds_per_set]
+            cardio_parts.append(f"times: {', '.join(durations)}")
+    return " ".join(cardio_parts)
+
+
+def _format_strength_exercise(e: ExerciseLog) -> str:
+    """Helper to format a single strength exercise."""
+    uniform_reps = all(r == e.reps_per_set[0] for r in e.reps_per_set)
+    uniform_weights = not e.weights_per_set or all(
+        w == e.weights_per_set[0] for w in e.weights_per_set
+    )
+
+    if uniform_reps and uniform_weights:
+        weight_str = f" @ {e.weights_per_set[0]}kg" if e.weights_per_set else ""
+        return f"{e.sets}x{e.reps_per_set[0]} {e.name}{weight_str}"
+
+    series = []
+    for idx, reps in enumerate(e.reps_per_set):
+        if e.weights_per_set and idx < len(e.weights_per_set):
+            series.append(f"{reps}@{e.weights_per_set[idx]}kg")
+        else:
+            series.append(f"{reps} reps")
+    return f"{e.name}: {', '.join(series)}"

@@ -10,6 +10,7 @@ from langchain_core.tools import tool
 from pymongo.database import Database
 
 from src.repositories.event_repository import EventRepository
+from src.api.models.scheduled_event import ScheduledEvent
 from src.core.logs import logger
 
 
@@ -60,7 +61,6 @@ def create_create_event_tool(database: Database, user_email: str):
 
         Retorna: String com confirmação e ID do evento
         """
-        from src.api.models.scheduled_event import ScheduledEvent
 
         try:
             event = ScheduledEvent(
@@ -83,7 +83,7 @@ def create_create_event_tool(database: Database, user_email: str):
                 f"🔄 Recorrência: {recurrence}\n"
                 f"ID: {event_id}"
             )
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError) as e:
             logger.error("Error creating event: %s", e)
             return f"❌ Erro ao criar evento: {str(e)}"
 
@@ -128,7 +128,7 @@ def create_list_events_tool(database: Database, user_email: str):
                 lines.append(f"- **{event.title}** ({event.id})\n  {date_str}{recur_str}{desc_str}")
 
             return "\n".join(lines)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError) as e:
             logger.error("Error listing events: %s", e)
             return f"❌ Erro ao listar eventos: {str(e)}"
 
@@ -164,12 +164,12 @@ def create_delete_event_tool(database: Database, user_email: str):
             if success:
                 logger.info("Event deleted: %s for user %s", event_id, user_email)
                 return f"✅ Evento removido com sucesso! (ID: {event_id})"
-            else:
-                return (
-                    f"❌ Evento não encontrado ou não autorizado (ID: {event_id})\n"
-                    "Use list_events() para ver seus eventos."
-                )
-        except Exception as e:
+
+            return (
+                f"❌ Evento não encontrado ou não autorizado (ID: {event_id})\n"
+                "Use list_events() para ver seus eventos."
+            )
+        except (ValueError, TypeError, AttributeError) as e:
             logger.error("Error deleting event: %s", e)
             return f"❌ Erro ao deletar evento: {str(e)}"
 
@@ -192,11 +192,11 @@ def create_update_event_tool(database: Database, user_email: str):
     @tool
     def update_event(
         event_id: str,
+        *,
         title: str | None = None,
         description: str | None = None,
         date: str | None = None,
         recurrence: str | None = None,
-        clear_date: bool = False,
     ) -> str:
         """
         Atualiza um evento, plano ou meta existente.
@@ -205,9 +205,8 @@ def create_update_event_tool(database: Database, user_email: str):
         - event_id: ID do evento (ver com list_events)
         - title: Novo título (opcional)
         - description: Nova descrição (opcional)
-        - date: Nova data em YYYY-MM-DD (opcional)
+        - date: Nova data em YYYY-MM-DD. Use 'NONE' para remover a data. (opcional)
         - recurrence: Nova recorrência (opcional)
-        - clear_date: True para remover o prazo (tornar meta sem data)
 
         Retorna: String com confirmação ou erro
         """
@@ -217,7 +216,7 @@ def create_update_event_tool(database: Database, user_email: str):
                 update_data["title"] = title
             if description is not None:
                 update_data["description"] = description
-            if clear_date:
+            if date == "NONE":
                 update_data["date"] = None
             elif date is not None:
                 date_err = _validate_date_format(date)
@@ -228,19 +227,23 @@ def create_update_event_tool(database: Database, user_email: str):
                 update_data["recurrence"] = recurrence
 
             if not update_data:
-                return "⚠️ Nenhum campo para atualizar. Especifique title, description, date ou recurrence."
+                msg = (
+                    "⚠️ Nenhum campo para atualizar. "
+                    "Informe title, description, date ou recurrence."
+                )
+                return msg
 
             success = repo.update_event(event_id, user_email, update_data)
 
             if success:
                 logger.info("Event updated: %s for user %s", event_id, user_email)
                 return f"✅ Evento atualizado com sucesso! (ID: {event_id})"
-            else:
-                return (
-                    f"❌ Evento não encontrado ou não autorizado (ID: {event_id})\n"
-                    "Use list_events() para ver seus eventos."
-                )
-        except Exception as e:
+
+            return (
+                f"❌ Evento não encontrado ou não autorizado (ID: {event_id})\n"
+                "Use list_events() para ver seus eventos."
+            )
+        except (ValueError, TypeError, AttributeError) as e:
             logger.error("Error updating event: %s", e)
             return f"❌ Erro ao atualizar evento: {str(e)}"
 

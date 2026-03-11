@@ -102,7 +102,7 @@ def login(request: Request, data: FirebaseLoginRequest, brain: AITrainerBrainDep
         return {"token": token}
 
     except (firebase_admin.auth.InvalidIdTokenError, ValueError) as exc:
-        logger.warning("Invalid Firebase ID token provided: %s", exc)
+        logger.warning("Invalid Firebase authentication provided: %s", exc)
         raise HTTPException(status_code=401, detail="Invalid token") from exc
     except Exception as exc:
         logger.error("Error during login: %s", exc)

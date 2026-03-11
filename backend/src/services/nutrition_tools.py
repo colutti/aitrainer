@@ -3,10 +3,11 @@ LangChain tools for nutrition tracking.
 """
 
 from datetime import datetime
-from langchain_core.tools import tool
-from src.core.logs import logger
-from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Any
+from langchain_core.tools import tool
+from pydantic import BaseModel, Field, field_validator
+from src.core.logs import logger
+from src.api.models.nutrition_log import NutritionLog
 
 
 class SaveDailyNutritionInput(BaseModel):
@@ -70,7 +71,6 @@ def create_save_nutrition_tool(database, user_email: str):
     Returns:
         A LangChain tool function.
     """
-    from src.api.models.nutrition_log import NutritionLog
 
     def parse_numeric(value: int | float | str | None) -> float | None:
         """Helper to strict parse numeric values, cleaning 'g', 'mg', etc."""
@@ -101,12 +101,15 @@ def create_save_nutrition_tool(database, user_email: str):
         protein_grams: float,
         carbs_grams: float,
         fat_grams: float,
+        *,
         fiber_grams: Optional[float] = None,
         sugar_grams: Optional[float] = None,
         sodium_mg: Optional[float] = None,
         cholesterol_mg: Optional[float] = None,
         date: Optional[str] = None,
     ) -> str:
+        # pylint: disable=too-many-arguments,too-many-locals
+        # Justificativa: Necessário para a tool do LangChain receber os parâmetros estruturados.
         """
         Salva o resumo nutricional DIÁRIO do aluno.
 
@@ -212,11 +215,9 @@ def create_save_nutrition_tool(database, user_email: str):
             )
             return f"Log nutricional de {date_str} {action} com sucesso! (ID: {doc_id})"
 
-        except Exception as e:
-            logger.error("Failed to save nutrition log for user %s: %s", user_email, e)
-            return (
-                "Erro ao salvar log nutricional. Verifique os dados e tente novamente."
-            )
+        except (ValueError, TypeError, AttributeError) as e:
+            logger.error("Failed to save nutrition log for %s: %s", user_email, e)
+            return "Erro ao salvar log nutricional. Verifique os dados."
 
     return save_daily_nutrition
 
@@ -254,18 +255,16 @@ def create_get_nutrition_tool(database, user_email: str):
                     micros.append(f"Sódio: {log.sodium_mg}mg")
 
                 micros_str = f" | {', '.join(micros)}" if micros else ""
-
+                result += f"📅 {date_str}: {log.calories} kcal\n"
                 result += (
-                    f"📅 {date_str}: {log.calories} kcal\n"
-                    f"   P: {log.protein_grams}g | C: {log.carbs_grams}g | G: {log.fat_grams}g{micros_str}\n\n"
+                    f"   P: {log.protein_grams}g | C: {log.carbs_grams}g | "
+                    f"G: {log.fat_grams}g{micros_str}\n\n"
                 )
 
             return result
 
-        except Exception as e:
-            logger.error(
-                "Failed to get nutrition history for user %s: %s", user_email, e
-            )
+        except (ValueError, TypeError, AttributeError) as e:
+            logger.error("Failed to get nutrition history for %s: %s", user_email, e)
             return "Erro ao buscar histórico nutricional."
 
     return get_nutrition

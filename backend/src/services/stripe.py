@@ -1,3 +1,4 @@
+"""Stripe integration service."""
 import stripe
 from src.core.config import settings
 from src.api.models.user_profile import UserProfile
@@ -5,7 +6,9 @@ from src.core.logs import logger
 
 stripe.api_key = settings.STRIPE_API_KEY
 
-def create_checkout_session(user: UserProfile, price_id: str, success_url: str, cancel_url: str) -> str:
+def create_checkout_session(
+    user: UserProfile, price_id: str, success_url: str, cancel_url: str
+) -> str:
     """
     Creates a Stripe Checkout session for a user.
     """
@@ -28,9 +31,9 @@ def create_checkout_session(user: UserProfile, price_id: str, success_url: str, 
             }
         )
         return session.url
-    except Exception as e:
-        logger.error(f"Error creating Stripe checkout session: {e}")
-        raise e
+    except (ValueError, TypeError, AttributeError, stripe.StripeError) as e:
+        logger.error("Error creating Stripe checkout session: %s", e)
+        raise
 
 def create_customer_portal_session(customer_id: str, return_url: str) -> str:
     """
@@ -42,6 +45,6 @@ def create_customer_portal_session(customer_id: str, return_url: str) -> str:
             return_url=return_url,
         )
         return session.url
-    except Exception as e:
-        logger.error(f"Error creating Stripe portal session: {e}")
-        raise e
+    except (ValueError, TypeError, AttributeError, stripe.StripeError) as e:
+        logger.error("Error creating Stripe portal session: %s", e)
+        raise

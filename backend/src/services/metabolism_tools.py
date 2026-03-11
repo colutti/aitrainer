@@ -86,7 +86,7 @@ não de estimativas genéricas.
 """
             return response
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError) as e:
             logger.error("Failed to get metabolism data for %s: %s", user_email, e)
             return (
                 "Erro ao buscar dados de metabolismo. "
@@ -116,17 +116,18 @@ def create_update_tdee_params_tool(database: MongoDatabase, user_email: str):
         - 1.725 → Muito ativo (trabalho físico pesado, muito movimento)
         - 1.9   → Extremamente ativo (atleta, trabalho extenuante)
 
-        IMPORTANTE: Caso o aluno tenha iniciado um novo plano de treinos INTENSO (ex: HIIT 5x/semana)
-        ou esteja reclamando que a meta hoje é MUITO BAIXA em relação ao que ele está 
-        gastando de fato agora, você PODE usar esta tool para subir levemente o fator e, 
-        OBRIGATORIAMENTE, usar a tool 'reset_tdee_tracking' junto para resetar o passado.
+        IMPORTANTE: Caso o aluno tenha iniciado um novo plano de treinos INTENSO
+        (ex: HIIT 5x/semana) ou esteja reclamando que a meta hoje é MUITO BAIXA em relação
+        ao que ele está gastando de fato agora, você PODE usar esta tool para subir
+        levemente o fator e, OBRIGATORIAMENTE, usar a tool 'reset_tdee_tracking'
+        junto para resetar o passado.
 
         Exemplos válidos:
           - "Comecei a trabalhar em escritório" → 1.2
           - "Mudei de escritório para trabalho de pé" → 1.55
 
         Exemplos inválidos:
-          - "Comecei a treinar 3x/semana" → NÃO ajustar (mude apenas para mudanças muito bruscas e permanentes)
+          - "Comecei a treinar 3x/semana" → NÃO ajustar (mude apenas mudanças muito bruscas)
         """
         try:
             if not isinstance(activity_factor, (int, float)):
@@ -172,7 +173,7 @@ def create_update_tdee_params_tool(database: MongoDatabase, user_email: str):
                 f"O TDEE será recalculado no próximo check-in com este novo valor."
             )
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError) as e:
             logger.error("Failed to update TDEE params for %s: %s", user_email, e)
             return f"Erro ao atualizar parâmetros de metabolismo: {str(e)}"
 
@@ -193,7 +194,7 @@ def create_reset_tdee_tracking_tool(database: MongoDatabase, user_email: str):
         (que ainda está puxando a média para baixo com dados de quando o aluno gastava menos).
         
         Args:
-            start_date_iso (str): A data a partir da qual o algoritmo deve começar 
+            start_date_iso (str): A data a partir da qual o algoritmo deve começar
                                   a considerar os dados para a média. Formato YYYY-MM-DD.
                                   Se a mudança foi hoje, passe a data de hoje.
         """
@@ -201,18 +202,22 @@ def create_reset_tdee_tracking_tool(database: MongoDatabase, user_email: str):
             profile = database.get_user_profile(user_email)
             if not profile:
                 return "Perfil do aluno não encontrado."
-                
+
             profile.tdee_start_date = start_date_iso
             database.save_user_profile(profile)
-            
-            logger.info("User %s reset TDEE tracking from date %s", user_email, start_date_iso)
-            
+
+            logger.info(
+                "User %s reset TDEE tracking from date %s",
+                user_email,
+                start_date_iso
+            )
+
             return (
                 f"Histórico adaptativo resetado com sucesso! O algoritmo agora usará "
                 f"somente dados de dieta e peso a partir de {start_date_iso}. "
                 f"A nova meta será recalculada imediatamente."
             )
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError) as e:
             logger.error("Failed to reset TDEE tracking for %s: %s", user_email, e)
             return f"Erro ao resetar histórico: {str(e)}"
 

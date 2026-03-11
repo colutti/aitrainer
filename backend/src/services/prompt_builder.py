@@ -68,7 +68,7 @@ class PromptBuilder:
         Returns:
             dict: Input data ready for prompt template
         """
-        DIAS_PT = {
+        dias_pt = {
             0: "Segunda-feira", 1: "Terça-feira", 2: "Quarta-feira",
             3: "Quinta-feira", 4: "Sexta-feira", 5: "Sábado", 6: "Domingo"
         }
@@ -97,7 +97,7 @@ class PromptBuilder:
             "user_message": user_message_with_tag,
             "agenda_section": agenda_section,  # Agenda section for dynamic context
             "current_date": current_date,
-            "day_of_week": DIAS_PT[now.weekday()],
+            "day_of_week": dias_pt[now.weekday()],
             "current_time": now.strftime("%H:%M"),
         }
 
