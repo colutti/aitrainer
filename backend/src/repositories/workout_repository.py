@@ -156,84 +156,86 @@ class WorkoutRepository(BaseRepository):
             strength_radar=strength_radar,
         )
 
-    # pylint: disable=too-many-locals
-    def _calculate_weekly_streak(self, workouts: list[dict]) -> int:
-        """Calculates the number of consecutive weeks with at least 3 workouts."""
-        if not workouts:
-            return 0
-
+    @staticmethod
+    def _get_weeks_data(workouts: list[dict]) -> dict[tuple[int, int], int]:
         weeks_data: dict[tuple[int, int], int] = {}
         for w in workouts:
             dt = w["date"]
             iso_year, iso_week, _ = dt.isocalendar()
             key = (iso_year, iso_week)
             weeks_data[key] = weeks_data.get(key, 0) + 1
+        return weeks_data
 
+    def _calculate_weekly_streak(self, workouts: list[dict]) -> int:
+        """Calculates the number of consecutive weeks with at least 3 workouts."""
+        if not workouts:
+            return 0
+
+        weeks_data = self._get_weeks_data(workouts)
         now = datetime.now()
-        current_year, current_week, _ = now.isocalendar()
+        check_year, check_week, _ = now.isocalendar()
 
         streak = 0
 
         def met_criteria(y, w):
             return weeks_data.get((y, w), 0) >= 3
 
-        check_year, check_week = current_year, current_week
-
-        # If current week hasn't met criteria yet, but it's the CURRENT week,
-        # we skip it and start counting from the previous week.
         if not met_criteria(check_year, check_week):
-            prev_week_date = datetime.fromisocalendar(
-                check_year, check_week, 1
-            ) - timedelta(days=7)
-            check_year, check_week, _ = prev_week_date.isocalendar()
+            prev = datetime.fromisocalendar(check_year, check_week, 1) - timedelta(days=7)
+            check_year, check_week, _ = prev.isocalendar()
 
         while met_criteria(check_year, check_week):
             streak += 1
-            check_date = datetime.fromisocalendar(
-                check_year, check_week, 1
-            ) - timedelta(days=7)
+            check_date = datetime.fromisocalendar(check_year, check_week, 1) - timedelta(days=7)
             check_year, check_week, _ = check_date.isocalendar()
 
         return streak
 
-    # pylint: disable=too-many-locals
     def _calculate_weekly_metrics(
         self, workouts: list[dict]
     ) -> tuple[list[bool], list[VolumeStat]]:
         """Calculates frequency and volume for the current week."""
         now = datetime.now()
-        start_of_week = now - timedelta(days=now.weekday())
-        start_of_week = start_of_week.replace(hour=0, minute=0, second=0, microsecond=0)
-
-        current_week_workouts = [w for w in workouts if w["date"] >= start_of_week]
+        start = (now - timedelta(days=now.weekday())).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        curr = [w for w in workouts if w["date"] >= start]
 
         freq = [False] * 7
-        for w in current_week_workouts:
-            day_idx = w["date"].weekday()
-            freq[day_idx] = True
+        for w in curr:
+            freq[w["date"].weekday()] = True
 
-        volume_map: dict[str, float] = {}
-        for w in current_week_workouts:
-            cat = w.get("workout_type", "Outros") or "Outros"
-            exercises = w.get("exercises", [])
-            for ex in exercises:
-                reps_list = ex.get("reps_per_set", [])
-                weights_list = ex.get("weights_per_set", [])
+        vol_map: dict[str, float] = {}
+        for w in curr:
+            cat = w.get("workout_type") or "Outros"
+            for ex in w.get("exercises", []):
+                reps = ex.get("reps_per_set", [])
+                weights = ex.get("weights_per_set", [])
+                vol = sum(
+                    r * (weights[i] if i < len(weights) else 0.0)
+                    for i, r in enumerate(reps)
+                )
+                vol_map[cat] = vol_map.get(cat, 0.0) + vol
 
-                vol = 0.0
-                for i, reps in enumerate(reps_list):
-                    weight = weights_list[i] if i < len(weights_list) else 0.0
-                    vol += reps * weight
+        stats = [VolumeStat(category=k, volume=round(v, 1)) for k, v in vol_map.items()]
+        stats.sort(key=lambda x: x.volume, reverse=True)
+        return freq, stats
 
-                volume_map[cat] = volume_map.get(cat, 0.0) + vol
+    @staticmethod
+    def _get_exercise_pr(ex: dict) -> tuple[float, int] | None:
+        reps = ex.get("reps_per_set", [])
+        weights = ex.get("weights_per_set", [])
+        if not weights or all(w == 0 for w in weights):
+            return None
 
-        volume_stats = [
-            VolumeStat(category=k, volume=round(v, 1)) for k, v in volume_map.items()
-        ]
-        volume_stats.sort(key=lambda x: x.volume, reverse=True)
-        return freq, volume_stats
+        s_max, s_reps = -1.0, 0
+        for i, weight in enumerate(weights):
+            if weight > s_max:
+                s_max = weight
+                s_reps = reps[i] if i < len(reps) else 0
 
-    # pylint: disable=too-many-locals
+        return (s_max, s_reps) if s_max >= 0 else None
+
     def _calculate_recent_prs(
         self, workouts: list[dict], limit: int = 3
     ) -> list[PersonalRecord]:
@@ -243,40 +245,25 @@ class WorkoutRepository(BaseRepository):
         for w in reversed(workouts):
             w_id = str(w.get("_id"))
             dt = w["date"]
-            exercises = w.get("exercises", [])
 
-            for ex in exercises:
+            for ex in w.get("exercises", []):
                 name = ex.get("name")
                 if not name:
                     continue
 
-                weights = ex.get("weights_per_set", [])
-                reps = ex.get("reps_per_set", [])
-
-                if not weights:
+                pr_data = self._get_exercise_pr(ex)
+                if not pr_data:
                     continue
 
-                # Skip cardio-only exercises (all weights are 0, but has distance/duration)
-                if all(w == 0 for w in weights):
-                    continue
-
-                session_max = -1.0
-                session_max_reps = 0
-
-                for i, weight in enumerate(weights):
-                    if weight > session_max:
-                        session_max = weight
-                        session_max_reps = reps[i] if i < len(reps) else 0
-
-                if session_max >= 0:
-                    current_record = max_weights.get(name)
-                    if not current_record or session_max > current_record["weight"]:
-                        max_weights[name] = {
-                            "weight": session_max,
-                            "reps": session_max_reps,
-                            "date": dt,
-                            "workout_id": w_id,
-                        }
+                s_max, s_reps = pr_data
+                curr_rec = max_weights.get(name)
+                if not curr_rec or s_max > curr_rec["weight"]:
+                    max_weights[name] = {
+                        "weight": s_max,
+                        "reps": s_reps,
+                        "date": dt,
+                        "workout_id": w_id,
+                    }
 
         prs_list = [
             PersonalRecord(
@@ -312,9 +299,8 @@ class WorkoutRepository(BaseRepository):
         # Return reversed to show chronological order in chart
         return [round(v, 1) for v in reversed(weeks)]
 
-    # pylint: disable=too-many-locals
-    def _calculate_strength_radar(self, workouts: list[dict]) -> dict[str, float]:
-        """Calculates current vs peak strength ratio (0-1.0) for major muscle groups."""
+    @staticmethod
+    def _get_radar_category(name: str) -> str:
         categories = {
             "Push": ["Supino", "Peito", "Ombro", "Tríceps", "Militar", "Bench"],
             "Pull": [
@@ -326,44 +312,31 @@ class WorkoutRepository(BaseRepository):
                 "Panturrilha", "Squat",
             ],
         }
+        for k, v in categories.items():
+            if any(term.lower() in name.lower() for term in v):
+                return k
+        return "Outros"
 
+    def _calculate_strength_radar(self, workouts: list[dict]) -> dict[str, float]:
+        """Calculates current vs peak strength ratio (0-1.0) for major muscle groups."""
         peak_strength: dict[str, float] = {}
-        current_strength: dict[str, float] = {}
+        curr_strength: dict[str, float] = {}
 
-        # Sort by date to find latest
-        sorted_workouts = sorted(workouts, key=lambda x: x["date"])
-
-        for w in sorted_workouts:
+        for w in sorted(workouts, key=lambda x: x["date"]):
             for ex in w.get("exercises", []):
-                name = ex.get("name", "")
-                cat = next(
-                    (
-                        k
-                        for k, v in categories.items()
-                        if any(term.lower() in name.lower() for term in v)
-                    ),
-                    "Outros",
-                )
+                cat = self._get_radar_category(ex.get("name", ""))
                 if cat == "Outros":
                     continue
 
-                weights = ex.get("weights_per_set", [])
-                if not weights:
-                    continue
-                # We skip bodyweight exercises (0 weight) for strength radar
-                valid_weights = [weight for weight in weights if weight > 0]
-                if not valid_weights:
+                valid_w = [w_val for w_val in ex.get("weights_per_set", []) if w_val > 0]
+                if not valid_w:
                     continue
 
-                max_w = max(valid_weights)
+                max_w = max(valid_w)
                 peak_strength[cat] = max(peak_strength.get(cat, 0), max_w)
-                current_strength[cat] = max_w  # Latest session max
+                curr_strength[cat] = max_w
 
-        # Return ratio of current / peak (0 to 1.0)
-        result = {}
-        for cat in categories:
-            peak = peak_strength.get(cat, 0)
-            curr = current_strength.get(cat, 0)
-            result[cat] = round(curr / peak if peak > 0 else 0, 2)
-
-        return result
+        return {
+            cat: round(curr_strength.get(cat, 0) / peak, 2) if peak > 0 else 0
+            for cat, peak in peak_strength.items()
+        }

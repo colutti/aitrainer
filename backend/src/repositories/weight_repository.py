@@ -33,35 +33,13 @@ class WeightRepository(BaseRepository):
         """
         Saves or updates a weight log.
         """
-        # pylint: disable=duplicate-code
         log_datetime = datetime(log.date.year, log.date.month, log.date.day)
 
         data = log.model_dump(exclude_none=True)
         data["date"] = log_datetime
 
-        result = self.collection.update_one(
-            {"user_email": log.user_email, "date": log_datetime},
-            {"$set": data},
-            upsert=True,
-        )
-
-        is_new = result.upserted_id is not None
-
-        if is_new:
-            doc_id = str(result.upserted_id)
-            self.logger.info(
-                "Created new weight log for %s on %s", log.user_email, log.date
-            )
-        else:
-            existing = self.collection.find_one(
-                {"user_email": log.user_email, "date": log_datetime}
-            )
-            doc_id = str(existing["_id"]) if existing else ""
-            self.logger.info(
-                "Updated existing weight log for %s on %s", log.user_email, log.date
-            )
-
-        return doc_id, is_new
+        query = {"user_email": log.user_email, "date": log_datetime}
+        return self.upsert_document(query, data, f"weight log (date: {log.date})")
 
     def delete_log(self, user_email: str, log_date: date) -> bool:
         """

@@ -4,6 +4,7 @@ This module contains the repository for chat history management using MongoDB.
 
 import json
 from datetime import datetime
+from collections import namedtuple
 
 from langchain_mongodb.chat_message_histories import MongoDBChatMessageHistory
 from langchain_core.messages import (
@@ -63,13 +64,8 @@ class ChatRepository(BaseRepository):
                 continue
 
         # 2. Convert to ChatHistory model (this also sorts them chronologically)
-        # pylint: disable=too-few-public-methods
-        class DummyHistory:
-            """Wrapper for conversion utility"""
-            def __init__(self, msgs):
-                self.messages = msgs
-
-        all_chat_history = ChatHistory.from_mongodb_chat_message_history(DummyHistory(messages))
+        _DummyHistory = namedtuple("_DummyHistory", ["messages"])
+        all_chat_history = ChatHistory.from_mongodb_chat_message_history(_DummyHistory(messages))
 
         # 3. Filter out SYSTEM messages before pagination
         public_messages = [msg for msg in all_chat_history if msg.sender != Sender.SYSTEM]
@@ -183,7 +179,6 @@ class ChatRepository(BaseRepository):
             ai_prefix="Treinador",
         )
 
-    # pylint: disable=unused-argument
     def get_unsummarized_messages(
         self, session_id: str, skip_last: int = 40
     ) -> list[dict]:
@@ -191,4 +186,5 @@ class ChatRepository(BaseRepository):
         Retrieves messages that haven't been summarized yet. Currently returns empty list
         as V3 structure is pending.
         """
+        del session_id, skip_last
         return []

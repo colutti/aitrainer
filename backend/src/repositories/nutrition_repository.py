@@ -43,29 +43,9 @@ class NutritionRepository(BaseRepository):
         log_date = log_date.replace(hour=0, minute=0, second=0, microsecond=0)
         log.date = log_date
 
-        result = self.collection.update_one(
-            {"user_email": log.user_email, "date": log_date},
-            {"$set": log.model_dump(exclude_none=True)},
-            upsert=True,
-        )
-
-        is_new = result.upserted_id is not None
-
-        if is_new:
-            doc_id = str(result.upserted_id)
-            self.logger.info(
-                "Created new nutrition log for %s on %s", log.user_email, log_date
-            )
-        else:
-            existing = self.collection.find_one(
-                {"user_email": log.user_email, "date": log_date}
-            )
-            doc_id = str(existing["_id"]) if existing else ""
-            self.logger.info(
-                "Updated existing nutrition log for %s on %s", log.user_email, log_date
-            )
-
-        return doc_id, is_new
+        query = {"user_email": log.user_email, "date": log_date}
+        data = log.model_dump(exclude_none=True)
+        return self.upsert_document(query, data, f"nutrition log (date: {log_date})")
 
     def get_logs(self, user_email: str, limit: int = 30) -> list[NutritionLog]:
         """
@@ -137,7 +117,78 @@ class NutritionRepository(BaseRepository):
 
         return logs, total
 
-    # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    def _get_today_log(self, now: datetime, logs: list[dict]) -> NutritionWithId | None:
+        start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_log_doc = next(
+            (log_item for log_item in logs if log_item["date"] >= start_of_today), None
+        )
+        if not today_log_doc:
+            return None
+
+        doc_copy = dict(today_log_doc)
+        doc_copy["id"] = str(doc_copy.get("_id"))
+        if "_id" in doc_copy:
+            del doc_copy["_id"]
+        return NutritionWithId(**doc_copy)
+
+    def _get_last_14_days_stats(self, now: datetime, logs: list[dict]) -> list[DailyMacros]:
+        stats = []
+        for i in range(14):
+            date_item = (now - timedelta(days=i)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            log = next((log_item for log_item in logs if log_item["date"] == date_item), None)
+            if log:
+                stats.append(DailyMacros(
+                    date=date_item,
+                    calories=log["calories"],
+                    protein=log["protein_grams"],
+                    carbs=log["carbs_grams"],
+                    fat=log["fat_grams"],
+                ))
+            else:
+                stats.append(DailyMacros(date=date_item, calories=0, protein=0, carbs=0, fat=0))
+        stats.sort(key=lambda x: x.date)
+        return stats
+
+    def _get_weekly_adherence(self, now: datetime, logs: list[dict]) -> list[bool]:
+        current_week_start = now - timedelta(days=now.weekday())
+        current_week_start = current_week_start.replace(hour=0, minute=0, second=0, microsecond=0)
+        adherence = [False] * 7
+        for log_entry in logs:
+            if log_entry["date"] >= current_week_start:
+                day_idx = log_entry["date"].weekday()
+                adherence[day_idx] = True
+        return adherence
+
+    def _get_recent_averages(
+        self, now: datetime, logs: list[dict], days: int
+    ) -> tuple[float, float]:
+        start_date = (now - timedelta(days=days)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        recent_logs = [log_item for log_item in logs if log_item["date"] >= start_date]
+        count = len(recent_logs)
+        avg_cal = (
+            sum(log_item["calories"] for log_item in recent_logs) / count
+            if count > 0 else 0.0
+        )
+        avg_prot = (
+            sum(log_item["protein_grams"] for log_item in recent_logs) / count
+            if count > 0 else 0.0
+        )
+        return avg_cal, avg_prot
+
+    def _get_tdee_stats(self, user_email: str, tdee_service) -> dict:
+        if not tdee_service:
+            self.logger.debug("TDEE service not provided for stats calculation")
+            return {}
+        try:
+            return tdee_service.calculate_tdee(user_email)
+        except (ValueError, TypeError, AttributeError, RuntimeError) as e:
+            self.logger.warning("Failed to calculate Adaptive TDEE for stats: %s", e)
+            return {}
+
     def get_stats(self, user_email: str, tdee_service=None) -> NutritionStats:
         """
         Calculates and retrieves comprehensive nutrition statistics for a user.
@@ -151,105 +202,14 @@ class NutritionRepository(BaseRepository):
 
         logs = list(cursor)
 
-        start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        today_log_doc = next(
-            (log_item for log_item in logs if log_item["date"] >= start_of_today), None
-        )
-        today_log = None
-        if today_log_doc:
-            today_log_doc["id"] = str(today_log_doc.get("_id"))
-            if "_id" in today_log_doc:
-                del today_log_doc["_id"]
-            today_log = NutritionWithId(**today_log_doc)
-
-        last_14_days_stats = []
-        for i in range(14):
-            date_item = (now - timedelta(days=i)).replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
-            log = next((log_item for log_item in logs if log_item["date"] == date_item), None)
-            if log:
-                last_14_days_stats.append(
-                    DailyMacros(
-                        date=date_item,
-                        calories=log["calories"],
-                        protein=log["protein_grams"],
-                        carbs=log["carbs_grams"],
-                        fat=log["fat_grams"],
-                    )
-                )
-            else:
-                last_14_days_stats.append(
-                    DailyMacros(date=date_item, calories=0, protein=0, carbs=0, fat=0)
-                )
-        last_14_days_stats.sort(key=lambda x: x.date)
-
-        current_week_start = now - timedelta(days=now.weekday())
-        current_week_start = current_week_start.replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
-
-        weekly_adherence = [False] * 7
-        for log_entry in logs:
-            if log_entry["date"] >= current_week_start:
-                day_idx = log_entry["date"].weekday()
-                weekly_adherence[day_idx] = True
-
-        recent_logs = [
-            log_item
-            for log_item in logs
-            if log_item["date"]
-            >= (now - timedelta(days=7)).replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
-        ]
-        count = len(recent_logs)
-        avg_cal = (
-            sum(log_item["calories"] for log_item in recent_logs) / count
-            if count > 0
-            else 0
-        )
-        avg_prot = (
-            sum(log_item["protein_grams"] for log_item in recent_logs) / count
-            if count > 0
-            else 0
-        )
-
-        recent_logs_14 = [
-            log_item
-            for log_item in logs
-            if log_item["date"]
-            >= (now - timedelta(days=14)).replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
-        ]
-        count_14 = len(recent_logs_14)
-        avg_cal_14 = (
-            sum(log_item["calories"] for log_item in recent_logs_14) / count_14
-            if count_14 > 0
-            else 0
-        )
+        today_log = self._get_today_log(now, logs)
+        last_14_days_stats = self._get_last_14_days_stats(now, logs)
+        weekly_adherence = self._get_weekly_adherence(now, logs)
+        avg_cal, avg_prot = self._get_recent_averages(now, logs, 7)
+        avg_cal_14, _ = self._get_recent_averages(now, logs, 14)
 
         total_logs = self.collection.count_documents({"user_email": user_email})
-
-        tdee_val = None
-        target_val = None
-        macro_targets = None
-        stability_score = None
-
-        if tdee_service:
-            try:
-                period_stats = tdee_service.calculate_tdee(user_email)
-                tdee_val = period_stats.get("tdee")
-                target_val = period_stats.get("daily_target")
-                macro_targets = period_stats.get("macro_targets")
-                stability_score = period_stats.get("stability_score")
-            except Exception as e: # pylint: disable=broad-exception-caught
-                self.logger.warning(
-                    "Failed to calculate Adaptive TDEE for stats: %s", e
-                )
-        else:
-            self.logger.debug("TDEE service not provided for stats calculation")
+        period_stats = self._get_tdee_stats(user_email, tdee_service)
 
         return NutritionStats(
             today=today_log,
@@ -260,8 +220,8 @@ class NutritionRepository(BaseRepository):
             avg_daily_calories_14_days=round(avg_cal_14, 1),
             avg_protein=round(avg_prot, 1),
             total_logs=total_logs,
-            tdee=tdee_val,
-            daily_target=target_val,
-            macro_targets=macro_targets,
-            stability_score=stability_score,
+            tdee=period_stats.get("tdee"),
+            daily_target=period_stats.get("daily_target"),
+            macro_targets=period_stats.get("macro_targets"),
+            stability_score=period_stats.get("stability_score"),
         )

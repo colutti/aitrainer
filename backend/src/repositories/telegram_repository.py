@@ -6,6 +6,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from pymongo.database import Database
+from pymongo.errors import DuplicateKeyError
 
 from src.repositories.base import BaseRepository
 from src.api.models.telegram_link import TelegramLink
@@ -128,6 +129,6 @@ class TelegramRepository(BaseRepository):
                 {"update_id": update_id, "processed_at": datetime.now(timezone.utc)}
             )
             return True
-        except Exception:  # pylint: disable=broad-exception-caught
+        except DuplicateKeyError:
             # Most likely a duplicate key error (update_id already processed)
             return False
