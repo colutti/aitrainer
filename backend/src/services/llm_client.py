@@ -11,10 +11,23 @@ from langchain_core.messages import AIMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
 try:
     from langchain.agents import create_agent
-    from langgraph.graph.state import CompiledStateGraph
+    from langgraph.graph.state import CompiledStateGraph  # type: ignore
 except ImportError:
-    create_agent = Any  # type: ignore  # pylint: disable=invalid-name
-    CompiledStateGraph = Any  # type: ignore
+    def create_agent(*args, **kwargs) -> Any:  # pylint: disable=unused-argument
+        """Fallback for create_agent."""
+        return Any
+
+    class CompiledStateGraph:  # pylint: disable=too-few-public-methods
+        """Fallback for CompiledStateGraph."""
+
+        def astream(self, *args, **kwargs) -> Any:  # pylint: disable=unused-argument
+            """Fallback astream."""
+
+            async def _gen():
+                yield None
+                return
+
+            return _gen()
 
 # Suppress Pydantic V1/LangSmith warning as we cannot easily upgrade right now
 warnings.filterwarnings("ignore", message=".*Core Pydantic V1 functionality.*")
@@ -107,10 +120,11 @@ class LLMClient:
         prompt_str = ""
         usage_metadata_captured = False  # Track if we already captured
 
+        messages: list[Any] = []
         try:
             messages = list(prompt_template.format_messages(**input_data))
             prompt_str = prompt_template.format(**input_data)
-            agent: CompiledStateGraph = create_agent(self._llm, tools)
+            agent: Any = create_agent(self._llm, tools)
             config: RunnableConfig = {"recursion_limit": 50}
             async for item in agent.astream(
                 {"messages": messages}, stream_mode="messages", config=config
@@ -260,7 +274,7 @@ class LLMClient:
 
     def _capture_metadata(
         self, event: AIMessage, source: str = "LangGraph"
-    ) -> tuple[bool, dict]:
+    ) -> tuple[bool, Any]:
         """Helper to capture usage metadata from AI messages."""
         if hasattr(event, "usage_metadata") and event.usage_metadata:
             u_meta = event.usage_metadata

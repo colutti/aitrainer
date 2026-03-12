@@ -1,9 +1,8 @@
 """Utility functions for TDEE calculations and body composition analysis."""
-from typing import List, cast, TYPE_CHECKING
+from typing import List, cast, TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from src.api.models.weight_log import WeightLog
-    from src.api.models.user_profile import UserProfile
 
 def calculate_macro_targets(daily_target: int, weight_kg: float) -> dict:
     """
@@ -48,7 +47,7 @@ def calculate_body_composition_changes(logs: List["WeightLog"]) -> dict | None:
     else:
         muscle_change = (last.weight_kg - first.weight_kg) - fat_change
 
-    res = {
+    res: dict[str, Any] = {
         "fat_change_kg": round(fat_change, 2),
         "muscle_change_kg": round(muscle_change, 2),
         "start_fat_pct": round(cast(float, first.body_fat_pct), 2),

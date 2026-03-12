@@ -12,7 +12,10 @@ class OnboardingCompleteRequest(BaseModel):
 
     token: str = Field(..., description="Invite token")
     password: str = Field(..., min_length=8, description="User password")
-    gender: str = Field(..., pattern="^([Mm]asculino|[Ff]eminino|[Mm]ale|[Ff]emale|[Ff]emenino|[Oo]tro|[Oo]ther)$")
+    gender: str = Field(
+        ...,
+        pattern="^([Mm]asculino|[Ff]eminino|[Mm]ale|[Ff]emale|[Ff]emenino|[Oo]tro|[Oo]ther)$"
+    )
     age: int = Field(..., ge=18, le=100)
     weight: float = Field(..., ge=30.0, le=500.0, description="Weight in kg")
     height: int = Field(..., ge=100, le=250, description="Height in cm")
@@ -57,7 +60,10 @@ class PublicOnboardingRequest(BaseModel):
     Request model for completing onboarding for a user already authenticated.
     """
 
-    gender: str = Field(..., pattern="^([Mm]asculino|[Ff]eminino|[Mm]ale|[Ff]emale|[Ff]emenino|[Oo]tro|[Oo]ther)$")
+    gender: str = Field(
+        ...,
+        pattern="^([Mm]asculino|[Ff]eminino|[Mm]ale|[Ff]emale|[Ff]emenino|[Oo]tro|[Oo]ther)$"
+    )
     age: int = Field(..., ge=18, le=100)
     weight: float = Field(..., ge=30.0, le=500.0, description="Weight in kg")
     height: int = Field(..., ge=100, le=250, description="Height in cm")

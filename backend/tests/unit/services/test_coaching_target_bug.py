@@ -163,7 +163,7 @@ def test_macro_targets_validate_total_calories(service, mock_db):
     ]
 
     for weight_kg, daily_target in test_cases:
-        macros = service._calculate_macro_targets(daily_target, weight_kg)
+        macros = service.calculate_macro_targets(daily_target, weight_kg)
 
         protein_kcal = macros["protein"] * 4
         carbs_kcal = macros["carbs"] * 4
@@ -192,7 +192,7 @@ def test_macro_targets_detail(service):
     daily_target = 1500  # Too low
     weight_kg = 100  # High weight = high protein requirement
 
-    macros = service._calculate_macro_targets(daily_target, weight_kg)
+    macros = service.calculate_macro_targets(daily_target, weight_kg)
 
     protein_kcal = macros["protein"] * 4
     fat_kcal = macros["fat"] * 9
@@ -243,10 +243,8 @@ def test_coaching_target_returns_ideal_directly_not_gradual(service):
         tdee_last_check_in=(date.today() - timedelta(days=8)).isoformat(),
     )
 
-    result = service._calculate_coaching_target(
+    result = service.calculate_coaching_target(
         tdee=2508.0,
-        avg_calories=2000.0,
-        weekly_change=-0.25,  # losing at exactly goal rate (on-track)
         profile=profile,
     )
 

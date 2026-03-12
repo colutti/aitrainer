@@ -47,19 +47,19 @@ async def message_ai(
     Handles an AI messaging request for an authenticated user.
     """
     logger.info("Received message from user %s: %s", user_email, message.user_message)
-    
+
     # Detect and save timezone from header
     tz = request.headers.get("X-User-Timezone")
     if tz:
-        profile = brain._get_or_create_user_profile(user_email)
+        profile = brain.get_or_create_user_profile(user_email)
         if tz != profile.timezone:
             logger.info("Updating timezone for %s to %s", user_email, tz)
             brain.update_user_profile_fields(user_email, {"timezone": tz})
     try:
         # Pre-flight limits check to avoid StreamingResponse generator crash
-        profile = brain._get_or_create_user_profile(user_email)
-        brain._check_message_limits(profile)
-        
+        profile = brain.get_or_create_user_profile(user_email)
+        brain.check_message_limits(profile)
+
         response_generator = brain.send_message_ai(
             user_email=user_email,
             user_input=message.user_message,

@@ -94,7 +94,8 @@ git commit -m "feat: add specific feature"
 ## Remember
 - Exact file paths always
 - Complete code in plan (not "add validation")
-- Exact commands with expected output
+- Exact commands with expected output (Use full paths found during discovery, ex: `.venv/bin/pytest`)
+- Verify Environment: Always specify where tools (ruff, pylint, pyright) are located in the plan's verification section.
 - Reference relevant skills with @ syntax
 - DRY, YAGNI, TDD, frequent commits
 

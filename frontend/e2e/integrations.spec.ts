@@ -3,23 +3,15 @@ import { test, expect, Page } from '@playwright/test';
 test.describe('Integrations - Hevy e Telegram', () => {
   let page: Page;
 
-  test.beforeEach(async ({ browser }) => {
-    page = await browser.newPage();
+  test.beforeEach(async ({ page: testPage }) => {
+    page = testPage;
 
-    // Login
-    await page.goto('/login');
-    await page.fill('input[type="email"]', 'deacandia@gmail.com');
-    await page.fill('input[type="password"]', 'testpass123');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('/dashboard');
-
-    // Navigate to integrations
-    await page.goto('/settings/integrations');
+    // Navigate to integrations (auth state is already loaded from storageState)
+    await page.goto('/dashboard/settings/integrations');
   });
 
-  test.afterEach(async () => {
-    await page.close();
-  });
+  // Removed afterEach since standard page fixture closes automatically
+
 
   test('Hevy: syncHevy deve chamar /integrations/hevy/import e NÃO /sync', async () => {
     const requests: string[] = [];
@@ -145,7 +137,7 @@ test.describe('Integrations - Hevy e Telegram', () => {
     let received404 = false;
 
     page.on('response', (response) => {
-      if (response.url().includes('/integrations/hevy/sync') && response.status() === 404) {
+      if (response.url().includes('/api/integrations/hevy/sync') && response.status() === 404) {
         received404 = true;
       }
     });
@@ -153,7 +145,7 @@ test.describe('Integrations - Hevy e Telegram', () => {
     // Tentar chamar /sync diretamente (nunca deve acontecer via UI)
     const response = await page.evaluate(async () => {
       try {
-        const res = await fetch('/integrations/hevy/sync', { method: 'POST' });
+        const res = await fetch('/api/integrations/hevy/sync', { method: 'POST' });
         return res.status;
       } catch {
         return null;
@@ -169,7 +161,7 @@ test.describe('Integrations - Hevy e Telegram', () => {
   test('Telegram: field mapping deve ser exato (linked, telegram_username, etc)', async () => {
     // Fazer requisição real e validar shape da resposta
     const response = await page.evaluate(async () => {
-      const res = await fetch('/integrations/telegram/status');
+      const res = await fetch('/api/telegram/status');
       const data = await res.json();
 
       // Retornar as chaves para validação
@@ -189,7 +181,7 @@ test.describe('Integrations - Hevy e Telegram', () => {
 
     // Se linked=true, deve ter telegram_username
     const status = await page.evaluate(async () => {
-      const res = await fetch('/integrations/telegram/status');
+      const res = await fetch('/api/telegram/status');
       return res.json();
     });
 

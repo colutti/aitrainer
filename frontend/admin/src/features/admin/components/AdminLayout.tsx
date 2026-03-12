@@ -1,7 +1,9 @@
+
+import { ConfirmationProvider } from '@shared/components/ui/ConfirmationProvider';
+import { ToastContainer } from '@shared/components/ui/ToastContainer';
+import { cn } from '@shared/utils/cn';
 import { LayoutDashboard, Users, AlignLeft, BarChart3 } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
-
-import { cn } from '../../../../../src/shared/utils/cn';
 
 export function AdminLayout() {
   const tabs = [
@@ -37,6 +39,8 @@ export function AdminLayout() {
       <div className="flex-1 min-h-0 overflow-hidden">
         <Outlet />
       </div>
+      <ConfirmationProvider />
+      <ToastContainer />
     </div>
   );
 }

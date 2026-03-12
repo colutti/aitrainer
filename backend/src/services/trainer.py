@@ -73,15 +73,19 @@ from src.api.models.trainer_profile import TrainerProfile
 
 if TYPE_CHECKING:
     from qdrant_client import QdrantClient
-    from qdrant_client import models as qdrant_models
 
-class AITrainerBrain:
+class AITrainerBrain:  # pylint: disable=too-many-public-methods
     """
     Service class responsible for orchestrating AI trainer interactions.
     Uses LLMClient for LLM operations (abstracted from specific providers).
     """
 
-    def __init__(self, database: MongoDatabase, llm_client: LLMClient, qdrant_client=None):
+    def __init__(
+        self,
+        database: MongoDatabase,
+        llm_client: LLMClient,
+        qdrant_client: Optional["QdrantClient"] = None,
+    ):
         self._database: MongoDatabase = database
         self._llm_client: LLMClient = llm_client
         self._qdrant_client = qdrant_client
@@ -89,7 +93,7 @@ class AITrainerBrain:
         self.prompt_builder = PromptBuilder()
         self._executor = ThreadPoolExecutor(max_workers=10)
 
-    def _calculate_effective_limits(
+    def calculate_effective_limits(
         self, profile: UserProfile, plan
     ) -> tuple[int | None, int | None]:
         """Calculates effective limits applying overrides."""
@@ -102,7 +106,7 @@ class AITrainerBrain:
                 monthly = profile.custom_message_limit
         return daily, monthly
 
-    def _check_message_limits(self, profile: UserProfile) -> bool:
+    def check_message_limits(self, profile: UserProfile) -> bool:
         """
         Verifies if the user has reached their message limit.
         """
@@ -115,7 +119,7 @@ class AITrainerBrain:
         now = datetime.now()
         today_str = now.strftime("%Y-%m-%d")
 
-        needs_reset, cycle_start = self._check_billing_cycle(profile, now)
+        needs_reset, cycle_start = self.check_billing_cycle(profile, now)
 
         # 1. Trial
         validity = (profile.custom_trial_days if profile.custom_trial_days is not None
@@ -125,7 +129,7 @@ class AITrainerBrain:
                 raise HTTPException(status_code=403, detail="TRIAL_EXPIRED")
 
         # 2. Limits
-        eff_daily, eff_monthly = self._calculate_effective_limits(profile, plan)
+        eff_daily, eff_monthly = self.calculate_effective_limits(profile, plan)
 
         if eff_daily is not None:
             count = profile.messages_sent_today if profile.last_message_date == today_str else 0
@@ -139,7 +143,7 @@ class AITrainerBrain:
 
         return needs_reset
 
-    def _check_billing_cycle(
+    def check_billing_cycle(
         self, profile: UserProfile, now: datetime
     ) -> tuple[bool, datetime | None]:
         """Checks if the billing cycle needs reset."""
@@ -154,7 +158,7 @@ class AITrainerBrain:
                 cycle_start = now
         return (now - cycle_start >= timedelta(days=30)), cycle_start
 
-    def _increment_counts(self, user_email: str, needs_cycle_reset: bool):
+    def increment_counts(self, user_email: str, needs_cycle_reset: bool):
         """
         Background task to increment message counts.
         """
@@ -166,7 +170,7 @@ class AITrainerBrain:
         """Returns the database instance."""
         return self._database
 
-    def _log_prompt_in_background(
+    def log_prompt_in_background(
         self,
         user_email: str,
         prompt_data: dict,
@@ -186,13 +190,13 @@ class AITrainerBrain:
             except (ValueError, TypeError, AttributeError) as e:
                 logger.error("Error logging prompt to DB: %s", e)
 
-    def _get_log_callback(self, background_tasks: Optional[BackgroundTasks] = None):
+    def get_log_callback(self, background_tasks: Optional[BackgroundTasks] = None):
         """
         Returns a callback for LLMClient to use for logging.
         """
 
         def callback(email: str, data: dict):
-            self._log_prompt_in_background(email, data, background_tasks)
+            self.log_prompt_in_background(email, data, background_tasks)
 
         return callback
 
@@ -250,7 +254,7 @@ class AITrainerBrain:
         """
         self._database.save_trainer_profile(profile)
 
-    def _get_or_create_user_profile(self, user_email: str) -> UserProfile:
+    def get_or_create_user_profile(self, user_email: str) -> UserProfile:
         """Retrieves user profile or creates a default one if not found."""
         profile = self.get_user_profile(user_email)
         if not profile:
@@ -275,7 +279,7 @@ class AITrainerBrain:
             self.save_user_profile(profile)
         return profile
 
-    def _get_or_create_trainer_profile(self, user_email: str) -> TrainerProfile:
+    def get_or_create_trainer_profile(self, user_email: str) -> TrainerProfile:
         """Retrieves trainer profile or creates a default one if not found."""
         trainer_profile_obj = self._database.get_trainer_profile(user_email)
         if not trainer_profile_obj:
@@ -288,7 +292,7 @@ class AITrainerBrain:
             self.save_trainer_profile(trainer_profile_obj)
         return trainer_profile_obj
 
-    def _add_to_mongo_history(
+    def add_to_mongo_history(
         self, user_email: str, user_input: str, response_text: str, trainer_type: str
     ):
         """
@@ -323,7 +327,7 @@ class AITrainerBrain:
             trainer_type,
         )
 
-    def _add_system_message_to_history(self, user_email: str, content: str):
+    def add_system_message_to_history(self, user_email: str, content: str):
         """
         Adds a SYSTEM message to history (e.g. tool feedback).
         """
@@ -333,7 +337,7 @@ class AITrainerBrain:
         self._database.add_to_history(system_msg, user_email)
         logger.debug("Saved SYSTEM message to history: %s", content)
 
-    def _sort_messages_by_timestamp(self, messages: list) -> list:
+    def sort_messages_by_timestamp(self, messages: list) -> list:
         """
         Sorts LangChain messages by their timestamp in ascending order (oldest first).
         Messages without timestamps are placed at the end.
@@ -352,7 +356,7 @@ class AITrainerBrain:
 
         return sorted(messages, key=get_timestamp)
 
-    def _format_history_as_messages(
+    def format_history_as_messages(
         self,
         messages: list,
     ) -> list[BaseMessage]:
@@ -365,7 +369,7 @@ class AITrainerBrain:
             return []
 
         # Sort messages chronologically
-        messages = self._sort_messages_by_timestamp(messages)
+        messages = self.sort_messages_by_timestamp(messages)
 
         formatted_msgs: list[BaseMessage] = []
         for msg in messages:
@@ -421,13 +425,13 @@ class AITrainerBrain:
         return formatted_msgs
 
 
-    def _get_tools(self, user_email: str) -> list[BaseTool]:
+    def get_tools(self, user_email: str) -> list[BaseTool]:
         """
         Creates and returns a list of tools available to the AI.
         """
         hevy_service = HevyService(workout_repository=self._database.workouts_repo)
 
-        return [
+        tools = [
             # Workout
             create_save_workout_tool(self._database, user_email),
             create_get_workouts_tool(self._database, user_email),
@@ -455,19 +459,31 @@ class AITrainerBrain:
             create_get_metabolism_tool(self._database, user_email),
             create_update_tdee_params_tool(self._database, user_email),
             create_reset_tdee_tracking_tool(self._database, user_email),
-            # Memory
-            create_save_memory_tool(self._qdrant_client, user_email),
-            create_search_memory_tool(self._qdrant_client, user_email),
-            create_list_raw_memories_tool(self._qdrant_client, user_email),
-            create_update_memory_tool(self._qdrant_client, user_email),
-            create_delete_memory_tool(self._qdrant_client, user_email),
-            create_delete_memories_batch_tool(self._qdrant_client, user_email),
-            # Events
-            create_create_event_tool(self._database.database, user_email),
-            create_list_events_tool(self._database.database, user_email),
-            create_delete_event_tool(self._database.database, user_email),
-            create_update_event_tool(self._database.database, user_email),
         ]
+
+        if self._qdrant_client is not None:
+            tools.extend(
+                [
+                    create_save_memory_tool(self._qdrant_client, user_email),
+                    create_search_memory_tool(self._qdrant_client, user_email),
+                    create_list_raw_memories_tool(self._qdrant_client, user_email),
+                    create_update_memory_tool(self._qdrant_client, user_email),
+                    create_delete_memory_tool(self._qdrant_client, user_email),
+                    create_delete_memories_batch_tool(self._qdrant_client, user_email),
+                ]
+            )
+
+        tools.extend(
+            [
+                # Events
+                create_create_event_tool(self._database.database, user_email),
+                create_list_events_tool(self._database.database, user_email),
+                create_delete_event_tool(self._database.database, user_email),
+                create_update_event_tool(self._database.database, user_email),
+            ]
+        )
+
+        return tools
 
     async def send_message_ai(
         self,
@@ -497,14 +513,14 @@ class AITrainerBrain:
 
         # 1. Retrieve profiles (parallel)
         profile = await asyncio.wrap_future(self._executor.submit(
-            self._get_or_create_user_profile, user_email
+            self.get_or_create_user_profile, user_email
         ))
         trainer_profile_obj = await asyncio.wrap_future(self._executor.submit(
-            self._get_or_create_trainer_profile, user_email
+            self.get_or_create_trainer_profile, user_email
         ))
 
         # 2. Check limits
-        needs_cycle_reset = self._check_message_limits(profile)
+        needs_cycle_reset = self.check_message_limits(profile)
 
         # 3. Memory & History
         chat_history_messages = (await asyncio.to_thread(
@@ -520,7 +536,7 @@ class AITrainerBrain:
             trainer_profile_summary=trainer_profile_obj.get_trainer_profile_summary(),
             user_profile_summary=profile.get_profile_summary(),
             chat_history_summary="",
-            formatted_history_msgs=self._format_history_as_messages(chat_history_messages),
+            formatted_history_msgs=self.format_history_as_messages(chat_history_messages),
             user_input=user_input,
             current_date=datetime.now().strftime("%Y-%m-%d"),
             agenda_events=await asyncio.to_thread(
@@ -532,15 +548,15 @@ class AITrainerBrain:
         async for chunk in self._llm_client.stream_with_tools(
             prompt_template=self.prompt_builder.get_prompt_template(input_data, is_telegram),
             input_data=input_data,
-            tools=self._get_tools(user_email),
+            tools=self.get_tools(user_email),
             user_email=user_email,
-            log_callback=self._get_log_callback(background_tasks),
+            log_callback=self.get_log_callback(background_tasks),
         ):
             if isinstance(chunk, str):
                 full_response.append(chunk)
                 yield chunk
 
-        await self._finalize_ai_response(
+        await self.finalize_ai_response(
             user_email=user_email,
             user_input=user_input,
             final_response="".join(full_response),
@@ -548,11 +564,11 @@ class AITrainerBrain:
                 "trainer_type": trainer_profile_obj.trainer_type or "atlas",
                 "needs_cycle_reset": needs_cycle_reset,
                 "background_tasks": background_tasks,
-                "log_callback": self._get_log_callback(background_tasks)
+                "log_callback": self.get_log_callback(background_tasks)
             }
         )
 
-    async def _finalize_ai_response(
+    async def finalize_ai_response(
         self,
         *,
         user_email: str,
@@ -583,9 +599,9 @@ class AITrainerBrain:
 
         if bg_tasks:
             # Async FastAPI environment
-            bg_tasks.add_task(self._increment_counts, user_email, reset)
+            bg_tasks.add_task(self.increment_counts, user_email, reset)
             bg_tasks.add_task(
-                self._add_to_mongo_history,
+                self.add_to_mongo_history,
                 user_email,
                 user_input,
                 final_response,
@@ -601,8 +617,8 @@ class AITrainerBrain:
             logger.info("Scheduled background tasks for user: %s", user_email)
         else:
             # Fallback for sync callers (like Telegram)
-            self._increment_counts(user_email, reset)
-            self._add_to_mongo_history(
+            self.increment_counts(user_email, reset)
+            self.add_to_mongo_history(
                 user_email, user_input, final_response, train_type
             )
             await self.compactor.compact_history(
@@ -716,7 +732,10 @@ class AITrainerBrain:
         """
         Deletes a specific memory from Qdrant.
         """
-        logger.info("Attempting to delete memory: %s", memory_id)
+        if self._qdrant_client is None:
+            logger.error("Qdrant client not initialized for deletion")
+            return False
+
         try:
             self._qdrant_client.delete(
                 settings.QDRANT_COLLECTION_NAME, points_selector=[memory_id]
@@ -730,12 +749,15 @@ class AITrainerBrain:
         """
         Retrieves a specific memory by ID from Qdrant.
         """
+        if self._qdrant_client is None:
+            return None
+
         try:
             points = self._qdrant_client.retrieve(
                 settings.QDRANT_COLLECTION_NAME, ids=[memory_id]
             )
             return point_to_dict(points[0]) if points else None
-        except (ValueError, TypeError, AttributeError) as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to get memory %s: %s", memory_id, e)
             return None
 
@@ -746,6 +768,9 @@ class AITrainerBrain:
         page_size: int,
     ) -> tuple[list[dict], int]:
         """Delegates to memory_service."""
+        if self._qdrant_client is None:
+            return [], 0
+
         return paginate_memories(
             user_id,
             page,

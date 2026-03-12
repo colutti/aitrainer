@@ -4,6 +4,7 @@ Tests for the health check endpoint in main.py
 
 from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
+from pymongo.errors import PyMongoError
 from src.api.main import app
 
 
@@ -30,7 +31,7 @@ def test_health_endpoint_mongodb_unhealthy():
     """Test health endpoint when MongoDB is unhealthy."""
     with patch("src.api.main.get_mongo_database") as mock_mongo:
         # Mock MongoDB failure
-        mock_mongo.side_effect = Exception("Connection failed")
+        mock_mongo.side_effect = PyMongoError("Connection failed")
 
         response = client.get("/health")
 
@@ -44,7 +45,7 @@ def test_health_endpoint_mongodb_unhealthy_with_exception():
     """Test health endpoint when MongoDB throws exception."""
     with patch("src.api.main.get_mongo_database") as mock_mongo:
         # Mock MongoDB failure
-        mock_mongo.side_effect = Exception("MongoDB down")
+        mock_mongo.side_effect = PyMongoError("MongoDB down")
 
         response = client.get("/health")
 

@@ -28,7 +28,7 @@ def _get_embedder() -> GoogleGenerativeAIEmbeddings:
     """Returns a Gemini embedder for generating 768-dim vectors."""
     return GoogleGenerativeAIEmbeddings(
         model=settings.GEMINI_EMBEDDER_MODEL,
-        google_api_key=settings.GEMINI_API_KEY
+        google_api_key=settings.GEMINI_API_KEY  # type: ignore
     )
 
 
@@ -145,8 +145,9 @@ def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str):
 
             if similar_results.points:
                 existing = similar_results.points[0]
-                existing_id = existing.payload.get("id", existing.id)
-                existing_text = existing.payload.get("memory", "")[:80]
+                payload = existing.payload or {}
+                existing_id = payload.get("id", existing.id)
+                existing_text = payload.get("memory", "")[:80]
                 logger.info("Duplicate memory found for %s: %s", user_email, existing_id)
                 return (
                     f"⚠️ Memória similar já existe (ID: {existing_id}): \"{existing_text}...\"\n"
@@ -257,7 +258,7 @@ def create_search_memory_tool(qdrant_client: QdrantClient, user_email: str):
             # Format results
             formatted_results = []
             for result in results:
-                payload = result.payload
+                payload = result.payload or {}
                 memory_text = payload.get("memory", "")
                 memory_id = payload.get("id", result.id)
                 category = payload.get("category", "")

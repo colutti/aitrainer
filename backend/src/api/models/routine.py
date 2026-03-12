@@ -58,90 +58,42 @@ class HevySet(BaseModel):
         Coerce common LLM mistakes for rep_range into HevyRepRange-compatible dict.
         Hevy API REQUIRES rep_range as {"start": int, "end": int}, never as int.
         """
-        if v is None:
+        if v is None or isinstance(v, dict):
             return v
-        if isinstance(v, dict):
-            logger.debug(
-                "[normalize_rep_range] rep_range already in dict format: %s", v
-            )
-            return v  # Already correct format
+
+        res = None
         if isinstance(v, int):
-            # LLM sent: rep_range: 12 → interpret as {"start": 12, "end": 12}
-            result = {"start": v, "end": v}
-            logger.warning(
-                "[normalize_rep_range] Converted int rep_range to dict: %s → %s",
-                v,
-                result,
-            )
-            return result
-        if isinstance(v, str):
-            # LLM sent: rep_range: "8-12" or "8 - 12" or "12"
+            res = {"start": v, "end": v}
+        elif isinstance(v, str):
+            res = cls._parse_rep_range_str(v)
+        elif isinstance(v, (list, tuple)) and len(v) >= 2:
+            try:
+                res = {"start": int(v[0]), "end": int(v[1])}
+            except (ValueError, TypeError):
+                logger.error("[normalize_rep_range] Failed to parse %s: %s", type(v).__name__, v)
+
+        if res:
+            logger.debug("[normalize_rep_range] Converted %s to dict: %s", type(v).__name__, res)
+            return res
+
+        logger.warning(
+            "[normalize_rep_range] Unknown/Invalid type (Pydantic will handle): %s, %s",
+            type(v).__name__, v
+        )
+        return None
+
+    @staticmethod
+    def _parse_rep_range_str(v: str) -> Optional[dict]:
+        """Helper to parse rep range string."""
+        try:
             if "-" in v:
                 parts = v.split("-")
-                try:
-                    result = {
-                        "start": int(parts[0].strip()),
-                        "end": int(parts[1].strip()),
-                    }
-                    logger.warning(
-                        "[normalize_rep_range] Converted string rep_range (hyphen) to dict: %s → %s",
-                        v,
-                        result,
-                    )
-                    return result
-                except (ValueError, IndexError):
-                    logger.error(
-                        "[normalize_rep_range] Failed to parse string rep_range with hyphen: %s",
-                        v,
-                    )
-                    return None
-            # Single number as string: "12"
-            try:
-                n = int(v.strip())
-                result = {"start": n, "end": n}
-                logger.warning(
-                    "[normalize_rep_range] Converted string rep_range (single) to dict: %s → %s",
-                    v,
-                    result,
-                )
-                return result
-            except ValueError:
-                logger.error(
-                    "[normalize_rep_range] Failed to parse string rep_range: %s", v
-                )
-                return None
-        if isinstance(v, (list, tuple)):
-            # LLM sent: rep_range: [8, 12] or (8, 12)
-            if len(v) >= 2:
-                try:
-                    result = {"start": int(v[0]), "end": int(v[1])}
-                    logger.warning(
-                        "[normalize_rep_range] Converted %s rep_range to dict: %s → %s",
-                        type(v).__name__,
-                        v,
-                        result,
-                    )
-                    return result
-                except (ValueError, TypeError):
-                    logger.error(
-                        "[normalize_rep_range] Failed to parse %s rep_range: %s",
-                        type(v).__name__,
-                        v,
-                    )
-                    return None
-            # Empty or incomplete list/tuple - return None (invalid)
-            logger.debug(
-                "[normalize_rep_range] Empty or incomplete %s rep_range, returning None: %s",
-                type(v).__name__,
-                v,
-            )
+                return {"start": int(parts[0].strip()), "end": int(parts[1].strip())}
+            n = int(v.strip())
+            return {"start": n, "end": n}
+        except (ValueError, IndexError):
+            logger.error("[normalize_rep_range] Failed to parse string: %s", v)
             return None
-        logger.warning(
-            "[normalize_rep_range] Unknown type for rep_range (will let Pydantic handle): type=%s, value=%s",
-            type(v).__name__,
-            v,
-        )
-        return v  # Let Pydantic handle/reject unknown types
 
 
 class HevyRoutineExercise(BaseModel):

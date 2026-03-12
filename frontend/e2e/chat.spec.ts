@@ -2,14 +2,32 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Chat Feature', () => {
   test.beforeEach(async ({ context, page }) => {
+    page.on('console', msg => console.log('[Browser Console]', msg.type(), msg.text()));
+    page.on('pageerror', exception => console.log('[Browser Error]', exception));
+
     // PROTECT BACKEND
     await page.route(url => url.pathname.startsWith('/api/'), async (route) => {
+      console.log('Unmocked API call:', route.request().url());
       await route.fulfill({ status: 500, body: JSON.stringify({ detail: `Unmocked API call: ${route.request().url()}` }) });
     });
 
     // Mock user profile
     await page.route('**/api/user/me', async (route) => {
-      await route.fulfill({ status: 200, body: JSON.stringify({ name: 'User', email: 'user@ex.com' }) });
+      await route.fulfill({ status: 200, body: JSON.stringify({ name: 'User', email: 'user@ex.com', onboarding_completed: true }) });
+    });
+
+    // Common layout mocks
+    await page.route('**/api/dashboard', async (route) => {
+      await route.fulfill({ status: 200, body: JSON.stringify({}) });
+    });
+    await page.route('**/api/trainer/available_trainers', async (route) => {
+      await route.fulfill({ status: 200, body: JSON.stringify([{ trainer_id: 'atlas', name: 'Atlas', short_description: 'Powerlifting' }]) });
+    });
+    await page.route('**/api/trainer/trainer_profile', async (route) => {
+      await route.fulfill({ status: 200, body: JSON.stringify({ trainer_type: 'atlas' }) });
+    });
+    await page.route('**/api/user/profile', async (route) => {
+      await route.fulfill({ status: 200, body: JSON.stringify({}) });
     });
 
     // Set auth token before navigation
@@ -17,7 +35,7 @@ test.describe('Chat Feature', () => {
       window.localStorage.setItem('auth_token', 'mock-jwt');
     });
 
-    await page.goto('/chat');
+    await page.goto('/dashboard/chat');
   });
 
   test('should send a message and receive response', async ({ page }) => {
@@ -26,7 +44,7 @@ test.describe('Chat Feature', () => {
     // Playwright doesn't easily mock EventSource/SSE but we can mock the fetch that might initiate it
     // or just check the UI flow.
     
-    await page.route('**/api/message/message', async (route) => {
+    await page.route(/\/api\/message(\?|$)/, async (route) => {
       // Stream simulation
       await route.fulfill({
         status: 200,
@@ -43,12 +61,14 @@ test.describe('Chat Feature', () => {
   });
 
   test('should show empty state when no history', async ({ page }) => {
-    await page.route('**/api/message/history', async (route) => {
+    await page.route(/\/api\/message\/history/, async (route) => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
     });
 
     await page.reload();
     await page.waitForLoadState('networkidle');
+
+    console.log('[DEBUG_PAGE_DOM]', await page.content());
 
     // With empty history, the input field should still be visible (chat is ready)
     await expect(page.getByPlaceholder(/Mensagem para/)).toBeVisible();
@@ -56,7 +76,7 @@ test.describe('Chat Feature', () => {
 
   test('should not send with empty input', async ({ page }) => {
     // Mock history to avoid 500
-    await page.route('**/api/message/history', async (route) => {
+    await page.route(/\/api\/message\/history/, async (route) => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
     });
 
@@ -71,11 +91,11 @@ test.describe('Chat Feature', () => {
   });
 
   test('should send message with Enter key', async ({ page }) => {
-    await page.route('**/api/message/message', async (route) => {
+    await page.route(/\/api\/message(\?|$)/, async (route) => {
       await route.fulfill({ status: 200, contentType: 'text/plain', body: 'Resposta do treinador.' });
     });
 
-    await page.route('**/api/message/history', async (route) => {
+    await page.route(/\/api\/message\/history/, async (route) => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
     });
 
@@ -101,15 +121,7 @@ test.describe('Chat Feature', () => {
       });
     });
 
-    // Also mock trainer endpoints to prevent errors that could affect rendering
-    await page.route('**/api/trainer/trainer_profile', async (route) => {
-      await route.fulfill({ status: 200, body: JSON.stringify({ trainer_type: 'atlas' }) });
-    });
-    await page.route('**/api/trainer/available_trainers', async (route) => {
-      await route.fulfill({ status: 200, body: JSON.stringify([{ trainer_id: 'atlas', name: 'Atlas', short_description: 'Powerlifting' }]) });
-    });
-
-    await page.goto('/chat');
+    await page.goto('/dashboard/chat');
     await page.waitForLoadState('networkidle');
     await expect(page.getByText('Old message').first()).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('Old response').first()).toBeVisible();

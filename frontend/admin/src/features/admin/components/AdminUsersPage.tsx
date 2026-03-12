@@ -1,16 +1,18 @@
+
+import { Button } from '@shared/components/ui/Button';
+import { Input } from '@shared/components/ui/Input';
+import { useConfirmation } from '@shared/hooks/useConfirmation';
+import { useNotificationStore } from '@shared/hooks/useNotification';
+import type { AdminUser } from '@shared/types/admin';
 import { Search, Eye, Trash2, ArrowLeft, ArrowRight, RotateCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { Button } from '../../../../../src/shared/components/ui/Button';
-import { Input } from '../../../../../src/shared/components/ui/Input';
-import { useConfirmation } from '../../../../../src/shared/hooks/useConfirmation';
-import { useNotificationStore } from '../../../../../src/shared/hooks/useNotification';
-import type { AdminUser } from '../../../../../src/shared/types/admin';
 import { adminApi } from '../api/admin-api';
 
 interface UserEditDetails {
   subscription_plan: string;
   custom_message_limit: number | null;
+  custom_trial_days: number | null;
 }
 
 interface UserFullDetails {
@@ -101,6 +103,7 @@ export function AdminUsersPage() {
       setEditUser({
         subscription_plan: details.profile?.subscription_plan || 'Free',
         custom_message_limit: details.profile?.custom_message_limit || null,
+        custom_trial_days: details.profile?.custom_trial_days || null,
       });
     } catch {
       // console.error(error);
@@ -377,6 +380,46 @@ export function AdminUsersPage() {
                           value={editUser.custom_message_limit ?? ''}
                            onChange={(e) => {
                              setEditUser({ ...editUser, custom_message_limit: e.target.value ? parseInt(e.target.value) : null });
+                           }}
+                        />
+                     </div>
+
+                     <div>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">
+                          Validade Customizada (Dias) - null para padrão
+                        </label>
+                        <div className="flex gap-2 mb-2 flex-wrap">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="bg-zinc-800 hover:bg-zinc-700 text-xs text-red-300"
+                            onClick={() => {
+                              setEditUser({ ...editUser, custom_trial_days: null });
+                            }}
+                          >Remover (Padrão)</Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="bg-zinc-800 hover:bg-zinc-700 text-xs"
+                            onClick={() => {
+                              setEditUser({ ...editUser, custom_trial_days: 7 });
+                            }}
+                          >7 Dias</Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="bg-zinc-800 hover:bg-zinc-700 text-xs"
+                            onClick={() => {
+                              setEditUser({ ...editUser, custom_trial_days: 30 });
+                            }}
+                          >30 Dias</Button>
+                        </div>
+                        <Input 
+                          type="number"
+                          placeholder="Ex: 30"
+                          value={editUser.custom_trial_days ?? ''}
+                           onChange={(e) => {
+                             setEditUser({ ...editUser, custom_trial_days: e.target.value ? parseInt(e.target.value) : null });
                            }}
                         />
                      </div>

@@ -28,7 +28,7 @@ class TestMacroCalculationValidation:
         150kg person, 1200 kcal target
         Expected: Macros should sum to ~1200 kcal, not 1500 kcal
         """
-        macros = service._calculate_macro_targets(daily_target=1200, weight_kg=150)
+        macros = service.calculate_macro_targets(daily_target=1200, weight_kg=150)
 
         total_kcal = (macros["protein"] * 4 +
                       macros["carbs"] * 4 +
@@ -45,7 +45,7 @@ class TestMacroCalculationValidation:
         200kg person, 1500 kcal target
         Expected: Macros should sum to ~1500 kcal, not 1978 kcal
         """
-        macros = service._calculate_macro_targets(daily_target=1500, weight_kg=200)
+        macros = service.calculate_macro_targets(daily_target=1500, weight_kg=200)
 
         total_kcal = (macros["protein"] * 4 +
                       macros["carbs"] * 4 +
@@ -60,7 +60,7 @@ class TestMacroCalculationValidation:
         80kg person, 2500 kcal target (normal case)
         Expected: Macros should sum to ~2500 kcal
         """
-        macros = service._calculate_macro_targets(daily_target=2500, weight_kg=80)
+        macros = service.calculate_macro_targets(daily_target=2500, weight_kg=80)
 
         total_kcal = (macros["protein"] * 4 +
                       macros["carbs"] * 4 +
@@ -76,7 +76,7 @@ class TestMacroCalculationValidation:
         (unless they absolutely can't fit)
         """
         # Extreme: high weight, very low calories
-        macros = service._calculate_macro_targets(daily_target=1000, weight_kg=120)
+        macros = service.calculate_macro_targets(daily_target=1000, weight_kg=120)
 
         # All should have values (carbs might be minimal but not 0)
         assert macros["protein"] > 0
@@ -95,7 +95,7 @@ class TestMacroCalculationValidation:
         ]
 
         for weight_kg, daily_target in test_cases:
-            macros = service._calculate_macro_targets(daily_target, weight_kg)
+            macros = service.calculate_macro_targets(daily_target, weight_kg)
             protein_kcal = macros["protein"] * 4
 
             protein_pct = (protein_kcal / daily_target) * 100 if daily_target > 0 else 0
@@ -113,7 +113,7 @@ class TestMacroCalculationValidation:
         targets = [1200, 1500, 1800, 2000, 2500, 3000]
 
         for target in targets:
-            macros = service._calculate_macro_targets(target, weight)
+            macros = service.calculate_macro_targets(target, weight)
             total = macros["protein"] * 4 + macros["carbs"] * 4 + macros["fat"] * 9
 
             # Should be within 5% of target for all cases

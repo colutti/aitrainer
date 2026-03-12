@@ -3,7 +3,9 @@
 import pytest
 import string
 from unittest.mock import MagicMock
+from pymongo.errors import DuplicateKeyError
 from src.repositories.telegram_repository import TelegramRepository
+
 
 
 @pytest.fixture
@@ -77,6 +79,7 @@ class TestIdempotency:
     def test_try_record_update_duplicate_fails(self, telegram_repo, mock_db):
         """Test recording a duplicate update_id returns False."""
         # Use a real exception to simulate duplicate key error
-        mock_db["telegram_processed_updates"].insert_one.side_effect = Exception("Duplicate key")
+        mock_db["telegram_processed_updates"].insert_one.side_effect = DuplicateKeyError("Duplicate key")
+
         result = telegram_repo.try_record_update(123)
         assert result is False

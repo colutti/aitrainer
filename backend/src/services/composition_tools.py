@@ -106,7 +106,7 @@ def create_save_composition_tool(database, user_email: str):
             logger.info("Body composition %s for %s on %s", action, user_email, date_str)
             return f"Composição corporal de {date_str} {action} com sucesso! (ID: {doc_id})"
 
-        except (ValueError, TypeError, AttributeError) as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to save body composition for %s: %s", user_email, e)
             return "Erro ao salvar composição corporal. Tente novamente."
 
@@ -207,6 +207,7 @@ def create_get_composition_tool(database, user_email: str):
 
                 result += "\n=== MÉDIAS SEMANAIS (pré-calculadas) ===\n"
 
+                avg_current, avg_prev = 0.0, 0.0
                 if current_week:
                     avg_current = (
                         sum(log.weight_kg for log in current_week) / len(current_week)
@@ -222,6 +223,7 @@ def create_get_composition_tool(database, user_email: str):
                             f"{sum(bf_vals)/len(bf_vals):.1f}%\n"
                         )
 
+                avg_prev = 0.0
                 if prev_week:
                     avg_prev = sum(log.weight_kg for log in prev_week) / len(prev_week)
                     result += (
@@ -238,7 +240,7 @@ def create_get_composition_tool(database, user_email: str):
 
             return result
 
-        except (ValueError, TypeError, AttributeError) as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to get body composition for %s: %s", user_email, e)
             return "Erro ao buscar histórico de composição corporal."
 

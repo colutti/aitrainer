@@ -215,7 +215,7 @@ def create_save_nutrition_tool(database, user_email: str):
             )
             return f"Log nutricional de {date_str} {action} com sucesso! (ID: {doc_id})"
 
-        except (ValueError, TypeError, AttributeError) as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to save nutrition log for %s: %s", user_email, e)
             return "Erro ao salvar log nutricional. Verifique os dados."
 
@@ -263,7 +263,7 @@ def create_get_nutrition_tool(database, user_email: str):
 
             return result
 
-        except (ValueError, TypeError, AttributeError) as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to get nutrition history for %s: %s", user_email, e)
             return "Erro ao buscar histórico nutricional."
 

@@ -50,7 +50,8 @@ class Settings(BaseSettings):
     API_SERVER_PORT: int = 8000
 
     MAX_SHORT_TERM_MEMORY_MESSAGES: int = 20
-    COMPACTION_THRESHOLD: int = 60  # Must be > MAX_SHORT_TERM_MEMORY_MESSAGES (the active window size)
+    # Must be > MAX_SHORT_TERM_MEMORY_MESSAGES (the active window size)
+    COMPACTION_THRESHOLD: int = 60
     MAX_LONG_TERM_MEMORY_MESSAGES: int = Field(default=50)
     SUMMARY_MAX_TOKEN_LIMIT: int = 200
     ALLOWED_ORIGINS: str | list[str] = Field(default="*")

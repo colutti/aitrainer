@@ -16,17 +16,18 @@ AI Personal Trainer - Full-stack web application for AI-powered fitness coaching
 
 **Zero Tolerance for Linting Errors:** Both backend and frontend must have ZERO linting errors and ZERO warnings at all times. Always run lint checks after any code change.
 
-### Mandatory Quality Checks
-
 After ANY code modification, run the appropriate checks:
 
 ```bash
-# Backend: linting
-cd backend && ruff check .
+# Backend: Quality (from backend directory)
+.venv/bin/ruff check src
+.venv/bin/pylint src
+.venv/bin/pyright src
 
-# Frontend: linting + type checking (BOTH required)
-cd frontend && npm run lint
-cd frontend && npm run typecheck
+# Frontend: Quality (from frontend directory)
+npm run lint
+npm run typecheck
+```
 
 # Combined frontend check (lint + typecheck + tests)
 cd frontend && npm run check
@@ -49,11 +50,14 @@ make build-prod      # Build containers (production - minified)
 make restart         # Rebuild and restart
 ```
 
-### Backend
+### Backend (Local)
 
 ```bash
-cd backend && make api            # Run backend locally (outside container)
-cd backend && ruff check .        # Lint (zero errors/warnings required)
+cd backend
+.venv/bin/python src/api/main.py  # Run API
+.venv/bin/ruff check src          # Fast lint
+.venv/bin/pylint src              # Deep lint (must be 10/10)
+.venv/bin/pyright src             # Type check
 ```
 
 ### Frontend

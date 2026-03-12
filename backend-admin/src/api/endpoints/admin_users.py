@@ -1,3 +1,5 @@
+"""Endpoints for administrative user management tasks (list, update, delete)."""
+from datetime import datetime
 from fastapi import APIRouter, Query, HTTPException
 from src.core.deps import MainDB, CurrentAdmin
 
@@ -19,11 +21,15 @@ def list_users(
         query = {"email": {"$regex": search, "$options": "i"}}
 
     # Buscar usuários (excluir campos sensíveis)
+    exclude_fields = {
+        "_id": 0,
+        "password_hash": 0,
+        "hevy_api_key": 0,
+        "hevy_webhook_secret": 0,
+        "photo_base64": 0
+    }
     users = list(
-        db.users.find(
-            query,
-            {"_id": 0, "password_hash": 0, "hevy_api_key": 0, "hevy_webhook_secret": 0, "photo_base64": 0},
-        )
+        db.users.find(query, exclude_fields)
         .skip(skip)
         .limit(page_size)
     )
@@ -80,6 +86,17 @@ def update_user(
             raise HTTPException(
                 status_code=400, detail=f"Cannot modify protected field: {field}"
             )
+
+    # Lógica de reset se mudar o plano
+    if "subscription_plan" in updates:
+        now = datetime.now()
+        updates["current_billing_cycle_start"] = now
+        updates["messages_sent_this_month"] = 0
+        updates["messages_sent_today"] = 0
+        updates["stripe_subscription_status"] = "active" # Override manually
+        # Se for um override manual, limpamos o stripe_subscription_id pra evitar conflitos
+        if "stripe_subscription_id" not in updates:
+            updates["stripe_subscription_id"] = None
 
     result = db.users.update_one({"email": email}, {"$set": updates})
     if result.matched_count == 0:

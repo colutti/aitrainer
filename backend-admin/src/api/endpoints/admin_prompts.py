@@ -1,3 +1,4 @@
+"""Endpoints for managing and viewing system prompt logs."""
 from bson import ObjectId
 from fastapi import APIRouter, Query, HTTPException
 from src.core.deps import MainDB, CurrentAdmin

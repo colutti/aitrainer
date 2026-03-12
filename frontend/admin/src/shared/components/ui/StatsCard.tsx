@@ -1,1 +1,1 @@
-export { StatsCard } from '../../../../../src/shared/components/ui/StatsCard';
+export { StatsCard } from '@shared/components/ui/StatsCard';

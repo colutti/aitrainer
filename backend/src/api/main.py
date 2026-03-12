@@ -7,6 +7,7 @@ import warnings
 from typing import Any
 
 import uvicorn
+from pymongo.errors import PyMongoError
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -35,7 +36,7 @@ from src.core.firebase import init_firebase
 
 # Configure log level based on settings
 set_log_level(settings.LOG_LEVEL)
-logger.info(f"Log level set to: {settings.LOG_LEVEL}")
+logger.info("Log level set to: %s", settings.LOG_LEVEL)
 
 # Initialize external services
 init_firebase()
@@ -122,7 +123,7 @@ def health_check() -> JSONResponse:
         db = get_mongo_database()
         db.client.admin.command("ping")
         health_status["services"]["mongodb"] = "healthy"
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except PyMongoError as e:
         logger.error("MongoDB health check failed: %s", e)
         health_status["status"] = "unhealthy"
         health_status["services"]["mongodb"] = f"unhealthy: {str(e)}"
@@ -133,12 +134,12 @@ def health_check() -> JSONResponse:
 
 if __name__ == "__main__":
     # Run the server
-    port_env = int(os.environ.get("PORT", settings.API_SERVER_PORT))
-    is_prod = settings.LOG_LEVEL.upper() == "INFO"
+    PORT = int(os.environ.get("PORT", settings.API_SERVER_PORT))
+    IS_PROD = settings.LOG_LEVEL.upper() == "INFO"
 
     uvicorn.run(
         "src.api.main:app",
         host="0.0.0.0",
-        port=port_env,
-        reload=not is_prod,  # reload only locally
+        port=PORT,
+        reload=not IS_PROD,  # reload only locally
     )

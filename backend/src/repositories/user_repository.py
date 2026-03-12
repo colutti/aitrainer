@@ -5,6 +5,7 @@ This module provides the UserRepository for managing user persistence.
 
 
 from datetime import datetime
+from typing import Any
 from pymongo.database import Database
 from src.api.models.user_profile import UserProfile
 from src.repositories.base import BaseRepository
@@ -130,7 +131,7 @@ class UserRepository(BaseRepository):
             }
         else:
             inc_fields = {"total_messages_sent": 1, "messages_sent_this_month": 1}
-            set_fields = {"last_message_date": today_str}
+            set_fields: dict[str, Any] = {"last_message_date": today_str}
 
             if is_new_day:
                 set_fields["messages_sent_today"] = 1

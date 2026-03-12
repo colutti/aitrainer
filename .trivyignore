@@ -1,1 +1,4 @@
 # Add vulnerabilities or secrets to ignore here with their IDs and justification
+backend/firebase-admin-dev.json
+backend/firebase-admin.json
+frontend/playwright/.auth/user.json

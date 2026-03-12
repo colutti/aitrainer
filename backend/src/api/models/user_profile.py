@@ -4,6 +4,7 @@ This module contains the models for user profiles and preferences.
 
 from datetime import datetime
 from pydantic import BaseModel, Field, model_validator, computed_field
+from src.core.subscription import SUBSCRIPTION_PLANS, SubscriptionPlan
 
 
 class UserProfileInput(BaseModel):
@@ -12,7 +13,8 @@ class UserProfileInput(BaseModel):
     """
 
     gender: str = Field(
-        ..., description="User's gender", pattern="^([Mm]asculino|[Ff]eminino|[Mm]ale|[Ff]emale|[Ff]emenino|[Oo]tro|[Oo]ther)$"
+        ..., description="User's gender",
+        pattern="^([Mm]asculino|[Ff]eminino|[Mm]ale|[Ff]emale|[Ff]emenino|[Oo]tro|[Oo]ther)$"
     )
     age: int = Field(..., ge=18, le=100, description="Age between 18 and 100 years")
     weight: float | None = Field(
@@ -28,7 +30,8 @@ class UserProfileInput(BaseModel):
         description="Type of goal: lose, gain, or maintain",
     )
     target_weight: float | None = Field(
-        default=None, gt=0, le=500.0, description="Target weight in kg (optional, must be > 0 if set)"
+        default=None, gt=0, le=500.0,
+        description="Target weight in kg (optional, must be > 0 if set)"
     )
     weekly_rate: float = Field(
         default=0.5, ge=0.0, le=2.0, description="Desired weekly weight change rate in kg"
@@ -100,18 +103,31 @@ class UserProfile(UserProfileInput):
         default=None, max_length=50, description="User display name for UI and prompts"
     )
     photo_base64: str | None = Field(
-        default=None, max_length=700_000, description="Profile photo as base64 data URI (max ~500KB)"
+        default=None, max_length=700_000,
+        description="Profile photo as base64 data URI (max ~500KB)"
     )
 
     # Subscription and Limits
     subscription_plan: str = Field(default="Free", description="Current subscription plan")
     stripe_customer_id: str | None = Field(default=None, description="Stripe Customer ID")
     stripe_subscription_id: str | None = Field(default=None, description="Active subscription ID")
-    stripe_subscription_status: str | None = Field(default=None, description="Subscription status from Stripe")
-    custom_message_limit: int | None = Field(default=None, description="Custom limit override (daily for Free, monthly for paid)")
-    custom_trial_days: int | None = Field(default=None, description="Custom validity days override")
-    messages_sent_this_month: int = Field(default=0, description="Messages sent in current billing cycle")
-    total_messages_sent: int = Field(default=0, description="Total messages sent by user ever")
+    stripe_subscription_status: str | None = Field(
+        default=None, description="Subscription status from Stripe"
+    )
+    custom_message_limit: int | None = Field(
+        default=None,
+        description="Custom limit override (daily for Free, monthly for paid)"
+    )
+    custom_trial_days: int | None = Field(
+        default=None,
+        description="Custom validity days override"
+    )
+    messages_sent_this_month: int = Field(
+        default=0, description="Messages sent in current billing cycle"
+    )
+    total_messages_sent: int = Field(
+        default=0, description="Total messages sent by user ever"
+    )
     current_billing_cycle_start: datetime | None = Field(
         default=None, description="ISO timestamp of cycle start"
     )
@@ -142,87 +158,82 @@ class UserProfile(UserProfileInput):
         default=None, max_length=50, description="IANA timezone e.g. Europe/Madrid"
     )
     tdee_start_date: str | None = Field(
-        default=None, description="ISO Date string to start TDEE EMA calculation from (format: YYYY-MM-DD)"
+        default=None,
+        description="ISO Date string to start TDEE EMA calculation from (format: YYYY-MM-DD)"
     )
 
     @computed_field
     @property
     def trial_remaining_days(self) -> int | None:
         """Calculates remaining days in the trial period."""
-        from src.core.subscription import SUBSCRIPTION_PLANS, SubscriptionPlan
         try:
             plan_name = SubscriptionPlan(self.subscription_plan)
         except (ValueError, AttributeError):
             plan_name = SubscriptionPlan.FREE
-        
         plan = SUBSCRIPTION_PLANS[plan_name]
-        
         # Admin Override for validity
-        validity = self.custom_trial_days if self.custom_trial_days is not None else plan.validity_days
-        
-        if validity is None:
+        v_days = (
+            self.custom_trial_days if self.custom_trial_days is not None
+            else plan.validity_days
+        )
+        if v_days is None:
             return None
-        
         if not self.current_billing_cycle_start:
-            return validity
-            
+            return v_days
         now = datetime.now()
         cycle_start = self.current_billing_cycle_start
         if isinstance(cycle_start, str):
             cycle_start = datetime.fromisoformat(cycle_start)
-            
         elapsed = (now - cycle_start).days
-        remaining = validity - elapsed
+        remaining = v_days - elapsed
         return max(0, remaining)
 
     @computed_field
     @property
     def current_daily_limit(self) -> int | None:
         """Returns the daily message limit for the current plan."""
-        from src.core.subscription import SUBSCRIPTION_PLANS, SubscriptionPlan
-        
         try:
             plan_name = SubscriptionPlan(self.subscription_plan)
         except (ValueError, AttributeError):
             plan_name = SubscriptionPlan.FREE
-            
         plan = SUBSCRIPTION_PLANS[plan_name]
-        
         # If it's a daily plan (Free), the custom limit overrides the daily limit
         if plan.daily_limit is not None:
-            return self.custom_message_limit if self.custom_message_limit is not None else plan.daily_limit
-        
+            c_lim = self.custom_message_limit
+            return c_lim if c_lim is not None else plan.daily_limit
         return None
 
     @computed_field
     @property
     def effective_remaining_messages(self) -> int | None:
         """Calculates how many messages the user can still send."""
-        from src.core.subscription import SUBSCRIPTION_PLANS, SubscriptionPlan
-        
         try:
             plan_name = SubscriptionPlan(self.subscription_plan)
         except (ValueError, AttributeError):
             plan_name = SubscriptionPlan.FREE
-            
         plan = SUBSCRIPTION_PLANS[plan_name]
-        
         # Check Validity / Trial Expiration
-        validity = self.custom_trial_days if self.custom_trial_days is not None else plan.validity_days
-        if validity is not None:
+        v_days = (
+            self.custom_trial_days if self.custom_trial_days is not None
+            else plan.validity_days
+        )
+        if v_days is not None:
             if self.trial_remaining_days is not None and self.trial_remaining_days <= 0:
                 return 0
-
         # Daily Limit Logic (Overrides for Free)
         if plan.daily_limit is not None:
-            daily_limit = self.custom_message_limit if self.custom_message_limit is not None else plan.daily_limit
-            return max(0, daily_limit - self.messages_sent_today)
-            
+            d_lim = (
+                self.custom_message_limit if self.custom_message_limit is not None
+                else plan.daily_limit
+            )
+            return max(0, d_lim - self.messages_sent_today)
         # Monthly Limit Logic (Overrides for Paid)
         if plan.monthly_limit is not None:
-             monthly_limit = self.custom_message_limit if self.custom_message_limit is not None else plan.monthly_limit
-             return max(0, monthly_limit - self.messages_sent_this_month)
-
+            m_lim = (
+                self.custom_message_limit if self.custom_message_limit is not None
+                else plan.monthly_limit
+            )
+            return max(0, m_lim - self.messages_sent_this_month)
         return None
 
     def _goal_type_label(self) -> str:

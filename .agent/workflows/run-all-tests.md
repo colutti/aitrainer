@@ -2,75 +2,80 @@
 description: Executa a suíte completa de testes e verificação de qualidade do projeto (Backend & Frontend)
 ---
 
+### 0. Guia de Ferramentas e Caminhos (Para o Agente)
+// turbo
+1. **Ambiente Local (Venv)**: Sempre dê preferência aos executáveis dentro da pasta `.venv` do backend para evitar confusão de versões:
+   - Python: `backend/.venv/bin/python`
+   - Pyright: `backend/.venv/bin/pyright`
+   - Ruff: `backend/.venv/bin/ruff`
+   - Pytest: `backend/.venv/bin/pytest`
+   - Pylint: `backend/.venv/bin/pylint` ou `backend/.venv/bin/python -m pylint`
+
+2. **Container (Podman)**: Caso prefira rodar no container para garantir paridade com prod:
+   - Ruff: `podman exec personal_backend_1 /opt/venv/bin/ruff check .`
+   - Pylint: `podman exec personal_backend_1 /opt/venv/bin/pylint src`
+   - Testes: `podman exec personal_backend_1 pytest`
+
 ### 1. Preparação do Ambiente Backend
 // turbo
-1. Verifique se as dependências do sistema estão instaladas no container backend.
+1. Verifique se as dependências do sistema estão instaladas no container backend (se estiver usando containers).
    - Execute: `podman exec personal_backend_1 bash -c "dpkg -l | grep libatomic1 || (apt-get update && apt-get install -y libatomic1)"`
 
 ### 2. Verificação de Qualidade Backend (Zero Tolerância)
 // turbo
-1. Linting (Ruff): `podman exec personal_backend_1 /opt/venv/bin/ruff check .`
+1. **Linting (Ruff)**: `cd backend && .venv/bin/ruff check src`
 // turbo
-2. Linting (Pylint): `podman exec personal_backend_1 /opt/venv/bin/pylint src`
+2. **Linting (Pylint)**: `cd backend && .venv/bin/pylint src` (Deve ser 10.00/10)
 // turbo
-3. Type Checking (Pyright): `podman exec personal_backend_1 /opt/venv/bin/pyright`
-   - **Nota**: Se houver erros de "import-outside-toplevel" ou "too-many-locals", avalie se deve refatorar ou adicionar `# pylint: disable=...` com parcimônia.
+3. **Type Checking (Pyright)**: `cd backend && .venv/bin/pyright src`
+   - **Nota**: Se houver erros de "import-outside-toplevel" em handlers de ferramentas de IA ou outros padrões específicos do projeto, use `# pylint: disable=...` apenas se for estritamente necessário e documentado.
 
-### 3. Testes Backend
+### 3. Testes Backend (TDD Obrigatório)
 // turbo
-1. Execute os testes unitários e de integração: `podman exec personal_backend_1 pytest`
-   - Se houver falhas, corrija-as imediatamente. Não avance sem que o backend esteja 100% verde.
+1. Execute os testes unitários e de integração: `cd backend && .venv/bin/pytest`
+   - **Regra TDD**: Para novas features ou correção de bugs, o teste falhando deve existir ANTES da correção.
+   - **Cobertura**: Use `cd backend && .venv/bin/pytest --cov=src` se precisar verificar gaps de testes.
 
 ### 4. Admin Backend (Acesso Isolado)
 // turbo
-1. Linting & Type Check (Admin): `cd backend-admin && .venv/bin/python -m pylint src/**/*.py --disable=C0114,C0115,C0116,R0903,R0913 --max-line-length=120`
+1. Linting & Type Check (Admin): `cd backend-admin && .venv/bin/pylint src`
    - **Nota**: Manter nota 10/10 no pylint.
 
 ### 5. Verificação de Qualidade Frontend (Main & Admin)
 // turbo
-1. Linting (Main): `cd frontend && npm run lint`
+1. **Linting (Main)**: `cd frontend && npm run lint`
 // turbo
-2. Linting (Admin): `cd frontend/admin && npm run lint`
+2. **Type Checking (Main)**: `cd frontend && npm run typecheck`
 // turbo
-3. Type Checking (Main): `cd frontend && npm run typecheck`
-// turbo
-4. Type Checking (Admin): `cd frontend/admin && npm run typecheck`
+3. **Linting & Type Check (Admin)**: `cd frontend/admin && npm run lint && npm run typecheck`
 
 ### 6. Testes Frontend
 // turbo
-1. Testes Unitários e Cobertura (Main): `cd frontend && npx vitest run --coverage`
+1. **Testes Unitários (Main)**: `cd frontend && npm test`
 // turbo
-2. Testes Unitários (Admin): `cd frontend/admin && npx vitest run`
-   - **Atenção**: Se a cobertura falhar por pouco, ajuste os thresholds em `vitest.config.ts` para refletir o estado atual, mas não diminua drasticamente.
+2. **Testes Unitários (Admin)**: `cd frontend/admin && npm test`
 // turbo
-3. Testes E2E (Opcional, mas recomendado se houver mudanças visuais/fluxo): `cd frontend && npx playwright test`
+3. **Testes E2E (Playwright)**: `cd frontend && npx playwright test` (Opcional, mas recomendado para fluxos críticos).
 
-### 8. Security Scanning (SAST + SCA + Secrets)
+### 7. Security Scanning (SAST + SCA + Secrets)
 // turbo
-1. SAST (Semgrep): `podman run --rm -v $(pwd):/src:ro docker.io/semgrep/semgrep:latest semgrep scan --config auto --error --severity ERROR --severity WARNING /src`
-// turbo
-2. SCA + Secrets (Trivy): `podman run --rm -v $(pwd):/src:ro docker.io/aquasec/trivy:latest fs --exit-code 1 --severity HIGH,CRITICAL --scanners vuln,secret /src`
+1. **Security Check**: `make security-check` (ou rode individualmente Semgrep e Trivy via podman).
 
-### 9. Limpeza e Relatório
+### 8. Limpeza e Relatório
 // turbo
-1. Remova artefatos gerados:
-   - Backend: `.pytest_cache`, `__pycache__`, `.ruff_cache`
-   - Frontend: `coverage/`, `playwright-report/`, `test-results/`
-   - Comando: `rm -rf frontend/coverage frontend/playwright-report frontend/test-results frontend/coverage_report.txt`
-   - Remova outros arquivos temporarios, como arquivos do pyright, arquivos txt nao sejam usados
-   - Remova arquivos gerados por voce para testes temporarios.
+1. **Limpeza Profunda**:
+   - Delete arquivos temporários: `rm -rf tmp/*`
+   - Delete caches: `find . -name "*.pyc" -delete && find . -name "__pycache__" -delete`
+   - Delete artefatos de testes: `rm -rf backend/.pytest_cache frontend/coverage frontend/playwright-report`
+   - Delete logs desnecessários e arquivos de POC gerados por você.
 
-2. Produza um relatório final contendo:
-   - Status dos linters (deve ser "Clean").
-   - Total de testes passados no backend e frontend.
-   - Cobertura atual do frontend.
-   - Lista de problemas corrigidos durante a execução.
+2. **Produza um relatório final**:
+   - Status dos linters (Zero Errors/Warnings).
+   - Total de testes passados.
+   - Resumo das correções feitas.
 
 **Regras de Ouro:**
-- **Zero Warnings/Errors**: Não ignore warnings dos linters.
-- **Frontend Isolado**: Testes de frontend não devem depender do backend rodando (use mocks/msw).
-- **Backend Robusto**: Testes de backend devem garantir a integridade da API e lógica de negócios.
-- **Testes de Erro**: Sempre use `vi.spyOn(console, 'error').mockImplementation(() => {})` + `consoleSpy.mockRestore()` em testes que esperam falhas de API, para manter o stderr limpo.
-- **Submit em Forms**: Use `fireEvent.submit(container.querySelector('form'))` ao invés de `fireEvent.click(submitButton)`, pois o JSDOM não implementa `requestSubmit` internamente e gera erros "Not implemented" ao clicar em buttons de submit.
-- **Recharts**: O mock global de `ResponsiveContainer` está em `src/test/setup.ts` — não duplique em testes individuais.
-- Se detectar algo que deveria estar nessas instrucoes, ao final do testes atualize-as nesse arquivo. Seja breve e mantenha esse arquivo atualizado.
+- **Bug = Teste primeiro**: Nunca corrija um bug sem antes provar que ele existe com um teste automatizado.
+- **Zero Warnings**: Warnings são erros disfarçados. Corrija a raiz, não silencie (a menos que seja genuinamente necessário).
+- **Caminhos Curtos**: Use os caminhos definidos no passo 0 para ser rápido e preciso.
+- **Limpeza**: Nunca deixe lixo (logs, screenshots, scripts .py temporários) no repositório.

@@ -128,6 +128,7 @@ async def test_process_webhook_async_logic():
         api_key="api_key_123",
         workout_id="workout-456",
         hevy_service=mock_service,
+        brain=MagicMock(),
     )
 
     # Verify the flow
@@ -159,6 +160,7 @@ async def test_process_webhook_async_retry_logic():
             api_key="api_key_123",
             workout_id="workout-456",
             hevy_service=mock_service,
+            brain=MagicMock(),
         )
 
         # Verify it was called 3 times

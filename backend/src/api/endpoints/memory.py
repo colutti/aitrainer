@@ -5,11 +5,9 @@ This module contains the API endpoints for memory management.
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from qdrant_client import QdrantClient
 
 from src.services.auth import verify_token
-from src.core.config import settings
-from src.core.deps import get_ai_trainer_brain, get_qdrant_client
+from src.core.deps import get_ai_trainer_brain
 from src.core.logs import logger
 from src.api.models.memory_item import MemoryItem, MemoryListResponse
 from src.services.trainer import AITrainerBrain
@@ -19,25 +17,21 @@ router = APIRouter()
 
 CurrentUser = Annotated[str, Depends(verify_token)]
 AITrainerBrainDep = Annotated[AITrainerBrain, Depends(get_ai_trainer_brain)]
-QdrantClientDep = Annotated[QdrantClient, Depends(get_qdrant_client)]
 
 
 @router.get("/list", response_model=MemoryListResponse)
-def list_memories(
+async def list_memories(
     user_email: CurrentUser,
     brain: AITrainerBrainDep,
-    qdrant: QdrantClientDep,
     page: int = Query(default=1, ge=1, description="Page number (1-indexed)"),
     page_size: int = Query(default=10, ge=1, le=50, description="Items per page"),
 ) -> MemoryListResponse:
-    # pylint: disable=duplicate-code
     """
     Retrieves paginated memories for the authenticated user.
 
     Args:
         user_email (str): The authenticated user's email.
         brain (AITrainerBrain): The AI trainer brain dependency.
-        qdrant (QdrantClient): Qdrant client for direct memory access.
         page (int): Page number (1-indexed).
         page_size (int): Number of items per page (1-50).
 
@@ -48,11 +42,12 @@ def list_memories(
     logger.info("User: %s, Page: %d, PageSize: %d", user_email, page, page_size)
 
     try:
-        raw_memories, total = brain.get_memories_paginated(
+        raw_memories, total = await brain.get_memories_paginated(
             user_id=user_email,
             page=page,
             page_size=page_size,
         )
+
         logger.debug("Processing %d raw memories", len(raw_memories))
 
         memories = [

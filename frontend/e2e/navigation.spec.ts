@@ -47,20 +47,20 @@ test.describe('Navigation', () => {
       await expect(page.getByRole('heading', { name: 'Bom dia, Atleta!' }).or(page.getByRole('heading', { level: 1 }))).toBeVisible();
 
       // Chat
-      await page.goto('/chat');
-      await expect(page).toHaveURL('/chat');
+      await page.goto('/dashboard/chat');
+      await expect(page).toHaveURL('/dashboard/chat');
 
       // Body
-      await page.goto('/body/weight');
-      await expect(page).toHaveURL('/body/weight');
+      await page.goto('/dashboard/body/weight');
+      await expect(page).toHaveURL('/dashboard/body/weight');
 
       // Workouts
-      await page.goto('/workouts');
-      await expect(page).toHaveURL('/workouts');
+      await page.goto('/dashboard/workouts');
+      await expect(page).toHaveURL('/dashboard/workouts');
 
       // Settings
-      await page.goto('/settings/profile');
-      await expect(page).toHaveURL('/settings/profile');
+      await page.goto('/dashboard/settings/profile');
+      await expect(page).toHaveURL('/dashboard/settings/profile');
     });
 
     test('should redirect non-admin from /admin/users to home', async ({ page }) => {
@@ -99,12 +99,12 @@ test.describe('Navigation', () => {
 
     test('should use browser back button correctly', async ({ page }) => {
       await page.goto('/dashboard');
-      await page.goto('/chat');
-      await page.goto('/body/weight');
+      await page.goto('/dashboard/chat');
+      await page.goto('/dashboard/body/weight');
 
       // Go back
       await page.goBack();
-      await expect(page).toHaveURL('/chat');
+      await expect(page).toHaveURL('/dashboard/chat');
 
       await page.goBack();
       await expect(page).toHaveURL('/dashboard');

@@ -10,7 +10,8 @@ from src.api.models.weight_log import WeightLog
 
 # Outlier detection configuration
 OUTLIER_MODIFIED_Z_THRESHOLD = 3.5
-MAX_DAILY_WEIGHT_CHANGE = 2.0  # kg
+MAX_DAILY_WEIGHT_CHANGE = 1.0  # kg
+
 
 
 def pass1_statistical_filter(

@@ -58,19 +58,23 @@ async def test_send_message_ai_streaming_error(mock_deps):
         await anext(gen)
 
 
-def test_get_memories_paginated_error(mock_deps):
+@pytest.mark.asyncio
+async def test_get_memories_paginated_error(mock_deps):
+
     """Test get_memories_paginated handling Qdrant error."""
     db, llm, memory = mock_deps
     db, llm, memory = mock_deps
-    with patch("src.services.trainer.HistoryCompactor"):
-        trainer = AITrainerBrain(db, llm)
-
     mock_qdrant = MagicMock()
+    with patch("src.services.trainer.HistoryCompactor"):
+        trainer = AITrainerBrain(db, llm, qdrant_client=mock_qdrant)
+
     mock_qdrant.count.side_effect = Exception("Qdrant unavailable")
 
+
+
     with pytest.raises(Exception, match="Qdrant unavailable"):
-        trainer.get_memories_paginated(
-            "user@test.com", 1, 10, mock_qdrant, "test_collection"
+        await trainer.get_memories_paginated(
+            "user@test.com", 1, 10
         )
 
 
@@ -83,7 +87,7 @@ def test_get_memory_by_id_error(mock_deps):
 
     qdrant_client.retrieve.side_effect = Exception("Not found")
 
-    result = trainer.get_memory_by_id("mem_id", "test@example.com")
+    result = trainer.get_memory_by_id("mem_id")
     assert result is None
 
 
@@ -98,7 +102,8 @@ def test_format_memory_messages_unknown_type(mock_deps):
         type = "unknown"
 
     msg = UnknownMessage()
-    result = trainer._format_history_as_messages([msg], "atlas")
+    result = trainer.format_history_as_messages([msg])
+
 
     assert len(result) == 1
     assert isinstance(result[0], HumanMessage)

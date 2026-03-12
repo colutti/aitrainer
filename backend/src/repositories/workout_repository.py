@@ -336,7 +336,9 @@ class WorkoutRepository(BaseRepository):
                 peak_strength[cat] = max(peak_strength.get(cat, 0), max_w)
                 curr_strength[cat] = max_w
 
-        return {
-            cat: round(curr_strength.get(cat, 0) / peak, 2) if peak > 0 else 0
-            for cat, peak in peak_strength.items()
-        }
+        result = {}
+        for cat in ["Push", "Pull", "Legs"]:
+            peak = peak_strength.get(cat, 0)
+            result[cat] = round(curr_strength.get(cat, 0) / peak, 2) if peak > 0 else 0.0
+
+        return result

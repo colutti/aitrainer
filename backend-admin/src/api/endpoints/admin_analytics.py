@@ -1,5 +1,7 @@
+"""Endpoints for admin analytics and system-wide metrics."""
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter
+from pymongo.errors import PyMongoError
 from src.core.deps import MainDB, CurrentAdmin
 
 router = APIRouter(prefix="/admin/analytics", tags=["admin"])
@@ -81,6 +83,7 @@ def get_quality_metrics(_admin: CurrentAdmin, db: MainDB) -> dict:
     }
 
 def _calculate_avg_messages(db) -> float:
+    """Calculate average number of messages per session."""
     try:
         pipeline = [
             {"$group": {"_id": "$SessionId", "count": {"$sum": 1}}},
@@ -88,25 +91,27 @@ def _calculate_avg_messages(db) -> float:
         ]
         result = list(db.message_store.aggregate(pipeline))
         return round(result[0]["avg"], 2) if result else 0.0
-    except Exception: # pylint: disable=broad-exception-caught
+    except PyMongoError:
         return 0.0
 
 def _calculate_trainer_distribution(db) -> dict:
+    """Calculate distribution of selected trainer types among users."""
     try:
         pipeline = [{"$group": {"_id": "$trainer_type", "count": {"$sum": 1}}}]
         result = list(db.trainer_profiles.aggregate(pipeline))
         return {
             str(t["_id"]): t["count"] for t in result if t["_id"] is not None
         }
-    except Exception: # pylint: disable=broad-exception-caught
+    except PyMongoError:
         return {}
 
 def _calculate_goal_distribution(db) -> dict:
+    """Calculate distribution of user goals (e.g., weight loss, muscle gain)."""
     try:
         pipeline = [{"$group": {"_id": "$goal_type", "count": {"$sum": 1}}}]
         result = list(db.users.aggregate(pipeline))
         return {
             str(g["_id"]): g["count"] for g in result if g["_id"] is not None
         }
-    except Exception: # pylint: disable=broad-exception-caught
+    except PyMongoError:
         return {}

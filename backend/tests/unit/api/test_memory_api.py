@@ -3,7 +3,7 @@ Unit tests for the memory API endpoints.
 """
 
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, AsyncMock
 from fastapi import HTTPException, status
 from fastapi.testclient import TestClient
 
@@ -37,7 +37,7 @@ class TestMemoryApi(unittest.TestCase):
     def _setup_pagination_mock(self, memories: list, total: int):
         """Helper to set up pagination mock with brain returning the expected data."""
         mock_brain = MagicMock()
-        mock_brain.get_memories_paginated.return_value = (memories, total)
+        mock_brain.get_memories_paginated = AsyncMock(return_value=(memories, total))
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
         # Mock Qdrant client (not directly used since brain is mocked)
@@ -152,7 +152,7 @@ class TestMemoryApi(unittest.TestCase):
         """Test memory list with database error."""
         app.dependency_overrides[verify_token] = lambda: "test@example.com"
         mock_brain = MagicMock()
-        mock_brain.get_memories_paginated.side_effect = Exception("Qdrant Error")
+        mock_brain.get_memories_paginated = AsyncMock(side_effect=Exception("Qdrant Error"))
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
         response = self.client.get(
@@ -204,7 +204,7 @@ class TestMemoryApi(unittest.TestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"message": "Memory deleted successfully"})
-        mock_brain.get_memory_by_id.assert_called_once_with("mem_123", user_email)
+        mock_brain.get_memory_by_id.assert_called_once_with("mem_123")
         mock_brain.delete_memory.assert_called_once_with("mem_123", user_email)
 
     def test_delete_memory_not_owner(self):
@@ -231,7 +231,7 @@ class TestMemoryApi(unittest.TestCase):
         self.assertEqual(
             response.json(), {"detail": "Not authorized to delete this memory"}
         )
-        mock_brain.get_memory_by_id.assert_called_once_with("mem_123", user_email)
+        mock_brain.get_memory_by_id.assert_called_once_with("mem_123")
 
     def test_delete_memory_not_found(self):
         """
@@ -251,7 +251,7 @@ class TestMemoryApi(unittest.TestCase):
 
         # Assert
         self.assertEqual(response.status_code, 404)
-        mock_brain.get_memory_by_id.assert_called_once_with("mem_xxx", user_email)
+        mock_brain.get_memory_by_id.assert_called_once_with("mem_xxx")
 
     def test_delete_memory_failure(self):
         """
@@ -276,7 +276,7 @@ class TestMemoryApi(unittest.TestCase):
         # Assert
         self.assertEqual(response.status_code, 500)
         self.assertEqual(response.json(), {"detail": "Failed to delete memory"})
-        mock_brain.get_memory_by_id.assert_called_once_with("mem_123", user_email)
+        mock_brain.get_memory_by_id.assert_called_once_with("mem_123")
         mock_brain.delete_memory.assert_called_once_with("mem_123", user_email)
 
 if __name__ == "__main__":

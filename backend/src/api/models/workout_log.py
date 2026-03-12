@@ -48,11 +48,11 @@ class ExerciseLog(BaseModel):
             )
         if self.distance_meters_per_set and len(self.distance_meters_per_set) != self.sets:
             raise ValueError(
-                f"distance_meters_per_set deve ter {self.sets} elementos, tem {len(self.distance_meters_per_set)}"
+                f"distance_meters_per_set must have {self.sets} elements"
             )
         if self.duration_seconds_per_set and len(self.duration_seconds_per_set) != self.sets:
             raise ValueError(
-                f"duration_seconds_per_set deve ter {self.sets} elementos, tem {len(self.duration_seconds_per_set)}"
+                f"duration_seconds_per_set must have {self.sets} elements"
             )
         return self
 

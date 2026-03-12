@@ -1,3 +1,4 @@
+"""Endpoints for managing and analyzing token usage and costs."""
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Query
 from src.core.deps import MainDB, CurrentAdmin
@@ -13,6 +14,7 @@ PRICING = {
 }
 
 def get_cost_usd(model: str, input_tokens: int, output_tokens: int) -> float:
+    """Calculate estimated cost in USD based on model and token counts."""
     rates = PRICING.get(model, PRICING["gpt-4o-mini"])
     return (input_tokens / 1000 * rates["input"]) + (output_tokens / 1000 * rates["output"])
 
@@ -24,7 +26,7 @@ def get_token_summary(
 ) -> dict:
     """Consumo de tokens por usuário."""
     since = datetime.now(timezone.utc) - timedelta(days=days)
-    
+
     pipeline = [
         {"$match": {"timestamp": {"$gte": since}}},
         {"$group": {
@@ -37,12 +39,16 @@ def get_token_summary(
         }},
         {"$sort": {"total_input": -1}}
     ]
-    
+
     results = list(db.prompt_logs.aggregate(pipeline))
-    
+
     for item in results:
         item["user_email"] = item["_id"]
-        item["cost_usd"] = get_cost_usd(item.get("model", ""), item.get("total_input", 0), item.get("total_output", 0))
+        item["cost_usd"] = get_cost_usd(
+            item.get("model", ""),
+            item.get("total_input", 0),
+            item.get("total_output", 0)
+        )
         # Ensure last_activity is ISO string for frontend
         if isinstance(item.get("last_activity"), datetime):
             item["last_activity"] = item["last_activity"].isoformat()
@@ -62,7 +68,7 @@ def get_token_timeseries(
 ) -> dict:
     """Dados temporais de consumo de tokens para o gráfico."""
     since = datetime.now(timezone.utc) - timedelta(days=days)
-    
+
     match_query = {"timestamp": {"$gte": since}}
     if user_email:
         match_query["user_email"] = user_email
@@ -89,7 +95,7 @@ def get_token_timeseries(
         }},
         {"$sort": {"date": 1}}
     ]
-    
+
     results = list(db.prompt_logs.aggregate(pipeline))
     return {
         "data": results,

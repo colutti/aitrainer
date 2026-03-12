@@ -10,8 +10,21 @@ import numpy as np
 from src.api.models.weight_log import WeightLog
 from src.api.models.nutrition_log import NutritionLog
 from src.services.tdee_outliers import filter_outliers
+if TYPE_CHECKING:
+    from numpy.exceptions import RankWarning
+else:
+    try:
+        from numpy.exceptions import RankWarning
+    except ImportError:
+        try:
+            from numpy import RankWarning  # type: ignore
+        except ImportError:
+            RankWarning = RuntimeWarning  # type: ignore
 from src.core.logs import logger
-from src.services.tdee_utils import calculate_macro_targets, calculate_body_composition_changes
+from src.services.tdee_utils import (
+    calculate_body_composition_changes,
+    calculate_macro_targets as calc_macros,
+)
 
 if TYPE_CHECKING:
     from src.services.database import MongoDatabase
@@ -57,12 +70,14 @@ class AdaptiveTDEEService:
     MIN_CALORIES_FEMALE = 1200
     MIN_CALORIES_MALE = 1500
     MAX_DEFICIT_PCT = 0.30  # Never exceed 30% deficit
+    OUTLIER_MODIFIED_Z_THRESHOLD = 3.5
+
 
     def __init__(self, db: "MongoDatabase"):
         """Initialize the AdaptiveTDEEService with a database connection."""
         self.db = db
 
-    def _estimate_energy_per_kg(self, body_fat_pct: float | None, slope: float) -> float:
+    def estimate_energy_per_kg(self, body_fat_pct: float | None, slope: float) -> float:
         """
         Estimates energy content per kg of weight change using Forbes/Hall model.
 
@@ -106,7 +121,7 @@ class AdaptiveTDEEService:
         alpha = 2 / (self.EMA_SPAN + 1)
         return (weight_kg * alpha) + (prev_trend * (1 - alpha))
 
-    def _interpolate_weight_gaps(
+    def interpolate_weight_gaps(
         self, weight_logs: list[WeightLog], max_gap_days: int | None = None
     ) -> dict[date, float]:
         """
@@ -165,7 +180,7 @@ class AdaptiveTDEEService:
 
         return dict(sorted(result.items()))
 
-    def _compute_daily_trend(self, daily_weight_series: dict[date, float]) -> dict[date, float]:
+    def compute_daily_trend(self, daily_weight_series: dict[date, float]) -> dict[date, float]:
         """
         Calcula EMA (21 dias) sobre a série diária de pesos.
 
@@ -199,7 +214,7 @@ class AdaptiveTDEEService:
         return result
 
     @staticmethod
-    def _compute_single_window_observation(
+    def compute_single_window_observation(
         sorted_dates: list[date],
         daily_trend: dict[date, float],
         nutrition_by_date: dict[date, int],
@@ -231,7 +246,7 @@ class AdaptiveTDEEService:
             return (window_end_date, obs_tdee)
         return None
 
-    def _compute_tdee_observations(
+    def compute_tdee_observations(
         self,
         daily_trend: dict[date, float],
         nutrition_by_date: dict[date, int],
@@ -261,7 +276,7 @@ class AdaptiveTDEEService:
         observations = []
 
         for i in range(6, len(sorted_dates)):
-            obs = self._compute_single_window_observation(
+            obs = self.compute_single_window_observation(
                 sorted_dates,
                 daily_trend,
                 nutrition_by_date,
@@ -413,8 +428,8 @@ class AdaptiveTDEEService:
             )
 
         # Step 5: Interpolate weight gaps and compute daily trend (Task 2)
-        daily_weight = self._interpolate_weight_gaps(weight_logs)
-        daily_trend = self._compute_daily_trend(daily_weight)
+        daily_weight = self.interpolate_weight_gaps(weight_logs)
+        daily_trend = self.compute_daily_trend(daily_weight)
 
         # Step 6: Filter complete nutrition logs (Task 1)
         complete_nutrition = [n for n in nutrition_logs if not n.partial_logged]
@@ -456,10 +471,10 @@ class AdaptiveTDEEService:
             ),
             None,
         )
-        energy_per_kg = self._estimate_energy_per_kg(latest_body_fat, trend_slope)
+        energy_per_kg = self.estimate_energy_per_kg(latest_body_fat, trend_slope)
 
         # Step 10: Generate TDEE observations (Task 3)
-        observations = self._compute_tdee_observations(
+        observations = self.compute_tdee_observations(
             daily_trend, nutrition_by_date, energy_per_kg
         )
 
@@ -507,7 +522,7 @@ class AdaptiveTDEEService:
         goal_rate, goal_type = 0.0, "maintain"
 
         # Use coaching check-in for daily_target
-        daily_target = self._calculate_coaching_target(tdee, profile)
+        daily_target = self.calculate_coaching_target(tdee, profile)
 
         if profile:
             goal_rate, goal_type = profile.weekly_rate or 0.0, profile.goal_type
@@ -610,7 +625,7 @@ class AdaptiveTDEEService:
 
     def _map_result(self, p: dict) -> dict:
         """Helper to map results to the final dictionary."""
-        macro_targets = calculate_macro_targets(p["target"], p["lat_weight"])
+        macro_targets = self.calculate_macro_targets(p["target"], p["lat_weight"])
         stability = self._calculate_stability_score(p["target"], p["relevant_nut"])
 
         return {
@@ -710,7 +725,7 @@ class AdaptiveTDEEService:
             else:
                 r_val = np.corrcoef(x_arr, y_arr)[0, 1]
             return float(m), float(c), float(r_val)
-        except (ValueError, TypeError, np.RankWarning) as e:
+        except (ValueError, TypeError, RankWarning) as e:
             logger.error("Regression calculation failed: %s", e)
             total_days = x_list[-1] - x_list[0]
             slope = (y_list[-1] - y_list[0]) / total_days if total_days > 0 else 0.0
@@ -805,7 +820,7 @@ class AdaptiveTDEEService:
             "goal_weekly_rate": goal_rate,
             "goal_type": goal_type,
             "consistency_score": int(round(adh * 100)),
-            "macro_targets": calculate_macro_targets(target, latest_weight),
+            "macro_targets": self.calculate_macro_targets(target, latest_weight),
             "weight_trend": [],
             "consistency": [],
             "calorie_trend": [],
@@ -832,7 +847,7 @@ class AdaptiveTDEEService:
         )
         return int(round((stable / len(last_7)) * 100))
 
-    def _calculate_coaching_target(
+    def calculate_coaching_target(
         self,
         tdee: float,
         profile: "UserProfile | None",
@@ -865,14 +880,14 @@ class AdaptiveTDEEService:
             ideal_target = int(round(tdee + surplus_needed))
 
         # Apply gradual adjustment
-        ideal_target = self._apply_gradual_adjustment(ideal_target, profile)
+        ideal_target = self.apply_gradual_adjustment(ideal_target, profile)
 
         # Apply safety floor
-        ideal_target = self._apply_safety_floor(ideal_target, tdee, profile)
+        ideal_target = self.apply_safety_floor(ideal_target, tdee, profile)
 
         return ideal_target
 
-    def _apply_gradual_adjustment(
+    def apply_gradual_adjustment(
         self, ideal_target: int, profile: "UserProfile | None"
     ) -> int:
         """
@@ -905,7 +920,7 @@ class AdaptiveTDEEService:
         step = self.MAX_WEEKLY_ADJUSTMENT if diff > 0 else -self.MAX_WEEKLY_ADJUSTMENT
         return prev_target + step
 
-    def _apply_safety_floor(
+    def apply_safety_floor(
         self, target: int, tdee: float, profile: "UserProfile | None"
     ) -> int:
         """
@@ -929,3 +944,18 @@ class AdaptiveTDEEService:
             return max(gender_min, int(round(tdee * (1 - self.MAX_DEFICIT_PCT))), target)
 
         return max(gender_min, target)
+
+    def calculate_macro_targets(self, daily_target: int, weight_kg: float) -> dict[str, int]:
+        """
+        Calculates macro targets ensuring total calories = daily_target.
+        Delegates to tdee_utils implementation.
+        """
+        return calc_macros(daily_target, weight_kg)
+
+
+    def filter_outliers(self, logs: list[WeightLog]) -> tuple[list[WeightLog], int]:
+        """
+        Wrapper for outlier filtering logic.
+        Delegates to tdee_outliers implementation.
+        """
+        return filter_outliers(logs)

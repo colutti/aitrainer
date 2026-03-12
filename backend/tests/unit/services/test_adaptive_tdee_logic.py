@@ -52,7 +52,7 @@ class TestAdaptiveTDEELogic:
         """
         logs = self._create_logs([78.0, 76.5, 76.5, 76.5, 76.5])
 
-        filtered, count = service._filter_outliers(logs)
+        filtered, count = service.filter_outliers(logs)
 
         # Should exclude the first one (78.0) because the subsequent logs confirm the drop was a 'step'
         # OR it treats it as a new baseline.
@@ -72,7 +72,7 @@ class TestAdaptiveTDEELogic:
         """
         logs = self._create_logs([76.5, 76.5, 78.0, 76.5, 76.5])
 
-        filtered, count = service._filter_outliers(logs)
+        filtered, count = service.filter_outliers(logs)
 
         assert len(filtered) == 4
         assert count == 1
@@ -88,7 +88,7 @@ class TestAdaptiveTDEELogic:
         # 0.5kg is < 1.0kg limit, so treated as normal
         logs = self._create_logs([80.0, 79.5, 79.0, 78.5, 78.0])
 
-        filtered, count = service._filter_outliers(logs)
+        filtered, count = service.filter_outliers(logs)
 
         assert len(filtered) == 5
         assert count == 0
@@ -103,7 +103,7 @@ class TestAdaptiveTDEELogic:
         """
         logs = self._create_logs([76.5, 78.0, 78.0, 78.0])
 
-        filtered, count = service._filter_outliers(logs)
+        filtered, count = service.filter_outliers(logs)
 
         assert len(filtered) == 3
         assert count == 1
@@ -133,40 +133,40 @@ class TestEnergyPerKg:
 
     def test_no_body_fat_returns_default(self, service):
         """When body_fat_pct is None, fallback to 7700."""
-        result = service._estimate_energy_per_kg(body_fat_pct=None, slope=-0.05)
+        result = service.estimate_energy_per_kg(body_fat_pct=None, slope=-0.05)
         assert result == 7700
 
     def test_average_body_fat_25pct(self, service):
         """At 25% body fat, fat_fraction = 0.75 → energy ≈ 0.75*9400 + 0.25*1800 = 7500."""
-        result = service._estimate_energy_per_kg(body_fat_pct=25.0, slope=-0.05)
+        result = service.estimate_energy_per_kg(body_fat_pct=25.0, slope=-0.05)
         assert 7400 <= result <= 7600
 
     def test_high_body_fat_35pct(self, service):
         """At 35% body fat, fat_fraction = 0.80 → energy ≈ 0.80*9400 + 0.20*1800 = 7880."""
-        result = service._estimate_energy_per_kg(body_fat_pct=35.0, slope=-0.05)
+        result = service.estimate_energy_per_kg(body_fat_pct=35.0, slope=-0.05)
         assert 7700 <= result <= 8100
 
     def test_low_body_fat_15pct(self, service):
         """At 15% body fat, fat_fraction = 0.70 → energy ≈ 0.70*9400 + 0.30*1800 = 7120."""
-        result = service._estimate_energy_per_kg(body_fat_pct=15.0, slope=-0.05)
+        result = service.estimate_energy_per_kg(body_fat_pct=15.0, slope=-0.05)
         assert 6900 <= result <= 7300
 
     def test_very_low_body_fat_clamps_at_50pct(self, service):
         """Fat fraction never goes below 0.50."""
-        result = service._estimate_energy_per_kg(body_fat_pct=5.0, slope=-0.05)
+        result = service.estimate_energy_per_kg(body_fat_pct=5.0, slope=-0.05)
         # 0.50 * 9400 + 0.50 * 1800 = 5600
         assert result >= 5600
 
     def test_very_high_body_fat_clamps_at_90pct(self, service):
         """Fat fraction never goes above 0.90."""
-        result = service._estimate_energy_per_kg(body_fat_pct=60.0, slope=-0.05)
+        result = service.estimate_energy_per_kg(body_fat_pct=60.0, slope=-0.05)
         # 0.90 * 9400 + 0.10 * 1800 = 8640
         assert result <= 8640
 
     def test_rapid_loss_reduces_fat_fraction(self, service):
         """Losing > 0.5 kg/week penalizes fat fraction (more lean loss)."""
-        normal = service._estimate_energy_per_kg(body_fat_pct=25.0, slope=-0.05)
-        rapid = service._estimate_energy_per_kg(body_fat_pct=25.0, slope=-0.15)
+        normal = service.estimate_energy_per_kg(body_fat_pct=25.0, slope=-0.05)
+        rapid = service.estimate_energy_per_kg(body_fat_pct=25.0, slope=-0.15)
         # Rapid loss should have lower energy per kg (more lean tissue lost)
         assert rapid < normal
 
@@ -216,10 +216,8 @@ class TestCoachingTargetNoPenalty:
         """Even when actual rate (0.2 kg/week) < goal rate (0.5 kg/week), NO extra penalty. Target = TDEE - deficit_needed."""
         profile = self._make_profile(goal_type="lose", weekly_rate=0.5)
         tdee = 2200.0
-        avg_calories = 1800.0
-        weekly_change = -0.2  # Only losing 0.2 kg/week (off-track)
 
-        target = service._calculate_coaching_target(tdee, avg_calories, weekly_change, profile)
+        target = service.calculate_coaching_target(tdee=tdee, profile=profile)
 
         # Target should be TDEE - (0.5 * 1100) = 2200 - 550 = 1650
         # NOT 2200 - 550 - (0.3 * 1100) = 1320 with penalty
@@ -230,10 +228,8 @@ class TestCoachingTargetNoPenalty:
         """Even when not gaining fast enough, no extra surplus penalty."""
         profile = self._make_profile(goal_type="gain", weekly_rate=0.5)
         tdee = 2200.0
-        avg_calories = 2500.0
-        weekly_change = 0.2  # Only gaining 0.2 kg/week (off-track)
 
-        target = service._calculate_coaching_target(tdee, avg_calories, weekly_change, profile)
+        target = service.calculate_coaching_target(tdee=tdee, profile=profile)
 
         # Target should be TDEE + (0.5 * 1100) = 2200 + 550 = 2750
         assert target <= 2800, f"Target {target} is too high — penalty was applied!"
@@ -242,12 +238,12 @@ class TestCoachingTargetNoPenalty:
     def test_maintain_returns_tdee(self, service):
         """Maintain goal returns TDEE directly."""
         profile = self._make_profile(goal_type="maintain")
-        target = service._calculate_coaching_target(2200.0, 2200.0, 0.0, profile)
+        target = service.calculate_coaching_target(tdee=2200.0, profile=profile)
         assert target == 2200
 
     def test_no_profile_returns_tdee(self, service):
         """No profile returns TDEE directly."""
-        target = service._calculate_coaching_target(2200.0, 2200.0, 0.0, None)
+        target = service.calculate_coaching_target(tdee=2200.0, profile=None)
         assert target == 2200
 
 
@@ -274,39 +270,39 @@ class TestGradualAdjustment:
     def test_first_time_no_previous_target(self, service):
         """First time: return ideal_target directly (no capping)."""
         profile = self._make_profile(tdee_last_target=None)
-        result = service._apply_gradual_adjustment(1650, profile)
+        result = service.apply_gradual_adjustment(1650, profile)
         assert result == 1650
 
     def test_small_change_within_100_passes_through(self, service):
         """Change of 80 kcal (< 100) passes through unchanged."""
         profile = self._make_profile(tdee_last_target=1600, tdee_last_check_in="2025-01-01")
-        result = service._apply_gradual_adjustment(1680, profile)
+        result = service.apply_gradual_adjustment(1680, profile)
         assert result == 1680
 
     def test_large_decrease_capped_at_minus_100(self, service):
         """Change of -300 kcal capped to -100."""
         profile = self._make_profile(tdee_last_target=1800, tdee_last_check_in="2025-01-01")
-        result = service._apply_gradual_adjustment(1500, profile)
+        result = service.apply_gradual_adjustment(1500, profile)
         assert result == 1700  # 1800 - 100
 
     def test_large_increase_capped_at_plus_100(self, service):
         """Change of +250 kcal capped to +100."""
         profile = self._make_profile(tdee_last_target=1500, tdee_last_check_in="2025-01-01")
-        result = service._apply_gradual_adjustment(1750, profile)
+        result = service.apply_gradual_adjustment(1750, profile)
         assert result == 1600  # 1500 + 100
 
     def test_check_in_too_recent_returns_previous(self, service):
         """If last check-in was < 7 days ago, return previous target."""
         yesterday = (date.today() - timedelta(days=1)).isoformat()
         profile = self._make_profile(tdee_last_target=1600, tdee_last_check_in=yesterday)
-        result = service._apply_gradual_adjustment(1400, profile)
+        result = service.apply_gradual_adjustment(1400, profile)
         assert result == 1600  # No change
 
     def test_check_in_exactly_7_days_allows_adjustment(self, service):
         """If last check-in was exactly 7 days ago, allow adjustment."""
         seven_days_ago = (date.today() - timedelta(days=7)).isoformat()
         profile = self._make_profile(tdee_last_target=1800, tdee_last_check_in=seven_days_ago)
-        result = service._apply_gradual_adjustment(1500, profile)
+        result = service.apply_gradual_adjustment(1500, profile)
         assert result == 1700  # 1800 - 100
 
 
@@ -333,45 +329,45 @@ class TestSafetyFloor:
     def test_male_floor_1500(self, service):
         """Male target should never go below 1500."""
         profile = self._make_profile(gender="Masculino")
-        result = service._apply_safety_floor(1200, 2000.0, profile)
+        result = service.apply_safety_floor(1200, 2000.0, profile)
         assert result == 1500
 
     def test_female_floor_1200(self, service):
         """Female target should never go below 1200."""
         profile = self._make_profile(gender="Feminino")
         # With TDEE=1600, 30% deficit = 1120. Female floor = 1200. Floor wins.
-        result = service._apply_safety_floor(1000, 1600.0, profile)
+        result = service.apply_safety_floor(1000, 1600.0, profile)
         assert result == 1200
 
     def test_max_deficit_30pct(self, service):
         """Target should not exceed 30% deficit from TDEE."""
         profile = self._make_profile(gender="Masculino")
         # TDEE=2500, 30% deficit = 1750. Target 1500 is 40% deficit → clamp to 1750
-        result = service._apply_safety_floor(1500, 2500.0, profile)
+        result = service.apply_safety_floor(1500, 2500.0, profile)
         assert result == 1750
 
     def test_gender_floor_wins_over_deficit_pct(self, service):
         """When both apply, the HIGHER floor wins."""
         profile = self._make_profile(gender="Masculino")
         # TDEE=1800, 30% deficit = 1260. Male floor = 1500. Floor wins.
-        result = service._apply_safety_floor(1100, 1800.0, profile)
+        result = service.apply_safety_floor(1100, 1800.0, profile)
         assert result == 1500
 
     def test_target_above_all_floors_unchanged(self, service):
         """Target above all floors passes through unchanged."""
         profile = self._make_profile(gender="Masculino")
-        result = service._apply_safety_floor(1900, 2500.0, profile)
+        result = service.apply_safety_floor(1900, 2500.0, profile)
         assert result == 1900
 
     def test_no_profile_uses_generic_floor(self, service):
         """Without profile, use MIN_TDEE (1200) as generic floor."""
-        result = service._apply_safety_floor(1000, 2000.0, None)
+        result = service.apply_safety_floor(1000, 2000.0, None)
         assert result == 1200
 
     def test_gain_goal_no_deficit_floor(self, service):
         """For gain goals, deficit floor should not apply (target > TDEE)."""
         profile = self._make_profile(gender="Masculino", goal_type="gain")
-        result = service._apply_safety_floor(2800, 2500.0, profile)
+        result = service.apply_safety_floor(2800, 2500.0, profile)
         assert result == 2800
 
 
@@ -405,7 +401,7 @@ class TestModifiedZScoreOutlier:
                    82.0,  # Statistical outlier
                    76.0, 76.1, 75.9, 76.2, 76.0, 75.8]
         logs = self._create_logs(weights)
-        filtered, count = service._filter_outliers(logs)
+        filtered, count = service.filter_outliers(logs)
         assert count >= 1
         # The 82.0 should be removed
         assert all(log.weight_kg < 80.0 for log in filtered)
@@ -415,7 +411,7 @@ class TestModifiedZScoreOutlier:
         weights = [76.0, 76.2, 75.8, 76.1, 75.9, 76.3, 76.0,
                    75.7, 76.1, 76.2, 75.8, 76.0, 76.1, 75.9]
         logs = self._create_logs(weights)
-        filtered, count = service._filter_outliers(logs)
+        filtered, count = service.filter_outliers(logs)
         assert count == 0
         assert len(filtered) == 14
 
@@ -588,7 +584,7 @@ class TestNutritionLogPartialLogged:
 
 
 class TestInterpolateWeightGaps:
-    """Tests for the _interpolate_weight_gaps method."""
+    """Tests for the interpolate_weight_gaps method."""
 
     @pytest.fixture
     def mock_db(self):
@@ -615,20 +611,20 @@ class TestInterpolateWeightGaps:
 
     def test_empty_list_returns_empty_dict(self, service):
         """Empty weight log list should return empty dict."""
-        result = service._interpolate_weight_gaps([])
+        result = service.interpolate_weight_gaps([])
         assert result == {}
 
     def test_single_log_returns_single_day(self, service):
         """Single weight log should return dict with one entry."""
         logs = self._create_logs([80.0])
-        result = service._interpolate_weight_gaps(logs)
+        result = service.interpolate_weight_gaps(logs)
         assert len(result) == 1
         assert result[date(2025, 1, 1)] == 80.0
 
     def test_consecutive_days_no_gap(self, service):
         """Consecutive days with no gap should return all dates."""
         logs = self._create_logs([80.0, 79.8, 79.6])
-        result = service._interpolate_weight_gaps(logs)
+        result = service.interpolate_weight_gaps(logs)
         assert len(result) == 3
         assert result[date(2025, 1, 1)] == 80.0
         assert result[date(2025, 1, 2)] == 79.8
@@ -641,7 +637,7 @@ class TestInterpolateWeightGaps:
             WeightLog(user_email="test@test.com", date=start, weight_kg=80.0),
             WeightLog(user_email="test@test.com", date=start + timedelta(days=2), weight_kg=78.0),
         ]
-        result = service._interpolate_weight_gaps(logs)
+        result = service.interpolate_weight_gaps(logs)
         assert len(result) == 3
         assert result[start] == 80.0
         assert result[start + timedelta(days=1)] == 79.0  # Halfway
@@ -654,7 +650,7 @@ class TestInterpolateWeightGaps:
             WeightLog(user_email="test@test.com", date=start, weight_kg=80.0),
             WeightLog(user_email="test@test.com", date=start + timedelta(days=3), weight_kg=77.0),
         ]
-        result = service._interpolate_weight_gaps(logs)
+        result = service.interpolate_weight_gaps(logs)
         assert len(result) == 4
         assert result[start] == 80.0
         assert abs(result[start + timedelta(days=1)] - 79.0) < 0.01
@@ -668,7 +664,7 @@ class TestInterpolateWeightGaps:
             WeightLog(user_email="test@test.com", date=start, weight_kg=80.0),
             WeightLog(user_email="test@test.com", date=start + timedelta(days=14), weight_kg=73.6),
         ]
-        result = service._interpolate_weight_gaps(logs)
+        result = service.interpolate_weight_gaps(logs)
         # Should have 15 entries (day 0 to day 14)
         assert len(result) == 15
         assert result[start] == 80.0
@@ -683,7 +679,7 @@ class TestInterpolateWeightGaps:
             WeightLog(user_email="test@test.com", date=start, weight_kg=80.0),
             WeightLog(user_email="test@test.com", date=start + timedelta(days=15), weight_kg=73.0),
         ]
-        result = service._interpolate_weight_gaps(logs)
+        result = service.interpolate_weight_gaps(logs)
         assert len(result) == 16
         assert result[start] == 80.0
         # Gap between day 1-14 should use last known value (80.0)
@@ -699,7 +695,7 @@ class TestInterpolateWeightGaps:
             WeightLog(user_email="test@test.com", date=start + timedelta(days=7), weight_kg=79.0),
             WeightLog(user_email="test@test.com", date=start + timedelta(days=20), weight_kg=79.0),
         ]
-        result = service._interpolate_weight_gaps(logs)
+        result = service.interpolate_weight_gaps(logs)
         # First segment (7 days): interpolated
         # Gap between day 7-20 (13 days): interpolated
         assert len(result) == 21
@@ -714,7 +710,7 @@ class TestInterpolateWeightGaps:
             WeightLog(user_email="test@test.com", date=start, weight_kg=75.0),
             WeightLog(user_email="test@test.com", date=start + timedelta(days=5), weight_kg=75.0),
         ]
-        result = service._interpolate_weight_gaps(logs)
+        result = service.interpolate_weight_gaps(logs)
         assert len(result) == 6
         for val in result.values():
             assert val == 75.0
@@ -727,7 +723,7 @@ class TestInterpolateWeightGaps:
             WeightLog(user_email="test@test.com", date=start + timedelta(days=7), weight_kg=76.0),
             WeightLog(user_email="test@test.com", date=start + timedelta(days=14), weight_kg=80.0),
         ]
-        result = service._interpolate_weight_gaps(logs)
+        result = service.interpolate_weight_gaps(logs)
         assert len(result) == 15
         # Check V pattern
         assert result[start] == 80.0
@@ -743,7 +739,7 @@ class TestInterpolateWeightGaps:
             WeightLog(user_email="test@test.com", date=start, weight_kg=80.0),
             WeightLog(user_email="test@test.com", date=start + timedelta(days=10), weight_kg=77.0),
         ]
-        result = service._interpolate_weight_gaps(logs)
+        result = service.interpolate_weight_gaps(logs)
         assert len(result) == 11
         for i in range(11):
             assert (start + timedelta(days=i)) in result
@@ -755,7 +751,7 @@ class TestInterpolateWeightGaps:
             WeightLog(user_email="test@test.com", date=start, weight_kg=80.55),
             WeightLog(user_email="test@test.com", date=start + timedelta(days=2), weight_kg=79.45),
         ]
-        result = service._interpolate_weight_gaps(logs)
+        result = service.interpolate_weight_gaps(logs)
         assert result[start] == 80.55
         # Mid-point should be ~80.0
         assert abs(result[start + timedelta(days=1)] - 80.0) < 0.01
@@ -769,7 +765,7 @@ class TestInterpolateWeightGaps:
             WeightLog(user_email="test@test.com", date=start + timedelta(days=2), weight_kg=78.0),
             WeightLog(user_email="test@test.com", date=start, weight_kg=80.0),
         ]
-        result = service._interpolate_weight_gaps(logs)
+        result = service.interpolate_weight_gaps(logs)
         assert len(result) == 3
         assert result[start] == 80.0
         assert result[start + timedelta(days=2)] == 78.0
@@ -782,7 +778,7 @@ class TestInterpolateWeightGaps:
             WeightLog(user_email="test@test.com", date=start + timedelta(days=5), weight_kg=77.0),
         ]
         # With max_gap=3, a 5-day gap should NOT interpolate
-        result = service._interpolate_weight_gaps(logs, max_gap_days=3)
+        result = service.interpolate_weight_gaps(logs, max_gap_days=3)
         assert result[start] == 80.0
         assert result[start + timedelta(days=1)] == 80.0  # Not interpolated
         assert result[start + timedelta(days=5)] == 77.0
@@ -794,7 +790,7 @@ class TestInterpolateWeightGaps:
             WeightLog(user_email="test@test.com", date=start, weight_kg=80.0),
             WeightLog(user_email="test@test.com", date=start + timedelta(days=3), weight_kg=77.0),
         ]
-        result = service._interpolate_weight_gaps(logs)
+        result = service.interpolate_weight_gaps(logs)
         dates = list(result.keys())
         assert dates == sorted(dates)
 
@@ -805,7 +801,7 @@ class TestInterpolateWeightGaps:
             WeightLog(user_email="test@test.com", date=start, weight_kg=100.0),
             WeightLog(user_email="test@test.com", date=start + timedelta(days=4), weight_kg=80.0),
         ]
-        result = service._interpolate_weight_gaps(logs)
+        result = service.interpolate_weight_gaps(logs)
         assert len(result) == 5
         assert result[start] == 100.0
         assert result[start + timedelta(days=2)] == 90.0
@@ -834,7 +830,7 @@ class TestComputeTDEEObservations:
             for i in range(7)
         }
 
-        observations = service._compute_tdee_observations(
+        observations = service.compute_tdee_observations(
             daily_trend, nutrition_by_date, 7700
         )
 
@@ -851,7 +847,7 @@ class TestComputeTDEEObservations:
             for i in range(10)
         }
 
-        observations = service._compute_tdee_observations(
+        observations = service.compute_tdee_observations(
             daily_trend, nutrition_by_date, 7700
         )
 
@@ -873,7 +869,7 @@ class TestComputeTDEEObservations:
             date(2025, 1, 3): 2100,
         }
 
-        observations = service._compute_tdee_observations(
+        observations = service.compute_tdee_observations(
             daily_trend, nutrition_by_date, 7700
         )
 
@@ -892,7 +888,7 @@ class TestComputeTDEEObservations:
             for i in range(5)
         }
 
-        observations = service._compute_tdee_observations(
+        observations = service.compute_tdee_observations(
             daily_trend, nutrition_by_date, 7700
         )
 
@@ -913,7 +909,7 @@ class TestComputeTDEEObservations:
 
         # Com energy_per_kg=20000 (artificialmente alto) e mudança de trend,
         # vamos gerar observações muito altas ou baixas
-        observations = service._compute_tdee_observations(
+        observations = service.compute_tdee_observations(
             daily_trend, nutrition_by_date, 20000
         )
 
@@ -937,7 +933,7 @@ class TestComputeTDEEObservations:
             daily_trend[date(2025, 1, 1) + timedelta(days=i)] = trend_weight
             nutrition_by_date[date(2025, 1, 1) + timedelta(days=i)] = 2100
 
-        observations = service._compute_tdee_observations(
+        observations = service.compute_tdee_observations(
             daily_trend, nutrition_by_date, 7700
         )
 
@@ -987,7 +983,7 @@ class TestComputeTDEEObservations7d:
         daily_trend = self._make_daily_trend(start, [75.0, 74.8, 74.6, 74.4, 74.2, 74.0, 73.8])
         nutrition_by_date = self._make_nutrition_by_date(start, [2000] * 7)
 
-        observations = service._compute_tdee_observations(
+        observations = service.compute_tdee_observations(
             daily_trend, nutrition_by_date, energy_per_kg=7700
         )
 
@@ -1016,7 +1012,7 @@ class TestComputeTDEEObservations7d:
         )
         nutrition_by_date = self._make_nutrition_by_date(start, [2100] * 10)
 
-        observations = service._compute_tdee_observations(
+        observations = service.compute_tdee_observations(
             daily_trend, nutrition_by_date, energy_per_kg=7700
         )
 
@@ -1044,7 +1040,7 @@ class TestComputeTDEEObservations7d:
             start + timedelta(days=2): 2100,
         }
 
-        observations = service._compute_tdee_observations(
+        observations = service.compute_tdee_observations(
             daily_trend, nutrition_by_date, energy_per_kg=7700
         )
 
@@ -1077,7 +1073,7 @@ class TestComputeTDEEObservations7d:
             start + timedelta(days=4): 2100,
         }
 
-        observations = service._compute_tdee_observations(
+        observations = service.compute_tdee_observations(
             daily_trend, nutrition_by_date, energy_per_kg=7700
         )
 
@@ -1101,7 +1097,7 @@ class TestComputeTDEEObservations7d:
 
         # Use extreme energy_per_kg to force outlier scenarios
         # High energy_per_kg will create low TDEE observations
-        observations_low = service._compute_tdee_observations(
+        observations_low = service.compute_tdee_observations(
             daily_trend, nutrition_by_date, energy_per_kg=20000
         )
 
@@ -1132,7 +1128,7 @@ class TestComputeTDEEObservations7d:
         daily_trend = self._make_daily_trend(start, daily_weights)
         nutrition_by_date = self._make_nutrition_by_date(start, [2200] * 20)
 
-        observations = service._compute_tdee_observations(
+        observations = service.compute_tdee_observations(
             daily_trend, nutrition_by_date, energy_per_kg=7700
         )
 
@@ -1174,7 +1170,7 @@ class TestComputeTDEEFromObservations:
 
 
 class TestComputeDailyTrend:
-    """Tests for the _compute_daily_trend method."""
+    """Tests for the compute_daily_trend method."""
 
     @pytest.fixture
     def mock_db(self):
@@ -1186,13 +1182,13 @@ class TestComputeDailyTrend:
 
     def test_empty_dict_returns_empty_dict(self, service):
         """Empty daily weight series should return empty dict."""
-        result = service._compute_daily_trend({})
+        result = service.compute_daily_trend({})
         assert result == {}
 
     def test_single_day_returns_first_weight(self, service):
         """Single day should return weight as-is (initialization)."""
         daily_weights = {date(2025, 1, 1): 80.0}
-        result = service._compute_daily_trend(daily_weights)
+        result = service.compute_daily_trend(daily_weights)
         assert len(result) == 1
         assert result[date(2025, 1, 1)] == 80.0
 
@@ -1202,7 +1198,7 @@ class TestComputeDailyTrend:
             date(2025, 1, 1): 80.0,
             date(2025, 1, 2): 79.0,
         }
-        result = service._compute_daily_trend(daily_weights)
+        result = service.compute_daily_trend(daily_weights)
         assert len(result) == 2
         assert result[date(2025, 1, 1)] == 80.0
         # trend_day2 = 0.0909*79 + 0.9091*80 ≈ 79.909
@@ -1218,7 +1214,7 @@ class TestComputeDailyTrend:
             date(2025, 1, 3): 75.0,
             date(2025, 1, 4): 75.0,
         }
-        result = service._compute_daily_trend(daily_weights)
+        result = service.compute_daily_trend(daily_weights)
         for val in result.values():
             # With EMA, floating point precision may cause tiny differences
             assert abs(val - 75.0) < 0.0001
@@ -1230,7 +1226,7 @@ class TestComputeDailyTrend:
             date(2025, 1, 2): 80.0,
             date(2025, 1, 3): 75.0,  # Sharp drop
         }
-        result = service._compute_daily_trend(daily_weights)
+        result = service.compute_daily_trend(daily_weights)
         # Trend on day 3 should be HIGHER than the actual weight (lag)
         assert result[date(2025, 1, 3)] > 75.0
         assert result[date(2025, 1, 3)] < 80.0
@@ -1248,7 +1244,7 @@ class TestComputeDailyTrend:
             date(2025, 1, 1): 85.5,
             date(2025, 1, 2): 84.0,
         }
-        result = service._compute_daily_trend(daily_weights)
+        result = service.compute_daily_trend(daily_weights)
         assert result[date(2025, 1, 1)] == 85.5
 
     def test_trend_converges_toward_new_level(self, service):
@@ -1262,7 +1258,7 @@ class TestComputeDailyTrend:
             else:
                 daily_weights[base_date + timedelta(days=i)] = 75.0
 
-        result = service._compute_daily_trend(daily_weights)
+        result = service.compute_daily_trend(daily_weights)
 
         # At day 6, trend should be between 80 and 75, moving toward 75
         # At day 45 (40 days at 75kg), trend should be closer to 75 (with 21-day window)
@@ -1280,7 +1276,7 @@ class TestComputeDailyTrend:
             date(2025, 1, 3): 78.0,
             date(2025, 1, 2): 79.0,
         }
-        result = service._compute_daily_trend(daily_weights)
+        result = service.compute_daily_trend(daily_weights)
         dates = list(result.keys())
         assert dates == sorted(dates)
 
@@ -1292,7 +1288,7 @@ class TestComputeDailyTrend:
             date(2025, 1, 3): 80.0,
             date(2025, 1, 4): 76.0,
         }
-        result = service._compute_daily_trend(daily_weights)
+        result = service.compute_daily_trend(daily_weights)
 
         # Calculate day-to-day changes
         raw_changes = []
@@ -1320,7 +1316,7 @@ class TestComputeDailyTrend:
         for i in range(60, 100):
             daily_weights[base_date + timedelta(days=i)] = 75.0
 
-        result = service._compute_daily_trend(daily_weights)
+        result = service.compute_daily_trend(daily_weights)
 
         # After ~40 days at 75kg, trend should be moving toward 75
         # With EMA span=21, convergence is gradual
@@ -1341,7 +1337,7 @@ class TestComputeDailyTrend:
             w = 78.0 if (i % 2 == 0) else 82.0
             daily_weights[base_date + timedelta(days=i)] = w
 
-        result = service._compute_daily_trend(daily_weights)
+        result = service.compute_daily_trend(daily_weights)
 
         # Trend should be around 80 (the mean), not oscillating
         trend_values = list(result.values())
@@ -1355,7 +1351,7 @@ class TestComputeDailyTrend:
             date(2025, 1, 1): 80.0,
             date(2025, 1, 2): 79.0,
         }
-        result = service._compute_daily_trend(daily_weights)
+        result = service.compute_daily_trend(daily_weights)
         dates = list(result.keys())
         assert dates == [date(2025, 1, 1), date(2025, 1, 2), date(2025, 1, 3)]
 

@@ -23,6 +23,7 @@ export interface AdminUser {
   last_login?: string;
   subscription_plan?: string;
   custom_message_limit?: number | null;
+  custom_trial_days?: number | null;
   messages_sent_this_month?: number;
   total_messages_sent?: number;
   current_billing_cycle_start?: string;

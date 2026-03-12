@@ -10,6 +10,7 @@ from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from pymongo.errors import PyMongoError
 
 # Project imports
 from src.core.deps import get_admin_db
@@ -34,7 +35,9 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours for admin
 
 # CORS configuration
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3001,http://localhost:5173").split(",")
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS", "http://localhost:3001,http://localhost:5173"
+).split(",")
 
 app.add_middleware(
     CORSMiddleware,
@@ -46,25 +49,31 @@ app.add_middleware(
 
 # Models
 class LoginRequest(BaseModel):
+    """Login request model for admin authentication"""
     email: str
     password: str
 
 class Token(BaseModel):
+    """Token response model"""
     token: str
 
 class UserResponse(BaseModel):
+    """User response model with basic profile information"""
     email: str
     role: str
     name: Optional[str] = None
 
 # Helpers
 def verify_password(plain_password: str, hashed_password: str):
+    """Verify if the plain password matches the hashed password"""
     return bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
 
 def get_password_hash(password: str):
+    """Generate a bcrypt hash of the given password"""
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 def create_access_token(data: dict):
+    """Create a new JWT access token for an admin user"""
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
@@ -100,33 +109,23 @@ def startup_event():
             })
             print(f"👤 Created default admin: {default_email}")
 
-    except Exception as e: # pylint: disable=broad-exception-caught
+    except PyMongoError as e:
+        # We catch database exceptions here to prevent the application from crashing
+        # on startup if the admin initialization fails.
         print(f"⚠️  Admin collection init warning: {e}")
 
 # Admin authentication middleware
-@app.middleware("http")
-async def admin_auth_middleware(request: Request, call_next): # pylint: disable=too-many-return-statements
-    """Verify JWT token and X-Admin-Key header for admin endpoints"""
-
-    # Skip auth for OPTIONS (CORS preflight) and public endpoints
-    if request.method == "OPTIONS" or request.url.path in ["/health", "/docs", "/openapi.json", "/user/login"]:
-        return await call_next(request)
-
+async def _verify_admin_access(request: Request) -> Optional[JSONResponse]:
+    """Helper to verify admin access and return error response if invalid."""
     # Check X-Admin-Key header (Shield protection)
     admin_key = request.headers.get("X-Admin-Key")
     if not ADMIN_SECRET_KEY or admin_key != ADMIN_SECRET_KEY:
-        return JSONResponse(
-            status_code=status.HTTP_403_FORBIDDEN,
-            content={"detail": "Invalid admin shield key"}
-        )
+        return JSONResponse(status_code=403, content={"detail": "Invalid admin shield key"})
 
     # Verify JWT Token
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"detail": "Missing or invalid token"}
-        )
+        return JSONResponse(status_code=401, content={"detail": "Missing or invalid token"})
 
     token = auth_header.split(" ")[1]
     try:
@@ -142,8 +141,22 @@ async def admin_auth_middleware(request: Request, call_next): # pylint: disable=
             return JSONResponse(status_code=403, content={"detail": "Admin access required"})
 
         request.state.user = admin_user
+        return None
     except jwt.PyJWTError:
         return JSONResponse(status_code=401, content={"detail": "Could not validate credentials"})
+
+@app.middleware("http")
+async def admin_auth_middleware(request: Request, call_next):
+    """Verify JWT token and X-Admin-Key header for admin endpoints"""
+
+    # Skip auth for OPTIONS (CORS preflight) and public endpoints
+    is_public = request.url.path in ["/health", "/docs", "/openapi.json", "/user/login"]
+    if request.method == "OPTIONS" or is_public:
+        return await call_next(request)
+
+    error_response = await _verify_admin_access(request)
+    if error_response:
+        return error_response
 
     return await call_next(request)
 

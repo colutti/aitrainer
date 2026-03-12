@@ -1,20 +1,31 @@
+"""
+This module defines the subscription plans and their details.
+"""
+
 from enum import Enum
 from pydantic import BaseModel
 
+
 class SubscriptionPlan(str, Enum):
+    """Enumeration of available subscription plans."""
+
     FREE = "Free"
     BASIC = "Basic"
     PRO = "Pro"
     PREMIUM = "Premium"
 
+
 class PlanDetails(BaseModel):
+    """Details and limits for a specific subscription plan."""
+
     name: str
     monthly_limit: int | None  # None for no monthly limit
-    total_limit: int | None   # None for no total limit
+    total_limit: int | None  # None for no total limit
     daily_limit: int | None
     validity_days: int | None
     allowed_trainers: list[str] | None
     price_usd: float
+
 
 SUBSCRIPTION_PLANS = {
     SubscriptionPlan.FREE: PlanDetails(
@@ -24,7 +35,7 @@ SUBSCRIPTION_PLANS = {
         daily_limit=20,
         validity_days=7,
         allowed_trainers=["gymbro"],
-        price_usd=0.0
+        price_usd=0.0,
     ),
     SubscriptionPlan.BASIC: PlanDetails(
         name="Basic",
@@ -33,7 +44,7 @@ SUBSCRIPTION_PLANS = {
         daily_limit=None,
         validity_days=None,
         allowed_trainers=None,
-        price_usd=4.99
+        price_usd=4.99,
     ),
     SubscriptionPlan.PRO: PlanDetails(
         name="Pro",
@@ -42,7 +53,7 @@ SUBSCRIPTION_PLANS = {
         daily_limit=None,
         validity_days=None,
         allowed_trainers=None,
-        price_usd=9.99
+        price_usd=9.99,
     ),
     SubscriptionPlan.PREMIUM: PlanDetails(
         name="Premium",
@@ -51,6 +62,6 @@ SUBSCRIPTION_PLANS = {
         daily_limit=None,
         validity_days=None,
         allowed_trainers=None,
-        price_usd=19.99
+        price_usd=19.99,
     ),
 }

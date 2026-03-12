@@ -234,7 +234,7 @@ class TestUpdateEventTool:
         mock_repo_class.return_value = mock_repo
 
         tool = create_update_event_tool(mock_db, user_email)
-        tool.invoke({"event_id": "event-123", "clear_date": True})
+        tool.invoke({"event_id": "event-123", "date": "NONE"})
 
         call_args = mock_repo.update_event.call_args
         _, _, update_data = call_args[0]

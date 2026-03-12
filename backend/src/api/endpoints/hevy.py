@@ -4,9 +4,9 @@ API endpoints for Hevy integration.
 import asyncio
 import secrets
 from datetime import datetime
-from typing import Annotated, Optional
+from typing import Annotated, Optional, Any
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
@@ -21,6 +21,20 @@ router = APIRouter()
 CurrentUser = Annotated[str, Depends(verify_token)]
 HevyServiceDep = Annotated[HevyService, Depends(get_hevy_service)]
 BrainDep = Annotated[AITrainerBrain, Depends(get_ai_trainer_brain)]
+
+
+class WebhookDeps:  # pylint: disable=too-few-public-methods
+    """Combines dependencies for Hevy webhook to reduce argument count."""
+
+    def __init__(
+        self,
+        brain: BrainDep,
+        hevy_service: HevyServiceDep,
+        background_tasks: BackgroundTasks,
+    ):
+        self.brain = brain
+        self.hevy_service = hevy_service
+        self.background_tasks = background_tasks
 
 
 class ValidateRequest(BaseModel):
@@ -165,104 +179,102 @@ class WebhookGenerateResponse(BaseModel):
 # ==================== WEBHOOK PROCESSING ====================
 
 
+async def _fetch_workout_with_retry(
+    api_key: str, workout_id: str, hevy_service: HevyService
+) -> Optional[dict]:
+    """Helper to fetch workout with retries."""
+    max_retries = 3
+    retry_delay = 5
+    for attempt in range(max_retries):
+        if attempt > 0:
+            logger.info(
+                "[Webhook BG] Retrying in %ss (%d/%d)",
+                retry_delay, attempt + 1, max_retries
+            )
+            await asyncio.sleep(retry_delay)
+        hevy_workout = await hevy_service.fetch_workout_by_id(api_key, workout_id)
+        if hevy_workout:
+            return hevy_workout
+    return None
+
+
+async def _handle_workout_notification(user_email: str, workout_log: Any, brain: AITrainerBrain):
+    """Handles Telegram notification after a workout is synced."""
+    profile = brain.get_user_profile(user_email)
+    if not profile:
+        return
+
+    telegram_link = brain.database.telegram.get_link_by_email(user_email)
+    if not telegram_link:
+        return
+
+    if not getattr(profile, "telegram_notify_on_workout", True):
+        return
+
+    # Gerar resumo do treino
+    exercises_summary = ", ".join([ex.name for ex in workout_log.exercises[:3]])
+    if len(workout_log.exercises) > 3:
+        exercises_summary += f" (+ {len(workout_log.exercises) - 3} outros)"
+
+    workout_summary = (
+        f"{workout_log.workout_type} em {workout_log.date.strftime('%d/%m/%Y')} - "
+        f"{len(workout_log.exercises)} exercícios: {exercises_summary}"
+    )
+
+    # Gerar análise pela IA
+    logger.info("[Webhook BG] Requesting AI analysis for %s", user_email)
+    analysis = await brain.analyze_workout_async(user_email, workout_summary)
+
+    if not analysis or not analysis.strip():
+        logger.warning("[Webhook BG] AI analysis empty for %s, skipping notification", user_email)
+        return
+
+    # Enviar via Telegram
+    telegram_service = get_telegram_service()
+    await telegram_service.send_notification(user_email, analysis)
+
+
 async def process_webhook_async(
-    user_email: str, api_key: Optional[str], workout_id: str, hevy_service: HevyService
+    user_email: str,
+    api_key: Optional[str],
+    workout_id: str,
+    hevy_service: HevyService,
+    brain: AITrainerBrain,
 ):
     """
     Background task to process Hevy webhook.
     Fetches workout, transforms and saves.
     """
-    # pylint: disable=too-many-locals,too-many-branches,broad-exception-caught
     logger.info(
         "[Webhook BG] Starting background processing for user %s, workout %s",
         user_email, workout_id
     )
 
     if not api_key:
-        logger.error(
-            "[Webhook BG] FAILED: Missing Hevy API key. Integration requires API Key to fetch details.",
-        )
+        logger.error("[Webhook BG] FAILED: Missing Hevy API key.")
         return
 
     try:
-        # 1. Fetch from Hevy with retry
-        max_retries = 3
-        retry_delay = 5  # seconds
-        hevy_workout = None
-
-        for attempt in range(max_retries):
-            if attempt > 0:
-                logger.info(
-                    "[Webhook BG] Retrying in %ss (%d/%d)",
-                    retry_delay, attempt + 1, max_retries
-                )
-                await asyncio.sleep(retry_delay)
-
-            hevy_workout = await hevy_service.fetch_workout_by_id(api_key, workout_id)
-            if hevy_workout:
-                break
-
+        hevy_workout = await _fetch_workout_with_retry(api_key, workout_id, hevy_service)
         if not hevy_workout:
             logger.error("[Webhook BG] Workout %s not found in Hevy", workout_id)
             return
 
-        # 2. Transform
         workout_log = hevy_service.transform_to_workout_log(hevy_workout, user_email)
         if not workout_log:
             logger.error("[Webhook BG] Failed to transform workout %s", workout_id)
             return
 
-        # 3. Save
         hevy_service.workout_repository.save_log(workout_log)
-        logger.info(
-            "[Webhook BG] SUCCESS: Workout %s synced for %s. Data saved to MongoDB.",
-            workout_id, user_email
-        )
+        logger.info("[Webhook BG] SUCCESS: Workout %s synced for %s.", workout_id, user_email)
 
-        # === NOVA LÓGICA: Notificação Telegram ===
         try:
-            brain = get_ai_trainer_brain()
-            profile = brain.get_user_profile(user_email)
-
-            if not profile:
-                return
-
-            telegram_link = brain.database.telegram.get_link_by_email(user_email)
-
-            if not telegram_link:
-                return
-
-            if not getattr(profile, "telegram_notify_on_workout", True):
-                return
-
-            # Gerar resumo do treino
-            exercises_summary = ", ".join([ex.name for ex in workout_log.exercises[:3]])
-            if len(workout_log.exercises) > 3:
-                exercises_summary += f" (+ {len(workout_log.exercises) - 3} outros)"
-
-            workout_summary = (
-                f"{workout_log.workout_type} em {workout_log.date.strftime('%d/%m/%Y')} - "
-                f"{len(workout_log.exercises)} exercícios: {exercises_summary}"
-            )
-
-            # Gerar análise pela IA
-            logger.info("[Webhook BG] Requesting AI analysis for %s", user_email)
-            analysis = await brain.analyze_workout_async(user_email, workout_summary)
-
-            # Validar que análise não está vazia antes de enviar
-            if not analysis or not analysis.strip():
-                logger.warning("[Webhook BG] AI analysis empty for %s, skipping Telegram notification", user_email)
-                return
-
-            # Enviar via Telegram
-            telegram_service = get_telegram_service()
-            await telegram_service.send_notification(user_email, analysis)
-
-        except Exception as notif_error:
+            await _handle_workout_notification(user_email, workout_log, brain)
+        except Exception as notif_error:  # pylint: disable=broad-exception-caught
             logger.error("[Webhook BG] Notification error: %s", notif_error)
 
-    except Exception as e:
-        logger.error("[Webhook BG] Error: %s", e)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.error("[Webhook BG] Error processing webhook: %s", e)
 
 
 # ==================== WEBHOOK ENDPOINTS ====================
@@ -366,93 +378,62 @@ def revoke_webhook(user_email: CurrentUser, brain: BrainDep):
     return {"message": "Webhook credentials revoked"}
 
 
-# pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
 @router.get("/webhook/{user_token}", include_in_schema=False)
 @router.post("/webhook/{user_token}", include_in_schema=False)
 async def receive_hevy_webhook(
     user_token: str,
     request: Request,
-    background_tasks: BackgroundTasks,
-    brain: BrainDep,
-    hevy_service: HevyServiceDep,
+    deps: Annotated[WebhookDeps, Depends(WebhookDeps)],
     body: Optional[WebhookPayload] = None,
-    authorization: Annotated[Optional[str], Header()] = None,
 ):
     """
     Receives webhook from Hevy. Identifies user by token and validates auth header.
     Supports GET for verification and POST for payload.
     """
+    # pylint: disable=no-member
     client_host = request.client.host if request.client else "unknown"
     method = request.method
 
-    # Extensive logging for visibility
     logger.info("--- [Hevy Webhook Start] ---")
     logger.info("Method: %s | Client IP: %s | URL: %s", method, client_host, request.url)
 
-    # Log sanitized headers
-    headers_to_log = {k: v for k, v in request.headers.items() if k.lower() not in ["authorization", "cookie"]}
-    logger.info("Headers: %s", headers_to_log)
-    if authorization:
-        logger.info("Authorization Header present (masked): %s...", authorization[:12])
+    authorization = request.headers.get("authorization")
 
     if method == "GET":
-        logger.info("[Webhook] VERIFICATION attempt...")
-        user_profile = brain.database.users.find_by_webhook_token(user_token)
-        if not user_profile:
-            logger.warning("[Webhook] VERIFICATION FAILED: Invalid token")
+        profile = deps.brain.database.users.find_by_webhook_token(user_token)
+        if not profile:
             return JSONResponse(status_code=404, content={"message": "Token not found"})
-
-        logger.info("[Webhook] VERIFICATION SUCCESS for user: %s", user_profile.email)
         return {"status": "ok", "message": "Hevy webhook endpoint is active"}
 
-    # Handle POST (Payload)
     if not body:
         try:
-            body_bytes = await request.body()
-            body_str = body_bytes.decode()
-            logger.info("[Webhook] Raw body received: %s", body_str)
             body_json = await request.json()
             body = WebhookPayload(**body_json)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("[Webhook] MALFORMED PAYLOAD from %s: %s", client_host, e)
             raise HTTPException(status_code=400, detail="Malformed JSON payload") from e
 
-    logger.info("[Webhook] Processing payload...")
-    logger.info("[Webhook] Payload Data: %s", body.model_dump())
-
-    # 1. Find user by token
-    user_profile = brain.database.users.find_by_webhook_token(user_token)
-    if not user_profile:
-        logger.warning("[Webhook] UNKNOWN TOKEN")
+    profile = deps.brain.database.users.find_by_webhook_token(user_token)
+    if not profile:
         raise HTTPException(status_code=404, detail="Invalid token")
 
-    # 2. Validate Authorization
-    if user_profile.hevy_webhook_secret:
-        expected = f"Bearer {user_profile.hevy_webhook_secret}"
+    if profile.hevy_webhook_secret:
+        expected = f"Bearer {profile.hevy_webhook_secret}"
         if authorization != expected:
-            logger.warning("[Webhook] AUTH FAILED")
-            # Log length comparison if they look similar to detect trailing spaces/encoding bugs
-            if authorization:
-                logger.debug("Received len: %d, Expected len: %d", len(authorization), len(expected))
             raise HTTPException(status_code=401, detail="Invalid authorization")
-    else:
-        logger.warning("[Webhook] SECURITY: User %s has no webhook secret set, accepting any auth!", user_profile.email)
 
-    # 3. Extract workout ID
     workout_id = body.payload.get("workoutId")
     if not workout_id:
-        logger.error("[Webhook] MISSING workoutId for user %s", user_profile.email)
         raise HTTPException(status_code=400, detail="Missing workoutId")
 
-    # 4. Queue background task
-    background_tasks.add_task(
+    deps.background_tasks.add_task(
         process_webhook_async,
-        user_email=user_profile.email,
-        api_key=user_profile.hevy_api_key,
+        user_email=profile.email,
+        api_key=profile.hevy_api_key,
         workout_id=workout_id,
-        hevy_service=hevy_service,
+        hevy_service=deps.hevy_service,
+        brain=deps.brain,
     )
 
-    logger.info("[Webhook] SUCCESS: Queued processing for user %s, workout %s", user_profile.email, workout_id)
-    logger.info("--- [Hevy Webhook End] ---")
+    logger.info("[Webhook] SUCCESS: Queued for user %s", profile.email)
     return {"status": "queued"}

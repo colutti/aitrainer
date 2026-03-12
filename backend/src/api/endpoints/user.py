@@ -3,18 +3,19 @@ This module contains the API endpoints for user management.
 """
 
 from typing import Annotated
+import firebase_admin.auth  # type: ignore
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from src.services.auth import user_logout, oauth2_scheme, verify_token, create_token
-from src.core.deps import get_ai_trainer_brain
-from src.core.logs import logger
-from src.core.config import settings
-from src.core.limiter import limiter, RATE_LIMITING_ENABLED
 from src.api.models.auth import FirebaseLoginRequest
 from src.api.models.user_profile import UserProfile, UserProfileInput
+from src.core.config import settings
+from src.core.deps import get_ai_trainer_brain, get_mongo_database
+from src.core.limiter import limiter, RATE_LIMITING_ENABLED
+from src.core.logs import logger
+from src.services.auth import user_logout, oauth2_scheme, verify_token, create_token
 from src.services.trainer import AITrainerBrain
 
 router = APIRouter()
@@ -36,20 +37,20 @@ def verify_id_token(token: str) -> dict:
     Verifies the Firebase ID token and returns the decoded payload.
     Separated for easier testing.
     """
-    import firebase_admin.auth
     return firebase_admin.auth.verify_id_token(token)
 
 
 @router.post("/login")
 @rate_limit_login
-def login(request: Request, data: FirebaseLoginRequest, brain: AITrainerBrainDep) -> dict:  # pylint: disable=unused-argument
+def login(
+    request: Request,  # pylint: disable=unused-argument
+    data: FirebaseLoginRequest,
+    brain: AITrainerBrainDep
+) -> dict:
     """
     Authenticates a user with a Firebase ID token.
     This replaces both conventional and social login.
     """
-    from src.core.deps import get_mongo_database
-    import firebase_admin.auth
-
     try:
         # Verify the Firebase ID token
         decoded_token = verify_id_token(data.token)
@@ -170,9 +171,11 @@ def update_profile(
         if existing_profile:
             # Update existing profile with new data
             update_data = profile_data.model_dump(exclude_unset=True)
+            g_old = existing_profile.goal_type
+            w_old = existing_profile.weekly_rate
             goal_changed = (
-                ("goal_type" in update_data and update_data["goal_type"] != existing_profile.goal_type)
-                or ("weekly_rate" in update_data and update_data["weekly_rate"] != existing_profile.weekly_rate)
+                ("goal_type" in update_data and update_data["goal_type"] != g_old)
+                or ("weekly_rate" in update_data and update_data["weekly_rate"] != w_old)
             )
             updated_profile = existing_profile.model_copy(update=update_data)
             brain.save_user_profile(updated_profile)
@@ -193,10 +196,10 @@ def update_profile(
         return JSONResponse(content={"message": "Profile updated successfully"})
     except ValueError as e:
         logger.error("Validation error in update_profile: %s", str(e))
-        raise HTTPException(status_code=422, detail=str(e))
+        raise HTTPException(status_code=422, detail=str(e)) from e
     except Exception as e:
         logger.error("Error in update_profile: %s", str(e))
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 class UpdateIdentityRequest(BaseModel):

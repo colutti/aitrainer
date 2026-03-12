@@ -70,7 +70,10 @@ def list_nutrition(
             page_size=page_size,
             total_pages=total_pages,
         )
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except (ValueError, TypeError, KeyError) as e:
+        logger.error("Data error listing nutrition for %s: %s", user_email, e)
+        raise HTTPException(status_code=400, detail="Invalid request parameters") from e
+    except Exception as e:
         logger.error("Error listing nutrition logs for user %s: %s", user_email, e)
         raise HTTPException(
             status_code=500, detail="Failed to retrieve nutrition logs"
@@ -85,7 +88,7 @@ def get_nutrition_stats(user_email: CurrentUser, db: DatabaseDep) -> NutritionSt
     logger.info("Fetching nutrition stats for user: %s", user_email)
     try:
         return db.get_nutrition_stats(user_email)
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except Exception as e:
         logger.error("Error fetching nutrition stats for user %s: %s", user_email, e)
         raise HTTPException(
             status_code=500, detail="Failed to retrieve nutrition stats"
@@ -170,7 +173,7 @@ def create_nutrition_log(
             "Validation error creating nutrition log for %s: %s", user_email, e
         )
         raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except Exception as e:
         logger.error("Error creating nutrition log for user %s: %s", user_email, e)
         raise HTTPException(
             status_code=500, detail="Failed to create nutrition log"
@@ -181,7 +184,6 @@ def create_nutrition_log(
 async def import_myfitnesspal(
     user_email: CurrentUser, db: DatabaseDep, file: UploadFile = File(...)
 ) -> ImportResult:
-    # pylint: disable=duplicate-code
     """
     Import nutrition data from MyFitnessPal CSV export.
     """
@@ -203,7 +205,7 @@ async def import_myfitnesspal(
     except ValueError as e:
         logger.warning("Validation error importing CSV for %s: %s", user_email, e)
         raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except Exception as e:
         logger.error("Error importing CSV for user %s: %s", user_email, e)
         raise HTTPException(status_code=500, detail="Falha ao importar dados.") from e
 
@@ -246,7 +248,7 @@ def delete_nutrition(log_id: str, user_email: CurrentUser, db: DatabaseDep) -> d
         return {"message": "Nutrition log deleted successfully"}
     except HTTPException:
         raise
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except Exception as e:
         logger.error(
             "Failed to delete nutrition log %s for user %s: %s", log_id, user_email, e
         )

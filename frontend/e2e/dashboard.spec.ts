@@ -41,7 +41,7 @@ test.describe('Dashboard', () => {
       window.localStorage.setItem('auth_token', 'mock-jwt-token');
     });
 
-    await page.goto('/');
+    await page.goto('/dashboard');
   });
 
   test('should display dashboard widgets', async ({ page }) => {
@@ -67,7 +67,7 @@ test.describe('Dashboard', () => {
       await route.fulfill({ status: 500, body: JSON.stringify({ detail: 'Internal Server Error' }) });
     });
 
-    await page.goto('/');
+    await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
 
     // Page should load without crash - any heading or content should be present
