@@ -24,12 +24,12 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
 
   if (!isAuthenticated) {
     // Redirect to login page but save the current location to redirect back after login
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: { pathname: location.pathname, search: location.search } }} replace />;
   }
 
   if (userInfo && !userInfo.onboarding_completed) {
-    // If onboarding is not completed, redirect to onboarding page
-    return <Navigate to="/onboarding" replace />;
+    // If onboarding is not completed, redirect to onboarding page but preserve search
+    return <Navigate to={`/onboarding${location.search}`} replace />;
   }
 
   if (requireAdmin && !isAdmin) {

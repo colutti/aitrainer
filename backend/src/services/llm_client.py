@@ -11,7 +11,6 @@ from langchain_core.messages import AIMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
 try:
     from langchain.agents import create_agent
-    from langgraph.graph.state import CompiledStateGraph  # type: ignore
 except ImportError:
     def create_agent(*args, **kwargs) -> Any:  # pylint: disable=unused-argument
         """Fallback for create_agent."""

@@ -8,8 +8,9 @@ import {
   Target,
   TrendingDown
 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { EmptyState } from '../../shared/components/ui/EmptyState';
@@ -17,6 +18,7 @@ import { HelpTooltip } from '../../shared/components/ui/HelpTooltip';
 import { StatsCard } from '../../shared/components/ui/StatsCard';
 import { useAuthStore } from '../../shared/hooks/useAuth';
 import { useDashboardStore } from '../../shared/hooks/useDashboard';
+import { useNotificationStore } from '../../shared/hooks/useNotification';
 import { cn } from '../../shared/utils/cn';
 
 import { WidgetRecentPRs } from './components/WidgetRecentPRs';
@@ -38,10 +40,32 @@ export function DashboardPage() {
   const { data, isLoading, fetchData } = useDashboardStore();
   const { userInfo } = useAuthStore();
   const { t, i18n } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const notification = useNotificationStore();
+  const hasTriggeredPaymentToast = useRef(false);
 
   useEffect(() => {
     void fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment');
+    if (paymentStatus === 'success' && !hasTriggeredPaymentToast.current) {
+      hasTriggeredPaymentToast.current = true;
+      notification.success(t('subscription.payment_success_message', { defaultValue: 'Pagamento realizado com sucesso! Bem-vindo ao time Pro.' }));
+      
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('payment');
+      setSearchParams(newParams, { replace: true });
+    } else if (paymentStatus === 'cancelled' && !hasTriggeredPaymentToast.current) {
+      hasTriggeredPaymentToast.current = true;
+      notification.info(t('subscription.payment_cancelled_message', { defaultValue: 'O processo de pagamento foi interrompido. Você pode tentar novamente quando quiser.' }));
+      
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('payment');
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams, notification, t]);
 
   if (isLoading && !data) {
     return (

@@ -131,6 +131,7 @@ def complete_onboarding(request: OnboardingCompleteRequest):
         height=request.height,
         goal_type=request.goal_type,
         weekly_rate=request.weekly_rate,
+        subscription_plan=request.subscription_plan,
         # Mandatory fields for Mypy/Pyright
         # Optional/Default fields
         goal=None,
@@ -190,7 +191,10 @@ def complete_public_onboarding(
     profile.height = request.height
     profile.goal_type = request.goal_type
     profile.weekly_rate = request.weekly_rate
+    profile.subscription_plan = request.subscription_plan
     profile.onboarding_completed = True
+    if request.name:
+        profile.display_name = request.name
 
     # Create trainer profile
     trainer_profile = TrainerProfile(user_email=user_email, trainer_type=request.trainer_type)

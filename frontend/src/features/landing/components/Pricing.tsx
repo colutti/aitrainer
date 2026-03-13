@@ -1,13 +1,50 @@
+import { stripeApi } from '@shared/api/stripe-api';
 import { Button } from '@shared/components/ui/Button';
+import { STRIPE_PRICE_IDS } from '@shared/constants/stripe';
+import { useAuthStore } from '@shared/hooks/useAuth';
+import { useNotificationStore } from '@shared/hooks/useNotification';
 import { Check } from 'lucide-react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 export const Pricing = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
+  const notify = useNotificationStore();
+  const [loading, setLoading] = useState<string | null>(null);
+
   const isPt = i18n.language.startsWith('pt');
   const currencySymbol = isPt ? 'R$ ' : '$';
+
+  const handleSubscribe = async (planId: string) => {
+    if (planId === 'free') {
+      void navigate('/login?mode=register');
+      return;
+    }
+
+    if (!isAuthenticated) {
+      void navigate(`/login?mode=register&plan=${planId}`);
+      return;
+    }
+
+    setLoading(planId);
+    try {
+      const priceId = STRIPE_PRICE_IDS[planId as keyof typeof STRIPE_PRICE_IDS];
+      const url = await stripeApi.createCheckoutSession(
+        priceId,
+        window.location.origin + '/dashboard?payment=success',
+        window.location.origin + '/#planos'
+      );
+      window.location.href = url;
+    } catch (error) {
+      console.error('Stripe error:', error);
+      notify.error(t('settings.subscription.error', 'Erro ao iniciar pagamento'));
+    } finally {
+      setLoading(null);
+    }
+  };
 
   const plans = [
     {
@@ -82,11 +119,13 @@ export const Pricing = () => {
                 </div>
 
                 <Button
-                  onClick={() => { void navigate('/login?mode=register'); }}
+                  onClick={() => { void handleSubscribe(plan.id); }}
                   variant={plan.id === 'pro' ? 'primary' : 'secondary'}
-                  disabled={!plan.isFree}
+                  disabled={loading !== null}
+                  isLoading={loading === plan.id}
                   fullWidth
                   className={`mb-8 rounded-md ${plan.id === 'pro' ? 'bg-primary bg-none hover:bg-primary-hover shadow-none' : 'border-border bg-dark-card'}`}
+                  data-testid={`plan-button-${plan.id}`}
                 >
                   {planData.button}
                 </Button>

@@ -105,3 +105,37 @@ def test_webhook_invalid_signature(mock_stripe_construct_event):
     
     assert response.status_code == 400
     assert response.json()["detail"] == "Invalid signature"
+
+def test_webhook_subscription_deleted(mock_brain, mock_stripe_construct_event):
+    # Setup mock event
+    mock_stripe_construct_event.return_value = {
+        "type": "customer.subscription.deleted",
+        "data": {
+            "object": {
+                "id": "sub_123",
+                "customer": "cus_123"
+            }
+        }
+    }
+    
+    # Mock settings and brain data
+    mock_user = MagicMock(email="test@example.com")
+    mock_brain.database.users.find_by_stripe_customer_id.return_value = mock_user
+    
+    with patch("src.api.endpoints.stripe.settings") as mock_settings:
+        mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
+        response = client.post(
+            "/stripe/webhook",
+            content=b"{}",
+            headers={"stripe-signature": "test_sig"}
+        )
+    
+    assert response.status_code == 200
+    mock_brain.update_user_profile_fields.assert_called_with(
+        "test@example.com",
+        {
+            "stripe_subscription_status": "canceled",
+            "subscription_plan": "Free",
+            "stripe_subscription_id": None,
+        }
+    )

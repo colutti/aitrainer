@@ -3,7 +3,8 @@ import {
   Settings as SettingsIcon,
   Database,
   Target,
-  Brain
+  Brain,
+  CreditCard
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { NavLink, Outlet } from 'react-router-dom';
@@ -15,6 +16,7 @@ export function SettingsPage() {
   
   const tabs = [
     { to: 'profile', label: t('settings.tabs.profile'), icon: User },
+    { to: 'subscription', label: t('settings.tabs.subscription', 'Assinatura'), icon: CreditCard },
     { to: 'memories', label: t('settings.tabs.memories'), icon: Brain },
     { to: 'trainer', label: t('settings.tabs.trainer'), icon: Target },
     { to: 'integrations', label: t('settings.tabs.integrations'), icon: Database },
@@ -23,7 +25,7 @@ export function SettingsPage() {
   return (
     <div className="flex flex-col h-full space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       {/* Header */}
-      <div className="flex-shrink-0">
+      <div className="shrink-0">
         <h1 className="text-3xl font-bold text-text-primary flex items-center gap-3">
           <SettingsIcon className="text-gradient-start" size={32} />
           {t('settings.title')}
@@ -32,7 +34,7 @@ export function SettingsPage() {
       </div>
 
       {/* Horizontal Tab Navigation */}
-      <div className="border-b border-border overflow-x-auto hide-scrollbar flex-shrink-0">
+      <div className="border-b border-border overflow-x-auto hide-scrollbar shrink-0">
         <nav className="flex flex-wrap gap-1 sm:gap-2 md:gap-4 pb-4 w-full">
           {tabs.map((tab) => (
             <NavLink

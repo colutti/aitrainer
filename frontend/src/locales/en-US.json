@@ -317,7 +317,7 @@
         "basic": {
           "name": "Basic",
           "description": "For serious starters",
-          "button": "Coming Soon",
+          "button": "Select",
           "features": [
             "Access to all AI trainers",
             "Workouts and Analytics",
@@ -327,7 +327,7 @@
         "pro": {
           "name": "Pro",
           "description": "For consistent results",
-          "button": "Coming Soon",
+          "button": "Select",
           "features": [
             "Access to all AI trainers",
             "Workouts and Analytics",
@@ -337,7 +337,7 @@
         "premium": {
           "name": "Premium",
           "description": "For athletes wanting proactive AI",
-          "button": "Coming Soon",
+          "button": "Select",
           "features": [
             "Access to all AI trainers",
             "Workouts and Analytics",
@@ -346,6 +346,10 @@
         }
       },
       "total": "/total"
+    },
+    "subscription": {
+      "payment_success_message": "Payment successful! Welcome to the Pro team.",
+      "payment_cancelled_message": "The payment process was interrupted. You can try again whenever you want."
     }
   },
   "settings": {
@@ -374,8 +378,21 @@
     "kg_week": "kg/week",
     "recommended": "recommended",
     "maximum": "maximum",
+    "subscription": {
+      "title": "Subscription",
+      "subtitle": "Manage your plan and payments",
+      "active": "Current Plan",
+      "upgrade": "Select",
+      "unavailable": "Unavailable",
+      "manage_title": "Active Subscription",
+      "manage_subtitle": "Manage your billing and invoices on Stripe portal.",
+      "manage_button": "Manage Billing",
+      "error": "Error initiating payment. Please check your settings.",
+      "portal_error": "Error opening billing portal."
+    },
     "tabs": {
       "profile": "Personal Profile",
+      "subscription": "Subscription",
       "memories": "Memories",
       "trainer": "AI Trainer",
       "integrations": "Integrations"
@@ -676,7 +693,18 @@
     "start_conversation": "Start your conversation",
     "typing": "{{name}} is typing...",
     "input_placeholder": "Message {{name}}...",
-    "disclaimer": "The Trainer can make mistakes. Consider checking important information."
+    "disclaimer": "The Trainer can make mistakes. Consider checking important information.",
+    "messages_remaining": "{{count}} messages remaining today",
+    "trial_ended": {
+      "title": "Your free trial has ended",
+      "description": "You enjoyed your 7-day trial. To continue receiving personalized guidance, upgrade to Pro."
+    },
+    "daily_limit": {
+      "title": "Daily limit reached",
+      "description": "You reached the limit of 20 daily messages. Tomorrow you'll have 20 more, or remove limits now with the Pro plan."
+    },
+    "upgrade_button": "Upgrade Now",
+    "wait_tomorrow": "Come back tomorrow"
   },
   "body": {
     "nutrition_title": "Diet & Macros",

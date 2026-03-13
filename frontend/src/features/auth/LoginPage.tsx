@@ -72,15 +72,53 @@ export function LoginPage() {
       if (mode === 'login') {
         await login(data.email, data.password);
         notify.success(t('login.welcome_back'));
+        await navigate('/dashboard');
       } else {
         const { auth } = await import('../../features/auth/firebase');
         const { createUserWithEmailAndPassword } = await import('firebase/auth');
-        await createUserWithEmailAndPassword(auth, data.email, data.password);
-        // After firebase creation, we call login to sync with our backend
+        
+        const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+        const firebaseToken = await userCredential.user.getIdToken();
+        
+        // Manual backend login to avoid AuthGuard redirecting us before Stripe redirect
+        const { httpClient } = await import('../../shared/api/http-client');
+        const response = await httpClient<{ token: string }>('/user/login', {
+          method: 'POST',
+          body: JSON.stringify({ token: firebaseToken }),
+        });
+
+        if (!response?.token) {
+          throw new Error('Invalid response from server');
+        }
+
+        localStorage.setItem('auth_token', response.token);
+        
+        const planId = searchParams.get('plan');
+        if (planId && planId !== 'free') {
+          try {
+            const { stripeApi } = await import('../../shared/api/stripe-api');
+            const { STRIPE_PRICE_IDS } = await import('../../shared/constants/stripe');
+            const priceId = STRIPE_PRICE_IDS[planId as keyof typeof STRIPE_PRICE_IDS];
+            
+            if (priceId) {
+              const url = await stripeApi.createCheckoutSession(
+                priceId,
+                window.location.origin + '/dashboard?payment=success',
+                window.location.origin + '/onboarding'
+              );
+              window.location.href = url;
+              return;
+            }
+          } catch (stripeError) {
+            console.error('Stripe redirect error:', stripeError);
+          }
+        }
+        
+        // If free plan or stripe failed, we sync with the store to allow the normal flow
         await login(data.email, data.password);
         notify.success(t('login.account_created', 'Conta criada com sucesso!'));
+        await navigate('/dashboard');
       }
-      await navigate('/dashboard');
     } catch (error: unknown) {
       console.error('Login error:', error);
       const errorCode = error instanceof Error && 'code' in error 
@@ -97,6 +135,8 @@ export function LoginPage() {
       }
       
       notify.error(message);
+    } finally {
+      setIsLoading(false);
     }
   };
 

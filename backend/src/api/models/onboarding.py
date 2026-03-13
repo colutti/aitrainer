@@ -28,6 +28,11 @@ class OnboardingCompleteRequest(BaseModel):
         pattern="^(atlas|luna|sargento|sofia|gymbro)$",
         description="Selected trainer type",
     )
+    subscription_plan: str = Field(
+        default="Free",
+        pattern="^(Free|Basic|Pro|Premium)$",
+        description="Selected subscription plan",
+    )
 
     @model_validator(mode="after")
     def validate_password_strength(self) -> "OnboardingCompleteRequest":
@@ -59,6 +64,7 @@ class PublicOnboardingRequest(BaseModel):
     """
     Request model for completing onboarding for a user already authenticated.
     """
+    model_config = {"extra": "ignore"}
 
     gender: str = Field(
         ...,
@@ -76,6 +82,12 @@ class PublicOnboardingRequest(BaseModel):
         pattern="^(atlas|luna|sargento|sofia|gymbro)$",
         description="Selected trainer type",
     )
+    subscription_plan: str = Field(
+        default="Free",
+        pattern="^(Free|Basic|Pro|Premium)$",
+        description="Selected subscription plan",
+    )
+    name: str | None = Field(default=None, description="User's display name")
 
 
 class OnboardingValidateResponse(BaseModel):

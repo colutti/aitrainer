@@ -9,6 +9,7 @@ import { MemoriesPage } from './features/memories/MemoriesPage';
 import { NutritionPage } from './features/nutrition/NutritionPage';
 import { OnboardingPage } from './features/onboarding/components/OnboardingPage';
 import { IntegrationsPage } from './features/settings/components/IntegrationsPage';
+import { SubscriptionPage } from './features/settings/components/SubscriptionPage';
 import { TrainerSettingsPage } from './features/settings/components/TrainerSettingsPage';
 import { UserProfilePage } from './features/settings/components/UserProfilePage';
 import { SettingsPage } from './features/settings/SettingsPage';
@@ -76,6 +77,7 @@ export function AppRoutes() {
         <Route path="settings" element={<SettingsPage />}>
           <Route index element={<Navigate to="profile" replace />} />
           <Route path="profile" element={<UserProfilePage />} />
+          <Route path="subscription" element={<SubscriptionPage />} />
           <Route path="memories" element={<MemoriesPage />} />
           <Route path="trainer" element={<TrainerSettingsPage />} />
           <Route path="integrations" element={<IntegrationsPage />} />

@@ -126,20 +126,18 @@ def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str):
             # Generate 768-dim embedding using Gemini with dimensionality reduction
             embedding = _embed_text(content)
 
-            # Check for semantic duplicates before saving
-            user_filter = qdrant_models.Filter(
-                must=[
-                    qdrant_models.FieldCondition(
-                        key="user_id", match=qdrant_models.MatchValue(value=user_email)
-                    )
-                ]
-            )
             similar_results = qdrant_client.query_points(
                 collection_name=collection_name,
                 query=embedding,
-                query_filter=user_filter,
+                query_filter=qdrant_models.Filter(
+                    must=[
+                        qdrant_models.FieldCondition(
+                            key="user_id", match=qdrant_models.MatchValue(value=user_email)
+                        )
+                    ]
+                ),
                 limit=1,
-                score_threshold=0.92,  # High threshold for semantic duplicates
+                score_threshold=0.92,
                 with_payload=True,
             )
 

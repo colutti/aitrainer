@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { useDashboardStore } from '../../shared/hooks/useDashboard';
@@ -89,7 +90,11 @@ describe('DashboardPage', () => {
       isLoading: true,
       data: null,
     });
-    const { container } = render(<DashboardPage />);
+    const { container } = render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
     expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
@@ -99,7 +104,11 @@ describe('DashboardPage', () => {
       data: defaultData as any,
     });
 
-    render(<DashboardPage />);
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
 
     expect(screen.getByText(/Bom dia/i)).toBeInTheDocument();
     expect(screen.getByText('2000')).toBeInTheDocument(); 
@@ -131,7 +140,11 @@ describe('DashboardPage', () => {
           }
         } as any,
       });
-      const { unmount } = render(<DashboardPage />);
+      const { unmount } = render(
+        <MemoryRouter>
+          <DashboardPage />
+        </MemoryRouter>
+      );
       if (level === null) {
         expect(screen.getByText((content) => content.includes('Análise:') && content.includes('---'))).toBeInTheDocument();
       } else {
@@ -155,7 +168,11 @@ describe('DashboardPage', () => {
       } as any,
     });
 
-    render(<DashboardPage />);
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
     expect(screen.getByTestId('prs-widget')).toBeInTheDocument(); // Widget renders with overlay
     expect(screen.getByText('Dados de força insuficientes')).toBeInTheDocument();
   });
@@ -172,7 +189,11 @@ describe('DashboardPage', () => {
         }
       } as any,
     });
-    render(<DashboardPage />);
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
     expect(screen.getByText((_content, element) => {
       const hasText = (node: Element) => node.textContent?.includes('0.50') && node.textContent?.includes('kg');
       const elementHasText = hasText(element!);

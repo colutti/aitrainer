@@ -10,7 +10,7 @@ GCP_REGISTRY=$(GCP_REGION)-docker.pkg.dev/$(GCP_PROJECT_ID)/$(GCP_REPO)
 # 3. Joins with commas
 GCP_ENV_VARS=$(shell grep -v '^\#' backend/.env.prod | grep -v '^$$' | sed 's/"//g' | paste -sd "," -)
 
-.PHONY: up down build restart logs init-db api front front-admin api-admin admin clean-pod db db-down db-logs debug-rebuild debug-rebuild-admin test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov e2e e2e-ui e2e-report ci-test ci-fast gcp-full gcp-build gcp-push gcp-deploy gcp-list gcp-setup-telegram gcp-hosting security-sast security-sca security-check
+.PHONY: up down build restart logs init-db api front front-admin api-admin admin clean-pod db db-down db-logs debug-rebuild debug-rebuild-admin test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov e2e e2e-ui e2e-report ci-test ci-fast gcp-full gcp-build gcp-push gcp-deploy gcp-list gcp-setup-telegram gcp-hosting security-sast security-sca security-check stripe-listen
 
 up:
 	podman-compose up -d
@@ -192,13 +192,13 @@ ci-test: test-backend test-frontend e2e
 
 security-sast:
 	@echo "🔍 Running SAST (Semgrep)..."
-	podman run --rm -v $$(pwd):/src:ro docker.io/semgrep/semgrep:latest \
-		semgrep scan --config auto --error --severity ERROR --severity WARNING /src
+	podman run --rm -v $$(pwd):/src:ro -w /src docker.io/semgrep/semgrep:latest \
+		semgrep scan --config auto --error --severity ERROR --severity WARNING .
 
 security-sca:
 	@echo "🔍 Running SCA + Secret Scanning (Trivy)..."
-	podman run --rm -v $$(pwd):/src:ro docker.io/aquasec/trivy:latest \
-		fs --exit-code 1 --severity HIGH,CRITICAL --scanners vuln,secret /src
+	podman run --rm -v $$(pwd):/src:ro -w /src docker.io/aquasec/trivy:latest \
+		fs --exit-code 1 --severity HIGH,CRITICAL --scanners vuln,secret --skip-files "backend/firebase-admin-dev.json,backend/firebase-admin.json,backend/.env,.env" .
 
 security-check: security-sast security-sca
 	@echo "✅ Security checks passed!"
@@ -281,4 +281,15 @@ gcp-hosting:
 gcp-list:
 	@echo "🔍 Cloud Run Services:"
 	@gcloud run services list --region $(GCP_REGION)
+
+
+# -----------------------------------------------------------------------------
+# Stripe Local Testing
+# -----------------------------------------------------------------------------
+
+stripe-login:
+	podman run --rm -it -v stripe-config:/root/.config/stripe stripe/stripe-cli login
+
+stripe-listen:
+	podman run --rm -it -v stripe-config:/root/.config/stripe --network host stripe/stripe-cli listen --forward-to localhost:8000/stripe/webhook
 

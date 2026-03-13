@@ -11,6 +11,7 @@ export interface OnboardingPayload {
   goal_type: string;
   weekly_rate: number;
   trainer_type: string;
+  subscription_plan: string;
   activity_level?: string;
   name?: string;
 }

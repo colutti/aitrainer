@@ -316,7 +316,7 @@
         "basic": {
           "name": "Básico",
           "description": "Para quien quiere empezar en serio",
-          "button": "Próximamente",
+          "button": "Seleccionar",
           "features": [
             "Acceso a todos los entrenadores IA",
             "Entrenamientos y Análisis",
@@ -326,7 +326,7 @@
         "pro": {
           "name": "Pro",
           "description": "Para resultados consistentes",
-          "button": "Próximamente",
+          "button": "Seleccionar",
           "features": [
             "Acceso a todos los entrenadores IA",
             "Entrenamientos y Análisis",
@@ -336,7 +336,7 @@
         "premium": {
           "name": "Premium",
           "description": "Para atletas más exigentes",
-          "button": "Próximamente",
+          "button": "Seleccionar",
           "features": [
             "Acceso a todos los entrenadores IA",
             "Entrenamientos y Análisis",
@@ -345,6 +345,10 @@
         }
       },
       "total": "/total"
+    },
+    "subscription": {
+      "payment_success_message": "¡Pago realizado con éxito! Bienvenido al equipo Pro.",
+      "payment_cancelled_message": "El proceso de pago fue interrumpido. Puedes intentarlo de nuevo cuando quieras."
     }
   },
   "settings": {
@@ -373,8 +377,21 @@
     "kg_week": "kg/semana",
     "recommended": "recomendado",
     "maximum": "máximo",
+    "subscription": {
+      "title": "Suscripción",
+      "subtitle": "Gestione su plan y pagos",
+      "active": "Plan Actual",
+      "upgrade": "Seleccionar",
+      "unavailable": "No disponible",
+      "manage_title": "Suscripción Activa",
+      "manage_subtitle": "Gestione su facturación y recibos en el portal de Stripe.",
+      "manage_button": "Gestionar Facturación",
+      "error": "Error al iniciar el pago. Por favor, verifique su configuración.",
+      "portal_error": "Error al abrir el portal de facturación."
+    },
     "tabs": {
       "profile": "Perfil Personal",
+      "subscription": "Suscripción",
       "memories": "Memorias",
       "trainer": "Entrenador AI",
       "integrations": "Integraciones"
@@ -670,7 +687,18 @@
     "start_conversation": "Inicie su conversación",
     "typing": "{{name}} escribiendo...",
     "input_placeholder": "Mensaje para {{name}}...",
-    "disclaimer": "El Entrenador puede cometer errores. Considere verificar información importante."
+    "disclaimer": "El Entrenador puede cometer errores. Considere verificar información importante.",
+    "messages_remaining": "{{count}} mensajes restantes hoy",
+    "trial_ended": {
+      "title": "Tu periodo gratuito ha terminado",
+      "description": "Has disfrutado de tus 7 días de prueba. Para seguir recibiendo orientación personalizada, actualiza a Pro."
+    },
+    "daily_limit": {
+      "title": "Límite diario alcanzado",
+      "description": "Has alcanzado el límite de 20 mensajes diarios. Mañana tendrás otros 20, o elimina los límites ahora con el plan Pro."
+    },
+    "upgrade_button": "Actualizar Ahora",
+    "wait_tomorrow": "Volver Mañana"
   },
   "body": {
     "nutrition_title": "Dieta & Macros",

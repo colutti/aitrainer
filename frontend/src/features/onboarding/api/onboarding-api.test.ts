@@ -32,7 +32,8 @@ describe('onboardingApi', () => {
       height: 180,
       goal_type: 'maintain',
       weekly_rate: 0,
-      trainer_type: 'atlas'
+      trainer_type: 'atlas',
+      subscription_plan: 'Pro'
     };
     
     vi.mocked(httpClient).mockResolvedValue({ token: 'jwt-token' });

@@ -33,7 +33,8 @@ export function OnboardingPage() {
   const [formData, setFormData] = useState<Partial<OnboardingPayload>>({
     goal_type: 'maintain',
     weekly_rate: 0.5,
-    trainer_type: 'atlas'
+    trainer_type: 'gymbro',
+    subscription_plan: 'Free'
   });
   
   const [password, setPassword] = useState('');
@@ -96,7 +97,8 @@ export function OnboardingPage() {
         height: Number(formData.height),
         goal_type: formData.goal_type ?? 'maintain',
         weekly_rate: Number(formData.weekly_rate),
-        trainer_type: formData.trainer_type ?? 'atlas',
+        trainer_type: formData.trainer_type ?? 'gymbro',
+        subscription_plan: formData.subscription_plan ?? 'Free',
         name: formData.name
       };
 
@@ -309,44 +311,53 @@ export function OnboardingPage() {
           </div>
         )}
 
-        {/* Step 3: Plan */}
-        {step === 3 && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-             <h2 className="text-2xl font-bold text-text-primary text-center">{t('onboarding.step_plan_title', 'Escolha seu Plano')}</h2>
-             <div className="space-y-4">
-                <button
-                   onClick={() => { /* Already selected */ }}
-                   className={cn(
-                     "w-full flex flex-col p-6 rounded-2xl border transition-all text-left",
-                     "bg-gradient-start/10 border-gradient-start shadow-orange-sm ring-1 ring-gradient-start"
-                   )}
-                >
-                   <div className="flex justify-between items-center w-full mb-2">
-                      <span className="font-bold text-xl text-text-primary">Free</span>
-                      <span className="text-gradient-start font-bold uppercase text-xs tracking-wider">{t('onboarding.plan_free_badge', 'Gratuito')}</span>
-                   </div>
-                   <p className="text-sm text-text-secondary mb-4">{t('onboarding.plan_free_desc', 'Inicie com 20 mensagens por dia durante 7 dias para testar a plataforma.')}</p>
-                   <div className="space-y-2 mt-auto">
-                      <div className="flex items-center gap-2 text-sm text-text-secondary"><Check size={16} className="text-emerald-500" /> Acesso ao Gymbro AI</div>
-                      <div className="flex items-center gap-2 text-sm text-text-secondary"><Check size={16} className="text-emerald-500" /> Dashboard & Análises Musculares</div>
-                      <div className="flex items-center gap-2 text-sm text-text-secondary"><Check size={16} className="text-emerald-500" /> Integrações com Hevy / Outros</div>
-                   </div>
-                </button>
-             </div>
-             
-             <div className="flex gap-4 mt-6">
-                <Button variant="secondary" onClick={handleBack}>{t('onboarding.back')}</Button>
-                <Button className="flex-1" onClick={() => {
-                   if (formData.trainer_type !== 'gymbro') {
-                       setFormData({ ...formData, trainer_type: 'gymbro' });
-                   }
-                   handleNext();
-                }}>
-                   {t('onboarding.next')}
-                </Button>
-             </div>
-          </div>
-        )}
+         {/* Step 3: Plan */}
+         {step === 3 && (
+           <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+              <h2 className="text-2xl font-bold text-text-primary text-center">{t('onboarding.step_plan_title', 'Escolha seu Plano')}</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 {[
+                   { id: 'Free', name: 'Free', color: 'border-emerald-500/30' },
+                   { id: 'Basic', name: 'Basic', color: 'border-blue-500/30' },
+                   { id: 'Pro', name: 'Pro', color: 'border-primary' },
+                   { id: 'Premium', name: 'Premium', color: 'border-purple-500/30' }
+                 ].map((plan) => (
+                    <button
+                       key={plan.id}
+                       onClick={() => { setFormData({ ...formData, subscription_plan: plan.id }); }}
+                       className={cn(
+                         "flex flex-col p-4 rounded-2xl border transition-all text-left relative overflow-hidden",
+                         formData.subscription_plan === plan.id
+                           ? "bg-gradient-start/10 border-gradient-start shadow-orange-sm ring-1 ring-gradient-start"
+                           : "bg-dark-bg border-border hover:border-zinc-700"
+                       )}
+                    >
+                       <div className="flex justify-between items-center w-full mb-1">
+                          <span className="font-bold text-lg text-text-primary">{plan.name}</span>
+                          {formData.subscription_plan === plan.id && <Check size={16} className="text-gradient-start" />}
+                       </div>
+                       <p className="text-[10px] text-text-secondary leading-tight line-clamp-2">
+                          {t(`landing.plans.items.${plan.id.toLowerCase()}.description`)}
+                       </p>
+                    </button>
+                 ))}
+              </div>
+              
+              <div className="flex gap-4 mt-6">
+                 <Button variant="secondary" onClick={handleBack}>{t('onboarding.back')}</Button>
+                 <Button className="flex-1" onClick={() => {
+                    // Se mudar de plano e o treinador atual não for permitido, reseta para Gymbro ou Atlas
+                    const allowedTrainers = formData.subscription_plan === 'Free' ? ['gymbro'] : ['atlas', 'luna', 'sargento', 'sofia', 'gymbro'];
+                    if (!allowedTrainers.includes(formData.trainer_type ?? '')) {
+                        setFormData({ ...formData, trainer_type: formData.subscription_plan === 'Free' ? 'gymbro' : 'atlas' });
+                    }
+                    handleNext();
+                 }}>
+                    {t('onboarding.next')}
+                 </Button>
+              </div>
+           </div>
+         )}
 
         {/* Step 4: Trainer */}
         {step === 4 && (
@@ -354,7 +365,7 @@ export function OnboardingPage() {
              <h2 className="text-2xl font-bold text-text-primary text-center">{t('onboarding.step_3_title')}</h2>
              <div className="grid grid-cols-1 gap-3">
                {TRAINERS.map(trainer => {
-                 const isLocked = trainer.id !== 'gymbro';
+                 const isLocked = formData.subscription_plan === "Free" && trainer.id !== "gymbro";
                  
                  return (
                  <button
@@ -367,7 +378,7 @@ export function OnboardingPage() {
                      formData.trainer_type === trainer.id
                        ? "bg-gradient-start/10 border-gradient-start shadow-orange-sm"
                        : "bg-dark-bg border-border hover:border-zinc-600",
-                     trainer.id !== 'gymbro' && "opacity-60 grayscale hover:border-border cursor-not-allowed"
+                     isLocked && "opacity-60 grayscale hover:border-border cursor-not-allowed"
                    )}
                  >
                     <img src={`/assets/avatars/${trainer.id}.png`} alt={trainer.name} className="w-12 h-12 rounded-full border-2 border-dark-bg object-cover bg-white/10 relative z-10" />

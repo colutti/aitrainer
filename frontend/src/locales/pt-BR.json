@@ -324,7 +324,7 @@
         "basic": {
           "name": "Basic",
           "description": "Para quem quer iniciar seriamente",
-          "button": "Em Breve",
+          "button": "Selecionar",
           "features": [
             "Acesso a todos os treinadores",
             "Treinos e Análises",
@@ -334,7 +334,7 @@
         "pro": {
           "name": "Pro",
           "description": "Para resultados consistentes",
-          "button": "Em Breve",
+          "button": "Selecionar",
           "features": [
             "Acesso a todos os treinadores",
             "Treinos e Análises",
@@ -344,7 +344,7 @@
         "premium": {
           "name": "Premium",
           "description": "Para atletas mais exigentes",
-          "button": "Em Breve",
+          "button": "Selecionar",
           "features": [
             "Acesso a todos os treinadores",
             "Treinos e Análises",
@@ -353,6 +353,10 @@
         }
       },
       "total": "/total"
+    },
+    "subscription": {
+      "payment_success_message": "Pagamento realizado com sucesso! Bem-vindo ao time Pro.",
+      "payment_cancelled_message": "O processo de pagamento foi interrompido. Você pode tentar novamente quando quiser."
     }
   },
   "settings": {
@@ -383,8 +387,21 @@
     "kg_week": "kg/semana",
     "recommended": "recomendado",
     "maximum": "máximo",
+    "subscription": {
+      "title": "Assinatura",
+      "subtitle": "Gerencie seu plano e pagamentos",
+      "active": "Plano Atual",
+      "upgrade": "Selecionar",
+      "unavailable": "Indisponível",
+      "manage_title": "Assinatura Ativa",
+      "manage_subtitle": "Gerencie sua cobrança e faturas no portal Stripe.",
+      "manage_button": "Gerenciar Cobrança",
+      "error": "Erro ao iniciar pagamento. Verifique suas configurações.",
+      "portal_error": "Erro ao abrir portal de cobrança."
+    },
     "tabs": {
       "profile": "Perfil Pessoal",
+      "subscription": "Assinatura",
       "memories": "Memórias",
       "trainer": "Treinador AI",
       "integrations": "Integrações"
@@ -686,7 +703,18 @@
     "start_conversation": "Inicie sua conversa",
     "typing": "{{name}} digitando...",
     "input_placeholder": "Mensagem para {{name}}...",
-    "disclaimer": "O Treinador pode cometer erros. Considere verificar informações importantes."
+    "disclaimer": "O Treinador pode cometer erros. Considere verificar informações importantes.",
+    "messages_remaining": "{{count}} mensagens restantes hoje",
+    "trial_ended": {
+      "title": "Seu período gratuito acabou",
+      "description": "Você aproveitou seus 7 dias de teste. Para continuar recebendo orientações personalizadas, faça o upgrade para o Pro."
+    },
+    "daily_limit": {
+      "title": "Limite diário atingido",
+      "description": "Você atingiu o limite de 20 mensagens diárias. Amanhã você terá mais 20, ou remova os limites agora com o plano Pro."
+    },
+    "upgrade_button": "Fazer Upgrade Agora",
+    "wait_tomorrow": "Voltar Amanhã"
   },
   "body": {
     "nutrition_title": "Dieta & Macros",
@@ -815,24 +843,6 @@
         "load_error": "Erro ao carregar dados metabólicos."
       }
     }
-  },
-  "chat": {
-    "default_trainer_name": "Treinador AI",
-    "start_conversation": "Inicie sua conversa",
-    "typing": "{{name}} está digitando...",
-    "input_placeholder": "Mensagem para {{name}}...",
-    "disclaimer": "O treinador pode cometer erros. Considere consultar um profissional de saúde.",
-    "messages_remaining": "{{count}} mensagens restantes hoje",
-    "trial_ended": {
-      "title": "Seu período gratuito acabou",
-      "description": "Você aproveitou seus 7 dias de teste. Para continuar recebendo orientações personalizadas, faça o upgrade para o Pro."
-    },
-    "daily_limit": {
-      "title": "Limite diário atingido",
-      "description": "Você atingiu o limite de 20 mensagens diárias. Amanhã você terá mais 20, ou remova os limites agora com o plano Pro."
-    },
-    "upgrade_button": "Fazer Upgrade Agora",
-    "wait_tomorrow": "Voltar Amanhã"
   },
   "onboarding": {
     "validating": "Validando convite...",

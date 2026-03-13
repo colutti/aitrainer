@@ -7,9 +7,15 @@ from typing import List, TYPE_CHECKING
 
 import numpy as np
 
+from src.core.logs import logger
+from src.services.tdee_utils import (
+    calculate_body_composition_changes,
+    calculate_macro_targets as calc_macros,
+)
 from src.api.models.weight_log import WeightLog
 from src.api.models.nutrition_log import NutritionLog
 from src.services.tdee_outliers import filter_outliers
+
 if TYPE_CHECKING:
     from numpy.exceptions import RankWarning
 else:
@@ -20,11 +26,6 @@ else:
             from numpy import RankWarning  # type: ignore
         except ImportError:
             RankWarning = RuntimeWarning  # type: ignore
-from src.core.logs import logger
-from src.services.tdee_utils import (
-    calculate_body_composition_changes,
-    calculate_macro_targets as calc_macros,
-)
 
 if TYPE_CHECKING:
     from src.services.database import MongoDatabase
