@@ -1,3 +1,4 @@
+"""Endpoints for managing workout logs."""
 from datetime import datetime, date as py_date
 from typing import Annotated
 

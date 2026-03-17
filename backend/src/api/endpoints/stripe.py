@@ -93,6 +93,48 @@ def _handle_checkout_completed(session, brain):
         )
 
 
+def _get_subscription_plan(subscription):
+    """Determines the subscription plan based on the price ID."""
+    status = subscription.get("status")
+    if status not in ["active", "trialing"]:
+        return "Free"
+
+    items = subscription.get("items", {}).get("data", [])
+    if not items:
+        return "Free"
+
+    price_id = items[0]["price"]["id"]
+    if price_id == settings.STRIPE_PRICE_ID_BASIC:
+        return "Basic"
+    if price_id == settings.STRIPE_PRICE_ID_PRO:
+        return "Pro"
+    if price_id == settings.STRIPE_PRICE_ID_PREMIUM:
+        return "Premium"
+
+    logger.warning("Unknown Stripe price ID received: %s. Fallback to Free.", price_id)
+    return "Free"
+
+
+def _find_profile_for_subscription(subscription, brain):
+    """Finds user profile by customer ID or metadata email."""
+    customer_id = subscription.get("customer")
+    profile = brain.database.users.find_by_stripe_customer_id(customer_id)
+
+    if not profile:
+        user_email = subscription.get("metadata", {}).get("user_email")
+        if user_email:
+            logger.info(
+                "Customer %s not in DB. Fallback to metadata email: %s",
+                customer_id, user_email
+            )
+            profile = brain.get_user_profile(user_email)
+            if profile:
+                brain.update_user_profile_fields(
+                    user_email, {"stripe_customer_id": customer_id}
+                )
+    return profile
+
+
 def _handle_subscription_updated(subscription, brain):
     """Handle subscription created/updated event."""
     customer_id = subscription.get("customer")
@@ -102,62 +144,39 @@ def _handle_subscription_updated(subscription, brain):
         logger.warning("Subscription %s has no items", subscription["id"])
         return
 
-    price_id = subscription["items"]["data"][0]["price"]["id"]
-    plan = "Free"
+    plan = _get_subscription_plan(subscription)
+    profile = _find_profile_for_subscription(subscription, brain)
 
-    # Only assign a paid plan if the status is active or trialing
-    if status in ["active", "trialing"]:
-        if price_id == settings.STRIPE_PRICE_ID_BASIC:
-            plan = "Basic"
-        elif price_id == settings.STRIPE_PRICE_ID_PRO:
-            plan = "Pro"
-        elif price_id == settings.STRIPE_PRICE_ID_PREMIUM:
-            plan = "Premium"
-        else:
-            logger.warning("Unknown Stripe price ID received: %s. Fallback to Free.", price_id)
-    else:
-        logger.info("Subscription status %s received for customer %s. Set to Free.", status, customer_id)
-
-    profile = brain.database.users.find_by_stripe_customer_id(customer_id)
-    
-    # Fallback to metadata if customer ID mapping doesn't exist yet (race condition)
     if not profile:
-        user_email = subscription.get("metadata", {}).get("user_email")
-        if user_email:
-            logger.info("Customer %s not found in DB. Falling back to metadata email: %s", customer_id, user_email)
-            profile = brain.get_user_profile(user_email)
-            # If found by email, ensure we link the customer ID now
-            if profile:
-                brain.update_user_profile_fields(user_email, {"stripe_customer_id": customer_id})
+        logger.error(
+            "Could not find profile for customer_id: %s or metadata email",
+            customer_id
+        )
+        return
 
-    if profile:
-        c_ts = subscription.get("current_period_start", datetime.now().timestamp())
-        cycle_start = datetime.fromtimestamp(c_ts, tz=timezone.utc)
-        cycle_start_iso = cycle_start.isoformat()
+    c_ts = subscription.get("current_period_start", datetime.now().timestamp())
+    cycle_start = datetime.fromtimestamp(c_ts, tz=timezone.utc)
+    cycle_start_iso = cycle_start.isoformat()
 
-        # Check if we need to reset the counter
-        # 1. Plan changed (upgrade/downgrade)
-        # 2. Billing cycle start changed (new month)
-        # 3. Was Free, now is something else
-        plan_changed = profile.subscription_plan != plan
-        cycle_changed = profile.current_billing_cycle_start != cycle_start_iso
-        
-        updates = {
-            "stripe_subscription_id": subscription["id"],
-            "stripe_subscription_status": status,
-            "subscription_plan": plan,
-            "current_billing_cycle_start": cycle_start_iso,
-            "custom_message_limit": None,
-        }
-        
-        if plan_changed or cycle_changed:
-            logger.info("Resetting message counter for user %s. Plan changed: %s, Cycle changed: %s", 
-                        profile.email, plan_changed, cycle_changed)
-            updates["messages_sent_this_month"] = 0
+    plan_changed = profile.subscription_plan != plan
+    cycle_changed = profile.current_billing_cycle_start != cycle_start_iso
 
-        brain.update_user_profile_fields(profile.email, updates)
-    else:
-        logger.error("Could not find user profile for customer_id: %s or metadata email", customer_id)
+    updates = {
+        "stripe_subscription_id": subscription["id"],
+        "stripe_subscription_status": status,
+        "subscription_plan": plan,
+        "current_billing_cycle_start": cycle_start_iso,
+        "custom_message_limit": None,
+    }
+
+    if plan_changed or cycle_changed:
+        logger.info(
+            "Resetting counter for user %s. Plan: %s, Cycle: %s",
+            profile.email, plan_changed, cycle_changed
+        )
+        updates["messages_sent_this_month"] = 0
+
+    brain.update_user_profile_fields(profile.email, updates)
 
 
 def _handle_subscription_deleted(subscription, brain):

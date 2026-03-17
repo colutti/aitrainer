@@ -8,7 +8,7 @@ test('SettingsPage mobile layout (375px)', async ({ page }) => {
   await page.waitForLoadState('networkidle');
 
   // Tabs should be visible - specifically the settings nav with gap-2
-  const settingsNav = page.locator('nav:has-text("Perfil Pessoal")');
+  const settingsNav = page.locator('nav').filter({ hasText: /Perfil Pessoal/i });
   await expect(settingsNav).toBeVisible();
 
   // User info should be visible below (lg:hidden = visible on mobile)
@@ -23,7 +23,7 @@ test('SettingsPage desktop layout (1920px)', async ({ page }) => {
   await page.waitForLoadState('networkidle');
 
   // Tabs visible - specifically the settings nav with gap-2
-  const settingsNav = page.locator('nav:has-text("Perfil Pessoal")');
+  const settingsNav = page.locator('nav').filter({ hasText: /Perfil Pessoal/i });
   await expect(settingsNav).toBeVisible();
 
   // User info sidebar (hidden lg:block = visible on desktop)

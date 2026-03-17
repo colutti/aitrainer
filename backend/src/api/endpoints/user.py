@@ -2,6 +2,7 @@
 This module contains the API endpoints for user management.
 """
 
+import time
 from typing import Annotated
 import firebase_admin.auth  # type: ignore
 
@@ -42,7 +43,6 @@ def verify_id_token(token: str) -> dict:
         return firebase_admin.auth.verify_id_token(token)
     except ValueError as e:
         if "Token used too early" in str(e):
-            import time
             logger.info("Token used too early (clock skew). Retrying in 1s...")
             time.sleep(1.1)
             return firebase_admin.auth.verify_id_token(token)
