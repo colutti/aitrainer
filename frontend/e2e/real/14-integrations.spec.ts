@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+
 import { test, expect } from './fixtures';
 import { cleanupUserData } from './helpers/cleanup';
 
@@ -41,7 +43,7 @@ test.describe('Integrations', () => {
     // We create a dummy CSV content
     const csvContent = 'date,weight,body_fat\n2024-03-01,80.5,18.0\n';
     const filePath = '/tmp/zepp_test.csv';
-    require('fs').writeFileSync(filePath, csvContent);
+    fs.writeFileSync(filePath, csvContent);
     
     const [fileChooser] = await Promise.all([
       authenticatedPage.waitForEvent('filechooser'),

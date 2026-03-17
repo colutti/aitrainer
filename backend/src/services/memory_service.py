@@ -1,8 +1,11 @@
 """Service for managing memories in Qdrant."""
 from typing import List, Dict, Any, Tuple
+from datetime import datetime
+from uuid import uuid4
 from qdrant_client import QdrantClient, models as qdrant_models
 from src.core.logs import logger
 from src.utils.qdrant_utils import scroll_all_user_points, point_to_dict
+from src.services.memory_tools import _embed_text
 
 def get_memories_paginated(
     user_id: str,
@@ -48,4 +51,43 @@ def get_memories_paginated(
 
     except (ValueError, TypeError, AttributeError) as e:
         logger.error("Failed to retrieve paginated memories: %s", e)
+        raise
+
+def add_memory(
+    user_id: str,
+    text: str,
+    qdrant_client: QdrantClient,
+    collection_name: str,
+    category: str = "context",
+) -> str:
+    """Adds a new memory to Qdrant."""
+    logger.info("Adding memory for user: %s (category: %s)", user_id, category)
+
+    try:
+        # Generate embedding
+        embedding = _embed_text(text)
+
+        # Create point
+        memory_id = str(uuid4())
+        now = datetime.utcnow().isoformat()
+        point = qdrant_models.PointStruct(
+            id=memory_id,
+            vector=embedding,
+            payload={
+                "id": memory_id,
+                "memory": text,
+                "category": category,
+                "user_id": user_id,
+                "created_at": now,
+                "updated_at": now,
+            },
+        )
+
+        # Upsert
+        qdrant_client.upsert(collection_name, points=[point])
+        logger.info("Memory saved successfully with ID: %s", memory_id)
+        return memory_id
+
+    except (ValueError, TypeError, AttributeError, Exception) as e:
+        logger.error("Failed to add memory for %s: %s", user_id, e)
         raise

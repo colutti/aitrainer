@@ -64,7 +64,10 @@ from src.services.profile_tools import (
     create_update_user_goal_tool,
 )
 from src.repositories.event_repository import EventRepository
-from src.services.memory_service import get_memories_paginated as paginate_memories
+from src.services.memory_service import (
+    get_memories_paginated as paginate_memories,
+    add_memory as service_add_memory,
+)
 from src.core.logs import logger
 from src.api.models.chat_history import ChatHistory
 from src.api.models.user_profile import UserProfile
@@ -777,4 +780,16 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             page_size,
             self._qdrant_client,
             settings.QDRANT_COLLECTION_NAME,
+        )
+
+    async def add_memory(self, text: str, user_id: str) -> str:
+        """Adds a memory to Qdrant."""
+        if self._qdrant_client is None:
+            raise HTTPException(status_code=500, detail="Qdrant not initialized")
+
+        return service_add_memory(
+            user_id=user_id,
+            text=text,
+            qdrant_client=self._qdrant_client,
+            collection_name=settings.QDRANT_COLLECTION_NAME
         )

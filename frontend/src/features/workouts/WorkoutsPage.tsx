@@ -75,7 +75,19 @@ export function WorkoutsPage() {
           variant="primary" 
           size="lg" 
           className="shadow-orange gap-2"
-          onClick={() => { setSelectedWorkout({ id: '', exercises: [], date: new Date().toISOString() } as any); }}
+          onClick={() => { 
+            setSelectedWorkout({ 
+              id: '', 
+              user_email: '',
+              date: new Date().toISOString(),
+              workout_type: '',
+              exercises: [],
+              duration_minutes: 0,
+              source: 'manual',
+              external_id: null,
+              notes: ''
+            }); 
+          }}
         >
           <Plus size={20} />
           {t('workouts.new_workout')}
