@@ -1,6 +1,7 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import { stripeApi } from '../../../shared/api/stripe-api';
 import { onboardingApi } from '../api/onboarding-api';
 
 import { OnboardingPage } from './OnboardingPage';
@@ -9,6 +10,13 @@ vi.mock('../api/onboarding-api', () => ({
   onboardingApi: {
     validateToken: vi.fn(),
     completeOnboarding: vi.fn(),
+    completePublicOnboarding: vi.fn(),
+  },
+}));
+
+vi.mock('../../../shared/api/stripe-api', () => ({
+  stripeApi: {
+    createCheckoutSession: vi.fn(),
   },
 }));
 
@@ -26,14 +34,21 @@ vi.mock('firebase/auth', () => ({
 }));
 
 const mockNavigate = vi.fn();
+const mockUseAuthStore = vi.fn();
+
 vi.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
   useSearchParams: () => [new URLSearchParams({ token: 'abc-123' })],
 }));
 
+vi.mock('../../../shared/hooks/useAuth', () => ({
+  useAuthStore: () => mockUseAuthStore(),
+}));
+
 describe('OnboardingPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseAuthStore.mockReturnValue({ userInfo: null });
   });
 
   it('should validate token on mount', async () => {
@@ -92,15 +107,14 @@ describe('OnboardingPage', () => {
     const trainerCard = screen.getByText('GymBro');
     fireEvent.click(trainerCard);
     
-    // Agora o botão é "Próximo" para ir para Integrações
-    const nextToIntegrationsBtn = screen.getByRole('button', { name: /próximo/i });
-    fireEvent.click(nextToIntegrationsBtn);
+    // Trigger submit
+    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
 
-    // Passo adicional: Integrações
+    // Step 5: Integrations
     expect(await screen.findByText(/Turbine sua Evolução/i)).toBeInTheDocument();
-    const finishBtn = screen.getByRole('button', { name: /finalizar/i });
-    fireEvent.click(finishBtn);
+    fireEvent.click(screen.getByRole('button', { name: /finalizar/i }));
 
+    // Verification
     await waitFor(() => {
       expect(onboardingApi.completeOnboarding).toHaveBeenCalled();
       expect(screen.getByText(/Tudo Pronto/i)).toBeInTheDocument();
@@ -135,19 +149,60 @@ describe('OnboardingPage', () => {
     // Step 4: Trainer - Atlas should be unlocked
     expect(await screen.findByText('Escolha seu Treinador')).toBeInTheDocument();
     const atlasCard = screen.getByText('Atlas');
-    // Ensure it's not disabled (in this component we don't use 'disabled' attribute on buttons but we check logic)
+    // Ensure it's not disabled
     fireEvent.click(atlasCard);
+
+    // Trigger submit
     fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
 
-    // Step 5: Integrations
-    expect(await screen.findByText(/Turbine sua Evolução/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /finalizar/i }));
-
+    // Verification (Redirect to Stripe since Pro is a paid plan)
     await waitFor(() => {
-      expect(onboardingApi.completeOnboarding).toHaveBeenCalledWith(expect.objectContaining({
-        subscription_plan: 'Pro',
-        trainer_type: 'atlas'
-      }));
+      expect(onboardingApi.completeOnboarding).toHaveBeenCalled();
+      expect(stripeApi.createCheckoutSession).toHaveBeenCalled();
+    });
+  });
+
+  it('should redirect to Stripe if Premium plan selected in onboarding (Public Flow)', async () => {
+    // 1. Setup
+    mockUseAuthStore.mockReturnValue({ 
+      userInfo: { email: 'premium@example.com', onboarding_completed: false } 
+    });
+    vi.mocked(onboardingApi.completePublicOnboarding).mockResolvedValue({ token: 'premium-token' });
+    vi.mocked(stripeApi.createCheckoutSession).mockResolvedValue('https://stripe.com/checkout/premium');
+
+    // Mock window.location.href
+    const originalLocation = window.location;
+    // @ts-expect-error - overriding part of window.location
+    window.location = { ...originalLocation, href: '' } as unknown as Location;
+
+    render(<OnboardingPage />);
+    
+    // Directo para Perfil (Step 2)
+    expect(await screen.findByText('Seu Perfil')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Masculino'));
+    fireEvent.change(screen.getByLabelText(/idade/i), { target: { value: '35' } });
+    fireEvent.change(screen.getByLabelText(/peso/i), { target: { value: '90' } });
+    fireEvent.change(screen.getByLabelText(/altura/i), { target: { value: '185' } });
+    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+
+    // Step 3: Plan - Select Premium
+    expect(await screen.findByText('Escolha seu Plano')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Premium'));
+    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+
+    // Step 4: Trainer - Sofia (Premium)
+    expect(await screen.findByText('Escolha seu Treinador')).toBeInTheDocument();
+    const sofiaCard = screen.getByText('Sofia');
+    fireEvent.click(sofiaCard);
+    
+    // Trigger submit
+    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+
+    // Verification
+    await waitFor(() => {
+      expect(onboardingApi.completePublicOnboarding).toHaveBeenCalled();
+      expect(stripeApi.createCheckoutSession).toHaveBeenCalled();
+      expect(window.location.href).toBe('https://stripe.com/checkout/premium');
     });
   });
 });

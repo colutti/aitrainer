@@ -20,7 +20,7 @@ export const Pricing = () => {
 
   const handleSubscribe = async (planId: string) => {
     if (planId === 'free') {
-      void navigate('/login?mode=register');
+      void navigate('/login?mode=register&plan=free');
       return;
     }
 

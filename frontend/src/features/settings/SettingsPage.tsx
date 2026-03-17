@@ -23,14 +23,14 @@ export function SettingsPage() {
   ];
 
   return (
-    <div className="flex flex-col h-full space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
+    <div className="flex flex-col h-full space-y-4 md:space-y-6 pb-20">
       {/* Header */}
       <div className="shrink-0">
-        <h1 className="text-3xl font-bold text-text-primary flex items-center gap-3">
-          <SettingsIcon className="text-gradient-start" size={32} />
+        <h1 className="text-3xl font-black text-text-primary flex items-center gap-3 tracking-tight">
+          <SettingsIcon className="text-primary" size={32} />
           {t('settings.title')}
         </h1>
-        <p className="text-text-secondary mt-1">{t('settings.subtitle')}</p>
+        <p className="text-text-secondary mt-1 text-sm font-medium">{t('settings.subtitle')}</p>
       </div>
 
       {/* Horizontal Tab Navigation */}
@@ -41,10 +41,10 @@ export function SettingsPage() {
               key={tab.to}
               to={tab.to}
               className={({ isActive }) => cn(
-                "flex items-center gap-1 sm:gap-2 px-2 sm:px-3 md:px-4 py-2 rounded-lg text-xs sm:text-sm md:text-base font-medium transition-colors whitespace-nowrap shrink-0 md:shrink",
+                "flex items-center gap-1 sm:gap-2 px-2 sm:px-3 md:px-4 py-2 rounded text-xs sm:text-sm md:text-base font-black uppercase tracking-widest transition-colors duration-150 whitespace-nowrap shrink-0 md:shrink",
                 isActive
-                  ? "bg-gradient-start/10 text-gradient-start border border-gradient-start/20 shadow-orange-sm/5"
-                  : "text-text-secondary hover:text-text-primary hover:bg-white/5"
+                  ? "bg-primary/10 text-primary border border-primary/20"
+                  : "text-text-muted hover:text-text-primary hover:bg-white/5"
               )}
             >
               <tab.icon size={18} className="sm:w-5 sm:h-5" />

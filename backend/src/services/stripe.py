@@ -35,6 +35,11 @@ def create_checkout_session(
             cancel_url=cancel_url,
             metadata={
                 "user_email": user.email
+            },
+            subscription_data={
+                "metadata": {
+                    "user_email": user.email
+                }
             }
         )
         return str(session.url)

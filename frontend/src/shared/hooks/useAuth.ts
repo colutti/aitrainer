@@ -62,7 +62,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   isAuthenticated: false,
   userInfo: null,
   isAdmin: false,
-  isLoading: false,
+  isLoading: true, // Start with loading true
 
   /**
    * Login with email and password
@@ -206,6 +206,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     const token = get().getToken();
 
     if (!token) {
+      set({ isLoading: false });
       return;
     }
 

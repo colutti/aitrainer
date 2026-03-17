@@ -25,11 +25,40 @@ export default defineConfig({
     {
       name: 'setup',
       testMatch: /auth\.setup\.ts/,
+      testIgnore: /real\/auth\.setup\.ts/,
+    },
+    {
+      name: 'integration-setup',
+      testDir: './e2e/real',
+      testMatch: /auth\.setup\.ts/,
     },
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/user.json' },
       dependencies: ['setup'],
+    },
+    {
+      name: 'integration-public',
+      use: { 
+        ...devices['Desktop Chrome'],
+        storageState: { cookies: [], origins: [] }
+      },
+      testDir: './e2e/real',
+      testMatch: /01-landing\.spec\.ts/,
+      fullyParallel: false,
+      workers: 1,
+    },
+    {
+      name: 'integration',
+      use: { 
+        ...devices['Desktop Chrome'],
+        storageState: { cookies: [], origins: [] }
+      },
+      testDir: './e2e/real',
+      testIgnore: [/auth\.setup\.ts/, /01-landing\.spec\.ts/],
+      dependencies: ['integration-setup'],
+      fullyParallel: false,
+      workers: 1,
     },
     {
       name: 'admin-chromium',

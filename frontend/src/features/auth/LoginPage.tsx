@@ -93,7 +93,7 @@ export function LoginPage() {
 
         localStorage.setItem('auth_token', response.token);
         
-        const planId = searchParams.get('plan');
+        const planId = searchParams.get('plan')?.toLowerCase();
         if (planId && planId !== 'free') {
           try {
             const { stripeApi } = await import('../../shared/api/stripe-api');
@@ -108,9 +108,12 @@ export function LoginPage() {
               );
               window.location.href = url;
               return;
+            } else {
+              console.warn(`No price ID found for plan: ${planId}`);
             }
           } catch (stripeError) {
             console.error('Stripe redirect error:', stripeError);
+            notify.error(t('settings.subscription.error', 'Erro ao iniciar pagamento'));
           }
         }
         

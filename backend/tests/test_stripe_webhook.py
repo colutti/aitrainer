@@ -139,3 +139,59 @@ def test_webhook_subscription_deleted(mock_brain, mock_stripe_construct_event):
             "stripe_subscription_id": None,
         }
     )
+
+def test_webhook_subscription_updated_fallback(mock_brain, mock_stripe_construct_event):
+    """Test fallback to metadata email if customer_id not yet mapped (race condition)."""
+    now_ts = datetime.now().timestamp()
+    mock_stripe_construct_event.return_value = {
+        "type": "customer.subscription.updated",
+        "data": {
+            "object": {
+                "id": "sub_123",
+                "customer": "cus_fallback",
+                "status": "active",
+                "current_period_start": now_ts,
+                "items": {
+                    "data": [
+                        {"price": {"id": "price_basic"}}
+                    ]
+                },
+                "metadata": {
+                    "user_email": "fallback@example.com"
+                }
+            }
+        }
+    }
+    
+    # 1. Lookup by customer_id fails
+    mock_brain.database.users.find_by_stripe_customer_id.return_value = None
+    
+    # 2. Lookup by email succeeds
+    mock_user = MagicMock(email="fallback@example.com")
+    mock_brain.get_user_profile.return_value = mock_user
+    
+    with patch("src.api.endpoints.stripe.settings") as mock_settings:
+        mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
+        mock_settings.STRIPE_PRICE_ID_BASIC = "price_basic"
+        response = client.post(
+            "/stripe/webhook",
+            content=b"{}",
+            headers={"stripe-signature": "test_sig"}
+        )
+    
+    assert response.status_code == 200
+    
+    # Verify both mapping and plan update were called
+    # First call: mapping customer_id
+    # Second call: updating subscription details
+    assert mock_brain.update_user_profile_fields.call_count == 2
+    
+    # Check mapping call
+    mapping_call = mock_brain.update_user_profile_fields.call_args_list[0]
+    assert mapping_call[0][0] == "fallback@example.com"
+    assert mapping_call[0][1]["stripe_customer_id"] == "cus_fallback"
+    
+    # Check plan update call
+    plan_call = mock_brain.update_user_profile_fields.call_args_list[1]
+    assert plan_call[0][0] == "fallback@example.com"
+    assert plan_call[0][1]["subscription_plan"] == "Basic"

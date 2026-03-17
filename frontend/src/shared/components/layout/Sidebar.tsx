@@ -14,9 +14,16 @@ import { useAuthStore } from '../../hooks/useAuth';
 import { cn } from '../../utils/cn';
 import { UserAvatar } from '../ui/UserAvatar';
 
+const PLAN_BADGE_STYLES: Record<string, string> = {
+  Free: 'bg-zinc-700/60 text-zinc-300 border-zinc-600',
+  Basic: 'bg-blue-900/50 text-blue-300 border-blue-700',
+  Pro: 'bg-orange-900/50 text-orange-300 border-orange-700',
+  Premium: 'bg-purple-900/50 text-purple-300 border-purple-700',
+};
+
 interface NavItemProps {
   to: string;
-  icon: React.ElementType; // Better way to pass icons
+  icon: React.ElementType;
   label: string;
   dataTour?: string;
   end?: boolean;
@@ -29,18 +36,17 @@ function NavItem({ to, icon: Icon, label, dataTour, end = false }: NavItemProps)
       end={end}
       data-tour={dataTour}
       className={({ isActive }) => cn(
-        "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
-        isActive 
-          ? "bg-linear-to-r from-gradient-start to-gradient-end text-white shadow-primary" 
+        "flex items-center gap-4 px-3 py-3 rounded-md transition-colors duration-150 font-bold text-base",
+        isActive
+          ? "bg-gradient-start text-white shadow-md shadow-gradient-start/20"
           : "text-text-secondary hover:bg-white/5 hover:text-text-primary"
       )}
     >
-      <Icon size={20} className="shrink-0" />
+      <Icon size={22} className="shrink-0" />
       <span>{label}</span>
     </NavLink>
   );
 }
-
 
 /**
  * Sidebar component for Desktop navigation
@@ -50,27 +56,26 @@ export function Sidebar() {
   const { t } = useTranslation();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-72 bg-dark-card border-r border-white/5 hidden lg:flex flex-col p-6 z-50 shadow-2xl">
+    <aside className="fixed left-0 top-0 h-screen w-64 bg-dark-card border-r border-white/10 hidden lg:flex flex-col px-4 pb-4 pt-5 z-50">
       {/* Brand */}
-      <div className="flex flex-col items-center gap-4 py-8 mb-8 relative">
-        <div className="absolute inset-0 bg-linear-to-b from-gradient-start/5 to-transparent rounded-3xl -m-2 opacity-50" />
-        <img 
-          src="/brand_icon_final.png" 
+      <div className="flex items-center gap-4 px-2 mb-10">
+        <img
+          src="/brand_icon_final.png"
           alt="FityQ"
-          className="h-32 w-32 object-contain drop-shadow-[0_0_15px_rgba(235,93,29,0.4)] filter brightness-110 relative z-10"
+          className="h-14 w-14 object-contain shrink-0"
         />
-        <div className="text-center relative z-10">
-          <span className="text-2xl font-black bg-linear-to-r from-white to-white/60 bg-clip-text text-transparent tracking-[0.2em] block">
+        <div>
+          <span className="text-3xl font-black text-white tracking-tighter block leading-none">
             FityQ
           </span>
-          <span className="text-[10px] uppercase tracking-[0.4em] text-gradient-start font-bold">
+          <span className="text-xs uppercase tracking-widest text-text-muted font-bold mt-1.5 block">
             {t('nav.brand_tagline')}
           </span>
         </div>
       </div>
 
       {/* Main Navigation */}
-      <nav className="flex-1 flex flex-col gap-1 overflow-y-auto hide-scrollbar">
+      <nav className="flex-1 flex flex-col gap-0.5 overflow-y-auto hide-scrollbar">
         <NavItem to="/dashboard" icon={LayoutDashboard} label={t('nav.home')} dataTour="tour-nav-home" end={true} />
         <NavItem to="/dashboard/chat" icon={MessageSquare} label={t('nav.trainer')} dataTour="tour-nav-trainer" />
         <NavItem to="/dashboard/workouts" icon={Dumbbell} label={t('nav.workouts')} dataTour="tour-nav-workouts" />
@@ -80,27 +85,63 @@ export function Sidebar() {
 
       {/* User Info Section */}
       {userInfo && (
-        <div className="mt-auto pt-6 border-t border-border mb-4">
-          <div className="flex items-center gap-3 px-3 py-3 bg-white/5 rounded-xl">
-            <UserAvatar photo={userInfo.photo_base64} name={userInfo.name} size="md" />
+        <div className="mt-auto pt-2 border-t border-white/10">
+          <div className="flex items-center gap-4 px-1 py-1">
+            <UserAvatar photo={userInfo.photo_base64} name={userInfo.name} size="lg" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-text-primary truncate">{userInfo.name}</p>
-              <p className="text-xs text-text-muted truncate">{userInfo.email}</p>
+              {/* Name + badge on the same line */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-lg font-bold text-text-primary leading-tight truncate">{userInfo.name}</p>
+                {userInfo.subscription_plan && (
+                  <span className={cn(
+                    "inline-flex items-center px-2 py-0.5 rounded text-xs font-black uppercase tracking-wider border leading-none shadow-sm",
+                    PLAN_BADGE_STYLES[userInfo.subscription_plan] ?? PLAN_BADGE_STYLES.Free
+                  )}>
+                    {userInfo.subscription_plan}
+                  </span>
+                )}
+              </div>
+              {/* Email */}
+              <p className="text-[13px] text-text-muted truncate mt-1">{userInfo.email}</p>
+              {/* Message count */}
+              {typeof userInfo.effective_remaining_messages === 'number' && (
+                <div className="mt-2 text-sm text-text-muted border-l-2 border-gradient-start/30 pl-2">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-text-primary font-bold">{userInfo.effective_remaining_messages}</span>
+                    <span className="text-xs opacity-50">/ {userInfo.current_daily_limit ?? userInfo.custom_message_limit ?? 100}</span>
+                  </div>
+                  <span className="text-xs uppercase tracking-widest opacity-40 font-bold block">
+                    {t('common.msgs')}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Bottom Actions / Settings Section */}
-      <div className="pt-6 border-t border-border flex flex-col gap-1">
-        <NavItem to="/dashboard/settings" icon={SettingsIcon} label={t('nav.settings')} dataTour="tour-nav-settings" />
+      {/* Bottom Actions */}
+      <div className="pt-4 border-t border-white/10 flex flex-col gap-1">
+        <NavLink
+          to="/dashboard/settings"
+          data-tour="tour-nav-settings"
+          className={({ isActive }) => cn(
+            "flex items-center gap-4 px-3 py-3 rounded-md transition-colors duration-150 font-bold text-base",
+            isActive
+              ? "bg-gradient-start text-white shadow-md shadow-gradient-start/20"
+              : "text-text-secondary hover:bg-white/5 hover:text-text-primary"
+          )}
+        >
+          <SettingsIcon size={22} className="shrink-0" />
+          <span>{t('nav.settings')}</span>
+        </NavLink>
 
         <button
           onClick={() => { logout(); }}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-text-muted hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 mt-2"
+          className="flex items-center gap-4 px-3 py-3 rounded-md text-text-muted hover:bg-red-500/10 hover:text-red-400 transition-colors duration-150 font-bold text-base"
         >
-          <LogOut size={20} className="shrink-0" />
-          <span className="font-medium">{t('common.logout')}</span>
+          <LogOut size={22} className="shrink-0" />
+          <span>{t('common.logout')}</span>
         </button>
       </div>
     </aside>

@@ -10,6 +10,7 @@ interface ProtectedRouteProps {
 /**
  * ProtectedRoute component
  * 
+ *
  * Guards routes that require authentication.
  * Redirects to /login if not authenticated.
  * Redirects to /dashboard if authenticated but lacks admin privileges (when required).

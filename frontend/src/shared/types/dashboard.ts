@@ -29,6 +29,9 @@ export interface DashboardStats {
     muscle_diff?: number | null;
     muscle_diff_15?: number | null;
     muscle_diff_30?: number | null;
+    muscle_diff_kg?: number | null;
+    muscle_diff_kg_15?: number | null;
+    muscle_diff_kg_30?: number | null;
     bmr?: number | null;
   };
   calories: {

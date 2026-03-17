@@ -72,15 +72,15 @@ export function NutritionPage() {
   const macroTargets = stats?.macro_targets ?? { protein: 180, carbs: 250, fat: 80 };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold text-text-primary flex items-center gap-3">
-            <Utensils className="text-gradient-start" size={32} />
+          <h1 className="text-3xl font-black text-text-primary flex items-center gap-3 tracking-tight">
+            <Utensils className="text-primary" size={32} />
             {t('nutrition.title')}
           </h1>
-          <p className="text-text-secondary mt-3">
+          <p className="text-text-secondary mt-2 text-sm font-medium">
             {t('nutrition.subtitle')}
           </p>
         </div>
@@ -176,11 +176,11 @@ export function NutritionPage() {
         {/* Adherence/Insights */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <TrendingDown className="text-gradient-start" size={20} />
-            <h2 className="text-xl font-bold text-text-primary">{t('nutrition.adherence_title')}</h2>
+            <TrendingDown className="text-primary" size={20} />
+            <h2 className="text-xl font-black text-text-primary tracking-tight">{t('nutrition.adherence_title')}</h2>
           </div>
           
-          <div className="bg-dark-card border border-border rounded-2xl p-6">
+          <div className="bg-dark-card border border-border rounded-xl p-6">
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="relative w-32 h-32 flex items-center justify-center">
                 <svg className="w-full h-full transform -rotate-90">
@@ -202,7 +202,7 @@ export function NutritionPage() {
                     fill="transparent"
                     strokeDasharray={364.4}
                     strokeDashoffset={364.4 * (1 - (stats?.stability_score ?? 0) / 100)}
-                    className="text-gradient-start"
+                    className="text-primary"
                     strokeLinecap="round"
                   />
                 </svg>
@@ -226,8 +226,8 @@ export function NutritionPage() {
                 return (
                   <div key={i} className="flex flex-col items-center gap-1">
                     <div className={cn(
-                      "w-full aspect-square rounded-md",
-                      adhered ? "bg-gradient-start shadow-orange-sm" : "bg-dark-bg border border-border"
+                      "w-full aspect-square rounded-sm",
+                      adhered ? "bg-primary" : "bg-dark-bg border border-border"
                     )} />
                     <span className="text-[10px] text-text-muted font-medium">
                       {weeklyDays[i]}

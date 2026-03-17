@@ -88,7 +88,7 @@ describe('WeightTab', () => {
   it('should render loading state initially', () => {
     vi.mocked(useWeightTab).mockReturnValue(makeMock({ isLoading: true }));
     const { container } = render(<MemoryRouter><WeightTab /></MemoryRouter>);
-    expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
+    expect(container.querySelector('.h-64')).toBeInTheDocument();
   });
 
   it('should render form and history list', () => {

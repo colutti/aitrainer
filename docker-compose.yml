@@ -65,7 +65,7 @@ services:
     volumes:
       - mongodata:/data/db
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.runCommand('ping').ok\" -u $${MONGO_INITDB_ROOT_USERNAME} -p $${MONGO_INITDB_ROOT_PASSWORD} --authenticationDatabase admin"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -97,7 +97,7 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
     healthcheck:
-      test: curl -f http://localhost:6333/health || exit 1
+      test: ["CMD", "/usr/bin/bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/6333 && exec 3<&-"]
       interval: 10s
       timeout: 5s
       retries: 5

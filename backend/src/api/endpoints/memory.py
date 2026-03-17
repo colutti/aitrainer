@@ -1,7 +1,4 @@
-"""
-This module contains the API endpoints for memory management.
-"""
-
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -17,6 +14,31 @@ router = APIRouter()
 
 CurrentUser = Annotated[str, Depends(verify_token)]
 AITrainerBrainDep = Annotated[AITrainerBrain, Depends(get_ai_trainer_brain)]
+
+
+@router.post("", response_model=MemoryItem)
+async def create_memory(
+    user_email: CurrentUser,
+    brain: AITrainerBrainDep,
+    memory_data: dict,
+) -> MemoryItem:
+    """
+    Creates a new memory / insight for the user.
+    Mainly for testing or manual overrides.
+    """
+    text = memory_data.get("memory")
+    if not text:
+        raise HTTPException(status_code=400, detail="Missing 'memory' text")
+
+    memory_id = await brain.add_memory(text, user_email)
+
+    # Return the newly created item
+    return MemoryItem(
+        id=memory_id,
+        memory=text,
+        created_at=datetime.now(),
+        updated_at=datetime.now(),
+    )
 
 
 @router.get("/list", response_model=MemoryListResponse)

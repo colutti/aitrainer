@@ -34,16 +34,16 @@ export function WeightLogCard({ log, onDelete, onEdit, onClick }: WeightLogCardP
     <div 
       onClick={() => onClick?.(log)}
       className={cn(
-        "bg-dark-card border border-border/50 rounded-2xl p-4 hover:border-gradient-start/40 transition-all duration-300 group flex flex-col gap-3 w-full hover:bg-white/5 active:scale-[0.99] relative overflow-hidden",
+        "bg-dark-card border border-border rounded-xl p-4 hover:border-primary/40 transition-colors duration-150 group flex flex-col gap-3 w-full hover:bg-white/5 relative overflow-hidden",
         onClick && "cursor-pointer"
       )}
     >
       {/* Accent Line */}
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-start opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
 
       <div className="flex items-center gap-5 w-full">
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gradient-start/10 to-gradient-end/10 flex flex-shrink-0 items-center justify-center text-gradient-start group-hover:scale-110 transition-transform duration-500 shadow-inner">
-          <Scale size={22} />
+        <div className="w-11 h-11 rounded bg-primary/10 flex shrink-0 items-center justify-center text-primary transition-colors duration-150 border border-primary/20">
+          <Scale size={20} />
         </div>
         
         <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
@@ -57,7 +57,7 @@ export function WeightLogCard({ log, onDelete, onEdit, onClick }: WeightLogCardP
                 
                 {hasTrend && (
                   <div className={cn(
-                    "flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-md shadow-sm border",
+                    "flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded shadow-sm border",
                     isTrendUp 
                       ? "bg-red-500/5 text-red-500 border-red-500/10" 
                       : "bg-emerald-500/5 text-emerald-500 border-emerald-500/10"
@@ -94,7 +94,7 @@ export function WeightLogCard({ log, onDelete, onEdit, onClick }: WeightLogCardP
                   variant="ghost" 
                   size="icon" 
                    onClick={(e) => { e.stopPropagation(); onEdit?.(log); }}
-                   className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all hover:bg-white/10"
+                   className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-white/10"
                    title={t('shared.edit')}
                  >
                   <Edit2 size={16} className="text-text-muted hover:text-white" />
@@ -103,7 +103,7 @@ export function WeightLogCard({ log, onDelete, onEdit, onClick }: WeightLogCardP
                   variant="danger" 
                   size="icon" 
                    onClick={handleDelete}
-                   className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all hover:scale-110 hover:shadow-red bg-red-500/10 border-red-500/20"
+                   className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-red-500/20 bg-red-500/10 border-red-500/20"
                    title={t('shared.delete')}
                  >
                   <Trash2 size={16} />
@@ -111,7 +111,7 @@ export function WeightLogCard({ log, onDelete, onEdit, onClick }: WeightLogCardP
               </div>
               
               {onClick && (
-                <div className="text-text-muted/30 ml-2 pl-4 border-l border-white/5 group-hover:text-gradient-start group-hover:translate-x-1 transition-all">
+                <div className="text-text-muted/30 ml-2 pl-4 border-l border-white/5 group-hover:text-primary transition-colors duration-150">
                    <ChevronRight size={22} />
                 </div>
               )}

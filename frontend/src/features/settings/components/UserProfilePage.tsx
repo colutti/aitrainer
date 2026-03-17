@@ -24,7 +24,7 @@ export function UserProfilePage() {
   const profileSchema = z.object({
     display_name: z.string().max(50).optional(),
     email: z.string().email(),
-    age: z.coerce.number().min(1, { message: t('validation.invalid_age') }),
+    age: z.coerce.number().min(18, { message: t('validation.invalid_age') }),
     height: z.coerce.number().min(1),
     gender: z.string().min(1),
     goal_type: z.enum(['lose', 'gain', 'maintain']),

@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { useChatStore } from '../../shared/hooks/useChat';
@@ -42,7 +43,11 @@ describe('ChatPage', () => {
   });
 
   it('should render empty state when no messages', () => {
-    render(<ChatPage />);
+    render(
+      <MemoryRouter>
+        <ChatPage />
+      </MemoryRouter>
+    );
     expect(screen.getByText('Inicie sua conversa')).toBeInTheDocument();
   });
 
@@ -51,7 +56,11 @@ describe('ChatPage', () => {
         ...defaultSettingsStore,
         availableTrainers: []
     });
-    render(<ChatPage />);
+    render(
+      <MemoryRouter>
+        <ChatPage />
+      </MemoryRouter>
+    );
     expect(mockFetchTrainer).toHaveBeenCalled();
     expect(mockFetchAvailable).toHaveBeenCalled();
   });
@@ -62,12 +71,20 @@ describe('ChatPage', () => {
         trainer: null,
         availableTrainers: []
     });
-    render(<ChatPage />);
+    render(
+      <MemoryRouter>
+        <ChatPage />
+      </MemoryRouter>
+    );
     expect(screen.getByText('Treinador AI')).toBeInTheDocument();
   });
 
   it('should handle message submission', () => {
-    render(<ChatPage />);
+    render(
+      <MemoryRouter>
+        <ChatPage />
+      </MemoryRouter>
+    );
     
     const input = screen.getByPlaceholderText(/Mensagem para Marcus/i);
     fireEvent.change(input, { target: { value: 'New Message' } });
@@ -86,7 +103,11 @@ describe('ChatPage', () => {
         ...defaultChatStore,
         isStreaming: true
     });
-    render(<ChatPage />);
+    render(
+      <MemoryRouter>
+        <ChatPage />
+      </MemoryRouter>
+    );
     const button = screen.getByRole('button');
     const form = button.closest('form');
     if (!form) throw new Error('Form not found');
@@ -101,13 +122,21 @@ describe('ChatPage', () => {
       error: 'default',
     });
 
-    render(<ChatPage />);
+    render(
+      <MemoryRouter>
+        <ChatPage />
+      </MemoryRouter>
+    );
     // errors.default in pt-BR.json is "Algo deu errado..."
     expect(screen.getByText(/Algo deu errado/i)).toBeInTheDocument();
   });
 
   it('should handle multiline input with Shift+Enter and submit on Enter', () => {
-    render(<ChatPage />);
+    render(
+      <MemoryRouter>
+        <ChatPage />
+      </MemoryRouter>
+    );
     const input = screen.getByPlaceholderText(/Mensagem para Marcus/i);
 
     // Simulate typing 'Line1'
@@ -132,7 +161,11 @@ describe('ChatPage', () => {
       error: 'TRIAL_EXPIRED',
     });
 
-    render(<ChatPage />);
+    render(
+      <MemoryRouter>
+        <ChatPage />
+      </MemoryRouter>
+    );
     expect(screen.queryByPlaceholderText(/Mensagem/i)).not.toBeInTheDocument();
     expect(screen.getByText(/Seu período gratuito acabou/i)).toBeInTheDocument();
   });
@@ -143,7 +176,11 @@ describe('ChatPage', () => {
       error: 'DAILY_LIMIT_REACHED',
     });
 
-    render(<ChatPage />);
+    render(
+      <MemoryRouter>
+        <ChatPage />
+      </MemoryRouter>
+    );
     expect(screen.queryByPlaceholderText(/Mensagem/i)).not.toBeInTheDocument();
     expect(screen.getByText(/Limite diário atingido/i)).toBeInTheDocument();
   });

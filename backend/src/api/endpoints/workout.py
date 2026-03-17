@@ -1,15 +1,13 @@
-"""
-API endpoints for workout log management.
-"""
-
+from datetime import datetime, date as py_date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, HTTPException
+from pydantic import BaseModel, Field
 
 from src.services.auth import verify_token
 from src.core.deps import get_mongo_database
 from src.core.logs import logger
-from src.api.models.workout_log import WorkoutListResponse, WorkoutWithId
+from src.api.models.workout_log import WorkoutListResponse, WorkoutWithId, WorkoutLog, ExerciseLog
 from src.services.database import MongoDatabase
 from src.utils.pagination import calculate_total_pages
 
@@ -17,6 +15,50 @@ router = APIRouter()
 
 CurrentUser = Annotated[str, Depends(verify_token)]
 DatabaseDep = Annotated[MongoDatabase, Depends(get_mongo_database)]
+
+
+class CreateWorkoutRequest(BaseModel):
+    """Request model for creating a workout log."""
+
+    date: datetime | py_date = Field(default_factory=datetime.now)
+    workout_type: str | None = None
+    exercises: list[ExerciseLog]
+    duration_minutes: int | None = None
+    source: str = "manual"
+
+
+@router.post("", response_model=WorkoutWithId)
+def create_workout(
+    user_email: CurrentUser,
+    db: DatabaseDep,
+    workout_data: CreateWorkoutRequest,
+) -> WorkoutWithId:
+    """
+    Creates a new workout log for the authenticated user.
+    """
+    logger.info("Creating workout log for user: %s", user_email)
+    try:
+        # Create workout log with user_email from token
+        workout_log = WorkoutLog(
+            user_email=user_email,
+            date=workout_data.date,
+            workout_type=workout_data.workout_type,
+            exercises=workout_data.exercises,
+            duration_minutes=workout_data.duration_minutes,
+            source=workout_data.source,
+        )
+
+        doc_id = db.save_workout_log(workout_log)
+
+        # Retrieve the saved log
+        saved_workout = db.get_workout_by_id(doc_id)
+        if not saved_workout:
+            raise HTTPException(status_code=500, detail="Failed to retrieve saved workout")
+
+        return WorkoutWithId(**saved_workout)
+    except Exception as e:
+        logger.error("Error creating workout for user %s: %s", user_email, e)
+        raise HTTPException(status_code=500, detail="Failed to create workout") from e
 
 
 @router.get("/list", response_model=WorkoutListResponse)

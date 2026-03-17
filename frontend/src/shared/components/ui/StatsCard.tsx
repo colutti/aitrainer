@@ -29,29 +29,29 @@ export function StatsCard({
 }: StatsCardProps) {
   const { t } = useTranslation();
   const variants = {
-    primary: 'from-gradient-start/10 to-gradient-end/10 text-gradient-start',
-    orange: 'from-orange-500/10 to-orange-600/10 text-orange-500',
-    blue: 'from-blue-500/10 to-blue-600/10 text-blue-500',
-    green: 'from-emerald-500/10 to-emerald-600/10 text-emerald-500',
-    secondary: 'from-zinc-700/10 to-zinc-800/10 text-zinc-400',
-    purple: 'from-purple-500/10 to-purple-600/10 text-purple-500',
+    primary: 'bg-primary/10 text-primary border-primary/20',
+    orange: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
+    blue: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    green: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+    secondary: 'bg-zinc-700/10 text-zinc-400 border-zinc-700/20',
+    purple: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
   };
 
   return (
-    <div className="bg-dark-card border border-border rounded-2xl p-6 hover:border-gradient-start/30 transition-all duration-300 group">
+    <div className="bg-dark-card border border-border rounded-xl p-5 hover:border-primary/50 transition-colors duration-150 group">
       <div className="flex items-start justify-between">
-        <div>
-          <p className="text-text-secondary text-sm font-medium mb-1">{title}</p>
+        <div className="min-w-0">
+          <p className="text-text-secondary text-[13px] font-semibold mb-1">{title}</p>
           <h3 className="text-2xl font-bold text-text-primary tracking-tight">
             {value}
           </h3>
           {subtitle && (
-            <p className="text-xs text-text-muted mt-1">{subtitle}</p>
+            <p className="text-xs text-text-muted mt-1.5 font-medium">{subtitle}</p>
           )}
         </div>
         
         <div className={cn(
-          "w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br transition-transform duration-300 group-hover:scale-110",
+          "w-11 h-11 rounded-lg flex items-center justify-center border transition-colors duration-150",
           variants[variant]
         )}>
           {icon}
@@ -62,16 +62,16 @@ export function StatsCard({
         <div className="mt-4 pt-4 border-t border-border flex items-center gap-2">
           {trend && (
             <span className={cn(
-              "text-xs font-bold px-2 py-0.5 rounded-full capitalize",
-              trend === 'down' ? 'bg-red-500/10 text-red-500' : 
-              trend === 'up' ? 'bg-emerald-500/10 text-emerald-500' : 
-              'bg-blue-500/10 text-blue-500'
+              "text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider",
+              trend === 'down' ? 'bg-red-500/10 text-red-500 border border-red-500/10' : 
+              trend === 'up' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/10' : 
+              'bg-blue-500/10 text-blue-500 border border-blue-500/10'
             )}>
               {t(`common.trends.${trend}`)}
             </span>
           )}
           {trendValue && (
-            <span className="text-xs text-text-secondary">{trendValue}</span>
+            <span className="text-xs text-text-muted font-bold">{trendValue}</span>
           )}
         </div>
       )}

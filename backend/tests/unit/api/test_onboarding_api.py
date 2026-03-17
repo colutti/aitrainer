@@ -9,6 +9,8 @@ from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 from src.api.main import app
 from src.api.models.invite import Invite
+from src.services.auth import verify_token
+from src.api.models.user_profile import UserProfile
 
 client = TestClient(app)
 
@@ -119,6 +121,8 @@ def test_complete_onboarding_success(valid_invite):
         data = response.json()
         assert data["token"] == "fake-jwt-token"
         mock_db_instance.save_user_profile.assert_called_once()
+        saved_profile = mock_db_instance.save_user_profile.call_args[0][0]
+        assert saved_profile.subscription_plan == "Free"
         mock_db_instance.save_trainer_profile.assert_called_once()
         mock_invites.mark_as_used.assert_called_once_with(valid_invite.token)
 
@@ -188,3 +192,60 @@ def test_complete_onboarding_creates_weight_log(valid_invite):
         assert saved_log.weight_kg == 80.0
         assert saved_log.trend_weight == 80.0
         assert saved_log.user_email == "newuser@test.com"
+
+
+def test_complete_public_onboarding_success():
+    """Test public onboarding (already authenticated user)."""
+    user_email = "public@test.com"
+    app.dependency_overrides[verify_token] = lambda: user_email
+    
+    with (
+        patch("src.api.endpoints.onboarding.get_mongo_database") as mock_db,
+        patch("src.api.endpoints.onboarding.create_token") as mock_create_token,
+    ):
+        mock_db_instance = MagicMock()
+        mock_profile = UserProfile(
+            email=user_email,
+            gender="Male",
+            age=25,
+            weight=70.0,
+            height=170,
+            goal_type="maintain",
+            onboarding_completed=False
+        )
+        mock_db_instance.get_user_profile.return_value = mock_profile
+        mock_db.return_value = mock_db_instance
+        mock_create_token.return_value = "new-jwt-token"
+
+        request_data = {
+            "gender": "Feminino",
+            "age": 26,
+            "weight": 65.0,
+            "height": 165,
+            "goal_type": "lose",
+            "weekly_rate": 0.5,
+            "trainer_type": "sofia",
+            "subscription_plan": "Pro",
+            "name": "Public User"
+        }
+
+        response = client.post("/onboarding/profile", json=request_data)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["token"] == "new-jwt-token"
+        
+        # Verify profile was updated correctly
+        mock_db_instance.save_user_profile.assert_called_once()
+        updated_profile = mock_db_instance.save_user_profile.call_args[0][0]
+        assert updated_profile.subscription_plan == "Pro"
+        assert updated_profile.gender == "Feminino"
+        assert updated_profile.display_name == "Public User"
+        assert updated_profile.onboarding_completed is True
+        
+        # Verify trainer was created
+        mock_db_instance.save_trainer_profile.assert_called_once()
+        trainer = mock_db_instance.save_trainer_profile.call_args[0][0]
+        assert trainer.trainer_type == "sofia"
+
+    app.dependency_overrides.clear()

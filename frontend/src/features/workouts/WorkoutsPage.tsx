@@ -59,19 +59,24 @@ export function WorkoutsPage() {
   );
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold text-text-primary flex items-center gap-3">
-            <Dumbbell className="text-gradient-start" size={32} />
+          <h1 className="text-3xl font-black text-text-primary flex items-center gap-3 tracking-tight">
+            <Dumbbell className="text-primary" size={32} />
             {t('workouts.title')}
           </h1>
-          <p className="text-text-secondary mt-3">
+          <p className="text-text-secondary mt-2 text-sm font-medium">
             {t('workouts.subtitle')}
           </p>
         </div>
-        <Button variant="primary" size="lg" className="shadow-orange gap-2 hidden">
+        <Button 
+          variant="primary" 
+          size="lg" 
+          className="shadow-orange gap-2"
+          onClick={() => { setSelectedWorkout({ id: '', exercises: [], date: new Date().toISOString() } as any); }}
+        >
           <Plus size={20} />
           {t('workouts.new_workout')}
         </Button>

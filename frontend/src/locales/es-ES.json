@@ -15,8 +15,10 @@
       "down": "Bajando",
       "stable": "Estable"
     },
-    "athlete": "Atleta",
-    "day": "día"
+    "athlete": "mensajes",
+    "msgs": "msgs",
+    "day": "día",
+    "days_left": "{{count}}d restantes"
   },
   "nav": {
     "home": "Inicio",
@@ -347,7 +349,7 @@
       "total": "/total"
     },
     "subscription": {
-      "payment_success_message": "¡Pago realizado con éxito! Bienvenido al equipo Pro.",
+      "payment_success_message": "¡Pago realizado con éxito! Bienvenido al equipo FityQ.",
       "payment_cancelled_message": "El proceso de pago fue interrumpido. Puedes intentarlo de nuevo cuando quieras."
     }
   },
@@ -691,11 +693,11 @@
     "messages_remaining": "{{count}} mensajes restantes hoy",
     "trial_ended": {
       "title": "Tu periodo gratuito ha terminado",
-      "description": "Has disfrutado de tus 7 días de prueba. Para seguir recibiendo orientación personalizada, actualiza a Pro."
+      "description": "Has disfrutado de tus 7 días de prueba. Para seguir recibiendo orientación personalizada, actualiza a uno de nuestros planes."
     },
     "daily_limit": {
       "title": "Límite diario alcanzado",
-      "description": "Has alcanzado el límite de 20 mensajes diarios. Mañana tendrás otros 20, o elimina los límites ahora con el plan Pro."
+      "description": "Has alcanzado el límite de 20 mensajes diarios. Mañana tendrás otros 20, o elimina los límites ahora suscribiéndote a un plan."
     },
     "upgrade_button": "Actualizar Ahora",
     "wait_tomorrow": "Volver Mañana"

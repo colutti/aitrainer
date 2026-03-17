@@ -2,11 +2,21 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
+import { useAuthStore } from '../../shared/hooks/useAuth';
 import { useDashboardStore } from '../../shared/hooks/useDashboard';
+import { useNotificationStore } from '../../shared/hooks/useNotification';
 
 import { DashboardPage } from './DashboardPage';
 
 vi.mock('../../shared/hooks/useDashboard');
+vi.mock('../../shared/hooks/useAuth');
+vi.mock('../../shared/hooks/useNotification');
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'pt', changeLanguage: vi.fn() },
+  }),
+}));
 
 // Mock Chart components to avoid layout issues in JSDOM
 vi.mock('./components/WidgetWeightChart', () => ({
@@ -35,6 +45,9 @@ vi.mock('./components/WidgetWeeklyFrequency', () => ({
 
 describe('DashboardPage', () => {
   const mockFetchData = vi.fn();
+  const mockLoadUserInfo = vi.fn();
+  const mockNotifySuccess = vi.fn();
+  const mockNotifyInfo = vi.fn();
 
   const defaultData = {
     stats: {
@@ -82,6 +95,14 @@ describe('DashboardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useDashboardStore).mockReturnValue(defaultHookValues);
+    vi.mocked(useAuthStore).mockReturnValue({
+      userInfo: { name: 'Test User' },
+      loadUserInfo: mockLoadUserInfo,
+    } as any);
+    vi.mocked(useNotificationStore).mockReturnValue({
+      success: mockNotifySuccess,
+      info: mockNotifyInfo,
+    } as any);
   });
 
   it('should render loading state when loading and no data', () => {
@@ -95,7 +116,7 @@ describe('DashboardPage', () => {
         <DashboardPage />
       </MemoryRouter>
     );
-    expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
+    expect(container.querySelector('.h-64')).toBeInTheDocument();
   });
 
   it('should render dashboard content when data loaded', () => {
@@ -110,7 +131,7 @@ describe('DashboardPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText(/Bom dia/i)).toBeInTheDocument();
+    expect(screen.getByText('dashboard.greeting')).toBeInTheDocument();
     expect(screen.getByText('2000')).toBeInTheDocument(); 
     expect(screen.getByText('2500')).toBeInTheDocument(); 
     expect(screen.getByText('95%')).toBeInTheDocument(); 
@@ -146,10 +167,9 @@ describe('DashboardPage', () => {
         </MemoryRouter>
       );
       if (level === null) {
-        expect(screen.getByText((content) => content.includes('Análise:') && content.includes('---'))).toBeInTheDocument();
+        expect(screen.getByText('dashboard.confidence_level.none')).toBeInTheDocument();
       } else {
-        const expected = { 'high': 'Alta', 'medium': 'Média', 'low': 'Baixa' }[level];
-        expect(screen.getByText(new RegExp(`Análise:.*${expected}`))).toBeInTheDocument();
+        expect(screen.getByText(`dashboard.confidence_level.${level}`)).toBeInTheDocument();
       }
       unmount();
     });
@@ -200,5 +220,76 @@ describe('DashboardPage', () => {
       const childrenDontHaveText = Array.from(element?.children ?? []).every(child => !hasText(child));
       return elementHasText && childrenDontHaveText;
     })).toBeInTheDocument();
+  });
+
+  it('should render Fat and Muscle diffs even if 7d is missing (sparse data)', () => {
+    vi.mocked(useDashboardStore).mockReturnValue({
+      ...defaultHookValues,
+      data: {
+        ...defaultData,
+        stats: {
+           ...defaultData.stats,
+           body: {
+             ...defaultData.stats.body,
+             body_fat_pct: 15.0,
+             fat_diff: null,
+             fat_diff_15: -1.0,
+             fat_diff_30: -2.0,
+             muscle_mass_kg: 35.0,
+             muscle_diff_kg: 0.5,
+             muscle_diff_kg_15: 1.5,
+           }
+        }
+      } as any,
+    });
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    // Fat checks
+    expect(screen.getByText('-1.0 %')).toBeInTheDocument();
+    expect(screen.getByText('-2.0 %')).toBeInTheDocument();
+
+    // Muscle checks
+    expect(screen.getByText('+0.5 kg')).toBeInTheDocument();
+    expect(screen.getByText('+1.5 kg')).toBeInTheDocument();
+  });
+
+  it('should trigger user info refresh and show success notification when payment is successful', () => {
+    vi.mocked(useDashboardStore).mockReturnValue({
+      ...defaultHookValues,
+      data: defaultData as any,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/dashboard?payment=success']}>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    expect(mockLoadUserInfo).toHaveBeenCalled();
+    expect(mockNotifySuccess).toHaveBeenCalledWith(
+      expect.stringContaining('landing.subscription.payment_success_message')
+    );
+  });
+
+  it('should show info notification when payment is cancelled', () => {
+    vi.mocked(useDashboardStore).mockReturnValue({
+      ...defaultHookValues,
+      data: defaultData as any,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/dashboard?payment=cancelled']}>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    expect(mockNotifyInfo).toHaveBeenCalledWith(
+      expect.stringContaining('landing.subscription.payment_cancelled_message')
+    );
   });
 });

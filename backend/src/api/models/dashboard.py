@@ -39,6 +39,9 @@ class BodyStats(BaseModel):
     muscle_diff: Optional[float] = None
     muscle_diff_15: Optional[float] = None
     muscle_diff_30: Optional[float] = None
+    muscle_diff_kg: Optional[float] = None
+    muscle_diff_kg_15: Optional[float] = None
+    muscle_diff_kg_30: Optional[float] = None
     bmr: Optional[float] = None
 
 

@@ -49,7 +49,10 @@ describe('MetabolismTab', () => {
     } as unknown as ReturnType<typeof useMetabolismTab>);
 
     const { container } = render(<MetabolismTab />);
-    expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
+    // Check for skeleton containers instead of animate-pulse
+    const skeletons = container.querySelectorAll('.h-32');
+    expect(skeletons.length).toBe(3);
+    expect(container.querySelector('.h-96')).toBeInTheDocument();
   });
 
   it('should render stats and chart when data loaded', () => {

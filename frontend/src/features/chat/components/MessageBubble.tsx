@@ -23,10 +23,13 @@ export function MessageBubble({ message, trainerId, userPhoto, userName }: Messa
   const isUser = message.sender === 'Student';
 
   return (
-    <div className={cn(
-      'flex w-full gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300',
-      isUser ? 'flex-row-reverse' : 'flex-row'
-    )}>
+    <div 
+      data-sender={isUser ? 'user' : 'trainer'}
+      className={cn(
+        'flex w-full gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300',
+        isUser ? 'flex-row-reverse' : 'flex-row'
+      )}
+    >
       {/* Avatar */}
       {isUser && userPhoto ? (
         <UserAvatar photo={userPhoto} name={userName} size="sm" className="shrink-0" />

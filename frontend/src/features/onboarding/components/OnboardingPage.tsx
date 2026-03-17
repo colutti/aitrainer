@@ -106,6 +106,29 @@ export function OnboardingPage() {
         // Fluxo Público (já logado)
         const res = await onboardingApi.completePublicOnboarding(payload);
         localStorage.setItem('auth_token', res.token);
+        
+        // Stripe Redirect if Paid Plan
+        const planId = formData.subscription_plan?.toLowerCase();
+        if (planId && planId !== 'free') {
+          try {
+            const { stripeApi } = await import('../../../shared/api/stripe-api');
+            const { STRIPE_PRICE_IDS } = await import('../../../shared/constants/stripe');
+            const priceId = STRIPE_PRICE_IDS[planId as keyof typeof STRIPE_PRICE_IDS];
+            
+            if (priceId) {
+              const url = await stripeApi.createCheckoutSession(
+                priceId,
+                window.location.origin + '/dashboard?payment=success',
+                window.location.origin + '/onboarding'
+              );
+              window.location.href = url;
+              return; // Interrupt onboarding flow for payment
+            }
+          } catch (stripeError) {
+            console.error('Stripe redirect error:', stripeError);
+          }
+        }
+        
         setStep(5); // Vai para Integrações
       } else {
         // Fluxo por Convite
@@ -124,6 +147,29 @@ export function OnboardingPage() {
         const fullPayload = { ...payload, token, password };
         const res = await onboardingApi.completeOnboarding(fullPayload);
         localStorage.setItem('auth_token', res.token);
+        
+        // Stripe Redirect if Paid Plan
+        const planId = formData.subscription_plan?.toLowerCase();
+        if (planId && planId !== 'free') {
+          try {
+            const { stripeApi } = await import('../../../shared/api/stripe-api');
+            const { STRIPE_PRICE_IDS } = await import('../../../shared/constants/stripe');
+            const priceId = STRIPE_PRICE_IDS[planId as keyof typeof STRIPE_PRICE_IDS];
+            
+            if (priceId) {
+              const url = await stripeApi.createCheckoutSession(
+                priceId,
+                window.location.origin + '/dashboard?payment=success',
+                window.location.origin + '/onboarding'
+              );
+              window.location.href = url;
+              return; // Interrupt onboarding flow for payment
+            }
+          } catch (stripeError) {
+            console.error('Stripe redirect error:', stripeError);
+          }
+        }
+        
         setStep(5); // Vai para Integrações
       }
     } catch (err: unknown) {
@@ -180,7 +226,7 @@ export function OnboardingPage() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-dark-bg">
-        <div className="bg-dark-card border border-red-500/20 p-8 rounded-2xl max-w-md w-full text-center space-y-4">
+        <div className="bg-dark-card border border-red-500/20 p-8 rounded-xl max-w-md w-full text-center space-y-4">
           <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto text-red-500">
              <AlertTriangle size={32} />
           </div>
@@ -201,7 +247,7 @@ export function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl bg-dark-card border border-border rounded-3xl p-8 md:p-12 shadow-2xl animate-in fade-in zoom-in-95 duration-500">
+      <div className="w-full max-w-2xl bg-dark-card border border-border rounded-xl p-8 md:p-12 shadow-2xl">
         {/* Progress */}
         {step < 6 && step > 1 && (
           <div className="flex justify-between mb-8 relative">
@@ -280,8 +326,15 @@ export function OnboardingPage() {
                </div>
 
                <div className="grid grid-cols-2 gap-4">
-                 <div className="col-span-2">
-                   <label htmlFor="age" className="text-sm text-text-secondary">{t('onboarding.age')}</label>
+                <div className="col-span-2">
+                  <label htmlFor="name" className="text-sm text-text-secondary">{t('settings.name')}</label>
+                  <Input id="name" placeholder={t('onboarding.name_placeholder', 'Seu nome completo')} 
+                     value={formData.name ?? ''} 
+                     onChange={e => { setFormData({...formData, name: e.target.value}); }} 
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label htmlFor="age" className="text-sm text-text-secondary">{t('onboarding.age')}</label>
                    <Input id="age" type="number" placeholder={t('onboarding.age_placeholder')} 
                       value={formData.age ?? ''} 
                       onChange={e => { setFormData({...formData, age: Number(e.target.value)}); }} 

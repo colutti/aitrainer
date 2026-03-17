@@ -40,10 +40,10 @@ export function WidgetRecentPRs({ prs }: WidgetRecentPRsProps) {
               className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl hover:border-yellow-500/30 transition-colors group relative overflow-hidden"
             >
               <div className="flex items-center gap-4 relative z-10">
-                <div className="h-10 w-10 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500 font-bold text-xs">
+                <div className="h-10 w-10 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500 font-bold text-xs shrink-0">
                   {t('dashboard.pr_label')}
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <h4 className="font-bold text-text-primary group-hover:text-yellow-400 transition-colors truncate">{pr.exercise}</h4>
                   <p className="text-[10px] text-text-secondary">
                     {new Date(pr.date).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })} • {t('dashboard.reps', { count: pr.reps })}

@@ -36,8 +36,17 @@ def verify_id_token(token: str) -> dict:
     """
     Verifies the Firebase ID token and returns the decoded payload.
     Separated for easier testing.
+    Includes a retry mechanism for 'Token used too early' (clock skew).
     """
-    return firebase_admin.auth.verify_id_token(token)
+    try:
+        return firebase_admin.auth.verify_id_token(token)
+    except ValueError as e:
+        if "Token used too early" in str(e):
+            import time
+            logger.info("Token used too early (clock skew). Retrying in 1s...")
+            time.sleep(1.1)
+            return firebase_admin.auth.verify_id_token(token)
+        raise e
 
 
 @router.post("/login")
@@ -189,7 +198,7 @@ def update_profile(
             logger.warning(
                 "Creating new profile during update for %s (unexpected)", user_email
             )
-            profile = UserProfile(**profile_data.model_dump(), email=user_email)
+            profile = UserProfile(**profile_data.model_dump(exclude_unset=True), email=user_email)
             brain.save_user_profile(profile)
 
         logger.info("User profile updated for email: %s", user_email)

@@ -1,6 +1,7 @@
 import { Bot, Send } from 'lucide-react';
 import { useEffect, useRef, useState, useMemo, useLayoutEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 import { useAuthStore } from '../../shared/hooks/useAuth';
 import { useChatStore } from '../../shared/hooks/useChat';
@@ -20,6 +21,7 @@ export function ChatPage() {
   const { trainer, availableTrainers, fetchTrainer, fetchAvailableTrainers } = useSettingsStore();
   const { userInfo } = useAuthStore();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -106,11 +108,11 @@ export function ChatPage() {
   };
 
   return (
-    <div className="fixed inset-0 bottom-16 lg:bottom-0 lg:left-64 bg-dark-bg z-40 flex flex-col">
+    <div className="fixed inset-0 bottom-16 md:bottom-18 lg:bottom-0 lg:left-64 bg-dark-bg z-40 flex flex-col">
       {/* Header - Fixed Top */}
-      <div className="flex-none h-16 bg-dark-bg/80 backdrop-blur-md border-b border-white/5 px-6 flex items-center justify-between z-50">
+      <div className="flex-none h-16 bg-dark-bg/80 backdrop-blur-md border-b border-border px-6 flex items-center justify-between z-50">
         <div className="flex items-center gap-3 mx-auto w-full max-w-6xl">
-          <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/10 shrink-0">
+          <div className="w-8 h-8 rounded overflow-hidden border border-white/10 shrink-0">
             {currentTrainer ? (
               <img 
                 src={`/assets/avatars/${currentTrainer.trainer_id.toLowerCase()}.png`} 
@@ -118,16 +120,16 @@ export function ChatPage() {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-gradient-start flex items-center justify-center">
+              <div className="w-full h-full bg-primary flex items-center justify-center">
                 <Bot size={16} className="text-white" />
               </div>
             )}
           </div>
           <div className="flex items-center gap-2">
-            <h1 className="text-sm font-bold text-text-primary">
+            <h1 className="text-sm font-black text-text-primary tracking-tight uppercase">
               {trainerName}
             </h1>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-success" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]" />
           </div>
         </div>
       </div>
@@ -147,10 +149,10 @@ export function ChatPage() {
           
           {messages.length === 0 && !isLoading ? (
             <div className="h-[70vh] flex flex-col items-center justify-center opacity-30 select-none">
-              <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-4">
-                  <Bot size={32} className="text-white/50" />
+              <div className="w-16 h-16 bg-white/5 rounded-xl flex items-center justify-center mb-6 border border-white/5">
+                  <Bot size={32} className="text-white" />
               </div>
-              <p className="text-base font-medium text-text-secondary">{t('chat.start_conversation')}</p>
+              <p className="text-base font-black text-text-secondary uppercase tracking-widest">{t('chat.start_conversation')}</p>
             </div>
           ) : (
             <>
@@ -179,13 +181,13 @@ export function ChatPage() {
             )}
 
             {isStreaming && (
-              <div className="absolute -top-7 left-1 flex items-center gap-2 px-2 py-1 rounded-lg bg-dark-card/40 backdrop-blur-sm border border-white/5 animate-in slide-in-from-bottom-2">
+              <div className="absolute -top-7 left-1 flex items-center gap-2 px-2.5 py-1 rounded bg-dark-bg border border-border">
                 <div className="flex gap-1">
-                  <span className="w-1 h-1 bg-gradient-start rounded-full animate-bounce [animation-duration:0.6s]" />
-                  <span className="w-1 h-1 bg-gradient-start rounded-full animate-bounce [animation-duration:0.6s] [animation-delay:0.2s]" />
-                  <span className="w-1 h-1 bg-gradient-start rounded-full animate-bounce [animation-duration:0.6s] [animation-delay:0.4s]" />
+                  <span className="w-1 h-1 bg-primary rounded-full animate-bounce [animation-duration:0.6s]" />
+                  <span className="w-1 h-1 bg-primary rounded-full animate-bounce [animation-duration:0.6s] [animation-delay:0.2s]" />
+                  <span className="w-1 h-1 bg-primary rounded-full animate-bounce [animation-duration:0.6s] [animation-delay:0.4s]" />
                 </div>
-                <span className="text-[10px] font-medium text-text-secondary uppercase tracking-widest">
+                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">
                   {t('chat.typing', { name: trainerName })}
                 </span>
               </div>
@@ -197,7 +199,7 @@ export function ChatPage() {
                   onSubmit={(e) => { 
                     void handleSend(e); 
                   }} 
-                  className="relative shadow-2xl rounded-2xl bg-dark-card border border-white/10 focus-within:border-gradient-start/50 focus-within:ring-1 focus-within:ring-gradient-start/20 transition-all overflow-hidden"
+                  className="relative rounded-xl bg-dark-card border border-border focus-within:border-primary/50 transition-colors overflow-hidden"
                 >
                   <textarea
                     ref={textareaRef}
@@ -218,10 +220,10 @@ export function ChatPage() {
                     type="submit"
                     disabled={!inputValue.trim() || isStreaming}
                     className={cn(
-                      "absolute right-2 bottom-3 p-2 rounded-xl transition-all",
+                      "absolute right-2 bottom-2.5 p-2.5 rounded-lg transition-colors duration-150",
                       inputValue.trim() && !isStreaming
-                        ? "bg-gradient-start text-white hover:bg-gradient-start/90"
-                        : "text-text-muted/50 cursor-not-allowed"
+                        ? "bg-primary text-white"
+                        : "text-text-muted/40 cursor-not-allowed"
                     )}
                   >
                     <Send size={18} className={cn(isStreaming && "animate-pulse")} />
@@ -230,15 +232,18 @@ export function ChatPage() {
                 <div className="mt-3 flex items-center justify-between px-1">
                   <div className="flex items-center gap-4">
                     {typeof userInfo?.effective_remaining_messages === 'number' && (
-                      <span className="text-[10px] text-text-muted/60 font-medium">
-                        {t('chat.messages_remaining', { 
-                          count: userInfo.effective_remaining_messages 
-                        })}
-                      </span>
+                      <div className="flex items-center gap-1.5 px-2 py-1 rounded border border-white/10 bg-white/2">
+                        <span className="text-[10px] text-text-primary font-bold">
+                          {userInfo.effective_remaining_messages}
+                        </span>
+                        <span className="text-[10px] text-text-muted uppercase tracking-tight font-medium">
+                          {t('common.msgs')}
+                        </span>
+                      </div>
                     )}
                     {typeof userInfo?.trial_remaining_days === 'number' && (
-                      <span className="text-[10px] text-text-muted/60 font-medium">
-                        {userInfo.trial_remaining_days} dias de teste restantes
+                      <span className="text-[10px] text-text-muted/60 font-bold bg-white/5 px-2 py-1 rounded-lg border border-white/5">
+                        {t('common.days_left', { count: userInfo.trial_remaining_days })}
                       </span>
                     )}
                   </div>
@@ -248,30 +253,30 @@ export function ChatPage() {
                 </div>
               </>
             ) : (
-              <div className="shadow-2xl rounded-2xl bg-dark-card border border-gradient-start/30 p-6 animate-in zoom-in-95 duration-300">
+              <div className="bg-dark-card border border-primary/30 rounded-xl p-5 sm:p-6">
                 <div className="flex flex-col items-center text-center space-y-4">
-                  <div className="w-12 h-12 bg-gradient-start/10 rounded-full flex items-center justify-center">
-                    <Bot size={24} className="text-gradient-start" />
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Bot size={24} className="text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-text-primary">
+                    <h3 className="text-lg font-black text-text-primary tracking-tight">
                       {error === 'TRIAL_EXPIRED' ? t('chat.trial_ended.title') : t('chat.daily_limit.title')}
                     </h3>
-                    <p className="mt-2 text-sm text-text-secondary leading-relaxed">
+                    <p className="mt-2 text-sm text-text-muted font-medium leading-relaxed">
                       {error === 'TRIAL_EXPIRED' ? t('chat.trial_ended.description') : t('chat.daily_limit.description')}
                     </p>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
                     <button 
-                      onClick={() => window.location.href = '#plans'}
-                      className="flex-1 bg-gradient-to-r from-gradient-start to-gradient-end hover:opacity-90 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-gradient-start/20"
+                      onClick={() => { void navigate('/dashboard/settings/subscription'); }}
+                      className="flex-1 bg-primary text-white font-black py-3 px-6 rounded-lg transition-colors"
                     >
                       {t('chat.upgrade_button')}
                     </button>
                     {error === 'DAILY_LIMIT_REACHED' && (
                       <button 
                         onClick={() => { window.location.reload(); }}
-                        className="flex-1 bg-white/5 hover:bg-white/10 text-text-primary font-medium py-3 px-6 rounded-xl transition-all border border-white/10"
+                        className="flex-1 bg-white/5 text-text-primary font-bold py-3 px-6 rounded-lg transition-colors border border-border"
                       >
                         {t('chat.wait_tomorrow')}
                       </button>

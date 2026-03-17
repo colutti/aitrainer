@@ -49,6 +49,10 @@ class UserProfileInput(BaseModel):
     last_compaction_timestamp: str | None = Field(
         default=None, description="ISO timestamp of the last summarized message"
     )
+    # Onboarding status
+    onboarding_completed: bool | None = Field(
+        default=None, description="Whether the user has completed the onboarding flow"
+    )
 
     @model_validator(mode="after")
     def validate_weekly_rate(self) -> "UserProfileInput":
@@ -131,7 +135,7 @@ class UserProfile(UserProfileInput):
     current_billing_cycle_start: datetime | None = Field(
         default=None, description="ISO timestamp of cycle start"
     )
-    onboarding_completed: bool = Field(
+    onboarding_completed: bool | None = Field(
         default=True, description="Whether the user has completed the onboarding flow"
     )
 

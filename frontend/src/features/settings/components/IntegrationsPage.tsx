@@ -202,10 +202,10 @@ export function IntegrationsPage() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8">
       
       {/* Hevy Integration */}
-      <section className="bg-dark-card border border-border rounded-2xl p-6 space-y-4">
+      <section className="bg-dark-card border border-border rounded-xl p-6 space-y-4">
         <div className="flex items-center gap-3 border-b border-border pb-4">
            <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-500">
              <DumbbellIcon />
@@ -326,7 +326,7 @@ export function IntegrationsPage() {
       </section>
 
       {/* Telegram Integration */}
-      <section className="bg-dark-card border border-border rounded-2xl p-6 space-y-4">
+      <section className="bg-dark-card border border-border rounded-xl p-6 space-y-4">
         <div className="flex items-center gap-3 border-b border-border pb-4">
            <div className="w-10 h-10 bg-sky-500/10 rounded-xl flex items-center justify-center text-sky-500">
              <Send size={20} />
@@ -389,7 +389,7 @@ export function IntegrationsPage() {
       </section>
 
       {/* Imports Section */}
-      <section className="bg-dark-card border border-border rounded-2xl p-6 space-y-6">
+      <section className="bg-dark-card border border-border rounded-xl p-6 space-y-6">
          <div className="flex items-center gap-3 border-b border-border pb-4">
            <div className="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center text-purple-500">
              <Database size={20} />
@@ -403,7 +403,7 @@ export function IntegrationsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* MFP */}
           <div className="space-y-3">
-             <h3 className="font-bold text-text-primary flex items-center gap-2">
+             <h3 className="font-black text-text-primary tracking-tight flex items-center gap-2">
                <span className="w-2 h-2 rounded-full bg-blue-500" />
                MyFitnessPal (CSV)
              </h3>
@@ -428,7 +428,7 @@ export function IntegrationsPage() {
 
           {/* Zepp Life */}
           <div className="space-y-3">
-             <h3 className="font-bold text-text-primary flex items-center gap-2">
+             <h3 className="font-black text-text-primary tracking-tight flex items-center gap-2">
                <span className="w-2 h-2 rounded-full bg-orange-500" />
                Zepp Life (CSV)
              </h3>

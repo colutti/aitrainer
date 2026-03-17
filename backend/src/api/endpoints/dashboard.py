@@ -244,46 +244,85 @@ def _get_latest_metrics(weight_logs: list) -> tuple:
 
 
 def _find_closest_logs(today: datetime, weight_logs: list) -> dict:
-    """Finds logs closest to 7, 15, and 30 days ago."""
+    """Finds logs closest to 7, 15, and 30 days ago for each specific metric."""
     target_dates = {
         7: today.date() - timedelta(days=7),
         15: today.date() - timedelta(days=15),
         30: today.date() - timedelta(days=30),
     }
-    closest_logs = {7: None, 15: None, 30: None}
-    min_diffs = {7: 999, 15: 999, 30: 999}
+    # results[period][metric] = log
+    periods = [7, 15, 30]
+    metrics = ["w", "f", "m_pct", "m_kg"]
+    results = {p: {m: None for m in metrics} for p in periods}
+    min_diffs = {p: {m: 999 for m in metrics} for p in periods}
 
     for log in weight_logs[1:]:
         l_date = log.date.date() if isinstance(log.date, datetime) else log.date
-        for p in [7, 15, 30]:
+        for p in periods:
             diff = abs((l_date - target_dates[p]).days)
-            thresh = 3 if p == 7 else 5
-            if diff < min_diffs[p] and diff <= thresh:
-                closest_logs[p] = log
-                min_diffs[p] = diff
-    return closest_logs
+            # Thresholds: 10 days for 7d period, 15 for 15d, 30 for 30d (sparse data friendly)
+            thresh = 10 if p == 7 else (15 if p == 15 else 30)
+            if diff <= thresh:
+                # Weight (always present in weight_logs, but let's be safe)
+                if diff < min_diffs[p]["w"]:
+                    results[p]["w"] = log
+                    min_diffs[p]["w"] = diff
+                # Body Fat
+                if log.body_fat_pct is not None and diff < min_diffs[p]["f"]:
+                    results[p]["f"] = log
+                    min_diffs[p]["f"] = diff
+                # Muscle Pct
+                if log.muscle_mass_pct is not None and diff < min_diffs[p]["m_pct"]:
+                    results[p]["m_pct"] = log
+                    min_diffs[p]["m_pct"] = diff
+                # Muscle Kg
+                if log.muscle_mass_kg is not None and diff < min_diffs[p]["m_kg"]:
+                    results[p]["m_kg"] = log
+                    min_diffs[p]["m_kg"] = diff
+    return results
+
+
+def _get_metrics_diffs(today: datetime, weight_logs: List[Any], curr: dict) -> dict:
+    """Calculates diffs for 7, 15, and 30 day periods."""
+    diffs = {
+        "w": [0.0, None, None], 
+        "f": [None, None, None], 
+        "m": [None, None, None],
+        "m_kg": [None, None, None]
+    }
+    closest = _find_closest_logs(today, weight_logs)
+    for i, period in enumerate([7, 15, 30]):
+        cl_map = closest.get(period, {})
+        # Weight
+        if cl_w := cl_map.get("w"):
+            val = curr["w"] - cl_w.weight_kg
+            diffs["w"][i] = round(val, 2) if i > 0 else val
+        # Fat
+        if curr["f"] is not None and (cl_f := cl_map.get("f")):
+            diffs["f"][i] = round(curr["f"] - cl_f.body_fat_pct, 1)
+        # Muscle (%)
+        if curr["m"] is not None and (cl_m_pct := cl_map.get("m_pct")):
+            diffs["m"][i] = round(curr["m"] - cl_m_pct.muscle_mass_pct, 1)
+        # Muscle (kg)
+        if curr["m_kg"] is not None and (cl_m_kg := cl_map.get("m_kg")):
+            diffs["m_kg"][i] = round(curr["m_kg"] - cl_m_kg.muscle_mass_kg, 1)
+    return diffs
 
 
 def _calculate_body_stats(today: datetime, weight_logs: List[Any]) -> BodyStats:
     """Helper to calculate body stats and trends."""
     curr_w, fat_pct, mus_pct, mus_kg, bmr = _get_latest_metrics(weight_logs)
-
-    diffs: dict[str, Any] = {
-        "w": [0.0, None, None], "f": [None, None, None], "m": [None, None, None]
+    diffs = {
+        "w": [0.0, None, None], 
+        "f": [None, None, None], 
+        "m": [None, None, None],
+        "m_kg": [None, None, None]
     }
     trend = "stable"
 
     if weight_logs:
-        closest = _find_closest_logs(today, weight_logs)
-        for i, period in enumerate([7, 15, 30]):
-            cl = closest.get(period)
-            if cl:
-                diffs["w"][i] = round(curr_w - cl.weight_kg, 2) if i > 0 else curr_w - cl.weight_kg
-                if fat_pct is not None and cl.body_fat_pct is not None:
-                    diffs["f"][i] = round(fat_pct - cl.body_fat_pct, 1)
-                if mus_pct is not None and cl.muscle_mass_pct is not None:
-                    diffs["m"][i] = round(mus_pct - cl.muscle_mass_pct, 1)
-
+        curr = {"w": curr_w, "f": fat_pct, "m": mus_pct, "m_kg": mus_kg}
+        diffs = _get_metrics_diffs(today, weight_logs, curr)
         if diffs["w"][0] > 0.3:
             trend = "up"
         elif diffs["w"][0] < -0.3:
@@ -295,6 +334,8 @@ def _calculate_body_stats(today: datetime, weight_logs: List[Any]) -> BodyStats:
         body_fat_pct=fat_pct, muscle_mass_pct=mus_pct, muscle_mass_kg=mus_kg,
         fat_diff=diffs["f"][0], fat_diff_15=diffs["f"][1], fat_diff_30=diffs["f"][2],
         muscle_diff=diffs["m"][0], muscle_diff_15=diffs["m"][1], muscle_diff_30=diffs["m"][2],
+        muscle_diff_kg=diffs["m_kg"][0], muscle_diff_kg_15=diffs["m_kg"][1],
+        muscle_diff_kg_30=diffs["m_kg"][2],
         bmr=bmr,
     )
 

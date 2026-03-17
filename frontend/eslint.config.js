@@ -79,7 +79,12 @@ export default defineConfig([
     },
   },
   {
-    files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', 'src/shared/utils/cn.test.ts'],
+    files: [
+      '**/*.test.{ts,tsx}', 
+      '**/*.spec.{ts,tsx}', 
+      'e2e/**/*.{ts,tsx}',
+      'src/shared/utils/cn.test.ts'
+    ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',
@@ -100,6 +105,7 @@ export default defineConfig([
       '@typescript-eslint/no-confusing-void-expression': 'off',
       '@typescript-eslint/prefer-nullish-coalescing': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
+      'react-hooks/rules-of-hooks': 'off',
     },
   },
 ]);

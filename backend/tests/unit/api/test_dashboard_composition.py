@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
@@ -383,3 +383,65 @@ def test_fat_muscle_ema_skips_none_values_correctly(client, mock_db):
     assert fat[1]["value"] == pytest.approx(ema_fat_3, rel=0.01)
     assert len(muscle) == 2
     assert muscle[1]["value"] == pytest.approx(ema_muscle_3, rel=0.01)
+
+
+def test_calculate_body_stats_independent_sparse_data(client, mock_db):
+    """
+    Test that fat diff is calculated even if the closest WEIGHT log 
+    doesn't have fat data, but another log nearby DOES.
+    """
+    today = datetime(2026, 2, 9)
+    email = "test@example.com"
+    
+    # Today's log (full)
+    log_today = WeightLog(
+        user_email=email,
+        date=today.date(),
+        weight_kg=80.0,
+        body_fat_pct=15.0,
+        muscle_mass_pct=40.0,
+        bmr=1800
+    )
+    
+    # Log 7 days ago (ONLY weight)
+    log_7d_w_only = WeightLog(
+        user_email=email,
+        date=(today - timedelta(days=7)).date(),
+        weight_kg=81.0,
+        body_fat_pct=None,
+        muscle_mass_pct=None
+    )
+    
+    # Log 6 days ago (HAS fat data)
+    log_6d_fat = WeightLog(
+        user_email=email,
+        date=(today - timedelta(days=6)).date(),
+        weight_kg=80.8,
+        body_fat_pct=16.0,
+        muscle_mass_pct=41.0
+    )
+    
+    mock_db.get_weight_logs.return_value = [log_today, log_6d_fat, log_7d_w_only]
+    mock_db.get_weight_logs_by_date_range.return_value = [log_today, log_6d_fat, log_7d_w_only]
+    mock_db.get_nutrition_logs_by_date_range.return_value = []
+    mock_db.get_nutrition_logs.return_value = []
+    mock_db.get_workout_logs.return_value = []
+    mock_db.get_user_profile.return_value = None
+    
+    with patch('src.api.endpoints.dashboard.WorkoutRepository') as mock_repo_class, \
+         patch('src.api.endpoints.dashboard._get_today', return_value=today):
+        mock_repo = MagicMock()
+        mock_repo_class.return_value = mock_repo
+        mock_repo.get_stats.return_value = MagicMock(
+            current_streak_weeks=0, recent_prs=[], strength_radar={},
+            volume_trend=[], weekly_frequency=[], last_workout=None
+        )
+        response = client.get("/dashboard")
+    
+    assert response.status_code == 200
+    body = response.json()["stats"]["body"]
+    
+    assert body["weight_diff"] == -1.0 # 80.0 - 81.0 (7d is closest)
+    assert body["fat_diff"] == -1.0 # 15.0 - 16.0 (from 6 days ago)
+    assert body["muscle_diff"] == -1.0 # 40.0 - 41.0
+

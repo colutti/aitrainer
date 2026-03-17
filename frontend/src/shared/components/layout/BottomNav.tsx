@@ -25,17 +25,15 @@ function NavItem({ to, icon, label, testId, dataTour, end = false }: NavItemProp
       end={end}
       data-testid={testId}
       data-tour={dataTour}
-      className={({ isActive }) => `
-        flex flex-col items-center justify-center flex-1 py-2 px-1 transition-all duration-300 min-w-0 relative
-        ${isActive ? 'text-gradient-start' : 'text-text-muted hover:text-text-primary'}
+      className={({ isActive }: { isActive: boolean }) => `
+        flex flex-col items-center justify-center flex-1 py-1.5 px-1 transition-colors duration-150 min-w-0 relative
+        ${isActive ? 'text-primary' : 'text-text-muted hover:text-text-primary'}
       `}
     >
-      <div className="relative">
+      <div className="flex items-center justify-center">
         {icon}
-        {/* Subtle active indicator dot */}
-        <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-gradient-start opacity-0 scale-0 transition-all ui-active:opacity-100 ui-active:scale-100" />
       </div>
-      <span className="text-[10px] font-bold mt-1 truncate max-w-full hidden xs:block">{label}</span>
+      <span className="text-[10px] font-black tracking-tight mt-1 truncate max-w-full hidden xs:block uppercase">{label}</span>
     </NavLink>
   );
 }
@@ -47,8 +45,8 @@ export function BottomNav() {
   const { t } = useTranslation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-dark-card/80 backdrop-blur-xl border-t border-white/5 flex items-center justify-center lg:hidden z-90 safe-area-bottom h-16 md:h-20 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-      <div className="flex items-center justify-between w-full h-full max-w-md px-2">
+    <nav className="fixed bottom-0 left-0 right-0 bg-dark-card/80 backdrop-blur-xl border-t border-white/5 flex flex-col items-center justify-center lg:hidden z-90 safe-area-bottom h-auto">
+      <div className="flex items-center justify-between w-full h-16 md:h-18 max-w-md px-2">
         <NavItem
           to="/dashboard"
           icon={<LayoutDashboard size={20} />}

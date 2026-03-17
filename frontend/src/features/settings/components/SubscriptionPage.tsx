@@ -82,14 +82,14 @@ export function SubscriptionPage() {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-700">
+    <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-primary/10 rounded-xl text-primary">
+        <div className="p-3 bg-primary/10 rounded-lg text-primary border border-primary/10">
           <CreditCard size={24} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">{t('settings.subscription.title', 'Assinatura')}</h1>
-          <p className="text-text-secondary">{t('settings.subscription.subtitle', 'Gerencie seu plano e pagamentos')}</p>
+          <h1 className="text-2xl font-black text-text-primary tracking-tight">{t('settings.subscription.title', 'Assinatura')}</h1>
+          <p className="text-text-secondary font-medium">{t('settings.subscription.subtitle', 'Gerencie seu plano e pagamentos')}</p>
         </div>
       </div>
 
@@ -100,25 +100,25 @@ export function SubscriptionPage() {
           return (
             <div 
               key={plan.id} 
-              className={`p-6 rounded-2xl border flex flex-col h-full bg-dark-card transition-all ${
-                isCurrent ? 'border-primary ring-1 ring-primary/30' : 'border-border'
+              className={`p-6 rounded-xl border flex flex-col h-full bg-dark-card transition-colors duration-150 ${
+                isCurrent ? 'border-primary' : 'border-border'
               }`}
             >
               <div className="mb-4">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${
-                  isCurrent ? 'bg-primary/20 text-primary' : 'bg-white/5 text-text-secondary'
+                <div className={`w-10 h-10 rounded flex items-center justify-center mb-4 border ${
+                  isCurrent ? 'bg-primary/20 text-primary border-primary/20' : 'bg-white/5 text-text-muted border-white/5'
                 }`}>
                   <plan.icon size={20} />
                 </div>
-                <h3 className="text-lg font-bold text-text-primary">{plan.name}</h3>
+                <h3 className="text-lg font-black text-text-primary tracking-tight">{plan.name}</h3>
                 <div className="mt-1">
-                  <span className="text-2xl font-bold text-text-primary">{isPt ? 'R$' : '$'}{plan.price}</span>
-                  <span className="text-xs text-text-muted ml-1">/mês</span>
+                  <span className="text-2xl font-black text-text-primary tracking-tighter">{isPt ? 'R$' : '$'}{plan.price}</span>
+                  <span className="text-[10px] text-text-muted ml-1 font-black uppercase">{t('common.per_month', '/mês')}</span>
                 </div>
               </div>
 
               {isCurrent && (
-                <div className="mb-4 px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider rounded-full self-start">
+                <div className="mb-4 px-3 py-1 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded self-start">
                   Plano Atual
                 </div>
               )}
@@ -148,10 +148,10 @@ export function SubscriptionPage() {
       </div>
 
       {userInfo?.subscription_plan && userInfo.subscription_plan !== 'Free' && (
-        <div className="bg-dark-card border border-border p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 mt-8">
+        <div className="bg-dark-card border border-border p-6 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 mt-8">
           <div>
-            <h3 className="text-lg font-bold text-text-primary">{t('settings.subscription.manage_title', 'Assinatura Ativa')}</h3>
-            <p className="text-sm text-text-secondary">{t('settings.subscription.manage_subtitle', 'Altere seu cartão ou cancele sua assinatura no portal do Stripe.')}</p>
+            <h3 className="text-lg font-black text-text-primary tracking-tight">{t('settings.subscription.manage_title', 'Assinatura Ativa')}</h3>
+            <p className="text-sm text-text-muted font-medium">{t('settings.subscription.manage_subtitle', 'Altere seu cartão ou cancele sua assinatura no portal do Stripe.')}</p>
           </div>
           <Button 
             variant="secondary" 

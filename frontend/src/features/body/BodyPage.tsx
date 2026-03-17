@@ -20,11 +20,11 @@ export function BodyPage() {
   const { t } = useTranslation();
   
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
+    <div className="space-y-8 pb-20">
       {/* Header - Dynamic based on route */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold text-text-primary flex items-center gap-3">
+          <h1 className="text-3xl font-black text-text-primary flex items-center gap-3 tracking-tight">
             {isNutrition ? (
               <>
                 <Flame className="text-orange-500" size={32} />
@@ -37,7 +37,7 @@ export function BodyPage() {
               </>
             )}
           </h1>
-          <p className="text-text-secondary mt-3 md:ml-12 pr-4">
+          <p className="text-text-secondary mt-2 md:ml-12 pr-4 text-sm font-medium">
             {isNutrition 
               ? t('body.nutrition_subtitle')
               : t('body.weight_subtitle')
@@ -47,7 +47,7 @@ export function BodyPage() {
       </div>
 
       {/* Content */}
-      <div className="min-h-[600px] animate-in fade-in slide-in-from-right-4 duration-500">
+      <div className="min-h-[600px]">
         {isNutrition ? <NutritionTab /> : <WeightTab />}
       </div>
     </div>

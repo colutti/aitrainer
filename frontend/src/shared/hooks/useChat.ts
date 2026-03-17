@@ -129,8 +129,14 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
             if (errorData.detail?.includes('LIMITE')) {
               throw new Error('LIMIT_EXCEEDED');
             }
+            if (errorData.detail === 'TRIAL_EXPIRED') {
+              throw new Error('TRIAL_EXPIRED');
+            }
+            if (errorData.detail === 'DAILY_LIMIT_REACHED') {
+              throw new Error('DAILY_LIMIT_REACHED');
+            }
           } catch (e: unknown) {
-            if (e instanceof Error && e.message === 'LIMIT_EXCEEDED') {
+            if (e instanceof Error && ['LIMIT_EXCEEDED', 'TRIAL_EXPIRED', 'DAILY_LIMIT_REACHED'].includes(e.message)) {
                throw e;
             }
           }
@@ -182,6 +188,8 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
       
       if (error instanceof Error && error.message === 'LIMIT_EXCEEDED') {
         errorMessage = 'Você atingiu o limite de mensagens do seu plano. Atualize sua assinatura ou aguarde o próximo mês.';
+      } else if (error instanceof Error && (error.message === 'TRIAL_EXPIRED' || error.message === 'DAILY_LIMIT_REACHED')) {
+        errorMessage = error.message;
       }
       
       set({ 

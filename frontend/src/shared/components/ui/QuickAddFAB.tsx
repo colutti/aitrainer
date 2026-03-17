@@ -57,17 +57,17 @@ export function QuickAddFAB() {
             className="flex items-center gap-3 transition-transform pointer-events-auto"
             style={{ transitionDelay: `${(idx * 40).toString()}ms` }}
           >
-            <span className="px-3 py-1.5 rounded-xl bg-dark-card border border-border text-xs font-bold text-text-primary shadow-xl">
+            <span className="px-3 py-1.5 rounded bg-dark-card border border-border text-xs font-black uppercase tracking-wider text-text-primary shadow-lg">
               {t(action.labelKey)}
             </span>
             <button
               onClick={() => { action.onClick(); setIsOpen(false); }}
               className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-2xl transition-all active:scale-95 group",
+                "w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-xl transition-colors duration-150 active:scale-95 group",
                 action.color
               )}
             >
-              <action.icon size={22} className="group-hover:scale-110 transition-transform" />
+              <action.icon size={22} />
             </button>
           </div>
         ))}
@@ -77,10 +77,10 @@ export function QuickAddFAB() {
       <button
         onClick={() => { setIsOpen(!isOpen); }}
         className={cn(
-          "w-16 h-16 rounded-3xl flex items-center justify-center shadow-[0_20px_50px_rgba(249,115,22,0.4)] pointer-events-auto transition-all active:scale-90",
+          "w-16 h-16 rounded-xl flex items-center justify-center shadow-lg pointer-events-auto transition-all duration-150 active:scale-90",
           isOpen 
             ? "bg-zinc-800 text-text-primary rotate-45 border border-zinc-700" 
-            : "bg-gradient-start text-white border border-white/20"
+            : "bg-primary text-white border border-white/20"
         )}
       >
         <Plus size={32} />

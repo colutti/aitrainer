@@ -98,6 +98,7 @@ export function TrainerSettingsPage() {
           return (
             <div
               key={t_data.trainer_id}
+              data-testid={`trainer-card-${t_data.trainer_id}`}
               onClick={() => { 
                 if (isLocked) {
                   window.location.hash = 'plans';
@@ -114,12 +115,15 @@ export function TrainerSettingsPage() {
               )}
             >
               {isLocked && (
-                <div className="absolute top-3 left-3 z-20 bg-dark-bg/80 backdrop-blur-sm p-1.5 rounded-lg border border-white/10 animate-in fade-in zoom-in duration-300">
-                  <Lock size={14} className="text-gradient-start" data-testid="lock-icon" />
-                </div>
+                <>
+                  <div className="absolute inset-0 bg-linear-to-br from-primary/5 to-transparent pointer-events-none" />
+                  <div className="absolute top-3 left-3 z-20 bg-dark-bg/80 backdrop-blur-sm p-1.5 rounded-lg border border-white/10 animate-in fade-in zoom-in duration-300">
+                    <Lock size={14} className="text-gradient-start" data-testid="lock-icon" />
+                  </div>
+                </>
               )}
               <div className={cn(
-                "absolute inset-0 opacity-0 transition-opacity duration-300 rounded-xl bg-gradient-to-br",
+                "absolute inset-0 opacity-0 transition-opacity duration-300 rounded-xl bg-linear-to-br",
                 getTrainerColor(trainerId),
                 selectedTrainerId === t_data.trainer_id ? "opacity-5" : "group-hover:opacity-5"
               )} />
@@ -127,7 +131,7 @@ export function TrainerSettingsPage() {
               <div className="flex items-start justify-between relative z-10">
                 <div className="flex items-center gap-5">
                    <div className={cn(
-                     "w-20 h-20 rounded-2xl p-0.5 bg-gradient-to-br shadow-inner shrink-0 overflow-hidden",
+                     "w-20 h-20 rounded-2xl p-0.5 bg-linear-to-br shadow-inner shrink-0 overflow-hidden",
                      getTrainerColor(trainerId)
                    )}>
                       <img 
@@ -159,7 +163,7 @@ export function TrainerSettingsPage() {
                     ? "border-gradient-start bg-gradient-start text-black"
                     : "border-text-tertiary"
                 )}>
-                  {selectedTrainerId === t_data.trainer_id && <Check size={14} strokeWidth={3} />}
+                  {selectedTrainerId === t_data.trainer_id && <Check size={14} strokeWidth={3} data-testid="check-icon" />}
                 </div>
               </div>
               

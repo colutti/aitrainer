@@ -123,6 +123,40 @@ describe('useChatStore', () => {
     consoleSpy.mockRestore();
   });
 
+  it('should handle trial expired error', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 403,
+      json: async () => ({ detail: 'TRIAL_EXPIRED' }),
+    });
+
+    await useChatStore.getState().sendMessage('Hello Trial');
+
+    const state = useChatStore.getState();
+    expect(state.isStreaming).toBe(false);
+    expect(state.error).toBe('TRIAL_EXPIRED');
+    consoleSpy.mockRestore();
+  });
+
+  it('should handle daily limit reached error', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 403,
+      json: async () => ({ detail: 'DAILY_LIMIT_REACHED' }),
+    });
+
+    await useChatStore.getState().sendMessage('Hello Daily');
+
+    const state = useChatStore.getState();
+    expect(state.isStreaming).toBe(false);
+    expect(state.error).toBe('DAILY_LIMIT_REACHED');
+    consoleSpy.mockRestore();
+  });
+
   it('should clear history successfully', () => {
     // Setup state
     useChatStore.setState({ messages: [{ text: 'Hi', sender: 'Student', timestamp: 'now' }] });

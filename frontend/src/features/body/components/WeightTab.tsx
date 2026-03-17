@@ -64,8 +64,8 @@ export function WeightTab() {
 
   if (isLoading && history.length === 0) {
     return (
-      <div className="space-y-8 animate-pulse">
-        <div className="h-64 bg-dark-card rounded-2xl" />
+      <div className="space-y-8">
+        <div className="h-64 bg-dark-card rounded-xl border border-border" />
       </div>
     );
   }
