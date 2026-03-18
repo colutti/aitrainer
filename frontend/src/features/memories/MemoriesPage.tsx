@@ -134,6 +134,7 @@ export function MemoriesPage() {
                   <Button 
                     variant="ghost" 
                     size="icon" 
+                    title={t('shared.delete')}
                     onClick={() => {
                       void handleDelete(m.id);
                     }}

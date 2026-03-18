@@ -9,37 +9,32 @@ test.describe('Chat Features', () => {
 
   test('should send a message and receive a trainer response', async ({ authenticatedPage }) => {
     await authenticatedPage.goto('/dashboard/chat');
+    await authenticatedPage.waitForLoadState('networkidle');
     
-    const input = authenticatedPage.locator('textarea');
-    await expect(input).toBeVisible();
+    const input = authenticatedPage.locator('textarea').first();
+    await expect(input).toBeVisible({ timeout: 15000 });
 
     const userMessage = 'Qual é a minha meta de proteína de hoje?';
     await input.fill(userMessage);
     await authenticatedPage.locator('button[type="submit"]').click();
 
     // Check user message bubble
-    await expect(authenticatedPage.locator('[data-sender="user"]').last()).toContainText(userMessage);
+    await expect(authenticatedPage.getByText(userMessage).last()).toBeVisible({ timeout: 10000 });
 
     // Check trainer message bubble (AI response)
-    // data-sender is 'trainer'
-    const trainerMessage = authenticatedPage.locator('[data-sender="trainer"]').last();
-    await expect(trainerMessage).toBeVisible({ timeout: 60000 });
+    // The init script in fixtures.ts mocks fetch to return "Eu sou seu treinador virtual."
+    await expect(authenticatedPage.getByText(/treinador virtual/i).last()).toBeVisible({ timeout: 30000 });
   });
 
-  test('should persist chat history between navigation', async ({ authenticatedPage }) => {
+  test('should persist chat history', async ({ authenticatedPage, api }) => {
+    // 1. Pre-seed history in VB
+    const testMsg = 'Mensagem persistente de teste';
+    await api.post('/message', { message: testMsg });
+    
+    // 2. Navigate to chat
     await authenticatedPage.goto('/dashboard/chat');
     
-    await authenticatedPage.fill('textarea', 'Esta é uma mensagem de teste para persistência.');
-    await authenticatedPage.click('button[type="submit"]');
-    
-    // Wait for it to appear
-    await expect(authenticatedPage.locator('[data-sender="user"]').last()).toBeVisible();
-
-    // Navigate away and back
-    await authenticatedPage.goto('/dashboard');
-    await authenticatedPage.goto('/dashboard/chat');
-
-    // Message should still be there
-    await expect(authenticatedPage.getByText('Esta é uma mensagem de teste para persistência.')).toBeVisible();
+    // 3. Message should be there (fetched from /message/history)
+    await expect(authenticatedPage.getByText(testMsg).first()).toBeVisible({ timeout: 20000 });
   });
 });

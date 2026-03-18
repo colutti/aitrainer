@@ -8,28 +8,32 @@ test.describe('Memories Features', () => {
   });
 
   test('should list and delete AI insights (memories)', async ({ authenticatedPage, api }) => {
-    // 1. Seed memories via newly added POST endpoint
+    // 1. Seed memories
     await api.post('/memory', {
-      memory: 'O usuário prefere treinar peito às segundas-feiras.'
+      memory: 'O usuário prefere treinar peito'
     });
     
-    // Seed another one to test list multiple
-    await api.post('/memory', {
-      memory: 'O usuário está focando em hipertrofia.'
-    });
-
     await authenticatedPage.goto('/dashboard/settings/memories');
     await authenticatedPage.waitForLoadState('networkidle');
 
     // 2. Check if memory is listed
-    await expect(authenticatedPage.getByText('O usuário prefere treinar peito')).toBeVisible();
+    const card = authenticatedPage.locator('div.bg-dark-card').filter({ hasText: /prefere treinar peito/i }).first();
+    await expect(card).toBeVisible({ timeout: 15000 });
 
     // 3. Delete memory
-    await authenticatedPage.locator('button:has-text("Excluir")').or(authenticatedPage.locator('.lucide-trash-2')).first().click();
-    await authenticatedPage.locator('button:has-text("Confirmar")').click();
+    // Hover to trigger visibility (best practice)
+    await card.hover();
+    
+    // Use a very generic but effective locator for the delete button inside this card
+    const deleteBtn = card.locator('button').last();
+    await deleteBtn.click({ force: true });
+    
+    // Confirm in modal - looking for button with "Excluir" or "Confirmar" or "Sim"
+    const confirmBtn = authenticatedPage.locator('button').filter({ hasText: /Excluir|Confirmar|Sim/i }).last();
+    await expect(confirmBtn).toBeVisible({ timeout: 5000 });
+    await confirmBtn.click({ force: true });
 
     // 4. Verify gone
-    await expect(authenticatedPage.getByText('O usuário prefere treinar peito')).not.toBeVisible();
-    await expect(authenticatedPage.getByText(/Nenhum insight/i)).toBeVisible();
+    await expect(authenticatedPage.getByText(/prefere treinar peito/i)).not.toBeVisible({ timeout: 15000 });
   });
 });

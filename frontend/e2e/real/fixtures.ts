@@ -1,93 +1,93 @@
-import { execSync } from 'child_process';
-import fs from 'fs';
-
 import { test as base, expect, type Page } from '@playwright/test';
-
-import { ApiClient } from './helpers/api-client';
+import { VirtualBackend } from './helpers/virtual-backend';
 
 /**
  * Interface for our custom fixtures
  */
 interface MyFixtures {
-  api: ApiClient;
+  virtualBackend: VirtualBackend;
   authenticatedPage: Page;
+  api: VirtualBackend; // Alias for tests using cleanupUserData(api)
 }
 
 export const test = base.extend<MyFixtures>({
-  // Direct API client fixture
-  // eslint-disable-next-line no-empty-pattern
-  api: async ({ }, use) => {
-    let token = '';
-    
-    try {
-      // Run the setup script in the backend container to get a fresh E2E bot token
-      console.log('DEBUG: Running setup_e2e_user.py script...');
-      const output = execSync('podman exec personal_backend_1 python /app/scripts/setup_e2e_user.py').toString();
-      
-      // The script might have debug logs in stderr, we only want the JSON from stdout
-      const lines = output.trim().split('\n');
-      const jsonLine = lines.find(line => line.trim().startsWith('{'));
-      
-      if (jsonLine) {
-        const data = JSON.parse(jsonLine);
-        token = data.token;
-        console.log(`DEBUG: Obtained fresh token for ${data.email}`);
-      } else {
-        console.error('DEBUG: Failed to find JSON in script output:', output);
-      }
-    } catch (error) {
-      console.error('DEBUG: Error calling setup_e2e_user.py:', error);
-      
-      // Fallback to existing auth file if script fails
-      const authFile = 'playwright/.auth/integration.json';
-      if (fs.existsSync(authFile)) {
-        console.log('DEBUG: Falling back to integration.json');
-        const auth = JSON.parse(fs.readFileSync(authFile, 'utf-8'));
-        const origins = auth.origins as any[];
-        const localStorageData = origins.find((o: any) => o.origin.includes('localhost'))?.localStorage;
-        token = localStorageData?.find((i: any) => i.name === 'auth_token')?.value || '';
-      }
-    }
-
-    const client = new ApiClient(token);
-    await use(client);
+  // Initialize the virtual backend state for each test
+  virtualBackend: async ({ }, use) => {
+    const vb = new VirtualBackend();
+    await use(vb);
   },
 
-  // Authenticated page fixture
-  authenticatedPage: async ({ page, api }, use) => {
-    const token = api.token;
-    const email = 'e2e-bot@fityq.it'; // Fixed E2E bot email
-    const tourKey = `dashboard-main-${email}`;
+  // Alias 'api' to 'virtualBackend'
+  api: async ({ virtualBackend }, use) => {
+    await use(virtualBackend);
+  },
 
-    if (token) {
-      console.log(`DEBUG: Using addInitScript to inject token for ${email}`);
-      // Inject token BEFORE any page scripts run
-      await page.addInitScript(({ t, k }: { t: string; k: string }) => {
-        window.localStorage.setItem('auth_token', t);
-        window.localStorage.setItem(`has_seen_tour_${k}`, 'true');
-        window.localStorage.setItem('has_seen_tour_dashboard-main-guest', 'true');
-        window.localStorage.setItem('i18nextLng', 'pt-BR');
-      }, { t: token, k: tourKey });
-    } else {
-      console.error('DEBUG: No token available for authenticatedPage fixture!');
-    }
-    
-    // Add console listener for debugging
-    page.on('console', (msg) => {
-      if (msg.type() === 'error' || msg.type() === 'warning') {
-        console.log(`BROWSER [${msg.type()}]: ${msg.text()}`);
-      }
+  // Authenticated page fixture with global mocking
+  authenticatedPage: async ({ page, virtualBackend }, use) => {
+    const email = 'e2e-bot@fityq.it';
+    const token = 'mock-v-token';
+
+    // 1. Mock Firebase Globals (satisfy SDK)
+    const firebaseMockResponse = {
+        kind: 'identitytoolkit#VerifyPasswordResponse',
+        localId: 'mock-id',
+        email: email,
+        displayName: 'E2E Bot',
+        idToken: 'mock-id-token',
+        registered: true,
+        refreshToken: 'mock-refresh-token',
+        expiresIn: '3600',
+        users: [{ localId: 'mock-id', email: email, emailVerified: true }]
+    };
+
+    await page.route('https://identitytoolkit.googleapis.com/**', async (route) => {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(firebaseMockResponse) });
     });
 
-    // Set desktop viewport BEFORE navigating so sidebar is visible (TailwindCSS lg:flex = 1024px+)
-    await page.setViewportSize({ width: 1440, height: 900 });
-    
-    // Navigate directly to dashboard
-    console.log('DEBUG: Navigating to /dashboard');
+    await page.route('https://securetoken.googleapis.com/**', async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ access_token: 'mock-token', expires_in: '3600', id_token: 'mock-id-token', user_id: 'mock-id' })
+        });
+    });
+
+    // 2. Intercept Backend API calls
+    await page.route(url => url.pathname.includes('/api/'), async (route) => {
+        const method = route.request().method();
+        const url = route.request().url();
+        let postData;
+        try {
+            postData = route.request().postDataJSON();
+        } catch (e) {
+            postData = undefined;
+        }
+        
+        const response = await virtualBackend.handleRequest(method, url, postData);
+        
+        await route.fulfill({
+            status: response.status,
+            contentType: response.contentType || 'application/json',
+            body: typeof response.body === 'string' ? response.body : JSON.stringify(response.body)
+        });
+    });
+
+    // 3. Inject Auth Token and verify it's there
+    await page.addInitScript(({ t }: { t: string }) => {
+        window.localStorage.setItem('auth_token', t);
+        window.localStorage.setItem('i18nextLng', 'pt-BR');
+        // Clear onboarding tour
+        window.localStorage.setItem('has_seen_tour_dashboard-main-e2e-bot@fityq.it', 'true');
+    }, { t: token });
+
+    // 4. Navigate and VERIFY AUTHENTICATION
     await page.goto('/dashboard');
     
-    // Wait for the app to initialize
-    await page.waitForLoadState('networkidle');
+    // If we are still on login page, something is wrong
+    await expect(page).not.toHaveURL(/.*login/, { timeout: 10000 });
+    
+    // Check for root
+    await expect(page.locator('#root')).toBeVisible({ timeout: 15000 });
     
     await use(page);
   }

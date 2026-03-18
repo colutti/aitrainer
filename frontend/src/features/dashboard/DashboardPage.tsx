@@ -689,11 +689,10 @@ export function DashboardPage() {
               <h2 className="text-xl font-black text-text-primary tracking-tight">{t('dashboard.recent_activity')}</h2>
             </div>
             <div className="bg-dark-bg border border-border rounded-xl overflow-hidden min-h-[200px]">
-            {data?.recentActivities.length ? (
+            {data?.recentActivities?.length ? (
               <div className="divide-y divide-border">
                 {data.recentActivities.map((activity) => (
-                  <div key={activity.id} className="p-4 flex items-center gap-4 hover:bg-white/5 transition-colors group">
-                    <div className="w-10 h-10 rounded bg-dark-bg border border-border flex items-center justify-center text-text-muted group-hover:text-primary transition-colors">
+                  <div key={activity.id} className="p-4 flex items-center gap-4 hover:bg-white/5 transition-colors group">                    <div className="w-10 h-10 rounded bg-dark-bg border border-border flex items-center justify-center text-text-muted group-hover:text-primary transition-colors">
                       {activity.type === 'workout' ? <Dumbbell size={20} /> :
                        activity.type === 'nutrition' ? <Flame size={20} /> :
                        <Scale size={20} />}

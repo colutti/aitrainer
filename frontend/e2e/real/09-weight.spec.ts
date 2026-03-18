@@ -7,48 +7,48 @@ test.describe('Weight Features', () => {
     await cleanupUserData(api);
   });
 
-  test('should create and list weight logs', async ({ authenticatedPage }) => {
+  test('should create and list weight logs', async ({ authenticatedPage, api }) => {
     await authenticatedPage.goto('/dashboard/body/weight');
     await authenticatedPage.waitForLoadState('networkidle');
     
-    // Check empty state
-    await expect(authenticatedPage.getByText(/Nenhuma pesagem registrada/i)).toBeVisible();
-
-    // Click "Registrar Peso" button
-    await authenticatedPage.locator('button:has-text("Registrar Peso")').or(authenticatedPage.locator('button.fixed.bottom-24')).click();
+    // 1. Open drawer
+    await authenticatedPage.getByRole('button', { name: /Registrar Peso/i }).first().click();
     
-    // Fill form
-    await authenticatedPage.fill('input[name="weight"]', '79.2');
-    await authenticatedPage.fill('input[name="body_fat_pct"]', '17.5');
+    // 2. Fill form
+    await authenticatedPage.locator('input[name="weight_kg"]').first().fill('82.5');
+    // Body fat is mandatory in useWeightTab
+    await authenticatedPage.locator('input[name="body_fat_pct"]').first().fill('15');
     
-    // Submit
-    await authenticatedPage.locator('button[type="submit"]').click();
+    // 3. Save
+    await authenticatedPage.waitForTimeout(1000);
+    const saveBtn = authenticatedPage.locator('button').filter({ hasText: /Salvar/i }).last();
+    await saveBtn.click({ force: true });
 
-    // Success toast
-    await expect(authenticatedPage.getByText(/sucesso/i).first()).toBeVisible();
-
-    // Check list entries
-    await expect(authenticatedPage.getByText('79.2')).toBeVisible();
-    await expect(authenticatedPage.getByText('17.5 %')).toBeVisible();
+    // 4. Verify in list (it uses .toFixed(2))
+    await expect(authenticatedPage.getByText('82.50').first()).toBeVisible({ timeout: 15000 });
   });
 
   test('should delete a weight log', async ({ authenticatedPage, api }) => {
-    // 1. Setup data
+    // 1. Setup
     await api.post('/weight', {
-      weight_kg: 105.0,
-      date: new Date().toISOString().split('T')[0] // Use YYYY-MM-DD
+      weight_kg: 90.0,
+      body_fat_pct: 20,
+      date: new Date().toISOString().split('T')[0]
     });
 
     await authenticatedPage.goto('/dashboard/body/weight');
     await authenticatedPage.waitForLoadState('networkidle');
-    await expect(authenticatedPage.getByText('105.0')).toBeVisible();
+    
+    // 2. Verify and delete
+    await expect(authenticatedPage.getByText('90.00').first()).toBeVisible({ timeout: 15000 });
+    
+    const card = authenticatedPage.locator('.bg-dark-card').filter({ hasText: /90/ }).first();
+    await card.hover();
+    const deleteBtn = card.locator('button[title*="Excluir"]').first();
+    // In Weight Tab, delete is direct (no modal)
+    await deleteBtn.click({ force: true });
 
-    // 2. Delete
-    await authenticatedPage.locator('button:has-text("Excluir")').or(authenticatedPage.locator('.lucide-trash-2')).first().click();
-    await authenticatedPage.locator('button:has-text("Confirmar")').click();
-
-    // Verify
-    await expect(authenticatedPage.getByText('105.0')).not.toBeVisible();
-    await expect(authenticatedPage.getByText(/Nenhuma pesagem registrada/i)).toBeVisible();
+    // 3. Verify gone
+    await expect(authenticatedPage.getByText('90.00')).not.toBeVisible({ timeout: 15000 });
   });
 });

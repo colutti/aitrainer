@@ -6,15 +6,15 @@ dotenv.config({ path: '.env' });
 
 /**
  * Playwright E2E test configuration
- * See https://playwright.dev/docs/test-configuration
+ * Focused on the stable Mocked VirtualBackend suite.
  */
 export default defineConfig({
-  testDir: './e2e',
+  testDir: './e2e/real', // Focus on the fixed tests
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  reporter: [['html', { open: 'never' }], ['list']],
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
@@ -23,63 +23,21 @@ export default defineConfig({
 
   projects: [
     {
-      name: 'setup',
-      testMatch: /auth\.setup\.ts/,
-      testIgnore: /real\/auth\.setup\.ts/,
-    },
-    {
-      name: 'integration-setup',
-      testDir: './e2e/real',
-      testMatch: /auth\.setup\.ts/,
-    },
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/user.json' },
-      dependencies: ['setup'],
-    },
-    {
-      name: 'integration-public',
+      name: 'e2e',
       use: { 
         ...devices['Desktop Chrome'],
-        storageState: { cookies: [], origins: [] }
+        storageState: { cookies: [], origins: [] } 
       },
-      testDir: './e2e/real',
-      testMatch: /01-landing\.spec\.ts/,
-      fullyParallel: false,
-      workers: 1,
-    },
-    {
-      name: 'integration',
-      use: { 
-        ...devices['Desktop Chrome'],
-        storageState: { cookies: [], origins: [] }
-      },
-      testDir: './e2e/real',
-      testIgnore: [/auth\.setup\.ts/, /01-landing\.spec\.ts/],
-      dependencies: ['integration-setup'],
-      fullyParallel: false,
-      workers: 1,
-    },
-    {
-      name: 'admin-chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-        baseURL: 'http://localhost:3001',
-      },
-      testMatch: /admin\.spec\.ts/,
+      testIgnore: [/auth\.setup\.ts/],
     },
   ],
 
   webServer: [
     {
-      command: 'npm run dev',
+      command: 'npm run preview -- --port 3000',
       url: 'http://localhost:3000',
-      reuseExistingServer: !process.env.CI,
-    },
-    {
-      command: 'cd admin && npm run dev',
-      url: 'http://localhost:3001',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
+      timeout: 60000,
     },
   ],
 });

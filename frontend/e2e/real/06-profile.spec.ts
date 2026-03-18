@@ -20,7 +20,7 @@ test.describe('Profile Features', () => {
     await nameInput.fill(newName);
     
     // Click "Salvar Alterações"
-    await authenticatedPage.locator('button:has-text("Salvar Alterações")').click();
+    await authenticatedPage.locator('button').filter({ hasText: /Salvar Alterações|Salvar|Save/i }).first().click();
 
     // Verify success toast
     await expect(authenticatedPage.getByText(/sucesso/i).first()).toBeVisible();
@@ -42,14 +42,14 @@ test.describe('Profile Features', () => {
     await authenticatedPage.selectOption('select#profile-goal-type', 'lose');
     
     // Click "Salvar Alterações"
-    await authenticatedPage.locator('button:has-text("Salvar Alterações")').click();
+    await authenticatedPage.locator('button').filter({ hasText: /Salvar Alterações|Salvar|Save/i }).first().click();
 
     // Verify success toast
     await expect(authenticatedPage.getByText(/sucesso/i).first()).toBeVisible();
 
     // Verify in Dashboard (metabolism values should change)
     await authenticatedPage.goto('/dashboard');
-    await expect(authenticatedPage.getByText(/Meta Diária/i)).toBeVisible();
+    await expect(authenticatedPage.getByText(/Meta Diária/i).first()).toBeVisible();
     
     // Check back in settings
     await authenticatedPage.goto('/dashboard/settings/profile');
@@ -63,9 +63,9 @@ test.describe('Profile Features', () => {
     
     // Age below 18 (backend validation)
     await authenticatedPage.fill('input[name="age"]', '15');
-    await authenticatedPage.locator('button:has-text("Salvar Alterações")').click();
+    await authenticatedPage.locator('button').filter({ hasText: /Salvar Alterações|Salvar|Save/i }).first().click();
     
     // It should show a validation error (either browser-side from Zod or from backend)
-    await expect(authenticatedPage.getByText(/idade/i).or(authenticatedPage.getByText(/age/i))).toBeVisible();
+    await expect(authenticatedPage.getByText(/idade/i).or(authenticatedPage.getByText(/age/i)).first()).toBeVisible();
   });
 });

@@ -2,27 +2,22 @@ import i18n from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { initReactI18next } from 'react-i18next';
 
+// resources are loaded from JSON imports below
 import enUS from './locales/en-US.json';
 import esES from './locales/es-ES.json';
 import ptBR from './locales/pt-BR.json';
 
-const resources = {
-  'pt-BR': {
-    translation: ptBR,
-  },
-  'es-ES': {
-    translation: esES,
-  },
-  'en-US': {
-    translation: enUS,
-  },
+const resourcesWithData = {
+  'pt-BR': { translation: ptBR },
+  'es-ES': { translation: esES },
+  'en-US': { translation: enUS },
 };
 
 void i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    resources,
+    resources: resourcesWithData,
     fallbackLng: 'pt-BR',
     interpolation: {
       escapeValue: false,
@@ -33,7 +28,6 @@ void i18n
     },
   });
 
-// Map short language codes to full locales
 i18n.on('languageChanged', (lng) => {
   if (lng === 'pt' || lng.startsWith('pt-')) {
     if (lng !== 'pt-BR') void i18n.changeLanguage('pt-BR');

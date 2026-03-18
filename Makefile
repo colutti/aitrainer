@@ -157,15 +157,28 @@ test: test-backend test-frontend test-admin
 
 test-cov: test-backend-cov test-frontend-cov
 
-# E2E Tests (Playwright)
+# E2E Tests (Playwright - Mocked Environment)
 
-## Playwright (headless)
+## Playwright (Automated Headless)
 e2e:
-	cd frontend && npx playwright test
+	@echo "🛠️  Construindo App para testes..."
+	cd frontend && npm run build
+	@echo "🧪 Rodando suíte E2E estável (Mocked)..."
+	cd frontend && npx playwright test --project=e2e --reporter=list
 
-## Playwright UI
+## Playwright UI (Debug Mode)
 e2e-ui:
-	cd frontend && npx playwright test --ui
+	@echo "🛠️  Construindo App para testes..."
+	cd frontend && npm run build
+	@echo "🖥️  Abrindo Playwright UI..."
+	cd frontend && npx playwright test --project=e2e --ui
+
+## Playwright Journey (Automatic Animated Run)
+e2e-journey:
+	@echo "🛠️  Construindo App para testes..."
+	cd frontend && npm run build
+	@echo "🏃 Rodando jornada completa (Navegador Real)..."
+	cd frontend && npx playwright test e2e/real/complete_user_journey.spec.ts --project=e2e --headed
 
 ## Playwright Report
 e2e-report:

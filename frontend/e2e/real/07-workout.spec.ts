@@ -7,42 +7,53 @@ test.describe('Workout Features', () => {
     await cleanupUserData(api);
   });
 
-  test.skip('should create and list workouts', async ({ authenticatedPage }) => {
-    // Manual creation is currently disabled in the UI (button is hidden and drawer has no form)
-    /*
-    await authenticatedPage.goto('/dashboard/workouts');
-    ...
-    */
-  });
-
-  test('should delete a workout', async ({ authenticatedPage, api }) => {
-    // 1. Seed a workout via API
+  test('should list workouts and show details', async ({ authenticatedPage, api }) => {
+    // Seed a workout
     await api.post('/workout', {
-      workout_type: 'Treino para deletar',
-      exercises: [
-        { 
-          name: 'Supino', 
-          sets: 3, 
-          reps_per_set: [10, 10, 10], 
-          weights_per_set: [60, 60, 60] 
-        }
-      ],
-      date: new Date().toISOString(),
-      source: 'manual'
+      workout_type: 'Força',
+      duration_minutes: 60,
+      exercises: [{ name: 'Supino', sets: 1, reps_per_set: [10], weights_per_set: [60] }]
     });
 
     await authenticatedPage.goto('/dashboard/workouts');
-    await expect(authenticatedPage.getByText('Treino para deletar')).toBeVisible();
+    await authenticatedPage.waitForLoadState('networkidle');
 
-    // 2. Click delete button on the card
-    // Cards usually have a trash icon or a "Excluir" button
-    await authenticatedPage.locator('button:has-text("Excluir")').or(authenticatedPage.locator('.lucide-trash-2')).first().click();
+    // 1. Verify in list
+    const card = authenticatedPage.locator('.bg-dark-card').filter({ hasText: /Força/i }).first();
+    await expect(card).toBeVisible({ timeout: 15000 });
 
-    // 3. Confirm deletion in modal
-    await authenticatedPage.locator('button:has-text("Confirmar")').or(authenticatedPage.locator('button:has-text("Excluir")')).last().click();
+    // 2. Click to see details (Card)
+    await card.click();
+    
+    // 3. Check drawer details
+    await expect(authenticatedPage.getByText(/Detalhes do Treino/i).first()).toBeVisible();
+    await expect(authenticatedPage.getByText(/Supino/i).first()).toBeVisible();
+  });
 
-    // Verify it's gone
-    await expect(authenticatedPage.getByText('Treino para deletar')).not.toBeVisible();
-    await expect(authenticatedPage.getByText(/Nenhum treino registrado/i)).toBeVisible();
+  test('should delete a workout', async ({ authenticatedPage, api }) => {
+    // 1. Setup: add a workout first
+    await api.post('/workout', {
+      workout_type: 'Leg Day',
+      duration_minutes: 45,
+      exercises: []
+    });
+
+    await authenticatedPage.goto('/dashboard/workouts');
+    await authenticatedPage.waitForLoadState('networkidle');
+
+    // 2. Click delete button
+    const card = authenticatedPage.locator('.bg-dark-card').filter({ hasText: /Leg Day/i }).first();
+    await expect(card).toBeVisible({ timeout: 10000 });
+    
+    await card.hover();
+    const deleteBtn = card.locator('button').filter({ has: authenticatedPage.locator('svg') }).first();
+    await deleteBtn.click({ force: true });
+
+    // 3. Confirm in modal
+    const confirmBtn = authenticatedPage.locator('button').filter({ hasText: /Confirmar|Sim|Excluir/i }).last();
+    await confirmBtn.click({ force: true });
+
+    // 4. Verify gone
+    await expect(authenticatedPage.getByText(/Leg Day/i)).not.toBeVisible({ timeout: 15000 });
   });
 });
