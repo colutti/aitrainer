@@ -20,6 +20,7 @@ interface XmlSection {
 interface MsgMetadata {
   data?: string;
   hora?: string;
+  trainer?: string;
 }
 
 // Parse XML tags from prompt string (supports attributes like <tag attr="val">)
@@ -30,8 +31,8 @@ function parsePromptSections(prompt: string): XmlSection[] {
   while ((match = regex.exec(prompt)) !== null) {
     const tag = match[1] ?? '';
     const content = (match[2] ?? '').trim();
-    // Ignore 'msg' tags as they are part of chat history
-    if (tag && tag.toLowerCase() !== 'msg') {
+    // Ignore 'msg' and 'treinador' tags as they are part of chat history
+    if (tag && tag.toLowerCase() !== 'msg' && tag.toLowerCase() !== 'treinador') {
       sections.push({ tag, content });
     }
   }
@@ -46,17 +47,31 @@ function formatTagName(tag: string): string {
     .join(' ');
 }
 
-// Extract <msg> tag metadata from message content
+// Extract <msg> and <treinador> tag metadata from message content
 function parseMsgAttributes(content: string): { attributes: MsgMetadata; text: string } {
-  const msgRegex = /<msg(?:\s+data="([^"]*)")?(?:\s+hora="([^"]*)")?>(.*?)<\/msg>/;
-  const match = msgRegex.exec(content);
-  if (match) {
-    return {
-      attributes: { data: match[1], hora: match[2] },
-      text: match[3] ?? '',
-    };
+  // 1. Try to extract from <msg> tag first
+  const msgRegex = /<msg(?:\s+data="([^"]*)")?(?:\s+hora="([^"]*)")?>(.*?)<\/msg>/s;
+  const msgMatch = msgRegex.exec(content);
+  
+  let attributes: MsgMetadata = {};
+  let innerText = content;
+
+  if (msgMatch) {
+    attributes.data = msgMatch[1];
+    attributes.hora = msgMatch[2];
+    innerText = msgMatch[3] ?? '';
   }
-  return { attributes: {}, text: content };
+
+  // 2. Try to extract trainer info from <treinador> tag inside msg
+  const trainerRegex = /<treinador(?:\s+name="([^"]*)")?>(.*?)<\/treinador>/s;
+  const trainerMatch = trainerRegex.exec(innerText);
+
+  if (trainerMatch) {
+    attributes.trainer = trainerMatch[1];
+    innerText = trainerMatch[2] ?? '';
+  }
+
+  return { attributes, text: innerText.trim() };
 }
 
 // Color mapping for XML tag sections
@@ -330,7 +345,7 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
                                     isAI ? 'bg-green-500/20 text-green-400' : 
                                     'bg-zinc-800 text-zinc-400'
                                   }`}>
-                                    {isUser ? 'USER' : isAI ? 'AI' : msg.role.toUpperCase()}
+                                    {isUser ? 'USER' : isAI ? (attributes.trainer ? `AI: ${attributes.trainer}` : 'AI') : msg.role.toUpperCase()}
                                   </span>
                                   {!!(attributes.data ?? attributes.hora) && (
                                     <div className="flex gap-1">

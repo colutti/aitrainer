@@ -33,7 +33,6 @@ from src.services.metabolism_tools import (
     create_get_metabolism_tool,
     create_update_tdee_params_tool,
     create_reset_tdee_tracking_tool,
-    create_force_target_update_tool,
 )
 from src.services.memory_tools import (
     create_save_memory_tool,
@@ -417,14 +416,14 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
                 formatted_msgs.append(HumanMessage(content=full_content))
 
             elif isinstance(msg, AIMessage):
-                # AI messages: <msg>[Treinador Name]: Content</msg>
-                trainer_prefix = ""
+                # AI messages: <msg><treinador name="...">Content</treinador></msg>
+                trainer_name = "Treinador"
                 if hasattr(msg, "additional_kwargs") and msg.additional_kwargs:
                     t_type = msg.additional_kwargs.get("trainer_type", "")
                     if t_type:
-                        trainer_prefix = f"[Treinador {t_type.capitalize()}]: "
+                        trainer_name = t_type.capitalize()
                 
-                full_content = f"{msg_tag_prefix}{trainer_prefix}{content_clean}{msg_tag_suffix}"
+                full_content = f'{msg_tag_prefix}<treinador name="{trainer_name}">{content_clean}</treinador>{msg_tag_suffix}'
                 formatted_msgs.append(
                     AIMessage(content=full_content, additional_kwargs=msg.additional_kwargs)
                 )
@@ -471,7 +470,6 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             create_get_metabolism_tool(self._database, user_email),
             create_update_tdee_params_tool(self._database, user_email),
             create_reset_tdee_tracking_tool(self._database, user_email),
-            create_force_target_update_tool(self._database, user_email),
         ]
 
         if self._qdrant_client is not None:

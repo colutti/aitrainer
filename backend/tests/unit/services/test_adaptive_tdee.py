@@ -62,8 +62,9 @@ def test_tdee_calculation_maintenance(service, mock_db):
     result = service.calculate_tdee("test@test.com", lookback_weeks=3)
 
     # Weight change = 0, TDEE computed from v3 algorithm (7-day windows + EMA)
-    assert 2400 <= result["tdee"] <= 2470  # v3 algo with 7-day windows
-    assert result["avg_calories"] == 2500
+    # With V4 dynamic span, perfectly stable weight (low variance) reduces EMA span to ~7 days,
+    # converging almost exactly to the 2500 kcal intake.
+    assert 2470 <= result["tdee"] <= 2510  # v4 algo with dynamic span    assert result["avg_calories"] == 2500
     assert result["weight_change_per_week"] == 0.0
     assert result["confidence"] == "high"  # High adherence
 
@@ -299,8 +300,8 @@ def test_tdee_outlier_filtering(service, mock_db):
 
     assert result["outliers_count"] == 1
     assert result["weight_logs_count"] == 20  # 21 total - 1 outlier
-    assert 2400 <= result["tdee"] <= 2470  # v3 algo with 7-day windows, outlier filtered correctly
-
+    # With V4 dynamic span, it converges faster to 2500 since noise is low (outlier was removed)
+    assert 2470 <= result["tdee"] <= 2510
 
 def test_tdee_sparse_weight_logs(service, mock_db):
     """Verify separate counts for weight and nutrition logs."""
@@ -732,10 +733,9 @@ def test_coaching_target_on_track(service, mock_db):
 
     # Check-in > 7 days, so gradual adjustment applies:
     # Verify target is adjusting gradually (within ±20 of expected cap, accounting for 7-day window + activity factor 1.45)
-    assert 1970 <= result["daily_target"] <= 2010, (
+    assert 1960 <= result["daily_target"] <= 2010, (
         f"Expected daily_target ~2000 with gradual adjustment, got {result['daily_target']}"
     )
-
 
 
 

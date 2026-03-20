@@ -91,7 +91,7 @@ Fator Atividade (Âncora): {profile.tdee_activity_factor or 1.45 if profile else
 Último Ajuste de Meta: {last_check_in_str}
 ... Applied fuzzy match.
 === INSTRUÇÃO PARA O TREINADOR ===
-Analise os dados acima. Se os 'Lows' estiverem caindo consistentemente na taxa meta, mas o TDEE estimado ainda estiver baixo (lag do algoritmo), você pode concordar com o aluno e usar a tool 'force_target_update' para ajustar a meta agora.
+Analise os dados acima. Se os 'Lows' estiverem caindo consistentemente na taxa meta, mas o TDEE estimado ainda estiver baixo (lag do algoritmo), você deve ajustar o fator de atividade do aluno usando a tool 'update_tdee_params' passando reset_tracking=True para forçar o recalculo imediato.
 """
             return response
 
@@ -102,59 +102,13 @@ Analise os dados acima. Se os 'Lows' estiverem caindo consistentemente na taxa m
     return get_metabolism_data
 
 
-def create_force_target_update_tool(database: MongoDatabase, user_email: str):
-    """
-    Factory function for the force_target_update tool.
-    Allows the AI to manually override the target and reset the coaching clock.
-    """
-
-    @tool
-    def force_target_update(target_calories: int) -> str:
-        """
-        Força a atualização da meta calórica diária do aluno.
-        Use esta tool APENAS quando seu raciocínio matemático (baseado nos dados brutos)
-        indicar que a meta atual está defasada e precisa de um ajuste imediato,
-        ignorando a trava de 7 dias do sistema.
-
-        Args:
-            target_calories (int): A nova meta calórica sugerida.
-        """
-        try:
-            profile = database.get_user_profile(user_email)
-            if not profile:
-                return "Perfil do aluno não encontrado."
-
-            # Update target and clear last check-in to force immediate UI update
-            fields = {
-                "tdee_last_target": target_calories,
-                "tdee_last_check_in": None
-            }
-            database.update_user_profile_fields(user_email, fields)
-
-            logger.info(
-                "AI forced target update for %s to %d kcal",
-                user_email,
-                target_calories
-            )
-            return (
-                f"Meta calórica atualizada com sucesso para {target_calories} kcal. "
-                "A alteração será visível imediatamente para o aluno."
-            )
-
-        except (ValueError, TypeError, AttributeError) as e:
-            logger.error("Failed to force target update for %s: %s", user_email, e)
-            return f"Erro ao forçar atualização da meta: {str(e)}"
-
-    return force_target_update
-
-
 def create_update_tdee_params_tool(database: MongoDatabase, user_email: str):
     """
     Factory function to create an update_tdee_params tool with injected dependencies.
     """
 
     @tool
-    def update_tdee_params(activity_factor: float) -> str:
+    def update_tdee_params(activity_factor: float, reset_tracking: bool = False) -> str:
         """
         Ajusta o fator de atividade usado no cálculo do TDEE adaptativo do aluno.
 
@@ -168,11 +122,10 @@ def create_update_tdee_params_tool(database: MongoDatabase, user_email: str):
         - 1.725 → Muito ativo (trabalho físico pesado, muito movimento)
         - 1.9   → Extremamente ativo (atleta, trabalho extenuante)
 
-        IMPORTANTE: Caso o aluno tenha iniciado um novo plano de treinos INTENSO
-        (ex: HIIT 5x/semana) ou esteja reclamando que a meta hoje é MUITO BAIXA em relação
-        ao que ele está gastando de fato agora, você PODE usar esta tool para subir
-        levemente o fator e, OBRIGATORIAMENTE, usar a tool 'reset_tdee_tracking'
-        junto para resetar o passado.
+        IMPORTANTE: Caso o aluno tenha iniciado um novo plano de treinos INTENSO ou esteja
+        reclamando que a meta hoje é MUITO BAIXA/ALTA em relação ao que ele está gastando
+        de fato agora (lag do algoritmo), você DEVE usar o parâmetro `reset_tracking=True`
+        para zerar o histórico passado e forçar o recalculo imediato da meta com a nova base.
 
         Exemplos válidos:
           - "Comecei a trabalhar em escritório" → 1.2
@@ -180,6 +133,10 @@ def create_update_tdee_params_tool(database: MongoDatabase, user_email: str):
 
         Exemplos inválidos:
           - "Comecei a treinar 3x/semana" → NÃO ajustar (mude apenas mudanças muito bruscas)
+
+        Args:
+            activity_factor (float): O novo fator de atividade.
+            reset_tracking (bool): Se verdadeiro, descarta o histórico anterior e recomeça a média móvel a partir de hoje.
         """
         try:
             if not isinstance(activity_factor, (int, float)):
@@ -201,6 +158,12 @@ def create_update_tdee_params_tool(database: MongoDatabase, user_email: str):
 
             old_factor = profile.tdee_activity_factor or 1.45
             profile.tdee_activity_factor = activity_factor
+            
+            reset_msg = ""
+            if reset_tracking:
+                profile.tdee_start_date = date.today().isoformat()
+                reset_msg = " e o histórico adaptativo foi resetado para forçar recalculo imediato"
+
             database.save_user_profile(profile)
 
             activity_labels = {
@@ -213,16 +176,16 @@ def create_update_tdee_params_tool(database: MongoDatabase, user_email: str):
             label = activity_labels.get(activity_factor, f"{activity_factor}")
 
             logger.info(
-                "User %s updated activity_factor from %s to %s",
+                "User %s updated activity_factor from %s to %s (reset_tracking=%s)",
                 user_email,
                 old_factor,
                 activity_factor,
+                reset_tracking
             )
 
             return (
-                f"Fator de atividade atualizado com sucesso! "
-                f"Novo fator: {activity_factor} ({label}). "
-                f"O TDEE será recalculado no próximo check-in com este novo valor."
+                f"Fator de atividade atualizado com sucesso para {activity_factor} ({label}){reset_msg}. "
+                f"O TDEE será recalculado com este novo valor."
             )
 
         except (ValueError, TypeError, AttributeError) as e:

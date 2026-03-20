@@ -92,6 +92,24 @@ class AdaptiveTDEEService:
         Returns:
             Estimated kcal per kg of weight change (range: ~5600-8640).
         """
+        rate_weekly = abs(slope * 7)
+
+        # MacroFactor V3 style water weight dampening
+        # If user is losing > 1.5kg/week, it's highly likely water/glycogen.
+        # We dampen the energy per kg to prevent the TDEE from skyrocketing.
+        if slope < 0 and rate_weekly > 1.5:
+            # Dampen aggressively for extreme loss (e.g. 3.5kg/week -> mostly water)
+            # Normal fat loss is ~7700. Water/glycogen is closer to 1000-2000.
+            # We scale it down linearly:
+            # At 1.5kg/wk -> ~6000
+            # At 3.5kg/wk -> ~2000
+            dampening_factor = max(0.25, 1.0 - ((rate_weekly - 1.5) * 0.35))
+            base_energy = self.KCAL_PER_KG_DEFAULT if body_fat_pct is None else (
+                (0.75 + (body_fat_pct - 25) * 0.005) * self.KCAL_PER_KG_FAT_MASS +
+                (1 - (0.75 + (body_fat_pct - 25) * 0.005)) * self.KCAL_PER_KG_LEAN_MASS
+            )
+            return base_energy * dampening_factor
+
         if body_fat_pct is None:
             return self.KCAL_PER_KG_DEFAULT
 
@@ -101,7 +119,6 @@ class AdaptiveTDEEService:
         fat_fraction = 0.75 + (body_fat_pct - 25) * 0.005
 
         # Rapid loss penalty: losing > 0.5 kg/week means more lean tissue lost
-        rate_weekly = abs(slope * 7)
         if rate_weekly > 0.5:
             fat_fraction -= 0.05 * (rate_weekly - 0.5)
 
@@ -221,17 +238,31 @@ class AdaptiveTDEEService:
         nutrition_by_date: dict[date, int],
         energy_per_kg: float,
         i: int,
+        daily_target_fallback: int | None = None,
     ) -> tuple[date, float] | None:
         """Helper to compute TDEE observation for a single 7-day window."""
         window_end_date = sorted_dates[i]
         window_start_date = sorted_dates[i - 6]
 
-        window_calories = [
+        # Gather known calories
+        known_calories = [
             nutrition_by_date[sorted_dates[j]]
             for j in range(i - 6, i + 1)
             if sorted_dates[j] in nutrition_by_date
         ]
 
+        # Impute missing days if we have at least 1 known day and a fallback
+        if len(known_calories) < 7 and len(known_calories) > 0 and daily_target_fallback:
+            missing_count = 7 - len(known_calories)
+            # Impute using a mix of actual average and target (to prevent crazy feedback loops)
+            actual_avg = sum(known_calories) / len(known_calories)
+            # 70% weight on actual avg, 30% on target as a safe anchor
+            imputed_value = (actual_avg * 0.7) + (daily_target_fallback * 0.3)
+            window_calories = known_calories + [imputed_value] * missing_count
+        else:
+            window_calories = known_calories
+
+        # Still require at least 4 valid/imputed days
         if len(window_calories) < 4:
             return None
 
@@ -252,18 +283,19 @@ class AdaptiveTDEEService:
         daily_trend: dict[date, float],
         nutrition_by_date: dict[date, int],
         energy_per_kg: float,
+        daily_target_fallback: int | None = None,
     ) -> list[tuple[date, float]]:
         """
         Computes TDEE observations using 7-day windows (MacroFactor-style).
 
         For each date, looks back 7 days:
-        - avg_calories = mean of last 7 days
+        - avg_calories = mean of last 7 days (imputed if missing 1-6 days)
         - trend_change_7d = trend[now] - trend[7days_ago]
         - obs = avg_calories - (trend_change_7d / 7) × energy_per_kg
 
         Requirements:
         - Minimum 8 days of trend data (returns [] otherwise)
-        - Minimum 4/7 days with nutrition data per window
+        - Minimum 4/7 days with nutrition data per window (after imputation)
         - Filters observations outside [500, 5000] kcal range
         """
         if not daily_trend or not nutrition_by_date:
@@ -282,12 +314,44 @@ class AdaptiveTDEEService:
                 daily_trend,
                 nutrition_by_date,
                 energy_per_kg,
-                i
+                i,
+                daily_target_fallback
             )
             if obs:
                 observations.append(obs)
 
         return observations
+
+    def _calculate_dynamic_span(self, weight_logs: list[WeightLog]) -> int:
+        """
+        Calculates a dynamic EMA span based on the variance (noise) of recent weight logs.
+        Low variance (smooth loss/gain) -> Fast reaction (Span ~7)
+        High variance (noisy data) -> Slow reaction (Span ~28)
+        """
+        if len(weight_logs) < 4:
+            return self.TDEE_OBS_EMA_SPAN
+
+        # Calculate a simple trend line to find variance from trend
+        weights = [log.weight_kg for log in weight_logs[-14:]] # Look at last 14 days max
+        n = len(weights)
+        
+        # Simple linear regression manually to avoid numpy dependency if possible,
+        # but since we already import numpy later for _calculate_regression_trend, we could use it.
+        # Let's do simple variance of differences to keep it fast
+        diffs = [abs(weights[i] - weights[i-1]) for i in range(1, n)]
+        avg_diff = sum(diffs) / len(diffs)
+        
+        # If average daily fluctuation is < 0.2kg, it's very smooth.
+        # If > 0.8kg, it's very noisy.
+        # Map [0.1, 0.8] to [7, 28] days span.
+        
+        noise_level = min(max(avg_diff, 0.1), 0.8)
+        
+        # Linear interpolation
+        # span = 7 + (noise_level - 0.1) * (28 - 7) / (0.8 - 0.1)
+        span = 7 + (noise_level - 0.1) * (21 / 0.7)
+        
+        return int(round(span))
 
     def _compute_tdee_from_observations(
         self,
@@ -475,8 +539,9 @@ class AdaptiveTDEEService:
         energy_per_kg = self.estimate_energy_per_kg(latest_body_fat, trend_slope)
 
         # Step 10: Generate TDEE observations (Task 3)
+        daily_target_fallback = getattr(profile, "tdee_last_target", None) if profile else None
         observations = self.compute_tdee_observations(
-            daily_trend, nutrition_by_date, energy_per_kg
+            daily_trend, nutrition_by_date, energy_per_kg, daily_target_fallback
         )
 
         # Step 11: Compute TDEE from observations (Task 3)
@@ -484,7 +549,7 @@ class AdaptiveTDEEService:
             tdee = self._compute_tdee_from_observations(
                 observations,
                 formula_tdee,
-                span=self.TDEE_OBS_EMA_SPAN,
+                span=self._calculate_dynamic_span(weight_logs),
                 start_date=tdee_start_date,
             )
         else:
@@ -590,9 +655,9 @@ class AdaptiveTDEEService:
             result["scale_bmr"] = weight_logs[-1].bmr
 
         # Persist coaching check-in data
-        if profile and daily_target != profile.tdee_last_target:
+        if profile and result["daily_target"] != profile.tdee_last_target:
             self.db.update_user_coaching_target(
-                user_email, daily_target, date.today().isoformat()
+                user_email, result["daily_target"], date.today().isoformat()
             )
 
         return result

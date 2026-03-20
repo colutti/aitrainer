@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 from src.services.nutrition_tools import create_sync_nutrition_text_tool
-from src.services.metabolism_tools import create_get_metabolism_tool, create_force_target_update_tool
+from src.services.metabolism_tools import create_get_metabolism_tool
 from src.services.trainer import AITrainerBrain
 from langchain_core.messages import AIMessage, HumanMessage
 
@@ -19,20 +19,6 @@ TOTAIS 1748 153 47 182
     assert "Sincronização concluída" in result
     assert "19/03/2026 (criado)" in result
     assert mock_db.save_nutrition_log.called
-
-def test_force_target_update_tool():
-    mock_db = MagicMock()
-    mock_db.get_user_profile.return_value = MagicMock(email="user@test.com")
-    
-    tool = create_force_target_update_tool(mock_db, "user@test.com")
-    
-    result = tool.invoke({"target_calories": 1800})
-    
-    assert "atualizada com sucesso para 1800 kcal" in result
-    mock_db.update_user_profile_fields.assert_called_with(
-        "user@test.com", 
-        {"tdee_last_target": 1800, "tdee_last_check_in": None}
-    )
 
 @patch("src.services.metabolism_tools.AdaptiveTDEEService")
 def test_get_metabolism_data_raw(mock_tdee_service_class):
@@ -77,8 +63,8 @@ def test_trainer_history_prefixing():
     formatted = brain.format_history_as_messages(messages)
     
     # Check prefixes
-    assert "[Treinador Atlas]: Hello" in formatted[1].content
-    assert "[Treinador Gymbro]: Yo" in formatted[2].content
+    assert '<treinador name="Atlas">Hello</treinador>' in formatted[1].content
+    assert '<treinador name="Gymbro">Yo</treinador>' in formatted[2].content
     # Check XML tags
     assert '<msg data="20/03" hora="10:00">' in formatted[1].content
     assert "</msg>" in formatted[1].content
