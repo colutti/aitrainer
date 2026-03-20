@@ -1,8 +1,9 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { OnboardingPage } from '../OnboardingPage';
 import { BrowserRouter } from 'react-router-dom';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { useAuthStore } from '../../../../shared/hooks/useAuth';
+import { OnboardingPage } from '../OnboardingPage';
 
 // Mock translations
 vi.mock('react-i18next', () => ({

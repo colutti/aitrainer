@@ -66,7 +66,7 @@ export class VirtualBackend {
         path = path.slice(0, -1);
     }
 
-    let response: VirtualResponse = { status: 200, body: {} };
+    const response: VirtualResponse = { status: 200, body: {} };
 
     // User Profile
     if (path === '/user/me' || path === '/user/profile') {

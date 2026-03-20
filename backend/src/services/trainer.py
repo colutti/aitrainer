@@ -23,6 +23,7 @@ from src.services.workout_tools import (
 from src.services.nutrition_tools import (
     create_save_nutrition_tool,
     create_get_nutrition_tool,
+    create_sync_nutrition_text_tool,
 )
 from src.services.composition_tools import (
     create_save_composition_tool,
@@ -32,6 +33,7 @@ from src.services.metabolism_tools import (
     create_get_metabolism_tool,
     create_update_tdee_params_tool,
     create_reset_tdee_tracking_tool,
+    create_force_target_update_tool,
 )
 from src.services.memory_tools import (
     create_save_memory_tool,
@@ -400,10 +402,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             raw_content = msg.content if msg.content else ""
             if not isinstance(raw_content, str):
                 raw_content = str(raw_content)
-            content = " ".join(raw_content.split())
-
-            # Incorporate XML tags for LLM visibility
-            content = f"{msg_tag_prefix}{content}{msg_tag_suffix}"
+            content_clean = " ".join(raw_content.split())
 
             # Check message type
             is_system = hasattr(msg, "type") and msg.type == "system"
@@ -413,17 +412,26 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
                 continue
 
             if isinstance(msg, HumanMessage):
-                # Pass user messages as-is
-                formatted_msgs.append(HumanMessage(content=content))
+                # User messages: <msg>Content</msg>
+                full_content = f"{msg_tag_prefix}{content_clean}{msg_tag_suffix}"
+                formatted_msgs.append(HumanMessage(content=full_content))
 
             elif isinstance(msg, AIMessage):
-                # Pass AI messages as-is
+                # AI messages: <msg>[Treinador Name]: Content</msg>
+                trainer_prefix = ""
+                if hasattr(msg, "additional_kwargs") and msg.additional_kwargs:
+                    t_type = msg.additional_kwargs.get("trainer_type", "")
+                    if t_type:
+                        trainer_prefix = f"[Treinador {t_type.capitalize()}]: "
+                
+                full_content = f"{msg_tag_prefix}{trainer_prefix}{content_clean}{msg_tag_suffix}"
                 formatted_msgs.append(
-                    AIMessage(content=content, additional_kwargs=msg.additional_kwargs)
+                    AIMessage(content=full_content, additional_kwargs=msg.additional_kwargs)
                 )
             else:
-                # Fallback for unknown message types
-                formatted_msgs.append(HumanMessage(content=content))
+                # Fallback
+                full_content = f"{msg_tag_prefix}{content_clean}{msg_tag_suffix}"
+                formatted_msgs.append(HumanMessage(content=full_content))
 
         return formatted_msgs
 
@@ -441,6 +449,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             # Nutrition
             create_save_nutrition_tool(self._database, user_email),
             create_get_nutrition_tool(self._database, user_email),
+            create_sync_nutrition_text_tool(self._database, user_email),
             # Composition
             create_save_composition_tool(self._database, user_email),
             create_get_composition_tool(self._database, user_email),
@@ -462,6 +471,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             create_get_metabolism_tool(self._database, user_email),
             create_update_tdee_params_tool(self._database, user_email),
             create_reset_tdee_tracking_tool(self._database, user_email),
+            create_force_target_update_tool(self._database, user_email),
         ]
 
         if self._qdrant_client is not None:

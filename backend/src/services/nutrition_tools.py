@@ -8,6 +8,7 @@ from langchain_core.tools import tool
 from pydantic import BaseModel, Field, field_validator
 from src.core.logs import logger
 from src.api.models.nutrition_log import NutritionLog
+from src.utils.mfp_parser import parse_mfp_text
 
 
 class SaveDailyNutritionInput(BaseModel):
@@ -116,7 +117,7 @@ def create_save_nutrition_tool(database, user_email: str):
         Use APENAS para dados nutricionais (calorias, macros).
         NÃO salve: água, suplementos isolados, refeições individuais sem macros.
 
-        Geralmente usado quando o aluno reporta o que comeu no dia (ex: dados do MyFitnessPal).
+        Geralmente usado quando o aluno reportar o que comeu no dia (ex: dados do MyFitnessPal).
         Se já existe log para a data, ATUALIZA os dados (upsert).
 
         EXTRAIA os TOTAIS do texto do aluno (linha "TOTAIS" se for tabela).
@@ -268,3 +269,66 @@ def create_get_nutrition_tool(database, user_email: str):
             return "Erro ao buscar histórico nutricional."
 
     return get_nutrition
+
+
+def create_sync_nutrition_text_tool(database, user_email: str):
+    """
+    Factory function to create a sync_nutrition_text tool.
+    Allows bulk syncing from MyFitnessPal text logs.
+    """
+
+    @tool
+    def sync_nutrition_text(raw_text: str) -> str:
+        """
+        Sincroniza múltiplos dias de logs nutricionais a partir de um texto bruto.
+        Use quando o aluno colar logs do MyFitnessPal (ex: "19 de mar. de 2026... TOTAIS...").
+
+        Esta ferramenta é muito eficiente para corrigir erros em massa ou preencher gaps.
+        NÃO tente extrair os dados manualmente; apenas passe o texto bruto para esta tool.
+
+        Args:
+            raw_text (str): O bloco de texto bruto contendo as datas e os totais nutricionais.
+
+        Returns:
+            Resumo dos dias atualizados ou criados no banco de dados.
+        """
+        try:
+            days_found = parse_mfp_text(raw_text)
+            if not days_found:
+                return "Nenhum dado nutricional válido foi encontrado no texto fornecido."
+
+            results = []
+            for day in days_found:
+                log_date = datetime.combine(day["date"], datetime.min.time())
+                log = NutritionLog(
+                    user_email=user_email,
+                    date=log_date,
+                    calories=day["calories"],
+                    protein_grams=day["protein"],
+                    carbs_grams=day["carbs"],
+                    fat_grams=day["fat"],
+                    fiber_grams=day.get("fiber"),
+                    sugar_grams=day.get("sugar"),
+                    sodium_mg=day.get("sodium"),
+                    cholesterol_mg=day.get("cholesterol"),
+                    source="myfitnesspal_text",
+                    notes="Sincronizado via chat (bulk text)",
+                )
+
+                _, is_new = database.save_nutrition_log(log)
+                status = "criado" if is_new else "atualizado"
+                results.append(f"{day['date'].strftime('%d/%m/%Y')} ({status})")
+
+            logger.info(
+                "Bulk nutrition sync for %s: %d days processed",
+                user_email,
+                len(results),
+            )
+            msg = f"Sincronização concluída com sucesso! Processados {len(results)} dia(s):\n"
+            return msg + "\n".join(results)
+
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.error("Failed bulk nutrition sync for %s: %s", user_email, e)
+            return f"Erro durante a sincronização em massa: {str(e)}"
+
+    return sync_nutrition_text

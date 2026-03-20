@@ -3,6 +3,7 @@ LangChain tools for TDEE and metabolism data access.
 Provides AI trainer access to adaptive TDEE calculations with full algorithm documentation.
 """
 
+from datetime import date, timedelta
 from langchain_core.tools import tool
 from src.core.logs import logger
 from src.services.database import MongoDatabase
@@ -17,83 +18,134 @@ def create_get_metabolism_tool(database: MongoDatabase, user_email: str):
     @tool
     def get_metabolism_data() -> str:
         """
-        Consulta o TDEE adaptativo real do aluno e a meta calórica diária.
+        Consulta os dados brutos de metabolismo e TDEE do aluno.
 
-        USE ESTA TOOL SEMPRE que for falar sobre:
-        - Calorias para comer (meta, déficit, superávit)
-        - Metabolismo, TDEE, gasto energético
-        - Progresso de peso em relação ao objetivo
-        - Recomendações de nutrição personalizadas
+        Retorna:
+        - TDEE atual e meta calórica
+        - Histórico de peso e calorias dos últimos 30 dias (dados crus)
+        - Médias de 'Lows' (3 menores pesos) da semana atual vs anterior
 
-        NUNCA use fórmulas padrão (Harris-Benedict, Mifflin-St Jeor, etc.)
-        para estimar calorias. Os dados desta tool são sempre mais precisos
-        porque usam dados reais do aluno.
+        USE ESTA TOOL SEMPRE que precisar analisar o progresso real ou quando o aluno
+        questionar se a meta está correta. Use os dados brutos para tirar suas próprias
+        conclusões matemáticas e comparar com a estimativa do algoritmo.
         """
         try:
             tdee_service = AdaptiveTDEEService(database)
-            tdee_data = tdee_service.calculate_tdee(user_email)
+            tdee_data = tdee_service.calculate_tdee(user_email, lookback_weeks=4)
             profile = database.get_user_profile(user_email)
 
-            response = f"""=== METABOLISMO ADAPTATIVO DO ALUNO ===
+            # Extract raw trends
+            w_trend = tdee_data.get("weight_trend", [])
+            c_trend = tdee_data.get("calorie_trend", [])
 
-TDEE atual: {tdee_data.get('tdee', 'N/A')} kcal
-  → Calculado a partir de {tdee_data.get('weight_logs_count', '?')} pesagens de dados reais
-  → Confiança: {tdee_data.get('confidence', 'desconhecida').upper()}
-    ({tdee_data.get('confidence_reason', 'dados insuficientes')})
+            # Calculate Weekly Lows (3 lowest weights)
+            today = date.today()
+            
+            def get_avg_lows(days_offset_start, days_offset_end):
+                d_start = today - timedelta(days=days_offset_start)
+                d_end = today - timedelta(days=days_offset_end)
+                period_weights = [
+                    w["weight"] for w in w_trend
+                    if w["weight"] and d_end <= date.fromisoformat(w["date"]) <= d_start
+                ]
+                if not period_weights:
+                    return None
+                lowest_3 = sorted(period_weights)[:3]
+                return sum(lowest_3) / len(lowest_3)
 
-Meta diária: {tdee_data.get('daily_target', 'N/A')} kcal
-  → Balanço energético: {tdee_data.get('energy_balance', 0):.0f} kcal
-  → Status: {tdee_data.get('status', 'desconhecido').upper()}
-  → Objetivo: {tdee_data.get('goal_type', 'manter')} peso
-    ({tdee_data.get('goal_weekly_rate', 0)} kg/semana)
+            current_lows = get_avg_lows(0, 6)
+            previous_lows = get_avg_lows(7, 13)
 
-Fator de atividade atual: {profile.tdee_activity_factor or 1.45 if profile else 1.45}
-  → Usado como âncora inicial do cálculo
-  → Pode ser ajustado via update_tdee_params() se o nível de atividade mudou
+            lows_delta = (current_lows - previous_lows) if (current_lows and previous_lows) else None
+            
+            # Pack status info
+            lows_status = f"{lows_delta:+.2f} kg" if lows_delta is not None else "N/A"
 
-=== COMO ESTE TDEE É CALCULADO ===
+            # Build detailed raw response
+            response = f"""=== METABOLISMO: DADOS BRUTOS (Últimos 30 dias) ===
 
-Algoritmo: Adaptativo v3 (baseado no método MacroFactor / Stronger by Science)
+TDEE Estimado: {tdee_data.get('tdee')} kcal
+Meta Diária Atual: {tdee_data.get('daily_target')} kcal
+Objetivo: {tdee_data.get('goal_type')} ({tdee_data.get('goal_weekly_rate')} kg/semana)
 
-Fórmula central (janela de 7 dias):
-  TDEE_obs = média_calorias_7d − (Δpeso_tendência_7d ÷ 7) × energia_por_kg
+-- AUDITORIA DE LOWS (Média dos 3 menores pesos) --
+Semana Atual: {f'{current_lows:.2f} kg' if current_lows else 'N/A'}
+Semana Anterior: {f'{previous_lows:.2f} kg' if previous_lows else 'N/A'}
+Delta Lows: {lows_status}
 
-Suavização final:
-  EMA de 21 dias sobre as observações diárias
-  Ancorada no prior: BMR × fator_atividade
+-- SÉRIE TEMPORAL (Peso e Calorias) --
+"""
+            # Add last 14 days of raw data for concise AI context
+            r_weight = {w["date"]: w["weight"] for w in w_trend}
+            r_cal = {c["date"]: c["calories"] for c in c_trend}
 
-Energia por kg de peso (modelo Forbes/Hall, 1987):
-  fat_fraction = 0.75 + (gordura_corporal% − 25) × 0.005
-  energia_por_kg = fat_fraction × 9400 + (1 − fat_fraction) × 1800
-  Fallback sem dados de composição: 7700 kcal/kg
+            all_dates = sorted(set(list(r_weight.keys()) + list(r_cal.keys())), reverse=True)[:14]
+            for d in all_dates:
+                w = f"{r_weight.get(d, '---'):>5}"
+                c = f"{r_cal.get(d, '---'):>5}"
+                response += f"{d}: Peso {w} kg | Cal {c} kcal\n"
 
-Peso suavizado: EMA 21 dias + interpolação linear (gaps ≤ 14 dias)
-
-Por que é mais preciso que Harris-Benedict / Mifflin-St Jeor:
-  Fórmulas estáticas erram ±20-30% pois ignoram adaptação metabólica.
-  Este algoritmo usa dados reais do aluno e converge para o valor verdadeiro.
-
-Referências:
-  - Hall et al. (2012) "Quantification of the effect of energy imbalance on bodyweight"
-  - Forbes (1987) "Human Body Composition"
-  - MacroFactor methodology (https://macrofactorapp.com)
-
+            last_check_in_str = profile.tdee_last_check_in if profile else "Nunca"
+            response += f"""
+Fator Atividade (Âncora): {profile.tdee_activity_factor or 1.45 if profile else 1.45}
+Último Ajuste de Meta: {last_check_in_str}
+... Applied fuzzy match.
 === INSTRUÇÃO PARA O TREINADOR ===
-Baseie TODAS as recomendações calóricas nos valores acima.
-Se o aluno questionar os números, explique que são calculados
-a partir do comportamento real do peso e calorias consumidas —
-não de estimativas genéricas.
+Analise os dados acima. Se os 'Lows' estiverem caindo consistentemente na taxa meta, mas o TDEE estimado ainda estiver baixo (lag do algoritmo), você pode concordar com o aluno e usar a tool 'force_target_update' para ajustar a meta agora.
 """
             return response
 
         except (ValueError, TypeError, AttributeError) as e:
             logger.error("Failed to get metabolism data for %s: %s", user_email, e)
-            return (
-                "Erro ao buscar dados de metabolismo. "
-                "Certifique-se de que há histórico de peso e nutrição registrado."
-            )
+            return f"Erro ao buscar dados brutos de metabolismo: {str(e)}"
 
     return get_metabolism_data
+
+
+def create_force_target_update_tool(database: MongoDatabase, user_email: str):
+    """
+    Factory function for the force_target_update tool.
+    Allows the AI to manually override the target and reset the coaching clock.
+    """
+
+    @tool
+    def force_target_update(target_calories: int) -> str:
+        """
+        Força a atualização da meta calórica diária do aluno.
+        Use esta tool APENAS quando seu raciocínio matemático (baseado nos dados brutos)
+        indicar que a meta atual está defasada e precisa de um ajuste imediato,
+        ignorando a trava de 7 dias do sistema.
+
+        Args:
+            target_calories (int): A nova meta calórica sugerida.
+        """
+        try:
+            profile = database.get_user_profile(user_email)
+            if not profile:
+                return "Perfil do aluno não encontrado."
+
+            # Update target and clear last check-in to force immediate UI update
+            fields = {
+                "tdee_last_target": target_calories,
+                "tdee_last_check_in": None
+            }
+            database.update_user_profile_fields(user_email, fields)
+
+            logger.info(
+                "AI forced target update for %s to %d kcal",
+                user_email,
+                target_calories
+            )
+            return (
+                f"Meta calórica atualizada com sucesso para {target_calories} kcal. "
+                "A alteração será visível imediatamente para o aluno."
+            )
+
+        except (ValueError, TypeError, AttributeError) as e:
+            logger.error("Failed to force target update for %s: %s", user_email, e)
+            return f"Erro ao forçar atualização da meta: {str(e)}"
+
+    return force_target_update
 
 
 def create_update_tdee_params_tool(database: MongoDatabase, user_email: str):

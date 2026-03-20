@@ -1,4 +1,5 @@
 import { test as base, expect, type Page } from '@playwright/test';
+
 import { VirtualBackend } from './helpers/virtual-backend';
 
 /**
@@ -12,7 +13,7 @@ interface MyFixtures {
 
 export const test = base.extend<MyFixtures>({
   // Initialize the virtual backend state for each test
-  virtualBackend: async ({ }, use) => {
+  virtualBackend: async (_, use) => {
     const vb = new VirtualBackend();
     await use(vb);
   },
