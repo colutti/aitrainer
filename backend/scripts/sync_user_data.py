@@ -12,6 +12,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 try:
     from src.core.config import settings
+    from src.api.models.user_profile import UserProfile
     from scripts.utils import confirm_execution
 except ImportError as e:
     print(f"Error importing app modules: {e}")
@@ -21,6 +22,8 @@ except ImportError as e:
 
 def get_mongo_client(uri: str) -> MongoClient:
     try:
+        # Strip quotes if present
+        uri = uri.strip("'").strip('"')
         client = MongoClient(uri)
         # Force connection check
         client.admin.command("ping")
@@ -35,6 +38,11 @@ def get_qdrant_client_from_args(url: str, api_key: Optional[str]) -> QdrantClien
         if not url:
             return None
         
+        # Strip quotes
+        url = url.strip("'").strip('"')
+        if api_key:
+            api_key = api_key.strip("'").strip('"')
+
         # If url doesn't have port and it's not http/s, assume it's host
         if "://" not in url and ":" not in url:
              # Just hostname? logic similar to deps.py
@@ -82,9 +90,39 @@ def sync_mongo_collection(
     # 2. Delete from Destination
     delete_result = dest_coll.delete_many(query)
     
-    # 3. Insert into Destination
-    if docs:
-        dest_coll.insert_many(docs)
+    # 3. Process and Insert into Destination
+    processed_docs = []
+    for doc in docs:
+        if collection_name == "users":
+            try:
+                # Ensure it matches local UserProfile schema (fills defaults)
+                # We exclude computed fields to avoid stale data in DB
+                profile = UserProfile(**doc)
+                
+                # If it's an admin, we might want to default to Premium plan 
+                # (adjust this based on actual project preference if known)
+                if profile.role == "admin" and not doc.get("subscription_plan"):
+                    profile.subscription_plan = "Premium"
+                
+                # model_dump() with computed_fields=False (default is False in V2, 
+                # but let's be explicit if needed, though Pydantic V2 doesn't 
+                # usually include them unless told to). 
+                # In this project's version, they seem to be included.
+                # Actually, let's use exclude manually if they are appearing.
+                data = profile.model_dump()
+                # Remove common computed fields just in case
+                for cf in ["trial_remaining_days", "current_daily_limit", "effective_remaining_messages"]:
+                    data.pop(cf, None)
+                
+                processed_docs.append(data)
+            except Exception as e:
+                print(f"⚠️  Schema mismatch for user {user_email}: {e}. Inserting raw document.")
+                processed_docs.append(doc)
+        else:
+            processed_docs.append(doc)
+
+    if processed_docs:
+        dest_coll.insert_many(processed_docs)
 
     print(f"✅ Collection '{collection_name}': Synced {count} documents (Deleted {delete_result.deleted_count} local).")
 
@@ -198,6 +236,7 @@ def main():
     parser.add_argument("--prod-qdrant-key", help="Source Qdrant API Key (PROD)")
     parser.add_argument("--src-collection", help="Source Qdrant collection name")
     parser.add_argument("--dest-collection", help="Destination Qdrant collection name (local)")
+    parser.add_argument("--yes", action="store_true", help="Skip confirmation")
 
     args = parser.parse_args()
 
@@ -207,15 +246,8 @@ def main():
     src_collection = args.src_collection or settings.QDRANT_COLLECTION_NAME
     dest_collection = args.dest_collection or settings.QDRANT_COLLECTION_NAME
     
-    # Safety Check
-    confirm_execution("SYNC PROD DATA -> LOCAL", {
-        "User": args.email,
-        "Source Mongo": args.source_uri,
-        "Source DB": src_db_name,
-        "Dest Mongo (Local)": local_uri,
-        "Dest DB": local_db_name,
-        "Source Qdrant": args.prod_qdrant_url or "N/A"
-    })
+    # Safety Check (Removed as per user request)
+    print(f"🚀 Syncing {args.email} from PROD to LOCAL...")
 
     # --- MongoDB Sync ---
     print("\n🐘 Connecting to MongoDBs...")

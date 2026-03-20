@@ -22,17 +22,28 @@ interface MsgMetadata {
   hora?: string;
 }
 
-// Parse XML tags from prompt string
+// Parse XML tags from prompt string (supports attributes like <tag attr="val">)
 function parsePromptSections(prompt: string): XmlSection[] {
   const sections: XmlSection[] = [];
-  const regex = /<(\w+)>([\s\S]*?)<\/\1>/g;
+  const regex = /<(\w+)(?:\s+[^>]*?)?>([\s\S]*?)<\/\1>/g;
   let match;
   while ((match = regex.exec(prompt)) !== null) {
     const tag = match[1] ?? '';
     const content = (match[2] ?? '').trim();
-    if (tag) sections.push({ tag, content });
+    // Ignore 'msg' tags as they are part of chat history
+    if (tag && tag.toLowerCase() !== 'msg') {
+      sections.push({ tag, content });
+    }
   }
   return sections;
+}
+
+// Format tag name for display (e.g., resumo_conversas -> Resumo Conversas)
+function formatTagName(tag: string): string {
+  return tag
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 }
 
 // Extract <msg> tag metadata from message content
@@ -50,6 +61,19 @@ function parseMsgAttributes(content: string): { attributes: MsgMetadata; text: s
 
 // Color mapping for XML tag sections
 const TAG_COLORS: Record<string, { bg: string; text: string; emoji: string }> = {
+  // New V3 tags
+  regras: { bg: 'bg-purple-500/10', text: 'text-purple-400', emoji: '📜' },
+  treinador: { bg: 'bg-blue-500/10', text: 'text-blue-400', emoji: '👤' },
+  sessao: { bg: 'bg-yellow-500/10', text: 'text-yellow-400', emoji: '🕒' },
+  agenda: { bg: 'bg-cyan-500/10', text: 'text-cyan-400', emoji: '📅' },
+  perfil_aluno: { bg: 'bg-green-500/10', text: 'text-green-400', emoji: '🟢' },
+  resumo_conversas: { bg: 'bg-orange-500/10', text: 'text-orange-400', emoji: '🧠' },
+
+  // Summarization tags
+  current_profile: { bg: 'bg-indigo-500/10', text: 'text-indigo-400', emoji: '📂' },
+  new_conversation: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', emoji: '💬' },
+
+  // Legacy compatibility
   identidade: { bg: 'bg-purple-500/10', text: 'text-purple-400', emoji: '🟣' },
   escopo: { bg: 'bg-blue-500/10', text: 'text-blue-400', emoji: '🔵' },
   formato: { bg: 'bg-cyan-500/10', text: 'text-cyan-400', emoji: '🔷' },
@@ -58,11 +82,69 @@ const TAG_COLORS: Record<string, { bg: string; text: string; emoji: string }> = 
   historico: { bg: 'bg-orange-500/10', text: 'text-orange-400', emoji: '🟠' },
 };
 
+// Helper to render section content (with special JSON formatting for history/summary)
+function renderSectionContent(tag: string, content: string) {
+  const isHistory = tag.toLowerCase() === 'resumo_conversas' || 
+                    tag.toLowerCase() === 'historico' ||
+                    tag.toLowerCase() === 'current_profile';
+  
+  if (isHistory) {
+    try {
+      const data = JSON.parse(content);
+      if (typeof data === 'object' && data !== null) {
+        return (
+          <div className="space-y-4">
+            {Object.entries(data).map(([category, items]) => {
+              if (!Array.isArray(items) || items.length === 0) return null;
+              return (
+                <div key={category} className="space-y-1">
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                    {formatTagName(category)}
+                  </h4>
+                  <ul className="space-y-1">
+                    {items.map((item, i) => (
+                      <li key={i} className="text-xs text-zinc-300 flex gap-2">
+                        <span className="text-zinc-500">•</span>
+                        <span>{String(item)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        );
+      }
+    } catch (e) {
+      // Fallback to markdown if not valid JSON
+    }
+  }
+
+  return (
+    <div className="prose prose-invert prose-sm max-w-none text-zinc-300 whitespace-pre-wrap">
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+}
+
 export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModalProps) {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    system: true,
+    system: false,
     history: false,
     tools: false,
+    // V3 tags
+    regras: true,
+    treinador: true,
+    sessao: true,
+    agenda: true,
+    perfil_aluno: true,
+    resumo_conversas: true,
+    // Summarization
+    current_profile: true,
+    new_conversation: true,
+    // Legacy tags
     identidade: true,
     escopo: true,
     formato: true,
@@ -151,7 +233,7 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto space-y-3 min-h-0">
           {/* Prompt / System Section */}
-          {hasXmlSections ? (
+          {hasXmlSections && (
             // Render individual XML sections with colors
             <>
               {xmlSections.map((section) => {
@@ -169,7 +251,7 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
                       className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
                     >
                       <h3 className={`font-semibold ${colors.text} text-sm`}>
-                        {colors.emoji} {section.tag.charAt(0).toUpperCase() + section.tag.slice(1)}
+                        {colors.emoji} {formatTagName(section.tag)}
                       </h3>
                       {isExpanded ? (
                         <ChevronUp size={16} className={colors.text} />
@@ -179,52 +261,40 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
                     </button>
                     {isExpanded && (
                       <div className="border-t border-white/5 p-4 max-h-[300px] overflow-y-auto">
-                        <div className="prose prose-invert prose-sm max-w-none text-zinc-300">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                            {section.content}
-                          </ReactMarkdown>
-                        </div>
+                        {renderSectionContent(section.tag, section.content)}
                       </div>
                     )}
                   </div>
                 );
               })}
             </>
-          ) : (
-            // Fallback: render raw prompt as markdown
-            <div className={`bg-black/40 rounded-lg border border-white/5 overflow-hidden ${!hasMessages ? 'p-4' : ''}`}>
-              {hasMessages ? (
-                <>
-                  <button
-                    onClick={() => { toggleSection('system'); }}
-                    className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
-                  >
-                    <h3 className="font-semibold text-text-primary text-sm">System Prompt</h3>
-                    {expandedSections.system ? (
-                      <ChevronUp size={16} className="text-text-secondary" />
-                    ) : (
-                      <ChevronDown size={16} className="text-text-secondary" />
-                    )}
-                  </button>
-                  {expandedSections.system && (
-                    <div className="border-t border-white/5 p-4 max-h-[300px] overflow-y-auto">
-                      <div className="prose prose-invert prose-sm max-w-none text-zinc-300">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {promptStr}
-                        </ReactMarkdown>
-                      </div>
-                    </div>
-                  )}
-                </>
+          )}
+
+          {/* Full System Prompt (Raw) - Always available as fallback or for detail */}
+          <div className="bg-black/40 rounded-lg border border-white/5 overflow-hidden">
+            <button
+              onClick={() => { toggleSection('system'); }}
+              className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+            >
+              <h3 className="font-semibold text-text-primary text-sm flex items-center gap-2">
+                ⚙️ {hasXmlSections ? 'Full System Message (Raw)' : 'System Prompt'}
+              </h3>
+              {expandedSections.system ? (
+                <ChevronUp size={16} className="text-text-secondary" />
               ) : (
-                <div className="prose prose-invert prose-sm max-w-none text-zinc-300 overflow-x-hidden">
+                <ChevronDown size={16} className="text-text-secondary" />
+              )}
+            </button>
+            {expandedSections.system && (
+              <div className="border-t border-white/5 p-4 max-h-[400px] overflow-y-auto">
+                <div className="prose prose-invert prose-sm max-w-none text-zinc-300 whitespace-pre-wrap">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {promptStr}
                   </ReactMarkdown>
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
 
           {/* Chat History Section */}
           {hasMessages && (
@@ -243,34 +313,47 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
                     )}
                   </button>
                   {expandedSections.history && (
-                    <div className="border-t border-white/5 p-4 max-h-[400px] overflow-y-auto space-y-2">
-                      {selectedPrompt.prompt?.messages?.map((msg, idx) => {
-                        const { attributes, text } = parseMsgAttributes(msg.content);
-                        return (
-                          <div key={idx} className="flex gap-3">
-                            <span className="text-[10px] font-bold px-2 py-1 rounded bg-zinc-800 text-zinc-400 flex-shrink-0 h-fit">
-                              {msg.role === 'human' ? 'User' : msg.role === 'ai' ? 'AI' : 'System'}
-                            </span>
-                            {!!(attributes.data ?? attributes.hora) && (
-                              <div className="flex gap-1 flex-shrink-0">
-                                {attributes.data && (
-                                  <span className="text-[10px] px-1 py-0.5 rounded bg-blue-900/40 text-blue-300">
-                                    {attributes.data}
+                    <div className="border-t border-white/5 p-4 max-h-[400px] overflow-y-auto space-y-3">
+                      {selectedPrompt.prompt?.messages
+                        ?.filter((msg) => msg.role !== 'system')
+                        ?.map((msg, idx) => {
+                          const { attributes, text } = parseMsgAttributes(msg.content);
+                          const isUser = msg.role === 'human';
+                          const isAI = msg.role === 'ai';
+                          
+                          return (
+                            <div key={idx} className={`flex flex-col gap-1 p-2 rounded-lg ${isUser ? 'bg-blue-500/5' : isAI ? 'bg-green-500/5' : 'bg-zinc-500/5'}`}>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                                    isUser ? 'bg-blue-500/20 text-blue-400' : 
+                                    isAI ? 'bg-green-500/20 text-green-400' : 
+                                    'bg-zinc-800 text-zinc-400'
+                                  }`}>
+                                    {isUser ? 'USER' : isAI ? 'AI' : msg.role.toUpperCase()}
                                   </span>
-                                )}
-                                {attributes.hora && (
-                                  <span className="text-[10px] px-1 py-0.5 rounded bg-purple-900/40 text-purple-300">
-                                    {attributes.hora}
-                                  </span>
-                                )}
+                                  {!!(attributes.data ?? attributes.hora) && (
+                                    <div className="flex gap-1">
+                                      {attributes.data && (
+                                        <span className="text-[10px] text-text-secondary">
+                                          {attributes.data}
+                                        </span>
+                                      )}
+                                      {attributes.hora && (
+                                        <span className="text-[10px] text-text-secondary">
+                                          {attributes.hora}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            )}
-                            <p className="text-xs text-zinc-300 flex-1 break-words">
-                              {text}
-                            </p>
-                          </div>
-                        );
-                      })}
+                              <div className="text-xs text-zinc-300 break-words whitespace-pre-wrap">
+                                {text}
+                              </div>
+                            </div>
+                          );
+                        })}
                     </div>
                   )}
                 </div>
