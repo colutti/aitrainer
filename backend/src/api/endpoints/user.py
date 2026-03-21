@@ -162,6 +162,7 @@ def get_current_user(user_email: CurrentUser, brain: AITrainerBrainDep) -> dict:
         "messages_sent_today": user_profile.messages_sent_today,
         "trial_remaining_days": user_profile.trial_remaining_days,
         "current_daily_limit": user_profile.current_daily_limit,
+        "current_plan_limit": user_profile.current_plan_limit,
         "effective_remaining_messages": user_profile.effective_remaining_messages,
     }
 

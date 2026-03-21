@@ -234,7 +234,8 @@ export function ChatPage() {
                     {typeof userInfo?.effective_remaining_messages === 'number' && (
                       <div className="flex items-center gap-1.5 px-2 py-1 rounded border border-white/10 bg-white/2">
                         <span className="text-[10px] text-text-primary font-bold">
-                          {userInfo.effective_remaining_messages}
+                          {(userInfo.current_plan_limit ?? 100) - (userInfo.effective_remaining_messages ?? 0)}
+                          <span className="text-text-muted/40 font-medium ml-0.5">/ {userInfo.current_plan_limit ?? 100}</span>
                         </span>
                         <span className="text-[10px] text-text-muted uppercase tracking-tight font-medium">
                           {t('common.msgs')}

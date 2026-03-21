@@ -16,6 +16,7 @@ export interface UserInfo {
   messages_sent_today?: number;
   trial_remaining_days?: number | null;
   current_daily_limit?: number | null;
+  current_plan_limit?: number | null;
   effective_remaining_messages?: number | null;
 }
 
@@ -165,6 +166,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       messages_sent_today: number;
       trial_remaining_days: number | null;
       current_daily_limit: number | null;
+      current_plan_limit: number | null;
       effective_remaining_messages: number | null;
     }>('/user/me');
 
@@ -185,6 +187,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         messages_sent_today: data.messages_sent_today,
         trial_remaining_days: data.trial_remaining_days,
         current_daily_limit: data.current_daily_limit,
+        current_plan_limit: data.current_plan_limit,
         effective_remaining_messages: data.effective_remaining_messages,
       },
       isAdmin: data.role === 'admin',

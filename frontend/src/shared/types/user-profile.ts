@@ -19,7 +19,9 @@ export interface UserProfile {
   last_message_date?: string;
   trial_remaining_days?: number | null;
   current_daily_limit?: number | null;
-  effective_remaining_messages?: number | null;
+  current_plan_limit?: number | null;
+  effective_remaining_messages: number;
+
 }
 
 export type OnboardingData = Partial<UserProfile>;

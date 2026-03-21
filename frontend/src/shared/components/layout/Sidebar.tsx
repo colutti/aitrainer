@@ -107,8 +107,10 @@ export function Sidebar() {
               {typeof userInfo.effective_remaining_messages === 'number' && (
                 <div className="mt-2 text-sm text-text-muted border-l-2 border-gradient-start/30 pl-2">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-text-primary font-bold">{userInfo.effective_remaining_messages}</span>
-                    <span className="text-xs opacity-50">/ {userInfo.current_daily_limit ?? userInfo.custom_message_limit ?? 100}</span>
+                    <span className="text-text-primary font-bold">
+                      {(userInfo.current_plan_limit ?? 100) - (userInfo.effective_remaining_messages ?? 0)}
+                    </span>
+                    <span className="text-xs opacity-50">/ {userInfo.current_plan_limit ?? 100}</span>
                   </div>
                   <span className="text-xs uppercase tracking-widest opacity-40 font-bold block">
                     {t('common.msgs')}

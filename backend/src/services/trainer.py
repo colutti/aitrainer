@@ -160,7 +160,9 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
                 cycle_start = datetime.fromisoformat(cycle_start)
             except ValueError:
                 cycle_start = now
-        return (now - cycle_start >= timedelta(days=30)), cycle_start
+        
+        needs_reset = (now - cycle_start >= timedelta(days=30))
+        return needs_reset, cycle_start
 
     def increment_counts(self, user_email: str, needs_cycle_reset: bool):
         """

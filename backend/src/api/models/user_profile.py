@@ -2,7 +2,7 @@
 This module contains the models for user profiles and preferences.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from pydantic import BaseModel, Field, model_validator, computed_field
 from src.core.subscription import SUBSCRIPTION_PLANS, SubscriptionPlan
 
@@ -209,6 +209,28 @@ class UserProfile(UserProfileInput):
 
     @computed_field
     @property
+    def current_plan_limit(self) -> int | None:
+        """Returns the total message limit for the current plan (daily for Free, monthly for others)."""
+        try:
+            plan_name = SubscriptionPlan(self.subscription_plan)
+        except (ValueError, AttributeError):
+            plan_name = SubscriptionPlan.FREE
+        plan = SUBSCRIPTION_PLANS[plan_name]
+        
+        # Priority: Custom limit > Plan limit (Daily or Monthly)
+        if self.custom_message_limit is not None:
+            return self.custom_message_limit
+            
+        if plan.daily_limit is not None:
+            return plan.daily_limit
+        
+        if plan.monthly_limit is not None:
+            return plan.monthly_limit
+            
+        return None
+
+    @computed_field
+    @property
     def effective_remaining_messages(self) -> int | None:
         """Calculates how many messages the user can still send."""
         try:
@@ -216,6 +238,20 @@ class UserProfile(UserProfileInput):
         except (ValueError, AttributeError):
             plan_name = SubscriptionPlan.FREE
         plan = SUBSCRIPTION_PLANS[plan_name]
+
+        # Check for billing cycle reset (30 days)
+        now = datetime.now()
+        is_cycle_reset = False
+        if self.current_billing_cycle_start:
+            cycle_start = self.current_billing_cycle_start
+            if isinstance(cycle_start, str):
+                try:
+                    cycle_start = datetime.fromisoformat(cycle_start)
+                except ValueError:
+                    cycle_start = now
+            if now - cycle_start >= timedelta(days=30):
+                is_cycle_reset = True
+
         # Check Validity / Trial Expiration
         v_days = (
             self.custom_trial_days if self.custom_trial_days is not None
@@ -224,20 +260,26 @@ class UserProfile(UserProfileInput):
         if v_days is not None:
             if self.trial_remaining_days is not None and self.trial_remaining_days <= 0:
                 return 0
+
         # Daily Limit Logic (Overrides for Free)
         if plan.daily_limit is not None:
             d_lim = (
                 self.custom_message_limit if self.custom_message_limit is not None
                 else plan.daily_limit
             )
-            return max(0, d_lim - self.messages_sent_today)
+            # Check for daily reset
+            today_str = now.strftime("%Y-%m-%d")
+            sent_today = self.messages_sent_today if self.last_message_date == today_str else 0
+            return max(0, d_lim - sent_today)
+
         # Monthly Limit Logic (Overrides for Paid)
         if plan.monthly_limit is not None:
             m_lim = (
                 self.custom_message_limit if self.custom_message_limit is not None
                 else plan.monthly_limit
             )
-            return max(0, m_lim - self.messages_sent_this_month)
+            sent_this_month = 0 if is_cycle_reset else self.messages_sent_this_month
+            return max(0, m_lim - sent_this_month)
         return None
 
     def _goal_type_label(self) -> str:
