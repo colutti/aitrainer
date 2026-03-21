@@ -325,8 +325,14 @@ def test_fat_and_muscle_trends_use_ema_smoothing(client, mock_db):
     alpha = 2 / 11
     ema_fat_2 = 22.0 * alpha + 20.0 * (1 - alpha)
     ema_fat_3 = 19.0 * alpha + ema_fat_2 * (1 - alpha)
-    ema_muscle_2 = 38.0 * alpha + 40.0 * (1 - alpha)
-    ema_muscle_3 = 41.0 * alpha + ema_muscle_2 * (1 - alpha)
+    # Calculando EMAs em kg:
+    # log1: 80.0kg * 40% = 32.0kg
+    # log2: 79.5kg * 38% = 30.21kg
+    # log3: 79.0kg * 41% = 32.39kg
+    ema_muscle_1 = 32.0
+    ema_muscle_2 = 30.21 * alpha + ema_muscle_1 * (1 - alpha)
+    ema_muscle_3 = 32.39 * alpha + ema_muscle_2 * (1 - alpha)
+    
     with patch('src.api.endpoints.dashboard.WorkoutRepository') as mock_repo_class, \
          patch('src.api.endpoints.dashboard._get_today', return_value=today):
         mock_repo = MagicMock()
@@ -343,6 +349,7 @@ def test_fat_and_muscle_trends_use_ema_smoothing(client, mock_db):
     assert fat[1]["value"] == pytest.approx(ema_fat_2, rel=0.01)
     assert fat[2]["value"] == pytest.approx(ema_fat_3, rel=0.01)
     assert fat[1]["value"] != 22.0   # spike suavizado
+    assert muscle[0]["value"] == pytest.approx(ema_muscle_1)
     assert muscle[1]["value"] == pytest.approx(ema_muscle_2, rel=0.01)
     assert muscle[2]["value"] == pytest.approx(ema_muscle_3, rel=0.01)
 
@@ -365,7 +372,9 @@ def test_fat_muscle_ema_skips_none_values_correctly(client, mock_db):
     mock_db.get_user_profile.return_value = None
     alpha = 2 / 11
     ema_fat_3 = 19.0 * alpha + 20.0 * (1 - alpha)
-    ema_muscle_3 = 41.0 * alpha + 40.0 * (1 - alpha)
+    # log1: 80 * 40% = 32.0kg
+    # log3: 79 * 41% = 32.39kg
+    ema_muscle_3 = 32.39 * alpha + 32.0 * (1 - alpha)
     with patch('src.api.endpoints.dashboard.WorkoutRepository') as mock_repo_class, \
          patch('src.api.endpoints.dashboard._get_today', return_value=today):
         mock_repo = MagicMock()
@@ -382,6 +391,7 @@ def test_fat_muscle_ema_skips_none_values_correctly(client, mock_db):
     assert fat[0]["value"] == pytest.approx(20.0)
     assert fat[1]["value"] == pytest.approx(ema_fat_3, rel=0.01)
     assert len(muscle) == 2
+    assert muscle[0]["value"] == pytest.approx(32.0)
     assert muscle[1]["value"] == pytest.approx(ema_muscle_3, rel=0.01)
 
 

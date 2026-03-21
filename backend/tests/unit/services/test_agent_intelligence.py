@@ -48,6 +48,7 @@ def test_get_metabolism_data_raw(mock_tdee_service_class):
     assert "AUDITORIA DE LOWS" in result
     assert "2026-03-19: Peso  72.8 kg | Cal  1800 kcal" in result
     assert "Fator Atividade (Âncora): 1.55" in result
+    assert "COMO O SISTEMA V4 DE TDEE FUNCIONA" in result
 
 def test_trainer_history_prefixing():
     mock_db = MagicMock()

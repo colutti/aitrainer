@@ -149,19 +149,22 @@ def _get_composition_trends(
                 value=ema_fat,
             ))
 
-    mus_hist = [
-        TrendPoint(
-            date=log.date.isoformat() if isinstance(log.date, datetime) else str(log.date),
-            value=log.muscle_mass_pct,
-        )
-        for log in logs_asc if log.muscle_mass_pct is not None
-    ]
-
+    mus_hist = []
     mus_trend = []
     ema_mus = None
     for log in logs_asc:
-        if log.muscle_mass_pct is not None:
-            ema_mus = tdee_service.calculate_ema_trend(log.muscle_mass_pct, ema_mus)
+        # Prefer muscle_mass_kg for the chart (matches frontend display)
+        mus_val = log.muscle_mass_kg
+        # Fallback to calculating kg from pct if kg is missing
+        if mus_val is None and log.muscle_mass_pct is not None:
+            mus_val = round(log.weight_kg * (log.muscle_mass_pct / 100), 2)
+
+        if mus_val is not None:
+            mus_hist.append(TrendPoint(
+                date=log.date.isoformat() if isinstance(log.date, datetime) else str(log.date),
+                value=mus_val,
+            ))
+            ema_mus = tdee_service.calculate_ema_trend(mus_val, ema_mus)
             mus_trend.append(TrendPoint(
                 date=log.date.isoformat() if isinstance(log.date, datetime) else str(log.date),
                 value=ema_mus,

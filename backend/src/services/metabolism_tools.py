@@ -90,8 +90,14 @@ Delta Lows: {lows_status}
 Fator Atividade (Âncora): {profile.tdee_activity_factor or 1.45 if profile else 1.45}
 Último Ajuste de Meta: {last_check_in_str}
 ... Applied fuzzy match.
+=== COMO O SISTEMA V4 DE TDEE FUNCIONA (Contexto para você) ===
+O algoritmo não é uma média simples. Ele usa:
+1. Span Dinâmico: A inércia do cálculo varia de 7 a 30 dias. Se o aluno perde peso de forma linear, a janela cai para 7 dias (reação rápida). Se há muito sobe/desce, vai para 30 dias (proteção contra ruído).
+2. Dampening de Água: Quedas abruptas na primeira semana (>1.5kg) têm seu impacto energético reduzido (água/glicogênio) para não causar picos falsos no Gasto Diário.
+3. Imputação de Gaps: Se o aluno não logar calorias, o sistema preenche as lacunas usando a Meta, evitando que o algoritmo congele.
+
 === INSTRUÇÃO PARA O TREINADOR ===
-Analise os dados acima. Se os 'Lows' estiverem caindo consistentemente na taxa meta, mas o TDEE estimado ainda estiver baixo (lag do algoritmo), você deve ajustar o fator de atividade do aluno usando a tool 'update_tdee_params' passando reset_tracking=True para forçar o recalculo imediato.
+Use o conhecimento acima para explicar o comportamento do app ao aluno. Se os 'Lows' estiverem caindo consistentemente na taxa meta, mas o TDEE estimado ainda estiver baixo (mesmo com Span rápido de 7 dias), você deve ajustar o fator de atividade do aluno usando a tool 'update_tdee_params' passando reset_tracking=True para forçar o recalculo imediato.
 """
             return response
 
