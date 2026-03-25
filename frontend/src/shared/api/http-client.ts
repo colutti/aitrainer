@@ -38,6 +38,9 @@ export async function httpClient<T = unknown>(
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
     ...config.headers,
   };
 
@@ -45,7 +48,13 @@ export async function httpClient<T = unknown>(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const url = `${API_BASE_URL}${endpoint}`;
+  let url = `${API_BASE_URL}${endpoint}`;
+  
+  // Cache busting for GET requests to prevent stale subscription data
+  if (!config.method || config.method.toUpperCase() === 'GET') {
+    const separator = url.includes('?') ? '&' : '?';
+    url = `${url}${separator}_t=${Date.now().toString()}`;
+  }
 
   try {
     const response = await fetch(url, {

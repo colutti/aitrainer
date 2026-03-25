@@ -13,6 +13,10 @@ export default defineConfig({
       '@features': path.resolve(__dirname, './src/features'),
     },
   },
+  optimizeDeps: {
+    force: true,
+    include: ['framer-motion']
+  },
   server: {
     port: 3000,
     host: true, // Allow external access for Docker

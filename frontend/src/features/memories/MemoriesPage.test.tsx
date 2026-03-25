@@ -4,7 +4,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { useConfirmation } from '../../shared/hooks/useConfirmation';
 import { useMemoryStore } from '../../shared/hooks/useMemory';
 
-import { MemoriesPage } from './MemoriesPage';
+import MemoriesPage from './MemoriesPage';
 
 vi.mock('../../shared/hooks/useMemory');
 vi.mock('../../shared/hooks/useConfirmation');
@@ -42,7 +42,7 @@ describe('MemoriesPage', () => {
 
   it('should render empty state', () => {
     render(<MemoriesPage />);
-    expect(screen.getByText('Nenhuma memória encontrada.')).toBeInTheDocument();
+    expect(screen.getByText('Nenhuma memória capturada ainda.')).toBeInTheDocument();
   });
 
   it('should render memories list', () => {
@@ -114,8 +114,15 @@ describe('MemoriesPage', () => {
     
     render(<MemoriesPage />);
     
-    const nextBtn = screen.getByText('Próximo');
-    fireEvent.click(nextBtn);
+    // The pagination component uses lucide-react chevron icons, usually wrapped in buttons
+    // Let's grab the next button via aria-label or role if text isn't explicit
+    const buttons = screen.getAllByRole('button');
+    // The next button is typically the last button in the pagination controls
+    const nextBtn = buttons[buttons.length - 1];
+    if (nextBtn) {
+      fireEvent.click(nextBtn);
+    }
     expect(mockNextPage).toHaveBeenCalled();
   });
 });
+;

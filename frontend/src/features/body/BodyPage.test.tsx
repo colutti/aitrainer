@@ -1,96 +1,48 @@
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import { describe, it, expect, vi } from 'vitest';
 
-import { BodyPage } from './BodyPage';
-import { useMetabolismTab } from './hooks/useMetabolismTab';
-import { useNutritionTab } from './hooks/useNutritionTab';
-import { useWeightTab } from './hooks/useWeightTab';
+import BodyPage from './BodyPage';
 
-// Mock the hooks
-vi.mock('./hooks/useWeightTab');
-vi.mock('./hooks/useNutritionTab');
-vi.mock('./hooks/useMetabolismTab');
-
-// Mock child components to verify which one is rendered
+// Mocks
 vi.mock('./components/WeightTab', () => ({
   WeightTab: () => <div data-testid="weight-tab">Weight Content</div>
 }));
+
 vi.mock('./components/NutritionTab', () => ({
   NutritionTab: () => <div data-testid="nutrition-tab">Nutrition Content</div>
 }));
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      if (key === 'body.weight_title') return 'Peso';
+      if (key === 'body.nutrition_title') return 'Nutrição';
+      return key;
+    },
+  }),
+}));
+
 describe('BodyPage', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    
-    // Default mock returns
-    vi.mocked(useWeightTab).mockReturnValue({
-      stats: null,
-      history: [],
-      isLoading: false,
-      isSaving: false,
-      page: 1,
-      totalPages: 1,
-      register: vi.fn(),
-      handleSubmit: vi.fn(),
-      errors: {},
-      deleteEntry: vi.fn(),
-      editEntry: vi.fn(),
-      changePage: vi.fn(),
-      loadData: vi.fn()
-    } as unknown as ReturnType<typeof useWeightTab>);
-
-    vi.mocked(useNutritionTab).mockReturnValue({
-      logs: [],
-      stats: null,
-      isLoading: false,
-      isSaving: false,
-      currentPage: 1,
-      totalPages: 1,
-      daysFilter: undefined,
-      register: vi.fn(),
-      handleSubmit: vi.fn(),
-      errors: {},
-      deleteEntry: vi.fn(),
-      editEntry: vi.fn(),
-      setFilter: vi.fn(),
-      nextPage: vi.fn(),
-      prevPage: vi.fn(),
-      loadData: vi.fn(),
-      changePage: vi.fn()
-    } as unknown as ReturnType<typeof useNutritionTab>);
-    
-    vi.mocked(useMetabolismTab).mockReturnValue({
-      stats: null,
-      isLoading: false,
-      weeks: 3,
-      loadData: vi.fn(),
-      setWeeks: vi.fn()
-    });
-  });
-
-  it('renders WeightTab by default (or when path does not include nutrition)', () => {
+  it('renders WeightTab by default', () => {
     render(
-      <MemoryRouter initialEntries={['/body/weight']}>
-        <Routes>
-          <Route path="/body/*" element={<BodyPage />} />
-        </Routes>
+      <MemoryRouter initialEntries={['/dashboard/body/weight']}>
+        <BodyPage />
       </MemoryRouter>
     );
-
-    expect(screen.getByText('Peso & Corpo')).toBeInTheDocument();
+    
+    expect(screen.getByRole('heading', { name: /Peso/i })).toBeInTheDocument();
     expect(screen.getByTestId('weight-tab')).toBeInTheDocument();
   });
 
   it('renders NutritionTab when path includes nutrition', () => {
     render(
-      <MemoryRouter initialEntries={['/body/nutrition']}>
+      <MemoryRouter initialEntries={['/dashboard/body/nutrition']}>
         <BodyPage />
       </MemoryRouter>
     );
-
-    expect(screen.getByText('Dieta & Macros')).toBeInTheDocument();
+    
+    expect(screen.getByRole('heading', { name: /Nutrição/i })).toBeInTheDocument();
     expect(screen.getByTestId('nutrition-tab')).toBeInTheDocument();
   });
 });

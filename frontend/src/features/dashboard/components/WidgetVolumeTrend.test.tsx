@@ -1,38 +1,32 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 import { WidgetVolumeTrend } from './WidgetVolumeTrend';
 
-// Mock recharts
-vi.mock('recharts', () => {
-  return {
-    ResponsiveContainer: ({ children }: any) => <div style={{ width: '100%', height: '100%' }}>{children}</div>,
-    BarChart: ({ children }: any) => <svg>{children}</svg>,
-    Bar: () => <g />,
-    XAxis: () => <g />,
-    YAxis: () => <g />,
-    CartesianGrid: () => <g />,
-    Tooltip: () => <div />,
-  };
-});
+// Mock recharts with all needed components
+vi.mock('recharts', () => ({
+  ResponsiveContainer: ({ children }: { children: any }) => <div style={{ width: '100%', height: '100%' }}>{children}</div>,
+  BarChart: ({ children }: { children: any }) => <svg>{children}</svg>,
+  Bar: () => <g />,
+  XAxis: () => <g />,
+  YAxis: () => <g />,
+  Tooltip: () => <div />,
+  Cell: () => <g />,
+  CartesianGrid: () => <g />,
+}));
+
+const mockData = [1000, 1200, 1100, 1300, 1400, 1350, 1500, 1600];
 
 describe('WidgetVolumeTrend', () => {
-  const mockData = [1000, 2000, 1500, 2500];
-
-  it('should render with overlay if no data provided', () => {
+  it('should render with overlay key if no data provided', () => {
     render(<WidgetVolumeTrend data={[]} />);
-    expect(screen.getByText('Tendência de Volume')).toBeInTheDocument();
-    expect(screen.getByText('Histórico de volume indisponível.')).toBeInTheDocument();
+    expect(screen.getByText(/Volume Semanal/i)).toBeInTheDocument();
+    expect(screen.getByText(/Histórico de volume indisponível/i)).toBeInTheDocument();
   });
 
-  it('should render title and subtitle', () => {
+  it('should render title and subtitle keys', () => {
     render(<WidgetVolumeTrend data={mockData} />);
-    expect(screen.getByText('Tendência de Volume')).toBeInTheDocument();
-    expect(screen.getByText('Últimas 8 semanas')).toBeInTheDocument();
-  });
-
-  it('should apply custom className', () => {
-    const { container } = render(<WidgetVolumeTrend data={mockData} className="custom-volume" />);
-    expect(container.firstChild).toHaveClass('custom-volume');
+    expect(screen.getByText(/Volume Semanal/i)).toBeInTheDocument();
+    expect(screen.getByText(/Carga total levantada/i)).toBeInTheDocument();
   });
 });

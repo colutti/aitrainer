@@ -195,8 +195,12 @@ class HevyService:
                     weights_per_set=weights_per_set
                     if not has_cardio or any(w > 0 for w in weights_per_set)
                     else [],
-                    distance_meters_per_set=distance_meters_per_set if has_cardio else [],
-                    duration_seconds_per_set=duration_seconds_per_set if has_cardio else [],
+                    distance_meters_per_set=distance_meters_per_set
+                    if has_cardio
+                    else [],
+                    duration_seconds_per_set=duration_seconds_per_set
+                    if has_cardio
+                    else [],
                 )
                 exercises.append(exercise_log)
 
@@ -447,7 +451,12 @@ class HevyService:
             routine_data.get("title", "UNKNOWN"),
         )
 
-        removed_fields = {"folder_id": 0, "exercise_index": 0, "exercise_title": 0, "set_index": 0}
+        removed_fields = {
+            "folder_id": 0,
+            "exercise_index": 0,
+            "exercise_title": 0,
+            "set_index": 0,
+        }
 
         # Remove folder_id for PUT (not allowed in update)
         if for_update and "folder_id" in routine_data:
@@ -458,7 +467,9 @@ class HevyService:
         # Clean exercises: remove index and title, then clean sets
         if "exercises" in routine_data:
             num_exercises = len(routine_data["exercises"])
-            logger.debug("[_prepare_routine_payload] Cleaning %d exercises", num_exercises)
+            logger.debug(
+                "[_prepare_routine_payload] Cleaning %d exercises", num_exercises
+            )
 
             for ex_idx, ex in enumerate(routine_data["exercises"]):
                 ex_id = ex.get("exercise_template_id", "UNKNOWN")
@@ -506,9 +517,7 @@ class HevyService:
         """
         async with httpx.AsyncClient() as client:
             try:
-                logger.info(
-                    "[create_routine] Creating routine: %s", routine.title
-                )
+                logger.info("[create_routine] Creating routine: %s", routine.title)
 
                 routine_data = routine.model_dump(
                     exclude={"id", "created_at", "updated_at"},
@@ -525,7 +534,9 @@ class HevyService:
 
                 # Clean payload: remove index, title, etc.
                 logger.debug("[create_routine] Cleaning payload for POST request")
-                routine_data = self._prepare_routine_payload(routine_data, for_update=False)
+                routine_data = self._prepare_routine_payload(
+                    routine_data, for_update=False
+                )
 
                 import json
 
@@ -613,8 +624,12 @@ class HevyService:
                 )
 
                 # Clean payload: remove index, title, folder_id, etc. for PUT
-                logger.debug("[update_routine] Cleaning payload for PUT request (for_update=True)")
-                routine_data = self._prepare_routine_payload(routine_data, for_update=True)
+                logger.debug(
+                    "[update_routine] Cleaning payload for PUT request (for_update=True)"
+                )
+                routine_data = self._prepare_routine_payload(
+                    routine_data, for_update=True
+                )
 
                 import json
 

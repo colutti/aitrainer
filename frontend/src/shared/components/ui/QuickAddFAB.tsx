@@ -1,4 +1,4 @@
-import { Plus, Scale, Utensils } from 'lucide-react';
+import { Plus, Scale, Utensils, Dumbbell } from 'lucide-react';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -21,7 +21,7 @@ export function QuickAddFAB() {
   const ACTIONS: QuickAction[] = [
     {
       id: 'weight',
-      labelKey: 'body.weight.register_title',
+      labelKey: 'body.weight.register_weight',
       icon: Scale,
       onClick: () => { void navigate('/dashboard/body/weight?action=log-weight'); },
       color: 'bg-emerald-500 hover:bg-emerald-400'
@@ -32,6 +32,13 @@ export function QuickAddFAB() {
       icon: Utensils,
       onClick: () => { void navigate('/dashboard/body/nutrition?action=log-meal'); },
       color: 'bg-orange-500 hover:bg-orange-400'
+    },
+    {
+      id: 'workout',
+      labelKey: 'workouts.register_workout',
+      icon: Dumbbell,
+      onClick: () => { void navigate('/dashboard/workouts?action=log-workout'); },
+      color: 'bg-indigo-500 hover:bg-indigo-400'
     }
   ];
 
@@ -49,7 +56,7 @@ export function QuickAddFAB() {
       {/* Action Buttons */}
       <div className={cn(
         "flex flex-col-reverse items-end gap-3 transition-all duration-300",
-        isOpen ? "translate-y-0 opacity-100 scale-100" : "translate-y-[20%] opacity-0 scale-95 pointer-events-none"
+        isOpen ? "translate-y-0 opacity-100 scale-100" : "translate-y-[20%] opacity-0 scale-95 pointer-events-none hidden"
       )}>
         {ACTIONS.map((action, idx) => (
           <div 
@@ -75,6 +82,7 @@ export function QuickAddFAB() {
 
       {/* Main FAB */}
       <button
+        data-testid="quick-add-fab"
         onClick={() => { setIsOpen(!isOpen); }}
         className={cn(
           "w-16 h-16 rounded-xl flex items-center justify-center shadow-lg pointer-events-auto transition-all duration-150 active:scale-90",

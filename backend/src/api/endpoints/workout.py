@@ -1,4 +1,5 @@
 """Endpoints for managing workout logs."""
+
 from datetime import datetime, date as py_date
 from typing import Annotated
 
@@ -8,7 +9,12 @@ from pydantic import BaseModel, Field
 from src.services.auth import verify_token
 from src.core.deps import get_mongo_database
 from src.core.logs import logger
-from src.api.models.workout_log import WorkoutListResponse, WorkoutWithId, WorkoutLog, ExerciseLog
+from src.api.models.workout_log import (
+    WorkoutListResponse,
+    WorkoutWithId,
+    WorkoutLog,
+    ExerciseLog,
+)
 from src.services.database import MongoDatabase
 from src.utils.pagination import calculate_total_pages
 
@@ -54,7 +60,9 @@ def create_workout(
         # Retrieve the saved log
         saved_workout = db.get_workout_by_id(doc_id)
         if not saved_workout:
-            raise HTTPException(status_code=500, detail="Failed to retrieve saved workout")
+            raise HTTPException(
+                status_code=500, detail="Failed to retrieve saved workout"
+            )
 
         return WorkoutWithId(**saved_workout)
     except Exception as e:

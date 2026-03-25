@@ -1,6 +1,7 @@
 """
 Hevy integration tools for AI trainer.
 """
+
 # pylint: disable=too-many-locals,broad-exception-caught,too-many-return-statements,too-many-branches,too-many-statements,line-too-long,missing-function-docstring
 from langchain_core.tools import tool
 from src.core.logs import logger
@@ -383,6 +384,7 @@ def create_replace_hevy_exercise_tool(hevy_service, database, user_email: str):
     """
     Creates a tool to replace an exercise in a Hevy routine.
     """
+
     @tool
     async def replace_hevy_exercise(
         routine_title: str, old_exercise_name_or_id: str, new_exercise_id: str
@@ -783,7 +785,9 @@ def create_set_routine_rest_and_ranges_tool(hevy_service, database, user_email: 
                 summary += "📊 Mudanças aplicadas:\n"
                 summary += f"  - Descanso: {rest_seconds}s em todos os exercícios\n"
                 summary += f"  - Rep Range: {rep_range_start}-{rep_range_end} em séries normais\n"
-                summary += f"  - Total de exercícios atualizados: {len(current.exercises)}\n"
+                summary += (
+                    f"  - Total de exercícios atualizados: {len(current.exercises)}\n"
+                )
 
                 if changes_summary:
                     summary += "\nDetalhes:\n" + "\n".join(changes_summary[:10])
@@ -808,9 +812,7 @@ def create_set_routine_rest_and_ranges_tool(hevy_service, database, user_email: 
 
 def create_trigger_hevy_import_tool(hevy_service, database, user_email: str):
     @tool
-    async def trigger_hevy_import(
-        days_back: int = 7
-    ) -> str:
+    async def trigger_hevy_import(days_back: int = 7) -> str:
         """
         Dispara a importação de treinos do Hevy para o sistema.
         Use esta ferramenta APENAS se a integração com o Hevy estiver ATIVA e o aluno pedir para sincronizar ou importar os treinos.
@@ -824,14 +826,17 @@ def create_trigger_hevy_import_tool(hevy_service, database, user_email: str):
 
         try:
             from datetime import datetime, timezone, timedelta  # pylint: disable=import-outside-toplevel
+
             from_date = datetime.now(timezone.utc) - timedelta(days=days_back)
 
-            logger.info("[trigger_hevy_import] Starting import for user %s, %d days back", user_email, days_back)
+            logger.info(
+                "[trigger_hevy_import] Starting import for user %s, %d days back",
+                user_email,
+                days_back,
+            )
 
             result = await hevy_service.import_workouts(
-                user_email=user_email,
-                api_key=profile.hevy_api_key,
-                from_date=from_date
+                user_email=user_email, api_key=profile.hevy_api_key, from_date=from_date
             )
 
             imported = result.get("imported", 0)

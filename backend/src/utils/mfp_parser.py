@@ -7,9 +7,20 @@ from datetime import date
 from typing import List, Dict, Any
 
 MONTHS_PT = {
-    "jan": 1, "fev": 2, "mar": 3, "abr": 4, "mai": 5, "jun": 6,
-    "jul": 7, "ago": 8, "set": 9, "out": 10, "nov": 11, "dez": 12
+    "jan": 1,
+    "fev": 2,
+    "mar": 3,
+    "abr": 4,
+    "mai": 5,
+    "jun": 6,
+    "jul": 7,
+    "ago": 8,
+    "set": 9,
+    "out": 10,
+    "nov": 11,
+    "dez": 12,
 }
+
 
 def parse_mfp_text(text: str) -> List[Dict[str, Any]]:
     """
@@ -20,7 +31,9 @@ def parse_mfp_text(text: str) -> List[Dict[str, Any]]:
 
     # Split text into potential day blocks.
     # Pattern: 'D de MMM. de YYYY' or 'D de MMMM de YYYY'
-    date_pattern = re.compile(r"(\d{1,2})\s+de\s+(\w+)\.?\s+de\s+(\d{4})", re.IGNORECASE)
+    date_pattern = re.compile(
+        r"(\d{1,2})\s+de\s+(\w+)\.?\s+de\s+(\d{4})", re.IGNORECASE
+    )
 
     # Split the text by lines and look for data
     lines = text.strip().split("\n")
@@ -50,7 +63,9 @@ def parse_mfp_text(text: str) -> List[Dict[str, Any]]:
             # Calories, Carbs, Fat, Protein, Cholest, Sodium, Sugar, Fiber
 
             # Remove "TOTAIS" and units
-            cleaned_line = line.replace("TOTAIS", "").replace("g", "").replace("mg", "").strip()
+            cleaned_line = (
+                line.replace("TOTAIS", "").replace("g", "").replace("mg", "").strip()
+            )
             # Find all numbers (including floats)
             numbers = re.findall(r"[-+]?\d*\.?\d+", cleaned_line)
 
@@ -74,6 +89,6 @@ def parse_mfp_text(text: str) -> List[Dict[str, Any]]:
                     day_data["fiber"] = float(numbers[7])
 
                 results.append(day_data)
-                current_date = None # Reset for next date
+                current_date = None  # Reset for next date
 
     return results

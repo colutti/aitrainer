@@ -1,6 +1,7 @@
 """
 Stripe payment and webhook endpoints.
 """
+
 from datetime import datetime, timezone
 import stripe
 from fastapi import APIRouter, Header, Request, HTTPException
@@ -31,7 +32,9 @@ async def checkout_session(
         return {"url": url}
     except Exception as e:
         logger.error("Error creating checkout session: %s", e)
-        raise HTTPException(status_code=500, detail="Error creating checkout session") from e
+        raise HTTPException(
+            status_code=500, detail="Error creating checkout session"
+        ) from e
 
 
 @router.post("/create-portal-session")
@@ -44,11 +47,15 @@ async def portal_session(
         raise HTTPException(status_code=400, detail="User has no Stripe customer ID")
 
     try:
-        url = create_customer_portal_session(profile.stripe_customer_id, request.return_url)
+        url = create_customer_portal_session(
+            profile.stripe_customer_id, request.return_url
+        )
         return {"url": url}
     except Exception as e:
         logger.error("Error creating portal session: %s", e)
-        raise HTTPException(status_code=500, detail="Error creating portal session") from e
+        raise HTTPException(
+            status_code=500, detail="Error creating portal session"
+        ) from e
 
 
 @router.post("/webhook")
@@ -75,7 +82,10 @@ async def stripe_webhook(
 
     if event["type"] == "checkout.session.completed":
         _handle_checkout_completed(event["data"]["object"], brain)
-    elif event["type"] in ["customer.subscription.created", "customer.subscription.updated"]:
+    elif event["type"] in [
+        "customer.subscription.created",
+        "customer.subscription.updated",
+    ]:
         _handle_subscription_updated(event["data"]["object"], brain)
     elif event["type"] == "customer.subscription.deleted":
         _handle_subscription_deleted(event["data"]["object"], brain)
@@ -125,7 +135,8 @@ def _find_profile_for_subscription(subscription, brain):
         if user_email:
             logger.info(
                 "Customer %s not in DB. Fallback to metadata email: %s",
-                customer_id, user_email
+                customer_id,
+                user_email,
             )
             profile = brain.get_user_profile(user_email)
             if profile:
@@ -149,8 +160,7 @@ def _handle_subscription_updated(subscription, brain):
 
     if not profile:
         logger.error(
-            "Could not find profile for customer_id: %s or metadata email",
-            customer_id
+            "Could not find profile for customer_id: %s or metadata email", customer_id
         )
         return
 
@@ -172,9 +182,14 @@ def _handle_subscription_updated(subscription, brain):
     if plan_changed or cycle_changed:
         logger.info(
             "Resetting counter for user %s. Plan: %s, Cycle: %s",
-            profile.email, plan_changed, cycle_changed
+            profile.email,
+            plan_changed,
+            cycle_changed,
         )
         updates["messages_sent_this_month"] = 0
+
+        # Ensure trainer is allowed for the new plan
+        brain.ensure_trainer_allowed(profile.email, plan)
 
     brain.update_user_profile_fields(profile.email, updates)
 
@@ -192,3 +207,5 @@ def _handle_subscription_deleted(subscription, brain):
                 "stripe_subscription_id": None,
             },
         )
+        # Reset trainer to Breno if they were using someone else
+        brain.ensure_trainer_allowed(profile.email, "Free")

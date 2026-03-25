@@ -13,6 +13,7 @@ export interface DashboardStats {
     } | null;
     goal_type: string;
     consistency_score: number;
+    stability_score: number;
   };
   body: {
     weight_current: number;

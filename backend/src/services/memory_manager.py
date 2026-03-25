@@ -147,7 +147,9 @@ class MemoryManager:
         results = self._memory.search(user_id=user_id, query=query, limit=limit)
         return self._normalize_mem0_results(results, source="semantic")
 
-    def _retrieve_recent_memories(self, user_id: str, limit: int | None = None) -> list[dict]:
+    def _retrieve_recent_memories(
+        self, user_id: str, limit: int | None = None
+    ) -> list[dict]:
         """Retrieve recently-added memories."""
         if limit is None:
             limit = settings.MEM0_RECENT_LIMIT

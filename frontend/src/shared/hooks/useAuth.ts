@@ -18,6 +18,7 @@ export interface UserInfo {
   current_daily_limit?: number | null;
   current_plan_limit?: number | null;
   effective_remaining_messages?: number | null;
+  has_stripe_customer: boolean;
 }
 
 export interface AuthState {
@@ -41,34 +42,14 @@ export type AuthStore = AuthState & AuthActions;
 
 /**
  * Authentication store using Zustand
- *
- * Manages user authentication state, login/logout, and user information.
- * Token is stored in localStorage and automatically attached to API requests.
- *
- * @example
- * ```tsx
- * function LoginPage() {
- *   const { login, isAuthenticated } = useAuthStore();
- *
- *   const handleLogin = async () => {
- *     await login('user@example.com', 'password');
- *   };
- *
- *   return <button onClick={handleLogin}>Login</button>;
- * }
- * ```
  */
 export const useAuthStore = create<AuthStore>((set, get) => ({
   // Initial state
   isAuthenticated: false,
   userInfo: null,
   isAdmin: false,
-  isLoading: true, // Start with loading true
+  isLoading: true,
 
-  /**
-   * Login with email and password
-   * Stores the JWT token in localStorage and loads user info
-   */
   login: async (email: string, password: string) => {
     set({ isLoading: true });
 
@@ -97,10 +78,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
-  /**
-   * Login with a social provider (Google, Apple) using Firebase
-   * Stores the JWT token in localStorage and loads user info
-   */
   socialLogin: async (providerName: 'google' | 'apple') => {
     set({ isLoading: true });
 
@@ -136,10 +113,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
-  /**
-   * Logout and clear all auth state
-   * Removes token from localStorage and resets state
-   */
   logout: () => {
     localStorage.removeItem(AUTH_TOKEN_KEY);
     set({
@@ -149,10 +122,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     });
   },
 
-  /**
-   * Load current user information from API
-   * Sets userInfo and isAdmin based on response
-   */
   loadUserInfo: async () => {
     const data = await httpClient<{ 
       email: string; 
@@ -168,6 +137,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       current_daily_limit: number | null;
       current_plan_limit: number | null;
       effective_remaining_messages: number | null;
+      has_stripe_customer: boolean;
     }>('/user/me');
 
     if (!data) {
@@ -189,22 +159,16 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         current_daily_limit: data.current_daily_limit,
         current_plan_limit: data.current_plan_limit,
         effective_remaining_messages: data.effective_remaining_messages,
+        has_stripe_customer: data.has_stripe_customer,
       },
       isAdmin: data.role === 'admin',
     });
   },
 
-  /**
-   * Get the current auth token from localStorage
-   */
   getToken: () => {
     return localStorage.getItem(AUTH_TOKEN_KEY);
   },
 
-  /**
-   * Initialize auth state on app startup
-   * Checks for existing token and loads user info if present
-   */
   init: async () => {
     const token = get().getToken();
 
@@ -219,18 +183,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       set({ isAuthenticated: true });
       await get().loadUserInfo();
     } catch {
-      // Token is invalid, logout
       get().logout();
     } finally {
       set({ isLoading: false });
     }
   },
 
-  /**
-   * Silently refreshes the JWT token using the /user/refresh endpoint.
-   * Returns true on success (new token stored), false on failure (triggers logout).
-   * Uses fetch directly to avoid recursive httpClient calls.
-   */
   refreshToken: async (): Promise<boolean> => {
     const token = get().getToken();
     if (!token) {

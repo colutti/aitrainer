@@ -181,12 +181,16 @@ class WorkoutRepository(BaseRepository):
             return weeks_data.get((y, w), 0) >= 3
 
         if not met_criteria(check_year, check_week):
-            prev = datetime.fromisocalendar(check_year, check_week, 1) - timedelta(days=7)
+            prev = datetime.fromisocalendar(check_year, check_week, 1) - timedelta(
+                days=7
+            )
             check_year, check_week, _ = prev.isocalendar()
 
         while met_criteria(check_year, check_week):
             streak += 1
-            check_date = datetime.fromisocalendar(check_year, check_week, 1) - timedelta(days=7)
+            check_date = datetime.fromisocalendar(
+                check_year, check_week, 1
+            ) - timedelta(days=7)
             check_year, check_week, _ = check_date.isocalendar()
 
         return streak
@@ -304,12 +308,22 @@ class WorkoutRepository(BaseRepository):
         categories = {
             "Push": ["Supino", "Peito", "Ombro", "Tríceps", "Militar", "Bench"],
             "Pull": [
-                "Costas", "Remada", "Puxada", "Bíceps", "Levantamento Terra",
-                "Deadlift", "Row",
+                "Costas",
+                "Remada",
+                "Puxada",
+                "Bíceps",
+                "Levantamento Terra",
+                "Deadlift",
+                "Row",
             ],
             "Legs": [
-                "Agachamento", "Leg Press", "Extensora", "Flexora", "Pernas",
-                "Panturrilha", "Squat",
+                "Agachamento",
+                "Leg Press",
+                "Extensora",
+                "Flexora",
+                "Pernas",
+                "Panturrilha",
+                "Squat",
             ],
         }
         for k, v in categories.items():
@@ -328,7 +342,9 @@ class WorkoutRepository(BaseRepository):
                 if cat == "Outros":
                     continue
 
-                valid_w = [w_val for w_val in ex.get("weights_per_set", []) if w_val > 0]
+                valid_w = [
+                    w_val for w_val in ex.get("weights_per_set", []) if w_val > 0
+                ]
                 if not valid_w:
                     continue
 
@@ -339,6 +355,8 @@ class WorkoutRepository(BaseRepository):
         result = {}
         for cat in ["Push", "Pull", "Legs"]:
             peak = peak_strength.get(cat, 0)
-            result[cat] = round(curr_strength.get(cat, 0) / peak, 2) if peak > 0 else 0.0
+            result[cat] = (
+                round(curr_strength.get(cat, 0) / peak, 2) if peak > 0 else 0.0
+            )
 
         return result

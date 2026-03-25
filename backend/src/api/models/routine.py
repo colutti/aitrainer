@@ -34,14 +34,10 @@ class HevySet(BaseModel):
             original = v
             v = v.lower().strip()
             if v == "warm_up":
-                logger.debug(
-                    "[normalize_type] Converted warm_up → warmup"
-                )
+                logger.debug("[normalize_type] Converted warm_up → warmup")
                 return "warmup"
             if v == "drop_set":
-                logger.debug(
-                    "[normalize_type] Converted drop_set → dropset"
-                )
+                logger.debug("[normalize_type] Converted drop_set → dropset")
                 return "dropset"
             if original != v:
                 logger.debug(
@@ -70,15 +66,20 @@ class HevySet(BaseModel):
             try:
                 res = {"start": int(v[0]), "end": int(v[1])}
             except (ValueError, TypeError):
-                logger.error("[normalize_rep_range] Failed to parse %s: %s", type(v).__name__, v)
+                logger.error(
+                    "[normalize_rep_range] Failed to parse %s: %s", type(v).__name__, v
+                )
 
         if res:
-            logger.debug("[normalize_rep_range] Converted %s to dict: %s", type(v).__name__, res)
+            logger.debug(
+                "[normalize_rep_range] Converted %s to dict: %s", type(v).__name__, res
+            )
             return res
 
         logger.warning(
             "[normalize_rep_range] Unknown/Invalid type (Pydantic will handle): %s, %s",
-            type(v).__name__, v
+            type(v).__name__,
+            v,
         )
         return None
 

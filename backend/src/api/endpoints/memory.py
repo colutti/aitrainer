@@ -1,4 +1,5 @@
 """Endpoints for managing user memories and insights."""
+
 from datetime import datetime
 from typing import Annotated
 

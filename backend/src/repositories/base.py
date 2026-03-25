@@ -10,6 +10,7 @@ class BaseRepository:
     """
     Base repository providing common access to MongoDB collection and logging.
     """
+
     def __init__(self, database: Database, collection_name: str):
         self.collection = database[collection_name]
         self.logger = logger

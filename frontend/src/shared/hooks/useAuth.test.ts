@@ -84,6 +84,7 @@ describe('useAuth', () => {
         role: 'user',
         name: 'Test User',
         onboarding_completed: true,
+        has_stripe_customer: false,
       };
       
       const expectedUserInfo = {
@@ -92,6 +93,7 @@ describe('useAuth', () => {
          is_admin: false,
          photo_base64: undefined,
          onboarding_completed: true,
+         has_stripe_customer: false,
       };
 
       // Mock login response
@@ -159,7 +161,7 @@ describe('useAuth', () => {
       act(() => {
         useAuthStore.setState({
           isAuthenticated: true,
-          userInfo: { email: 'test@example.com', name: 'Test User', is_admin: true, onboarding_completed: true },
+          userInfo: { email: 'test@example.com', name: 'Test User', is_admin: true, onboarding_completed: true, has_stripe_customer: false },
           isAdmin: true,
           isLoading: false // Add isLoading mandatory field
         });
@@ -183,6 +185,7 @@ describe('useAuth', () => {
         role: 'admin',
         name: 'Admin User',
         onboarding_completed: true,
+        has_stripe_customer: false,
       };
       
       const expectedUserInfo = {
@@ -190,6 +193,7 @@ describe('useAuth', () => {
         name: 'Admin User',
         is_admin: true,
         onboarding_completed: true,
+        has_stripe_customer: false,
       };
 
       vi.mocked(httpClient).mockResolvedValueOnce(mockUserApiData);
@@ -211,6 +215,7 @@ describe('useAuth', () => {
         role: 'user',
         name: 'Regular User',
         onboarding_completed: true,
+        has_stripe_customer: false,
       };
       
       const expectedUserInfo = {
@@ -218,6 +223,7 @@ describe('useAuth', () => {
         name: 'Regular User',
         is_admin: false,
         onboarding_completed: true,
+        has_stripe_customer: false,
       };
 
       vi.mocked(httpClient).mockResolvedValueOnce(mockUserApiData);
@@ -237,6 +243,7 @@ describe('useAuth', () => {
           email: 'user@example.com',
           role: 'user',
           onboarding_completed: true,
+          has_stripe_customer: false,
         };
         
         const expectedUserInfo = {
@@ -244,6 +251,7 @@ describe('useAuth', () => {
           name: 'user', // extracted from email
           is_admin: false,
           onboarding_completed: true,
+          has_stripe_customer: false,
         };
   
         vi.mocked(httpClient).mockResolvedValueOnce(mockUserApiData);
@@ -310,6 +318,7 @@ describe('useAuth', () => {
         role: 'user',
         name: 'Test User',
         onboarding_completed: true,
+        has_stripe_customer: false,
       };
       
       const expectedUserInfo = {
@@ -317,6 +326,7 @@ describe('useAuth', () => {
         name: 'Test User',
         is_admin: false,
         onboarding_completed: true,
+        has_stripe_customer: false,
       };
 
       vi.mocked(httpClient).mockResolvedValueOnce(mockUserApiData);

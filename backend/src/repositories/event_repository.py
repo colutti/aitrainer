@@ -73,8 +73,9 @@ class EventRepository(BaseRepository):
         }
 
         cursor = (
-            self.collection.find(query)
-            .sort("date", 1)  # Sort by date ascending (None first, then future)
+            self.collection.find(query).sort(
+                "date", 1
+            )  # Sort by date ascending (None first, then future)
         )
 
         events = []
@@ -99,10 +100,7 @@ class EventRepository(BaseRepository):
         Returns:
             All events (past, future, active, inactive)
         """
-        cursor = (
-            self.collection.find({"user_email": user_email})
-            .sort("date", 1)
-        )
+        cursor = self.collection.find({"user_email": user_email}).sort("date", 1)
 
         events = []
         for doc in cursor:
@@ -144,9 +142,7 @@ class EventRepository(BaseRepository):
 
         return deleted
 
-    def update_event(
-        self, event_id: str, user_email: str, update_data: dict
-    ) -> bool:
+    def update_event(self, event_id: str, user_email: str, update_data: dict) -> bool:
         """
         Update event fields (title, description, date, recurrence, active).
 

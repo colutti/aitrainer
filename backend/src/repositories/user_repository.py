@@ -3,7 +3,6 @@ This module provides the UserRepository for managing user persistence.
 """
 # pylint: disable=line-too-long
 
-
 from datetime import datetime
 from typing import Any
 from pymongo.database import Database

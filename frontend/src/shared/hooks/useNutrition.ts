@@ -5,7 +5,7 @@ import type {
   NutritionListResponse, 
   NutritionLog, 
   NutritionStats,
-  CreateNutritionLogRequest 
+  CreateNutritionLogRequest
 } from '../types/nutrition';
 
 interface NutritionState {
@@ -16,24 +16,19 @@ interface NutritionState {
   totalPages: number;
   isLoading: boolean;
   error: string | null;
-}
-
-interface NutritionActions {
-  fetchLogs: (page?: number, days?: number) => Promise<void>;
+  
+  // Actions
+  fetchLogs: (page?: number, limit?: number) => Promise<void>;
   fetchStats: () => Promise<void>;
   createLog: (data: CreateNutritionLogRequest) => Promise<void>;
   deleteLog: (id: string) => Promise<void>;
   reset: () => void;
 }
 
-type NutritionStore = NutritionState & NutritionActions;
-
 /**
- * Nutrition store using Zustand
- * 
- * Manages nutrition logs, daily stats, and diet adherence tracking.
+ * Standardized Nutrition Store.
  */
-export const useNutritionStore = create<NutritionStore>((set, get) => ({
+export const useNutritionStore = create<NutritionState>((set, get) => ({
   logs: [],
   stats: null,
   total: 0,
@@ -42,85 +37,59 @@ export const useNutritionStore = create<NutritionStore>((set, get) => ({
   isLoading: false,
   error: null,
 
-  fetchLogs: async (page = 1, days) => {
+  fetchLogs: async (page = 1, limit = 20) => {
     set({ isLoading: true, error: null });
     try {
-      const params = new URLSearchParams();
-      params.append('page', page.toString());
-      if (days) {
-        params.append('days', days.toString());
-      }
-
-      const response = await httpClient<NutritionListResponse>(`/nutrition/list?${params.toString()}`);
-      
-      if (response) {
+      const data = await httpClient<NutritionListResponse>(`/nutrition?page=${String(page)}&limit=${String(limit)}`);
+      if (data) {
         set({
-          logs: response.logs,
-          total: response.total,
-          page: response.page,
-          totalPages: response.total_pages,
+          logs: data.logs,
+          total: data.total,
+          page: data.page,
+          totalPages: data.total_pages,
+          isLoading: false
         });
+      } else {
+        set({ isLoading: false });
       }
-      set({ isLoading: false });
-    } catch (error) {
-      console.error('Error fetching nutrition logs:', error);
+    } catch (err) {
       set({ 
-        isLoading: false, 
-        error: 'Falha ao carregar histórico nutricional.' 
+        error: err instanceof Error ? err.message : 'Error fetching nutrition logs', 
+        isLoading: false 
       });
     }
   },
 
   fetchStats: async () => {
-    set({ isLoading: true });
     try {
-      const stats = await httpClient<NutritionStats>('/nutrition/stats');
-      set({ stats: stats ?? null, isLoading: false });
-    } catch (error) {
-      console.error('Error fetching nutrition stats:', error);
-      set({ isLoading: false });
+      const data = await httpClient<NutritionStats>('/nutrition/stats');
+      if (data) set({ stats: data });
+    } catch {
+      // Quiet fail for stats
     }
   },
 
   createLog: async (data: CreateNutritionLogRequest) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true });
     try {
-      await httpClient<NutritionLog>('/nutrition/log', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      await httpClient('/nutrition', { method: 'POST', body: JSON.stringify(data) });
       await Promise.all([get().fetchLogs(), get().fetchStats()]);
-    } catch (error) {
-      console.error('Error creating nutrition log:', error);
+    } catch (err) {
       set({ 
         isLoading: false, 
-        error: 'Falha ao salvar registro nutricional.' 
+        error: err instanceof Error ? err.message : 'Error creating nutrition log' 
       });
-      throw error;
+      throw err;
     }
   },
 
   deleteLog: async (id: string) => {
-    set({ isLoading: true, error: null });
-    try {
-      await httpClient(`/nutrition/${id}`, { method: 'DELETE' });
-      
-      const { logs, total } = get();
-      set({
-        logs: logs.filter((l) => l.id !== id),
-        total: total - 1,
-        isLoading: false,
-      });
-      // Optionally refresh stats
-      void get().fetchStats();
-    } catch (error) {
-      console.error('Error deleting nutrition log:', error);
-      set({ 
-        isLoading: false, 
-        error: 'Falha ao excluir registro.' 
-      });
-      throw error;
-    }
+    await httpClient(`/nutrition/${id}`, { method: 'DELETE' });
+    const { logs, total } = get();
+    set({
+      logs: logs.filter(log => log.id !== id),
+      total: total - 1
+    });
   },
 
   reset: () => {

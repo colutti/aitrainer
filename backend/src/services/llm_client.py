@@ -9,9 +9,11 @@ from typing import AsyncGenerator, Any
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import AIMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
+
 try:
     from langchain.agents import create_agent
 except ImportError:
+
     def create_agent(*args, **kwargs) -> Any:  # pylint: disable=unused-argument
         """Fallback for create_agent."""
         return Any
@@ -27,6 +29,7 @@ except ImportError:
                 return
 
             return _gen()
+
 
 # Suppress Pydantic V1/LangSmith warning as we cannot easily upgrade right now
 warnings.filterwarnings("ignore", message=".*Core Pydantic V1 functionality.*")
@@ -131,7 +134,9 @@ class LLMClient:
                 event = item[0] if isinstance(item, tuple) and len(item) == 2 else item
 
                 if not usage_metadata_captured and isinstance(event, AIMessage):
-                    usage_metadata_captured, usage_metadata = self._capture_metadata(event)
+                    usage_metadata_captured, usage_metadata = self._capture_metadata(
+                        event
+                    )
 
                 if isinstance(event, ToolMessage):
                     tools_called.append(str(event.name or "unknown"))
@@ -224,10 +229,13 @@ class LLMClient:
                     # Capture usage_metadata from AIMessage (only once - first chunk with tokens)
                     if isinstance(chunk, AIMessage):
                         # Capture usage_metadata if not captured yet
-                        if (not usage_metadata_captured and hasattr(chunk, "usage_metadata")
-                                and chunk.usage_metadata):
-                            usage_metadata_captured, usage_metadata = self._capture_metadata(
-                                chunk, "stream_simple"
+                        if (
+                            not usage_metadata_captured
+                            and hasattr(chunk, "usage_metadata")
+                            and chunk.usage_metadata
+                        ):
+                            usage_metadata_captured, usage_metadata = (
+                                self._capture_metadata(chunk, "stream_simple")
                             )
                         # Always yield the text content
                         if chunk.content:
@@ -269,7 +277,6 @@ class LLMClient:
                     )
                 except (ValueError, TypeError, AttributeError, Exception) as log_err:  # pylint: disable=broad-exception-caught
                     logger.warning("Failed to log prompt in stream_simple: %s", log_err)
-
 
     def _capture_metadata(
         self, event: AIMessage, source: str = "LangGraph"

@@ -14,15 +14,29 @@
     "error": "Erro",
     "success": "Sucesso",
     "connect": "Conectar",
+    "save": "Salvar",
+    "age": "Idade",
+    "gender": "Gênero",
+    "athlete": "Atleta",
+    "retry": "Tentar Novamente",
+    "error_loading": "Erro ao carregar dados",
+    "error_loading_desc": "Não foi possível conectar ao servidor. Verifique sua conexão.",
+    "no_data": "Nenhum registro",
+    "no_data_desc": "Parece que você ainda não tem dados nesta seção.",
+    "back": "Voltar",
+    "per_month": "/mês",
     "trends": {
       "up": "Subindo",
       "down": "Descendo",
       "stable": "Estável"
     },
-    "athlete": "mensagens",
     "msgs": "msgs",
     "day": "dia",
     "days_left": "{{count}}d restantes"
+  },
+  "auth": {
+    "login_error": "E-mail ou senha incorretos.",
+    "social_error": "Falha na autenticação social. Tente novamente."
   },
   "nav": {
     "home": "Início",
@@ -31,376 +45,36 @@
     "body": "Peso e Corpo",
     "nutrition": "Dieta e Macros",
     "settings": "Configurações",
+    "chat": "Chat",
     "brand_tagline": "Inteligência x Performance"
   },
-  "errors": {
-    "network_failed": "Parece que você está sem internet. Verifique sua conexão e tente novamente.",
-    "server_error": "Ops, tivemos um problema no nosso servidor. Tente novamente em alguns instantes.",
-    "unauthorized": "Sua sessão expirou. Por favor, faça login novamente.",
-    "not_found": "O recurso que você procura não foi encontrado.",
-    "default": "Algo deu errado. Se o problema persistir, entre em contato com o suporte.",
-    "retry": "Tentar Novamente",
-    "TRIAL_EXPIRED": "Seu período gratuito de 7 dias acabou.",
-    "DAILY_LIMIT_REACHED": "Limite diário atingido. Você pode enviar até 20 mensagens por dia no plano grátis."
-  },
-  "brand_tagline": "Inteligência x Performance",
-  "landing": {
-    "nav": {
-      "trainers": "Treinadores",
-      "differentiators": "Diferenciais",
-      "how_it_works": "Como Funciona",
-      "login": "Entrar",
-      "get_started": "Começar Agora",
-      "plans": "Planos"
-    },
-    "hero": {
-      "badge": "A Nova Era do Fitness",
-      "title": "Seu Corpo é um Sistema.",
-      "title_gradient": "Deixe a IA Otimizá-lo.",
-      "description": "Esqueça planilhas e palpites. Tenha um treinador de elite que analisa seus dados em tempo real para entregar o plano perfeito.",
-      "cta": "Garantir meu Acesso",
-      "trial_desc": "20 mensagens por dia, durante 7 dias. Grátis.",
-      "feature_247": "Suporte 24/7",
-      "feature_ai": "IA Pessoal",
-      "feature_integrations": "Integrações",
-      "daily_goal": "Meta Diária",
-      "weight_trend": "Progresso Real",
-      "gymbro_message": "Mano, vi que você dormiu 8h hoje. Hoje é dia de ir pesado! 💪",
-      "macro_protein": "Proteína",
-      "macro_fat": "Gordura",
-      "macro_carbs": "Carboidrato"
-    },
-    "trainers": {
-      "title": "Conheça Seus Treinadores",
-      "description": "5 personalidades únicas, cada uma com estilo, expertise e abordagem própria. Escolha quem combina com você.",
-      "scroll_hint": "Deslize para ver mais treinadores →",
-      "talk_with": "Conversar com {{name}}",
-      "profiles": {
-        "atlas": {
-          "tagline": "A eficiência é a única métrica que importa.",
-          "catchphrase": "Seus músculos são máquinas biológicas. Vamos otimizá-las.",
-          "specialties": [
-            "#biomecânica",
-            "#dados",
-            "#hipertrofia"
-          ],
-          "style": "Científico & Precisionista"
-        },
-        "luna": {
-          "tagline": "Seu corpo é um templo estelar.",
-          "catchphrase": "Respire o universo, expire as tensões.",
-          "specialties": [
-            "#yoga",
-            "#mindfulness",
-            "#fluxo"
-          ],
-          "style": "Holística & Telúrica"
-        },
-        "sofia": {
-          "tagline": "Saúde inteligente para mulheres modernas.",
-          "catchphrase": "Vamos hackear seu metabolismo com ciência e carinho.",
-          "specialties": [
-            "#saúdefeminina",
-            "#hormônios",
-            "#metabolismo"
-          ],
-          "style": "Especialista Empática"
-        },
-        "sargento": {
-          "tagline": "A dor é a fraqueza saindo do corpo!",
-          "catchphrase": "Sem desculpas, recruta. VAMOS EMBORA!",
-          "specialties": [
-            "#disciplina",
-            "#força",
-            "#semdesculpas"
-          ],
-          "style": "Bootcamp Militar"
-        },
-        "gymbro": {
-          "tagline": "Seu parceiro de treino que sempre te bota pra cima!",
-          "catchphrase": "Bora, monstro! Hoje é dia de EVOLUIR! 🔥",
-          "specialties": [
-            "#parceria",
-            "#motivação",
-            "#lifestyle"
-          ],
-          "style": "Parceiro do Ginásio"
-        }
-      }
-    },
-    "showcase": {
-      "title": "Veja o FityQ em Ação",
-      "description": "Dashboard inteligente, chat contextual e análise metabólica — tudo em um só lugar.",
-      "dashboard_title": "Dashboard Inteligente",
-      "chat_title": "Chat com IA",
-      "meta_title": "Meta Inteligente",
-      "scroll_hint": "Deslize para ver mais →",
-      "meta_calorie_title": "Meta Calórica Inteligente",
-      "accuracy": "precisão",
-      "weekly_target_title": "Sua meta desta semana",
-      "high_confidence": "Aprendizado Alto",
-      "vs_previous": "Vs. semana anterior",
-      "data_used": "Dados usados",
-      "weight_30d": "Peso (30 dias)",
-      "days_count": "{{count}} dias"
-    },
-    "diff": {
-      "title": "Por que FityQ?",
-      "subtitle": "Combinamos tecnologia de ponta com ciência esportiva para criar a experiência definitiva.",
-      "features": {
-        "meta": {
-          "title": "Análise Metabólica",
-          "description": "Calculamos seu Gasto Diário Real baseado no seu histórico, não em fórmulas genéricas."
-        },
-        "vision": {
-          "title": "Análise de Treino e Dieta",
-          "description": "Analisamos seu histórico de treinos e alimentação para ajustar seu progresso com precisão."
-        },
-        "trainers": {
-          "title": "Treinadores Diversos",
-          "description": "Escolha entre 5 personalidades únicas para guiar sua jornada."
-        },
-        "integrations": {
-          "title": "Conectado",
-          "description": "Integramos com os principais apps para centralizar sua saúde."
-        },
-        "journey": {
-          "title": "Jornada Longa",
-          "description": "Memória contextual que lembra cada detalhe da sua evolução.",
-          "items": [
-            "Foco em Longevidade",
-            "Evolução Constante",
-            "Abordagem Holística"
-          ]
-        },
-        "available": {
-          "title": "Sempre Disponível",
-          "description": "Seu treinador nunca tira férias e responde em segundos.",
-          "online": "Online & Pronto"
-        }
-      }
-    },
-    "how": {
-      "title": "Como Funciona",
-      "subtitle": "Simples, direto e altamente eficaz.",
-      "steps": [
-        {
-          "title": "Conecte seus Dados",
-          "description": "Importe seu histórico do Hevy, MyFitnessPal ou Zepp Life."
-        },
-        {
-          "title": "Escolha seu Mentor",
-          "description": "Selecione o treinador que mais combina com seu estilo de vida."
-        },
-        {
-          "title": "Evolução Real",
-          "description": "Receba feedbacks diários e ajustes precisos no seu plano."
-        }
-      ]
-    },
-    "cta": {
-      "title": "Pronto para sua melhor versão?",
-      "subtitle": "Junte-se a milhares de atletas que já otimizaram seus resultados com o FityQ.",
-      "button": "Começar Jornada Agora",
-      "trial": "20 mensagens/dia por 7 dias grátis. Teste agora."
-    },
-    "footer": {
-      "rights": "© {{year}} FityQ. Todos os direitos reservados."
-    },
-    "cta_trainers": "Escolha seu treinador agora",
-    "cta_product": "Experimente o FityQ grátis",
-    "trust_badge_free": "✓ Grátis para começar",
-    "trust_badge_card": "✓ Sem cartão de crédito",
-    "counters": {
-      "trainers": "Treinadores IA",
-      "availability": "Disponibilidade",
-      "integrations": "Integrações",
-      "memory": "Memória",
-      "availability_val": "24/7",
-      "integrations_val": "3+",
-      "memory_val": "∞"
-    },
-    "comparison": {
-      "title": "Compare e Escolha a Melhor Opção para Você",
-      "subtitle": "Alcance seus objetivos com eficiência e personalização.",
-      "headers": {
-        "fityq": "FityQ AI",
-        "personal": "Personal Trainer Tradicional",
-        "generic": "App Genérico"
-      },
-      "rows": {
-        "price": "Preço",
-        "availability": "Disponibilidade",
-        "memory": "Memória",
-        "personalization": "Personalização",
-        "integrations": "Integrações"
-      },
-      "values": {
-        "free": "Grátis",
-        "personal_price": "R$150-300/mês",
-        "generic_price": "Grátis-R$49",
-        "247": "24/7",
-        "scheduled": "Horário marcado",
-        "remembers_all": "Lembra tudo",
-        "depends": "Depende",
-        "doesnt_remember": "Não lembra",
-        "adaptive_ai": "IA adaptativa",
-        "high": "Alta",
-        "generic": "Genérica",
-        "all_apps": "Hevy, MFP, Zepp",
-        "none": "Nenhuma",
-        "limited": "Limitadas"
-      }
-    },
-    "integrations_section": {
-      "title": "Conecte suas ferramentas favoritas",
-      "subtitle": "O FityQ se integra aos apps que você já usa para centralizar seus dados.",
-      "hevy_desc": "Importe seus treinos automaticamente do Hevy.",
-      "mfp_desc": "Sincronize sua nutrição e macros do MyFitnessPal.",
-      "zepp_desc": "Conecte seus dados de saúde e sono do Zepp Life.",
-      "coming_soon": "Em breve"
-    },
-    "faq": {
-      "title": "Perguntas Frequentes",
-      "items": [
-        {
-          "q": "O FityQ é realmente grátis?",
-          "a": "Sim! Você pode começar gratuitamente com 20 mensagens diárias durante 7 dias para testar a experiência com o treinador Breno."
-        },
-        {
-          "q": "Como a IA funciona?",
-          "a": "Nossa IA analisa seus logs de treino, dieta e peso para entender seu metabolismo único e ajustar suas metas em tempo real."
-        },
-        {
-          "q": "Meus dados estão seguros?",
-          "a": "Totalmente. Seus dados são criptografados e usados apenas para personalizar sua experiência de treinamento."
-        },
-        {
-          "q": "Posso trocar de treinador?",
-          "a": "Sim, você pode trocar de treinador a qualquer momento para experimentar diferentes estilos de motivação e conhecimento."
-        },
-        {
-          "q": "Quais integrações estão disponíveis?",
-          "a": "Atualmente suportamos Hevy, MyFitnessPal e Zepp Life, com mais integrações a caminho."
-        }
-      ]
-    },
-    "sticky_cta": "Começar Grátis",
-    "chat_carousel": {
-      "title": "Converse com Seu Treinador Agora",
-      "subtitle": "Cada treinador tem personalidade, expertise e um jeito único de te guiar.",
-      "cta_hint": ""
-    },
-    "conversations": {
-      "sofia": {
-        "user_1": "Tô na dieta faz 3 semanas, mas o peso não sai do lugar. O que tá errado?",
-        "trainer_1": "Olhei seus registros aqui. Nos últimos 7 dias você comeu em média 1.640 kcal — mas sua meta atual é 1.580. Não é isso. O problema está na quinta e no sábado: você compensou depois do treino e foi pra 2.100 kcal nos dois dias. Isso zerou seu déficit da semana.",
-        "user_2": "Nossa, não tinha percebido isso. Por que eu fico com tanta fome nesses dias?",
-        "trainer_2": "Seu treino de quinta queima bastante — vi que você faz HIIT. Proteína nesse dia ficou em 89g, mas você precisaria de pelo menos 130g pra não chegar com fome no jantar. Não é falta de força de vontade. É só ajustar a distribuição das refeições nos dias de treino. Quer que eu monte isso pra você?"
-      },
-      "gymbro": {
-        "user_1": "Nunca malhei antes. Quero começar do zero e ganhar músculo. Mas não sei por onde começo.",
-        "trainer_1": "Irmão, melhor hora pra começar é AGORA! 🔥 Primeira coisa: relaxa, você tá no lugar certo. Não é complicado. Preciso entender seu ponto de partida. Me fala: qual sua altura? Quanto você pesa? E no momento, você consegue treinar 3x por semana ou fica difícil?",
-        "user_2": "Tenho 1,78m, peso 82kg. Consigo treinar 3x por semana fácil, mas minha alimentação é bem bagunçada",
-        "trainer_2": "ISSO! 3x/semana é PERFEITO pro começo! Com seus dados aqui na plataforma — sua rotina, sono, alimentação real — meu sistema vai entender tudo. Não vou chutar números aleatório. Vou ver que você dorme quanto, que treina quando, aí sim construo um plano que funciona PRO SEU CONTEXTO. Nutrição bagunçada? A gente organiza junto, dia a dia. Vamo começar a registrar seus dados e EVOLUIR de verdade, mano! 💪"
-      }
-    },
-    "plans": {
-      "title": "Escolha seu Plano",
-      "subtitle": "Planos flexíveis para todos. Cancele quando quiser.",
-      "button": "Experimentar Grátis",
-      "recommended": "Recomendado",
-      "per_month": "/mês",
-      "items": {
-        "free": {
-          "name": "Gratuito",
-          "description": "Para conhecer a plataforma",
-          "button": "Começar Grátis",
-          "features": [
-            "Acesso apenas ao treinador Breno",
-            "Treinos e Análises",
-            "20 mensagens por dia",
-            "Válido por 7 dias"
-          ]
-        },
-        "basic": {
-          "name": "Basic",
-          "description": "Para quem quer iniciar seriamente",
-          "button": "Selecionar",
-          "features": [
-            "Acesso a todos os treinadores",
-            "Treinos e Análises",
-            "100 mensagens por mês"
-          ]
-        },
-        "pro": {
-          "name": "Pro",
-          "description": "Para resultados consistentes",
-          "button": "Selecionar",
-          "features": [
-            "Acesso a todos os treinadores",
-            "Treinos e Análises",
-            "300 mensagens por mês"
-          ]
-        },
-        "premium": {
-          "name": "Premium",
-          "description": "Para atletas mais exigentes",
-          "button": "Selecionar",
-          "features": [
-            "Acesso a todos os treinadores",
-            "Treinos e Análises",
-            "1000 mensagens por mês"
-          ]
-        }
-      },
-      "total": "/total"
-    },
-    "subscription": {
-      "payment_success_message": "Pagamento realizado com sucesso! Bem-vindo ao time FityQ.",
-      "payment_cancelled_message": "O processo de pagamento foi interrompido. Você pode tentar novamente quando quiser."
-    }
-  },
   "settings": {
-    "profile_title": "Perfil do Usuário",
-    "profile_subtitle": "Gerencie suas informações pessoais e objetivos",
-    "identity": "Identidade",
-    "display_name": "Nome Exibido",
-    "display_name_placeholder": "Seu nome para o app e treinador",
-    "email": "Email",
-    "age": "Idade",
+    "title": "Configurações",
+    "subtitle": "Gerencie sua conta e preferências",
     "gender": "Gênero",
-    "height": "Altura (cm)",
-    "goals_title": "Metas & Objetivos",
-    "goal_type": "Tipo de Objetivo",
-    "goal_lose": "Perder Peso",
-    "goal_gain": "Ganhar Massa",
-    "goal_maintain": "Manter Peso",
-    "weekly_rate": "Meta Semanal",
-    "target_weight": "Peso Alvo (kg)",
-    "save_changes": "Salvar Alterações",
-    "saving": "Salvando...",
-    "update_success": "Perfil atualizado com sucesso!",
-    "update_error": "Erro ao atualizar perfil",
-    "language": "Idioma",
-    "language_pt": "Português (Brasil)",
-    "language_es": "Español (España)",
-    "language_en": "English (United States)",
-    "kg_week": "kg/semana",
-    "recommended": "recomendado",
-    "maximum": "máximo",
-    "subscription": {
-      "title": "Assinatura",
-      "subtitle": "Gerencie seu plano e pagamentos",
-      "active": "Plano Atual",
-      "upgrade": "Selecionar",
-      "unavailable": "Indisponível",
-      "manage_title": "Assinatura Ativa",
-      "manage_subtitle": "Gerencie sua cobrança e faturas no portal Stripe.",
-      "manage_button": "Gerenciar Cobrança",
-      "error": "Erro ao iniciar pagamento. Verifique suas configurações.",
-      "portal_error": "Erro ao abrir portal de cobrança."
+    "height": "Altura",
+    "name": "Nome",
+    "profile": {
+      "title": "Perfil do Usuário",
+      "subtitle": "Gerencie suas informações pessoais e objetivos",
+      "personal_info": "Informações Pessoais",
+      "name": "Nome",
+      "change_photo": "Trocar Foto",
+      "identity": "Identidade",
+      "goals": "Metas & Objetivos",
+      "goal_type": "Tipo de Objetivo",
+      "weekly_rate": "Meta Semanal",
+      "target_weight": "Peso Alvo",
+      "save_success": "Perfil atualizado com sucesso!",
+      "save_error": "Erro ao atualizar perfil",
+      "load_error": "Erro ao carregar perfil",
+      "photo_success": "Foto atualizada com sucesso!",
+      "photo_error": "Erro ao atualizar foto"
     },
+    "language": "Idioma",
+    "language_pt": "Português",
+    "language_en": "English",
+    "language_es": "Español",
     "tabs": {
       "profile": "Perfil Pessoal",
       "subscription": "Assinatura",
@@ -408,493 +82,500 @@
       "trainer": "Treinador AI",
       "integrations": "Integrações"
     },
-    "title": "Configurações",
-    "subtitle": "Gerencie seu perfil e preferências do app.",
-    "trainer": {
-      "title": "Personal Trainer AI",
-      "subtitle": "Escolha a personalidade do seu treinador virtual",
-      "update_success": "Treinador atualizado com sucesso!",
-      "update_error": "Erro ao atualizar treinador",
-      "load_error": "Não foi possível carregar os treinadores disponíveis.",
-      "retry": "Tentar Novamente",
-      "save_button": "Atualizar Treinador",
-      "saving": "Salvando..."
+    "subscription": {
+      "title": "Assinatura",
+      "subtitle": "Gerencie seu plano e pagamentos",
+      "active": "Plano Ativo",
+      "change_plan": "Mudar Plano",
+      "upgrade": "Fazer Upgrade",
+      "manage_button": "Gerenciar Assinatura",
+      "manage_title": "Portal de Pagamento",
+      "manage_subtitle": "Redirecionando para o Stripe...",
+      "unavailable": "Plano indisponível no momento",
+      "error": "Erro ao carregar planos",
+      "portal_error": "Erro ao abrir portal de pagamento"
     },
     "integrations": {
+      "shared": {
+        "active": "Ativo: {{key}}",
+        "remove": "Remover",
+        "copy_success": "Copiado!",
+        "copy_error": "Erro ao copiar",
+        "connected": "Conectado"
+      },
       "hevy": {
+        "sync_button": "Sincronizar",
+        "hevy_placeholder": "Chave API",
         "title": "Hevy",
-        "subtitle": "Sincronização automática de treinos.",
-        "hevy_placeholder": "Cole sua chave API do Hevy aqui",
-        "save_success": "Chave da Hevy salva com sucesso!",
-        "save_error": "Erro ao salvar chave da Hevy.",
-        "sync_success": "Sincronização concluída! Importados: {{imported}}, Ignorados: {{skipped}}",
-        "sync_error": "Erro ao sincronizar Hevy.",
-        "remove_success": "Integração Hevy removida com sucesso!",
-        "remove_error": "Erro ao remover integração Hevy.",
-        "sync_button": "Sincronizar Agora",
-        "last_sync": "Última sincronização: {{date}}",
-        "webhook_title": "Webhook para Sincronização Automática",
+        "subtitle": "Sincronize seus treinos automaticamente",
+        "save_success": "Chave Hevy salva!",
+        "save_error": "Erro ao salvar chave Hevy",
+        "sync_success": "Treinos sincronizados!",
+        "sync_error": "Erro na sincronização",
+        "remove_success": "Hevy desconectado",
+        "remove_error": "Erro ao desconectar Hevy",
+        "webhook_success": "Webhook configurado!",
+        "webhook_error": "Erro no webhook",
+        "webhook_revoke_success": "Webhook removido!",
+        "webhook_revoke_error": "Erro ao remover webhook",
+        "webhook_title": "Hevy Webhook",
         "webhook_setup": "Configurar Webhook",
         "webhook_url": "URL do Webhook",
-        "webhook_auth": "Auth Header",
-        "webhook_warning": "⚠️ Copie agora - não será mostrado novamente",
-        "webhook_revoke": "Revogar Webhook",
-        "webhook_success": "Webhook gerado com sucesso!",
-        "webhook_revoke_success": "Webhook revogado com sucesso!",
-        "webhook_error": "Erro ao gerar webhook.",
-        "webhook_revoke_error": "Erro ao revogar webhook."
+        "webhook_revoke": "Revogar Webhook"
       },
       "telegram": {
+        "connected": "Conectado: {{username}}",
         "title": "Telegram Bot",
-        "subtitle": "Receba notificações e logs rápidos pelo chat.",
-        "connected": "Conectado como @{{username}}",
-        "ready": "O bot está pronto para enviar alertas.",
-        "notifications_title": "Receber análise de treinos:",
-        "notifications_item_title": "Análise Automática de Treinos",
-        "notifications_item_desc": "Receba análise da IA quando sincronizar treinos da Hevy",
-        "notification_update_success": "Preferência de notificação atualizada!",
-        "notification_update_error": "Erro ao atualizar preferência de notificação.",
-        "send_code": "Envie este código para o nosso bot:",
-        "open_bot": "Abrir Bot no Telegram",
-        "generate_code": "Gerar Código de Conexão",
-        "generate_error": "Erro ao gerar código do Telegram."
+        "subtitle": "Interaja via chat no Telegram",
+        "generate_error": "Erro ao gerar código",
+        "notification_update_success": "Preferências atualizadas!",
+        "notification_update_error": "Erro ao atualizar preferências",
+        "ready": "Bot pronto!",
+        "notifications_title": "Notificaciones",
+        "notifications_item_title": "Alertas de Treino",
+        "notifications_item_desc": "Receba lembretes via Telegram",
+        "send_code": "Enviar código para o bot",
+        "open_bot": "Abrir Bot",
+        "generate_code": "Gerar Código"
       },
       "imports": {
+        "success": "Importado! Criados: {{created}}",
+        "error": "Erro na importação",
+        "errors_found": "Alguns erros foram encontrados",
         "title": "Importação de Dados",
-        "subtitle": "Importe históricos de outros apps.",
-        "mfp_desc": "Importe seus logs de nutrição exportados do MFP.",
-        "zepp_desc": "Importe histórico de peso e composição corporal.",
-        "click_to_select": "Clique para selecionar CSV",
-        "processing": "Processando arquivo...",
-        "success": "Importação concluída! Criados: {{created}}, Atualizados: {{updated}}",
-        "errors_found": "{{count}} erros encontrados durante a importação.",
-        "error": "Erro ao importar arquivo."
-      },
-      "shared": {
-        "active": "Integração ativa. Chave: {{key}}",
-        "remove": "Remover",
-        "connected": "Conectado",
-        "copy_success": "Copiado para a área de transferência!",
-        "copy_error": "Erro ao copiar."
+        "mfp_desc": "Importar do MyFitnessPal",
+        "click_to_select": "Clique para selecionar arquivo",
+        "zepp_desc": "Importar do Zepp Life",
+        "processing": "Processando...",
+        "waiting_desc": "Aguardando processamento"
       }
+    },
+    "trainer": {
+      "title": "Treinador AI",
+      "subtitle": "Personalize seu mentor",
+      "update_success": "Treinador atualizado!",
+      "update_error": "Erro ao atualizar treinador",
+      "save_button": "Salvar Treinador",
+      "load_error": "Erro ao carregar treinadores",
+      "retry": "Tentar novamente",
+      "saving": "Salvando..."
     }
-  },
-  "dashboard": {
-    "greeting": "Bom dia, {{name}}!",
-    "summary_subtitle": "Aqui está o resumo do seu desempenho metabólico e físico.",
-    "confidence": "Aprendizado da IA",
-    "confidence_level": {
-      "none": "---",
-      "high": "Alta",
-      "medium": "Média",
-      "low": "Baixa",
-      "unknown": "Desconhecida"
-    },
-    "daily_target": "Meta Diária",
-    "focus": "Foco: {{goal}}",
-    "tdee_real": "Gasto Diário Real",
-    "weekly_trend": "Progresso Real",
-    "trend_disclaimer": "* O Progresso Real usa algoritmos para filtrar flutuações diárias de peso, garantindo maior precisão na sua meta.",
-    "suggested_macros": "Macros Sugeridos",
-    "protein": "Proteína",
-    "fat": "Gordura",
-    "carbs": "Carboidrato",
-    "consistency": "Consistência",
-    "consistency_subtitle": "Qualidade dos seus registros recentes.",
-    "body_composition": "Composição Corporal",
-    "current_weight": "Peso Atual",
-    "body_fat": "Gordura Corporal",
-    "muscle_mass": "Massa Muscular",
-    "chart": {
-      "weight": "Peso",
-      "trend": "Progresso Real",
-      "fat": "Gordura",
-      "muscle": "Músculo"
-    },
-    "recent_activity": "Atividade Recente",
-    "no_activity": "Nenhuma atividade recente.",
-    "insufficient_strength_data": "Dados de força insuficientes",
-    "volume_history_unavailable": "Histórico de volume indisponível.",
-    "goals_status": "{{completed}} de {{target}} metas atingidas",
-    "calories_today": "Calorias Hoje",
-    "target_kcal": "Meta: {{target}} kcal",
-    "goals": {
-      "lose": "Perda de Peso",
-      "gain": "Ganho de Massa",
-      "maintain": "Manutenção"
-    },
-    "streak": "Sequência",
-    "streak_w": "w",
-    "streak_d": "d",
-    "frequency_title": "Frequência Semanal",
-    "frequency_subtitle": "Consistência de Treino",
-    "volume_trend_title": "Tendência de Volume",
-    "volume_trend_subtitle": "Últimas 8 semanas",
-    "volume_label": "Volume Total",
-    "strength_radar_title": "Balanço de Força",
-    "strength_radar_subtitle": "Equilíbrio por Categoria",
-    "radar_push": "Empurrar",
-    "radar_pull": "Puxar",
-    "radar_legs": "Pernas",
-    "radar_core": "Core",
-    "radar_strength": "Força Relativa",
-    "recent_prs_title": "Recordes Pessoais",
-    "reps": "{{count}} reps",
-    "weight_unit": "kg",
-    "no_prs_yet": "Nenhum recorde ainda",
-    "no_workouts_yet": "Nenhum treino esta semana",
-    "no_data_yet": "Sem dados para exibir",
-    "pr_label": "PR",
-    "weekly_days": [
-      "S",
-      "T",
-      "Q",
-      "Q",
-      "S",
-      "S",
-      "D"
-    ],
-    "week_short": "S{{count}}",
-    "pr_label": "PR",
-    "tour": {
-      "home_title": "O Centro de Comando",
-      "home_desc": "O Dashboard é onde você acompanha seu resumo geral de saúde. Mostramos as análises mais valiosas e sua consistência.",
-      "trainer_title": "Seu Treinador IA (24/7)",
-      "trainer_desc": "Aba do Chat. Mande e-mails ou mensagens para ajustar sua rotina, pedir dicas alimentares ou simplesmente conversar. Ele tem memória da sua jornada!",
-      "workouts_title": "Análise de Treinos Avançada",
-      "workouts_desc": "Explore seu volume semanal e veja gráficos impressionantes da sua progressão em força ao longo do tempo.",
-      "body_title": "Corpo & Nutrição",
-      "body_desc": "Entenda sua verdadeira composição corporal e acompanhe seus diários alimentares. Seu metabolismo é o motor do processo!",
-      "settings_title": "Integrações Mágicas",
-      "settings_desc": "É crucial você conectar seus Apps (como o Hevy) ou relógios nas Configurações para que o FityQ trabalhe 100% no automático.",
-      "next": "Próximo",
-      "prev": "Anterior",
-      "skip": "Pular Tour",
-      "finish": "Começar"
-    },
-    "empty_states": {
-      "weight_title": "Registre seu Primeiro Peso",
-      "weight_desc": "Precisamos do seu peso inicial para que a IA comece a entender o seu metabolismo.",
-      "action_weight": "Registrar Peso",
-      "activity_title": "Vamos entrar em ação?",
-      "activity_desc": "Sincronize o app Hevy ou adicione um treino manualmente para ver suas análises.",
-      "action_activity": "Conectar Apps",
-      "radar_title": "Radar de Força",
-      "radar_desc": "Registre alguns treinos para ver o equilíbrio da sua força muscular.",
-      "volume_title": "Tendência de Volume",
-      "volume_desc": "Seu progresso de carga ao longo das semanas aparecerá aqui."
-    },
-    "ai_welcome": {
-      "title": "Mensagem do Treinador",
-      "input_placeholder": "Responda ao {{trainer}}...",
-      "daily_win": "Primeira vitória do dia! Continue assim.",
-      "setup_hint": "Conecte sua conta Hevy para sincronizar treinos automaticamente."
-    }
-  },
-  "login": {
-    "title": "Login",
-    "subtitle": "Seja bem-vindo ao futuro do treinamento.",
-    "email_label": "Endereço de Email",
-    "email_placeholder": "nome@exemplo.com",
-    "password_label": "Senha",
-    "password_placeholder": "Sua senha secreta",
-    "forgot_password": "Esqueceu a senha?",
-    "submit": "Entrar",
-    "marketing_title": "Eleve sua Performance com Inteligência Artificial.",
-    "marketing_subtitle": "Acompanhamento completo de dieta, treinos e metabolismo em uma única plataforma premium.",
-    "welcome_back": "Bem-vindo de volta!",
-    "error_message": "Falha no login. Verifique suas credenciais.",
-    "invalid_credentials": "Email ou senha incorretos.",
-    "enter_email_first": "Por favor, digite seu e-mail primeiro.",
-    "password_reset_sent": "E-mail de redefinição de senha enviado com sucesso!",
-    "or_continue_with": "Ou continue com",
-    "brand_tagline": "I.A. x Fitness",
-    "register_tab": "Cadastrar",
-    "register_title": "Crie sua Conta",
-    "register_subtitle": "Comece sua jornada fitness hoje mesmo.",
-    "register_submit": "Criar Conta",
-    "account_created": "Conta criada com sucesso!",
-    "email_already_in_use": "Este email já está em uso por outra conta.",
-    "weak_password": "A senha digitada é muito fraca.",
-    "confirm_password_label": "Confirmar Senha"
-  },
-  "validation": {
-    "email_invalid": "Email inválido",
-    "invalid_age": "Idade inválida",
-    "password_min": "A senha deve ter pelo menos 6 caracteres",
-    "field_required": "{{field}} é obrigatório",
-    "invalid_type_number": "O {{field}} deve ser um número",
-    "number_min": "{{field}} deve ser ao menos {{min}}",
-    "number_max": "{{field}} deve ser no máximo {{max}}",
-    "number_min": "{{field}} deve ser ao menos {{min}}",
-    "number_max": "{{field}} deve ser no máximo {{max}}",
-    "max_chars": "Máximo de {{max}} caracteres",
-    "passwords_dont_match": "As senhas não coincidem"
-  },
-  "nutrition": {
-    "title": "Nutrição",
-    "subtitle": "Abasteça seu corpo para o máximo desempenho.",
-    "import": "Importar",
-    "register_meal": "Registrar Refeição",
-    "today_progress": "Progresso de Hoje",
-    "history_title": "Histórico",
-    "calories": "Calorias",
-    "proteins": "Proteínas",
-    "carbs": "Carboidratos",
-    "fats": "Gorduras",
-    "adherence_title": "Aderência",
-    "stability_score": "Score de Estabilidade",
-    "consistency": "Consistência",
-    "stability_description": "Baseado na sua variação calórica dos últimos 14 dias. Manter estabilidade é chave para prever resultados.",
-    "weekly_days": [
-      "D",
-      "S",
-      "T",
-      "Q",
-      "Q",
-      "S",
-      "S"
-    ],
-    "delete_confirm_title": "Excluir Registro",
-    "delete_confirm_message": "Tem certeza que deseja excluir este registro nutricional? Os dados de hoje serão atualizados.",
-    "delete_confirm_btn": "Excluir",
-    "delete_success": "Registro excluído com sucesso!",
-    "delete_error": "Erro ao excluir registro.",
-    "empty_history_title": "Nenhum registro encontrado.",
-    "empty_history_desc": "Seus registros nutricionais aparecerão aqui.",
-    "view_charts": "Ver Gráficos",
-    "protein_short": "Proteína",
-    "fat_short": "Gordura",
-    "carbs_short": "Carboidratos"
-  },
-  "workouts": {
-    "title": "Meus Treinos",
-    "subtitle": "Acompanhe sua evolução e mantenha a consistência.",
-    "new_workout": "Novo Treino",
-    "search_placeholder": "Buscar por tipo ou exercício...",
-    "empty_title": "Nenhum registro encontrado.",
-    "empty_desc": "Seus treinos aparecerão aqui.",
-    "empty_search_desc": "Não encontramos resultados para sua busca.",
-    "delete_confirm_title": "Excluir Treino",
-    "delete_confirm_message": "Tem certeza que deseja excluir este registro de treino? Esta ação não pode ser desfeita.",
-    "delete_confirm_btn": "Excluir",
-    "delete_success": "Treino excluído com sucesso!",
-    "delete_error": "Erro ao excluir treino.",
-    "general_training": "Treino Geral"
-  },
-  "memories": {
-    "title": "Memórias do Treinador",
-    "subtitle": "Conhecimentos que seu treinador acumulou sobre você.",
-    "total_insights": "Total de Insights",
-    "what_are_memories": "O que são memórias?",
-    "description": "Seu treinador utiliza estas informações para personalizar sugestões de treino, ajustar seus macros e entender seus objetivos. Elas são extraídas automaticamente das suas conversas e logs.",
-    "empty_title": "Nenhuma memória encontrada.",
-    "ai_memory": "Memória AI",
-    "delete_confirm_title": "Excluir Memória",
-    "delete_confirm_message": "Esta informação será removida permanentemente do conhecimento do seu treinador. Deseja continuar?",
-    "delete_confirm_btn": "Excluir",
-    "delete_success": "Memória removida com sucesso!",
-    "delete_error": "Erro ao remover memória.",
-    "previous": "Anterior",
-    "next": "Próximo",
-    "processing_warning": "As memórias são processadas de forma assíncrona e podem levar alguns minutos para aparecer após uma conversa."
-  },
-  "chat": {
-    "welcome_message": "Bem-vindo ao FityQ! Eu sou seu treinador e parceiro nessa jornada. Para montarmos o plano perfeito para você, me conte: Qual é a sua maior dificuldade para manter o foco hoje? Quantos dias na semana você pretende treinar? Estou pronto para começar!",
-    "default_trainer_name": "Treinador AI",
-    "start_conversation": "Inicie sua conversa",
-    "typing": "{{name}} digitando...",
-    "input_placeholder": "Mensagem para {{name}}...",
-    "disclaimer": "O Treinador pode cometer erros. Considere verificar informações importantes.",
-    "messages_remaining": "{{count}} mensagens restantes hoje",
-    "trial_ended": {
-      "title": "Seu período gratuito acabou",
-      "description": "Você aproveitou seus 7 dias de teste. Para continuar recebendo orientações personalizadas, faça o upgrade para um de nossos planos."
-    },
-    "daily_limit": {
-      "title": "Limite diário atingido",
-      "description": "Você atingiu o limite de 20 mensagens diárias. Amanhã você terá mais 20, ou remova os limites agora assinando um plano."
-    },
-    "upgrade_button": "Fazer Upgrade Agora",
-    "wait_tomorrow": "Voltar Amanhã"
   },
   "body": {
+    "weight_title": "Peso & Composição",
     "nutrition_title": "Dieta & Macros",
-    "weight_title": "Peso & Corpo",
-    "nutrition_subtitle": "Acompanhe sua ingestão calórica e macronutrientes diários.",
-    "weight_subtitle": "Gerencie seu histórico de peso e composição corporal.",
-    "nutrition": {
-      "edit_title": "Editando Registro",
-      "register_title": "Registrar Dieta",
-      "cancel": "Cancelar",
-      "date": "Data",
-      "calories": "Calorias (kcal)",
-      "calories_placeholder": "Ex: 2100",
-      "protein": "Proteínas (g)",
-      "carbs": "Carboidratos (g)",
-      "fat": "Gorduras (g)",
-      "save": "Salvar Registro",
-      "edit": "Editar registro",
-      "delete": "Excluir registro",
-      "day": "dia",
-      "optional": "(opcional)",
-      "history_title": "Histórico Recente",
-      "empty_title": "Nenhum registro encontrado.",
-      "empty_desc": "Seus registros nutricionais aparecerão aqui.",
-      "notifications": {
-        "load_logs_error": "Erro ao carregar logs nutricionais.",
-        "load_stats_error": "Erro ao carregar estatísticas nutricionais.",
-        "save_success": "Registro nutricional salvo!",
-        "save_error": "Erro ao salvar registro nutricional.",
-        "delete_success": "Registro removido.",
-        "delete_error": "Erro ao remover registro."
-      }
-    },
+    "weight_subtitle": "Gerencie seu histórico de peso e evolução corporal.",
+    "nutrition_subtitle": "Acompanhe sua ingestão calórica e macronutrientes.",
     "weight": {
-      "edit_title": "Editando Registro",
-      "register_title": "Registrar Peso",
-      "date": "Data",
-      "save": "Salvar Registro",
-      "cancel": "Cancelar",
       "history_title": "Histórico Recente",
-      "empty_title": "Nenhum registro encontrado.",
-      "weight": "Peso (kg)",
-      "body_fat": "Gordura Corporal (%)",
-      "muscle_mass": "Massa Muscular (kg)",
-      "body_water": "Água Corporal (%)",
-      "bone_mass": "Massa Óssea (kg)",
-      "visceral_fat": "Gordura Visceral",
-      "bmr": "TMB (kcal)",
-      "notes": "Observações",
-      "notes_placeholder": "Ex: Pesagem após acordar, em jejum.",
-      "empty_desc": "Seus registros de peso aparecerão aqui.",
-      "measurements_title": "Medidas Corporais (cm)",
-      "neck": "Pescoço",
-      "chest": "Peito",
-      "waist": "Cintura",
-      "hips": "Quadril",
-      "bicep_r": "Bíceps (D)",
-      "bicep_l": "Bíceps (E)",
-      "thigh_r": "Coxa (D)",
-      "thigh_l": "Coxa (E)",
-      "calf_r": "Panturrilha (D)",
-      "calf_l": "Panturrilha (E)",
+      "register_weight": "Registrar Peso",
+      "empty_history": "Nenhum peso registrado.",
+      "weight": "Peso",
+      "chart_title": "Evolução de Peso",
       "record_details": "Detalhes do Registro",
-      "registered_weight": "Peso Registrado",
-      "trend": "Progresso Real",
       "composition_title": "Composição Corporal",
-      "measurements_short_title": "Medidas (cm)",
-      "details_title": "Detalhes:",
-      "water_short": "Água",
-      "bone_short": "Óssea",
-      "visceral_short": "Visceral",
-      "bmr_short": "TMB",
-      "neck_short": "Pescoço",
-      "chest_short": "Peito",
-      "waist_short": "Cintura",
-      "hips_short": "Quadril",
-      "bicep_short": "Bíceps",
-      "thigh_short": "Coxa",
-      "calf_short": "Panturrilha",
-      "right_short": "D",
-      "left_short": "E",
+      "body_fat": "Gordura",
+      "muscle_mass": "Massa Muscular",
+      "visceral_fat": "Gordura Visceral",
+      "water": "Água",
+      "body_water": "Água Corporal",
+      "bone_mass": "Massa Óssea",
+      "bmr": "Metabolismo Basal",
+      "notes": "Notas",
+      "notes_placeholder": "Como foi seu dia? Alguma observação?",
+      "neck": "Pescoço (cm)",
+      "chest": "Peito (cm)",
+      "waist": "Cintura (cm)",
+      "hips": "Quadril (cm)",
+      "bicep_r": "Bíceps D (cm)",
+      "bicep_l": "Bíceps E (cm)",
+      "thigh_r": "Coxa D (cm)",
+      "thigh_l": "Coxa E (cm)",
+      "calf_r": "Panturrilha D (cm)",
+      "calf_l": "Panturrilha E (cm)",
       "notifications": {
-        "load_error": "Erro ao carregar dados de peso.",
+        "load_error": "Erro ao carregar pesos",
         "save_success": "Registro de peso salvo!",
         "save_error": "Erro ao salvar registro de peso.",
         "delete_success": "Registro removido.",
         "delete_error": "Erro ao remover registro."
       }
     },
+    "nutrition": {
+      "edit_title": "Editar Refeição",
+      "register_title": "Registrar Refeição",
+      "record_details": "Detalhes da Refeição",
+      "date": "Data",
+      "calories": "Calorias",
+      "protein": "Proteína",
+      "carbs": "Carboidratos",
+      "fat": "Gordura",
+      "save": "Salvar Refeição",
+      "macros_breakdown": "Distribuição de Macros",
+      "delete_confirm_title": "Excluir Refeição",
+      "delete_confirm_message": "Deseja remover este registro de refeição?",
+      "delete_confirm_btn": "Excluir",
+      "delete_success": "Refeição removida!",
+      "delete_error": "Erro ao remover refeição.",
+      "notifications": {
+        "load_logs_error": "Erro ao carregar refeições",
+        "load_stats_error": "Erro ao carregar estatísticas",
+        "save_success": "Refeição salva!",
+        "save_error": "Erro ao salvar refeição",
+        "delete_success": "Refeição removida!",
+        "delete_error": "Erro ao remover refeição"
+      }
+    },
     "metabolism": {
-      "current_tdee": "TDEE Atual",
-      "tdee_subtitle": "Gasto Energético Total",
-      "metabolic_rate": "Taxa Metabólica",
-      "recommended_goal": "Meta Recomendada",
-      "focus": "Foco: {{goal}}",
-      "change_rate": "Taxa de Variação",
-      "avg_per_week": "Média por semana",
-      "analysis_title": "Análise Metabólica",
-      "avg_balance": "Déficit/Superávit Médio",
-      "analysis_duration": "Duração da Análise",
-      "weeks": "{{count}} sem",
-      "weeks_plural": "{{count}} semanas",
       "tdee_label": "Gasto Diário",
-      "trend_label": "Tendência",
-      "confidence_label": "Nível de Aprendizado da IA",
-      "info_desc": "Seu Gasto Diário Real é calculado comparando sua ingestão calórica com a variação na sua Curva de Progresso Real. Quanto mais consistente você for nos registros, mais inteligente a IA se torna.",
-      "plan_title": "Plano Sugerido",
-      "insufficient_data": "Precisamos de pelo menos 7 dias de registros consistentes para gerar um plano sugerido.",
-      "plan_desc": "Para atingir seu objetivo de {{goal}}, sugerimos manter uma ingestão de {{target}} kcal diárias.",
-      "data_quality": "Qualidade dos Dados",
+      "trend_label": "Taxa Peso",
+      "avg_balance": "Balanço Médio",
       "general_consistency": "Consistência Geral",
       "caloric_stability": "Estabilidade Calórica",
-      "suggested_consumption": "Consumo Sugerido",
-      "confidence": {
-        "high": "Alta Confiança",
-        "medium": "Confiança Média",
-        "low": "Poucos Dados",
-        "none": "Dados Insuficientes"
-      },
+      "info_desc": "Análise baseada nos dados das últimas 3 semanas.",
       "goals": {
         "lose": "Perda de Peso",
         "gain": "Ganho de Massa",
         "maintain": "Manutenção"
-      },
-      "notifications": {
-        "load_error": "Erro ao carregar dados metabólicos."
       }
     }
   },
+  "dashboard": {
+    "greeting": "Bom dia, {{name}}!",
+    "summary_subtitle": "Resumo do seu desempenho metabólico e físico.",
+    "daily_target": "Meta Diária",
+    "confidence": "Confiança IA",
+    "recent_activity": "Atividade Recente",
+    "chart": {
+      "weight": "Evolução de Peso",
+      "fat": "Índice de Gordura",
+      "muscle": "Massa Muscular",
+      "trend": "Tendência de Peso"
+    },
+    "weekly_days": ["S", "T", "Q", "Q", "S", "S", "D"],
+    "streak": "Sequência",
+    "streak_w": "semanas",
+    "streak_d": "dias",
+    "recent_prs_title": "Recordes Pessoais",
+    "recent_prs_subtitle": "Sua evolução em força",
+    "no_prs_yet": "Nenhum recorde ainda. Continue treinando!",
+    "pr_label": "PR",
+    "reps": "reps",
+    "weight_unit": "kg",
+    "strength_radar_title": "Equilíbrio de Força",
+    "strength_radar_subtitle": "Distribuição por grupamento",
+    "volume_trend_title": "Volume Semanal",
+    "volume_trend_subtitle": "Carga total levantada",
+    "volume_label": "Volume (kg)",
+    "volume_history_unavailable": "Histórico de volume indisponível",
+    "frequency_title": "Frequência",
+    "frequency_subtitle": "Treinos nos últimos 7 dias",
+    "no_workouts_yet": "Nenhum treino esta semana",
+    "no_data_yet": "Aguardando dados...",
+    "radar_push": "Empurar",
+    "radar_pull": "Puxar",
+    "radar_legs": "Pernas",
+    "radar_core": "Core",
+    "radar_strength": "Força",
+    "insufficient_strength_data": "Dados insuficientes",
+    "week_short": "Sem",
+    "confidence_level": {
+      "none": "Iniciante",
+      "high": "Alta",
+      "medium": "Média",
+      "low": "Baixa",
+      "unknown": "Desconhecido"
+    }
+  },
+  "chat": {
+    "typing": "Digitando...",
+    "input_placeholder": "Fale com seu treinador...",
+    "online_now": "Online agora",
+    "start_conversation": "Começar conversa",
+    "default_trainer_name": "Treinador AI",
+    "welcome_message": "Olá! Como posso te ajudar hoje?",
+    "upgrade_button": "Fazer Upgrade",
+    "trial_ended": {
+      "title": "Teste Grátis Encerrado",
+      "description": "Você atingiu o limite de mensagens do plano gratuito."
+    },
+    "daily_limit": {
+      "title": "Limite Diário Atingido",
+      "description": "Você atingiu seu limite de mensagens para hoje."
+    }
+  },
   "onboarding": {
-    "validating": "Validando convite...",
-    "error_title": "Erro no Cadastro",
-    "step_1_title": "Criar Senha",
     "step_2_title": "Seu Perfil",
-    "step_plan_title": "Escolha seu Plano",
-    "plan_free_badge": "Gratuito",
-    "plan_free_desc": "Inicie com 20 mensagens por dia durante 7 dias para testar a plataforma.",
-    "free_plan_trainer_hint": "No plano gratuito o acesso é limitado ao treinador Gymbro. Mude seu plano para liberar outros treinadores após o Onboarding nas configurações.",
-    "step_3_title": "Escolha seu Treinador",
-    "integrations_title": "Turbine sua Evolução",
-    "integrations_desc": "Conecte seus apps para que seu treinador conheça seu histórico real e otimize seus resultados.",
-    "integrations_hevy_desc": "Sincronize seus treinos automaticamente.",
-    "integrations_hevy_hint": "No app Hevy: Perfil > Configurações > Hevy API.",
-    "integrations_csv_title": "Outros APPs (MFP, Zepp Life)",
-    "integrations_csv_desc": "Você pode importar seu histórico de macros e peso via CSV.",
-    "integrations_settings_hint": "Tudo isso pode ser configurado depois em: Configurações > Integrações.",
-    "password_placeholder": "Senha",
-    "confirm_password_placeholder": "Confirmar Senha",
-    "password_hint": "Mínimo 8 caracteres, números e letras (maiúsculas e minúsculas).",
-    "age": "Idade",
-    "age_placeholder": "Anos",
-    "weight_placeholder": "kg",
-    "height_placeholder": "cm",
-    "back": "Voltar",
-    "next": "Próximo",
-    "finish": "Finalizar Cadastro",
-    "success_title": "Tudo Pronto!",
-    "success_desc": "Seja bem-vindo, {{name}}! Seu perfil foi configurado e o treinador {{trainer}} já está te aguardando no Dashboard para começar sua transformação.",
-    "go_to_dashboard": "Ir para o Dashboard",
+    "step_2_subtitle": "Configuração biológica inicial",
+    "step_plan_title": "Plano de Jornada",
+    "step_plan_subtitle": "Escolha seu nível de acesso",
+    "step_3_title": "Seu Mentor",
+    "step_3_subtitle": "Escolha quem vai te guiar",
+    "integrations_title": "Conectar Apps",
+    "integrations_desc": "Sincronize seus dados reais",
+    "integrations_hevy_desc": "Conecte sua conta do Hevy",
+    "hevy_connected_success": "Hevy conectado!",
+    "hevy_error_connect": "Erro ao conectar Hevy",
+    "import_success": "Importação concluída!",
+    "import_error": "Erro na importação",
+    "error_title": "Erro no Onboarding",
     "tokens": {
-      "not_found": "Token de convite não encontrado.",
-      "expired": "O convite expirou.",
-      "already_used": "Convite já utilizado.",
-      "invalid": "Convite inválido.",
-      "validation_error": "Erro ao validar convite.",
-      "creation_error": "Erro ao criar conta."
+      "invalid": "Token inválido",
+      "validation_error": "Erro ao validar token"
     },
-    "trainers": {
-      "atlas": "Treinador focado em força e intensidade brutal.",
-      "luna": "Foco em bem-estar, yoga e equilíbrio mental.",
-      "sargento": "Disciplina militar. Sem desculpas.",
-      "sofia": "Abordagem científica e baseada em dados.",
-      "gymbro": "Seu parceiro de treino que sempre te bota pra cima!"
+    "errors": {
+      "creation_error": "Erro ao criar perfil"
     },
+    "next": "Próximo",
+    "finish": "Finalizar",
     "genders": {
       "male": "Masculino",
-      "female": "Feminino",
-      "other": "Outro"
+      "female": "Feminino"
+    },
+    "goals": {
+      "maintain": "Manter Peso",
+      "lose": "Perda de Peso",
+      "gain": "Ganho de Massa"
+    },
+    "name_placeholder": "Como quer ser chamado?",
+    "age": "Age",
+    "finish_onboarding": "Finalizar",
+    "success_title": "Bem-vindo!",
+    "success_desc": "Tudo pronto, {{name}}!",
+    "go_to_dashboard": "Ir para Dashboard",
+    "trainers": {
+      "atlas": "Foco em dados e biomecânica.",
+      "luna": "Mindfulness e equilíbrio corporal.",
+      "sargento": "Disciplina extrema. Sem desculpas.",
+      "sofia": "Abordagem científica e feminina.",
+      "gymbro": "Seu parceiro de motivação!"
     }
+  },
+  "workouts": {
+    "title": "Meus Treinos",
+    "subtitle": "Gerencie seu histórico de performance",
+    "register_workout": "Registrar Treino",
+    "edit_workout": "Editar Treino",
+    "empty_title": "Nenhum treino ainda",
+    "empty_desc": "Registre seu primeiro treino para começar a evoluir.",
+    "workout_type": "Tipo de Treino",
+    "duration": "Duração (min)",
+    "exercises": "Exercícios",
+    "delete_confirm_title": "Excluir Treino",
+    "delete_confirm_message": "Tem certeza que deseja remover este registro?",
+    "delete_confirm_btn": "Excluir",
+    "delete_success": "Treino removido!",
+    "delete_error": "Erro ao remover treino.",
+    "search_placeholder": "Buscar treinos..."
+  },
+  "nutrition": {
+    "title": "Nutrição",
+    "subtitle": "Acompanhe sua dieta",
+    "history_title": "Histórico de Refeições",
+    "register_meal": "Registrar Refeição",
+    "calories": "Calorias",
+    "proteins": "Proteínas",
+    "carbs": "Carboidratos",
+    "fats": "Gorduras",
+    "consistency": "Estabilidade",
+    "empty_history_title": "Sem refeições registradas",
+    "import": "Importar dados",
+    "view_charts": "Ver gráficos",
+    "adherence_title": "Aderência",
+    "stability_score": "Estabilidade",
+    "stability_description": "Consistência calórica semanal",
+    "weekly_days": ["S", "T", "Q", "Q", "S", "S", "D"],
+    "delete_confirm_title": "Excluir Refeição",
+    "delete_confirm_message": "Deseja remover este registro de refeição?",
+    "delete_confirm_btn": "Excluir",
+    "delete_success": "Refeição removida!",
+    "delete_error": "Erro ao remover refeição.",
+    "notifications": {
+      "save_success": "Registro nutricional salvo!",
+      "save_error": "Erro ao salvar registro nutricional.",
+      "delete_error": "Erro ao remover registro.",
+      "delete_success": "Registro removido!"
+    }
+  },
+  "memories": {
+    "title": "Memórias AI",
+    "subtitle": "O que a inteligência sabe sobre você",
+    "total_insights": "Total de Insights",
+    "what_are_memories": "O que são memórias?",
+    "description": "Insights capturados durante nossas conversas.",
+    "empty_title": "Nenhuma memória capturada ainda.",
+    "ai_memory": "Memória da IA",
+    "previous": "Anterior",
+    "next": "Próxima",
+    "processing_warning": "Processando novas informações...",
+    "delete_confirm_title": "Esquecer memória",
+    "delete_confirm_message": "Deseja remover este insight da minha base?",
+    "delete_confirm_btn": "Remover",
+    "delete_success": "Memória removida.",
+    "delete_error": "Erro ao remover memória."
+  },
+  "landing": {
+    "comparison": {
+      "title": "Comparativo de Planos",
+      "subtitle": "Por que o FityQ é a escolha superior",
+      "headers": {
+        "fityq": "FitYQ",
+        "personal": "Personal Presencial",
+        "generic": "Apps Genéricos"
+      },
+      "rows": {
+        "price": "Preço",
+        "availability": "Disponibilidade",
+        "memory": "Memória Contextual",
+        "personalization": "Personalização",
+        "integrations": "Integrações"
+      },
+      "values": {
+        "free": "Grátis",
+        "personal_price": "R$ 400+/mês",
+        "generic_price": "R$ 50+/mês",
+        "247": "24/7 Instantâneo",
+        "scheduled": "Agendado",
+        "adaptive_ai": "IA Adaptativa",
+        "high": "Alta",
+        "generic": "Baixa/Nula",
+        "all_apps": "Todos os Apps",
+        "none": "Nenhuma",
+        "limited": "Limitada"
+      }
+    },
+    "hero": {
+      "title": "Seu Treinador IA Pessoal",
+      "title_gradient": "Inteligência que gera Performance",
+      "description": "O único app que integra nutrição, treinos e metabolismo usando memória AI real.",
+      "subtitle": "O Treinador IA que conhece seu corpo melhor que você.",
+      "badge": "Nova Era Fitness",
+      "cta": "Começar Jornada",
+      "daily_goal": "Meta Diária",
+      "macro_protein": "Proteína",
+      "macro_fat": "Gordura",
+      "macro_carbs": "Carbs"
+    },
+    "nav": {
+      "trainers": "Treinadores",
+      "plans": "Planos",
+      "login": "Login",
+      "differentiators": "Diferenciais",
+      "how_it_works": "Como Funciona"
+    },
+    "showcase": {
+      "title": "Tudo em um só lugar",
+      "description": "Visualize sua evolução física e metabólica em tempo real.",
+      "dashboard_title": "Dashboard",
+      "chat_title": "Chat",
+      "meta_calorie_title": "Calorias AI",
+      "accuracy": "Precisão",
+      "weekly_target_title": "Meta Semanal",
+      "vs_previous": "vs anterior",
+      "data_used": "Dados processados",
+      "days_count": "dias",
+      "meta_title": "Metabolismo",
+      "dashboard_desc": "Sua central de comando corporal."
+    },
+    "how": {
+      "title": "Como Funciona",
+      "subtitle": "3 passos para sua melhor versão",
+      "steps": [
+        { "title": "Conecte", "desc": "Sincronize com Hevy ou MFP." },
+        { "title": "Treine", "desc": "Registre suas atividades normalmente." },
+        { "title": "Evolua", "desc": "Receba insights baseados em dados reais." }
+      ]
+    },
+    "diff": {
+      "title": "Differentiators",
+      "subtitle": "Por que o FityQ é diferente?",
+      "features": {
+        "meta": { "title": "Análise Metabólica", "description": "Cálculo real de TDEE e gasto diário." },
+        "vision": { "title": "Visão Computacional", "description": "Analise sua forma via vídeo." },
+        "trainers": { "title": "Personas Reais", "description": "Treinadores com personalidades distintas." },
+        "integrations": { "title": "Ecossistema Aberto", "description": "Conecta seus apps favoritos." },
+        "journey": { "title": "Jornada Adaptativa", "description": "Metas que mudam com seu progresso." },
+        "available": { "title": "Sempre Online", "description": "Seu treinador 24/7 no seu bolso." }
+      }
+    },
+    "trainers": {
+      "title": "Conheça seu Mentor",
+      "description": "Escolha a personalidade que melhor se adapta ao seu estilo.",
+      "talk_with": "Falar com",
+      "profiles": {
+        "atlas": { "tagline": "Performance Pura", "catchphrase": "Os números não mentem.", "specialties": "Biomecânica", "style": "Analítico" },
+        "luna": { "tagline": "Equilíbrio Total", "catchphrase": "Respire e supere.", "specialties": "Bem-estar", "style": "Empático" },
+        "sofia": { "tagline": "Ciência do Esporte", "catchphrase": "Baseado em evidências.", "specialties": "Fisiologia", "style": "Educativo" },
+        "sargento": { "tagline": "Disciplina Máxima", "catchphrase": "Sem desculpas!", "specialties": "Hardcore", "style": "Rigoroso" },
+        "gymbro": { "tagline": "Seu Parceiro", "catchphrase": "Bora pra cima!", "specialties": "Motivação", "style": "Energético" }
+      }
+    },
+    "plans": {
+      "title": "Planos",
+      "subtitle": "Escolha o nível da sua performance",
+      "total": "Total",
+      "per_month": "/mês",
+      "items": {
+        "free": { "name": "Free", "features": ["Chat Básico", "Log de Peso", "Dashboard"] },
+        "basic": { "name": "Basic", "features": ["Memória AI", "Integras", "Análise Macros"] },
+        "pro": { "name": "Pro", "features": ["Todos os Mentores", "TDEE Dinámico", "Suporte"] },
+        "premium": { "name": "Premium", "features": ["Visão Computacional", "Priority AI", "Full Pack"] }
+      }
+    },
+    "faq": {
+      "title": "FAQ",
+      "items": [
+        { "q": "Como funciona a memória AI?", "a": "A IA lembra de cada treino e refeição sua." },
+        { "q": "Posso cancelar a qualquer momento?", "a": "Sim, sem multas ou taxas." }
+      ]
+    },
+    "cta": {
+      "title": "Pronto para evoluir?",
+      "subtitle": "Comece seu teste grátis de 7 dias hoje.",
+      "button": "Criar minha conta",
+      "trial": "Sem compromisso."
+    },
+    "cta_product": "Ver Demo",
+    "cta_trainers": "Escolher Mentor",
+    "chat_carousel": {
+      "title": "Experimente agora",
+      "subtitle": "Simule uma conversa com Sofia ou GymBro"
+    },
+    "sticky_cta": "Começar agora",
+    "subscription": {
+      "payment_success_message": "Pagamento confirmado! Bem-vindo.",
+      "payment_cancelled_message": "Pagamento cancelado."
+    },
+    "footer": {
+      "rights": "© 2026 FitYQ. Todos os direitos reservados."
+    },
+    "trust_badge_free": "Grátis por 7 dias",
+    "trust_badge_card": "Sem cartão",
+    "counters": {
+      "trainers": "Treinadores",
+      "availability": "Disponibilidade",
+      "integrations": "Integrações",
+      "memory": "Memória AI"
+    },
+    "integrations_section": {
+      "title": "Ecossistema Aberto",
+      "subtitle": "Conecte seus dados favoritos",
+      "hevy_desc": "Sincronize seus treinos",
+      "mfp_desc": "Importe suas refeições",
+      "zepp_desc": "Dados de saúde e sono",
+      "coming_soon": "Em breve"
+    }
+  },
+  "validation": {
+    "field_required": "Campo obrigatório",
+    "invalid_type_number": "Deve ser um número",
+    "number_min": "Valor muito baixo",
+    "number_max": "Valor muito alto",
+    "max_chars": "Limite de caracteres atingido"
+  },
+  "errors": {
+    "server_error": "Erro no servidor",
+    "default": "Algo deu errado",
+    "retry": "Tentar novamente"
   }
 }

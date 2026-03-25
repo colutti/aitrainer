@@ -1,4 +1,5 @@
 """Utility functions for Qdrant operations."""
+
 from typing import List, Any
 from qdrant_client import QdrantClient, models as qdrant_models
 

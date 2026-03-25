@@ -154,7 +154,8 @@ class TelegramBotService:
             # 0. Validar mensagem não está vazia
             if not message or not message.strip():
                 logger.warning(
-                    "[Telegram Notification] Skipping - empty message for %s", user_email
+                    "[Telegram Notification] Skipping - empty message for %s",
+                    user_email,
                 )
                 return False
 

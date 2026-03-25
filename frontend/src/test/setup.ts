@@ -62,13 +62,15 @@ const useTranslationMock = {
   i18n: i18nMock,
 };
 
-vi.mock('react-i18next', () => {
+vi.mock('react-i18next', async () => {
+  const React = await import('react');
   return {
     useTranslation: () => useTranslationMock,
     initReactI18next: {
       type: '3rdParty',
       init: vi.fn(),
     },
+    I18nextProvider: ({ children }: any) => React.createElement(React.Fragment, null, children),
     Trans: ({ children, i18nKey }: any) => {
        const keys = typeof i18nKey === 'string' ? i18nKey.split('.') : [];
        let val: any = ptBR;

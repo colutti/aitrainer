@@ -46,7 +46,7 @@ def create_save_workout_tool(database, user_email: str):
 
             workout_id = database.save_workout_log(workout)
             logger.info("Saved workout for %s: %s", user_email, workout_id)
-            date_fmt = log_date.strftime('%d/%m/%Y')
+            date_fmt = log_date.strftime("%d/%m/%Y")
             return f"Treino de {date_fmt} registrado com sucesso! (ID: {workout_id})"
 
         except (ValueError, TypeError, AttributeError) as e:
@@ -126,7 +126,7 @@ def create_get_workouts_tool(database, user_email: str):
                 date_str = w.date.strftime("%d/%m/%Y %H:%M")
                 ex_summary = _format_exercises_summary(w.exercises)
                 duration = f" ({w.duration_minutes}min)" if w.duration_minutes else ""
-                w_type = w.workout_type or 'Treino'
+                w_type = w.workout_type or "Treino"
                 result += f"{i}. [{w_type}] {date_str}{duration}\n"
                 result += f"   Exercícios: {ex_summary}\n\n"
 
@@ -158,7 +158,7 @@ def _format_cardio_exercise(e: ExerciseLog) -> str:
         if all(d == e.distance_meters_per_set[0] for d in e.distance_meters_per_set):
             cardio_parts.append(f"{e.distance_meters_per_set[0] / 1000:.1f}km")
         else:
-            distances = [f"{d/1000:.1f}km" for d in e.distance_meters_per_set]
+            distances = [f"{d / 1000:.1f}km" for d in e.distance_meters_per_set]
             cardio_parts.append(f"distances: {', '.join(distances)}")
 
     if e.duration_seconds_per_set:
@@ -170,7 +170,7 @@ def _format_cardio_exercise(e: ExerciseLog) -> str:
                 fmt = f"{duration_min:.1f}min"
             cardio_parts.append(fmt)
         else:
-            durations = [f"{d/60:.1f}min" for d in e.duration_seconds_per_set]
+            durations = [f"{d / 60:.1f}min" for d in e.duration_seconds_per_set]
             cardio_parts.append(f"times: {', '.join(durations)}")
     return " ".join(cardio_parts)
 

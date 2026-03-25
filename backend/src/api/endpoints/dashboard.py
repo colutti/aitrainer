@@ -52,6 +52,7 @@ def _get_metabolism_stats(db: MongoDatabase, user_email: str) -> MetabolismStats
         macro_targets=tdee_data.get("macro_targets"),
         goal_type=tdee_data.get("goal_type", "maintain"),
         consistency_score=tdee_data.get("consistency_score", 0),
+        stability_score=tdee_data.get("stability_score", 0),
     )
 
 
@@ -64,7 +65,9 @@ def _get_calorie_stats(
     todays_nut = db.get_nutrition_logs_by_date_range(user_email, start, end)
     total_cal = sum(log.calories for log in todays_nut)
     percent = (total_cal / daily_target * 100) if daily_target > 0 else 0
-    return CalorieStats(consumed=total_cal, target=daily_target, percent=round(percent, 1))
+    return CalorieStats(
+        consumed=total_cal, target=daily_target, percent=round(percent, 1)
+    )
 
 
 def _get_workout_analytics(
@@ -113,7 +116,7 @@ def _get_workout_analytics(
         "streak": streak,
         "prs": prs,
         "radar": radar_data,
-        "analytics": analytics
+        "analytics": analytics,
     }
 
 
@@ -125,7 +128,9 @@ def _get_composition_trends(
 
     w_trend = [
         TrendPoint(
-            date=log.date.isoformat() if isinstance(log.date, datetime) else str(log.date),
+            date=log.date.isoformat()
+            if isinstance(log.date, datetime)
+            else str(log.date),
             value=log.trend_weight if log.trend_weight is not None else log.weight_kg,
         )
         for log in logs_asc
@@ -133,10 +138,13 @@ def _get_composition_trends(
 
     fat_hist = [
         TrendPoint(
-            date=log.date.isoformat() if isinstance(log.date, datetime) else str(log.date),
+            date=log.date.isoformat()
+            if isinstance(log.date, datetime)
+            else str(log.date),
             value=log.body_fat_pct,
         )
-        for log in logs_asc if log.body_fat_pct is not None
+        for log in logs_asc
+        if log.body_fat_pct is not None
     ]
 
     fat_trend = []
@@ -144,10 +152,14 @@ def _get_composition_trends(
     for log in logs_asc:
         if log.body_fat_pct is not None:
             ema_fat = tdee_service.calculate_ema_trend(log.body_fat_pct, ema_fat)
-            fat_trend.append(TrendPoint(
-                date=log.date.isoformat() if isinstance(log.date, datetime) else str(log.date),
-                value=ema_fat,
-            ))
+            fat_trend.append(
+                TrendPoint(
+                    date=log.date.isoformat()
+                    if isinstance(log.date, datetime)
+                    else str(log.date),
+                    value=ema_fat,
+                )
+            )
 
     mus_hist = []
     mus_trend = []
@@ -160,22 +172,30 @@ def _get_composition_trends(
             mus_val = round(log.weight_kg * (log.muscle_mass_pct / 100), 2)
 
         if mus_val is not None:
-            mus_hist.append(TrendPoint(
-                date=log.date.isoformat() if isinstance(log.date, datetime) else str(log.date),
-                value=mus_val,
-            ))
+            mus_hist.append(
+                TrendPoint(
+                    date=log.date.isoformat()
+                    if isinstance(log.date, datetime)
+                    else str(log.date),
+                    value=mus_val,
+                )
+            )
             ema_mus = tdee_service.calculate_ema_trend(mus_val, ema_mus)
-            mus_trend.append(TrendPoint(
-                date=log.date.isoformat() if isinstance(log.date, datetime) else str(log.date),
-                value=ema_mus,
-            ))
+            mus_trend.append(
+                TrendPoint(
+                    date=log.date.isoformat()
+                    if isinstance(log.date, datetime)
+                    else str(log.date),
+                    value=ema_mus,
+                )
+            )
 
     return {
         "w_trend": w_trend,
         "fat_hist": fat_hist,
         "fat_trend": fat_trend,
         "mus_hist": mus_hist,
-        "mus_trend": mus_trend
+        "mus_trend": mus_trend,
     }
 
 
@@ -200,14 +220,17 @@ def get_dashboard_data(user_email: CurrentUser, db: DatabaseDep) -> DashboardDat
     weight_hist = [
         WeightHistoryPoint(
             date=str(log.date.date() if isinstance(log.date, datetime) else log.date),
-            weight=log.weight_kg
-        ) for log in reversed(weight_logs)
+            weight=log.weight_kg,
+        )
+        for log in reversed(weight_logs)
     ]
 
     return DashboardData(
         stats=DashboardStats(
-            metabolism=metab_stats, body=body_stats,
-            calories=cal_stats, workouts=w_data["w_stats"]
+            metabolism=metab_stats,
+            body=body_stats,
+            calories=cal_stats,
+            workouts=w_data["w_stats"],
         ),
         recentActivities=activities[:5],
         weightHistory=weight_hist,
@@ -288,10 +311,10 @@ def _find_closest_logs(today: datetime, weight_logs: list) -> dict:
 def _get_metrics_diffs(today: datetime, weight_logs: List[Any], curr: dict) -> dict:
     """Calculates diffs for 7, 15, and 30 day periods."""
     diffs = {
-        "w": [0.0, None, None], 
-        "f": [None, None, None], 
+        "w": [0.0, None, None],
+        "f": [None, None, None],
         "m": [None, None, None],
-        "m_kg": [None, None, None]
+        "m_kg": [None, None, None],
     }
     closest = _find_closest_logs(today, weight_logs)
     for i, period in enumerate([7, 15, 30]):
@@ -316,10 +339,10 @@ def _calculate_body_stats(today: datetime, weight_logs: List[Any]) -> BodyStats:
     """Helper to calculate body stats and trends."""
     curr_w, fat_pct, mus_pct, mus_kg, bmr = _get_latest_metrics(weight_logs)
     diffs = {
-        "w": [0.0, None, None], 
-        "f": [None, None, None], 
+        "w": [0.0, None, None],
+        "f": [None, None, None],
         "m": [None, None, None],
-        "m_kg": [None, None, None]
+        "m_kg": [None, None, None],
     }
     trend = "stable"
 
@@ -332,12 +355,22 @@ def _calculate_body_stats(today: datetime, weight_logs: List[Any]) -> BodyStats:
             trend = "down"
 
     return BodyStats(
-        weight_current=curr_w, weight_diff=round(diffs["w"][0], 2),
-        weight_diff_15=diffs["w"][1], weight_diff_30=diffs["w"][2], weight_trend=trend,
-        body_fat_pct=fat_pct, muscle_mass_pct=mus_pct, muscle_mass_kg=mus_kg,
-        fat_diff=diffs["f"][0], fat_diff_15=diffs["f"][1], fat_diff_30=diffs["f"][2],
-        muscle_diff=diffs["m"][0], muscle_diff_15=diffs["m"][1], muscle_diff_30=diffs["m"][2],
-        muscle_diff_kg=diffs["m_kg"][0], muscle_diff_kg_15=diffs["m_kg"][1],
+        weight_current=curr_w,
+        weight_diff=round(diffs["w"][0], 2),
+        weight_diff_15=diffs["w"][1],
+        weight_diff_30=diffs["w"][2],
+        weight_trend=trend,
+        body_fat_pct=fat_pct,
+        muscle_mass_pct=mus_pct,
+        muscle_mass_kg=mus_kg,
+        fat_diff=diffs["f"][0],
+        fat_diff_15=diffs["f"][1],
+        fat_diff_30=diffs["f"][2],
+        muscle_diff=diffs["m"][0],
+        muscle_diff_15=diffs["m"][1],
+        muscle_diff_30=diffs["m"][2],
+        muscle_diff_kg=diffs["m_kg"][0],
+        muscle_diff_kg_15=diffs["m_kg"][1],
         muscle_diff_kg_30=diffs["m_kg"][2],
         bmr=bmr,
     )
@@ -374,7 +407,9 @@ def _format_activity_date(date_obj) -> str:
     return date_obj.strftime("%d/%m/%Y")
 
 
-def _assemble_recent_activities(workouts, nutrition, weight_logs) -> List[RecentActivity]:
+def _assemble_recent_activities(
+    workouts, nutrition, weight_logs
+) -> List[RecentActivity]:
     """Helper to assemble and sort recent activities."""
     activities: List[RecentActivity] = []
 
@@ -383,26 +418,42 @@ def _assemble_recent_activities(workouts, nutrition, weight_logs) -> List[Recent
     for w in workouts[:5]:
         if w.id not in seen_ids:
             seen_ids.add(w.id)
-            activities.append(RecentActivity(
-                id=w.id, type="workout", title=f"Treino de {w.workout_type or 'Força'}",
-                subtitle=f"{w.duration_minutes or 0} min • {len(w.exercises)} exercícios",
-                date=_format_activity_date(w.date), icon="dumbbell"
-            ))
+            activities.append(
+                RecentActivity(
+                    id=w.id,
+                    type="workout",
+                    title=f"Treino de {w.workout_type or 'Força'}",
+                    subtitle=f"{w.duration_minutes or 0} min • {len(w.exercises)} exercícios",
+                    date=_format_activity_date(w.date),
+                    icon="dumbbell",
+                )
+            )
 
     # Nutrition
     for n in nutrition[:5]:
-        activities.append(RecentActivity(
-            id=str(getattr(n, "id", n.date)), type="nutrition", title="Refeição Registrada",
-            subtitle=f"{n.calories} kcal • {n.protein_grams}g proteína",
-            date=_format_activity_date(n.date), icon="utensils"
-        ))
+        activities.append(
+            RecentActivity(
+                id=str(getattr(n, "id", n.date)),
+                type="nutrition",
+                title="Refeição Registrada",
+                subtitle=f"{n.calories} kcal • {n.protein_grams}g proteína",
+                date=_format_activity_date(n.date),
+                icon="utensils",
+            )
+        )
 
     # Weight
     for weight in weight_logs[:2]:
-        activities.append(RecentActivity(
-            id=str(weight.date), type="body", title="Pesagem",
-            subtitle=f"{weight.weight_kg} kg", date=_format_activity_date(weight.date), icon="scale"
-        ))
+        activities.append(
+            RecentActivity(
+                id=str(weight.date),
+                type="body",
+                title="Pesagem",
+                subtitle=f"{weight.weight_kg} kg",
+                date=_format_activity_date(weight.date),
+                icon="scale",
+            )
+        )
 
     activities.sort(key=lambda x: datetime.strptime(x.date, "%d/%m/%Y"), reverse=True)
     return activities

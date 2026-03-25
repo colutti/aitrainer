@@ -7,7 +7,9 @@ import sys
 from logging.handlers import RotatingFileHandler
 
 
-def setup_logging(log_file="api.log", max_bytes=10 * 1024 * 1024, backup_count=5, log_level="INFO"):
+def setup_logging(
+    log_file="api.log", max_bytes=10 * 1024 * 1024, backup_count=5, log_level="INFO"
+):
     """
     Sets up a robust logging configuration for the application.
     """

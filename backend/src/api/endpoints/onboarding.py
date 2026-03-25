@@ -120,7 +120,6 @@ def complete_onboarding(request: OnboardingCompleteRequest):
         logger.error("User already exists during onboarding")
         raise HTTPException(status_code=409, detail="User already exists")
 
-
     # Create user profile
     user_profile = UserProfile(
         email=email,
@@ -197,7 +196,9 @@ def complete_public_onboarding(
         profile.display_name = request.name
 
     # Create trainer profile
-    trainer_profile = TrainerProfile(user_email=user_email, trainer_type=request.trainer_type)
+    trainer_profile = TrainerProfile(
+        user_email=user_email, trainer_type=request.trainer_type
+    )
 
     # Save to database
     db.save_user_profile(profile)
@@ -217,4 +218,6 @@ def complete_public_onboarding(
     # Generate fresh JWT token
     jwt_token = create_token(user_email)
 
-    return OnboardingCompleteResponse(token=jwt_token, message="Perfil configurado com sucesso!")
+    return OnboardingCompleteResponse(
+        token=jwt_token, message="Perfil configurado com sucesso!"
+    )

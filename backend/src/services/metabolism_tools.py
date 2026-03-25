@@ -30,22 +30,26 @@ def create_get_metabolism_tool(database: MongoDatabase, user_email: str):
         conclusões matemáticas e comparar com a estimativa do algoritmo.
         """
         try:
-            tdee_service = AdaptiveTDEEService(database)
-            tdee_data = tdee_service.calculate_tdee(user_email, lookback_weeks=4)
+            tdee_data = AdaptiveTDEEService(database).calculate_tdee(
+                user_email, lookback_weeks=4
+            )
             profile = database.get_user_profile(user_email)
 
             # Extract raw trends
-            w_trend = tdee_data.get("weight_trend", [])
-            c_trend = tdee_data.get("calorie_trend", [])
+            trends = {
+                "weight": tdee_data.get("weight_trend", []),
+                "calorie": tdee_data.get("calorie_trend", []),
+            }
 
             # Calculate Weekly Lows (3 lowest weights)
             today = date.today()
-            
+
             def get_avg_lows(days_offset_start, days_offset_end):
                 d_start = today - timedelta(days=days_offset_start)
                 d_end = today - timedelta(days=days_offset_end)
                 period_weights = [
-                    w["weight"] for w in w_trend
+                    w["weight"]
+                    for w in trends["weight"]
                     if w["weight"] and d_end <= date.fromisoformat(w["date"]) <= d_start
                 ]
                 if not period_weights:
@@ -56,34 +60,38 @@ def create_get_metabolism_tool(database: MongoDatabase, user_email: str):
             current_lows = get_avg_lows(0, 6)
             previous_lows = get_avg_lows(7, 13)
 
-            lows_delta = (current_lows - previous_lows) if (current_lows and previous_lows) else None
-            
-            # Pack status info
-            lows_status = f"{lows_delta:+.2f} kg" if lows_delta is not None else "N/A"
+            lows_delta = (
+                (current_lows - previous_lows)
+                if (current_lows and previous_lows)
+                else None
+            )
 
             # Build detailed raw response
             response = f"""=== METABOLISMO: DADOS BRUTOS (Últimos 30 dias) ===
 
-TDEE Estimado: {tdee_data.get('tdee')} kcal
-Meta Diária Atual: {tdee_data.get('daily_target')} kcal
-Objetivo: {tdee_data.get('goal_type')} ({tdee_data.get('goal_weekly_rate')} kg/semana)
+TDEE Estimado: {tdee_data.get("tdee")} kcal
+Meta Diária Atual: {tdee_data.get("daily_target")} kcal
+Objetivo: {tdee_data.get("goal_type")} ({tdee_data.get("goal_weekly_rate")} kg/semana)
 
 -- AUDITORIA DE LOWS (Média dos 3 menores pesos) --
-Semana Atual: {f'{current_lows:.2f} kg' if current_lows else 'N/A'}
-Semana Anterior: {f'{previous_lows:.2f} kg' if previous_lows else 'N/A'}
-Delta Lows: {lows_status}
+Semana Atual: {f"{current_lows:.2f} kg" if current_lows else "N/A"}
+Semana Anterior: {f"{previous_lows:.2f} kg" if previous_lows else "N/A"}
+Delta Lows: {f"{lows_delta:+.2f} kg" if lows_delta is not None else "N/A"}
 
 -- SÉRIE TEMPORAL (Peso e Calorias) --
 """
             # Add last 14 days of raw data for concise AI context
-            r_weight = {w["date"]: w["weight"] for w in w_trend}
-            r_cal = {c["date"]: c["calories"] for c in c_trend}
+            r_weight = {w["date"]: w["weight"] for w in trends["weight"]}
+            r_cal = {c["date"]: c["calories"] for c in trends["calorie"]}
 
-            all_dates = sorted(set(list(r_weight.keys()) + list(r_cal.keys())), reverse=True)[:14]
+            all_dates = sorted(
+                set(list(r_weight.keys()) + list(r_cal.keys())), reverse=True
+            )[:14]
             for d in all_dates:
-                w = f"{r_weight.get(d, '---'):>5}"
-                c = f"{r_cal.get(d, '---'):>5}"
-                response += f"{d}: Peso {w} kg | Cal {c} kcal\n"
+                response += (
+                    f"{d}: Peso {r_weight.get(d, '---'):>5} kg | "
+                    f"Cal {r_cal.get(d, '---'):>5} kcal\n"
+                )
 
             last_check_in_str = profile.tdee_last_check_in if profile else "Nunca"
             response += f"""
@@ -142,7 +150,8 @@ def create_update_tdee_params_tool(database: MongoDatabase, user_email: str):
 
         Args:
             activity_factor (float): O novo fator de atividade.
-            reset_tracking (bool): Se verdadeiro, descarta o histórico anterior e recomeça a média móvel a partir de hoje.
+            reset_tracking (bool): Se verdadeiro, descarta o histórico anterior
+                e recomeça a média móvel a partir de hoje.
         """
         try:
             if not isinstance(activity_factor, (int, float)):
@@ -164,11 +173,14 @@ def create_update_tdee_params_tool(database: MongoDatabase, user_email: str):
 
             old_factor = profile.tdee_activity_factor or 1.45
             profile.tdee_activity_factor = activity_factor
-            
+
             reset_msg = ""
             if reset_tracking:
                 profile.tdee_start_date = date.today().isoformat()
-                reset_msg = " e o histórico adaptativo foi resetado para forçar recalculo imediato"
+                reset_msg = (
+                    " e o histórico adaptativo foi resetado "
+                    "para forçar recalculo imediato"
+                )
 
             database.save_user_profile(profile)
 
@@ -186,11 +198,12 @@ def create_update_tdee_params_tool(database: MongoDatabase, user_email: str):
                 user_email,
                 old_factor,
                 activity_factor,
-                reset_tracking
+                reset_tracking,
             )
 
             return (
-                f"Fator de atividade atualizado com sucesso para {activity_factor} ({label}){reset_msg}. "
+                f"Fator de atividade atualizado com sucesso para "
+                f"{activity_factor} ({label}){reset_msg}. "
                 f"O TDEE será recalculado com este novo valor."
             )
 
@@ -200,6 +213,7 @@ def create_update_tdee_params_tool(database: MongoDatabase, user_email: str):
 
     return update_tdee_params
 
+
 def create_reset_tdee_tracking_tool(database: MongoDatabase, user_email: str):
     """Factory function for the TDEE reset tool."""
 
@@ -207,13 +221,13 @@ def create_reset_tdee_tracking_tool(database: MongoDatabase, user_email: str):
     def reset_tdee_tracking(start_date_iso: str) -> str:
         """
         Zera o histórico do algoritmo adaptativo de TDEE, descartando os dados anteriores
-        à data informada no cálculo da Média Móvel. 
-        
-        USE ESTA TOOL quando o aluno reportar que mudou radicalmente sua rotina de 
+        à data informada no cálculo da Média Móvel.
+
+        USE ESTA TOOL quando o aluno reportar que mudou radicalmente sua rotina de
         treinos/atividade física recentemente, e a meta calórica atual sugerida
-        parece muito baixa ou incorreta por causa de um "atraso/lag" do algoritmo 
+        parece muito baixa ou incorreta por causa de um "atraso/lag" do algoritmo
         (que ainda está puxando a média para baixo com dados de quando o aluno gastava menos).
-        
+
         Args:
             start_date_iso (str): A data a partir da qual o algoritmo deve começar
                                   a considerar os dados para a média. Formato YYYY-MM-DD.
@@ -228,9 +242,7 @@ def create_reset_tdee_tracking_tool(database: MongoDatabase, user_email: str):
             database.save_user_profile(profile)
 
             logger.info(
-                "User %s reset TDEE tracking from date %s",
-                user_email,
-                start_date_iso
+                "User %s reset TDEE tracking from date %s", user_email, start_date_iso
             )
 
             return (

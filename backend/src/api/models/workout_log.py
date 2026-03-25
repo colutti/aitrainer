@@ -46,14 +46,16 @@ class ExerciseLog(BaseModel):
             raise ValueError(
                 f"weights_per_set deve ter {self.sets} elementos, tem {len(self.weights_per_set)}"
             )
-        if self.distance_meters_per_set and len(self.distance_meters_per_set) != self.sets:
-            raise ValueError(
-                f"distance_meters_per_set must have {self.sets} elements"
-            )
-        if self.duration_seconds_per_set and len(self.duration_seconds_per_set) != self.sets:
-            raise ValueError(
-                f"duration_seconds_per_set must have {self.sets} elements"
-            )
+        if (
+            self.distance_meters_per_set
+            and len(self.distance_meters_per_set) != self.sets
+        ):
+            raise ValueError(f"distance_meters_per_set must have {self.sets} elements")
+        if (
+            self.duration_seconds_per_set
+            and len(self.duration_seconds_per_set) != self.sets
+        ):
+            raise ValueError(f"duration_seconds_per_set must have {self.sets} elements")
         return self
 
 
@@ -70,7 +72,9 @@ class WorkoutLog(BaseModel):
     """
 
     user_email: str = Field(..., description="Email do usuário")
-    date: datetime | py_date = Field(default_factory=datetime.now, description="Data do treino")
+    date: datetime | py_date = Field(
+        default_factory=datetime.now, description="Data do treino"
+    )
     workout_type: str | None = Field(
         default=None, description="Tipo de treino (Legs, Upper, Push, etc.)"
     )

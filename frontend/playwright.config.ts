@@ -1,43 +1,66 @@
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 
-// Load env variables from .env
+// Load env variables from .env and .env.e2e
 dotenv.config({ path: '.env' });
+dotenv.config({ path: '.env.e2e' });
 
 /**
  * Playwright E2E test configuration
  * Focused on the stable Mocked VirtualBackend suite.
  */
 export default defineConfig({
-  testDir: './e2e/real', // Focus on the fixed tests
-  fullyParallel: true,
+  testDir: './e2e',
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: 1,
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
     locale: 'pt-BR',
+    // Default to Desktop for business flow stability
+    viewport: { width: 1280, height: 720 },
+    launchOptions: {
+      args: ['--disable-web-security']
+    }
   },
 
   projects: [
+    { name: 'setup', testMatch: /auth\.setup\.ts/ },
     {
-      name: 'e2e',
+      name: 'chromium',
       use: { 
         ...devices['Desktop Chrome'],
-        storageState: { cookies: [], origins: [] } 
+        storageState: 'playwright/.auth/user.json' 
       },
-      testIgnore: [/auth\.setup\.ts/],
+      dependencies: ['setup'],
+    },
+    {
+      name: 'firefox',
+      use: { 
+        ...devices['Desktop Firefox'],
+        storageState: 'playwright/.auth/user.json' 
+      },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'webkit',
+      use: { 
+        ...devices['Desktop Safari'],
+        storageState: 'playwright/.auth/user.json' 
+      },
+      dependencies: ['setup'],
     },
   ],
 
   webServer: [
     {
-      command: 'npm run preview -- --port 3000',
+      command: 'npm run dev',
       url: 'http://localhost:3000',
-      reuseExistingServer: false,
-      timeout: 60000,
+      reuseExistingServer: true,
+      timeout: 120000,
     },
   ],
 });

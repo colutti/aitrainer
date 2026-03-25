@@ -37,5 +37,7 @@ def get_cost_usd(model: str, tokens_input: int, tokens_output: int) -> float:
         return 0.0
 
     pricing = PROVIDER_PRICING[model]
-    cost = (tokens_input * pricing["input"] + tokens_output * pricing["output"]) / 1_000_000
+    cost = (
+        tokens_input * pricing["input"] + tokens_output * pricing["output"]
+    ) / 1_000_000
     return round(cost, 4)

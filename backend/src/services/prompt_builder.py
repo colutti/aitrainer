@@ -14,7 +14,6 @@ from src.core.config import settings
 from src.core.logs import logger
 
 
-
 class PromptBuilder:
     """Builds and constructs chat prompt templates with defensive injection."""
 
@@ -35,7 +34,11 @@ class PromptBuilder:
         lines = ["Eventos/planos ativos:"]
         for event in agenda_events:
             date_str = f"[{event.date}]" if event.date else "[sem prazo]"
-            recur_str = f" (recorrente: {event.recurrence})" if event.recurrence != "none" else ""
+            recur_str = (
+                f" (recorrente: {event.recurrence})"
+                if event.recurrence != "none"
+                else ""
+            )
             lines.append(f"- {date_str} {event.title}{recur_str}")
 
         return "\n".join(lines)
@@ -69,8 +72,13 @@ class PromptBuilder:
             dict: Input data ready for prompt template
         """
         dias_pt = {
-            0: "Segunda-feira", 1: "Terça-feira", 2: "Quarta-feira",
-            3: "Quinta-feira", 4: "Sexta-feira", 5: "Sábado", 6: "Domingo"
+            0: "Segunda-feira",
+            1: "Terça-feira",
+            2: "Quarta-feira",
+            3: "Quinta-feira",
+            4: "Sexta-feira",
+            5: "Sábado",
+            6: "Domingo",
         }
 
         now = datetime.now()
@@ -78,16 +86,20 @@ class PromptBuilder:
             current_date = now.strftime("%Y-%m-%d")
 
         # Wrap user message with <msg> tag including current date/time
-        date_str = now.strftime('%d/%m')
-        time_str = now.strftime('%H:%M')
-        user_message_with_tag = f'<msg data="{date_str}" hora="{time_str}">{user_input}</msg>'
+        date_str = now.strftime("%d/%m")
+        time_str = now.strftime("%H:%M")
+        user_message_with_tag = (
+            f'<msg data="{date_str}" hora="{time_str}">{user_input}</msg>'
+        )
 
         # Format agenda section
         agenda_section = PromptBuilder._format_agenda_section(agenda_events or [])
 
         return {
             "trainer_profile": trainer_profile_summary,
-            "trainer_name": PromptBuilder._extract_trainer_name(trainer_profile_summary),
+            "trainer_name": PromptBuilder._extract_trainer_name(
+                trainer_profile_summary
+            ),
             "user_profile": user_profile_summary,
             "user_profile_obj": profile,  # Passed for extraction
             "user_name": profile.display_name or "Aluno",
@@ -105,7 +117,9 @@ class PromptBuilder:
     def _extract_trainer_name(trainer_profile_summary: str) -> str:
         if "**Nome:**" in trainer_profile_summary:
             try:
-                return trainer_profile_summary.split("**Nome:**")[1].split("\n")[0].strip()
+                return (
+                    trainer_profile_summary.split("**Nome:**")[1].split("\n")[0].strip()
+                )
             except (IndexError, AttributeError):
                 pass
         return "Treinador"

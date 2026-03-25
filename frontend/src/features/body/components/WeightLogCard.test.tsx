@@ -1,87 +1,57 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
-
-import type { WeightLog } from '../../../shared/types/body';
+import { describe, it, expect, vi } from 'vitest';
 
 import { WeightLogCard } from './WeightLogCard';
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      if (key === 'body.weight.body_fat') return 'Gordura';
+      if (key === 'body.weight.muscle_mass') return 'Massa';
+      if (key === 'shared.edit') return 'Editar registro';
+      if (key === 'shared.delete') return 'Excluir registro';
+      return key;
+    },
+  }),
+}));
+
+const mockLog = {
+  id: '1',
+  user_email: 'test@test.com',
+  date: '2024-01-01T10:00:00Z',
+  weight_kg: 80.5,
+  body_fat_pct: 15.5,
+  muscle_mass_kg: null,
+  trend_weight: null,
+  notes: 'Feeling good',
+} as any;
+
 describe('WeightLogCard', () => {
-  const mockLog: WeightLog = {
-    id: '1',
-    date: '2024-01-01',
-    weight_kg: 80.5,
-    body_fat_pct: 15.5,
-    user_email: 'user@example.com',
-  };
-
-  const mockOnDelete = vi.fn();
-  const mockOnEdit = vi.fn();
-  const mockOnClick = vi.fn();
-
   it('should render log details', () => {
-    render(
-      <WeightLogCard 
-        log={mockLog} 
-        onDelete={mockOnDelete} 
-        onEdit={mockOnEdit} 
-        onClick={mockOnClick}
-      />
-    );
-
-    expect(screen.getByText('80.50')).toBeInTheDocument();
-    expect(screen.getByText('15.5')).toBeInTheDocument();
-    // Helper function formats date, check if date part is present or mock format if needed. 
-    // Assuming standard format or checking specific text if format is known.
-    // "2024-01-01" might be formatted. Let's check for date/month presence if needed, or loosely check.
-    // Actually, `formatDate` from utils is likely used.
+    render(<WeightLogCard log={mockLog} />);
+    
+    expect(screen.getByText(/01\/01\/2024/)).toBeInTheDocument();
+    // Use regex for weight to handle formatting 80.5 or 80.50
+    expect(screen.getByText(/80\.5/)).toBeInTheDocument();
+    expect(screen.getByText(/15\.5/)).toBeInTheDocument();
+    expect(screen.getByText(/"Feeling good"/i)).toBeInTheDocument();
   });
 
-  it('should trigger click handlers', () => {
-    render(
-      <WeightLogCard 
-        log={mockLog} 
-        onDelete={mockOnDelete} 
-        onEdit={mockOnEdit} 
-        onClick={mockOnClick}
-      />
-    );
-
-    // Main Card click
-    screen.getByText('80.50').closest('div'); // A bit loose but valid if closest div is clickable
-    // The closest div might be deep in the card.
-
-    // The whole card has the onClick. Let's find the card container.
-    // The card container has `cursor-pointer`.
-    // Or we can just click "80.50" directly, as event bubbles up.
+  it('should call onDelete when delete button is clicked', () => {
+    const onDelete = vi.fn();
+    render(<WeightLogCard log={mockLog} onDelete={onDelete} />);
     
-    // Let's fire click on "80.50"
-    fireEvent.click(screen.getByText('80.50'));
-    // Wait, the card structure:
-    /*
-      <div onClick={() => onClick?.(log)} ...>
-        ...
-        <span>80.50 ...</span>
-    */
-    // Clicking child triggers parent onClick.
-    expect(mockOnClick).toHaveBeenCalledWith(mockLog);
-  });
-  
-  it('should trigger delete and edit', () => {
-     render(
-      <WeightLogCard 
-        log={mockLog} 
-        onDelete={mockOnDelete} 
-        onEdit={mockOnEdit} 
-        onClick={mockOnClick}
-      />
-    );
-      
-    const editBtn = screen.getByTitle('Editar registro');
-    fireEvent.click(editBtn);
-    expect(mockOnEdit).toHaveBeenCalledWith(mockLog);
-    
-    const deleteBtn = screen.getByTitle('Excluir registro');
+    const deleteBtn = screen.getByLabelText(/Delete/i);
     fireEvent.click(deleteBtn);
-    expect(mockOnDelete).toHaveBeenCalledWith(mockLog.date);
+    
+    expect(onDelete).toHaveBeenCalledWith(mockLog.date);
+  });
+
+  it('should call onClick when card is clicked', () => {
+    const onClick = vi.fn();
+    render(<WeightLogCard log={mockLog} onClick={onClick} />);
+    
+    fireEvent.click(screen.getByTestId('weight-log-card'));
+    expect(onClick).toHaveBeenCalledWith(mockLog);
   });
 });

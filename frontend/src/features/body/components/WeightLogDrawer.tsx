@@ -1,359 +1,161 @@
-import { X, Scale, Activity, Ruler, FileText, Droplets, Zap, Target, Bone, Flame, Pencil, Save } from 'lucide-react';
-import { type UseFormRegister, type Control, type FieldErrors, type UseFormHandleSubmit, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Scale, Ruler, FileText, Droplets, Target, Bone, Flame, Save } from 'lucide-react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { z } from 'zod';
 
 import { Button } from '../../../shared/components/ui/Button';
-import { DateInput } from '../../../shared/components/ui/DateInput';
 import { Input } from '../../../shared/components/ui/Input';
+import { FormField } from '../../../shared/components/ui/premium/FormField';
+import { PremiumDrawer } from '../../../shared/components/ui/premium/PremiumDrawer';
 import type { WeightLog, WeightLogFormData } from '../../../shared/types/body';
-import { cn } from '../../../shared/utils/cn';
-import { formatDate } from '../../../shared/utils/format-date';
+
+const weightSchema = z.object({
+  date: z.string().optional(),
+  weight_kg: z.coerce.number().min(20).max(300),
+  body_fat_pct: z.coerce.number().min(2).max(70),
+  muscle_mass_kg: z.preprocess(
+    (val) => (val === '' || val === undefined || val === null ? null : Number(val)),
+    z.number().min(10).max(150).nullable().optional()
+  ),
+  visceral_fat: z.preprocess(
+    (val) => (val === '' || val === undefined || val === null ? null : Number(val)),
+    z.number().min(1).max(30).nullable().optional()
+  ),
+  body_water_pct: z.preprocess(
+    (val) => (val === '' || val === undefined || val === null ? null : Number(val)),
+    z.number().min(20).max(90).nullable().optional()
+  ),
+  bone_mass_kg: z.preprocess(
+    (val) => (val === '' || val === undefined || val === null ? null : Number(val)),
+    z.number().min(1).max(15).nullable().optional()
+  ),
+  bmr: z.preprocess(
+    (val) => (val === '' || val === undefined || val === null ? null : Number(val)),
+    z.number().min(500).max(5000).nullable().optional()
+  ),
+  notes: z.string().max(500).optional().nullable(),
+});
 
 interface WeightLogDrawerProps {
-  log: WeightLog | null;
   isOpen: boolean;
   onClose: () => void;
-  mode?: 'view' | 'edit';
-  // Form props (only used in edit mode)
-  register?: UseFormRegister<WeightLogFormData>;
-  control?: Control<WeightLogFormData>;
-  errors?: FieldErrors<WeightLogFormData>;
-  isSaving?: boolean;
-  handleSubmit?: UseFormHandleSubmit<WeightLogFormData>;
-  onSubmit?: (data: WeightLogFormData) => Promise<void>;
-  onCancelEdit?: () => void;
+  onSubmit: (data: WeightLogFormData) => Promise<void>;
+  log?: WeightLog | null;
 }
 
-/**
- * Drawer component to display detailed weight log information OR the entry form
- * Slides in from the right side of the screen
- */
-export function WeightLogDrawer({ 
-  log, 
-  isOpen, 
-  onClose, 
-  mode = 'view',
-  register,
-  control,
-  errors,
-  isSaving,
-  handleSubmit,
-  onSubmit,
-  onCancelEdit
-}: WeightLogDrawerProps) {
+export function WeightLogDrawer({ isOpen, onClose, onSubmit, log }: WeightLogDrawerProps) {
   const { t } = useTranslation();
   
-  const isEditMode = mode === 'edit';
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<WeightLogFormData>({
+    resolver: zodResolver(weightSchema),
+  });
 
-  if (!log && !isEditMode) return null;
+  const handleFormSubmit = async (data: WeightLogFormData) => {
+    // Format date to YYYY-MM-DD for backend
+    const formattedData = {
+      ...data,
+      date: data.date ? data.date.split('T')[0] : new Date().toISOString().split('T')[0]
+    };
+    await onSubmit(formattedData as WeightLogFormData);
+  };
+
+  useEffect(() => {
+    if (log) {
+      reset({
+        date: log.date,
+        weight_kg: log.weight_kg,
+        body_fat_pct: log.body_fat_pct ?? 0,
+        muscle_mass_kg: log.muscle_mass_kg,
+        visceral_fat: log.visceral_fat,
+        body_water_pct: log.body_water_pct,
+        bone_mass_kg: log.bone_mass_kg,
+        bmr: log.bmr,
+        notes: log.notes,
+      });
+    } else {
+      reset({ weight_kg: 0, body_fat_pct: 0, date: new Date().toISOString() });
+    }
+  }, [log, reset, isOpen]);
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className={cn(
-          'fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity',
-          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        )}
-        onClick={onClose}
-      />
-
-      {/* Drawer */}
-      <div
-        className={cn(
-          'fixed right-0 top-0 h-full w-full md:w-[500px] bg-dark-card border-l border-border z-50',
-          'transform transition-transform duration-300 ease-in-out overflow-y-auto',
-          isOpen ? 'translate-x-0' : 'translate-x-full'
-        )}
-      >
-        {/* Header */}
-        <div className="sticky top-0 bg-dark-card/95 backdrop-blur-md border-b border-border p-6 flex items-center justify-between z-10">
-          <div className="flex items-center gap-3">
-            {isEditMode ? (
-              <Pencil className="text-amber-400" size={24} />
-            ) : (
-              <Scale className="text-gradient-start" size={24} />
-            )}
-            <div>
-              <h2 className="text-xl font-bold text-text-primary">
-                {isEditMode 
-                  ? (log ? t('body.weight.edit_title') : t('body.weight.register_title'))
-                  : t('body.weight.record_details')}
-              </h2>
-              {log && (
-                <p className="text-sm text-text-secondary mt-0.5 capitalize">
-                  {formatDate(log.date)}
-                </p>
-              )}
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="text-text-muted hover:text-text-primary"
-          >
-            <X size={20} />
-          </Button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
-          {isEditMode && handleSubmit && onSubmit && register && control && errors ? (
-            <form onSubmit={(e) => { void handleSubmit(onSubmit)(e); }} className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-sm font-bold text-text-secondary uppercase tracking-wider">{t('body.weight.composition_title')}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Controller
-                    name="date"
-                    control={control}
-                    render={({ field }) => (
-                      <DateInput
-                        label={t('body.weight.date')}
-                        value={field.value}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        error={errors.date?.message}
-                      />
-                    )}
-                  />
-                  <Input 
-                    id="weight_kg"
-                    label={t('body.weight.weight')} 
-                    type="number" 
-                    step="0.01" 
-                    placeholder="Ex: 75.50" 
-                    error={errors.weight_kg?.message}
-                    {...register('weight_kg', { valueAsNumber: true })}
-                  />
-                  <Input 
-                    id="body_fat_pct"
-                    label={t('body.weight.body_fat')} 
-                    type="number" 
-                    step="0.01" 
-                    placeholder="Ex: 15.50"
-                    error={errors.body_fat_pct?.message}
-                    {...register('body_fat_pct', { valueAsNumber: true })}
-                  />
-                  <Input 
-                    id="muscle_mass_kg"
-                    label={t('body.weight.muscle_mass')} 
-                    type="number" 
-                    step="0.01" 
-                    placeholder="Ex: 35.20"
-                    error={errors.muscle_mass_kg?.message}
-                    {...register('muscle_mass_kg', { valueAsNumber: true })}
-                  />
-                </div>
-              </div>
-
-              <Input 
-                id="notes"
-                label={t('body.weight.notes')} 
-                type="text" 
-                placeholder={t('body.weight.notes_placeholder')}
-                error={errors.notes?.message}
-                {...register('notes')}
+    <PremiumDrawer
+      isOpen={isOpen}
+      onClose={onClose}
+      title={log ? t('body.weight.record_details') : t('body.weight.register_weight')}
+      subtitle={log ? log.date : t('body.weight_subtitle')}
+      icon={<Scale size={24} />}
+    >
+      <form onSubmit={(e) => { void handleSubmit(handleFormSubmit)(e); }} className="space-y-8">
+        <input type="hidden" {...register('date')} />
+        
+        {/* PRIMARY METRIC */}
+        <div className="bg-white/5 p-6 rounded-3xl border border-white/10 shadow-inner">
+          <FormField label={t('body.weight.weight')} id="weight-kg" error={errors.weight_kg?.message}>
+            <div className="relative">
+              <Scale className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={24} />
+              <Input
+                id="weight-kg"
+                data-testid="weight-kg"
+                type="number"
+                step="0.1"
+                {...register('weight_kg')}
+                placeholder="0.0"
+                className="pl-14 h-20 text-4xl font-black bg-transparent border-transparent focus:border-white/10 rounded-2xl"
               />
-
-              <div className="pt-6 border-t border-border">
-                <h3 className="text-sm font-bold text-text-secondary uppercase tracking-wider mb-4">{t('body.weight.measurements_title')}</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <Input label={t('body.weight.neck')} type="number" step="0.01" placeholder="Ex: 38" error={errors.neck_cm?.message} {...register('neck_cm', { valueAsNumber: true })} />
-                  <Input label={t('body.weight.chest')} type="number" step="0.01" placeholder="Ex: 100" error={errors.chest_cm?.message} {...register('chest_cm', { valueAsNumber: true })} />
-                  <Input id="waist_cm" label={t('body.weight.waist')} type="number" step="0.01" placeholder="Ex: 85" error={errors.waist_cm?.message} {...register('waist_cm', { valueAsNumber: true })} />
-                  <Input label={t('body.weight.hips')} type="number" step="0.01" placeholder="Ex: 95" error={errors.hips_cm?.message} {...register('hips_cm', { valueAsNumber: true })} />
-                  <Input label={t('body.weight.bicep_r')} type="number" step="0.01" placeholder="Ex: 35" error={errors.bicep_r_cm?.message} {...register('bicep_r_cm', { valueAsNumber: true })} />
-                  <Input label={t('body.weight.bicep_l')} type="number" step="0.01" placeholder="Ex: 35" error={errors.bicep_l_cm?.message} {...register('bicep_l_cm', { valueAsNumber: true })} />
-                  <Input label={t('body.weight.thigh_r')} type="number" step="0.01" placeholder="Ex: 55" error={errors.thigh_r_cm?.message} {...register('thigh_r_cm', { valueAsNumber: true })} />
-                  <Input label={t('body.weight.thigh_l')} type="number" step="0.01" placeholder="Ex: 55" error={errors.thigh_l_cm?.message} {...register('thigh_l_cm', { valueAsNumber: true })} />
-                  <Input label={t('body.weight.calf_r')} type="number" step="0.01" placeholder="Ex: 38" error={errors.calf_r_cm?.message} {...register('calf_r_cm', { valueAsNumber: true })} />
-                  <Input label={t('body.weight.calf_l')} type="number" step="0.01" placeholder="Ex: 38" error={errors.calf_l_cm?.message} {...register('calf_l_cm', { valueAsNumber: true })} />
-                </div>
-              </div>
-
-              <div className="sticky bottom-0 pt-6 bg-dark-card/95 backdrop-blur-sm border-t border-border flex gap-4">
-                <Button 
-                  fullWidth 
-                  variant="secondary" 
-                  type="button" 
-                  onClick={onCancelEdit ?? onClose}
-                >
-                  {t('common.cancel')}
-                </Button>
-                <Button 
-                  fullWidth 
-                  variant="primary" 
-                  type="submit" 
-                  isLoading={isSaving}
-                  className="shadow-orange"
-                >
-                  <Save size={18} className="mr-2" />
-                  {t('body.weight.save')}
-                </Button>
-              </div>
-            </form>
-          ) : log && (
-            <div className="space-y-8">
-              {/* Main Weight Display */}
-              <div className="flex items-center justify-between bg-zinc-900/50 p-6 rounded-2xl border border-white/5">
-                <div>
-                  <p className="text-sm text-text-muted mb-1 font-medium uppercase tracking-wider">{t('body.weight.registered_weight')}</p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-black text-white">{log.weight_kg.toFixed(2)}</span>
-                    <span className="text-xl text-text-secondary font-medium">kg</span>
-                  </div>
-                </div>
-                {log.trend_weight !== undefined && (
-                  <div className="text-right">
-                    <p className="text-xs text-text-muted mb-1 font-medium uppercase tracking-wider">{t('body.weight.trend')}</p>
-                    <div className={cn(
-                      "text-lg font-bold flex items-center justify-end gap-1",
-                      log.weight_kg > (log.trend_weight || 0) ? "text-red-400" : "text-emerald-400"
-                    )}>
-                        {log.weight_kg > (log.trend_weight || 0) ? '▲' : '▼'}
-                        {Math.abs(log.weight_kg - (log.trend_weight || 0)).toFixed(2)}kg
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Body Composition Grid */}
-              {(log.body_fat_pct != null || log.muscle_mass_pct != null || log.muscle_mass_kg != null || log.body_water_pct != null || log.bone_mass_kg != null || log.visceral_fat != null || log.bmr != null || log.bmi != null) && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b border-white/5">
-                    <Activity className="text-blue-400" size={18} />
-                    <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">
-                      {t('body.weight.composition_title')}
-                    </h3>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    {log.body_fat_pct != null && (
-                      <div className="bg-zinc-900/30 p-3 rounded-xl border border-white/5">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Target size={14} className="text-orange-400" />
-                          <p className="text-[10px] text-text-muted font-bold uppercase">{t('body.weight.body_fat').split(' ')[0]}</p>
-                        </div>
-                        <p className="text-xl font-bold text-text-primary">{log.body_fat_pct}%</p>
-                      </div>
-                    )}
-                    
-                    {(log.muscle_mass_pct != null || log.muscle_mass_kg != null) && (
-                      <div className="bg-zinc-900/30 p-3 rounded-xl border border-white/5">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Zap size={14} className="text-yellow-400" />
-                          <p className="text-[10px] text-text-muted font-bold uppercase">{t('body.weight.muscle_mass')}</p>
-                        </div>
-                        {log.muscle_mass_kg != null ? (
-                          <p className="text-xl font-bold text-text-primary">{log.muscle_mass_kg}kg</p>
-                        ) : (
-                          <p className="text-xl font-bold text-text-primary">{log.muscle_mass_pct}%</p>
-                        )}
-                      </div>
-                    )}
-
-                    {log.body_water_pct != null && (
-                      <div className="bg-zinc-900/30 p-3 rounded-xl border border-white/5">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Droplets size={14} className="text-blue-400" />
-                          <p className="text-[10px] text-text-muted font-bold uppercase">{t('body.weight.body_water')}</p>
-                        </div>
-                        <p className="text-xl font-bold text-text-primary">{log.body_water_pct}%</p>
-                      </div>
-                    )}
-
-                    {log.bone_mass_kg != null && (
-                      <div className="bg-zinc-900/30 p-3 rounded-xl border border-white/5">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Bone size={14} className="text-zinc-400" />
-                          <p className="text-[10px] text-text-muted font-bold uppercase">{t('body.weight.bone_mass')}</p>
-                        </div>
-                        <p className="text-xl font-bold text-text-primary">{log.bone_mass_kg}kg</p>
-                      </div>
-                    )}
-
-                    {log.visceral_fat != null && (
-                      <div className="bg-zinc-900/30 p-3 rounded-xl border border-white/5">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Activity size={14} className="text-red-400" />
-                          <p className="text-[10px] text-text-muted font-bold uppercase">{t('body.weight.visceral_fat')}</p>
-                        </div>
-                        <p className="text-xl font-bold text-text-primary">{log.visceral_fat}</p>
-                      </div>
-                    )}
-
-                    {log.bmr != null && (
-                      <div className="bg-zinc-900/30 p-3 rounded-xl border border-white/5">
-                        <div className="flex items-center gap-2 mb-1">
-                            <Flame className="text-orange-500" size={14} />
-                            <p className="text-[10px] text-text-muted font-bold uppercase">{t('body.metabolism.metabolic_rate')}</p>
-                        </div>
-                        <p className="text-xl font-bold text-text-primary">{log.bmr} kcal</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Measurements Grid - Always visible in View Mode */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 pb-2 border-b border-white/5">
-                  <Ruler className="text-emerald-400" size={18} />
-                  <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">
-                    {t('body.weight.measurements_short_title')}
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {[
-                      { label: t('body.weight.neck'), value: log.neck_cm },
-                      { label: t('body.weight.chest'), value: log.chest_cm },
-                      { label: t('body.weight.waist'), value: log.waist_cm },
-                      { label: t('body.weight.hips'), value: log.hips_cm },
-                      { label: t('body.weight.bicep_r'), value: log.bicep_r_cm },
-                      { label: t('body.weight.bicep_l'), value: log.bicep_l_cm },
-                      { label: t('body.weight.thigh_r'), value: log.thigh_r_cm },
-                      { label: t('body.weight.thigh_l'), value: log.thigh_l_cm },
-                      { label: t('body.weight.calf_r'), value: log.calf_r_cm },
-                      { label: t('body.weight.calf_l'), value: log.calf_l_cm },
-                    ].map((item) => (
-                      <div key={item.label} className={cn(
-                        "px-3 py-2 rounded-lg border flex justify-between items-center transition-colors",
-                        item.value 
-                          ? "bg-zinc-900/30 border-white/5" 
-                          : "bg-zinc-900/10 border-white/5 opacity-50"
-                      )}>
-                        <span className="text-xs text-text-muted">{item.label}</span>
-                        <span className={cn(
-                          "font-mono font-bold",
-                          item.value ? "text-text-primary" : "text-text-muted/50"
-                        )}>
-                          {item.value ?? '-'}
-                        </span>
-                      </div>
-                    ))}
-                </div>
-              </div>
-
-              {/* Notes */}
-              {log.notes && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b border-white/5">
-                    <FileText className="text-purple-400" size={18} />
-                    <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">
-                      {t('body.weight.notes')}
-                    </h3>
-                  </div>
-                  <div className="bg-zinc-900/30 p-4 rounded-xl border border-white/5 text-sm text-text-secondary italic leading-relaxed">
-                    "{log.notes}"
-                  </div>
-                </div>
-              )}
+              <span className="absolute right-6 top-1/2 -translate-y-1/2 text-xl font-bold text-zinc-500 uppercase">kg</span>
             </div>
-          )}
+          </FormField>
         </div>
-      </div>
-    </>
+
+        {/* COMPOSITION GRID */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 pb-2 border-b border-white/5">
+            <Target size={18} className="text-indigo-400" />
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('body.weight.composition_title')}</h3>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-6">
+            <FormField label={t('body.weight.body_fat')} id="body-fat-pct" icon={<Flame size={14} className="text-orange-400" />} error={errors.body_fat_pct?.message}>
+              <Input id="body-fat-pct" data-testid="body-fat-pct" type="number" step="0.1" {...register('body_fat_pct')} placeholder="%" className="h-14 bg-white/5 border-white/5 rounded-2xl font-bold" />
+            </FormField>
+            
+            <FormField label={t('body.weight.muscle_mass')} id="muscle-mass-kg" icon={<Bone size={14} className="text-emerald-400" />} error={errors.muscle_mass_kg?.message}>
+              <Input id="muscle-mass-kg" type="number" step="0.1" {...register('muscle_mass_kg')} placeholder="kg" className="h-14 bg-white/5 border-white/5 rounded-2xl font-bold" />
+            </FormField>
+
+            <FormField label={t('body.weight.visceral_fat')} id="visceral-fat" icon={<Ruler size={14} className="text-blue-400" />} error={errors.visceral_fat?.message}>
+              <Input id="visceral-fat" type="number" step="1" {...register('visceral_fat')} placeholder="1-20" className="h-14 bg-white/5 border-white/5 rounded-2xl font-bold" />
+            </FormField>
+
+            <FormField label={t('body.weight.water')} id="body-water-pct" icon={<Droplets size={14} className="text-cyan-400" />} error={errors.body_water_pct?.message}>
+              <Input id="body-water-pct" type="number" step="0.1" {...register('body_water_pct')} placeholder="%" className="h-14 bg-white/5 border-white/5 rounded-2xl font-bold" />
+            </FormField>
+          </div>
+        </div>
+
+        {/* NOTES */}
+        <FormField label={t('body.weight.notes')} id="notes" icon={<FileText size={14} />} error={errors.notes?.message} optional>
+          <textarea
+            id="notes"
+            {...register('notes')}
+            className="w-full h-32 bg-white/5 border border-white/5 rounded-2xl p-4 text-sm font-medium focus:outline-none focus:border-white/20 transition-all resize-none custom-scrollbar"
+            placeholder={t('body.weight.notes_placeholder')}
+          />
+        </FormField>
+
+        {/* SUBMIT */}
+        <Button 
+          type="submit" 
+          fullWidth 
+          isLoading={isSubmitting}
+          className="btn-premium h-16"
+        >
+          <Save size={20} strokeWidth={3} />
+          {t('common.save')}
+        </Button>
+      </form>
+    </PremiumDrawer>
   );
 }

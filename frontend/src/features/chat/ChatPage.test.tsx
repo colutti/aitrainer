@@ -5,7 +5,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { useChatStore } from '../../shared/hooks/useChat';
 import { useSettingsStore } from '../../shared/hooks/useSettings';
 
-import { ChatPage } from './ChatPage';
+import ChatPage from './ChatPage';
 
 vi.mock('../../shared/hooks/useChat');
 vi.mock('../../shared/hooks/useSettings');
@@ -48,7 +48,7 @@ describe('ChatPage', () => {
         <ChatPage />
       </MemoryRouter>
     );
-    expect(screen.getByText('Inicie sua conversa')).toBeInTheDocument();
+    expect(screen.getByText(/Começar conversa/i)).toBeInTheDocument();
   });
 
   it('should fetch trainer and available trainers if empty', () => {
@@ -86,7 +86,7 @@ describe('ChatPage', () => {
       </MemoryRouter>
     );
     
-    const input = screen.getByPlaceholderText(/Mensagem para Marcus/i);
+    const input = screen.getByPlaceholderText(/Fale com seu treinador/i);
     fireEvent.change(input, { target: { value: 'New Message' } });
     
     const form = input.closest('form');
@@ -137,7 +137,7 @@ describe('ChatPage', () => {
         <ChatPage />
       </MemoryRouter>
     );
-    const input = screen.getByPlaceholderText(/Mensagem para Marcus/i);
+    const input = screen.getByPlaceholderText(/Fale com seu treinador/i);
 
     // Simulate typing 'Line1'
     fireEvent.change(input, { target: { value: 'Line1' } });
@@ -166,8 +166,8 @@ describe('ChatPage', () => {
         <ChatPage />
       </MemoryRouter>
     );
-    expect(screen.queryByPlaceholderText(/Mensagem/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/Seu período gratuito acabou/i)).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/Fale com/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Teste Grátis Encerrado/i)).toBeInTheDocument();
   });
 
   it('should display paywall when daily limit reached', () => {
@@ -181,8 +181,8 @@ describe('ChatPage', () => {
         <ChatPage />
       </MemoryRouter>
     );
-    expect(screen.queryByPlaceholderText(/Mensagem/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/Limite diário atingido/i)).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/Fale com/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Limite Diário Atingido/i)).toBeInTheDocument();
   });
 });
 

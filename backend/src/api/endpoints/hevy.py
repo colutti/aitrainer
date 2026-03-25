@@ -1,6 +1,7 @@
 """
 API endpoints for Hevy integration.
 """
+
 import asyncio
 import secrets
 from datetime import datetime
@@ -39,17 +40,20 @@ class WebhookDeps:  # pylint: disable=too-few-public-methods
 
 class ValidateRequest(BaseModel):
     """Request model for validating API key."""
+
     api_key: str
 
 
 class HevyConfigRequest(BaseModel):
     """Request model for Hevy configuration."""
+
     api_key: Optional[str] = None
     enabled: bool = True
 
 
 class ImportRequest(BaseModel):
     """Request model for triggering import."""
+
     from_date: Optional[datetime] = None
 
     mode: str = Field("skip_duplicates", pattern="^(skip_duplicates|overwrite)$")
@@ -189,7 +193,9 @@ async def _fetch_workout_with_retry(
         if attempt > 0:
             logger.info(
                 "[Webhook BG] Retrying in %ss (%d/%d)",
-                retry_delay, attempt + 1, max_retries
+                retry_delay,
+                attempt + 1,
+                max_retries,
             )
             await asyncio.sleep(retry_delay)
         hevy_workout = await hevy_service.fetch_workout_by_id(api_key, workout_id)
@@ -198,7 +204,9 @@ async def _fetch_workout_with_retry(
     return None
 
 
-async def _handle_workout_notification(user_email: str, workout_log: Any, brain: AITrainerBrain):
+async def _handle_workout_notification(
+    user_email: str, workout_log: Any, brain: AITrainerBrain
+):
     """Handles Telegram notification after a workout is synced."""
     profile = brain.get_user_profile(user_email)
     if not profile:
@@ -226,7 +234,9 @@ async def _handle_workout_notification(user_email: str, workout_log: Any, brain:
     analysis = await brain.analyze_workout_async(user_email, workout_summary)
 
     if not analysis or not analysis.strip():
-        logger.warning("[Webhook BG] AI analysis empty for %s, skipping notification", user_email)
+        logger.warning(
+            "[Webhook BG] AI analysis empty for %s, skipping notification", user_email
+        )
         return
 
     # Enviar via Telegram
@@ -247,7 +257,8 @@ async def process_webhook_async(
     """
     logger.info(
         "[Webhook BG] Starting background processing for user %s, workout %s",
-        user_email, workout_id
+        user_email,
+        workout_id,
     )
 
     if not api_key:
@@ -255,7 +266,9 @@ async def process_webhook_async(
         return
 
     try:
-        hevy_workout = await _fetch_workout_with_retry(api_key, workout_id, hevy_service)
+        hevy_workout = await _fetch_workout_with_retry(
+            api_key, workout_id, hevy_service
+        )
         if not hevy_workout:
             logger.error("[Webhook BG] Workout %s not found in Hevy", workout_id)
             return
@@ -266,7 +279,9 @@ async def process_webhook_async(
             return
 
         hevy_service.workout_repository.save_log(workout_log)
-        logger.info("[Webhook BG] SUCCESS: Workout %s synced for %s.", workout_id, user_email)
+        logger.info(
+            "[Webhook BG] SUCCESS: Workout %s synced for %s.", workout_id, user_email
+        )
 
         try:
             await _handle_workout_notification(user_email, workout_log, brain)
@@ -281,9 +296,7 @@ async def process_webhook_async(
 
 
 @router.get("/webhook/config")
-def get_webhook_config(
-    user_email: CurrentUser, brain: BrainDep, request: Request
-):
+def get_webhook_config(user_email: CurrentUser, brain: BrainDep, request: Request):
     """Returns current webhook configuration."""
     profile = brain.get_user_profile(user_email)
     if not profile:
@@ -395,7 +408,9 @@ async def receive_hevy_webhook(
     method = request.method
 
     logger.info("--- [Hevy Webhook Start] ---")
-    logger.info("Method: %s | Client IP: %s | URL: %s", method, client_host, request.url)
+    logger.info(
+        "Method: %s | Client IP: %s | URL: %s", method, client_host, request.url
+    )
 
     authorization = request.headers.get("authorization")
 

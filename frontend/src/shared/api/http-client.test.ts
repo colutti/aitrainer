@@ -31,8 +31,11 @@ describe('httpClient', () => {
 
     const result = await httpClient('/test');
     expect(result).toEqual(mockData);
-    expect(fetch).toHaveBeenCalledWith('/api/test', expect.objectContaining({
-      headers: { 'Content-Type': 'application/json' }
+    expect(fetch).toHaveBeenCalledWith(expect.stringMatching(/^\/api\/test\?_t=\d+$/), expect.objectContaining({
+      headers: expect.objectContaining({
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      })
     }));
   });
 
@@ -45,11 +48,12 @@ describe('httpClient', () => {
     } as Response);
 
     await httpClient('/test');
-    expect(fetch).toHaveBeenCalledWith('/api/test', expect.objectContaining({
-      headers: {
+    expect(fetch).toHaveBeenCalledWith(expect.stringMatching(/^\/api\/test\?_t=\d+$/), expect.objectContaining({
+      headers: expect.objectContaining({
         'Content-Type': 'application/json',
         'Authorization': 'Bearer test-token',
-      }
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      })
     }));
   });
 

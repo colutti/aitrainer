@@ -12,9 +12,8 @@ interface BodyState {
   stats: BodyCompositionStats | null;
   isLoading: boolean;
   error: string | null;
-}
-
-interface BodyActions {
+  
+  // Actions
   fetchLogs: (limit?: number) => Promise<void>;
   fetchStats: () => Promise<void>;
   logWeight: (data: Partial<WeightLog>) => Promise<void>;
@@ -22,14 +21,10 @@ interface BodyActions {
   reset: () => void;
 }
 
-type BodyStore = BodyState & BodyActions;
-
 /**
- * Body store using Zustand
- * 
- * Manages weight logs and body composition trends.
+ * Standardized Body Store.
  */
-export const useBodyStore = create<BodyStore>((set, get) => ({
+export const useBodyStore = create<BodyState>((set, get) => ({
   logs: [],
   stats: null,
   isLoading: false,
@@ -38,68 +33,50 @@ export const useBodyStore = create<BodyStore>((set, get) => ({
   fetchLogs: async (limit = 30) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await httpClient<WeightListResponse>(`/weight?limit=${limit.toString()}`);
-      if (response) {
-        set({ logs: response.logs, isLoading: false });
-      } else {
-        set({ logs: [], isLoading: false });
-      }
-    } catch (error) {
-      console.error('Error fetching weight logs:', error);
+      const data = await httpClient<WeightListResponse>(`/weight?limit=${String(limit)}`);
+      if (data) set({ logs: data.logs, isLoading: false });
+    } catch (err) {
       set({ 
-        isLoading: false, 
-        error: 'Falha ao carregar histórico de peso.' 
+        error: err instanceof Error ? err.message : 'Error fetching logs', 
+        isLoading: false 
       });
     }
   },
 
   fetchStats: async () => {
-    set({ isLoading: true });
     try {
-      const stats = await httpClient<BodyCompositionStats>('/weight/stats');
-      set({ stats, isLoading: false });
-    } catch (error) {
-      console.error('Error fetching body stats:', error);
-      set({ isLoading: false });
+      const data = await httpClient<BodyCompositionStats>('/metabolism/stats');
+      if (data) set({ stats: data });
+    } catch {
+      // Quiet fail for stats
     }
   },
 
   logWeight: async (data: Partial<WeightLog>) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true });
     try {
-      await httpClient('/weight', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      await httpClient('/weight', { method: 'POST', body: JSON.stringify(data) });
       await Promise.all([get().fetchLogs(), get().fetchStats()]);
-    } catch (error) {
-      console.error('Error logging weight:', error);
+    } catch (err) {
       set({ 
         isLoading: false, 
-        error: 'Falha ao registrar peso.' 
+        error: err instanceof Error ? err.message : 'Error logging weight' 
       });
-      throw error;
+      throw err;
     }
   },
 
   deleteLog: async (date: string) => {
-    set({ isLoading: true, error: null });
+    set({ isLoading: true });
     try {
       await httpClient(`/weight/${date}`, { method: 'DELETE' });
-      
-      const { logs } = get();
-      set({
-        logs: logs.filter((l) => l.date !== date),
-        isLoading: false,
-      });
-      void get().fetchStats();
-    } catch (error) {
-      console.error('Error deleting weight log:', error);
+      await Promise.all([get().fetchLogs(), get().fetchStats()]);
+    } catch (err) {
       set({ 
         isLoading: false, 
-        error: 'Falha ao excluir registro.' 
+        error: err instanceof Error ? err.message : 'Error deleting log' 
       });
-      throw error;
+      throw err;
     }
   },
 

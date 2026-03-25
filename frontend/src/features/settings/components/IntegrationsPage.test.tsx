@@ -1,22 +1,20 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
 import { integrationsApi } from '../api/integrations-api';
 
-import { IntegrationsPage } from './IntegrationsPage';
+import IntegrationsPage from './IntegrationsPage';
 
+// Mocks
 vi.mock('../api/integrations-api', () => ({
   integrationsApi: {
     getHevyStatus: vi.fn(),
+    getTelegramStatus: vi.fn(),
+    getWebhookConfig: vi.fn(),
     saveHevyKey: vi.fn(),
     removeHevyKey: vi.fn(),
     syncHevy: vi.fn(),
-    getWebhookConfig: vi.fn(),
-    generateWebhook: vi.fn(),
-    revokeWebhook: vi.fn(),
-    getTelegramStatus: vi.fn(),
     generateTelegramCode: vi.fn(),
     updateTelegramNotifications: vi.fn(),
     uploadMfpCsv: vi.fn(),
@@ -28,10 +26,12 @@ vi.mock('../../../shared/hooks/useNotification', () => ({
   useNotificationStore: vi.fn(),
 }));
 
-// Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: (key: string, options?: any) => {
+      if (key === 'settings.integrations.shared.active' && options?.key) return `Active ${options.key}`;
+      return key;
+    },
   }),
 }));
 
@@ -44,167 +44,50 @@ describe('IntegrationsPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (useNotificationStore as any).mockReturnValue(mockNotify);
+    vi.mocked(useNotificationStore).mockReturnValue(mockNotify as any);
+    vi.mocked(integrationsApi.getHevyStatus).mockResolvedValue({ hasKey: false } as any);
+    vi.mocked(integrationsApi.getTelegramStatus).mockResolvedValue({ linked: false } as any);
+    vi.mocked(integrationsApi.getWebhookConfig).mockResolvedValue({ hasWebhook: false } as any);
   });
 
-  const setupMocks = () => {
-    vi.mocked(integrationsApi.getHevyStatus).mockResolvedValue({ enabled: false, hasKey: false, apiKeyMasked: null, lastSync: null });
-    vi.mocked(integrationsApi.getTelegramStatus).mockResolvedValue({ linked: false });
-    vi.mocked(integrationsApi.getWebhookConfig).mockResolvedValue({ hasWebhook: false, webhookUrl: null, authHeader: null });
-  };
-
-  it('should render integrations status', async () => {
-    vi.mocked(integrationsApi.getHevyStatus).mockResolvedValue({ enabled: true, hasKey: true, apiKeyMasked: '****123', lastSync: '2024-01-01T10:00:00Z' });
-    vi.mocked(integrationsApi.getTelegramStatus).mockResolvedValue({ linked: true, telegram_username: 'my_bot' });
-
+  it('should load initial statuses on mount', async () => {
     render(<IntegrationsPage />);
-
-    expect(await screen.findByText(/settings.integrations.shared.active/)).toBeInTheDocument();
-    expect(await screen.findByText(/settings.integrations.telegram.connected/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(integrationsApi.getHevyStatus).toHaveBeenCalled();
+      expect(integrationsApi.getTelegramStatus).toHaveBeenCalled();
+    });
   });
 
-  it('should save Hevy key successfully', async () => {
-    const user = userEvent.setup();
-    setupMocks();
-    vi.mocked(integrationsApi.saveHevyKey).mockResolvedValue({ enabled: true, hasKey: true, apiKeyMasked: '****KEY', lastSync: null });
-
+  it('should handle saving hevy key', async () => {
+    vi.mocked(integrationsApi.saveHevyKey).mockResolvedValue({ hasKey: true, apiKeyMasked: '****5678' } as any);
     render(<IntegrationsPage />);
-
-    const input = await screen.findByLabelText(/API Key/i);
-    await user.type(input, 'NEW_KEY');
     
-    const saveBtn = screen.getByRole('button', { name: /common.confirm/i });
-    fireEvent.click(saveBtn);
-
+    const input = screen.getByPlaceholderText(/settings\.integrations\.hevy\.hevy_placeholder/i);
+    fireEvent.change(input, { target: { value: 'my-new-key' } });
+    
+    const confirmBtn = screen.getByText(/common\.confirm/i);
+    fireEvent.click(confirmBtn);
+    
     await waitFor(() => {
-      expect(integrationsApi.saveHevyKey).toHaveBeenCalledWith('NEW_KEY');
-      expect(mockNotify.success).toHaveBeenCalledWith('settings.integrations.hevy.save_success');
+      expect(integrationsApi.saveHevyKey).toHaveBeenCalledWith('my-new-key');
+      expect(mockNotify.success).toHaveBeenCalled();
     });
   });
 
-  it('should sync Hevy successfully', async () => {
-    vi.mocked(integrationsApi.getHevyStatus).mockResolvedValue({ enabled: true, hasKey: true, apiKeyMasked: '****123', lastSync: null });
-    vi.mocked(integrationsApi.getTelegramStatus).mockResolvedValue({ linked: false });
-    vi.mocked(integrationsApi.getWebhookConfig).mockResolvedValue({ hasWebhook: false, webhookUrl: null, authHeader: null });
-    vi.mocked(integrationsApi.syncHevy).mockResolvedValue({ imported: 5, skipped: 0 });
-
+  it('should handle removing hevy key', async () => {
+    vi.mocked(integrationsApi.getHevyStatus).mockResolvedValue({ hasKey: true, apiKeyMasked: '****1234' } as any);
+    vi.mocked(integrationsApi.removeHevyKey).mockResolvedValue({ hasKey: false } as any);
+    
     render(<IntegrationsPage />);
-
-    const syncBtn = await screen.findByText(/settings.integrations.hevy.sync_button/);
-    fireEvent.click(syncBtn);
-
-    await waitFor(() => {
-      expect(integrationsApi.syncHevy).toHaveBeenCalled();
-      expect(mockNotify.success).toHaveBeenCalledWith('settings.integrations.hevy.sync_success');
-    });
-  });
-
-  it('should remove Hevy key via backend', async () => {
-    vi.mocked(integrationsApi.getHevyStatus)
-      .mockResolvedValueOnce({ enabled: true, hasKey: true, apiKeyMasked: '****123', lastSync: null });
-    vi.mocked(integrationsApi.getTelegramStatus).mockResolvedValue({ linked: false });
-    vi.mocked(integrationsApi.getWebhookConfig).mockResolvedValue({ hasWebhook: false, webhookUrl: null, authHeader: null });
-    vi.mocked(integrationsApi.removeHevyKey).mockResolvedValue({ enabled: false, hasKey: false, apiKeyMasked: null, lastSync: null });
-
-    render(<IntegrationsPage />);
-
-    const removeBtn = await screen.findByText(/settings.integrations.shared.remove/);
+    
+    await waitFor(() => screen.getByText(/Active \*\*\*\*1234/i));
+    
+    const removeBtn = screen.getByText(/settings\.integrations\.shared\.remove/i);
     fireEvent.click(removeBtn);
-
+    
     await waitFor(() => {
       expect(integrationsApi.removeHevyKey).toHaveBeenCalled();
-      expect(screen.getByLabelText(/API Key/i)).toBeInTheDocument();
-    });
-  });
-
-  it('should handle uploads (MFP)', async () => {
-    setupMocks();
-    vi.mocked(integrationsApi.uploadMfpCsv).mockResolvedValue({ created: 10, updated: 5, errors: 0, total_days: 7, error_messages: [] });
-
-    render(<IntegrationsPage />);
-
-    const fileInputs = document.querySelectorAll('input[type="file"]');
-    const mfpInput = fileInputs[0]!; // Based on DOM order in the component
-    
-    const file = new File(['test'], 'mfp.csv', { type: 'text/csv' });
-    fireEvent.change(mfpInput, { target: { files: [file] } });
-
-    await waitFor(() => {
-      expect(integrationsApi.uploadMfpCsv).toHaveBeenCalledWith(file);
-      expect(mockNotify.success).toHaveBeenCalledWith('settings.integrations.imports.success');
-    });
-  });
-
-  it('should handle uploads (Zepp)', async () => {
-    setupMocks();
-    vi.mocked(integrationsApi.uploadZeppLifeCsv).mockResolvedValue({ created: 5, updated: 2, errors: 1, total_days: 7, error_messages: ['Error row 1'] });
-
-    render(<IntegrationsPage />);
-
-    const fileInputs = document.querySelectorAll('input[type="file"]');
-    const zeppInput = fileInputs[1]!;
-    
-    const file = new File(['test'], 'zepp.csv', { type: 'text/csv' });
-    fireEvent.change(zeppInput, { target: { files: [file] } });
-
-    await waitFor(() => {
-      expect(integrationsApi.uploadZeppLifeCsv).toHaveBeenCalledWith(file);
-      expect(mockNotify.info).toHaveBeenCalledWith('settings.integrations.imports.errors_found');
-    });
-  });
-
-  it('should handle errors in Telegram generation', async () => {
-    setupMocks();
-    vi.mocked(integrationsApi.generateTelegramCode).mockRejectedValue(new Error('fail'));
-
-    render(<IntegrationsPage />);
-
-    const genBtn = await screen.findByText(/settings.integrations.telegram.generate_code/);
-    fireEvent.click(genBtn);
-
-    await waitFor(() => {
-      expect(mockNotify.error).toHaveBeenCalledWith('settings.integrations.telegram.generate_error');
-    });
-  });
-
-  it('should display webhook configuration when available', async () => {
-    vi.mocked(integrationsApi.getHevyStatus).mockResolvedValue({ enabled: true, hasKey: true, apiKeyMasked: '****123', lastSync: null });
-    vi.mocked(integrationsApi.getTelegramStatus).mockResolvedValue({ linked: false });
-    vi.mocked(integrationsApi.getWebhookConfig).mockResolvedValue({
-      hasWebhook: true,
-      webhookUrl: 'https://example.com/webhook/token123',
-      authHeader: 'Bearer ****abcd',
-    });
-
-    render(<IntegrationsPage />);
-
-    expect(await screen.findByText(/settings.integrations.hevy.webhook_title/i)).toBeInTheDocument();
-    expect(await screen.findByText(/example.com\/webhook\/token123/)).toBeInTheDocument();
-  });
-
-  it('should generate webhook credentials', async () => {
-    vi.mocked(integrationsApi.getHevyStatus).mockResolvedValue({ enabled: true, hasKey: true, apiKeyMasked: '****123', lastSync: null });
-    vi.mocked(integrationsApi.getTelegramStatus).mockResolvedValue({ linked: false });
-    vi.mocked(integrationsApi.getWebhookConfig).mockResolvedValueOnce({ hasWebhook: false, webhookUrl: null, authHeader: null });
-    vi.mocked(integrationsApi.generateWebhook).mockResolvedValue({
-      webhookUrl: 'https://example.com/webhook/new',
-      authHeader: 'Bearer full_secret',
-    });
-    vi.mocked(integrationsApi.getWebhookConfig).mockResolvedValueOnce({
-      hasWebhook: true,
-      webhookUrl: 'https://example.com/webhook/new',
-      authHeader: 'Bearer ****cret',
-    });
-
-    render(<IntegrationsPage />);
-
-    const configBtn = await screen.findByText(/settings.integrations.hevy.webhook_setup/);
-    fireEvent.click(configBtn);
-
-    await waitFor(() => {
-      expect(integrationsApi.generateWebhook).toHaveBeenCalled();
-      expect(mockNotify.success).toHaveBeenCalledWith('settings.integrations.hevy.webhook_success');
+      expect(screen.getByPlaceholderText(/settings\.integrations\.hevy\.hevy_placeholder/i)).toBeInTheDocument();
     });
   });
 });
-

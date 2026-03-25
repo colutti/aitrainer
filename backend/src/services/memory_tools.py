@@ -28,7 +28,7 @@ def _get_embedder() -> GoogleGenerativeAIEmbeddings:
     """Returns a Gemini embedder for generating 768-dim vectors."""
     return GoogleGenerativeAIEmbeddings(
         model=settings.GEMINI_EMBEDDER_MODEL,
-        google_api_key=settings.GEMINI_API_KEY  # type: ignore
+        google_api_key=settings.GEMINI_API_KEY,  # type: ignore
     )
 
 
@@ -71,7 +71,9 @@ def _ensure_collection(qdrant_client: QdrantClient, collection_name: str):
         except (ValueError, TypeError, AttributeError, Exception) as create_error:
             # Handle race condition
             if "already exists" not in str(create_error):
-                logger.error("Failed to create collection %s: %s", collection_name, create_error)
+                logger.error(
+                    "Failed to create collection %s: %s", collection_name, create_error
+                )
                 raise
 
 
@@ -132,7 +134,8 @@ def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str):
                 query_filter=qdrant_models.Filter(
                     must=[
                         qdrant_models.FieldCondition(
-                            key="user_id", match=qdrant_models.MatchValue(value=user_email)
+                            key="user_id",
+                            match=qdrant_models.MatchValue(value=user_email),
                         )
                     ]
                 ),
@@ -146,9 +149,11 @@ def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str):
                 payload = existing.payload or {}
                 existing_id = payload.get("id", existing.id)
                 existing_text = payload.get("memory", "")[:80]
-                logger.info("Duplicate memory found for %s: %s", user_email, existing_id)
+                logger.info(
+                    "Duplicate memory found for %s: %s", user_email, existing_id
+                )
                 return (
-                    f"⚠️ Memória similar já existe (ID: {existing_id}): \"{existing_text}...\"\n"
+                    f'⚠️ Memória similar já existe (ID: {existing_id}): "{existing_text}..."\n'
                     f"Use update_memory(memory_id='{existing_id}', "
                     "new_content=...) para atualizar, "
                     "ou delete_memory para remover antes de criar uma nova."
@@ -174,7 +179,9 @@ def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str):
             qdrant_client.upsert(collection_name, points=[point])
             logger.info(
                 "Saved memory for %s (ID: %s, category: %s)",
-                user_email, memory_id, category
+                user_email,
+                memory_id,
+                category,
             )
 
             return f"✅ Memória salva (ID: {memory_id}): {content[:60]}..."
@@ -266,7 +273,9 @@ def create_search_memory_tool(qdrant_client: QdrantClient, user_email: str):
                 date_str = ""
                 if created_at:
                     try:
-                        date_obj = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+                        date_obj = datetime.fromisoformat(
+                            created_at.replace("Z", "+00:00")
+                        )
                         date_str = date_obj.strftime("%d/%m/%Y")
                     except (ValueError, TypeError, AttributeError):
                         pass
@@ -347,7 +356,9 @@ def create_update_memory_tool(qdrant_client: QdrantClient, user_email: str):
             return f"✅ Memória atualizada (ID: {memory_id}): {new_content[:60]}..."
 
         except (ValueError, TypeError, AttributeError, Exception) as e:
-            logger.error("Failed to update memory %s for %s: %s", memory_id, user_email, e)
+            logger.error(
+                "Failed to update memory %s for %s: %s", memory_id, user_email, e
+            )
             return "❌ Erro ao atualizar memória. Tente novamente."
 
     return update_memory
@@ -396,7 +407,9 @@ def create_delete_memory_tool(qdrant_client: QdrantClient, user_email: str):
             return f"✅ Memória deletada (ID: {memory_id})"
 
         except (ValueError, TypeError, AttributeError, Exception) as e:
-            logger.error("Failed to delete memory %s for %s: %s", memory_id, user_email, e)
+            logger.error(
+                "Failed to delete memory %s for %s: %s", memory_id, user_email, e
+            )
             return "❌ Erro ao deletar memória. Tente novamente."
 
     return delete_memory
@@ -451,7 +464,10 @@ def create_list_raw_memories_tool(qdrant_client: QdrantClient, user_email: str):
             )
 
             from src.utils.qdrant_utils import scroll_all_user_points  # pylint: disable=import-outside-toplevel
-            all_points = scroll_all_user_points(qdrant_client, collection_name, user_filter)
+
+            all_points = scroll_all_user_points(
+                qdrant_client, collection_name, user_filter
+            )
 
             # Sort by created_at descending (newest first)
             all_points.sort(
@@ -480,10 +496,14 @@ def create_list_raw_memories_tool(qdrant_client: QdrantClient, user_email: str):
                 updated_str = ""
                 try:
                     if created_at:
-                        created_obj = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+                        created_obj = datetime.fromisoformat(
+                            created_at.replace("Z", "+00:00")
+                        )
                         created_str = created_obj.strftime("%d/%m/%Y %H:%M")
                     if updated_at:
-                        updated_obj = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
+                        updated_obj = datetime.fromisoformat(
+                            updated_at.replace("Z", "+00:00")
+                        )
                         updated_str = updated_obj.strftime("%d/%m/%Y %H:%M")
                 except (ValueError, TypeError, AttributeError):
                     pass

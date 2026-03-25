@@ -6,7 +6,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { useAuthStore } from '../../shared/hooks/useAuth';
 import { useNotificationStore } from '../../shared/hooks/useNotification';
 
-import { LoginPage } from './LoginPage';
+import LoginPage from './LoginPage';
 
 // Mock stores
 vi.mock('../../shared/hooks/useAuth', () => ({
@@ -69,8 +69,8 @@ describe('LoginPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByLabelText(/Email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Senha/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/exemplo@email\.com/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/••••••••/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Entrar/i })).toBeInTheDocument();
   });
 
@@ -86,7 +86,7 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: /Entrar/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Email inválido/i)).toBeInTheDocument();
+      expect(screen.getByText(/E-mail inválido/i)).toBeInTheDocument();
       expect(screen.getByText(/A senha deve ter pelo menos 6 caracteres/i)).toBeInTheDocument();
     });
   });
@@ -109,8 +109,8 @@ describe('LoginPage', () => {
       </MemoryRouter>
     );
 
-    await user.type(screen.getByLabelText(/Email/i), 'test@example.com');
-    await user.type(screen.getByLabelText(/Senha/i), 'password123');
+    await user.type(screen.getByPlaceholderText(/exemplo@email\.com/i), 'test@example.com');
+    await user.type(screen.getByPlaceholderText(/••••••••/i), 'password123');
 
     await user.click(screen.getByRole('button', { name: /Entrar/i }));
 
@@ -123,18 +123,9 @@ describe('LoginPage', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const user = userEvent.setup();
     const loginMock = vi.fn().mockRejectedValue(new Error('Invalid credentials'));
-    const errorNotificationMock = vi.fn();
 
     vi.mocked(useAuthStore).mockImplementation((selector?: unknown) => {
       const state = { ...mockAuth, login: loginMock };
-      if (typeof selector === 'function') {
-        return (selector as (s: typeof state) => unknown)(state);
-      }
-      return state;
-    });
-
-    vi.mocked(useNotificationStore).mockImplementation((selector?: unknown) => {
-      const state = { ...mockNotification, error: errorNotificationMock };
       if (typeof selector === 'function') {
         return (selector as (s: typeof state) => unknown)(state);
       }
@@ -147,13 +138,13 @@ describe('LoginPage', () => {
       </MemoryRouter>
     );
 
-    await user.type(screen.getByLabelText(/Email/i), 'test@example.com');
-    await user.type(screen.getByLabelText(/Senha/i), 'password123');
+    await user.type(screen.getByPlaceholderText(/exemplo@email\.com/i), 'test@example.com');
+    await user.type(screen.getByPlaceholderText(/••••••••/i), 'password123');
 
     await user.click(screen.getByRole('button', { name: /Entrar/i }));
 
     await waitFor(() => {
-      expect(errorNotificationMock).toHaveBeenCalledWith(expect.stringContaining('Falha no login'));
+      expect(screen.getByText(/E-mail ou senha incorreto/i)).toBeInTheDocument();
     });
     consoleSpy.mockRestore();
   });

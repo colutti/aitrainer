@@ -65,10 +65,14 @@ class ChatRepository(BaseRepository):
 
         # 2. Convert to ChatHistory model (this also sorts them chronologically)
         _DummyHistory = namedtuple("_DummyHistory", ["messages"])
-        all_chat_history = ChatHistory.from_mongodb_chat_message_history(_DummyHistory(messages))
+        all_chat_history = ChatHistory.from_mongodb_chat_message_history(
+            _DummyHistory(messages)
+        )
 
         # 3. Filter out SYSTEM messages before pagination
-        public_messages = [msg for msg in all_chat_history if msg.sender != Sender.SYSTEM]
+        public_messages = [
+            msg for msg in all_chat_history if msg.sender != Sender.SYSTEM
+        ]
 
         # 4. Apply pagination relative to the END (most recent messages)
         # Offset 0 means the last `limit` messages.

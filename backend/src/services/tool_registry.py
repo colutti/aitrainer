@@ -48,7 +48,9 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
         "search_hevy_exercises", ToolMemoryType.EPHEMERAL, "Search Hevy"
     ),
     "get_hevy_routine_detail": ToolMetadata(
-        "get_hevy_routine_detail", ToolMemoryType.EPHEMERAL, "Fetch Hevy routine details"
+        "get_hevy_routine_detail",
+        ToolMemoryType.EPHEMERAL,
+        "Fetch Hevy routine details",
     ),
     # Memorable (SAVE/CREATE/UPDATE - significant events)
     "save_workout": ToolMetadata(
@@ -73,15 +75,15 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
         "replace_hevy_exercise", ToolMemoryType.MEMORABLE, "Replace exercise"
     ),
     "set_routine_rest_and_ranges": ToolMetadata(
-        "set_routine_rest_and_ranges", ToolMemoryType.MEMORABLE, "Update rest times and rep ranges"
+        "set_routine_rest_and_ranges",
+        ToolMemoryType.MEMORABLE,
+        "Update rest times and rep ranges",
     ),
     "trigger_hevy_import": ToolMetadata(
         "trigger_hevy_import", ToolMemoryType.MEMORABLE, "Trigger Hevy workouts import"
     ),
     # Memory management (AI-driven, replacing Mem0 extraction)
-    "save_memory": ToolMetadata(
-        "save_memory", ToolMemoryType.MEMORABLE, "Save memory"
-    ),
+    "save_memory": ToolMetadata("save_memory", ToolMemoryType.MEMORABLE, "Save memory"),
     "search_memory": ToolMetadata(
         "search_memory", ToolMemoryType.EPHEMERAL, "Search memories"
     ),
@@ -102,7 +104,9 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
         "get_metabolism_data", ToolMemoryType.EPHEMERAL, "Get adaptive TDEE data"
     ),
     "update_tdee_params": ToolMetadata(
-        "update_tdee_params", ToolMemoryType.MEMORABLE, "Update TDEE parameters (activity_factor)"
+        "update_tdee_params",
+        ToolMemoryType.MEMORABLE,
+        "Update TDEE parameters (activity_factor)",
     ),
     # Events and planned reminders (persistent agenda for AI)
     "create_event": ToolMetadata(

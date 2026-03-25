@@ -72,9 +72,7 @@ class HistoryCompactor:
 
         return filtered
 
-    def _merge_summary(
-        self, existing_summary_str: str | None, new_data: dict
-    ) -> dict:
+    def _merge_summary(self, existing_summary_str: str | None, new_data: dict) -> dict:
         """
         Merges LLM partial output with existing summary.
         Categories present in new_data replace existing values.
@@ -128,7 +126,7 @@ class HistoryCompactor:
         return (
             candidate_messages,
             profile.long_term_summary,
-            profile.last_compaction_timestamp
+            profile.last_compaction_timestamp,
         )
 
     # pylint: disable=too-many-locals,too-many-branches,too-many-statements
@@ -182,7 +180,7 @@ class HistoryCompactor:
             user_email,
             current_summary or "",
             "\n".join(new_lines_to_summarize),
-            log_callback
+            log_callback,
         )
 
         if not response_text:

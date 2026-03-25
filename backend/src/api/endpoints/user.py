@@ -43,8 +43,8 @@ def verify_id_token(token: str) -> dict:
         return firebase_admin.auth.verify_id_token(token)
     except ValueError as e:
         if "Token used too early" in str(e):
-            logger.info("Token used too early (clock skew). Retrying in 1s...")
-            time.sleep(1.1)
+            logger.info("Token used too early (clock skew). Retrying in 3s...")
+            time.sleep(3.1)
             return firebase_admin.auth.verify_id_token(token)
         raise e
 
@@ -54,7 +54,7 @@ def verify_id_token(token: str) -> dict:
 def login(
     request: Request,  # pylint: disable=unused-argument
     data: FirebaseLoginRequest,
-    brain: AITrainerBrainDep
+    brain: AITrainerBrainDep,
 ) -> dict:
     """
     Authenticates a user with a Firebase ID token.
@@ -66,7 +66,9 @@ def login(
         email = decoded_token.get("email")
 
         if not email:
-            raise HTTPException(status_code=400, detail="Token does not contain an email")
+            raise HTTPException(
+                status_code=400, detail="Token does not contain an email"
+            )
 
         display_name = decoded_token.get("name", "")
         photo_base64 = decoded_token.get("picture", "")
@@ -121,10 +123,11 @@ def login(
 
 @router.post("/social-login")
 @rate_limit_login
-def social_login(request: Request, data: FirebaseLoginRequest, brain: AITrainerBrainDep) -> dict:
+def social_login(
+    request: Request, data: FirebaseLoginRequest, brain: AITrainerBrainDep
+) -> dict:
     """Legacy alias for /login using tokens."""
     return login(request, data, brain)
-
 
 
 @router.get("/profile")
@@ -164,6 +167,7 @@ def get_current_user(user_email: CurrentUser, brain: AITrainerBrainDep) -> dict:
         "current_daily_limit": user_profile.current_daily_limit,
         "current_plan_limit": user_profile.current_plan_limit,
         "effective_remaining_messages": user_profile.effective_remaining_messages,
+        "has_stripe_customer": bool(user_profile.stripe_customer_id),
     }
 
 
@@ -184,10 +188,14 @@ def update_profile(
             g_old = existing_profile.goal_type
             w_old = existing_profile.weekly_rate
             goal_changed = (
-                ("goal_type" in update_data and update_data["goal_type"] != g_old)
-                or ("weekly_rate" in update_data and update_data["weekly_rate"] != w_old)
-            )
+                "goal_type" in update_data and update_data["goal_type"] != g_old
+            ) or ("weekly_rate" in update_data and update_data["weekly_rate"] != w_old)
             updated_profile = existing_profile.model_copy(update=update_data)
+            logger.info(
+                "Saving user profile for %s. Onboarding completed: %s",
+                user_email,
+                updated_profile.onboarding_completed,
+            )
             brain.save_user_profile(updated_profile)
             if goal_changed:
                 brain.update_user_profile_fields(
@@ -199,7 +207,9 @@ def update_profile(
             logger.warning(
                 "Creating new profile during update for %s (unexpected)", user_email
             )
-            profile = UserProfile(**profile_data.model_dump(exclude_unset=True), email=user_email)
+            profile = UserProfile(
+                **profile_data.model_dump(exclude_unset=True), email=user_email
+            )
             brain.save_user_profile(profile)
 
         logger.info("User profile updated for email: %s", user_email)
@@ -234,7 +244,9 @@ def update_identity(
     existing_profile = brain.get_user_profile(user_email)
 
     if not existing_profile:
-        logger.warning("Attempted to update identity for non-existent user: %s", user_email)
+        logger.warning(
+            "Attempted to update identity for non-existent user: %s", user_email
+        )
         raise HTTPException(status_code=404, detail="User profile not found")
 
     # Use targeted partial update to avoid overwriting concurrent profile changes.

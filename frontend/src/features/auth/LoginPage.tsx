@@ -1,338 +1,235 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Mail, Lock, LogIn, Zap } from 'lucide-react';
-import { useEffect, useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 
 import { Button } from '../../shared/components/ui/Button';
 import { Input } from '../../shared/components/ui/Input';
-import { LanguageSelector } from '../../shared/components/ui/LanguageSelector';
+import { PremiumCard } from '../../shared/components/ui/premium/PremiumCard';
 import { useAuthStore } from '../../shared/hooks/useAuth';
-import { useNotificationStore } from '../../shared/hooks/useNotification';
-import { cn } from '../../shared/utils/cn';
 
-/**
- * LoginPage component
- * 
- * Provides a premium login experience with validation and error handling.
- */
-export function LoginPage() {
+const loginSchema = z.object({
+  email: z.string().email('E-mail inválido'),
+  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
+});
+
+const registerSchema = z.object({
+  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  email: z.string().email('E-mail inválido'),
+  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
+  confirmPassword: z.string().min(6, 'A confirmação deve ter pelo menos 6 caracteres'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "As senhas não coincidem",
+  path: ["confirmPassword"],
+});
+
+type LoginForm = z.infer<typeof loginSchema>;
+type RegisterForm = z.infer<typeof registerSchema>;
+
+export default function LoginPage() {
   const { t } = useTranslation();
-  const [isLoading, setIsLoading] = useState(false);
-  const login = useAuthStore((state) => state.login);
-  const socialLogin = useAuthStore((state) => state.socialLogin);
-  const notify = useNotificationStore();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [mode, setMode] = useState<'login' | 'register'>(searchParams.get('mode') === 'register' ? 'register' : 'login');
+  const location = useLocation();
+  const login = useAuthStore((state) => state.login);
+  const [isLogin, setIsLogin] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const m = searchParams.get('mode');
-    if (m === 'login' || m === 'register') {
-      setMode(m);
-    }
-  }, [searchParams]);
+  const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? '/dashboard';
 
-  const handleModeChange = (newMode: 'login' | 'register') => {
-    setMode(newMode);
-    setSearchParams({ mode: newMode }, { replace: true });
-  };
-
-  // Validation schema defined inside to allow for dynamic translations
-  const loginSchema = useMemo(() => z.object({
-    email: z.string().email(t('validation.email_invalid')),
-    password: z.string().min(6, t('validation.password_min')),
-    confirmPassword: z.string().optional(),
-  }).refine((data) => {
-    if (mode === 'register' && data.password !== data.confirmPassword) {
-      return false;
-    }
-    return true;
-  }, {
-    message: t('validation.passwords_dont_match', 'As senhas não coincidem'),
-    path: ['confirmPassword'],
-  }), [t, mode]);
-
-  type LoginForm = z.infer<typeof loginSchema>;
-
-  const {
-    register,
-    handleSubmit,
-    getValues,
-    formState: { errors },
-  } = useForm<LoginForm>({
+  const { register: registerLogin, handleSubmit: handleSubmitLogin, formState: { errors: loginErrors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (data: LoginForm) => {
+  const { register: registerSignup, handleSubmit: handleSubmitSignup, formState: { errors: signupErrors } } = useForm<RegisterForm>({
+    resolver: zodResolver(registerSchema),
+  });
+
+  const onSubmitLogin = async (data: LoginForm) => {
     setIsLoading(true);
+    setError(null);
     try {
-      if (mode === 'login') {
-        await login(data.email, data.password);
-        notify.success(t('login.welcome_back'));
-        await navigate('/dashboard');
-      } else {
-        const { auth } = await import('../../features/auth/firebase');
-        const { createUserWithEmailAndPassword } = await import('firebase/auth');
-        
-        const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-        const firebaseToken = await userCredential.user.getIdToken();
-        
-        // Manual backend login to avoid AuthGuard redirecting us before Stripe redirect
-        const { httpClient } = await import('../../shared/api/http-client');
-        const response = await httpClient<{ token: string }>('/user/login', {
-          method: 'POST',
-          body: JSON.stringify({ token: firebaseToken }),
-        });
-
-        if (!response?.token) {
-          throw new Error('Invalid response from server');
-        }
-
-        localStorage.setItem('auth_token', response.token);
-        
-        const planId = searchParams.get('plan')?.toLowerCase();
-        if (planId && planId !== 'free') {
-          try {
-            const { stripeApi } = await import('../../shared/api/stripe-api');
-            const { STRIPE_PRICE_IDS } = await import('../../shared/constants/stripe');
-            const priceId = STRIPE_PRICE_IDS[planId as keyof typeof STRIPE_PRICE_IDS];
-            
-            if (priceId) {
-              const url = await stripeApi.createCheckoutSession(
-                priceId,
-                window.location.origin + '/dashboard?payment=success',
-                window.location.origin + '/onboarding'
-              );
-              window.location.href = url;
-              return;
-            } else {
-              console.warn(`No price ID found for plan: ${planId}`);
-            }
-          } catch (stripeError) {
-            console.error('Stripe redirect error:', stripeError);
-            notify.error(t('settings.subscription.error', 'Erro ao iniciar pagamento'));
-          }
-        }
-        
-        // If free plan or stripe failed, we sync with the store to allow the normal flow
-        await login(data.email, data.password);
-        notify.success(t('login.account_created', 'Conta criada com sucesso!'));
-        await navigate('/dashboard');
-      }
-    } catch (error: unknown) {
-      console.error('Login error:', error);
-      const errorCode = error instanceof Error && 'code' in error 
-        ? (error as { code: string }).code 
-        : '';
-      
-      let message = t('login.error_message');
-      
-      if (mode === 'login') {
-        if (errorCode === 'auth/invalid-credential') message = t('login.invalid_credentials');
-      } else {
-        if (errorCode === 'auth/email-already-in-use') message = t('login.email_already_in_use', 'Este email já está em uso.');
-        if (errorCode === 'auth/weak-password') message = t('login.weak_password', 'A senha é muito fraca.');
-      }
-      
-      notify.error(message);
+      await login(data.email, data.password);
+      void navigate(from, { replace: true });
+    } catch {
+      setError(t('auth.login_error'));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleForgotPassword = async () => {
-    const email = getValues('email');
-    if (!email) {
-      notify.error(t('login.enter_email_first'));
-      return;
-    }
-    
+  const onSubmitSignup = (_data: RegisterForm) => {
+    setIsLoading(true);
+    setError(null);
     try {
-      const { auth } = await import('../../features/auth/firebase');
-      const { sendPasswordResetEmail } = await import('firebase/auth');
-      await sendPasswordResetEmail(auth, email);
-      notify.success(t('login.password_reset_sent'));
-    } catch (error: unknown) {
-      console.error('Password reset error:', error);
-      notify.error(t('login.error_message'));
+      setError("O registro de novos usuários é restrito via convite neste momento.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-dark-bg overflow-hidden font-outfit">
-      {/* Left Side: Visual Experience */}
-      <div className="hidden lg:flex lg:w-3/5 relative overflow-hidden group">
-        <img 
-          src="/login_side.png" 
-          alt="Professional Fitness Experience" 
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-[10s] group-hover:scale-110"
-        />
-        <div className="absolute inset-0 bg-linear-to-r from-dark-bg via-dark-bg/20 to-transparent" />
-        <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
-        
-        {/* Brand Overlay */}
-        <div className="absolute top-12 left-12 animate-in fade-in slide-in-from-left duration-1000">
-           <div className="flex items-center gap-4">
-              <img src="/brand_icon_final.png" alt="FityQ" className="h-28 w-28 drop-shadow-2xl brightness-110" />
-              <div>
-                <h1 className="text-4xl font-black text-white tracking-widest uppercase">FityQ</h1>
-                <p className="text-gradient-start font-bold uppercase tracking-[0.3em] text-xs">{t('login.brand_tagline')}</p>
+    <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-4 selection:bg-white/20 overflow-hidden relative">
+      {/* BACKGROUND DECORATION */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px]" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-orange-500/10 rounded-full blur-[120px]" />
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md relative z-10"
+      >
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6 backdrop-blur-xl shadow-inner">
+            <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Deep Space Premium</span>
+          </div>
+          <h1 className="text-5xl font-black text-white tracking-tighter mb-2">FITYQ</h1>
+          <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-[0.3em]">{t('nav.brand_tagline')}</p>
+        </div>
+
+        <PremiumCard className="p-10 border-white/10 shadow-2xl backdrop-blur-3xl overflow-visible">
+          {/* TABS */}
+          <div className="flex bg-white/5 p-1.5 rounded-2xl mb-8 border border-white/5 relative">
+            <div 
+              className="absolute h-[calc(100%-12px)] bg-white rounded-xl shadow-lg transition-all duration-500 ease-out"
+              style={{ 
+                width: 'calc(50% - 6px)', 
+                left: isLogin ? '6px' : 'calc(50%)',
+                transform: isLogin ? 'none' : 'translateX(0)'
+              }}
+            />
+            <button
+              onClick={() => { setIsLogin(true); }}
+              className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest relative z-10 transition-colors duration-300 ${isLogin ? 'text-black' : 'text-zinc-500'}`}
+            >
+              Login
+            </button>
+            <button
+              onClick={() => { setIsLogin(false); }}
+              className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest relative z-10 transition-colors duration-300 ${!isLogin ? 'text-black' : 'text-zinc-500'}`}
+            >
+              Registro
+            </button>
+          </div>
+
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-2xl mb-6 flex items-center gap-3"
+            >
+              <AlertCircle size={18} />
+              <p className="text-xs font-bold">{error}</p>
+            </motion.div>
+          )}
+
+          {isLogin ? (
+            <form onSubmit={(e) => { void handleSubmitLogin(onSubmitLogin)(e); }} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">E-mail</label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
+                  <Input 
+                    type="email" 
+                    {...registerLogin('email')} 
+                    error={loginErrors.email?.message}
+                    placeholder="exemplo@email.com"
+                    className="pl-12 h-14 bg-white/5 border-white/5 focus:border-white/20 rounded-2xl text-sm font-bold text-white"
+                  />
+                </div>
               </div>
-           </div>
-        </div>
 
-        <div className="absolute bottom-12 left-12 max-w-lg animate-in fade-in slide-in-from-bottom duration-1000 delay-300">
-          <h2 className="text-5xl font-bold text-white leading-tight">
-            {t('login.marketing_title').split('Performance').map((part, i) => (
-              <span key={i}>
-                {part}
-                {i === 0 && <span className="text-gradient-start">Performance</span>}
-              </span>
-            ))}
-          </h2>
-          <p className="text-text-secondary mt-6 text-lg leading-relaxed">
-            {t('login.marketing_subtitle')}
-          </p>
-        </div>
-      </div>
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center px-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Senha</label>
+                  <button type="button" className="text-[9px] font-black uppercase text-indigo-400 hover:text-indigo-300 transition-colors">Esqueci a senha</button>
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
+                  <Input 
+                    type="password" 
+                    {...registerLogin('password')} 
+                    error={loginErrors.password?.message}
+                    placeholder="••••••••"
+                    className="pl-12 h-14 bg-white/5 border-white/5 focus:border-white/20 rounded-2xl text-sm font-bold text-white"
+                  />
+                </div>
+              </div>
 
-      {/* Right Side: Login Form */}
-      <div className="w-full lg:w-2/5 flex items-center justify-center p-8 bg-dark-bg relative z-10 border-l border-white/5 shadow-[-20px_0_50px_rgba(0,0,0,0.5)]">
-        {/* Language Selector in Corner */}
-        <div className="absolute top-8 right-8 z-50">
-          <LanguageSelector />
-        </div>
-
-        <div className="w-full max-w-md space-y-10 animate-in fade-in slide-in-from-right duration-700 bg-white/2 p-10 rounded-[2.5rem] border border-white/5 backdrop-blur-xl relative">
-          <div className="lg:hidden text-center mb-10">
-            <img src="/brand_icon_final.png" alt="FityQ" className="h-36 w-auto mx-auto drop-shadow-2xl mb-4 brightness-110" />
-            <h1 className="text-3xl font-bold text-white tracking-widest">FityQ</h1>
-          </div>
-
-          <div className="flex bg-white/5 p-1 rounded-2xl">
-            <button 
-              onClick={() => { handleModeChange('login'); }}
-              className={cn(
-                "flex-1 py-3 text-sm font-bold rounded-xl transition-all",
-                mode === 'login' ? "bg-linear-to-r from-gradient-start to-gradient-end text-white shadow-lg" : "text-text-secondary hover:text-white"
-              )}
-            >
-              {t('login.title')}
-            </button>
-            <button 
-              onClick={() => { handleModeChange('register'); }}
-              className={cn(
-                "flex-1 py-3 text-sm font-bold rounded-xl transition-all",
-                mode === 'register' ? "bg-linear-to-r from-gradient-start to-gradient-end text-white shadow-lg" : "text-text-secondary hover:text-white"
-              )}
-            >
-              {t('login.register_tab', 'Cadastrar')}
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            <h2 className="text-4xl font-extrabold text-white tracking-tight">
-              {mode === 'login' ? t('login.title') : t('login.register_title', 'Crie sua Conta')}
-            </h2>
-            <p className="text-text-secondary text-lg">
-              {mode === 'login' ? t('login.subtitle') : t('login.register_subtitle', 'Comece sua jornada fitness hoje mesmo.')}
-            </p>
-          </div>
-
-          <form 
-            onSubmit={(e) => {
-              void handleSubmit(onSubmit)(e);
-            }} 
-            className="space-y-8"
-          >
-            <div className="space-y-4">
-              <Input
-                label={t('login.email_label')}
-                id="email"
-                type="email"
-                placeholder={t('login.email_placeholder')}
-                leftIcon={<Mail size={20} className="text-text-muted" />}
-                className="bg-white/5 border-white/10 h-14"
-                error={errors.email?.message}
-                {...register('email')}
-              />
-
-              <Input
-                label={t('login.password_label')}
-                id="password"
-                type="password"
-                placeholder={t('login.password_placeholder')}
-                leftIcon={<Lock size={20} className="text-text-muted" />}
-                className="bg-white/5 border-white/10 h-14"
-                error={errors.password?.message}
-                {...register('password')}
-              />
-
-              {mode === 'register' && (
-                <Input
-                  label={t('login.confirm_password_label', 'Confirmar Senha')}
-                  id="confirmPassword"
-                  type="password"
-                  placeholder={t('onboarding.confirm_password_placeholder')}
-                  leftIcon={<Lock size={20} className="text-text-muted" />}
-                  className="bg-white/5 border-white/10 h-14"
-                  error={errors.confirmPassword?.message}
-                  {...register('confirmPassword')}
+              <Button 
+                type="submit" 
+                fullWidth 
+                size="lg" 
+                isLoading={isLoading}
+                className="h-14 rounded-2xl bg-white text-black font-black shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all mt-4"
+              >
+                <LogIn className="mr-2 w-5 h-5" />
+                Entrar
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={(e) => { void handleSubmitSignup(onSubmitSignup)(e); }} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Nome Completo</label>
+                <Input 
+                  {...registerSignup('name')} 
+                  error={signupErrors.name?.message}
+                  placeholder="Seu nome"
+                  className="h-14 bg-white/5 border-white/5 focus:border-white/20 rounded-2xl text-sm font-bold text-white"
                 />
-              )}
-            </div>
-
-            {mode === 'login' && (
-              <div className="flex items-center justify-end">
-                <button
-                  type="button"
-                  onClick={() => void handleForgotPassword()}
-                  className="text-sm font-semibold text-gradient-start hover:text-gradient-end transition-colors underline-offset-4 hover:underline"
-                >
-                  {t('login.forgot_password')}
-                </button>
               </div>
-            )}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">E-mail</label>
+                <Input 
+                  type="email" 
+                  {...registerSignup('email')} 
+                  error={signupErrors.email?.message}
+                  placeholder="exemplo@email.com"
+                  className="h-14 bg-white/5 border-white/5 focus:border-white/20 rounded-2xl text-sm font-bold text-white"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Senha</label>
+                  <Input 
+                    type="password" 
+                    {...registerSignup('password')} 
+                    error={signupErrors.password?.message}
+                    className="h-14 bg-white/5 border-white/5 focus:border-white/20 rounded-2xl text-sm font-bold text-white"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Confirmar</label>
+                  <Input 
+                    type="password" 
+                    {...registerSignup('confirmPassword')} 
+                    error={signupErrors.confirmPassword?.message}
+                    className="h-14 bg-white/5 border-white/5 focus:border-white/20 rounded-2xl text-sm font-bold text-white"
+                  />
+                </div>
+              </div>
+              <Button 
+                type="submit" 
+                fullWidth 
+                size="lg" 
+                isLoading={isLoading}
+                className="h-14 rounded-2xl bg-white text-black font-black shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all mt-4"
+              >
+                Criar Conta
+              </Button>
+            </form>
+          )}
+        </PremiumCard>
 
-            <Button
-              type="submit"
-              fullWidth
-              isLoading={isLoading}
-              className="h-14 text-xl font-bold bg-linear-to-r from-gradient-start to-gradient-end shadow-orange hover:shadow-orange/40 transition-all rounded-xl"
-            >
-              {mode === 'login' ? t('login.submit') : t('login.register_submit', 'Criar Conta')}
-              {!isLoading && (mode === 'login' ? <LogIn className="ml-3" size={22} /> : <Zap className="ml-3" size={22} />)}
-            </Button>
-          </form>
-
-          <div className="relative flex items-center py-2">
-            <div className="grow border-t border-white/10"></div>
-            <span className="shrink-0 px-4 text-text-muted text-sm uppercase tracking-wider">
-              {t('login.or_continue_with') || "Ou continue com"}
-            </span>
-            <div className="grow border-t border-white/10"></div>
-          </div>
-
-          <Button
-            type="button"
-            variant="secondary"
-            fullWidth
-            onClick={() => void socialLogin('google')}
-            className="h-14 bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 text-white font-semibold flex items-center justify-center gap-3 transition-colors rounded-xl"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-            </svg>
-            Google
-          </Button>
-        </div>
-      </div>
+        <p className="text-center mt-10 text-[10px] font-bold text-zinc-600 uppercase tracking-widest leading-loose">
+          Ao continuar, você aceita nossos <Link to="/terms" className="text-zinc-400 hover:text-white transition-colors">Termos de Uso</Link> e <Link to="/privacy" className="text-zinc-400 hover:text-white transition-colors">Privacidade</Link>
+        </p>
+      </motion.div>
     </div>
   );
 }

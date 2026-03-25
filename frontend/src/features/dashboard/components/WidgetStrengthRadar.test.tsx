@@ -1,38 +1,35 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 import { WidgetStrengthRadar } from './WidgetStrengthRadar';
 
 // Mock recharts
-vi.mock('recharts', () => {
-  const OriginalModule = vi.importActual('recharts');
-  return {
-    ...OriginalModule,
-    ResponsiveContainer: ({ children }: any) => <div style={{ width: '100%', height: '100%' }}>{children}</div>,
-    RadarChart: ({ children }: any) => <svg>{children}</svg>,
-    PolarGrid: () => <g />,
-    PolarAngleAxis: () => <g />,
-    PolarRadiusAxis: () => <g />,
-    Radar: () => <g />,
-  };
-});
+vi.mock('recharts', () => ({
+  ResponsiveContainer: ({ children }: { children: any }) => <div style={{ width: '100%', height: '100%' }}>{children}</div>,
+  RadarChart: ({ children }: { children: any }) => <svg>{children}</svg>,
+  PolarGrid: () => <g />,
+  PolarAngleAxis: () => <g />,
+  PolarRadiusAxis: () => <g />,
+  Radar: () => <g />,
+}));
+
+const mockData: any = {
+  push: 80,
+  pull: 70,
+  legs: 90,
+  labels: ['Peito', 'Costas', 'Pernas', 'Ombros', 'Braços'],
+  values: [80, 70, 90, 60, 75],
+};
 
 describe('WidgetStrengthRadar', () => {
-  const mockData = {
-    push: 0.8,
-    pull: 0.7,
-    legs: 0.9,
-    core: 0.5,
-  };
-
-  it('should render title and subtitle', () => {
+  it('should render title and subtitle keys', () => {
     render(<WidgetStrengthRadar data={mockData} />);
-    expect(screen.getByText('Balanço de Força')).toBeInTheDocument();
-    expect(screen.getByText('Equilíbrio por Categoria')).toBeInTheDocument();
+    expect(screen.getByText(/Equilíbrio de Força/i)).toBeInTheDocument();
+    expect(screen.getByText(/Distribuição por grupamento/i)).toBeInTheDocument();
   });
 
-  it('should apply custom className', () => {
-    const { container } = render(<WidgetStrengthRadar data={mockData} className="custom-radar" />);
-    expect(container.firstChild).toHaveClass('custom-radar');
+  it('should render radar chart container', () => {
+    const { container } = render(<WidgetStrengthRadar data={mockData} />);
+    expect(container.querySelector('svg')).toBeInTheDocument();
   });
 });

@@ -22,7 +22,9 @@ def _validate_date_format(date: str | None) -> str | None:
         datetime.strptime(date, "%Y-%m-%d")
         return None
     except ValueError:
-        return f"❌ Data inválida: '{date}'. Use o formato YYYY-MM-DD (ex: '2025-12-01')"
+        return (
+            f"❌ Data inválida: '{date}'. Use o formato YYYY-MM-DD (ex: '2025-12-01')"
+        )
 
 
 def create_create_event_tool(database: Database, user_email: str):
@@ -74,7 +76,9 @@ def create_create_event_tool(database: Database, user_email: str):
             )
 
             event_id = repo.save_event(event)
-            logger.info("Event created: %s (ID: %s) for user %s", title, event_id, user_email)
+            logger.info(
+                "Event created: %s (ID: %s) for user %s", title, event_id, user_email
+            )
 
             return (
                 f"✅ Evento criado com sucesso!\n"
@@ -122,10 +126,14 @@ def create_list_events_tool(database: Database, user_email: str):
             lines = ["📋 **Seus eventos e planos:**\n"]
             for event in events:
                 date_str = f"📅 {event.date}" if event.date else "📅 Sem prazo"
-                recur_str = f" | 🔄 {event.recurrence}" if event.recurrence != "none" else ""
+                recur_str = (
+                    f" | 🔄 {event.recurrence}" if event.recurrence != "none" else ""
+                )
                 desc_str = f"\n   {event.description}" if event.description else ""
 
-                lines.append(f"- **{event.title}** ({event.id})\n  {date_str}{recur_str}{desc_str}")
+                lines.append(
+                    f"- **{event.title}** ({event.id})\n  {date_str}{recur_str}{desc_str}"
+                )
 
             return "\n".join(lines)
         except (ValueError, TypeError, AttributeError) as e:

@@ -131,29 +131,39 @@ class NutritionRepository(BaseRepository):
             del doc_copy["_id"]
         return NutritionWithId(**doc_copy)
 
-    def _get_last_14_days_stats(self, now: datetime, logs: list[dict]) -> list[DailyMacros]:
+    def _get_last_14_days_stats(
+        self, now: datetime, logs: list[dict]
+    ) -> list[DailyMacros]:
         stats = []
         for i in range(14):
             date_item = (now - timedelta(days=i)).replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
-            log = next((log_item for log_item in logs if log_item["date"] == date_item), None)
+            log = next(
+                (log_item for log_item in logs if log_item["date"] == date_item), None
+            )
             if log:
-                stats.append(DailyMacros(
-                    date=date_item,
-                    calories=log["calories"],
-                    protein=log["protein_grams"],
-                    carbs=log["carbs_grams"],
-                    fat=log["fat_grams"],
-                ))
+                stats.append(
+                    DailyMacros(
+                        date=date_item,
+                        calories=log["calories"],
+                        protein=log["protein_grams"],
+                        carbs=log["carbs_grams"],
+                        fat=log["fat_grams"],
+                    )
+                )
             else:
-                stats.append(DailyMacros(date=date_item, calories=0, protein=0, carbs=0, fat=0))
+                stats.append(
+                    DailyMacros(date=date_item, calories=0, protein=0, carbs=0, fat=0)
+                )
         stats.sort(key=lambda x: x.date)
         return stats
 
     def _get_weekly_adherence(self, now: datetime, logs: list[dict]) -> list[bool]:
         current_week_start = now - timedelta(days=now.weekday())
-        current_week_start = current_week_start.replace(hour=0, minute=0, second=0, microsecond=0)
+        current_week_start = current_week_start.replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
         adherence = [False] * 7
         for log_entry in logs:
             if log_entry["date"] >= current_week_start:
@@ -171,11 +181,13 @@ class NutritionRepository(BaseRepository):
         count = len(recent_logs)
         avg_cal = (
             sum(log_item["calories"] for log_item in recent_logs) / count
-            if count > 0 else 0.0
+            if count > 0
+            else 0.0
         )
         avg_prot = (
             sum(log_item["protein_grams"] for log_item in recent_logs) / count
-            if count > 0 else 0.0
+            if count > 0
+            else 0.0
         )
         return avg_cal, avg_prot
 

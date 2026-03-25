@@ -10,7 +10,6 @@ interface ProtectedRouteProps {
 /**
  * ProtectedRoute component
  * 
- *
  * Guards routes that require authentication.
  * Redirects to /login if not authenticated.
  * Redirects to /dashboard if authenticated but lacks admin privileges (when required).
@@ -29,8 +28,11 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
   }
 
   if (userInfo && !userInfo.onboarding_completed) {
-    // If onboarding is not completed, redirect to onboarding page but preserve search
-    return <Navigate to={`/onboarding${location.search}`} replace />;
+    // If onboarding is not completed, redirect to onboarding page
+    // but only if we are not already there to avoid infinite loop
+    if (!location.pathname.startsWith('/onboarding')) {
+      return <Navigate to={`/onboarding${location.search}`} replace />;
+    }
   }
 
   if (requireAdmin && !isAdmin) {

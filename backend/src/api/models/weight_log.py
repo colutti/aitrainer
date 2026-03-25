@@ -33,18 +33,24 @@ class WeightLogInput(BaseModel):
     visceral_fat: float | None = Field(
         default=None, ge=0, le=50, description="Visceral fat level"
     )
-    bmr: int | None = Field(default=None, ge=500, le=5000, description="Basal Metabolic Rate")
+    bmr: int | None = Field(
+        default=None, ge=500, le=5000, description="Basal Metabolic Rate"
+    )
     bmi: float | None = Field(default=None, ge=10, le=60, description="Body Mass Index")
 
     # Body Measurements (optional, in cm)
-    neck_cm: float | None = Field(default=None, ge=20, le=100, description="Neck circumference")
+    neck_cm: float | None = Field(
+        default=None, ge=20, le=100, description="Neck circumference"
+    )
     chest_cm: float | None = Field(
         default=None, ge=40, le=200, description="Chest circumference"
     )
     waist_cm: float | None = Field(
         default=None, ge=40, le=200, description="Waist circumference"
     )
-    hips_cm: float | None = Field(default=None, ge=40, le=200, description="Hips circumference")
+    hips_cm: float | None = Field(
+        default=None, ge=40, le=200, description="Hips circumference"
+    )
     bicep_r_cm: float | None = Field(
         default=None, ge=10, le=100, description="Right bicep circumference"
     )
@@ -68,7 +74,9 @@ class WeightLogInput(BaseModel):
     source: str = Field(
         default="manual", description="Data source: manual, scale_import, chat"
     )
-    notes: str | None = Field(default=None, description="Optional notes for the weight log")
+    notes: str | None = Field(
+        default=None, description="Optional notes for the weight log"
+    )
 
 
 class WeightLog(WeightLogInput):

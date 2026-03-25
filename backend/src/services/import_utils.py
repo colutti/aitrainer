@@ -1,8 +1,10 @@
 """
 Shared utilities for data import.
 """
+
 from fastapi import UploadFile, HTTPException
 from src.core.logs import logger
+
 
 async def read_csv_file(file: UploadFile) -> str:
     """
@@ -16,4 +18,6 @@ async def read_csv_file(file: UploadFile) -> str:
         return content.decode("utf-8")
     except Exception as e:
         logger.error("Error reading uploaded CSV file: %s", e)
-        raise HTTPException(status_code=400, detail="Falha ao ler o arquivo CSV.") from e
+        raise HTTPException(
+            status_code=400, detail="Falha ao ler o arquivo CSV."
+        ) from e

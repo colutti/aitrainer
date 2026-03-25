@@ -1,55 +1,31 @@
-import { Scale, Flame } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
-import { NutritionTab } from './components/NutritionTab';
-import { WeightTab } from './components/WeightTab';
-
-
-
+import { BodyView, type BodyTab } from './components/BodyView';
 
 /**
- * BodyPage component
+ * BodyPage component (Container)
  * 
- * Tracks weight, body composition, nutrition, and metabolic trends.
- * Uses a tab-based navigation for different health metrics.
+ * Tracks weight, body composition and nutrition.
+ * Metabolism data is now consolidated in the main Dashboard.
  */
-export function BodyPage() {
+export default function BodyPage() {
+  const navigate = useNavigate();
   const location = useLocation();
-  const isNutrition = location.pathname.includes('nutrition');
-  const { t } = useTranslation();
+
+  // Determine active tab based on URL
+  const activeTab: BodyTab = 
+    location.pathname.includes('nutrition') 
+      ? 'nutrition' 
+      : 'weight';
+
+  const handleTabChange = (tab: BodyTab) => {
+    void navigate(`/dashboard/body/${tab}`);
+  };
   
   return (
-    <div className="space-y-8 pb-20">
-      {/* Header - Dynamic based on route */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-black text-text-primary flex items-center gap-3 tracking-tight">
-            {isNutrition ? (
-              <>
-                <Flame className="text-orange-500" size={32} />
-                {t('body.nutrition_title')}
-              </>
-            ) : (
-              <>
-                <Scale className="text-blue-400" size={32} />
-                {t('body.weight_title')}
-              </>
-            )}
-          </h1>
-          <p className="text-text-secondary mt-2 md:ml-12 pr-4 text-sm font-medium">
-            {isNutrition 
-              ? t('body.nutrition_subtitle')
-              : t('body.weight_subtitle')
-            }
-          </p>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="min-h-[600px]">
-        {isNutrition ? <NutritionTab /> : <WeightTab />}
-      </div>
-    </div>
+    <BodyView 
+      activeTab={activeTab} 
+      onTabChange={handleTabChange} 
+    />
   );
 }

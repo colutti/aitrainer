@@ -57,6 +57,7 @@ class MetabolismStats(BaseModel):
     macro_targets: Optional[Dict[str, int]] = None
     goal_type: str = "maintain"
     consistency_score: int = 0
+    stability_score: int = 0
 
 
 class DashboardStats(BaseModel):
@@ -129,9 +130,9 @@ class DashboardData(BaseModel):
     weightHistory: Optional[List[WeightHistoryPoint]] = None
     weightTrend: Optional[List[TrendPoint]] = None
     fatHistory: Optional[List[TrendPoint]] = None  # raw fat data
-    fatTrend: Optional[List[TrendPoint]] = None    # EMA-smoothed fat
+    fatTrend: Optional[List[TrendPoint]] = None  # EMA-smoothed fat
     muscleHistory: Optional[List[TrendPoint]] = None  # raw muscle data
-    muscleTrend: Optional[List[TrendPoint]] = None    # EMA-smoothed muscle
+    muscleTrend: Optional[List[TrendPoint]] = None  # EMA-smoothed muscle
     streak: Optional[StreakStats] = None
     recentPRs: Optional[List[PRRecord]] = None
     strengthRadar: Optional[StrengthRadarData] = None

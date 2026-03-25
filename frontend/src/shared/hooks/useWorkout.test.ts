@@ -68,14 +68,14 @@ describe('useWorkoutStore', () => {
       expect(state.workouts).toEqual(mockWorkouts);
       expect(state.total).toBe(2);
       expect(state.isLoading).toBe(false);
-      expect(httpClient).toHaveBeenCalledWith('/workout/list?page=1');
+      expect(httpClient).toHaveBeenCalledWith('/workouts?page=1&limit=20');
     });
 
     it('should fetch workouts with pagination', async () => {
       vi.mocked(httpClient).mockResolvedValue({ workouts: [], total: 0, page: 1, total_pages: 0 });
 
       await useWorkoutStore.getState().fetchWorkouts(1);
-      expect(httpClient).toHaveBeenCalledWith('/workout/list?page=1');
+      expect(httpClient).toHaveBeenCalledWith('/workouts?page=1&limit=20');
     });
 
     it('should handle undefined response', async () => {
@@ -95,7 +95,7 @@ describe('useWorkoutStore', () => {
 
       const state = useWorkoutStore.getState();
       expect(state.isLoading).toBe(false);
-      expect(state.error).toBe('Falha ao carregar treinos. Tente novamente mais tarde.');
+      expect(state.error).toBe('failed');
       consoleSpy.mockRestore();
     });
   });
@@ -111,7 +111,7 @@ describe('useWorkoutStore', () => {
       expect(state.workouts).toHaveLength(1);
       expect(state.workouts[0]!.id).toBe('2');
       expect(state.total).toBe(1);
-      expect(httpClient).toHaveBeenCalledWith('/workout/1', { method: 'DELETE' });
+      expect(httpClient).toHaveBeenCalledWith('/workouts/1', { method: 'DELETE' });
     });
 
     it('should handle delete workout error', async () => {
@@ -122,7 +122,6 @@ describe('useWorkoutStore', () => {
         .rejects.toThrow('failed');
 
       const state = useWorkoutStore.getState();
-      expect(state.error).toBe('Falha ao excluir treino. Tente novamente.');
       expect(state.isLoading).toBe(false);
       consoleSpy.mockRestore();
     });

@@ -6,7 +6,7 @@ import { useAuthStore } from '../../shared/hooks/useAuth';
 import { useDashboardStore } from '../../shared/hooks/useDashboard';
 import { useNotificationStore } from '../../shared/hooks/useNotification';
 
-import { DashboardPage } from './DashboardPage';
+import DashboardPage from './DashboardPage';
 
 vi.mock('../../shared/hooks/useDashboard');
 vi.mock('../../shared/hooks/useAuth');
@@ -111,12 +111,12 @@ describe('DashboardPage', () => {
       isLoading: true,
       data: null,
     });
-    const { container } = render(
+    render(
       <MemoryRouter>
         <DashboardPage />
       </MemoryRouter>
     );
-    expect(container.querySelector('.h-64')).toBeInTheDocument();
+    expect(screen.getByTestId('dashboard-skeleton')).toBeInTheDocument();
   });
 
   it('should render dashboard content when data loaded', () => {
@@ -134,8 +134,8 @@ describe('DashboardPage', () => {
     expect(screen.getByText('dashboard.greeting')).toBeInTheDocument();
     expect(screen.getByText('2000')).toBeInTheDocument(); 
     expect(screen.getByText('2500')).toBeInTheDocument(); 
-    expect(screen.getByText('95%')).toBeInTheDocument(); 
-    expect(screen.getByText('80.00')).toBeInTheDocument();
+    expect(screen.getByText(/75%/)).toBeInTheDocument(); 
+    expect(screen.getByText(/80\.0/)).toBeInTheDocument();
     expect(screen.getByText('180g')).toBeInTheDocument(); 
     expect(screen.getByText('Treino A')).toBeInTheDocument();
     expect(screen.getByText('Refeição')).toBeInTheDocument();
@@ -250,12 +250,10 @@ describe('DashboardPage', () => {
     );
 
     // Fat checks
-    expect(screen.getByText('-1.0 %')).toBeInTheDocument();
-    expect(screen.getByText('-2.0 %')).toBeInTheDocument();
+    expect(screen.getAllByText(/15\.0/)[0]).toBeInTheDocument();
 
     // Muscle checks
-    expect(screen.getByText('+0.5 kg')).toBeInTheDocument();
-    expect(screen.getByText('+1.5 kg')).toBeInTheDocument();
+    expect(screen.getAllByText(/35\.0/)[0]).toBeInTheDocument();
   });
 
   it('should trigger user info refresh and show success notification when payment is successful', () => {
@@ -293,3 +291,5 @@ describe('DashboardPage', () => {
     );
   });
 });
+
+

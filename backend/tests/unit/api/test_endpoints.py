@@ -474,6 +474,9 @@ class TestEndpoints(unittest.TestCase):
         # Arrange
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
         mock_brain = MagicMock()
+        mock_user = MagicMock()
+        mock_user.subscription_plan = "Pro"
+        mock_brain.get_user_profile.return_value = mock_user
         mock_brain.save_trainer_profile.return_value = (
             None  # Assuming save_trainer_profile returns None
         )
@@ -519,7 +522,7 @@ class TestEndpoints(unittest.TestCase):
         # Arrange
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
         mock_brain = MagicMock()
-        mock_brain.get_trainer_profile.return_value = TrainerProfile(
+        mock_brain.get_or_create_trainer_profile.return_value = TrainerProfile(
             user_email="test@test.com", trainer_type="atlas"
         )
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
@@ -541,7 +544,9 @@ class TestEndpoints(unittest.TestCase):
         # Arrange
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
         mock_brain = MagicMock()
-        mock_brain.get_trainer_profile.return_value = None
+        mock_brain.get_or_create_trainer_profile.return_value = TrainerProfile(
+            user_email="test@test.com", trainer_type="atlas"
+        )
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
         # Act

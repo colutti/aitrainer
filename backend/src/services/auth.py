@@ -31,8 +31,6 @@ def create_token(email: str) -> str:
     return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
 
-
-
 def verify_token(token: str = Depends(oauth2_scheme)) -> str:
     """
     Verifies a JWT token and extracts the user's email.

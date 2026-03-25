@@ -19,38 +19,70 @@
   --color-error: #ef4444;
   --color-border: #27272a;
   --color-dark-card: #09090b;
-  --shadow-primary: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  --shadow-premium: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+@utility glass-card {
+  @apply rounded-[32px] bg-white/[0.03] backdrop-blur-3xl border border-white/10 relative overflow-hidden transition-all duration-300;
+}
+
+@utility glass-card-hover {
+  @apply hover:bg-white/[0.05] hover:border-white/20 hover:scale-[1.01];
+}
+
+@utility btn-premium {
+  @apply flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white text-black font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/5 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+@utility btn-glass {
+  @apply flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 active:scale-95 transition-all disabled:opacity-50;
+}
+
+@utility btn-ghost {
+  @apply p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 transition-all active:scale-95;
+}
+
+@utility text-premium-label {
+  @apply text-zinc-500 font-bold tracking-[0.2em] uppercase text-[10px] md:text-xs mb-2;
+}
+
+@utility text-premium-heading {
+  @apply text-4xl md:text-5xl font-black text-white tracking-tight;
+}
+
+@utility text-premium-value {
+  @apply text-5xl md:text-7xl font-black tracking-tighter text-white leading-none;
+}
+
+@utility custom-scrollbar {
+  &::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+  &::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full hover:bg-white/20;
+  }
 }
 
 body {
   font-family: var(--font-body);
+  @apply bg-[#09090b] text-zinc-50 selection:bg-white/20;
 }
 
 .font-display {
   font-family: var(--font-display);
 }
 
-/* Animations removed for Uncodixfy focus on performance and minimal UI */
-
+/* Animations */
 @keyframes slide-in-fade {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .animate-slide-in-fade {
@@ -61,167 +93,38 @@ body {
   animation: fade-in 0.4s ease-out forwards;
 }
 
-/**
- * Shared utility classes for the AI Personal Trainer application.
- * These classes reduce duplication across component templates.
- */
-
-/* Remove Arrows from Number Inputs (Spinners) */
-/* Chrome, Safari, Edge, Opera */
+/* Remove Arrows from Number Inputs */
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-/* Firefox */
 input[type='number'] {
   -moz-appearance: textfield;
 }
 
-/* Form Input Styles */
-.form-input {
-  margin-top: 0.25rem;
-  display: block;
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  background-color: var(--color-dark-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 0.25rem;
-  font-size: 14px;
-  line-height: 1.25rem;
-  color: inherit;
-}
-
-.form-input::placeholder {
-  color: #9ca3af;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--color-primary, #10b981);
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
-}
-
-.form-input:disabled {
-  opacity: 0.5;
-}
-
-/* Form Select Styles */
-.form-select {
-  margin-top: 0.25rem;
-  display: block;
-  width: 100%;
-  padding: 0.5rem 2.5rem 0.5rem 0.75rem;
-  background-color: var(--color-dark-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 0.25rem;
-  font-size: 14px;
-  line-height: 1.25rem;
-  color: inherit;
-}
-
-.form-select:focus {
-  outline: none;
-  border-color: var(--color-primary, #10b981);
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
-}
-
-/* Primary Button Styles */
-.btn-primary {
-  display: inline-flex;
-  justify-content: center;
-  padding: 0.625rem 1.25rem;
-  border: 1px solid transparent;
-  border-radius: 0.25rem;
-  font-size: 14px;
-  font-weight: 600;
-  color: white;
-  background-color: var(--color-primary);
-  transition: opacity 150ms ease-in-out;
-  cursor: pointer;
-}
-
-.btn-primary:hover {
-  background-color: var(--color-primary-hover, #059669);
-}
-
-.btn-primary:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.5);
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Form Label Styles */
-.form-label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--color-text-secondary, #a1a1aa);
-}
-
-/* Error Message Styles */
-.form-error {
-  margin-top: 0.25rem;
-  font-size: 0.875rem;
-  color: #f87171;
-}
-
-/* Success Message Styles */
-.form-success {
-  color: #4ade80;
-  transition: opacity 300ms ease-in-out;
-}
-
 /* Markdown Table Styling */
 .markdown-content table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 1rem 0;
-  font-size: 0.875rem;
+  @apply w-full border-collapse my-4 text-sm;
 }
 
 .markdown-content th,
 .markdown-content td {
-  border: 1px solid var(--color-secondary, #3f3f46);
-  padding: 0.75rem;
-  text-align: left;
+  @apply border border-white/10 p-3 text-left;
 }
 
 .markdown-content th {
-  background-color: rgba(255, 255, 255, 0.05);
-  font-weight: 600;
-  color: var(--color-primary, #10b981);
+  @apply bg-white/5 font-bold text-indigo-400;
 }
 
 .markdown-content tr:nth-child(even) {
-  background-color: rgba(255, 255, 255, 0.02);
+  @apply bg-white/[0.02];
 }
 
-/* react-day-picker dark theme overrides */
-.rdp-root {
-  --rdp-accent-color: #6366f1;
-  --rdp-accent-background-color: rgba(99, 102, 241, 0.15);
-  --rdp-today-color: #6366f1;
-  color: #fafafa;
-}
-
-.rdp-day_button:hover:not(:disabled) {
-  background-color: rgba(255, 255, 255, 0.08);
-}
-
-/* Phase 4: Mobile Touch Targets */
+/* Mobile Touch Targets */
 @media (pointer: coarse) {
-  button,
-  a,
-  [role='button'],
-  input[type='submit'],
-  input[type='reset'],
-  input[type='button'] {
+  button, a, [role='button'] {
     min-height: 44px;
     min-width: 44px;
   }

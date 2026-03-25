@@ -1,4 +1,5 @@
 """Service for managing memories in Qdrant."""
+
 from typing import List, Dict, Any, Tuple
 from datetime import datetime
 from uuid import uuid4
@@ -6,6 +7,7 @@ from qdrant_client import QdrantClient, models as qdrant_models
 from src.core.logs import logger
 from src.utils.qdrant_utils import scroll_all_user_points, point_to_dict
 from src.services.memory_tools import _embed_text
+
 
 def get_memories_paginated(
     user_id: str,
@@ -17,7 +19,9 @@ def get_memories_paginated(
     """Retrieves memories for a user with pagination via Qdrant scroll."""
     logger.info(
         "Retrieving paginated memories for user: %s (page: %d, size: %d)",
-        user_id, page, page_size
+        user_id,
+        page,
+        page_size,
     )
 
     try:
@@ -42,16 +46,19 @@ def get_memories_paginated(
 
         all_points.sort(
             key=lambda p: p.payload.get("created_at", "") if p.payload else "",
-            reverse=True
+            reverse=True,
         )
 
-        memories = [point_to_dict(point) for point in all_points[offset:offset + page_size]]
+        memories = [
+            point_to_dict(point) for point in all_points[offset : offset + page_size]
+        ]
 
         return memories, total
 
     except (ValueError, TypeError, AttributeError) as e:
         logger.error("Failed to retrieve paginated memories: %s", e)
         raise
+
 
 def add_memory(
     user_id: str,

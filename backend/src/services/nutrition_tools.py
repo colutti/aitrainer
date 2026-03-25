@@ -295,7 +295,9 @@ def create_sync_nutrition_text_tool(database, user_email: str):
         try:
             days_found = parse_mfp_text(raw_text)
             if not days_found:
-                return "Nenhum dado nutricional válido foi encontrado no texto fornecido."
+                return (
+                    "Nenhum dado nutricional válido foi encontrado no texto fornecido."
+                )
 
             results = []
             for day in days_found:

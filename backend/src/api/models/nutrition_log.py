@@ -26,7 +26,9 @@ class NutritionLog(BaseModel):
     """
 
     user_email: str = Field(..., description="Email do usuário")
-    date: datetime | py_date = Field(default_factory=datetime.now, description="Data do registro")
+    date: datetime | py_date = Field(
+        default_factory=datetime.now, description="Data do registro"
+    )
 
     # Main macros
     calories: int = Field(..., ge=0, description="Calorias totais")
@@ -38,7 +40,9 @@ class NutritionLog(BaseModel):
     fiber_grams: float | None = Field(default=None, ge=0, description="Fibras (g)")
     sugar_grams: float | None = Field(default=None, ge=0, description="Açúcar (g)")
     sodium_mg: float | None = Field(default=None, ge=0, description="Sódio (mg)")
-    cholesterol_mg: float | None = Field(default=None, ge=0, description="Colesterol (mg)")
+    cholesterol_mg: float | None = Field(
+        default=None, ge=0, description="Colesterol (mg)"
+    )
 
     source: str = Field(default="chat", description="Origem dos dados")
     notes: str | None = Field(default=None, description="Notas opcionais")

@@ -14,7 +14,7 @@ class OnboardingCompleteRequest(BaseModel):
     password: str = Field(..., min_length=8, description="User password")
     gender: str = Field(
         ...,
-        pattern="^([Mm]asculino|[Ff]eminino|[Mm]ale|[Ff]emale|[Ff]emenino|[Oo]tro|[Oo]ther)$"
+        pattern="^([Mm]asculino|[Ff]eminino|[Mm]ale|[Ff]emale|[Ff]emenino|[Oo]tro|[Oo]ther)$",
     )
     age: int = Field(..., ge=18, le=100)
     weight: float = Field(..., ge=30.0, le=500.0, description="Weight in kg")
@@ -64,11 +64,12 @@ class PublicOnboardingRequest(BaseModel):
     """
     Request model for completing onboarding for a user already authenticated.
     """
+
     model_config = {"extra": "ignore"}
 
     gender: str = Field(
         ...,
-        pattern="^([Mm]asculino|[Ff]eminino|[Mm]ale|[Ff]emale|[Ff]emenino|[Oo]tro|[Oo]ther)$"
+        pattern="^([Mm]asculino|[Ff]eminino|[Mm]ale|[Ff]emale|[Ff]emenino|[Oo]tro|[Oo]ther)$",
     )
     age: int = Field(..., ge=18, le=100)
     weight: float = Field(..., ge=30.0, le=500.0, description="Weight in kg")

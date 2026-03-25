@@ -29,7 +29,9 @@ def get_history(
     """
     logger.info(
         "Retrieving chat history for user: %s (limit: %d, offset: %d)",
-        user_email, limit, offset,
+        user_email,
+        limit,
+        offset,
     )
     messages = brain.get_chat_history(user_email, limit=limit, offset=offset)
     return messages

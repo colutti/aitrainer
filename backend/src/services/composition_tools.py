@@ -103,7 +103,9 @@ def create_save_composition_tool(database, user_email: str):
             action = "registrada" if is_new else "atualizada"
             date_str = log_date.strftime("%d/%m/%Y")
 
-            logger.info("Body composition %s for %s on %s", action, user_email, date_str)
+            logger.info(
+                "Body composition %s for %s on %s", action, user_email, date_str
+            )
             return f"Composição corporal de {date_str} {action} com sucesso! (ID: {doc_id})"
 
         except Exception as e:  # pylint: disable=broad-exception-caught
@@ -209,32 +211,34 @@ def create_get_composition_tool(database, user_email: str):
 
                 avg_current, avg_prev = 0.0, 0.0
                 if current_week:
-                    avg_current = (
-                        sum(log.weight_kg for log in current_week) / len(current_week)
+                    avg_current = sum(log.weight_kg for log in current_week) / len(
+                        current_week
                     )
                     result += (
                         f"Média últimos 7 dias: {avg_current:.2f} kg "
                         f"({len(current_week)} logs)\n"
                     )
-                    bf_vals = [log.body_fat_pct for log in current_week if log.body_fat_pct]
+                    bf_vals = [
+                        log.body_fat_pct for log in current_week if log.body_fat_pct
+                    ]
                     if bf_vals:
                         result += (
                             f"BF médio últimos 7 dias: "
-                            f"{sum(bf_vals)/len(bf_vals):.1f}%\n"
+                            f"{sum(bf_vals) / len(bf_vals):.1f}%\n"
                         )
 
                 avg_prev = 0.0
                 if prev_week:
                     avg_prev = sum(log.weight_kg for log in prev_week) / len(prev_week)
-                    result += (
-                        f"Média 7-14 dias atrás: {avg_prev:.2f} kg ({len(prev_week)} logs)\n"
-                    )
+                    result += f"Média 7-14 dias atrás: {avg_prev:.2f} kg ({len(prev_week)} logs)\n"
                     if current_week:
                         diff = avg_current - avg_prev
                         result += f"Variação média semanal: {diff:+.2f} kg\n"
 
                 if logs[0].trend_weight:
-                    result += f"\nPeso de tendência (EMA): {logs[0].trend_weight:.2f} kg\n"
+                    result += (
+                        f"\nPeso de tendência (EMA): {logs[0].trend_weight:.2f} kg\n"
+                    )
 
                 result += "\n⚠️ USE ESTAS MÉDIAS para comparações. NÃO compare pesos isolados.\n"
 

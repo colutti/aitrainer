@@ -2,9 +2,10 @@
 This module contains the models for user profiles and preferences.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel, Field, model_validator, computed_field
 from src.core.subscription import SUBSCRIPTION_PLANS, SubscriptionPlan
+from src.utils.date_utils import parse_cycle_start
 
 
 class UserProfileInput(BaseModel):
@@ -13,8 +14,9 @@ class UserProfileInput(BaseModel):
     """
 
     gender: str = Field(
-        ..., description="User's gender",
-        pattern="^([Mm]asculino|[Ff]eminino|[Mm]ale|[Ff]emale|[Ff]emenino|[Oo]tro|[Oo]ther)$"
+        ...,
+        description="User's gender",
+        pattern="^([Mm]asculino|[Ff]eminino|[Mm]ale|[Ff]emale|[Ff]emenino|[Oo]tro|[Oo]ther)$",
     )
     age: int = Field(..., ge=18, le=100, description="Age between 18 and 100 years")
     weight: float | None = Field(
@@ -30,11 +32,16 @@ class UserProfileInput(BaseModel):
         description="Type of goal: lose, gain, or maintain",
     )
     target_weight: float | None = Field(
-        default=None, gt=0, le=500.0,
-        description="Target weight in kg (optional, must be > 0 if set)"
+        default=None,
+        gt=0,
+        le=500.0,
+        description="Target weight in kg (optional, must be > 0 if set)",
     )
     weekly_rate: float = Field(
-        default=0.5, ge=0.0, le=2.0, description="Desired weekly weight change rate in kg"
+        default=0.5,
+        ge=0.0,
+        le=2.0,
+        description="Desired weekly weight change rate in kg",
     )
     notes: str | None = Field(
         default=None, max_length=1000, description="User observations/notes"
@@ -78,8 +85,12 @@ class UserProfile(UserProfileInput):
     role: str = Field(default="user", description="User role: user or admin")
 
     # Hevy Integration
-    hevy_api_key: str | None = Field(default=None, description="Hevy API key, encrypted")
-    hevy_enabled: bool = Field(default=False, description="Integration enabled/disabled toggle")
+    hevy_api_key: str | None = Field(
+        default=None, description="Hevy API key, encrypted"
+    )
+    hevy_enabled: bool = Field(
+        default=False, description="Integration enabled/disabled toggle"
+    )
     hevy_last_sync: datetime | None = Field(
         default=None, description="Last successful sync timestamp"
     )
@@ -99,7 +110,8 @@ class UserProfile(UserProfileInput):
         description="Send Telegram notification when nutrition is logged (future)",
     )
     telegram_notify_on_weight: bool = Field(
-        default=False, description="Send Telegram notification when weight is logged (future)"
+        default=False,
+        description="Send Telegram notification when weight is logged (future)",
     )
 
     # User Identity
@@ -107,24 +119,30 @@ class UserProfile(UserProfileInput):
         default=None, max_length=50, description="User display name for UI and prompts"
     )
     photo_base64: str | None = Field(
-        default=None, max_length=700_000,
-        description="Profile photo as base64 data URI (max ~500KB)"
+        default=None,
+        max_length=700_000,
+        description="Profile photo as base64 data URI (max ~500KB)",
     )
 
     # Subscription and Limits
-    subscription_plan: str = Field(default="Free", description="Current subscription plan")
-    stripe_customer_id: str | None = Field(default=None, description="Stripe Customer ID")
-    stripe_subscription_id: str | None = Field(default=None, description="Active subscription ID")
+    subscription_plan: str = Field(
+        default="Free", description="Current subscription plan"
+    )
+    stripe_customer_id: str | None = Field(
+        default=None, description="Stripe Customer ID"
+    )
+    stripe_subscription_id: str | None = Field(
+        default=None, description="Active subscription ID"
+    )
     stripe_subscription_status: str | None = Field(
         default=None, description="Subscription status from Stripe"
     )
     custom_message_limit: int | None = Field(
         default=None,
-        description="Custom limit override (daily for Free, monthly for paid)"
+        description="Custom limit override (daily for Free, monthly for paid)",
     )
     custom_trial_days: int | None = Field(
-        default=None,
-        description="Custom validity days override"
+        default=None, description="Custom validity days override"
     )
     messages_sent_this_month: int = Field(
         default=0, description="Messages sent in current billing cycle"
@@ -141,7 +159,9 @@ class UserProfile(UserProfileInput):
 
     # Message Tracking
     messages_sent_today: int = Field(default=0, description="Messages sent today")
-    last_message_date: str | None = Field(default=None, description="ISO Date of last message sent")
+    last_message_date: str | None = Field(
+        default=None, description="ISO Date of last message sent"
+    )
 
     # Coaching Check-in (TDEE)
     tdee_last_target: int | None = Field(
@@ -155,15 +175,15 @@ class UserProfile(UserProfileInput):
         ge=1.2,
         le=1.9,
         description="Activity factor for TDEE prior (AI-adjustable). "
-                    "None = use system default (1.45). "
-                    "Range: 1.2 (sedentary) to 1.9 (extremely active)."
+        "None = use system default (1.45). "
+        "Range: 1.2 (sedentary) to 1.9 (extremely active).",
     )
     timezone: str | None = Field(
         default=None, max_length=50, description="IANA timezone e.g. Europe/Madrid"
     )
     tdee_start_date: str | None = Field(
         default=None,
-        description="ISO Date string to start TDEE EMA calculation from (format: YYYY-MM-DD)"
+        description="ISO Date string to start TDEE EMA calculation from (format: YYYY-MM-DD)",
     )
 
     @computed_field
@@ -177,17 +197,18 @@ class UserProfile(UserProfileInput):
         plan = SUBSCRIPTION_PLANS[plan_name]
         # Admin Override for validity
         v_days = (
-            self.custom_trial_days if self.custom_trial_days is not None
+            self.custom_trial_days
+            if self.custom_trial_days is not None
             else plan.validity_days
         )
         if v_days is None:
             return None
         if not self.current_billing_cycle_start:
             return v_days
-        now = datetime.now()
-        cycle_start = self.current_billing_cycle_start
-        if isinstance(cycle_start, str):
-            cycle_start = datetime.fromisoformat(cycle_start)
+
+        now = datetime.now(timezone.utc)
+        cycle_start = parse_cycle_start(self.current_billing_cycle_start, now)
+
         elapsed = (now - cycle_start).days
         remaining = v_days - elapsed
         return max(0, remaining)
@@ -210,23 +231,23 @@ class UserProfile(UserProfileInput):
     @computed_field
     @property
     def current_plan_limit(self) -> int | None:
-        """Returns the total message limit for the current plan (daily for Free, monthly for others)."""
+        """Returns the message limit for the plan (daily for Free, monthly for others)."""
         try:
             plan_name = SubscriptionPlan(self.subscription_plan)
         except (ValueError, AttributeError):
             plan_name = SubscriptionPlan.FREE
         plan = SUBSCRIPTION_PLANS[plan_name]
-        
+
         # Priority: Custom limit > Plan limit (Daily or Monthly)
         if self.custom_message_limit is not None:
             return self.custom_message_limit
-            
+
         if plan.daily_limit is not None:
             return plan.daily_limit
-        
+
         if plan.monthly_limit is not None:
             return plan.monthly_limit
-            
+
         return None
 
     @computed_field
@@ -240,21 +261,18 @@ class UserProfile(UserProfileInput):
         plan = SUBSCRIPTION_PLANS[plan_name]
 
         # Check for billing cycle reset (30 days)
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         is_cycle_reset = False
         if self.current_billing_cycle_start:
-            cycle_start = self.current_billing_cycle_start
-            if isinstance(cycle_start, str):
-                try:
-                    cycle_start = datetime.fromisoformat(cycle_start)
-                except ValueError:
-                    cycle_start = now
+            cycle_start = parse_cycle_start(self.current_billing_cycle_start, now)
+
             if now - cycle_start >= timedelta(days=30):
                 is_cycle_reset = True
 
         # Check Validity / Trial Expiration
         v_days = (
-            self.custom_trial_days if self.custom_trial_days is not None
+            self.custom_trial_days
+            if self.custom_trial_days is not None
             else plan.validity_days
         )
         if v_days is not None:
@@ -264,18 +282,22 @@ class UserProfile(UserProfileInput):
         # Daily Limit Logic (Overrides for Free)
         if plan.daily_limit is not None:
             d_lim = (
-                self.custom_message_limit if self.custom_message_limit is not None
+                self.custom_message_limit
+                if self.custom_message_limit is not None
                 else plan.daily_limit
             )
             # Check for daily reset
             today_str = now.strftime("%Y-%m-%d")
-            sent_today = self.messages_sent_today if self.last_message_date == today_str else 0
+            sent_today = (
+                self.messages_sent_today if self.last_message_date == today_str else 0
+            )
             return max(0, d_lim - sent_today)
 
         # Monthly Limit Logic (Overrides for Paid)
         if plan.monthly_limit is not None:
             m_lim = (
-                self.custom_message_limit if self.custom_message_limit is not None
+                self.custom_message_limit
+                if self.custom_message_limit is not None
                 else plan.monthly_limit
             )
             sent_this_month = 0 if is_cycle_reset else self.messages_sent_this_month

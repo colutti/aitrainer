@@ -37,6 +37,7 @@ class MongoDatabase:
     """
     This class handles all the database operations.
     """
+
     # pylint: disable=too-many-public-methods
 
     def __init__(self):
@@ -98,7 +99,6 @@ class MongoDatabase:
     def get_user_profile(self, email: str) -> UserProfile | None:
         """Retrieves user profile."""
         return self.users.get_profile(email)
-
 
     def increment_user_message_counts(
         self, email: str, new_cycle_start: datetime | None = None

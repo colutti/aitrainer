@@ -4,7 +4,7 @@ This module contains the AI trainer brain, which is responsible for interacting 
 
 import asyncio
 from typing import Optional, TYPE_CHECKING
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor
 from fastapi import BackgroundTasks, HTTPException
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
@@ -16,6 +16,7 @@ from src.services.database import MongoDatabase
 from src.services.llm_client import LLMClient
 from src.services.history_compactor import HistoryCompactor
 from src.services.prompt_builder import PromptBuilder
+from src.utils.date_utils import parse_cycle_start
 from src.services.workout_tools import (
     create_save_workout_tool,
     create_get_workouts_tool,
@@ -78,6 +79,7 @@ from src.api.models.trainer_profile import TrainerProfile
 if TYPE_CHECKING:
     from qdrant_client import QdrantClient
 
+
 class AITrainerBrain:  # pylint: disable=too-many-public-methods
     """
     Service class responsible for orchestrating AI trainer interactions.
@@ -120,15 +122,22 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             plan_name = SubscriptionPlan.FREE
 
         plan = SUBSCRIPTION_PLANS[plan_name]
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         today_str = now.strftime("%Y-%m-%d")
 
         needs_reset, cycle_start = self.check_billing_cycle(profile, now)
 
         # 1. Trial
-        validity = (profile.custom_trial_days if profile.custom_trial_days is not None
-                   else plan.validity_days)
+        validity = (
+            profile.custom_trial_days
+            if profile.custom_trial_days is not None
+            else plan.validity_days
+        )
         if validity is not None and cycle_start:
+            # Ensure cycle_start is aware
+            if cycle_start.tzinfo is None:
+                cycle_start = cycle_start.replace(tzinfo=timezone.utc)
+
             if now - cycle_start >= timedelta(days=validity):
                 raise HTTPException(status_code=403, detail="TRIAL_EXPIRED")
 
@@ -136,12 +145,18 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         eff_daily, eff_monthly = self.calculate_effective_limits(profile, plan)
 
         if eff_daily is not None:
-            count = profile.messages_sent_today if profile.last_message_date == today_str else 0
+            count = (
+                profile.messages_sent_today
+                if profile.last_message_date == today_str
+                else 0
+            )
             if count >= eff_daily:
                 raise HTTPException(status_code=403, detail="DAILY_LIMIT_REACHED")
 
         if eff_monthly is not None:
-            count = 0 if needs_reset else getattr(profile, "messages_sent_this_month", 0)
+            count = (
+                0 if needs_reset else getattr(profile, "messages_sent_this_month", 0)
+            )
             if count >= eff_monthly:
                 raise HTTPException(status_code=403, detail="LIMITE_MENSAGENS_MES")
 
@@ -154,21 +169,16 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         if profile.current_billing_cycle_start is None:
             return True, None
 
-        cycle_start = profile.current_billing_cycle_start
-        if isinstance(cycle_start, str):
-            try:
-                cycle_start = datetime.fromisoformat(cycle_start)
-            except ValueError:
-                cycle_start = now
-        
-        needs_reset = (now - cycle_start >= timedelta(days=30))
+        cycle_start = parse_cycle_start(profile.current_billing_cycle_start, now)
+
+        needs_reset = now - cycle_start >= timedelta(days=30)
         return needs_reset, cycle_start
 
     def increment_counts(self, user_email: str, needs_cycle_reset: bool):
         """
         Background task to increment message counts.
         """
-        new_cycle_start = datetime.now() if needs_cycle_reset else None
+        new_cycle_start = datetime.now(timezone.utc) if needs_cycle_reset else None
         self._database.increment_user_message_counts(user_email, new_cycle_start)
 
     @property
@@ -285,17 +295,72 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             self.save_user_profile(profile)
         return profile
 
-    def get_or_create_trainer_profile(self, user_email: str) -> TrainerProfile:
+    def ensure_trainer_allowed(
+        self,
+        user_email: str,
+        plan_name: str,
+        trainer_profile: TrainerProfile | None = None,
+    ) -> str | None:
+        """
+        Ensures the current trainer is allowed for the user's plan.
+        Returns the new trainer_type if it was changed, otherwise None.
+        """
+        if not trainer_profile:
+            trainer_profile = self.get_trainer_profile(user_email)
+
+        if not trainer_profile:
+            return None
+
+        try:
+            plan = SubscriptionPlan(plan_name)
+        except (ValueError, AttributeError):
+            plan = SubscriptionPlan.FREE
+
+        plan_details = SUBSCRIPTION_PLANS[plan]
+        allowed = plan_details.allowed_trainers
+
+        if allowed and trainer_profile.trainer_type not in allowed:
+            # Reset to the first allowed trainer (usually gymbro/Breno)
+            new_trainer = allowed[0]
+            logger.info(
+                "Trainer %s not allowed for plan %s. Resetting user %s to %s",
+                trainer_profile.trainer_type,
+                plan_name,
+                user_email,
+                new_trainer,
+            )
+            trainer_profile.trainer_type = new_trainer
+            self.save_trainer_profile(trainer_profile)
+            return new_trainer
+
+        return None
+
+    def get_or_create_trainer_profile(
+        self, user_email: str, user_profile: UserProfile | None = None
+    ) -> TrainerProfile:
         """Retrieves trainer profile or creates a default one if not found."""
+        # 1. Get plan name
+        if not user_profile:
+            user_profile = self.get_user_profile(user_email)
+        plan_name = user_profile.subscription_plan if user_profile else "Free"
+
+        # 2. Get trainer profile
         trainer_profile_obj = self._database.get_trainer_profile(user_email)
+
         if not trainer_profile_obj:
             logger.info(
                 "Trainer profile not found, creating default for user: %s", user_email
             )
+            # Default for Free is gymbro, others is atlas
+            default_trainer = "gymbro" if plan_name == "Free" else "atlas"
             trainer_profile_obj = TrainerProfile(
-                user_email=user_email, trainer_type="atlas"
+                user_email=user_email, trainer_type=default_trainer
             )
             self.save_trainer_profile(trainer_profile_obj)
+        else:
+            # 3. Ensure allowed for current plan
+            self.ensure_trainer_allowed(user_email, plan_name, trainer_profile_obj)
+
         return trainer_profile_obj
 
     def add_to_mongo_history(
@@ -362,6 +427,21 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
 
         return sorted(messages, key=get_timestamp)
 
+    def _build_msg_tags(self, msg: BaseMessage) -> tuple[str, str]:
+        """Builds XML tags for a message based on its timestamp."""
+        if hasattr(msg, "additional_kwargs") and msg.additional_kwargs:
+            ts = msg.additional_kwargs.get("timestamp", "")
+            if ts:
+                try:
+                    dt = datetime.fromisoformat(ts)
+                    return (
+                        f'<msg data="{dt.strftime("%d/%m")}" hora="{dt.strftime("%H:%M")}">',
+                        "</msg>",
+                    )
+                except (ValueError, TypeError):
+                    pass
+        return "<msg>", "</msg>"
+
     def format_history_as_messages(
         self,
         messages: list,
@@ -379,63 +459,38 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
 
         formatted_msgs: list[BaseMessage] = []
         for msg in messages:
-            # Extract timestamp and create XML tag
-            msg_tag_prefix = ""
-            msg_tag_suffix = ""
-            if hasattr(msg, "additional_kwargs") and msg.additional_kwargs:
-                ts = msg.additional_kwargs.get("timestamp", "")
-                if ts:
-                    try:
-                        dt = datetime.fromisoformat(ts)
-                        date_str = dt.strftime('%d/%m')
-                        time_str = dt.strftime('%H:%M')
-                        msg_tag_prefix = f'<msg data="{date_str}" hora="{time_str}">'
-                        msg_tag_suffix = "</msg>"
-                    except (ValueError, TypeError):
-                        pass
-
-            # If no timestamp, use simple <msg> tag
-            if not msg_tag_prefix:
-                msg_tag_prefix = "<msg>"
-                msg_tag_suffix = "</msg>"
-
-            # Clean message content - single line
-            raw_content = msg.content if msg.content else ""
-            if not isinstance(raw_content, str):
-                raw_content = str(raw_content)
-            content_clean = " ".join(raw_content.split())
-
             # Check message type
-            is_system = hasattr(msg, "type") and msg.type == "system"
-
-            if is_system:
-                # Skip system messages
+            if hasattr(msg, "type") and msg.type == "system":
                 continue
 
+            # Extract tags and clean content
+            prefix, suffix = self._build_msg_tags(msg)
+            raw_content = msg.content if msg.content else ""
+            content_clean = " ".join(str(raw_content).split())
+
             if isinstance(msg, HumanMessage):
-                # User messages: <msg>Content</msg>
-                full_content = f"{msg_tag_prefix}{content_clean}{msg_tag_suffix}"
-                formatted_msgs.append(HumanMessage(content=full_content))
+                formatted_msgs.append(HumanMessage(content=f"{prefix}{content_clean}{suffix}"))
 
             elif isinstance(msg, AIMessage):
-                # AI messages: <msg><treinador name="...">Content</treinador></msg>
                 trainer_name = "Treinador"
                 if hasattr(msg, "additional_kwargs") and msg.additional_kwargs:
                     t_type = msg.additional_kwargs.get("trainer_type", "")
                     if t_type:
                         trainer_name = t_type.capitalize()
-                
-                full_content = f'{msg_tag_prefix}<treinador name="{trainer_name}">{content_clean}</treinador>{msg_tag_suffix}'
+
+                full_content = (
+                    f'{prefix}<treinador name="{trainer_name}">'
+                    f"{content_clean}</treinador>{suffix}"
+                )
                 formatted_msgs.append(
-                    AIMessage(content=full_content, additional_kwargs=msg.additional_kwargs)
+                    AIMessage(
+                        content=full_content, additional_kwargs=msg.additional_kwargs
+                    )
                 )
             else:
-                # Fallback
-                full_content = f"{msg_tag_prefix}{content_clean}{msg_tag_suffix}"
-                formatted_msgs.append(HumanMessage(content=full_content))
+                formatted_msgs.append(HumanMessage(content=f"{prefix}{content_clean}{suffix}"))
 
         return formatted_msgs
-
 
     def get_tools(self, user_email: str) -> list[BaseTool]:
         """
@@ -463,7 +518,9 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             create_get_hevy_routine_detail_tool(
                 hevy_service, self._database, user_email
             ),
-            create_set_routine_rest_and_ranges_tool(hevy_service, self._database, user_email),
+            create_set_routine_rest_and_ranges_tool(
+                hevy_service, self._database, user_email
+            ),
             create_trigger_hevy_import_tool(hevy_service, self._database, user_email),
             # User Goals
             create_get_user_goal_tool(self._database, user_email),
@@ -524,24 +581,29 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         """
         logger.info("Generating workout stream for user: %s", user_email)
 
-        # 1. Retrieve profiles (parallel)
-        profile = await asyncio.wrap_future(self._executor.submit(
-            self.get_or_create_user_profile, user_email
-        ))
-        trainer_profile_obj = await asyncio.wrap_future(self._executor.submit(
-            self.get_or_create_trainer_profile, user_email
-        ))
+        # 1. Retrieve profiles (sequentially to avoid redundant DB calls and plan mismatch)
+        profile = await asyncio.wrap_future(
+            self._executor.submit(self.get_or_create_user_profile, user_email)
+        )
+        trainer_profile_obj = await asyncio.wrap_future(
+            self._executor.submit(
+                self.get_or_create_trainer_profile, user_email, profile
+            )
+        )
 
         # 2. Check limits
         needs_cycle_reset = self.check_message_limits(profile)
 
         # 3. Memory & History
-        chat_history_messages = (await asyncio.to_thread(
-            self._database.get_window_memory(
-                session_id=user_email,
-                k=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
-            ).load_memory_variables, {}
-        )).get("chat_history", [])
+        chat_history_messages = (
+            await asyncio.to_thread(
+                self._database.get_window_memory(
+                    session_id=user_email,
+                    k=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
+                ).load_memory_variables,
+                {},
+            )
+        ).get("chat_history", [])
 
         # 4. Build input data
         input_data = self.prompt_builder.build_input_data(
@@ -549,7 +611,9 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             trainer_profile_summary=trainer_profile_obj.get_trainer_profile_summary(),
             user_profile_summary=profile.get_profile_summary(),
             chat_history_summary="",
-            formatted_history_msgs=self.format_history_as_messages(chat_history_messages),
+            formatted_history_msgs=self.format_history_as_messages(
+                chat_history_messages
+            ),
             user_input=user_input,
             current_date=datetime.now().strftime("%Y-%m-%d"),
             agenda_events=await asyncio.to_thread(
@@ -559,7 +623,9 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
 
         full_response: list[str] = []
         async for chunk in self._llm_client.stream_with_tools(
-            prompt_template=self.prompt_builder.get_prompt_template(input_data, is_telegram),
+            prompt_template=self.prompt_builder.get_prompt_template(
+                input_data, is_telegram
+            ),
             input_data=input_data,
             tools=self.get_tools(user_email),
             user_email=user_email,
@@ -577,8 +643,8 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
                 "trainer_type": trainer_profile_obj.trainer_type or "atlas",
                 "needs_cycle_reset": needs_cycle_reset,
                 "background_tasks": background_tasks,
-                "log_callback": self.get_log_callback(background_tasks)
-            }
+                "log_callback": self.get_log_callback(background_tasks),
+            },
         )
 
     async def finalize_ai_response(
@@ -600,8 +666,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         # Detect error responses
         if final_response.startswith("Error processing request:"):
             logger.warning(
-                "Error response for user %s, skipping history save.",
-                user_email
+                "Error response for user %s, skipping history save.", user_email
             )
             return
 
@@ -740,7 +805,6 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
 
         return response
 
-
     def delete_memory(self, memory_id: str, _user_email: str) -> bool:
         """
         Deletes a specific memory from Qdrant.
@@ -801,5 +865,5 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             user_id=user_id,
             text=text,
             qdrant_client=self._qdrant_client,
-            collection_name=settings.QDRANT_COLLECTION_NAME
+            collection_name=settings.QDRANT_COLLECTION_NAME,
         )
