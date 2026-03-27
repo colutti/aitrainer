@@ -18,6 +18,15 @@ jobs:
       - name: Run full test stack in containers
         run: make test-once
 
+      - name: Run backend coverage
+        run: make test-backend-cov
+
+      - name: Run frontend coverage
+        run: docker compose -f docker-compose.test.yml run --rm frontend-tests sh -lc "npm ci && npm test -- --coverage"
+
+      - name: Run admin coverage
+        run: docker compose -f docker-compose.test.yml run --rm admin-tests sh -lc "npm ci && npm test -- --coverage"
+
   security-scan:
     runs-on: ubuntu-latest
     steps:

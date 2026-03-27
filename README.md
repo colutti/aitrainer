@@ -108,7 +108,16 @@ The test stack also starts MongoDB, Qdrant, and `stripe-mock` as internal depend
 ```bash
 cd frontend
 npm test                # Run unit/integration tests
-npm run test:coverage   # Coverage (Thresholds: 70% branches, 85% functions, 88% lines)
+npm run test:coverage   # Coverage (Thresholds: 58% branches, 65% functions, 68% lines, 67% statements)
+npm run lint            # Zero warnings policy
+npm run typecheck       # Strict TypeScript check
+```
+
+### Admin Frontend
+```bash
+cd frontend/admin
+npm test                # Run unit/integration tests
+npm run test:coverage   # Coverage (Thresholds: 35% branches, 45% functions, 45% lines, 43% statements)
 npm run lint            # Zero warnings policy
 npm run typecheck       # Strict TypeScript check
 ```

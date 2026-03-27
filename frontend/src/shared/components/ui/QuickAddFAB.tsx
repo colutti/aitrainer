@@ -68,6 +68,8 @@ export function QuickAddFAB() {
               {t(action.labelKey)}
             </span>
             <button
+              type="button"
+              aria-label={t(action.labelKey)}
               onClick={() => { action.onClick(); setIsOpen(false); }}
               className={cn(
                 "w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-xl transition-colors duration-150 active:scale-95 group",
@@ -82,6 +84,7 @@ export function QuickAddFAB() {
 
       {/* Main FAB */}
       <button
+        type="button"
         data-testid="quick-add-fab"
         onClick={() => { setIsOpen(!isOpen); }}
         className={cn(
