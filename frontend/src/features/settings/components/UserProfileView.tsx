@@ -40,7 +40,7 @@ export default function UserProfileView({
         gender: profile.gender,
         age: profile.age,
         height: profile.height,
-        target_weight: profile.target_weight,
+        target_weight: profile.target_weight ?? undefined,
         goal_type: profile.goal_type,
         weekly_rate: profile.weekly_rate,
       });

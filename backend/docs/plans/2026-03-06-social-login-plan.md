@@ -1,6 +1,6 @@
 # Firebase Social Login Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> Execution workflow: use `.agent/workflows/executing-plans.md` to implement this plan in batches.
 
 **Goal:** Implement Google Social Login using Firebase Authentication on the frontend and Firebase Admin SDK on the backend, creating users on the free plan automatically if they don't exist.
 

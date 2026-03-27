@@ -2,7 +2,6 @@ import { type APIRequestContext } from '@playwright/test';
 
 /**
  * Cleanup functions to reset the E2E user state in the real backend.
- * Fixed to work with direct backend access (port 8000).
  */
 export async function cleanupUserData(api: APIRequestContext) {
   console.log('🧹 Cleaning up real E2E user data...');

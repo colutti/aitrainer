@@ -10,13 +10,18 @@ GCP_REGISTRY=$(GCP_REGION)-docker.pkg.dev/$(GCP_PROJECT_ID)/$(GCP_REPO)
 # 3. Joins with commas
 GCP_ENV_VARS=$(shell grep -v '^\#' backend/.env.prod | grep -v '^$$' | sed 's/"//g' | paste -sd "," -)
 
-.PHONY: up down build restart logs init-db api front front-admin api-admin admin clean-pod db db-down db-logs debug-rebuild debug-rebuild-admin test test-backend test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-cov e2e e2e-ui e2e-report ci-test ci-fast gcp-full gcp-build gcp-push gcp-deploy gcp-list gcp-setup-telegram gcp-hosting security-sast security-sca security-check stripe-listen
+COMPOSE_DEV=./scripts/compose.sh -f docker-compose.yml
+COMPOSE_TEST=COMPOSE_PROJECT_NAME=personal-test ./scripts/compose.sh -f docker-compose.test.yml
+CONTAINER_RUNTIME?=podman
+STRIPE_FORWARD_TO?=http://localhost:8000/stripe/webhook
+
+.PHONY: up down build build-prod restart api front front-admin api-admin admin user-create user-list user-get user-update user-password user-delete user-nuke user-nuke-force invite-create invite-list admin-promote admin-promote-rafael admin-list backend-lint backend-typecheck frontend-lint frontend-typecheck wait-for-services test test-once test-stack-up test-stack-down test-backend test-backend-local test-backend-cov test-backend-verbose test-backend-watch test-frontend test-frontend-watch test-frontend-cov test-admin test-admin-watch test-admin-cov test-cov e2e e2e-ui e2e-journey e2e-report ci-fast ci-test security-sast security-sca security-check gcp-full gcp-build gcp-push gcp-deploy gcp-setup-telegram gcp-hosting gcp-list stripe-login stripe-listen
 
 up:
-	podman-compose up -d
+	$(COMPOSE_DEV) up -d
 
 down:
-	podman-compose down
+	$(COMPOSE_DEV) down
 
 init-db:
 	cd backend && export PYTHONPATH=$$PYTHONPATH:. && .venv/bin/python src/api/main.py --init-db --email "$(USUARIO)" --password "$(SENHA)"
@@ -25,13 +30,11 @@ api:
 	cd backend && export PYTHONPATH=$$PYTHONPATH:. && .venv/bin/python src/api/main.py
 
 front:
-	podman-compose --in-pod 0 up -d --no-deps frontend
+	$(COMPOSE_DEV) up -d frontend
 
-# Admin Frontend (porta 3001, dev only)
 front-admin:
-	podman-compose --in-pod 0 up -d --no-deps frontend-admin
+	cd frontend/admin && npm run dev
 
-# Admin Backend (porta 8001, dev only)
 api-admin:
 	cd backend-admin && export PYTHONPATH=$$PYTHONPATH:. && .venv/bin/python src/main.py
 
@@ -47,29 +50,25 @@ admin:
 
 # Build padrão (development)
 build:
-	podman-compose build
+	$(COMPOSE_DEV) build
 
-# Build de produção (minificado, otimizado)
 build-prod:
-	BUILD_MODE=production podman-compose build
+	BUILD_MODE=production $(COMPOSE_DEV) build
 
-# Restart com rebuild
 restart:
-	podman-compose down
-	podman-compose build
-	podman-compose up -d
+	$(COMPOSE_DEV) down
+	$(COMPOSE_DEV) build
+	$(COMPOSE_DEV) up -d
 
-# Debug rebuild (without admin - recommended for main app testing)
 debug-rebuild:
-	podman-compose down
-	podman-compose build backend frontend mongo qdrant mongo-express
-	podman-compose up
+	$(COMPOSE_DEV) down
+	$(COMPOSE_DEV) build backend frontend mongo qdrant mongo-express
+	$(COMPOSE_DEV) up
 
-# Debug rebuild with admin services (full stack)
 debug-rebuild-admin:
-	podman-compose down
-	podman-compose build
-	podman-compose up
+	$(COMPOSE_DEV) down
+	$(COMPOSE_DEV) build
+	$(COMPOSE_DEV) up
 
 # User Management Commands
 user-create:
@@ -107,34 +106,90 @@ invite-list:
 # Admin Commands
 admin-promote:
 	@echo "Promovendo usuário $(EMAIL) a admin..."
-	@podman-compose exec backend python scripts/promote_admin.py $(EMAIL)
+	@$(COMPOSE_DEV) exec backend python scripts/promote_admin.py $(EMAIL)
 
 admin-promote-rafael:
 	@echo "Promovendo Rafael Colucci a admin..."
-	@podman-compose exec backend python scripts/promote_admin.py rafacolucci@gmail.com
+	@$(COMPOSE_DEV) exec backend python scripts/promote_admin.py rafacolucci@gmail.com
 
 admin-list:
 	@echo "Listando usuários admin..."
-	@podman-compose exec mongodb mongosh -u admin -p password --authenticationDatabase admin --quiet --eval "use aitrainer; db.users.find({role: 'admin'}, {email: 1, role: 1, _id: 0}).forEach(printjson)"
+	@$(COMPOSE_DEV) exec mongo mongosh -u admin -p password --authenticationDatabase admin --quiet --eval "use aitrainerdb; db.users.find({role: 'admin'}, {email: 1, role: 1, _id: 0}).forEach(printjson)"
+
+# Quality Check Commands
+backend-lint:
+	cd backend && .venv/bin/ruff check src
+	cd backend && .venv/bin/pylint src
+
+backend-typecheck:
+	cd backend && .venv/bin/pyright src
+
+frontend-lint:
+	cd frontend && npm run lint
+
+frontend-typecheck:
+	cd frontend && npm run typecheck
+
+# Infrastructure Helpers
+wait-for-services:
+	@echo "⏳ Waiting for services to be healthy..."
+	@for i in {1..30}; do \
+		if [ $$( $(COMPOSE_DEV) ps --filter "health=healthy" --quiet | wc -l) -ge 4 ]; then \
+			echo "✅ All services are healthy!"; \
+			exit 0; \
+		fi; \
+		echo "Waiting... ($$i/30)"; \
+		sleep 2; \
+	done; \
+	echo "❌ Services failed to become healthy in time"; \
+	$(COMPOSE_DEV) ps; \
+	exit 1
 
 # Test Commands
 
+test-stack-up:
+	$(COMPOSE_TEST) up -d --build mongo qdrant stripe-mock backend frontend
+
+test-stack-down:
+	$(COMPOSE_TEST) down --volumes --remove-orphans
+
+test-once:
+	@set -e; \
+	trap '$(COMPOSE_TEST) down --volumes --remove-orphans' EXIT; \
+	$(COMPOSE_TEST) up -d --build mongo qdrant stripe-mock backend frontend; \
+	$(COMPOSE_TEST) run --rm backend-tests; \
+	$(COMPOSE_TEST) run --rm frontend-tests; \
+	$(COMPOSE_TEST) run --rm admin-tests; \
+	$(COMPOSE_TEST) run --rm playwright
+
 ## Backend Tests
 test-backend:
-	podman-compose exec backend pytest
+	@set -e; \
+	trap '$(COMPOSE_TEST) down --volumes --remove-orphans' EXIT; \
+	$(COMPOSE_TEST) up -d --build mongo qdrant stripe-mock backend; \
+	$(COMPOSE_TEST) run --rm backend-tests
+
+test-backend-local:
+	cd backend && .venv/bin/pytest
 
 test-backend-cov:
-	podman-compose exec backend pytest --cov=src --cov-report=html --cov-report=term-missing
+	@set -e; \
+	trap '$(COMPOSE_TEST) down --volumes --remove-orphans' EXIT; \
+	$(COMPOSE_TEST) up -d --build mongo qdrant stripe-mock backend; \
+	$(COMPOSE_TEST) run --rm backend-tests pytest --cov=src --cov-report=html --cov-report=term-missing
 
 test-backend-verbose:
-	podman-compose exec backend pytest -v
+	@set -e; \
+	trap '$(COMPOSE_TEST) down --volumes --remove-orphans' EXIT; \
+	$(COMPOSE_TEST) up -d --build mongo qdrant stripe-mock backend; \
+	$(COMPOSE_TEST) run --rm backend-tests pytest -v
 
 test-backend-watch:
-	podman-compose exec backend pytest --cov=src -v --tb=short
+	@echo "Use test-backend or test-backend-verbose for the containerized flow."
 
 ## Frontend Tests
 test-frontend:
-	cd frontend && npm test
+	$(COMPOSE_TEST) run --rm frontend-tests
 
 test-frontend-watch:
 	cd frontend && npm test -- --watch
@@ -144,7 +199,7 @@ test-frontend-cov:
 
 ## Admin Frontend Tests
 test-admin:
-	cd frontend/admin && npm test
+	$(COMPOSE_TEST) run --rm admin-tests
 
 test-admin-watch:
 	cd frontend/admin && npm test -- --watch
@@ -153,32 +208,30 @@ test-admin-cov:
 	cd frontend/admin && npm test -- --coverage
 
 ## All Tests
-test: test-backend test-frontend test-admin
+test: test-once
 
 test-cov: test-backend-cov test-frontend-cov
 
-# E2E Tests (Playwright - Mocked Environment)
+# E2E Tests (Playwright + Real Backend)
 
 ## Playwright (Automated Headless)
 e2e:
-	@echo "🛠️  Construindo App para testes..."
-	cd frontend && npm run build
-	@echo "🧪 Rodando suíte E2E estável (Mocked)..."
-	cd frontend && npx playwright test --project=e2e --reporter=list
+	@set -e; \
+	trap '$(COMPOSE_TEST) down --volumes --remove-orphans' EXIT; \
+	$(COMPOSE_TEST) up -d --build mongo qdrant stripe-mock backend frontend; \
+	$(COMPOSE_TEST) run --rm playwright
 
 ## Playwright UI (Debug Mode)
 e2e-ui:
-	@echo "🛠️  Construindo App para testes..."
-	cd frontend && npm run build
-	@echo "🖥️  Abrindo Playwright UI..."
-	cd frontend && npx playwright test --project=e2e --ui
+	@echo "Use a containerized Playwright shell if you need interactive debugging."
+	@echo "The official stable E2E path is: make e2e"
 
 ## Playwright Journey (Automatic Animated Run)
 e2e-journey:
 	@echo "🛠️  Construindo App para testes..."
 	cd frontend && npm run build
 	@echo "🏃 Rodando jornada completa (Navegador Real)..."
-	cd frontend && npx playwright test e2e/real/complete_user_journey.spec.ts --project=e2e --headed
+	cd frontend && npx playwright test e2e/real/complete_user_journey.spec.ts --project=chromium --headed
 
 ## Playwright Report
 e2e-report:
@@ -187,16 +240,13 @@ e2e-report:
 # CI/CD Validation Commands
 
 ## CI Fast: Gate rápido para PRs
-## - Backend: testes unitários + linter
-## - Frontend: unit tests + vitest
-## - Playwright: omitido para fast check
-ci-fast: test-backend test-frontend
+## - Qualidade estática + Testes Unitários
+ci-fast: backend-lint backend-typecheck frontend-lint frontend-typecheck test-backend test-frontend test-admin
 	@echo "✅ CI Fast Gate Passed!"
 
 ## CI Full: Tudo que a CI/CD roda no GitHub Actions
-## - Backend: unit tests + benchmarks + linter
-## - Frontend: unit tests + build + playwright
-ci-test: test-backend test-frontend e2e
+## - Qualidade + Testes Unitários + E2E
+ci-test: ci-fast e2e
 	@echo "✅ CI Full Test Suite Passed!"
 
 # -----------------------------------------------------------------------------
@@ -205,12 +255,12 @@ ci-test: test-backend test-frontend e2e
 
 security-sast:
 	@echo "🔍 Running SAST (Semgrep)..."
-	podman run --rm -v $$(pwd):/src:ro -w /src docker.io/semgrep/semgrep:latest \
+	$(CONTAINER_RUNTIME) run --rm -v $$(pwd):/src:ro -w /src docker.io/semgrep/semgrep:latest \
 		semgrep scan --config auto --error --severity ERROR --severity WARNING .
 
 security-sca:
 	@echo "🔍 Running SCA + Secret Scanning (Trivy)..."
-	podman run --rm -v $$(pwd):/src:ro -w /src docker.io/aquasec/trivy:latest \
+	$(CONTAINER_RUNTIME) run --rm -v $$(pwd):/src:ro -w /src docker.io/aquasec/trivy:latest \
 		fs --exit-code 1 --severity HIGH,CRITICAL --scanners vuln,secret --skip-files "backend/firebase-admin-dev.json,backend/firebase-admin.json,backend/.env,.env" .
 
 security-check: security-sast security-sca
@@ -225,18 +275,18 @@ gcp-full: gcp-build gcp-push gcp-deploy
 
 gcp-build:
 	@echo "📦 Building production images..."
-	podman build -t $(GCP_REGISTRY)/backend:latest ./backend
-	podman build -t $(GCP_REGISTRY)/frontend:latest ./frontend
-	podman build -t $(GCP_REGISTRY)/backend-admin:latest ./backend-admin
+	$(CONTAINER_RUNTIME) build -t $(GCP_REGISTRY)/backend:latest ./backend
+	$(CONTAINER_RUNTIME) build -t $(GCP_REGISTRY)/frontend:latest ./frontend
+	$(CONTAINER_RUNTIME) build -t $(GCP_REGISTRY)/backend-admin:latest ./backend-admin
 	@ADMIN_KEY=$$(grep '^ADMIN_SECRET_KEY=' backend/.env.prod | cut -d'=' -f2) && \
-	podman build --build-arg VITE_ADMIN_SECRET_KEY=$$ADMIN_KEY -t $(GCP_REGISTRY)/frontend-admin:latest -f ./frontend/admin/Dockerfile ./frontend
+	$(CONTAINER_RUNTIME) build --build-arg VITE_ADMIN_SECRET_KEY=$$ADMIN_KEY -t $(GCP_REGISTRY)/frontend-admin:latest -f ./frontend/admin/Dockerfile ./frontend
 
 gcp-push:
 	@echo "⬆️  Pushing images to Artifact Registry..."
-	podman push $(GCP_REGISTRY)/backend:latest
-	podman push $(GCP_REGISTRY)/frontend:latest
-	podman push $(GCP_REGISTRY)/backend-admin:latest
-	podman push $(GCP_REGISTRY)/frontend-admin:latest
+	$(CONTAINER_RUNTIME) push $(GCP_REGISTRY)/backend:latest
+	$(CONTAINER_RUNTIME) push $(GCP_REGISTRY)/frontend:latest
+	$(CONTAINER_RUNTIME) push $(GCP_REGISTRY)/backend-admin:latest
+	$(CONTAINER_RUNTIME) push $(GCP_REGISTRY)/frontend-admin:latest
 
 gcp-deploy:
 	@echo "🚀 Deploying to Cloud Run in $(GCP_REGION)..."
@@ -301,8 +351,7 @@ gcp-list:
 # -----------------------------------------------------------------------------
 
 stripe-login:
-	podman run --rm -it -v stripe-config:/root/.config/stripe stripe/stripe-cli login
+	$(CONTAINER_RUNTIME) run --rm -it -v stripe-config:/root/.config/stripe stripe/stripe-cli login
 
 stripe-listen:
-	podman run --rm -it -v stripe-config:/root/.config/stripe --network host stripe/stripe-cli listen --forward-to localhost:8000/stripe/webhook
-
+	$(CONTAINER_RUNTIME) run --rm -it -v stripe-config:/root/.config/stripe --network host stripe/stripe-cli listen --forward-to $(STRIPE_FORWARD_TO)

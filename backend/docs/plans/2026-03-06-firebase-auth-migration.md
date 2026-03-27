@@ -1,6 +1,6 @@
 # Firebase Auth Migration Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> Execution workflow: use `.agent/workflows/executing-plans.md` to implement this plan in batches.
 
 **Goal:** Completely replace the custom email/password authentication system with Firebase Authentication, migrating existing users seamlessly.
 

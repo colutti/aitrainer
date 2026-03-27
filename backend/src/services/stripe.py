@@ -14,6 +14,7 @@ from src.api.models.user_profile import UserProfile
 from src.core.logs import logger
 
 stripe.api_key = settings.STRIPE_API_KEY  # type: ignore
+stripe.api_base = settings.STRIPE_API_BASE  # type: ignore
 
 
 def create_checkout_session(

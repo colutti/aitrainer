@@ -38,7 +38,7 @@ test.describe('Workouts Feature', () => {
     await ui.submit();
 
     // Drawer should close and we should see a success toast
-    // The backend in VirtualBackend should respond with 200/201, but just checking if drawer closes
+    // The real backend should accept the submission, but we only need to assert the UI closes cleanly
     const drawerTitle = authenticatedPage.getByRole('heading', { name: t('workouts.register_workout') });
     await expect(drawerTitle).toBeHidden({ timeout: 10000 });
   });

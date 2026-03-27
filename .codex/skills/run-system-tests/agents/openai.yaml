@@ -1,0 +1,4 @@
+interface:
+  display_name: "Run System Tests"
+  short_description: "Containerized full test suite with coverage"
+  default_prompt: "Use $run-system-tests to run the full containerized test suite and report coverage per suite."

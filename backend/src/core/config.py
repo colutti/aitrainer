@@ -65,6 +65,7 @@ class Settings(BaseSettings):
 
     # ====== FIREBASE INTEGRATION ======
     FIREBASE_CREDENTIALS: str | None = None
+    ENABLE_E2E_TEST_AUTH: bool = False
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
@@ -141,6 +142,7 @@ class Settings(BaseSettings):
 
     # ====== STRIPE ======
     STRIPE_API_KEY: str = ""
+    STRIPE_API_BASE: str = "https://api.stripe.com"
     STRIPE_WEBHOOK_SECRET: str = ""
     STRIPE_PRICE_ID_BASIC: str = ""
     STRIPE_PRICE_ID_PRO: str = ""

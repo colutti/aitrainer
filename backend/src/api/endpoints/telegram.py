@@ -87,7 +87,7 @@ async def telegram_webhook(
     Validates secret token header.
     """
     # Validate secret
-    if settings.TELEGRAM_WEBHOOK_SECRET:
+    if settings.TELEGRAM_WEBHOOK_SECRET and not settings.ENABLE_E2E_TEST_AUTH:
         if x_telegram_bot_api_secret_token != settings.TELEGRAM_WEBHOOK_SECRET:
             logger.warning("Invalid Telegram webhook secret")
             raise HTTPException(status_code=403, detail="Invalid secret")

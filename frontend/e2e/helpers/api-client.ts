@@ -5,7 +5,7 @@
  * Uses standard fetch to avoid any Playwright request context issues.
  */
 export class ApiClient {
-  private baseURL = 'http://localhost:8000';
+  private baseURL = process.env.E2E_API_BASE_URL || 'http://localhost:8000';
   public token: string | null = null;
 
   constructor(token?: string) {

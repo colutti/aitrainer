@@ -53,7 +53,7 @@ function parseMsgAttributes(content: string): { attributes: MsgMetadata; text: s
   const msgRegex = /<msg(?:\s+data="([^"]*)")?(?:\s+hora="([^"]*)")?>(.*?)<\/msg>/s;
   const msgMatch = msgRegex.exec(content);
   
-  let attributes: MsgMetadata = {};
+  const attributes: MsgMetadata = {};
   let innerText = content;
 
   if (msgMatch) {
@@ -130,7 +130,7 @@ function renderSectionContent(tag: string, content: string) {
           </div>
         );
       }
-    } catch (e) {
+    } catch {
       // Fallback to markdown if not valid JSON
     }
   }

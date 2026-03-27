@@ -1,7 +1,7 @@
 """Admin backend service - separate from main backend for security"""
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Optional, cast
 
 import bcrypt
 import jwt
@@ -77,7 +77,7 @@ def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, cast(str, SECRET_KEY), algorithm=ALGORITHM)
     return encoded_jwt
 
 # Initialize admin_users collection on startup
@@ -114,31 +114,34 @@ def startup_event():
         # on startup if the admin initialization fails.
         print(f"⚠️  Admin collection init warning: {e}")
 
-# Admin authentication middleware
 async def _verify_admin_access(request: Request) -> Optional[JSONResponse]:
     """Helper to verify admin access and return error response if invalid."""
-    # Check X-Admin-Key header (Shield protection)
+    # 1. Check Shield Key and Secret Configuration
     admin_key = request.headers.get("X-Admin-Key")
-    if not ADMIN_SECRET_KEY or admin_key != ADMIN_SECRET_KEY:
-        return JSONResponse(status_code=403, content={"detail": "Invalid admin shield key"})
+    if not ADMIN_SECRET_KEY or not SECRET_KEY or admin_key != ADMIN_SECRET_KEY:
+        return JSONResponse(
+            status_code=403,
+            content={"detail": "Invalid admin shield or server config"}
+        )
 
-    # Verify JWT Token
+    # 2. Verify JWT Token header
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         return JSONResponse(status_code=401, content={"detail": "Missing or invalid token"})
 
     token = auth_header.split(" ")[1]
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, cast(str, SECRET_KEY), algorithms=[ALGORITHM])
         email = payload.get("sub")
-        if email is None:
-            return JSONResponse(status_code=401, content={"detail": "Invalid token payload"})
 
-        # Check if email exists in admin_users
+        # 3. Check Admin Authorization in DB
         db = get_admin_db()
-        admin_user = db.admin_users.find_one({"email": email})
+        admin_user = db.admin_users.find_one({"email": email}) if email else None
+
         if not admin_user:
-            return JSONResponse(status_code=403, content={"detail": "Admin access required"})
+            code = 401 if not email else 403
+            msg = "Invalid token payload" if not email else "Admin access required"
+            return JSONResponse(status_code=code, content={"detail": msg})
 
         request.state.user = admin_user
         return None

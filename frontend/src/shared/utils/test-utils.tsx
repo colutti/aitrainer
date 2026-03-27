@@ -3,8 +3,7 @@ import i18n from 'i18next';
 import { initReactI18next, I18nextProvider } from 'react-i18next';
 import { MemoryRouter } from 'react-router-dom';
 
-// @ts-expect-error - JSON module resolution
-import ptBR from '../locales/pt-BR.json';
+import ptBR from '../../locales/pt-BR.json';
 
  
 const resources = {

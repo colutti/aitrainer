@@ -7,8 +7,11 @@ dotenv.config({ path: '.env.e2e' });
 
 /**
  * Playwright E2E test configuration
- * Focused on the stable Mocked VirtualBackend suite.
+ * Runs against the real backend stack.
  */
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
+const shouldManageWebServer = process.env.PLAYWRIGHT_SKIP_WEB_SERVER !== '1';
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
@@ -17,7 +20,7 @@ export default defineConfig({
   workers: 1,
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL,
     trace: 'on-first-retry',
     locale: 'pt-BR',
     // Default to Desktop for business flow stability
@@ -55,12 +58,14 @@ export default defineConfig({
     },
   ],
 
-  webServer: [
-    {
-      command: 'npm run dev',
-      url: 'http://localhost:3000',
-      reuseExistingServer: true,
-      timeout: 120000,
-    },
-  ],
+  webServer: shouldManageWebServer
+    ? [
+        {
+          command: 'npm run dev',
+          url: baseURL,
+          reuseExistingServer: true,
+          timeout: 120000,
+        },
+      ]
+    : undefined,
 });

@@ -229,6 +229,13 @@ class UpdateIdentityRequest(BaseModel):
     photo_base64: str | None = None
 
 
+class E2ETestLoginRequest(BaseModel):
+    """Request model for containerized E2E login bootstrap."""
+
+    email: str = "bot-real@fityq.it"
+    display_name: str = "Real QA Bot"
+
+
 @router.post("/update_identity")
 def update_identity(
     data: UpdateIdentityRequest, user_email: CurrentUser, brain: AITrainerBrainDep
@@ -257,6 +264,40 @@ def update_identity(
 
     logger.info("User identity updated for email: %s", user_email)
     return JSONResponse(content={"message": "Identity updated successfully"})
+
+
+@router.post("/e2e-login")
+def e2e_login(data: E2ETestLoginRequest, brain: AITrainerBrainDep) -> dict:
+    """
+    Creates or refreshes a deterministic E2E user and returns a platform JWT.
+    Enabled only in the containerized test environment.
+    """
+    if not settings.ENABLE_E2E_TEST_AUTH:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    profile = brain.get_user_profile(data.email)
+    if profile:
+        profile.display_name = data.display_name
+        profile.subscription_plan = "Free"
+        profile.onboarding_completed = True
+        brain.save_user_profile(profile)
+    else:
+        profile = UserProfile(
+            email=data.email,
+            role="user",
+            gender="Masculino",
+            age=30,
+            weight=80.0,
+            height=180,
+            goal_type="maintain",
+            subscription_plan="Free",
+            display_name=data.display_name,
+            onboarding_completed=True,
+        )
+        brain.save_user_profile(profile)
+
+    token = create_token(data.email)
+    return {"token": token, "email": data.email}
 
 
 class TelegramNotificationSettings(BaseModel):

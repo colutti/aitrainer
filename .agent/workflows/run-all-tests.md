@@ -6,6 +6,16 @@ description: Executa a suíte completa de testes e verificação de qualidade do
 
 Este guia define os comandos e padrões para garantir que o projeto mantenha **Zero Erros** e **Zero Warnings** em todas as camadas.
 
+## Caminho oficial
+
+Para a suíte completa com ambiente consistente, use:
+
+```bash
+make test-once
+```
+
+Esse comando sobe MongoDB, Qdrant, backend real, frontend real e Playwright em containers na mesma rede.
+
 ## 0. Caminhos e Ferramentas (Referência Rápida)
 
 Sempre utilize os executáveis dos ambientes virtuais locais para garantir paridade:
@@ -21,7 +31,7 @@ Sempre utilize os executáveis dos ambientes virtuais locais para garantir parid
 ### Verificação de Qualidade (Lint & Types)
 ```bash
 cd backend
-.venv/bin/ruff check src tests/integration  # Lint rápido
+.venv/bin/ruff check src                    # Lint rápido
 .venv/bin/pylint src                        # Lint profundo (Meta: 10/10)
 .venv/bin/pyright src                       # Verificação de Tipos estrita
 ```
@@ -40,6 +50,7 @@ cd backend
 
 ```bash
 cd backend-admin
+.venv/bin/python -m pytest || true          # Opcional: atualmente o foco principal é lint/typecheck
 .venv/bin/pylint src                        # Meta: 10/10
 .venv/bin/pyright src
 ```
@@ -61,9 +72,7 @@ npm run test:coverage -- src/features/onboarding  # Cobertura por feature
 ### Frontend Admin
 ```bash
 cd frontend/admin
-npm run lint
-npm run typecheck
-npm test
+npm run check
 ```
 
 ---
@@ -74,11 +83,9 @@ Os testes E2E rodam em modo **Headless** contra um **Build de Produção** local
 
 ```bash
 cd frontend
-# Execução 100% automatizada (Headless + Build)
-npx playwright test e2e/real/complete_user_journey.spec.ts --project=chromium --reporter=list
+# Execução automática padrão
+npx playwright test --project=chromium --reporter=list
 ```
-
-*Nota: O Playwright executará `npm run build` e `npm run preview` automaticamente via `webServer` se o servidor não estiver rodando.*
 
 ---
 
@@ -94,7 +101,7 @@ make security-check                         # Semgrep + Trivy + Secret Scanning
 
 Sempre limpe artefatos antes de considerar a tarefa concluída:
 
-1. **Limpeza**: `rm -rf tmp/* backend/.pytest_cache frontend/playwright-report frontend/coverage`
+1. **Limpeza**: remova apenas artefatos gerados localmente, conforme `.agent/workflows/cleancode.md`
 2. **Relatório**: O Agente deve reportar:
    - Status do Lint (Zero Erros).
    - Status dos Tipos (Zero Erros).

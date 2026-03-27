@@ -25,6 +25,12 @@ services:
     depends_on:
       - mongo
       - qdrant
+    healthcheck:
+      test: ["CMD", "python", "scripts/healthcheck.py"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks:
       - aitrainer-network
 
@@ -42,7 +48,14 @@ services:
       - VITE_API_PROXY_TARGET=http://backend:8000
     command: npm run dev -- --host
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "scripts/healthcheck.js"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - aitrainer-network
 

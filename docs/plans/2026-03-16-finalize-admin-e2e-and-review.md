@@ -1,6 +1,6 @@
 # Finalize Admin E2E Tests and Review Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> Execution workflow: use `.agent/workflows/executing-plans.md` to implement this plan in batches.
 
 **Goal:** Ensure the admin dashboard is fully functional, all E2E tests pass, and Stripe integration is ready for production.
 
@@ -30,7 +30,7 @@ Ensure the `confirmation-modal` and `confirm-accept` data-testids are correctly 
 ### Task 2: Stripe Integration Review
 
 **Files:**
-- Doc: `GEMINI.md`
+- Doc: `AGENTS.md`
 - Env: `.env`
 
 **Step 1: Verify current Stripe implementation**
@@ -50,7 +50,7 @@ Inform the user about configuring Price IDs and Webhook Secret.
 
 **Step 1: Execute all tests and quality checks**
 
-Run: `.agent/workflows/run-all-tests.md`
+Run: execute the commands documented in `.agent/workflows/run-all-tests.md`
 
 **Step 2: Resolve any lint or type errors**
 
@@ -65,7 +65,7 @@ Ensure zero errors in Ruff, Pylint, and TypeScript.
 
 **Step 1: Run cleancode**
 
-Run: `.agent/workflows/cleancode.md`
+Run: execute the cleanup commands documented in `.agent/workflows/cleancode.md`
 
 **Step 2: Create walkthrough**
 

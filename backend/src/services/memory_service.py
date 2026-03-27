@@ -6,7 +6,7 @@ from uuid import uuid4
 from qdrant_client import QdrantClient, models as qdrant_models
 from src.core.logs import logger
 from src.utils.qdrant_utils import scroll_all_user_points, point_to_dict
-from src.services.memory_tools import _embed_text
+from src.services.memory_tools import _embed_text, _ensure_collection
 
 
 def get_memories_paginated(
@@ -25,6 +25,7 @@ def get_memories_paginated(
     )
 
     try:
+        _ensure_collection(qdrant_client, collection_name)
         user_filter = qdrant_models.Filter(
             must=[
                 qdrant_models.FieldCondition(
@@ -71,6 +72,7 @@ def add_memory(
     logger.info("Adding memory for user: %s (category: %s)", user_id, category)
 
     try:
+        _ensure_collection(qdrant_client, collection_name)
         # Generate embedding
         embedding = _embed_text(text)
 

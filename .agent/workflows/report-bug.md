@@ -2,6 +2,8 @@
 description: Fluxo de correção de bugs com TDD obrigatório
 ---
 
+# Workflow: Bug Fix
+
 ### 1. Investigação e Reprodução
 1. Analise o bug reportado e identifique o código suspeito.
 2. **CRÍTICO**: Escreva um teste automatizado que falhe reproduzindo exatamente o comportamento indesejado.
@@ -13,7 +15,7 @@ description: Fluxo de correção de bugs com TDD obrigatório
 
 ### 3. Verificação de Regressão
 1. Execute outros testes relacionados para garantir que nada foi quebrado.
-2. **Execute o workflow `run-all-tests.md`** para garantir que a qualidade geral (lint/types) se mantém.
+2. Rode as verificações relevantes descritas em `.agent/workflows/run-all-tests.md` para garantir lint, types e testes das áreas afetadas.
 3. Crie testes automatizados para que o problema nao volte a acontecer sempre que possivel.
 
 ### 4. Relatório

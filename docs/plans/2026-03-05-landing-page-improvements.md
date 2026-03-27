@@ -1,6 +1,6 @@
 # Landing Page Improvements Implementation Plan
 
-> REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> Execution workflow: use `.agent/workflows/executing-plans.md` to implement this plan in batches.
 
 **Goal:** Reduce spacing between landing page sections, add more Call to Action (CTA) buttons, and implement conversion rate optimization (CRO) improvements.
 

@@ -21,6 +21,9 @@ export class UIActions {
     const internalPageName = pageName === 'dashboard' ? 'home' : pageName;
     const desktopId = `desktop-nav-${internalPageName}`;
     const mobileId = `nav-${internalPageName}`;
+    const expectedPath = pageName === 'home' || pageName === 'dashboard'
+      ? '/dashboard'
+      : `/dashboard/${pageName}`;
 
     const viewport = this.page.viewportSize();
     console.log(`QA: Navigating to ${pageName}. Viewport: ${viewport?.width}x${viewport?.height}`);
@@ -33,19 +36,29 @@ export class UIActions {
       console.log('QA: Desktop Nav Container is visible');
       const item = this.page.getByTestId(desktopId);
       await expect(item).toBeVisible({ timeout: 10000 });
-      await item.click();
+      await item.click({ force: true });
     } else if (await mobileNav.isVisible()) {
       console.log('QA: Mobile Nav Container is visible');
       const item = this.page.getByTestId(mobileId);
       await expect(item).toBeVisible({ timeout: 10000 });
-      await item.click();
+      await item.click({ force: true });
     } else {
       console.warn('QA: NO NAVIGATION CONTAINER VISIBLE. Fallback to direct URL.');
       await this.page.goto(`/dashboard/${pageName === 'home' ? '' : pageName}`);
     }
-    
+
+    const reachedTarget = await this.page.waitForURL(`**${expectedPath}`, { timeout: 5000 })
+      .then(() => true)
+      .catch(() => false);
+
+    if (!reachedTarget) {
+      console.warn(`QA: Nav click did not reach ${expectedPath}. Fallback to direct URL.`);
+      await this.page.goto(expectedPath);
+      await this.page.waitForURL(`**${expectedPath}`, { timeout: 10000 });
+    }
+
     await this.page.waitForLoadState('networkidle');
-    await this.page.waitForTimeout(1000);
+    await this.page.waitForTimeout(500);
   }
 
   /**

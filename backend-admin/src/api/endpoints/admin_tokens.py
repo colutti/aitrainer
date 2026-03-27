@@ -1,5 +1,7 @@
 """Endpoints for managing and analyzing token usage and costs."""
+# pyright: reportArgumentType=false
 from datetime import datetime, timedelta, timezone
+from typing import Any
 from fastapi import APIRouter, Query
 from src.core.deps import MainDB, CurrentAdmin
 
@@ -17,6 +19,28 @@ def get_cost_usd(model: str, input_tokens: int, output_tokens: int) -> float:
     """Calculate estimated cost in USD based on model and token counts."""
     rates = PRICING.get(model, PRICING["gpt-4o-mini"])
     return (input_tokens / 1000 * rates["input"]) + (output_tokens / 1000 * rates["output"])
+
+def _format_token_item(item: Any) -> dict[str, Any]:
+    """Helper to format a single token usage item for the summary response."""
+    user_email = str(item.get("_id", "unknown"))
+    model = str(item.get("model", ""))
+    total_input = int(item.get("total_input", 0))
+    total_output = int(item.get("total_output", 0))
+    cost_usd = get_cost_usd(model, total_input, total_output)
+    last_activity_val = item.get("last_activity")
+    last_activity_str = ""
+    if isinstance(last_activity_val, datetime):
+        last_activity_str = last_activity_val.isoformat()
+
+    return {
+        "user_email": user_email,
+        "total_input": total_input,
+        "total_output": total_output,
+        "message_count": int(item.get("message_count", 0)),
+        "model": model,
+        "cost_usd": cost_usd,
+        "last_activity": last_activity_str
+    }
 
 @router.get("/summary")
 def get_token_summary(
@@ -41,20 +65,12 @@ def get_token_summary(
     ]
 
     results = list(db.prompt_logs.aggregate(pipeline))
-
+    final_results: Any = []
     for item in results:
-        item["user_email"] = item["_id"]
-        item["cost_usd"] = get_cost_usd(
-            item.get("model", ""),
-            item.get("total_input", 0),
-            item.get("total_output", 0)
-        )
-        # Ensure last_activity is ISO string for frontend
-        if isinstance(item.get("last_activity"), datetime):
-            item["last_activity"] = item["last_activity"].isoformat()
+        final_results.append(_format_token_item(item))  # type: ignore
 
     return {
-        "data": results,
+        "data": final_results,
         "days": days,
         "total_users_with_tokens": len(results),
     }

@@ -1,6 +1,7 @@
 """
 Service for calculating Adaptive TDEE based on weight and nutrition history.
 """
+# pylint: disable=too-many-lines,too-many-locals
 
 from datetime import date, timedelta, datetime
 from typing import List, TYPE_CHECKING
@@ -10,7 +11,7 @@ import numpy as np
 from src.core.logs import logger
 from src.services.tdee_utils import (
     calculate_body_composition_changes,
-    calculate_macro_targets as calc_macros,
+    calculate_macro_targets,
 )
 from src.api.models.weight_log import WeightLog
 from src.api.models.nutrition_log import NutritionLog
@@ -76,6 +77,14 @@ class AdaptiveTDEEService:
     def __init__(self, db: "MongoDatabase"):
         """Initialize the AdaptiveTDEEService with a database connection."""
         self.db = db
+
+    def filter_outliers(self, logs: list[WeightLog]) -> tuple[list[WeightLog], int]:
+        """Compatibility wrapper for outlier filtering."""
+        return filter_outliers(logs)
+
+    def calculate_macro_targets(self, daily_target: int, weight_kg: float) -> dict:
+        """Compatibility wrapper for macro target calculation."""
+        return calculate_macro_targets(daily_target, weight_kg)
 
     def estimate_energy_per_kg(self, body_fat_pct: float | None, slope: float) -> float:
         """
@@ -415,6 +424,26 @@ class AdaptiveTDEEService:
         return ema_value
 
     # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    def _calculate_formula_tdee(
+        self, profile: "UserProfile | None", latest_weight: float, weight_logs: list[WeightLog]
+    ) -> float:
+        """Calculates a formula-based TDEE estimate as a fallback or prior."""
+        scale_bmr = next((log.bmr for log in reversed(weight_logs) if log.bmr), None)
+        calc_bmr = 0.0
+        if profile and profile.height and profile.age:
+            try:
+                adj = -161 if profile.gender in ("Feminino", "female") else 5
+                calc_bmr = (10 * latest_weight) + (6.25 * profile.height) - (5 * profile.age) + adj
+            except (ValueError, TypeError, AttributeError):
+                pass
+        base_bmr = scale_bmr or calc_bmr or (latest_weight * 22) or 1500
+        activity_factor = 1.45
+        if profile and hasattr(profile, "tdee_activity_factor"):
+            af = getattr(profile, "tdee_activity_factor", None)
+            if af is not None and isinstance(af, (int, float)):
+                activity_factor = af
+        return base_bmr * activity_factor
+
     def calculate_tdee(self, user_email: str, lookback_weeks: int = 4) -> dict:
         """
         Calculates the user's TDEE using v3 algorithm: daily observations + EMA.
@@ -494,7 +523,7 @@ class AdaptiveTDEEService:
         weight_logs_raw = list(weight_logs)
 
         # Step 4: Filter outliers
-        weight_logs, outliers_count = filter_outliers(weight_logs)
+        weight_logs, outliers_count = self.filter_outliers(weight_logs)
         weight_logs.sort(key=lambda x: x.date)
 
         days_elapsed = (weight_logs[-1].date - weight_logs[0].date).days
@@ -707,6 +736,20 @@ class AdaptiveTDEEService:
         """Helper to map results to the final dictionary."""
         macro_targets = self.calculate_macro_targets(p["target"], p["lat_weight"])
         stability = self._calculate_stability_score(p["target"], p["relevant_nut"])
+        raw_weight_dates = {log.date for log in p["w_logs_raw"]}
+        relevant_nutrition_dates = {
+            log.date.date() if isinstance(log.date, datetime) else log.date
+            for log in p["relevant_nut"]
+        }
+        calorie_trend = [
+            {
+                "date": (
+                    log.date.date() if isinstance(log.date, datetime) else log.date
+                ).isoformat(),
+                "calories": log.calories,
+            }
+            for log in sorted(p["relevant_nut"], key=lambda x: x.date)
+        ]
 
         return {
             "tdee": int(round(p["tdee"])),
@@ -753,41 +796,15 @@ class AdaptiveTDEEService:
                 {
                     "date": (date.today() - timedelta(days=i)).isoformat(),
                     "weight": (date.today() - timedelta(days=i))
-                    in {log.date for log in p["w_logs_raw"]},
+                    in raw_weight_dates,
                     "nutrition": (date.today() - timedelta(days=i))
-                    in {
-                        (
-                            log.date.date()
-                            if isinstance(log.date, datetime)
-                            else log.date
-                        )
-                        for log in p["n_logs"]
-                    },
+                    in relevant_nutrition_dates,
                 }
-                for i in range(27, -1, -1)
+                for i in range(28)
             ],
-            "calorie_trend": [
-                {
-                    "date": (p["p_start"] + timedelta(days=i)).isoformat(),
-                    "calories": next(
-                        (
-                            log_item.calories
-                            for log_item in p["relevant_nut"]
-                            if (
-                                log_item.date.date()
-                                if isinstance(log_item.date, datetime)
-                                else log_item.date
-                            )
-                            == (p["p_start"] + timedelta(days=i))
-                        ),
-                        0,
-                    ),
-                }
-                for i in range((p["p_end"] - p["p_start"]).days + 1)
-            ],
+            "calorie_trend": calorie_trend,
         }
 
-    # pylint: disable=too-many-locals
     def _calculate_regression_trend(
         self, logs: List[WeightLog]
     ) -> tuple[float, float, float]:
@@ -844,33 +861,16 @@ class AdaptiveTDEEService:
             if weight_logs
             else 70.0
         )
-        scale_bmr = next((log.bmr for log in reversed(weight_logs) if log.bmr), None)
-        calc_bmr = 0.0
-        if profile and profile.height and profile.age:
-            try:
-                adj = -161 if profile.gender in ("Feminino", "female") else 5
-                calc_bmr = (
-                    (10 * latest_weight)
-                    + (6.25 * profile.height)
-                    - (5 * profile.age)
-                    + adj
-                )
-            except (ValueError, TypeError, AttributeError):
-                pass
-        base_bmr = scale_bmr or calc_bmr or (latest_weight * 22) or 1500
-        activity_factor = 1.45
-        if profile and hasattr(profile, "tdee_activity_factor"):
-            af = getattr(profile, "tdee_activity_factor", None)
-            if af is not None and isinstance(af, (int, float)):
-                activity_factor = af
-        tdee_est = base_bmr * activity_factor
+        tdee_est = self._calculate_formula_tdee(profile, latest_weight, weight_logs)
+
         days = (
             (weight_logs[-1].date - weight_logs[0].date).days
             if weight_logs and len(weight_logs) >= 2
             else 7
         )
         adh = len(nutrition_logs) / (days + 1) if days > 0 else 0
-        target, goal_type, goal_rate = int(round(tdee_est)), "maintain", 0.0
+        target = int(round(tdee_est))
+        goal_type, goal_rate = "maintain", 0.0
         if profile:
             goal_type, goal_rate = profile.goal_type, profile.weekly_rate or 0.0
             adj = (
@@ -905,12 +905,14 @@ class AdaptiveTDEEService:
             "goal_weekly_rate": goal_rate,
             "goal_type": goal_type,
             "consistency_score": int(round(adh * 100)),
-            "macro_targets": self.calculate_macro_targets(target, latest_weight),
+            "macro_targets": calculate_macro_targets(target, latest_weight),
             "weight_trend": [],
             "consistency": [],
             "calorie_trend": [],
-            "confidence_reason": "Utilizando estimativa baseada em seu metabolismo basal (BMR) "
-            "devido a histórico de dados insuficiente ou instável.",
+            "confidence_reason": (
+                "Utilizando estimativa baseada em seu metabolismo basal (BMR) "
+                "devido a histórico de dados insuficiente ou instável."
+            ),
         }
         comp = calculate_body_composition_changes(weight_logs)
         if comp:
@@ -1028,21 +1030,4 @@ class AdaptiveTDEEService:
             return max(
                 gender_min, int(round(tdee * (1 - self.MAX_DEFICIT_PCT))), target
             )
-
         return max(gender_min, target)
-
-    def calculate_macro_targets(
-        self, daily_target: int, weight_kg: float
-    ) -> dict[str, int]:
-        """
-        Calculates macro targets ensuring total calories = daily_target.
-        Delegates to tdee_utils implementation.
-        """
-        return calc_macros(daily_target, weight_kg)
-
-    def filter_outliers(self, logs: list[WeightLog]) -> tuple[list[WeightLog], int]:
-        """
-        Wrapper for outlier filtering logic.
-        Delegates to tdee_outliers implementation.
-        """
-        return filter_outliers(logs)

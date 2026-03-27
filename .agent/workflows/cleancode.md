@@ -2,9 +2,35 @@
 description: Limpeza profunda de arquivos temporários e caches
 ---
 
-- Limpe o projeto atual inteiro eliminando arquivos de logs, scripts temporários, pastas de testes como `.coverage`.
-- Siga a seção de limpeza do `run-all-tests.md`:
-  - Delete arquivos em `tmp/` na raiz.
-  - Delete caches de Python: `find . -name "*.pyc" -delete && find . -name "__pycache__" -delete`.
-  - Delete artefatos de testes: `.pytest_cache`, `.ruff_cache`, `frontend/coverage`, etc.
-- Remova branches locais e worktrees que não são mais usados para manter o ambiente leve.
+# Workflow: Clean Codebase Artifacts
+
+Use este workflow para remover apenas artefatos locais gerados por testes, build e execução.
+
+## Escopo seguro
+
+- Limpar `tmp/` na raiz do projeto
+- Limpar caches Python (`*.pyc`, `__pycache__`, `.pytest_cache`, `.ruff_cache`)
+- Limpar artefatos de cobertura e relatórios (`frontend/coverage`, `frontend/playwright-report`)
+- Remover logs e arquivos temporários gerados localmente, desde que não façam parte do código-fonte
+
+## Não fazer sem pedido explícito
+
+- Não apagar branches git
+- Não remover worktrees
+- Não apagar arquivos de configuração, documentação ou scripts do projeto
+- Não usar comandos destrutivos fora do workspace atual
+
+## Comandos sugeridos
+
+```bash
+find . -name "*.pyc" -delete
+find . -name "__pycache__" -type d -prune -exec rm -rf {} +
+rm -rf tmp/*
+rm -rf backend/.pytest_cache backend/.ruff_cache
+rm -rf frontend/coverage frontend/playwright-report
+rm -rf frontend/admin/coverage
+```
+
+## Verificação
+
+- Rode os comandos de `.agent/workflows/run-all-tests.md` se a limpeza fizer parte do fechamento de uma tarefa.

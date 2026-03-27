@@ -58,4 +58,22 @@ describe('UserProfileView', () => {
     const pulseElements = document.querySelectorAll('.animate-pulse');
     expect(pulseElements.length).toBeGreaterThan(0);
   });
+
+  it('should submit when profile target_weight is null', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <UserProfileView
+        {...mockProps}
+        profile={{ ...mockProfile, target_weight: null as unknown as number }}
+        onSubmit={onSubmit}
+      />
+    );
+
+    fireEvent.submit(screen.getByTestId('profile-form'));
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalled();
+    });
+  });
 });

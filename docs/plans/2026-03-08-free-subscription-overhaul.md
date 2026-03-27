@@ -1,6 +1,6 @@
 # Free Subscription Overhaul Implementation Plan
 
-> ** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> Execution workflow: use `.agent/workflows/executing-plans.md` to implement this plan in batches.
 
 **Goal:** Modify the Free subscription plan to allow 20 messages per day for 7 days, locked to the 'gymbro' trainer (Breno), with a clear paywall/upgrade CTA when limits are reached, supporting admin custom limits.
 

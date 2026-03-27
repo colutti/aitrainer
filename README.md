@@ -63,9 +63,8 @@
 ## 🚀 Getting Started (Local Development)
 
 ### 1. Prerequisites
-- Docker / Podman + Podman Compose
-- Node.js 22+ (for local frontend dev)
-- Python 3.12+ (for local backend dev)
+- Docker or Podman with a Compose-compatible CLI
+- Node.js 22+ and Python 3.12+ only if you want to run app services outside containers
 
 ### 2. Setup
 ```bash
@@ -95,6 +94,16 @@ make debug-rebuild
 
 We maintain high quality standards with **TDD (Test Driven Development)** and strict linting.
 
+### Official Test Path
+The official stable way to run the full suite is containerized:
+
+```bash
+make test-once
+```
+
+This command runs backend, frontend, admin frontend, and Playwright E2E against real services on the same container network. It is the source of truth for local validation and CI.
+The test stack also starts MongoDB, Qdrant, and `stripe-mock` as internal dependencies.
+
 ### Frontend
 ```bash
 cd frontend
@@ -114,7 +123,7 @@ pyright                 # Type checking
 
 ### Full Workflow
 Use the provided automation for full verification:
-`/run-all-tests` (via AI Agent) or `make test`
+`make test-once`
 
 ---
 

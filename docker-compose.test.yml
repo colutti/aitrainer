@@ -1,0 +1,170 @@
+services:
+  mongo:
+    image: docker.io/library/mongo:latest
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: aitrainer
+      MONGO_INITDB_ROOT_PASSWORD: aitrainerpass
+      MONGO_INITDB_DATABASE: aitrainer_test
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh --quiet --eval \"db.runCommand('ping').ok\" -u $${MONGO_INITDB_ROOT_USERNAME} -p $${MONGO_INITDB_ROOT_PASSWORD} --authenticationDatabase admin",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - test-network
+
+  qdrant:
+    image: docker.io/qdrant/qdrant:latest
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/usr/bin/bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/6333 && exec 3<&-"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - test-network
+
+  stripe-mock:
+    image: docker.io/stripe/stripe-mock:latest
+    restart: unless-stopped
+    networks:
+      - test-network
+
+  backend:
+    build:
+      context: ./backend
+    working_dir: /workspace/backend
+    volumes:
+      - .:/workspace
+    env_file:
+      - ./backend/.env.test
+    environment:
+      PYTHONPATH: /workspace/backend
+      MONGO_URI: mongodb://aitrainer:aitrainerpass@mongo:27017/aitrainer_test?authSource=admin
+      DB_NAME: aitrainer_test
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: "6333"
+      QDRANT_COLLECTION_NAME: aitrainer_test
+      RUNNING_IN_CONTAINER: "true"
+    command: python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000
+    depends_on:
+      mongo:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      stripe-mock:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "/workspace/scripts/test/backend_healthcheck.py"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - test-network
+
+  backend-tests:
+    build:
+      context: ./backend
+    working_dir: /workspace/backend
+    volumes:
+      - .:/workspace
+    env_file:
+      - ./backend/.env.test
+    environment:
+      PYTHONPATH: /workspace/backend
+      MONGO_URI: mongodb://aitrainer:aitrainerpass@mongo:27017/aitrainer_test?authSource=admin
+      DB_NAME: aitrainer_test
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: "6333"
+      QDRANT_COLLECTION_NAME: aitrainer_test
+      RUNNING_IN_CONTAINER: "true"
+    depends_on:
+      mongo:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      stripe-mock:
+        condition: service_started
+    command: pytest
+    networks:
+      - test-network
+
+  frontend-tests:
+    image: docker.io/library/node:22-slim
+    working_dir: /workspace/frontend
+    volumes:
+      - .:/workspace
+      - frontend_test_node_modules:/workspace/frontend/node_modules
+    command: sh -lc "npm ci && npm test"
+    networks:
+      - test-network
+
+  admin-tests:
+    image: docker.io/library/node:22-slim
+    working_dir: /workspace/frontend/admin
+    volumes:
+      - .:/workspace
+      - frontend_admin_test_node_modules:/workspace/frontend/admin/node_modules
+    command: sh -lc "npm ci && npm test"
+    networks:
+      - test-network
+
+  frontend:
+    image: docker.io/library/node:22-slim
+    working_dir: /workspace/frontend
+    volumes:
+      - .:/workspace
+      - frontend_dev_node_modules:/workspace/frontend/node_modules
+    environment:
+      VITE_API_PROXY_TARGET: http://backend:8000
+    command: sh -lc "npm ci && npm run dev -- --host 0.0.0.0 --port 3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "/workspace/scripts/test/frontend_healthcheck.cjs"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - test-network
+
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.58.1-jammy
+    working_dir: /workspace/frontend
+    shm_size: 1gb
+    volumes:
+      - .:/workspace
+      - frontend_playwright_node_modules:/workspace/frontend/node_modules
+    environment:
+      PLAYWRIGHT_BASE_URL: http://frontend:3000
+      E2E_API_BASE_URL: http://backend:8000
+      PLAYWRIGHT_SKIP_WEB_SERVER: "1"
+      VITE_E2E_USER_EMAIL: bot-real@fityq.it
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    command: sh -lc "npm ci && npx playwright test --project=chromium --reporter=list"
+    networks:
+      - test-network
+
+volumes:
+  frontend_dev_node_modules:
+  frontend_playwright_node_modules:
+  frontend_test_node_modules:
+  frontend_admin_test_node_modules:
+
+networks:
+  test-network:
+    driver: bridge

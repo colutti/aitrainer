@@ -1,6 +1,6 @@
 # TDEE Reset Feature Implementation Plan
 
-> REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> Execution workflow: use `.agent/workflows/executing-plans.md` to implement this plan in batches.
 
 **Goal:** Allow users to reset their Adaptive TDEE baseline calculation from a specific date forward, removing the 21-day lagging effect of old data when their lifestyle changes significantly, without breaking the fallback mechanisms.
 

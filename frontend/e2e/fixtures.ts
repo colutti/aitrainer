@@ -14,8 +14,10 @@ interface Fixtures {
 }
 
 /**
- * Premium E2E Fixtures (ULTRA STABLE REAL EDITION)
+ * Premium E2E Fixtures against the real backend.
  */
+const apiBaseURL = process.env.E2E_API_BASE_URL ?? 'http://localhost:8000';
+
 export const test = base.extend<Fixtures>({
   // UI Actions Helper (POM)
   ui: async ({ page }, use) => {
@@ -35,7 +37,7 @@ export const test = base.extend<Fixtures>({
     const token = authState.origins[0]?.localStorage.find((i: any) => i.name === 'auth_token')?.value;
 
     const apiContext = await playwright.request.newContext({
-      baseURL: 'http://localhost:8000',
+      baseURL: apiBaseURL,
       extraHTTPHeaders: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'

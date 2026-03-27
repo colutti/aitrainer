@@ -34,7 +34,7 @@ O novo conjunto de regras impõe:
 - Documentação mentirosa = Bug.
 
 ## 4. Estratégia de Implementação
-1. Atualizar arquivode regras (`rules.md`, `GEMINI.md`).
+1. Atualizar arquivo de regras (`rules.md`, `AGENTS.md`).
 2. Implementar alvos no `Makefile`.
 3. Criar arquivos de configuração (`.semgrepignore`, `.trivyignore`).
 4. Atualizar workflows (`run-all-tests.md` e CI).
