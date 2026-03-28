@@ -2,12 +2,12 @@
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter
 from pymongo.errors import PyMongoError
-from src.core.deps import MainDB, CurrentAdmin
+from src.core.deps import CURRENT_ADMIN_DEP, MAIN_DB_DEP
 
 router = APIRouter(prefix="/admin/analytics", tags=["admin"])
 
 @router.get("/overview")
-def get_overview(_admin: CurrentAdmin, db: MainDB) -> dict:
+def get_overview(_admin: CURRENT_ADMIN_DEP, db: MAIN_DB_DEP) -> dict:
     """KPIs gerais do sistema (lendo do banco principal)."""
     # Contar totais
     total_users = db.users.count_documents({})
@@ -47,7 +47,7 @@ def get_overview(_admin: CurrentAdmin, db: MainDB) -> dict:
     }
 
 @router.get("/quality-metrics")
-def get_quality_metrics(_admin: CurrentAdmin, db: MainDB) -> dict:
+def get_quality_metrics(_admin: CURRENT_ADMIN_DEP, db: MAIN_DB_DEP) -> dict:
     """Métricas de qualidade do sistema."""
     # Média de mensagens por usuário
     avg_messages = _calculate_avg_messages(db)

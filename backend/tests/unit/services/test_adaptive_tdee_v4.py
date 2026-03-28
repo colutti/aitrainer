@@ -4,7 +4,6 @@ from unittest.mock import MagicMock
 from src.services.adaptive_tdee import AdaptiveTDEEService
 from src.api.models.weight_log import WeightLog
 from src.api.models.nutrition_log import NutritionLog
-from src.api.models.user_profile import UserProfile
 
 @pytest.fixture
 def db_mock():
@@ -137,7 +136,6 @@ class TestAdaptiveTDEEV4DynamicSpan:
         The algorithm should reduce the EMA span (e.g. to ~7-10 days) to respond quickly.
         """
         weights, _ = _build_test_data(days=14, weight_drop_per_day=0.1) # Perfectly linear
-        observations = [(w.date, 2500.0) for w in weights] # Mock TDEE observations
         
         # We need a method to calculate dynamic span
         span = service._calculate_dynamic_span(weights)

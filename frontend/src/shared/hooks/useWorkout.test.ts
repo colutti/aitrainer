@@ -45,6 +45,14 @@ describe('useWorkoutStore', () => {
     },
   ];
 
+  const mockResponse = {
+    workouts: mockWorkouts,
+    total: 2,
+    page: 1,
+    page_size: 20,
+    total_pages: 1,
+  };
+
   it('should have initial state', () => {
     const state = useWorkoutStore.getState();
     expect(state.workouts).toEqual([]);
@@ -54,12 +62,6 @@ describe('useWorkoutStore', () => {
 
   describe('fetchWorkouts', () => {
     it('should fetch workouts successfully', async () => {
-      const mockResponse = {
-        workouts: mockWorkouts,
-        total: 2,
-        page: 1,
-        total_pages: 1,
-      };
       vi.mocked(httpClient).mockResolvedValue(mockResponse);
 
       await useWorkoutStore.getState().fetchWorkouts();
@@ -68,14 +70,20 @@ describe('useWorkoutStore', () => {
       expect(state.workouts).toEqual(mockWorkouts);
       expect(state.total).toBe(2);
       expect(state.isLoading).toBe(false);
-      expect(httpClient).toHaveBeenCalledWith('/workouts?page=1&limit=20');
+      expect(httpClient).toHaveBeenCalledWith('/workout/list?page=1&page_size=20');
     });
 
     it('should fetch workouts with pagination', async () => {
-      vi.mocked(httpClient).mockResolvedValue({ workouts: [], total: 0, page: 1, total_pages: 0 });
+      vi.mocked(httpClient).mockResolvedValue({
+        workouts: [],
+        total: 0,
+        page: 1,
+        page_size: 20,
+        total_pages: 0,
+      });
 
       await useWorkoutStore.getState().fetchWorkouts(1);
-      expect(httpClient).toHaveBeenCalledWith('/workouts?page=1&limit=20');
+      expect(httpClient).toHaveBeenCalledWith('/workout/list?page=1&page_size=20');
     });
 
     it('should handle undefined response', async () => {
@@ -111,7 +119,7 @@ describe('useWorkoutStore', () => {
       expect(state.workouts).toHaveLength(1);
       expect(state.workouts[0]!.id).toBe('2');
       expect(state.total).toBe(1);
-      expect(httpClient).toHaveBeenCalledWith('/workouts/1', { method: 'DELETE' });
+      expect(httpClient).toHaveBeenCalledWith('/workout/1', { method: 'DELETE' });
     });
 
     it('should handle delete workout error', async () => {
@@ -139,5 +147,84 @@ describe('useWorkoutStore', () => {
     const state = useWorkoutStore.getState();
     expect(state.workouts).toEqual([]);
     expect(state.isLoading).toBe(false);
+  });
+
+  it('should create a manual workout and prepend it to the store', async () => {
+    const createdWorkout: WorkoutLog = {
+      id: '3',
+      user_email: 'test@test.com',
+      date: '2024-01-03',
+      workout_type: 'Push',
+      exercises: [
+        {
+          name: 'Bench Press',
+          sets: 2,
+          reps_per_set: [10, 8],
+          weights_per_set: [60, 70],
+        },
+      ],
+      duration_minutes: 45,
+      source: 'manual',
+      external_id: null,
+      notes: null,
+      created_at: '2024-01-03',
+      updated_at: '2024-01-03',
+    };
+    useWorkoutStore.setState({ workouts: mockWorkouts, total: 2 });
+    vi.mocked(httpClient).mockResolvedValue(createdWorkout);
+
+    await useWorkoutStore.getState().createWorkout({
+      date: '2024-01-03',
+      workout_type: 'Push',
+      duration_minutes: 45,
+      source: 'manual',
+      exercises: [
+        {
+          name: 'Bench Press',
+          sets: 2,
+          reps_per_set: [10, 8],
+          weights_per_set: [60, 70],
+        },
+      ],
+    });
+
+    const state = useWorkoutStore.getState();
+    expect(state.workouts[0]).toEqual(createdWorkout);
+    expect(state.total).toBe(3);
+    expect(httpClient).toHaveBeenCalledWith('/workout', {
+      method: 'POST',
+      body: JSON.stringify({
+        date: '2024-01-03',
+        workout_type: 'Push',
+        duration_minutes: 45,
+        source: 'manual',
+        exercises: [
+          {
+            name: 'Bench Press',
+            sets: 2,
+            reps_per_set: [10, 8],
+            weights_per_set: [60, 70],
+          },
+        ],
+      }),
+    });
+  });
+
+  it('should fetch workout type suggestions', async () => {
+    vi.mocked(httpClient).mockResolvedValue(['Push', 'Pull']);
+
+    const result = await useWorkoutStore.getState().fetchWorkoutTypes();
+
+    expect(result).toEqual(['Push', 'Pull']);
+    expect(httpClient).toHaveBeenCalledWith('/workout/types');
+  });
+
+  it('should fetch exercise suggestions', async () => {
+    vi.mocked(httpClient).mockResolvedValue(['Bench Press', 'Squat']);
+
+    const result = await useWorkoutStore.getState().fetchExerciseSuggestions();
+
+    expect(result).toEqual(['Bench Press', 'Squat']);
+    expect(httpClient).toHaveBeenCalledWith('/workout/exercises');
   });
 });

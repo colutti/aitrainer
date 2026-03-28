@@ -7,7 +7,7 @@ description: Run the FityQ test suite in containers only, including backend, fro
 
 ## Overview
 
-Use this skill to run the project's official validation path without ever running tests directly on the host. Prefer Makefile targets and container services as the source of truth.
+Use this skill to run the project's official validation path without ever running tests directly on the host. Prefer Makefile targets first, then the repository's container scripts and compose services when a target does not exist.
 
 ## Rules
 
@@ -27,7 +27,7 @@ Start with the repository's official full suite:
 make test-once
 ```
 
-Use this when the user wants to validate the whole system and does not need per-suite coverage details.
+In this repository, `make test-once` is a thin wrapper over the existing verify scripts and is the preferred full-suite entrypoint.
 
 ### 2. Collect per-suite coverage
 
@@ -37,14 +37,14 @@ Run the coverage-capable suites separately so each result is attributable to one
 make test-backend-cov
 ```
 
-For frontend and admin, run the container services with coverage enabled inside the container, not on the host:
+For frontend and admin, use the containerized Node test services with coverage enabled inside the container, not on the host:
 
 ```bash
-$(COMPOSE_TEST) run --rm frontend-tests sh -lc "npm ci && npm test -- --coverage"
-$(COMPOSE_TEST) run --rm admin-tests sh -lc "npm ci && npm test -- --coverage"
+./scripts/compose.sh -f docker-compose.test.yml run --rm frontend-tests sh -lc "npm ci && npm test -- --coverage"
+./scripts/compose.sh -f docker-compose.test.yml run --rm admin-tests sh -lc "npm ci && npm test -- --coverage"
 ```
 
-If the repository later adds Makefile targets for those containerized coverage commands, prefer the Makefile targets over inline commands.
+The current repository exposes `make test-backend-cov` but not dedicated Make targets for frontend or admin coverage, so use the compose commands above for those suites.
 
 ### 3. Run e2e in containers
 
@@ -62,6 +62,7 @@ If a user explicitly asks for e2e coverage, inspect the repo's Playwright and bu
 - Include coverage percentages and any threshold failures for suites that produce coverage.
 - Include the Playwright report location when e2e runs.
 - If a suite cannot produce coverage in the current stack, say that it is execution-only and do not guess a number.
+- Mention that the full-suite path also validates `backend-admin` through the verify stack even though coverage is only collected for backend, frontend, and admin frontend.
 
 ## References
 

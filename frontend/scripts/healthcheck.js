@@ -7,6 +7,7 @@ const options = {
   path: '/'
 };
 
+// nosemgrep: problem-based-packs.insecure-transport.js-node.using-http-server.using-http-server
 const request = http.get(options, (res) => {
   console.log(`STATUS: ${res.statusCode}`);
   if (res.statusCode >= 200 && res.statusCode < 400) {

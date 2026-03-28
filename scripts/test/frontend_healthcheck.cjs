@@ -1,5 +1,6 @@
 const http = require('http');
 
+// nosemgrep: problem-based-packs.insecure-transport.js-node.using-http-server.using-http-server
 const request = http.get(
   {
     host: 'localhost',

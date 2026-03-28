@@ -1,0 +1,57 @@
+services:
+  mongo:
+    image: docker.io/library/mongo:latest
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-aitrainer}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-aitrainerpass}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-aitrainerdb}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >
+          mongosh --quiet --eval "db.runCommand('ping').ok"
+          -u $${MONGO_INITDB_ROOT_USERNAME}
+          -p $${MONGO_INITDB_ROOT_PASSWORD}
+          --authenticationDatabase admin
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks:
+      - app-network
+
+  qdrant:
+    image: docker.io/qdrant/qdrant:latest
+    restart: always
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "/usr/bin/bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/6333 && exec 3<&-"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks:
+      - app-network
+
+  stripe-mock:
+    image: docker.io/stripe/stripe-mock:latest
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mongodata:
+  qdrant_data:

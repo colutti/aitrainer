@@ -16,7 +16,17 @@
 make test-once
 ```
 
-Runs backend, frontend, admin, and Playwright e2e through the test stack.
+Runs the repository's full containerized validation flow: backend verify, backend-admin verify, frontend verify, frontend-admin verify, then Playwright e2e.
+
+### Fast Verify
+
+```bash
+make verify
+make verify-all
+```
+
+- `make verify` runs the non-e2e verification gate.
+- `make verify-all` runs verify plus e2e.
 
 ### Backend Coverage
 
@@ -29,13 +39,13 @@ Runs `pytest --cov=src --cov-report=html --cov-report=term-missing` in the backe
 ### Frontend Coverage
 
 ```bash
-$(COMPOSE_TEST) run --rm frontend-tests sh -lc "npm ci && npm test -- --coverage"
+./scripts/compose.sh -f docker-compose.test.yml run --rm frontend-tests sh -lc "npm ci && npm test -- --coverage"
 ```
 
 ### Admin Coverage
 
 ```bash
-$(COMPOSE_TEST) run --rm admin-tests sh -lc "npm ci && npm test -- --coverage"
+./scripts/compose.sh -f docker-compose.test.yml run --rm admin-tests sh -lc "npm ci && npm test -- --coverage"
 ```
 
 ### E2E
@@ -48,6 +58,7 @@ Runs Playwright in the containerized test stack against the real backend and fro
 
 ## Coverage Notes
 
+- `backend-admin` is validated in the full verify flow but does not currently have a dedicated coverage target in this workflow.
 - Frontend and admin coverage are produced by Vitest in containerized Node services.
 - The current Playwright config does not define code coverage instrumentation.
 - If e2e coverage is requested, only report it when the repository already emits a coverage artifact for the Playwright run.

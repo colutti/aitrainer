@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from src.api.models.user_profile import UserProfile
-from src.core.subscription import SubscriptionPlan, SUBSCRIPTION_PLANS
+from src.core.subscription import SubscriptionPlan
 
 def test_premium_user_limits():
     # User with Premium plan

@@ -206,6 +206,10 @@ class MongoDatabase:
         """Delegates to workout repository."""
         return self.workouts_repo.get_types(user_email)
 
+    def get_workout_exercise_names(self, user_email: str) -> list[str]:
+        """Delegates to workout repository."""
+        return self.workouts_repo.get_exercise_names(user_email)
+
     def delete_workout_log(self, workout_id: str) -> bool:
         """Delegates to workout repository."""
         return self.workouts_repo.delete_log(workout_id)

@@ -1,14 +1,14 @@
 """Endpoints for managing and viewing system prompt logs."""
 from bson import ObjectId
 from fastapi import APIRouter, Query, HTTPException
-from src.core.deps import MainDB, CurrentAdmin
+from src.core.deps import CURRENT_ADMIN_DEP, MAIN_DB_DEP
 
 router = APIRouter(prefix="/admin/prompts", tags=["admin"])
 
 @router.get("/")
 def list_prompts(
-    _admin: CurrentAdmin,
-    db: MainDB,
+    _admin: CURRENT_ADMIN_DEP,
+    db: MAIN_DB_DEP,
     user_id: str | None = Query(None, alias="user_id"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=50),
@@ -65,7 +65,9 @@ def list_prompts(
     }
 
 @router.get("/{prompt_id}")
-def get_prompt_details(prompt_id: str, _admin: CurrentAdmin, db: MainDB) -> dict:
+def get_prompt_details(
+    prompt_id: str, _admin: CURRENT_ADMIN_DEP, db: MAIN_DB_DEP
+) -> dict:
     """Retorna prompt completo sem truncamento."""
     try:
         prompt = db.prompt_logs.find_one({"_id": ObjectId(prompt_id)})

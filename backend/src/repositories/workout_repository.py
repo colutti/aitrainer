@@ -105,6 +105,13 @@ class WorkoutRepository(BaseRepository):
         types = self.collection.distinct("workout_type", {"user_email": user_email})
         return sorted([t for t in types if t])
 
+    def get_exercise_names(self, user_email: str) -> list[str]:
+        """
+        Retrieves all unique exercise names for a user across workout logs.
+        """
+        names = self.collection.distinct("exercises.name", {"user_email": user_email})
+        return sorted([name for name in names if isinstance(name, str) and name.strip()])
+
     def get_stats(self, user_email: str) -> WorkoutStats:
         """
         Calculates and retrieves comprehensive workout statistics for a user.

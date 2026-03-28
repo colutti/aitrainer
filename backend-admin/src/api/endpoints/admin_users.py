@@ -1,14 +1,14 @@
 """Endpoints for administrative user management tasks (list, update, delete)."""
 from datetime import datetime
 from fastapi import APIRouter, Query, HTTPException
-from src.core.deps import MainDB, CurrentAdmin
+from src.core.deps import CURRENT_ADMIN_DEP, MAIN_DB_DEP
 
 router = APIRouter(prefix="/admin/users", tags=["admin"])
 
 @router.get("/")
 def list_users(
-    _admin: CurrentAdmin,
-    db: MainDB,
+    _admin: CURRENT_ADMIN_DEP,
+    db: MAIN_DB_DEP,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     search: str | None = None,
@@ -44,7 +44,7 @@ def list_users(
     }
 
 @router.get("/{email}")
-def get_user_details(email: str, _admin: CurrentAdmin, db: MainDB) -> dict:
+def get_user_details(email: str, _admin: CURRENT_ADMIN_DEP, db: MAIN_DB_DEP) -> dict:
     """Retorna detalhes completos de um usuário específico."""
     user = db.users.find_one({"email": email})
     if not user:
@@ -76,7 +76,7 @@ def get_user_details(email: str, _admin: CurrentAdmin, db: MainDB) -> dict:
 
 @router.patch("/{email}")
 def update_user(
-    email: str, updates: dict, _admin: CurrentAdmin, db: MainDB
+    email: str, updates: dict, _admin: CURRENT_ADMIN_DEP, db: MAIN_DB_DEP
 ) -> dict:
     """Permite admin editar perfil de usuário."""
     # Campos protegidos
@@ -105,14 +105,15 @@ def update_user(
     return {"message": "User updated successfully"}
 
 @router.delete("/{email}")
-def delete_user(email: str, admin: CurrentAdmin, db: MainDB) -> dict:
+def delete_user(email: str, admin: CURRENT_ADMIN_DEP, db: MAIN_DB_DEP) -> dict:
     """Deleta usuário completamente (MongoDB + logs)."""
     # Prevenir deleção de outros admins (segurança rápida baseada no email do admin logado)
     target_user = db.users.find_one({"email": email})
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    if target_user.get("role") == "admin" and email != admin.get("email"):
+    admin_email = admin.get("email") if admin else None
+    if target_user.get("role") == "admin" and email != admin_email:
         raise HTTPException(status_code=403, detail="Cannot delete another admin user")
 
     # Deletar de todas as collections

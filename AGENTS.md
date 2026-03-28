@@ -34,6 +34,18 @@ Source of truth for project operations is the codebase, especially:
 - Do not assume old docs are accurate; validate against the repository before acting.
 - When a command exists in the `Makefile`, prefer using it rather than inventing an alternative.
 - The official full test path is containerized. Prefer `make test-once` over host-local mixed execution.
+- `make verify` is the fast verification gate; `make verify-all` adds e2e; `make test-once` is the documented full-suite entrypoint.
+
+## Validation Gates
+
+- Any task that touches `frontend/` is incomplete until `cd frontend && npm run lint && npm run typecheck` passes after the last code edit.
+- Any task that touches `frontend/admin/` is incomplete until `cd frontend/admin && npm run lint && npm run typecheck` passes after the last code edit.
+- Any task that touches `backend/` is incomplete until `cd backend && .venv/bin/ruff check src tests && .venv/bin/pylint src` passes after the last code edit.
+- Any task that touches `backend-admin/` is incomplete until `cd backend-admin && .venv/bin/pylint src && .venv/bin/pyright src` passes after the last code edit.
+- Treat ESLint, Ruff, and Pylint warnings in touched files as failures to fix, not as acceptable cleanup for later.
+- Do not stop at passing tests for frontend work. Lint and typecheck are required before claiming completion.
+- Do not stop at passing tests for backend work. Ruff and Pylint are required before claiming completion.
+- When a change affects multiple surfaces, run the validation gate for each affected surface.
 
 ## Core Commands
 
@@ -97,15 +109,11 @@ npm test
 ### Useful project targets
 
 ```bash
+make verify
+make verify-all
 make test-once
-make ci-fast
-make ci-test
-make security-check
-make user-list
-make user-get EMAIL=user@example.com
-make user-nuke EMAIL=user@example.com
-make invite-create EMAIL=user@example.com
-make admin-promote EMAIL=user@example.com
+make e2e
+make test-backend-cov
 ```
 
 ## Architecture Notes

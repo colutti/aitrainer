@@ -1,5 +1,6 @@
-import { fireEvent, render, screen } from '../../utils/test-utils';
 import { vi } from 'vitest';
+
+import { fireEvent, render, screen } from '../../utils/test-utils';
 
 const mockNavigate = vi.fn();
 

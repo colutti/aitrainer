@@ -4,6 +4,7 @@ import { GlobalErrorBoundary } from './GlobalErrorBoundary';
 
 function Thrower() {
   throw new Error('boom');
+  return null;
 }
 
 describe('GlobalErrorBoundary', () => {

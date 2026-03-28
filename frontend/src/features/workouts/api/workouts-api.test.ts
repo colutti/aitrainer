@@ -40,4 +40,48 @@ describe('workoutsApi', () => {
     await workoutsApi.deleteWorkout('123');
     expect(httpClient).toHaveBeenCalledWith('/workout/123', { method: 'DELETE' });
   });
+
+  it('should create a manual workout', async () => {
+    const payload = {
+      date: '2024-01-01',
+      workout_type: 'Push',
+      duration_minutes: 45,
+      source: 'manual' as const,
+      exercises: [
+        {
+          name: 'Bench Press',
+          sets: 2,
+          reps_per_set: [10, 8],
+          weights_per_set: [60, 70],
+        },
+      ],
+    };
+
+    vi.mocked(httpClient).mockResolvedValue({ id: 'workout-1', ...payload });
+
+    await workoutsApi.createWorkout(payload);
+
+    expect(httpClient).toHaveBeenCalledWith('/workout', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  });
+
+  it('should fetch workout types', async () => {
+    vi.mocked(httpClient).mockResolvedValue(['Push', 'Pull']);
+
+    const result = await workoutsApi.getWorkoutTypes();
+
+    expect(result).toEqual(['Push', 'Pull']);
+    expect(httpClient).toHaveBeenCalledWith('/workout/types');
+  });
+
+  it('should fetch exercise suggestions', async () => {
+    vi.mocked(httpClient).mockResolvedValue(['Bench Press', 'Squat']);
+
+    const result = await workoutsApi.getExerciseSuggestions();
+
+    expect(result).toEqual(['Bench Press', 'Squat']);
+    expect(httpClient).toHaveBeenCalledWith('/workout/exercises');
+  });
 });

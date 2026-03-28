@@ -1,3 +1,4 @@
+import { AppRoutes } from './AppRoutes';
 import { render, screen } from './shared/utils/test-utils';
 
 vi.mock('./features/auth/LoginPage', () => ({
@@ -51,9 +52,6 @@ vi.mock('./shared/components/layout/PremiumLayout', () => ({
 vi.mock('./shared/components/ui/Skeleton', () => ({
   Skeleton: () => <div>Skeleton</div>,
 }));
-
-import { AppRoutes } from './AppRoutes';
-
 describe('AppRoutes', () => {
   it('redirects unknown routes to the landing page', async () => {
     render(<AppRoutes />, { route: '/totally-unknown' });

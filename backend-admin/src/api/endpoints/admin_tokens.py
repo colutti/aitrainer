@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from fastapi import APIRouter, Query
-from src.core.deps import MainDB, CurrentAdmin
+from src.core.deps import CURRENT_ADMIN_DEP, MAIN_DB_DEP
 
 router = APIRouter(prefix="/admin/tokens", tags=["admin"])
 
@@ -44,8 +44,8 @@ def _format_token_item(item: Any) -> dict[str, Any]:
 
 @router.get("/summary")
 def get_token_summary(
-    _admin: CurrentAdmin,
-    db: MainDB,
+    _admin: CURRENT_ADMIN_DEP,
+    db: MAIN_DB_DEP,
     days: int = Query(30, ge=1, le=365),
 ) -> dict:
     """Consumo de tokens por usuário."""
@@ -77,8 +77,8 @@ def get_token_summary(
 
 @router.get("/timeseries")
 def get_token_timeseries(
-    _admin: CurrentAdmin,
-    db: MainDB,
+    _admin: CURRENT_ADMIN_DEP,
+    db: MAIN_DB_DEP,
     days: int = Query(30, ge=1, le=365),
     user_email: str | None = Query(None),
 ) -> dict:

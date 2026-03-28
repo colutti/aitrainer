@@ -59,3 +59,11 @@ export interface WorkoutListResponse {
   page_size: number;
   total_pages: number;
 }
+
+export interface CreateWorkoutRequest {
+  date: string;
+  workout_type?: string | null;
+  duration_minutes?: number;
+  source: 'manual';
+  exercises: ExerciseLog[];
+}

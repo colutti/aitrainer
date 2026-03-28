@@ -1,0 +1,78 @@
+services:
+  backend:
+    build:
+      context: ../backend
+    ports:
+      - "8000:8000"
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ../backend:/app
+      - /app/.venv
+    env_file:
+      - ../backend/.env
+    environment:
+      MONGO_URI: ${MONGO_URI:-mongodb://aitrainer:aitrainerpass@mongo:27017/aitrainerdb?authSource=admin}
+      DB_NAME: aitrainerdb
+      QDRANT_HOST: qdrant
+      RUNNING_IN_CONTAINER: "true"
+      RATE_LIMIT_LOGIN: 100/minute
+      STRIPE_API_BASE: http://stripe-mock:12111
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      mongo:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      stripe-mock:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "scripts/healthcheck.py"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - app-network
+
+  frontend:
+    image: docker.io/library/node:22-slim
+    working_dir: /workspace/frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../:/workspace
+      - frontend_dev_node_modules:/workspace/frontend/node_modules
+    environment:
+      VITE_API_PROXY_TARGET: http://backend:8000
+    command: sh -lc "npm ci && npm run dev -- --host 0.0.0.0 --port 3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "/workspace/scripts/test/frontend_healthcheck.cjs"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - app-network
+
+  mongo-express:
+    image: docker.io/library/mongo-express:latest
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_INITDB_ROOT_USERNAME:-aitrainer}:${MONGO_INITDB_ROOT_PASSWORD:-aitrainerpass}@mongo:27017/
+      ME_CONFIG_BASICAUTH_ENABLED: "true"
+      ME_CONFIG_BASICAUTH_USERNAME: ${ME_CONFIG_BASICAUTH_USERNAME:-mongoexpressuser}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${ME_CONFIG_BASICAUTH_PASSWORD:-mongoexpresspass}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - app-network
+
+volumes:
+  frontend_dev_node_modules:

@@ -21,6 +21,12 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
+# Verify stage - includes dev tooling for lint/typecheck/tests
+FROM builder AS verify-builder
+
+COPY requirements-dev.txt .
+RUN pip install --no-cache-dir -r requirements-dev.txt
+
 # Runtime stage - imagem mínima
 FROM docker.io/library/python:3.12-slim
 
@@ -53,3 +59,17 @@ USER app
 EXPOSE 8000
 
 CMD ["sh", "-c", "gunicorn src.api.main:app --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000}"]
+
+# Verify runtime - reuses the builder venv with dev tooling installed
+FROM docker.io/library/python:3.12-slim AS verify
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    PATH="/opt/venv/bin:$PATH"
+
+COPY --from=verify-builder /opt/venv /opt/venv
+
+CMD ["sh", "-lc", "/opt/venv/bin/ruff check src tests && /opt/venv/bin/pylint src && /opt/venv/bin/pytest tests/unit tests/api tests/services tests/test_services"]

@@ -92,47 +92,82 @@ make debug-rebuild
 
 ## 🧪 Testing & Quality
 
-We maintain high quality standards with **TDD (Test Driven Development)** and strict linting.
+We maintain high quality standards with **TDD (Test Driven Development)** and strict linting. The supported local workflow is containerized for system validation and script-backed for verification.
 
-### Official Test Path
-The official stable way to run the full suite is containerized:
+### Official Full-Suite Path
+
+Run the complete containerized system suite with:
 
 ```bash
 make test-once
 ```
 
-This command runs backend, frontend, admin frontend, and Playwright E2E against real services on the same container network. It is the source of truth for local validation and CI.
-The test stack also starts MongoDB, Qdrant, and `stripe-mock` as internal dependencies.
+This runs:
+- backend verification
+- backend-admin verification
+- frontend verification
+- admin frontend verification
+- Playwright E2E against real backend and frontend services
 
-### Frontend
+The container stack also starts MongoDB, Qdrant, and `stripe-mock` as internal dependencies.
+
+### Verification vs Coverage
+
+Fast verification without per-suite coverage:
+
 ```bash
-cd frontend
-npm test                # Run unit/integration tests
-npm run test:coverage   # Coverage (Thresholds: 58% branches, 65% functions, 68% lines, 67% statements)
-npm run lint            # Zero warnings policy
-npm run typecheck       # Strict TypeScript check
+make verify
 ```
 
-### Admin Frontend
+Full verification including Playwright:
+
 ```bash
-cd frontend/admin
-npm test                # Run unit/integration tests
-npm run test:coverage   # Coverage (Thresholds: 35% branches, 45% functions, 45% lines, 43% statements)
-npm run lint            # Zero warnings policy
-npm run typecheck       # Strict TypeScript check
+make verify-all
+make test-once
 ```
 
-### Backend
+Per-suite backend coverage:
+
 ```bash
-cd backend
-pytest                  # Run all tests
-pylint src              # Linting
-pyright                 # Type checking
+make test-backend-cov
 ```
 
-### Full Workflow
-Use the provided automation for full verification:
-`make test-once`
+Per-suite frontend coverage from containers:
+
+```bash
+./scripts/compose.sh -f docker-compose.test.yml run --rm frontend-tests sh -lc "npm ci && npm test -- --coverage"
+./scripts/compose.sh -f docker-compose.test.yml run --rm admin-tests sh -lc "npm ci && npm test -- --coverage"
+```
+
+Playwright E2E only:
+
+```bash
+make e2e
+```
+
+### Coverage Thresholds
+
+Main frontend Vitest thresholds:
+- branches: `58%`
+- functions: `65%`
+- lines: `68%`
+- statements: `67%`
+
+Admin frontend Vitest thresholds:
+- branches: `35%`
+- functions: `45%`
+- lines: `45%`
+- statements: `43%`
+
+Current Playwright runs are execution-only. The repository does not currently emit instrumented E2E code coverage.
+
+### Reports
+
+When coverage or E2E runs complete, the generated reports are written to:
+- `backend/htmlcov/index.html`
+- `frontend/coverage/index.html`
+- `frontend/admin/coverage/index.html`
+- `frontend/playwright-report/index.html`
 
 ---
 

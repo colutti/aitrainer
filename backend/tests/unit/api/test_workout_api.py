@@ -61,6 +61,69 @@ class TestWorkoutApi(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), ["Push", "Pull", "Legs"])
 
+    def test_get_exercises_success(self):
+        """Test retrieval of distinct exercise names."""
+        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+        mock_db = MagicMock()
+        mock_db.get_workout_exercise_names.return_value = ["Bench Press", "Squat"]
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
+
+        response = self.client.get(
+            "/workout/exercises", headers={"Authorization": "Bearer token"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), ["Bench Press", "Squat"])
+
+    def test_create_workout_success(self):
+        """Test successful creation of a manual workout log."""
+        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+        mock_db = MagicMock()
+        mock_db.save_workout_log.return_value = "workout123"
+        mock_db.get_workout_by_id.return_value = {
+            "_id": "workout123",
+            "user_email": "test@test.com",
+            "date": datetime(2024, 1, 1, 10, 0, 0),
+            "workout_type": "Push",
+            "exercises": [
+                {
+                    "name": "Bench Press",
+                    "sets": 2,
+                    "reps_per_set": [10, 8],
+                    "weights_per_set": [60.0, 70.0],
+                }
+            ],
+            "duration_minutes": 45,
+            "source": "manual",
+            "external_id": None,
+        }
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
+
+        response = self.client.post(
+            "/workout",
+            json={
+                "date": "2024-01-01T10:00:00",
+                "workout_type": "Push",
+                "duration_minutes": 45,
+                "source": "manual",
+                "exercises": [
+                    {
+                        "name": "Bench Press",
+                        "sets": 2,
+                        "reps_per_set": [10, 8],
+                        "weights_per_set": [60.0, 70.0],
+                    }
+                ],
+            },
+            headers={"Authorization": "Bearer token"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["id"], "workout123")
+        self.assertEqual(data["source"], "manual")
+        self.assertEqual(data["workout_type"], "Push")
+
     def test_delete_workout_success(self):
         """Test successful deletion of a workout log."""
         app.dependency_overrides[verify_token] = lambda: "test@test.com"

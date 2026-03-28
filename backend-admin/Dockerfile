@@ -21,6 +21,14 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
+# Verify stage - admin service needs pyright and libatomic at runtime
+FROM builder AS verify-builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libatomic1 \
+    && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir pylint pyright
+
 # Runtime stage - imagem mínima
 FROM docker.io/library/python:3.12-slim
 
@@ -48,3 +56,21 @@ USER app
 EXPOSE 8000
 
 CMD ["sh", "-c", "gunicorn src.main:app --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000}"]
+
+# Verify runtime - includes static analysis tooling
+FROM docker.io/library/python:3.12-slim AS verify
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libatomic1 \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    PATH="/opt/venv/bin:$PATH"
+
+COPY --from=verify-builder /opt/venv /opt/venv
+
+CMD ["sh", "-lc", "/opt/venv/bin/pylint src && /opt/venv/bin/pyright --pythonpath /opt/venv/bin/python src"]

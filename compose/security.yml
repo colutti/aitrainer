@@ -1,0 +1,13 @@
+services:
+  semgrep:
+    image: docker.io/semgrep/semgrep:latest
+    working_dir: /workspace
+    volumes:
+      - ../:/workspace:ro
+    environment:
+      HOME: /tmp
+      XDG_CONFIG_HOME: /tmp/xdg
+    read_only: true
+    tmpfs:
+      - /tmp
+    command: semgrep scan --config=auto /workspace

@@ -1,0 +1,92 @@
+services:
+  backend-verify:
+    build:
+      context: ../backend
+      target: verify
+    working_dir: /workspace/backend
+    volumes:
+      - ../:/workspace
+    env_file:
+      - ../backend/.env.test
+    environment:
+      PYTHONPATH: /workspace/backend
+      MONGO_URI: mongodb://aitrainer:aitrainerpass@mongo:27017/aitrainer_test?authSource=admin
+      DB_NAME: aitrainer_test
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: "6333"
+      QDRANT_COLLECTION_NAME: aitrainer_test
+      RUNNING_IN_CONTAINER: "true"
+      STRIPE_API_BASE: http://stripe-mock:12111
+    depends_on:
+      mongo:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      stripe-mock:
+        condition: service_started
+    command: >
+      sh -lc "/opt/venv/bin/ruff check src tests &&
+      /opt/venv/bin/pylint src &&
+      /opt/venv/bin/pytest tests/unit tests/api tests/services tests/test_services"
+    networks:
+      - app-network
+
+  backend-admin-verify:
+    build:
+      context: ../backend-admin
+      target: verify
+    working_dir: /workspace/backend-admin
+    volumes:
+      - ../:/workspace
+    env_file:
+      - ../backend-admin/.env
+    environment:
+      MONGO_URI: mongodb://aitrainer:aitrainerpass@mongo:27017/aitrainer_admin?authSource=admin
+      DB_NAME: aitrainer_admin
+      MAIN_DB_NAME: aitrainerdb
+    depends_on:
+      mongo:
+        condition: service_healthy
+    command: sh -lc "/opt/venv/bin/pylint src && /opt/venv/bin/pyright --pythonpath /opt/venv/bin/python src"
+    networks:
+      - app-network
+
+  frontend-verify:
+    image: docker.io/library/node:22-slim
+    working_dir: /workspace/frontend
+    volumes:
+      - ../:/workspace
+      - frontend_verify_node_modules:/workspace/frontend/node_modules
+      - frontend_verify_npm_cache:/root/.npm
+    command: >
+      sh -lc "/workspace/scripts/verify/npm-install-if-needed.sh /workspace/frontend &&
+      npm run lint &&
+      npm run typecheck &&
+      npm test -- --maxWorkers=2"
+    networks:
+      - app-network
+
+  frontend-admin-verify:
+    image: docker.io/library/node:22-slim
+    working_dir: /workspace/frontend/admin
+    volumes:
+      - ../:/workspace
+      - frontend_admin_verify_root_node_modules:/workspace/frontend/node_modules
+      - frontend_admin_verify_node_modules:/workspace/frontend/admin/node_modules
+      - frontend_admin_verify_npm_cache:/root/.npm
+    command: >
+      sh -lc "/workspace/scripts/verify/npm-install-if-needed.sh /workspace/frontend &&
+      /workspace/scripts/verify/npm-install-if-needed.sh /workspace/frontend/admin &&
+      cd /workspace/frontend/admin &&
+      npm run lint &&
+      npm run typecheck &&
+      npm test -- --maxWorkers=2"
+    networks:
+      - app-network
+
+volumes:
+  frontend_verify_node_modules:
+  frontend_verify_npm_cache:
+  frontend_admin_verify_root_node_modules:
+  frontend_admin_verify_node_modules:
+  frontend_admin_verify_npm_cache:

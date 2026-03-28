@@ -1,7 +1,6 @@
+import { useNotificationStore } from '@shared/hooks/useNotification';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-import { useNotificationStore } from '@shared/hooks/useNotification';
 
 import { adminApi } from '../api/admin-api';
 

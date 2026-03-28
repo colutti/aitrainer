@@ -1,5 +1,9 @@
 import { httpClient } from '../../../shared/api/http-client';
-import type { WorkoutLog, WorkoutListResponse } from '../../../shared/types/workout';
+import type {
+  CreateWorkoutRequest,
+  WorkoutLog,
+  WorkoutListResponse,
+} from '../../../shared/types/workout';
 
 /**
  * API client for Workout endpoints
@@ -42,5 +46,20 @@ export const workoutsApi = {
    */
   deleteWorkout: async (id: string): Promise<void> => {
     await httpClient(`/workout/${id}`, { method: 'DELETE' });
+  },
+
+  createWorkout: async (data: CreateWorkoutRequest): Promise<WorkoutLog> => {
+    return httpClient<WorkoutLog>('/workout', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }) as Promise<WorkoutLog>;
+  },
+
+  getWorkoutTypes: async (): Promise<string[]> => {
+    return (await httpClient<string[]>('/workout/types')) ?? [];
+  },
+
+  getExerciseSuggestions: async (): Promise<string[]> => {
+    return (await httpClient<string[]>('/workout/exercises')) ?? [];
   },
 };

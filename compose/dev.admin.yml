@@ -1,0 +1,75 @@
+services:
+  backend-admin:
+    build:
+      context: ../backend-admin
+    working_dir: /workspace/backend-admin
+    ports:
+      - "8001:8001"
+    volumes:
+      - ../:/workspace
+    env_file:
+      - ../backend-admin/.env
+    environment:
+      MONGO_URI: mongodb://aitrainer:aitrainerpass@mongo:27017/aitrainer_admin?authSource=admin
+      DB_NAME: aitrainer_admin
+      MAIN_DB_NAME: aitrainerdb
+      ALLOWED_ORIGINS: http://localhost:3001,http://frontend-admin:3001
+      PORT: "8001"
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8001 --reload
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - |
+          import urllib.request
+          urllib.request.urlopen("http://127.0.0.1:8001/health", timeout=5)
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - app-network
+
+  frontend-admin:
+    image: docker.io/library/node:22-slim
+    working_dir: /workspace/frontend/admin
+    ports:
+      - "3001:3001"
+    volumes:
+      - ../:/workspace
+      - frontend_admin_root_node_modules:/workspace/frontend/node_modules
+      - frontend_admin_dev_node_modules:/workspace/frontend/admin/node_modules
+    environment:
+      VITE_ADMIN_API_PROXY_TARGET: http://backend-admin:8001
+    command: >
+      sh -lc "cd /workspace/frontend &&
+      npm ci &&
+      cd /workspace/frontend/admin &&
+      npm ci &&
+      npm run dev -- --host 0.0.0.0 --port 3001"
+    depends_on:
+      backend-admin:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - |
+          require("http").get("http://127.0.0.1:3001", (response) => {
+            process.exit(response.statusCode && response.statusCode < 500 ? 0 : 1);
+          }).on("error", () => process.exit(1));
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - app-network
+
+volumes:
+  frontend_admin_root_node_modules:
+  frontend_admin_dev_node_modules:

@@ -141,6 +141,21 @@ def get_types(user_email: CurrentUser, db: DatabaseDep) -> list[str]:
         ) from e
 
 
+@router.get("/exercises", response_model=list[str])
+def get_exercises(user_email: CurrentUser, db: DatabaseDep) -> list[str]:
+    """Retrieves all distinct exercise names for the user."""
+    logger.info("Fetching workout exercise names for user: %s", user_email)
+    try:
+        return db.get_workout_exercise_names(user_email)
+    except Exception as e:
+        logger.error(
+            "Error fetching workout exercise names for user %s: %s", user_email, e
+        )
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve workout exercise names"
+        ) from e
+
+
 @router.delete("/{workout_id}")
 def delete_workout(workout_id: str, user_email: CurrentUser, db: DatabaseDep) -> dict:
     """
