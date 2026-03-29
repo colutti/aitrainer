@@ -77,7 +77,7 @@ services:
         condition: service_healthy
     command: >
       sh -lc "/workspace/scripts/verify/npm-install-if-needed.sh /workspace/frontend &&
-      npx playwright test --project=chromium --reporter=list"
+      npx playwright test --reporter=list"
     networks:
       - app-network
 

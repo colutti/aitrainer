@@ -33,13 +33,11 @@ export const test = base.extend<Fixtures>({
   },
 
   authenticatedPage: async ({ page }, use, testInfo: TestInfo) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
     const bootstrappedPage = await bootstrapRegisteredUser(page, testInfo);
     await use(bootstrappedPage);
   },
 
   freshUser: async ({ page }, use, testInfo: TestInfo) => {
-    await page.setViewportSize({ width: 1280, height: 720 });
     const onboardingPage = await bootstrapFreshUser(page, testInfo);
     await use(onboardingPage);
   },

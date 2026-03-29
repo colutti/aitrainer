@@ -45,6 +45,7 @@ export function BodyView({ activeTab, onTabChange }: BodyViewProps) {
               <button
                 key={tab.id}
                 type="button"
+                data-testid={`body-tab-${tab.id}`}
                 onClick={() => { onTabChange(tab.id as BodyTab); }}
                 className={cn(
                   "flex items-center gap-2 px-4 md:px-6 py-2 rounded-full text-xs md:text-sm font-black transition-all uppercase tracking-widest",

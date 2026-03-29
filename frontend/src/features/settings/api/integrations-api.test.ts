@@ -99,7 +99,7 @@ describe('integrationsApi', () => {
     const res = await integrationsApi.uploadMfpCsv(file);
     
     expect(res).toEqual(mockRes);
-    expect(global.fetch).toHaveBeenCalledWith('/api/integrations/mfp/import', expect.objectContaining({
+    expect(global.fetch).toHaveBeenCalledWith('/api/nutrition/import/myfitnesspal', expect.objectContaining({
       method: 'POST',
       headers: { Authorization: 'Bearer mock-token' },
       body: expect.any(FormData)
@@ -118,7 +118,7 @@ describe('integrationsApi', () => {
     const res = await integrationsApi.uploadZeppLifeCsv(file);
     
     expect(res).toEqual(mockRes);
-    expect(global.fetch).toHaveBeenCalledWith('/api/integrations/zepp_life/import', expect.objectContaining({
+    expect(global.fetch).toHaveBeenCalledWith('/api/weight/import/zepp-life', expect.objectContaining({
       method: 'POST',
       headers: { Authorization: 'Bearer mock-token' },
       body: expect.any(FormData)

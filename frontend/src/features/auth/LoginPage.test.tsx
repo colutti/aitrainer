@@ -35,6 +35,7 @@ describe('LoginPage', () => {
 
   const mockAuth = {
     login: vi.fn(),
+    register: vi.fn(),
     logout: vi.fn(),
     initialize: vi.fn(),
     isAuthenticated: false,
@@ -116,6 +117,37 @@ describe('LoginPage', () => {
 
     await waitFor(() => {
       expect(loginMock).toHaveBeenCalledWith('test@example.com', 'password123');
+    });
+  });
+
+  it('should render register form from query param and call register action', async () => {
+    const user = userEvent.setup();
+    const registerMock = vi.fn().mockResolvedValue(undefined);
+
+    vi.mocked(useAuthStore).mockImplementation((selector?: unknown) => {
+      const state = { ...mockAuth, register: registerMock };
+      if (typeof selector === 'function') {
+        return (selector as (s: typeof state) => unknown)(state);
+      }
+      return state;
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/login?mode=register']}>
+        <LoginPage />
+      </MemoryRouter>
+    );
+
+    await user.type(screen.getByPlaceholderText(/Seu nome/i), 'Fresh User');
+    await user.type(screen.getByPlaceholderText(/exemplo@email\.com/i), 'fresh@example.com');
+    const passwordInputs = document.querySelectorAll('input[type="password"]');
+    await user.type(passwordInputs[0] as HTMLInputElement, 'password123');
+    await user.type(passwordInputs[1] as HTMLInputElement, 'password123');
+
+    await user.click(screen.getByRole('button', { name: /Criar Conta/i }));
+
+    await waitFor(() => {
+      expect(registerMock).toHaveBeenCalledWith('Fresh User', 'fresh@example.com', 'password123');
     });
   });
 

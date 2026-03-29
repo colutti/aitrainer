@@ -1,0 +1,4 @@
+Data,Refeição,Calorias,Gorduras (g),Colesterol,S Sodium (mg),Carboidratos (g),Fibra,Açucar,Proteínas (g)
+{{YESTERDAY}},Café da manhã,540,18,85,540,58,8,16,42
+{{YESTERDAY}},Almoço,780,24,120,920,88,11,22,63
+{{TODAY}},Jantar,900,28,160,1100,95,9,19,71

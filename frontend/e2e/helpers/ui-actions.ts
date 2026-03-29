@@ -66,7 +66,19 @@ export class UIActions {
    */
   async switchToTab(tabName: string) {
     const tabBtn = this.page.getByRole('button', { name: tabName, exact: false });
-    await tabBtn.click();
+    if (await tabBtn.isVisible().catch(() => false)) {
+      await tabBtn.click();
+      await this.page.waitForTimeout(300);
+      return;
+    }
+
+    const normalized = tabName.toLowerCase();
+    const fallbackId = normalized.includes('nutri') || normalized.includes('dieta') || normalized.includes('macro')
+      ? 'body-tab-nutrition'
+      : 'body-tab-weight';
+    const fallbackBtn = this.page.getByTestId(fallbackId);
+    await expect(fallbackBtn).toBeVisible({ timeout: 10000 });
+    await fallbackBtn.click();
     await this.page.waitForTimeout(300); // Wait for tab transition
   }
 
@@ -80,8 +92,8 @@ export class UIActions {
   }
 
   async closeDrawer() {
-    await this.page.locator('header button').first().click();
-    await this.page.waitForTimeout(500);
+    await this.page.keyboard.press('Escape');
+    await this.page.waitForTimeout(300);
   }
 
   /**

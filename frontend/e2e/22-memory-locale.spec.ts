@@ -12,6 +12,11 @@ test.describe('Memory Locale Rendering', () => {
     await expect(authenticatedPage.getByText(/AI Memories|Memórias AI|Memorias AI/i)).toBeVisible({
       timeout: 15000,
     });
+    await expect(
+      authenticatedPage.getByText(
+        /What the intelligence knows about you|O que a inteligência sabe sobre você|Lo que la inteligencia sabe sobre ti/i,
+      )
+    ).toBeVisible({ timeout: 15000 });
     await expect(authenticatedPage.getByText(memoryText)).toBeVisible({ timeout: 15000 });
 
     await authenticatedPage.evaluate(() => {
@@ -20,6 +25,7 @@ test.describe('Memory Locale Rendering', () => {
     await authenticatedPage.reload({ waitUntil: 'networkidle' });
 
     await expect(authenticatedPage.getByText(/Memorias AI/i)).toBeVisible({ timeout: 15000 });
+    await expect(authenticatedPage.getByText(/Lo que la inteligencia sabe sobre ti/i)).toBeVisible({ timeout: 15000 });
     await expect(authenticatedPage.getByText(memoryText)).toBeVisible({ timeout: 15000 });
   });
 });

@@ -199,6 +199,71 @@ def test_get_current_user_unauthorized():
     assert response.status_code == 401  # Unauthorized - no token
 
 
+def test_e2e_login_can_start_user_unonboarded():
+    """Test E2E bootstrap can create a fresh user that still needs onboarding."""
+    mock_brain = MagicMock()
+    mock_brain.get_user_profile.return_value = None
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+    response = client.post(
+        "/user/e2e-login",
+        json={
+            "email": "fresh@example.com",
+            "display_name": "Fresh User",
+            "onboarding_completed": False,
+        },
+    )
+
+    assert response.status_code == 200
+    mock_brain.save_user_profile.assert_called_once()
+    saved_profile = mock_brain.save_user_profile.call_args.args[0]
+    assert saved_profile.email == "fresh@example.com"
+    assert saved_profile.display_name == "Fresh User"
+    assert saved_profile.onboarding_completed is False
+
+    app.dependency_overrides = {}
+
+
+def test_e2e_login_recovers_malformed_existing_profile():
+    """E2E bootstrap should recover an invalid stored profile and overwrite it."""
+    from pydantic_core import ValidationError as PydanticCoreValidationError
+
+    malformed_error = PydanticCoreValidationError.from_exception_data(
+        "UserProfile",
+        [
+            {
+                "type": "string_too_long",
+                "loc": ("display_name",),
+                "msg": "String should have at most 50 characters",
+                "input": "x" * 80,
+                "ctx": {"max_length": 50},
+            }
+        ],
+    )
+
+    mock_brain = MagicMock()
+    mock_brain.get_user_profile.side_effect = malformed_error
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+    response = client.post(
+        "/user/e2e-login",
+        json={
+            "email": "fresh@example.com",
+            "display_name": "Fresh User",
+            "onboarding_completed": False,
+        },
+    )
+
+    assert response.status_code == 200
+    mock_brain.save_user_profile.assert_called_once()
+    saved_profile = mock_brain.save_user_profile.call_args.args[0]
+    assert saved_profile.email == "fresh@example.com"
+    assert saved_profile.display_name == "Fresh User"
+    assert saved_profile.onboarding_completed is False
+
+    app.dependency_overrides = {}
+
+
 # Test: POST /update_profile - Success Case
 def test_update_profile_success(sample_user_profile):
     """Test successful profile update."""

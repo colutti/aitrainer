@@ -5,7 +5,10 @@ import { test, expect } from './fixtures';
 import { t } from './helpers/translations';
 
 test.describe('Profile Photo Upload', () => {
-  test('uploads a profile photo through the real settings form', async ({ authenticatedPage, ui }) => {
+  test('uploads and persists a profile photo through the real settings form', async ({
+    authenticatedPage,
+    ui,
+  }) => {
     await ui.navigateTo('settings');
     await authenticatedPage.getByRole('link', { name: t('settings.tabs.profile') }).click();
 
@@ -21,10 +24,15 @@ test.describe('Profile Photo Upload', () => {
 
       const profileImage = authenticatedPage.getByTestId('profile-form').getByRole('img', { name: 'Profile' });
       await expect(profileImage).toBeVisible({ timeout: 15000 });
-      await expect(profileImage).toHaveAttribute(
-        'src',
-        /data:image\/png;base64/
-      );
+      const uploadedSrc = await profileImage.getAttribute('src');
+      expect(uploadedSrc).toBeTruthy();
+      expect(uploadedSrc).toContain('data:image/png;base64');
+
+      await authenticatedPage.reload({ waitUntil: 'networkidle' });
+
+      const persistedImage = authenticatedPage.getByTestId('profile-form').getByRole('img', { name: 'Profile' });
+      await expect(persistedImage).toBeVisible({ timeout: 15000 });
+      await expect(persistedImage).toHaveAttribute('src', uploadedSrc);
     } finally {
       fs.rmSync(filePath, { force: true });
     }

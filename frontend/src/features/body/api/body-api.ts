@@ -103,7 +103,7 @@ export const bodyApi = {
     formData.append('file', file);
     
     const token = localStorage.getItem('auth_token');
-    const response = await fetch('/api/integrations/zepp_life/import', {
+    const response = await fetch('/api/weight/import/zepp-life', {
       method: 'POST',
       headers: {
          ...(token ? { Authorization: `Bearer ${token}` } : {})

@@ -1,34 +1,41 @@
+import { STRIPE_PRICE_IDS } from '../src/shared/constants/stripe';
+
 import { test, expect } from './fixtures';
 import { t } from './helpers/translations';
 
 test.describe('Subscription Feature', () => {
-  test('should verify subscription page and plans', async ({ authenticatedPage, ui }) => {
-    // 1. Navigate to Settings
+  test('loads plans and sends a checkout request when upgrading', async ({ authenticatedPage, ui }) => {
+    const checkoutRequests: Record<string, unknown>[] = [];
+
+    await authenticatedPage.route('**/stripe/create-checkout-session', async route => {
+      checkoutRequests.push(route.request().postDataJSON() as Record<string, unknown>);
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ url: 'https://checkout.stripe.com/c/pay/test-checkout' }),
+      });
+    });
+
     await ui.navigateTo('settings');
-    
-    // 2. Click Subscription Tab
-    const subscriptionTab = authenticatedPage.getByRole('link', { name: t('settings.tabs.subscription') });
-    await subscriptionTab.click();
-    await expect(authenticatedPage).toHaveURL(/.*settings\/subscription/);
+    await authenticatedPage.getByRole('link', { name: t('settings.tabs.subscription') }).click();
+    await authenticatedPage.waitForLoadState('networkidle');
 
-    // 3. Verify Active Plan Section
-    const activePlanTitle = authenticatedPage.getByText(t('settings.subscription.active')).first();
-    await expect(activePlanTitle).toBeVisible();
+    await expect(authenticatedPage.getByText(t('settings.subscription.title')).first()).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(authenticatedPage.getByTestId('subscription-plan-btn-basic')).toBeVisible();
 
-    // The user created in tests is Free by default
-    const currentPlan = authenticatedPage.locator('h3', { hasText: /Free|Premium|Basic|Pro/i }).first();
-    await expect(currentPlan).toBeVisible();
+    await authenticatedPage.getByTestId('subscription-plan-btn-basic').click();
+    await expect(authenticatedPage).toHaveURL(/checkout\.stripe\.com\/c\/pay\/test-checkout/);
 
-    // 4. Verify Available Plans
-    const upgradeButton = authenticatedPage.getByText(t('settings.subscription.upgrade')).first();
-    await expect(upgradeButton).toBeVisible();
+    expect(checkoutRequests).toHaveLength(1);
+    expect(checkoutRequests[0]?.price_id).toBe(STRIPE_PRICE_IDS.basic);
+    expect(String(checkoutRequests[0]?.success_url)).toContain('/dashboard?payment=success');
+    expect(String(checkoutRequests[0]?.cancel_url)).toContain('/dashboard/settings/subscription?payment=cancel');
   });
 
-  test('should show payment success toast via query param', async ({ authenticatedPage, ui }) => {
-    // Navigate to dashboard with payment=success
+  test('shows payment success toast via query param', async ({ authenticatedPage, ui }) => {
     await authenticatedPage.goto('/dashboard?payment=success');
-    
-    // Wait for the success toast
     await ui.waitForToast('landing.subscription.payment_success_message');
   });
 });

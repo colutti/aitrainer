@@ -24,9 +24,9 @@ export function buildE2EUserCredentials(testInfo: TestInfo, suffix = 'user'): E2
     .replace(/^-+|-+$/g, '')
     .slice(0, 36) || 'spec';
 
-  const email = `e2e-${slug}-${testInfo.repeatEachIndex}-${suffix}@fityq.it`;
-  const baseName = `E2E ${testInfo.titlePath.at(-1) ?? 'User'}`.trim();
-  const name = baseName.slice(0, 50);
+  const uniqueSeed = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const email = `e2e-${slug}-${testInfo.repeatEachIndex}-${uniqueSeed}-${suffix}@fityq.it`;
+  const name = `E2E ${slug.slice(0, 18)}`.trim();
 
   return {
     name,

@@ -9,6 +9,7 @@ import firebase_admin.auth  # type: ignore
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from pydantic_core import ValidationError
 
 from src.api.models.auth import FirebaseLoginRequest
 from src.api.models.user_profile import UserProfile, UserProfileInput
@@ -238,6 +239,7 @@ class E2ETestLoginRequest(BaseModel):
 
     email: str = "bot-real@fityq.it"
     display_name: str = "Real QA Bot"
+    onboarding_completed: bool = True
 
 
 @router.post("/update_identity")
@@ -281,12 +283,19 @@ def e2e_login(data: E2ETestLoginRequest, brain: AITrainerBrainDep) -> dict:
     if not settings.ENABLE_E2E_TEST_AUTH:
         raise HTTPException(status_code=404, detail="Not found")
 
-    profile = brain.get_user_profile(data.email)
-    if profile:
-        profile.display_name = data.display_name
-        profile.subscription_plan = "Free"
-        profile.onboarding_completed = True
-        brain.save_user_profile(profile)
+    existing_profile = None
+    try:
+        existing_profile = brain.get_user_profile(data.email)
+    except ValidationError as exc:
+        logger.warning(
+            "Recovered malformed E2E profile for %s: %s", data.email, exc
+        )
+
+    if existing_profile:
+        existing_profile.display_name = data.display_name
+        existing_profile.subscription_plan = "Free"
+        existing_profile.onboarding_completed = data.onboarding_completed
+        brain.save_user_profile(existing_profile)
     else:
         profile = UserProfile(
             email=data.email,
@@ -298,7 +307,7 @@ def e2e_login(data: E2ETestLoginRequest, brain: AITrainerBrainDep) -> dict:
             goal_type="maintain",
             subscription_plan="Free",
             display_name=data.display_name,
-            onboarding_completed=True,
+            onboarding_completed=data.onboarding_completed,
         )
         brain.save_user_profile(profile)
 

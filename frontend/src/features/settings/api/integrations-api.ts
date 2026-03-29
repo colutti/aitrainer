@@ -54,7 +54,7 @@ export const integrationsApi = {
     
     // Using raw fetch for FormData to avoid Content-Type header issues with boundary
     const token = localStorage.getItem('auth_token'); // Or useStore
-    const response = await fetch('/api/integrations/mfp/import', {
+    const response = await fetch('/api/nutrition/import/myfitnesspal', {
       method: 'POST',
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -74,7 +74,7 @@ export const integrationsApi = {
     formData.append('file', file);
     
     const token = localStorage.getItem('auth_token');
-    const response = await fetch('/api/integrations/zepp_life/import', {
+    const response = await fetch('/api/weight/import/zepp-life', {
       method: 'POST',
       headers: {
          ...(token ? { Authorization: `Bearer ${token}` } : {})

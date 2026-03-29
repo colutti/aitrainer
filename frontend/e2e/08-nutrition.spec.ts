@@ -18,11 +18,52 @@ test.describe('Nutrition Feature', () => {
     await ui.navigateTo('body');
     await ui.switchToTab(t('body.nutrition_title'));
 
-    // Click the Action button which delegates to AI Chat
     const addButton = authenticatedPage.getByTestId('view-header-action').first();
     await addButton.click();
 
-    // Verify redirection to chat
     await expect(authenticatedPage).toHaveURL(/.*chat/);
+    await expect(authenticatedPage.getByTestId('chat-form')).toBeVisible({ timeout: 15000 });
+    await expect(authenticatedPage.getByTestId('chat-input')).toBeVisible({ timeout: 15000 });
+  });
+
+  test('should persist a nutrition log after the chat handoff', async ({ authenticatedPage, ui, api }) => {
+    await ui.navigateTo('body');
+    await ui.switchToTab(t('body.nutrition_title'));
+
+    await authenticatedPage.getByTestId('view-header-action').first().click();
+    await expect(authenticatedPage).toHaveURL(/.*chat/);
+    await expect(authenticatedPage.getByTestId('chat-input')).toBeVisible({ timeout: 15000 });
+
+    const calories = 612;
+    const protein = 41;
+    const carbs = 72;
+    const fat = 19;
+    const date = new Date().toISOString().split('T')[0];
+
+    await api.post('/nutrition/log', {
+      data: {
+        date,
+        source: 'Manual E2E',
+        calories,
+        protein_grams: protein,
+        carbs_grams: carbs,
+        fat_grams: fat,
+      },
+    });
+
+    const response = await api.get('/nutrition/list?page=1&page_size=20');
+    expect(response.status()).toBe(200);
+    const payload = await response.json() as { logs?: { calories?: number }[] };
+    expect(payload.logs?.some((log) => log.calories === calories)).toBe(true);
+
+    await ui.navigateTo('body');
+    await ui.switchToTab(t('body.nutrition_title'));
+    await authenticatedPage.waitForTimeout(1000);
+    const nutritionCard = authenticatedPage.getByTestId('nutrition-log-card').first();
+    await expect(nutritionCard).toBeVisible({ timeout: 15000 });
+    await expect(nutritionCard).toContainText(/kcal/i);
+
+    await authenticatedPage.reload({ waitUntil: 'networkidle' });
+    await expect(nutritionCard).toBeVisible({ timeout: 15000 });
   });
 });

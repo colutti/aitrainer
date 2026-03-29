@@ -190,6 +190,45 @@ describe('useAuth', () => {
     });
   });
 
+  describe('register', () => {
+    it('should bootstrap a new app user through e2e-login and set token', async () => {
+      const mockLoginResponse = { token: 'register-token-123' };
+      const mockUserApiData = {
+        email: 'new@example.com',
+        role: 'user',
+        name: 'New User',
+        onboarding_completed: false,
+        has_stripe_customer: false,
+      };
+
+      vi.mocked(httpClient).mockResolvedValueOnce(mockLoginResponse);
+      vi.mocked(httpClient).mockResolvedValueOnce(mockUserApiData);
+
+      const { result } = renderHook(() => useAuthStore());
+
+      await act(async () => {
+        await result.current.register('New User', 'new@example.com', 'password123');
+      });
+
+      expect(httpClient).toHaveBeenNthCalledWith(1, '/user/e2e-login', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: 'new@example.com',
+          display_name: 'New User',
+          onboarding_completed: false,
+          password: 'password123',
+        }),
+      });
+      expect(localStorage.getItem('auth_token')).toBe('register-token-123');
+      expect(result.current.isAuthenticated).toBe(true);
+      expect(result.current.userInfo).toEqual(expect.objectContaining({
+        email: 'new@example.com',
+        name: 'New User',
+        onboarding_completed: false,
+      }));
+    });
+  });
+
   describe('logout', () => {
     it('should clear token and reset state', () => {
       localStorage.setItem('auth_token', 'test-token');

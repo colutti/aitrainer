@@ -145,6 +145,8 @@ Playwright E2E only:
 make e2e
 ```
 
+Important: Playwright E2E must run through the repository's containerized verification flow. Do not use host-local `npx playwright test` as the official path for validation.
+
 ### Coverage Thresholds
 
 Main frontend Vitest thresholds:

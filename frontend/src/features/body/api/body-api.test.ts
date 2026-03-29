@@ -180,7 +180,7 @@ describe('bodyApi', () => {
       const res = await bodyApi.importZeppLife(file);
       
       expect(res).toEqual(mockRes);
-      expect(global.fetch).toHaveBeenCalledWith('/api/integrations/zepp_life/import', expect.objectContaining({
+      expect(global.fetch).toHaveBeenCalledWith('/api/weight/import/zepp-life', expect.objectContaining({
         method: 'POST',
         headers: { Authorization: 'Bearer mock-token' },
         body: expect.any(FormData)

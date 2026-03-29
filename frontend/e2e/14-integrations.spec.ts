@@ -2,39 +2,24 @@ import { test, expect } from './fixtures';
 import { t } from './helpers/translations';
 
 test.describe('Integrations Feature', () => {
-  test('should load integrations page and display connection options', async ({ authenticatedPage, ui }) => {
-    // 1. Navigate to Settings
-    await ui.navigateTo('settings');
-    
-    // 2. Click Integrations Tab
-    const integrationsTab = authenticatedPage.getByRole('link', { name: t('settings.tabs.integrations') });
-    await integrationsTab.click();
-    await expect(authenticatedPage).toHaveURL(/.*settings\/integrations/);
+  test('keeps Hevy connected after reload and generates a Telegram code', async ({ authenticatedPage }) => {
+    await authenticatedPage.goto('/dashboard/settings/integrations');
+    await authenticatedPage.waitForLoadState('networkidle');
 
-    // 3. Verify Hevy Integration Section
-    const hevyTitle = authenticatedPage.getByRole('heading', { name: 'Hevy' }).first();
-    await expect(hevyTitle).toBeVisible();
+    await expect(authenticatedPage.getByText(/Ativo: \*\*\*\*\d{4}|Active \*\*\*\*\d{4}/i)).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(authenticatedPage.getByRole('button', { name: t('settings.integrations.hevy.sync_button') })).toBeVisible();
 
-    // Check if a key is already active, if so, remove it to test the empty state
-    const removeHevyBtn = authenticatedPage.getByRole('button', { name: t('settings.integrations.shared.remove') });
-    if (await removeHevyBtn.isVisible()) {
-      await removeHevyBtn.click();
-      await authenticatedPage.waitForTimeout(1000);
-    }
+    await authenticatedPage.reload({ waitUntil: 'networkidle' });
+    await authenticatedPage.goto('/dashboard/settings/integrations');
+    await authenticatedPage.waitForLoadState('networkidle');
+    await expect(authenticatedPage.getByText(/Ativo: \*\*\*\*\d{4}|Active \*\*\*\*\d{4}/i)).toBeVisible({
+      timeout: 15000,
+    });
 
-    const hevyInput = authenticatedPage.getByPlaceholder(t('settings.integrations.hevy.hevy_placeholder') || 'API Key');
-    await expect(hevyInput).toBeVisible({ timeout: 10000 });
-    
-    // Check if the connect button is present
-    const confirmBtn = authenticatedPage.getByRole('button', { name: t('common.confirm') }).first();
-    await expect(confirmBtn).toBeVisible();
-
-    // 4. Verify Telegram Integration Section
-    const telegramTitle = authenticatedPage.getByRole('heading', { name: 'Telegram' }).first();
-    await expect(telegramTitle).toBeVisible();
-
-    // 5. Verify CSV Import Section
-    const importTitle = authenticatedPage.getByRole('heading', { name: t('settings.integrations.imports.title') });
-    await expect(importTitle).toBeVisible();
+    await authenticatedPage.getByRole('button', { name: t('settings.integrations.telegram.generate_code') }).click();
+    await expect(authenticatedPage.getByText(/^[A-Z0-9]{6}$/)).toBeVisible({ timeout: 15000 });
+    await expect(authenticatedPage.getByText(/Abrir Bot|Open Bot|Abrir bot/i)).toBeVisible();
   });
 });

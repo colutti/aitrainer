@@ -35,9 +35,17 @@ export function AuthGuard({ children }: AuthGuardProps) {
       return null;
     }
 
+    if (!userInfo) {
+      return null;
+    }
+
     // Allow authenticated users to stay on onboarding if they haven't completed it
-    if (location.pathname === '/onboarding' && userInfo && !userInfo.onboarding_completed) {
+    if (location.pathname === '/onboarding' && !userInfo.onboarding_completed) {
       return <>{children}</>;
+    }
+
+    if (!userInfo.onboarding_completed) {
+      return <Navigate to={`/onboarding${location.search}`} replace />;
     }
 
     // If user is already authenticated, redirect to dashboard or the page they was trying to access

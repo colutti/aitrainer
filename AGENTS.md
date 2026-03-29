@@ -35,6 +35,7 @@ Source of truth for project operations is the codebase, especially:
 - When a command exists in the `Makefile`, prefer using it rather than inventing an alternative.
 - The official full test path is containerized. Prefer `make test-once` over host-local mixed execution.
 - `make verify` is the fast verification gate; `make verify-all` adds e2e; `make test-once` is the documented full-suite entrypoint.
+- Playwright E2E must run through the containerized stack via `make e2e`, `make verify-all`, or `make test-once`. Do not treat host-local `npx playwright test` as the supported validation path.
 
 ## Validation Gates
 
@@ -93,6 +94,8 @@ npm run check
 npm test
 npx playwright test
 ```
+
+`npx playwright test` above is for local experimentation only. The supported validation path for E2E is the containerized `make e2e` / `make verify-all` / `make test-once` flow.
 
 ### Admin frontend
 

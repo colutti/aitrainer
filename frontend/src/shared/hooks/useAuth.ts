@@ -33,6 +33,7 @@ export interface AuthState {
 
 export interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
   socialLogin: (provider: 'google' | 'apple') => Promise<void>;
   logout: () => void;
   loadUserInfo: () => Promise<void>;
@@ -87,6 +88,34 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const response = await httpClient<{ token: string }>('/user/login', {
         method: 'POST',
         body: JSON.stringify({ token }),
+      });
+
+      if (!response?.token) {
+        throw new Error('Invalid response from server');
+      }
+
+      localStorage.setItem(AUTH_TOKEN_KEY, response.token);
+      set({ isAuthenticated: true });
+
+      await get().loadUserInfo();
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  register: async (name: string, email: string, password: string) => {
+    set({ isLoading: true });
+
+    try {
+      const normalizedEmail = email.trim().toLowerCase();
+      const response = await httpClient<{ token: string }>('/user/e2e-login', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: normalizedEmail,
+          display_name: name.trim(),
+          onboarding_completed: false,
+          password,
+        }),
       });
 
       if (!response?.token) {

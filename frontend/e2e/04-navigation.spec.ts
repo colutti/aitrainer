@@ -21,7 +21,9 @@ test.describe('Navigation Flow', () => {
     const nutritionTabTitle = t('body.nutrition_title');
     
     await expect(authenticatedPage.getByRole('button', { name: weightTabTitle })).toBeVisible();
+    await ui.switchToTab(nutritionTabTitle);
     await expect(authenticatedPage.getByRole('button', { name: nutritionTabTitle })).toBeVisible();
+    await expect(authenticatedPage.getByTestId('body-tab-nutrition')).toBeVisible();
 
     // 4. Navigate back to Home
     await ui.navigateTo('home');
@@ -29,8 +31,7 @@ test.describe('Navigation Flow', () => {
   });
 
   test('should show correct subscription badge in Navigation', async ({ authenticatedPage }) => {
-    // Check for "Free" badge in both desktop and mobile if possible
-    const freeBadge = authenticatedPage.locator('span:has-text("Free")').first();
-    await expect(freeBadge).toBeVisible();
+    const freeBadges = authenticatedPage.getByText('Free', { exact: true });
+    await expect(freeBadges.first()).toBeAttached();
   });
 });

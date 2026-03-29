@@ -35,7 +35,9 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const login = useAuthStore((state) => state.login);
-  const [isLogin, setIsLogin] = useState(true);
+  const register = useAuthStore((state) => state.register);
+  const initialMode = new URLSearchParams(location.search).get('mode') === 'register' ? 'register' : 'login';
+  const [isLogin, setIsLogin] = useState(initialMode === 'login');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -62,11 +64,14 @@ export default function LoginPage() {
     }
   };
 
-  const onSubmitSignup = (_data: RegisterForm) => {
+  const onSubmitSignup = async (data: RegisterForm) => {
     setIsLoading(true);
     setError(null);
     try {
-      setError("O registro de novos usuários é restrito via convite neste momento.");
+      await register(data.name, data.email, data.password);
+      void navigate('/onboarding', { replace: true });
+    } catch {
+      setError(t('auth.login_error'));
     } finally {
       setIsLoading(false);
     }
@@ -137,6 +142,7 @@ export default function LoginPage() {
                   <Input 
                     type="email" 
                     {...registerLogin('email')} 
+                    data-testid="login-email"
                     error={loginErrors.email?.message}
                     placeholder="exemplo@email.com"
                     className="pl-12 h-14 bg-white/5 border-white/5 focus:border-white/20 rounded-2xl text-sm font-bold text-white"
@@ -154,6 +160,7 @@ export default function LoginPage() {
                   <Input 
                     type="password" 
                     {...registerLogin('password')} 
+                    data-testid="login-password"
                     error={loginErrors.password?.message}
                     placeholder="••••••••"
                     className="pl-12 h-14 bg-white/5 border-white/5 focus:border-white/20 rounded-2xl text-sm font-bold text-white"
@@ -178,6 +185,7 @@ export default function LoginPage() {
                 <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Nome Completo</label>
                 <Input 
                   {...registerSignup('name')} 
+                  data-testid="register-name"
                   error={signupErrors.name?.message}
                   placeholder="Seu nome"
                   className="h-14 bg-white/5 border-white/5 focus:border-white/20 rounded-2xl text-sm font-bold text-white"
@@ -188,6 +196,7 @@ export default function LoginPage() {
                 <Input 
                   type="email" 
                   {...registerSignup('email')} 
+                  data-testid="register-email"
                   error={signupErrors.email?.message}
                   placeholder="exemplo@email.com"
                   className="h-14 bg-white/5 border-white/5 focus:border-white/20 rounded-2xl text-sm font-bold text-white"
@@ -199,6 +208,7 @@ export default function LoginPage() {
                   <Input 
                     type="password" 
                     {...registerSignup('password')} 
+                    data-testid="register-password"
                     error={signupErrors.password?.message}
                     className="h-14 bg-white/5 border-white/5 focus:border-white/20 rounded-2xl text-sm font-bold text-white"
                   />
@@ -208,6 +218,7 @@ export default function LoginPage() {
                   <Input 
                     type="password" 
                     {...registerSignup('confirmPassword')} 
+                    data-testid="register-confirm-password"
                     error={signupErrors.confirmPassword?.message}
                     className="h-14 bg-white/5 border-white/5 focus:border-white/20 rounded-2xl text-sm font-bold text-white"
                   />
