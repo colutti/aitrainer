@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
 import { type UserProfile } from '../../../shared/types/user-profile';
 import { settingsApi } from '../api/settings-api';
@@ -16,6 +17,7 @@ import UserProfileView from './UserProfileView';
 const UserProfilePage = () => {
   const { t } = useTranslation();
   const notify = useNotificationStore();
+  const { isReadOnly: isDemoUser } = useDemoMode();
   
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,6 +41,7 @@ const UserProfilePage = () => {
   }, [loadUserProfile]);
 
   const handleSubmit = async (formData: UserProfileForm) => {
+    if (isDemoUser) return;
     setIsSaving(true);
     try {
       // 1. Update Profile Stats (age, gender, goals, etc.)
@@ -59,6 +62,9 @@ const UserProfilePage = () => {
   };
 
   const handlePhotoUpload = async (file: File) => {
+    if (isDemoUser) {
+      return Promise.resolve();
+    }
     return new Promise<void>((resolve) => {
       const reader = new FileReader();
       reader.onloadend = async () => {
@@ -86,6 +92,7 @@ const UserProfilePage = () => {
       isLoading={isLoading}
       isSaving={isSaving}
       photoBase64={photoBase64}
+      isReadOnly={isDemoUser}
       onSubmit={handleSubmit}
       onPhotoUpload={handlePhotoUpload}
     />

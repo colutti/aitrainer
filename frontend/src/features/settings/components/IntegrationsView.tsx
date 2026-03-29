@@ -17,6 +17,7 @@ import type { HevyStatus, HevyWebhookConfig, HevyWebhookCredentials, TelegramSta
 import { cn } from '../../../shared/utils/cn';
 
 export interface IntegrationsViewProps {
+  isReadOnly?: boolean;
   hevy: {
     status: HevyStatus | null;
     key: string;
@@ -50,6 +51,7 @@ export interface IntegrationsViewProps {
 }
 
 export function IntegrationsView({
+  isReadOnly = false,
   hevy,
   webhook,
   telegram,
@@ -59,6 +61,11 @@ export function IntegrationsView({
 
   return (
     <div className={cn(PREMIUM_UI.animation.fadeIn, "space-y-8 pb-20")}>
+      {isReadOnly && (
+        <PremiumCard className="p-4 border-amber-500/20 bg-amber-500/5 text-amber-200 text-[10px] font-black uppercase tracking-[0.2em]">
+          Demo Read-Only
+        </PremiumCard>
+      )}
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* HEVY INTEGRATION */}
@@ -88,13 +95,14 @@ export function IntegrationsView({
                     type="password"
                     placeholder={t('settings.integrations.hevy.hevy_placeholder')}
                     value={hevy.key}
+                    disabled={isReadOnly}
                     onChange={(e) => { hevy.setKey(e.target.value); }}
                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 px-5 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
                   />
                 </div>
                 <button 
                   onClick={hevy.onSave}
-                  disabled={hevy.loading || !hevy.key}
+                  disabled={isReadOnly || hevy.loading || !hevy.key}
                   className="w-full py-4 rounded-full bg-white text-black font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/10 disabled:opacity-50"
                 >
                   {hevy.loading ? '...' : t('common.confirm')}
@@ -107,9 +115,9 @@ export function IntegrationsView({
                       <Check size={16} className="text-emerald-400" />
                       {t('settings.integrations.shared.active', { key: hevy.status.apiKeyMasked })}
                    </div>
-                   <button 
+                  <button 
                      onClick={hevy.onRemove}
-                     disabled={hevy.loading}
+                     disabled={isReadOnly || hevy.loading}
                      className="text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 transition-colors"
                    >
                      {t('settings.integrations.shared.remove')}
@@ -118,7 +126,7 @@ export function IntegrationsView({
 
                 <button 
                   onClick={hevy.onSync}
-                  disabled={hevy.syncing}
+                  disabled={isReadOnly || hevy.syncing}
                   className="w-full py-4 rounded-full bg-white/5 border border-white/10 text-white font-black hover:bg-white/10 transition-all flex items-center justify-center gap-3"
                 >
                   <RefreshCw size={18} className={cn(hevy.syncing && "animate-spin")} />
@@ -133,7 +141,7 @@ export function IntegrationsView({
                    {!webhook.config?.hasWebhook ? (
                      <button 
                        onClick={webhook.onGenerate}
-                       disabled={webhook.loading}
+                       disabled={isReadOnly || webhook.loading}
                        className="w-full py-3 rounded-2xl bg-white/5 border border-dashed border-white/10 text-xs font-bold text-zinc-500 hover:border-indigo-500/50 hover:text-indigo-400 transition-all"
                      >
                        {t('settings.integrations.hevy.webhook_setup')}
@@ -151,7 +159,7 @@ export function IntegrationsView({
                         </div>
                         <button 
                           onClick={webhook.onRevoke}
-                          disabled={webhook.loading}
+                          disabled={isReadOnly || webhook.loading}
                           className="w-full text-center text-[10px] font-black text-red-500/50 uppercase tracking-widest hover:text-red-400 transition-colors"
                         >
                           {t('settings.integrations.hevy.webhook_revoke')}
@@ -198,9 +206,10 @@ export function IntegrationsView({
                      <label 
                        className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/[0.08] transition-all cursor-pointer group"
                      >
-                        <input 
+                  <input 
                           type="checkbox"
                           checked={telegram.notifyOnWorkout}
+                          disabled={isReadOnly}
                           onChange={(e) => { telegram.onToggleNotify(e.target.checked); }}
                           className="mt-1 w-4 h-4 rounded border-white/10 bg-black/40 text-indigo-500 focus:ring-indigo-500/20 cursor-pointer"
                         />
@@ -230,7 +239,7 @@ export function IntegrationsView({
               ) : (
                 <button 
                   onClick={telegram.onGenerate}
-                  disabled={telegram.loading}
+                  disabled={isReadOnly || telegram.loading}
                   className="w-full py-4 rounded-full bg-white text-black font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/10 disabled:opacity-50 flex items-center justify-center gap-3"
                 >
                   <Smartphone size={20} />

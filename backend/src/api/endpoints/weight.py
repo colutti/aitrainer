@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from src.api.models.import_result import ImportResult
 from src.api.models.weight_log import WeightLog, WeightLogInput, WeightWithId
+from src.core.demo_access import WritableCurrentUser
 from src.core.deps import get_ai_trainer_brain, get_mongo_database
 from src.core.logs import logger
 from src.services.adaptive_tdee import AdaptiveTDEEService
@@ -29,7 +30,7 @@ DatabaseDep = Annotated[MongoDatabase, Depends(get_mongo_database)]
 @router.post("")
 def log_weight(
     log_input: WeightLogInput,
-    user_email: CurrentUser,
+    user_email: WritableCurrentUser,
     db: DatabaseDep,
     _brain: AITrainerBrainDep,
 ) -> dict:
@@ -71,7 +72,9 @@ def log_weight(
 
 
 @router.delete("/{date_str}")
-def delete_weight_log(date_str: str, user_email: CurrentUser, brain: AITrainerBrainDep):
+def delete_weight_log(
+    date_str: str, user_email: WritableCurrentUser, brain: AITrainerBrainDep
+):
     """
     Deletes a weight log for a specific date (YYYY-MM-DD).
     """
@@ -173,7 +176,7 @@ def get_body_composition_stats(
 
 @router.post("/import/zepp-life", response_model=ImportResult)
 async def import_zepp_life(
-    user_email: CurrentUser, db: DatabaseDep, file: UploadFile = File(...)
+    user_email: WritableCurrentUser, db: DatabaseDep, file: UploadFile = File(...)
 ) -> ImportResult:
     # pylint: disable=duplicate-code
     """

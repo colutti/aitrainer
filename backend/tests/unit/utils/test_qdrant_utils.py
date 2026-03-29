@@ -7,11 +7,12 @@ from src.utils.qdrant_utils import point_to_dict, scroll_all_user_points
 def test_point_to_dict_falls_back_to_point_id_and_data_payload():
     point = SimpleNamespace(
         id="abc123",
-        payload={"data": "remember this", "user_id": "u-1"},
+        payload={"data": "remember this", "translations": {"pt-BR": "lembre disto"}, "user_id": "u-1"},
     )
     assert point_to_dict(point) == {
         "id": "abc123",
         "memory": "remember this",
+        "translations": {"pt-BR": "lembre disto"},
         "user_id": "u-1",
         "created_at": None,
         "updated_at": None,

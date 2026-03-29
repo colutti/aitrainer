@@ -8,6 +8,7 @@ import { formatDate } from '../../../shared/utils/format-date';
 
 interface WeightLogCardProps {
   log: WeightLog;
+  isReadOnly?: boolean;
   onDelete?: (date: string) => void;
   onEdit?: (log: WeightLog) => void;
   onClick?: (log: WeightLog) => void;
@@ -18,7 +19,7 @@ interface WeightLogCardProps {
  * 
  * Displays a weight entry with premium Glassmorphism aesthetic.
  */
-export function WeightLogCard({ log, onDelete, onEdit, onClick }: WeightLogCardProps) {
+export function WeightLogCard({ log, isReadOnly = false, onDelete, onEdit, onClick }: WeightLogCardProps) {
   const { t } = useTranslation();
   
   const handleDelete = (e: React.MouseEvent) => {
@@ -33,7 +34,7 @@ export function WeightLogCard({ log, onDelete, onEdit, onClick }: WeightLogCardP
 
   return (
     <PremiumCard 
-      onClick={() => onClick?.(log)}
+      onClick={() => { onClick?.(log); }}
       data-testid="weight-log-card"
       className="p-5 md:p-6 cursor-pointer group flex flex-col gap-4 w-full"
     >
@@ -83,7 +84,7 @@ export function WeightLogCard({ log, onDelete, onEdit, onClick }: WeightLogCardP
           
           {/* Actions */}
           <div className="md:col-span-3 flex justify-end items-center gap-2">
-              {onEdit && (
+              {!isReadOnly && onEdit && (
                 <button 
                   onClick={(e) => { e.stopPropagation(); onEdit(log); }}
                   className="p-2.5 rounded-full bg-white/5 text-zinc-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-white/10 hover:text-white"
@@ -92,7 +93,7 @@ export function WeightLogCard({ log, onDelete, onEdit, onClick }: WeightLogCardP
                   <Edit2 size={16} />
                 </button>
               )}
-              {onDelete && (
+              {!isReadOnly && onDelete && (
                 <button 
                   onClick={handleDelete}
                   data-testid="btn-delete-weight"

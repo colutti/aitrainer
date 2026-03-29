@@ -12,6 +12,8 @@ from src.api.models.workout_log import WorkoutLog, WorkoutWithId
 from src.api.models.workout_stats import WorkoutStats, PersonalRecord, VolumeStat
 from src.repositories.base import BaseRepository
 
+datetime_type = datetime  # pylint: disable=invalid-name
+
 
 class WorkoutRepository(BaseRepository):
     """
@@ -164,10 +166,26 @@ class WorkoutRepository(BaseRepository):
         )
 
     @staticmethod
-    def _get_weeks_data(workouts: list[dict]) -> dict[tuple[int, int], int]:
+    def _normalize_datetime(value: Any) -> datetime:
+        """Converts workout date payloads into a datetime."""
+        if isinstance(value, datetime_type):
+            return value.replace(tzinfo=None) if value.tzinfo else value
+        if hasattr(value, "year") and hasattr(value, "month") and hasattr(value, "day"):
+            return datetime(value.year, value.month, value.day)
+        if isinstance(value, str):
+            parsed = value.replace("Z", "+00:00")
+            try:
+                dt = datetime.fromisoformat(parsed)
+            except ValueError:
+                dt = datetime.fromisoformat(f"{parsed}T00:00:00")
+            return dt.replace(tzinfo=None) if dt.tzinfo else dt
+        raise TypeError(f"Unsupported workout date value: {value!r}")
+
+    @classmethod
+    def _get_weeks_data(cls, workouts: list[dict]) -> dict[tuple[int, int], int]:
         weeks_data: dict[tuple[int, int], int] = {}
         for w in workouts:
-            dt = w["date"]
+            dt = cls._normalize_datetime(w["date"])
             iso_year, iso_week, _ = dt.isocalendar()
             key = (iso_year, iso_week)
             weeks_data[key] = weeks_data.get(key, 0) + 1
@@ -210,11 +228,11 @@ class WorkoutRepository(BaseRepository):
         start = (now - timedelta(days=now.weekday())).replace(
             hour=0, minute=0, second=0, microsecond=0
         )
-        curr = [w for w in workouts if w["date"] >= start]
+        curr = [w for w in workouts if self._normalize_datetime(w["date"]) >= start]
 
         freq = [False] * 7
         for w in curr:
-            freq[w["date"].weekday()] = True
+            freq[self._normalize_datetime(w["date"]).weekday()] = True
 
         vol_map: dict[str, float] = {}
         for w in curr:
@@ -255,7 +273,7 @@ class WorkoutRepository(BaseRepository):
 
         for w in reversed(workouts):
             w_id = str(w.get("_id"))
-            dt = w["date"]
+            dt = self._normalize_datetime(w["date"])
 
             for ex in w.get("exercises", []):
                 name = ex.get("name")
@@ -296,7 +314,7 @@ class WorkoutRepository(BaseRepository):
         weeks: list[float] = [0.0] * 8
 
         for w in workouts:
-            age_days = (now - w["date"]).days
+            age_days = (now - self._normalize_datetime(w["date"])).days
             week_idx = age_days // 7
             if week_idx < 8:
                 vol = 0.0
@@ -343,7 +361,7 @@ class WorkoutRepository(BaseRepository):
         peak_strength: dict[str, float] = {}
         curr_strength: dict[str, float] = {}
 
-        for w in sorted(workouts, key=lambda x: x["date"]):
+        for w in sorted(workouts, key=lambda x: self._normalize_datetime(x["date"])):
             for ex in w.get("exercises", []):
                 cat = self._get_radar_category(ex.get("name", ""))
                 if cat == "Outros":

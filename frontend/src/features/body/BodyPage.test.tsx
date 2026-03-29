@@ -1,6 +1,8 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+import { useAuthStore } from '../../shared/hooks/useAuth';
 
 import BodyPage from './BodyPage';
 
@@ -11,6 +13,10 @@ vi.mock('./components/WeightTab', () => ({
 
 vi.mock('./components/NutritionTab', () => ({
   NutritionTab: () => <div data-testid="nutrition-tab">Nutrition Content</div>
+}));
+
+vi.mock('../../shared/hooks/useAuth', () => ({
+  useAuthStore: vi.fn(),
 }));
 
 vi.mock('react-i18next', () => ({
@@ -24,6 +30,10 @@ vi.mock('react-i18next', () => ({
 }));
 
 describe('BodyPage', () => {
+  beforeEach(() => {
+    vi.mocked(useAuthStore).mockReturnValue({ userInfo: { is_demo: false } } as any);
+  });
+
   it('renders WeightTab by default', () => {
     render(
       <MemoryRouter initialEntries={['/dashboard/body/weight']}>
@@ -44,5 +54,30 @@ describe('BodyPage', () => {
     
     expect(screen.getByRole('heading', { name: /Nutrição/i })).toBeInTheDocument();
     expect(screen.getByTestId('nutrition-tab')).toBeInTheDocument();
+  });
+
+  it('allows switching between body tabs', () => {
+    render(
+      <MemoryRouter initialEntries={['/dashboard/body/weight']}>
+        <BodyPage />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Nutrição/i }));
+
+    expect(screen.getByRole('heading', { name: /Nutrição/i })).toBeInTheDocument();
+    expect(screen.getByTestId('nutrition-tab')).toBeInTheDocument();
+  });
+
+  it('passes read-only mode to body tabs for demo users', () => {
+    vi.mocked(useAuthStore).mockReturnValue({ userInfo: { is_demo: true } } as any);
+
+    render(
+      <MemoryRouter initialEntries={['/dashboard/body/weight']}>
+        <BodyPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId('weight-tab')).toBeInTheDocument();
   });
 });

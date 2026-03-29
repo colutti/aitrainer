@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { stripeApi } from '../../../shared/api/stripe-api';
 import { STRIPE_PRICE_IDS } from '../../../shared/constants/stripe';
 import { useAuthStore } from '../../../shared/hooks/useAuth';
+import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
 
 import { SubscriptionView, type Plan } from './SubscriptionView';
@@ -18,10 +19,10 @@ import { SubscriptionView, type Plan } from './SubscriptionView';
 export default function SubscriptionPage() {
   const { t, i18n } = useTranslation();
   const { userInfo, loadUserInfo } = useAuthStore();
+  const { isReadOnly: isDemoUser } = useDemoMode();
   const notify = useNotificationStore();
   const [loading, setLoading] = useState<string | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-
   useEffect(() => {
     let mounted = true;
     const refresh = async () => {
@@ -39,6 +40,7 @@ export default function SubscriptionPage() {
   const currentPlan = (userInfo?.subscription_plan ?? 'Free').toLowerCase().trim();
 
   const handleSubscribe = async (planId: string) => {
+    if (isDemoUser) return;
     const normalizedPlanId = planId.toLowerCase().trim();
     if (normalizedPlanId === 'free') return;
     
@@ -69,6 +71,7 @@ export default function SubscriptionPage() {
   };
 
   const handleManage = async (loadingKey = 'manage') => {
+    if (isDemoUser) return;
     setLoading(loadingKey);
     try {
       const url = await stripeApi.createPortalSession(window.location.origin + '/dashboard/settings/subscription');
@@ -124,6 +127,7 @@ export default function SubscriptionPage() {
       isInitialLoading={isInitialLoading}
       isPt={isPt}
       hasStripeCustomer={userInfo?.has_stripe_customer ?? false}
+      isReadOnly={isDemoUser}
       onSubscribe={(id) => { void handleSubscribe(id); }}
       onManage={(key) => { void handleManage(key); }}
     />

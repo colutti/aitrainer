@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Header, Request
 from fastapi.responses import JSONResponse
 
+from src.core.demo_access import WritableCurrentUser
 from src.services.auth import verify_token
 from src.core.config import settings
 from src.core.deps import (
@@ -26,7 +27,7 @@ BrainDep = Annotated[AITrainerBrain, Depends(get_ai_trainer_brain)]
 
 @router.post("/generate-code", response_model=LinkingCodeResponse)
 def generate_code(
-    user_email: CurrentUser, repo: TelegramRepoDep
+    user_email: WritableCurrentUser, repo: TelegramRepoDep
 ) -> LinkingCodeResponse:
     """Generate a 6-character linking code."""
     code = repo.create_linking_code(user_email)
@@ -72,7 +73,7 @@ def get_status(
 
 
 @router.post("/unlink")
-def unlink(user_email: CurrentUser, repo: TelegramRepoDep) -> JSONResponse:
+def unlink(user_email: WritableCurrentUser, repo: TelegramRepoDep) -> JSONResponse:
     """Remove Telegram link."""
     repo.delete_link(user_email)
     return JSONResponse(content={"message": "Unlinked successfully"})

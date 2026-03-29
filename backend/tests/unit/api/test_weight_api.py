@@ -13,12 +13,18 @@ from src.services.auth import verify_token
 from src.core.deps import get_ai_trainer_brain, get_mongo_database
 from src.api.models.weight_log import WeightLog
 from src.api.models.import_result import ImportResult
+from src.api.models.user_profile import UserProfile
 
 def mock_get_current_user():
     return "test@example.com"
 
 class TestWeightApi(unittest.TestCase):
     def setUp(self):
+        app.dependency_overrides = {}
+        mock_db = MagicMock()
+        mock_db.is_demo_user.return_value = False
+        mock_db.get_user_profile.return_value = None
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
         self.client = TestClient(app)
 
     def tearDown(self):
@@ -165,6 +171,33 @@ class TestWeightApi(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn("CSV", response.json()["detail"])
+
+    def test_log_weight_rejects_demo_user(self):
+        """Demo users cannot create or update weight logs."""
+        app.dependency_overrides[verify_token] = lambda: "demo@example.com"
+        mock_db = MagicMock()
+        mock_db.get_user_profile.return_value = UserProfile(
+            email="demo@example.com",
+            gender="Masculino",
+            age=30,
+            weight=75.0,
+            height=180,
+            goal_type="maintain",
+            weekly_rate=0.5,
+            is_demo=True,
+        )
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
+        app.dependency_overrides[get_ai_trainer_brain] = lambda: MagicMock()
+
+        response = self.client.post(
+            "/weight",
+            json={"date": str(date.today()), "weight_kg": 75.5},
+            headers={"Authorization": "Bearer test_token"},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["detail"], "demo_read_only")
+        mock_db.weight.save_log.assert_not_called()
 
 if __name__ == "__main__":
     unittest.main()

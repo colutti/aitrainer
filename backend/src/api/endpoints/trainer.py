@@ -4,6 +4,7 @@ API endpoints for managing trainer profiles.
 
 from fastapi import APIRouter, Depends, HTTPException
 from src.api.models.trainer_profile import TrainerProfileInput, TrainerProfile
+from src.core.demo_access import WritableCurrentUser
 from src.services.trainer import AITrainerBrain
 from src.core.deps import get_ai_trainer_brain
 from src.services.auth import verify_token
@@ -16,7 +17,7 @@ router = APIRouter()
 @router.put("/update_trainer_profile", response_model=TrainerProfile)
 async def update_trainer_profile(
     profile_input: TrainerProfileInput,
-    user_email: str = Depends(verify_token),
+    user_email: WritableCurrentUser,
     brain: AITrainerBrain = Depends(get_ai_trainer_brain),
 ):
     """

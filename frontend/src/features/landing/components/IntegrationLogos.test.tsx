@@ -9,4 +9,11 @@ describe('IntegrationLogos Component', () => {
     render(<IntegrationLogos />);
     expect(screen.getByText(/Ecossistema Aberto/i)).toBeInTheDocument();
   });
+
+  it('shows integrations as available instead of coming soon', () => {
+    render(<IntegrationLogos />);
+
+    expect(screen.queryByText(/em breve/i)).not.toBeInTheDocument();
+    expect(screen.getAllByText(/dispon[ií]vel/i)).toHaveLength(3);
+  });
 });

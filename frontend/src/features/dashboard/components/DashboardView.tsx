@@ -82,7 +82,7 @@ export function DashboardView({
   }
 
   return (
-    <div className="space-y-8 pb-20" data-testid="dashboard-bento">
+    <div className="space-y-8 pb-20 pr-1" data-testid="dashboard-bento">
       
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mt-4">

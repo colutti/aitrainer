@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import { useAuthStore } from '../../shared/hooks/useAuth';
 import { useConfirmation } from '../../shared/hooks/useConfirmation';
 import { useWorkoutStore } from '../../shared/hooks/useWorkout';
 
@@ -11,6 +12,10 @@ vi.mock('../../shared/hooks/useWorkout', () => ({
   useWorkoutStore: vi.fn(),
 }));
 
+vi.mock('../../shared/hooks/useAuth', () => ({
+  useAuthStore: vi.fn(),
+}));
+
 vi.mock('../../shared/hooks/useConfirmation', () => ({
   useConfirmation: vi.fn(),
 }));
@@ -18,6 +23,8 @@ vi.mock('../../shared/hooks/useConfirmation', () => ({
 describe('WorkoutsPage', () => {
   const mockFetchWorkouts = vi.fn();
   const mockDeleteWorkout = vi.fn();
+  const mockFetchWorkoutTypes = vi.fn();
+  const mockFetchExerciseSuggestions = vi.fn();
   const mockSetSelectedWorkout = vi.fn();
 
   const defaultHookValues = {
@@ -39,6 +46,8 @@ describe('WorkoutsPage', () => {
     isLoading: false,
     fetchWorkouts: mockFetchWorkouts,
     deleteWorkout: mockDeleteWorkout,
+    fetchWorkoutTypes: mockFetchWorkoutTypes,
+    fetchExerciseSuggestions: mockFetchExerciseSuggestions,
     totalPages: 2,
     page: 1,
     selectedWorkout: null,
@@ -47,8 +56,11 @@ describe('WorkoutsPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockFetchWorkoutTypes.mockResolvedValue([]);
+    mockFetchExerciseSuggestions.mockResolvedValue([]);
     vi.mocked(useWorkoutStore).mockReturnValue(defaultHookValues as any);
     vi.mocked(useConfirmation).mockReturnValue({ confirm: vi.fn().mockResolvedValue(true) } as any);
+    vi.mocked(useAuthStore).mockReturnValue({ userInfo: { is_demo: false } } as any);
   });
 
   it('should render workouts and call fetch on mount', () => {
@@ -72,5 +84,24 @@ describe('WorkoutsPage', () => {
     await waitFor(() => {
       expect(mockDelete).toHaveBeenCalledWith('w1');
     });
+  });
+
+  it('should disable workout actions for demo users', () => {
+    vi.mocked(useAuthStore).mockReturnValue({ userInfo: { is_demo: true } } as any);
+
+    render(<WorkoutsPage />);
+
+    expect(screen.getByRole('button', { name: /Registrar treino/i })).toBeDisabled();
+    expect(screen.queryByTestId('btn-delete-workout')).not.toBeInTheDocument();
+  });
+
+  it('should allow viewing a workout card in demo mode', () => {
+    vi.mocked(useAuthStore).mockReturnValue({ userInfo: { is_demo: true } } as any);
+
+    render(<WorkoutsPage />);
+
+    fireEvent.click(screen.getByTestId('workout-card'));
+
+    expect(screen.getByRole('heading', { name: /Detalhes do Treino|Workout Details/i })).toBeInTheDocument();
   });
 });

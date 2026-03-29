@@ -19,6 +19,7 @@ export interface AdminUser {
   name?: string;
   display_name?: string;
   is_admin: boolean;
+  is_demo?: boolean;
   created_at?: string;
   last_login?: string;
   subscription_plan?: string;

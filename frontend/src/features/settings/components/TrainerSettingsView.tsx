@@ -21,6 +21,7 @@ export interface TrainerSettingsViewProps {
   isSaving: boolean;
   isLoading: boolean;
   isFreePlan: boolean;
+  isReadOnly?: boolean;
   onSelect: (id: string) => void;
   onSave: () => void;
   onRetry: () => void;
@@ -32,6 +33,7 @@ export function TrainerSettingsView({
   isSaving,
   isLoading,
   isFreePlan,
+  isReadOnly = false,
   onSelect,
   onSave,
   onRetry,
@@ -82,9 +84,10 @@ export function TrainerSettingsView({
             <PremiumCard
               key={trainer.trainer_id}
               data-testid={`trainer-card-${trainer.trainer_id}`}
-              onClick={() => { onSelect(trainer.trainer_id); }}
+              onClick={() => { if (!isReadOnly) onSelect(trainer.trainer_id); }}
               className={cn(
-                "p-8 cursor-pointer group flex flex-col justify-between min-h-[220px]",
+                "p-8 group flex flex-col justify-between min-h-[220px]",
+                isReadOnly ? "cursor-default" : "cursor-pointer",
                 isActive && "border-indigo-500/50 bg-indigo-500/[0.05] ring-1 ring-indigo-500/20",
                 isLocked && "opacity-60 grayscale-[0.5]"
               )}
@@ -149,12 +152,12 @@ export function TrainerSettingsView({
       {/* FOOTER ACTIONS */}
       <div className="flex justify-end pt-10 border-t border-white/5">
           <button 
-            onClick={onSave} 
-            disabled={isSaving || !selectedTrainerId} 
+            onClick={() => { if (!isReadOnly) onSave(); }} 
+            disabled={isReadOnly || isSaving || !selectedTrainerId} 
             className="w-full md:w-auto px-12 py-4 rounded-full bg-white text-black font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/10 disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-3"
           >
-             {isSaving && <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />}
-             {isSaving ? t('settings.trainer.saving') : t('settings.trainer.save_button')}
+             {isSaving && !isReadOnly && <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />}
+             {isReadOnly ? t('settings.trainer.read_only', 'Somente leitura') : isSaving ? t('settings.trainer.saving') : t('settings.trainer.save_button')}
           </button>
       </div>
     </div>

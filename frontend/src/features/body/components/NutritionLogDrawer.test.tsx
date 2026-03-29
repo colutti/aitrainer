@@ -58,6 +58,14 @@ describe('NutritionLogDrawer', () => {
     expect(screen.getByLabelText(/Proteína/i)).toBeInTheDocument();
   });
 
+  it('should force view mode in read-only state', () => {
+    render(<NutritionLogDrawer {...defaultProps} mode="edit" isReadOnly />);
+
+    expect(screen.getByText(/Detalhes da Refeição/i)).toBeInTheDocument();
+    expect(screen.getByText('Demo Read-Only')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Calorias/i)).not.toBeInTheDocument();
+  });
+
   it('should return null if no log and not in edit mode', () => {
     const { container } = render(<NutritionLogDrawer {...defaultProps} log={null} />);
     expect(container.firstChild).toBeNull();

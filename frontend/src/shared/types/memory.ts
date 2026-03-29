@@ -1,6 +1,7 @@
 export interface Memory {
   id: string;
   memory: string;
+  translations?: Record<string, string> | null;
   created_at: string | null;
   updated_at: string | null;
 }

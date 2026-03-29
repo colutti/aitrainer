@@ -42,6 +42,7 @@ type WorkoutFormData = z.infer<typeof workoutSchema>;
 interface WorkoutDrawerProps {
   workout?: Workout | null;
   isOpen: boolean;
+  isReadOnly?: boolean;
   onClose: () => void;
 }
 
@@ -84,7 +85,7 @@ function exerciseTitlePath(exerciseIndex: number) {
   return `exercises.${exerciseIndex}.exercise_title` as const;
 }
 
-export function WorkoutDrawer({ workout, isOpen, onClose }: WorkoutDrawerProps) {
+export function WorkoutDrawer({ workout, isOpen, isReadOnly = false, onClose }: WorkoutDrawerProps) {
   const { t } = useTranslation();
   const { createWorkout, fetchWorkoutTypes, fetchExerciseSuggestions } = useWorkoutStore();
   const [workoutTypeSuggestions, setWorkoutTypeSuggestions] = useState<string[]>([]);
@@ -161,6 +162,9 @@ export function WorkoutDrawer({ workout, isOpen, onClose }: WorkoutDrawerProps) 
   }, [isOpen, reset, workout]);
 
   const onSubmit = async (data: WorkoutFormData) => {
+    if (isReadOnly) {
+      return;
+    }
     const payload: CreateWorkoutRequest = {
       date: data.date,
       workout_type: data.workout_type,
@@ -184,10 +188,15 @@ export function WorkoutDrawer({ workout, isOpen, onClose }: WorkoutDrawerProps) 
     <PremiumDrawer
       isOpen={isOpen}
       onClose={onClose}
-      title={workout ? t('workouts.edit_workout') : t('workouts.register_workout')}
+      title={workout ? (isReadOnly ? t('workouts.record_details') : t('workouts.edit_workout')) : t('workouts.register_workout')}
       subtitle={workout ? workout.date.split('T')[0] : t('workouts.subtitle')}
       icon={<Dumbbell size={24} />}
     >
+      {isReadOnly && (
+        <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-amber-200">
+          Demo Read-Only
+        </div>
+      )}
       <form onSubmit={(event) => { void handleSubmit(onSubmit)(event); }} className="space-y-8 pb-24">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
@@ -199,6 +208,7 @@ export function WorkoutDrawer({ workout, isOpen, onClose }: WorkoutDrawerProps) 
             <Input
               id="workout-type"
               list="workout-type-suggestions"
+              disabled={isReadOnly}
               {...register('workout_type')}
               className="h-14 bg-white/5 border-white/5 rounded-2xl font-bold"
             />
@@ -213,6 +223,7 @@ export function WorkoutDrawer({ workout, isOpen, onClose }: WorkoutDrawerProps) 
             <Input
               id="workout-duration"
               type="number"
+              disabled={isReadOnly}
               {...register('duration_minutes')}
               className="h-14 bg-white/5 border-white/5 rounded-2xl font-bold"
             />
@@ -237,6 +248,7 @@ export function WorkoutDrawer({ workout, isOpen, onClose }: WorkoutDrawerProps) 
               type="button"
               variant="ghost"
               size="sm"
+              disabled={isReadOnly}
               onClick={() => { append(emptyExercise); }}
             >
               <Plus size={14} />
@@ -258,6 +270,7 @@ export function WorkoutDrawer({ workout, isOpen, onClose }: WorkoutDrawerProps) 
                 register={register}
                 removeExercise={() => { remove(exerciseIndex); }}
                 exerciseSuggestions={exerciseSuggestions}
+                isReadOnly={isReadOnly}
               />
             ))}
           </div>
@@ -267,7 +280,7 @@ export function WorkoutDrawer({ workout, isOpen, onClose }: WorkoutDrawerProps) 
           <Button fullWidth variant="secondary" type="button" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button fullWidth type="submit" isLoading={isSubmitting} className="btn-premium">
+          <Button fullWidth type="submit" isLoading={isSubmitting} disabled={isReadOnly} className="btn-premium">
             <Save size={18} />
             Salvar treino
           </Button>
@@ -284,6 +297,7 @@ interface ExerciseCardProps {
   register: ReturnType<typeof useForm<WorkoutFormData>>['register'];
   removeExercise: () => void;
   exerciseSuggestions: string[];
+  isReadOnly: boolean;
 }
 
 function ExerciseCard({
@@ -293,6 +307,7 @@ function ExerciseCard({
   register,
   removeExercise,
   exerciseSuggestions,
+  isReadOnly,
 }: ExerciseCardProps) {
   const setArray = useFieldArray({
     control,
@@ -311,11 +326,12 @@ function ExerciseCard({
             id={`exercise-${String(exerciseIndex)}`}
             list={`exercise-suggestions-${String(exerciseIndex)}`}
             placeholder="Nome do Exercício"
+            disabled={isReadOnly}
             {...register(exerciseTitlePath(exerciseIndex))}
             className="h-12 bg-transparent border-white/10 rounded-2xl font-bold"
           />
         </FormField>
-        <Button type="button" variant="ghost" size="sm" onClick={removeExercise}>
+        <Button type="button" variant="ghost" size="sm" disabled={isReadOnly} onClick={() => { if (!isReadOnly) removeExercise(); }}>
           <Trash2 size={16} />
         </Button>
       </div>
@@ -338,7 +354,8 @@ function ExerciseCard({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => { setArray.remove(setIndex); }}
+                  disabled={isReadOnly}
+                  onClick={() => { if (!isReadOnly) setArray.remove(setIndex); }}
                 >
                   <Trash2 size={14} />
                 </Button>
@@ -350,6 +367,7 @@ function ExerciseCard({
                 id={exerciseSetFieldId(exerciseIndex, setIndex, 'weight')}
                 type="number"
                 label="Peso"
+                disabled={isReadOnly}
                 // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
                 {...register(`exercises.${exerciseIndex}.sets.${setIndex}.weight_kg` as const)}
               />
@@ -357,6 +375,7 @@ function ExerciseCard({
                 id={exerciseSetFieldId(exerciseIndex, setIndex, 'reps')}
                 type="number"
                 label="Reps"
+                disabled={isReadOnly}
                 // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
                 {...register(`exercises.${exerciseIndex}.sets.${setIndex}.reps` as const)}
               />
@@ -364,6 +383,7 @@ function ExerciseCard({
                 id={exerciseSetFieldId(exerciseIndex, setIndex, 'duration')}
                 type="number"
                 label="Tempo"
+                disabled={isReadOnly}
                 // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
                 {...register(`exercises.${exerciseIndex}.sets.${setIndex}.duration_seconds` as const)}
               />
@@ -371,6 +391,7 @@ function ExerciseCard({
                 id={exerciseSetFieldId(exerciseIndex, setIndex, 'distance')}
                 type="number"
                 label="Distância"
+                disabled={isReadOnly}
                 // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
                 {...register(`exercises.${exerciseIndex}.sets.${setIndex}.distance_meters` as const)}
               />
@@ -384,6 +405,7 @@ function ExerciseCard({
           type="button"
           variant="secondary"
           size="sm"
+          disabled={isReadOnly}
           onClick={() => { setArray.append(emptySet); }}
         >
           <Plus size={14} />
@@ -393,7 +415,11 @@ function ExerciseCard({
           type="button"
           variant="ghost"
           size="sm"
+          disabled={isReadOnly}
           onClick={() => {
+            if (isReadOnly) {
+              return;
+            }
             const exerciseSets = getValues('exercises')[exerciseIndex]?.sets ?? [];
             const lastSet = exerciseSets.at(-1);
             setArray.append({

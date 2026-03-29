@@ -1,0 +1,1033 @@
+{
+  "scenario_id": "ethan-parker-v1",
+  "content_version": "v1",
+  "locale": "en",
+  "source_user_email": "synthetic:ethan-parker:v1",
+  "persona": {
+    "display_name": "Ethan Parker",
+    "age": 35,
+    "gender": "Male",
+    "height": 182,
+    "weight": 84.6,
+    "goal_type": "lose",
+    "weekly_rate": 0.25,
+    "target_weight": 81.5,
+    "subscription_plan": "Premium",
+    "occupation": "Product design lead",
+    "notes": "Busy professional. Wants a clean system that connects training, nutrition, and decision-making."
+  },
+  "trainer_profile": {
+    "trainer_type": "gymbro",
+    "preferred_language": "en-US",
+    "personality_level": "balanced"
+  },
+  "integration_state": {
+    "hevy_enabled": true,
+    "hevy_connected": true,
+    "telegram_enabled": false
+  },
+  "memory_seeds": [
+    {
+      "memory": "Prefers four training days per week and protects Wednesday as a lighter recovery day.",
+      "category": "context",
+      "translations": {
+        "pt-BR": "Prefere quatro dias de treino por semana e preserva a quarta-feira como um dia mais leve de recuperacao."
+      }
+    },
+    {
+      "memory": "Travels for work at least twice a month and needs flexible restaurant strategies.",
+      "category": "context",
+      "translations": {
+        "pt-BR": "Viaja a trabalho pelo menos duas vezes por mes e precisa de estrategias flexiveis para restaurantes."
+      }
+    },
+    {
+      "memory": "Responds best to direct guidance, short summaries, and practical next steps.",
+      "category": "style",
+      "translations": {
+        "pt-BR": "Responde melhor a orientacao direta, resumos curtos e proximos passos praticos."
+      }
+    },
+    {
+      "memory": "Likes a mild cutting phase that preserves energy for work and training.",
+      "category": "context",
+      "translations": {
+        "pt-BR": "Prefere uma fase de cutting leve que preserve energia para o trabalho e para o treino."
+      }
+    },
+    {
+      "memory": "Prefers premium, practical coaching over hype or aggressive cut instructions.",
+      "category": "style",
+      "translations": {
+        "pt-BR": "Prefere coaching premium e pratico em vez de hype ou instrucoes agressivas de cutting."
+      }
+    }
+  ],
+  "data_windows": {
+    "weight_days": 84,
+    "nutrition_days": 42,
+    "workout_weeks": 8
+  },
+  "episodes": [
+    {
+      "episode_id": "ep01_onboarding_style_selection",
+      "primary_domain": "workout",
+      "started_at": "2026-01-05T08:30:00Z",
+      "title": "Training plan request and fit check",
+      "messages": [
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-05T08:30:00Z",
+          "content": "Could you build me a training plan here?",
+          "translations": {
+            "pt-BR": "Voce pode montar um treino pra mim aqui no app?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-05T08:36:00Z",
+          "content": "Absolutely. Before I save anything, tell me how many days you can train, how long each session can be, and whether you want fat loss, performance, or both driving the setup.",
+          "translations": {
+            "pt-BR": "Claro. Antes de eu salvar qualquer coisa, me fala quantos dias voce consegue treinar, quanto tempo dura cada sessao e se o foco principal e perder gordura, performance, ou os dois."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-05T08:42:00Z",
+          "content": "Four days. Monday, Tuesday, Thursday, and Saturday. About an hour each time. Main goal is to get leaner without feeling weak.",
+          "translations": {
+            "pt-BR": "Quatro dias. Segunda, terca, quinta e sabado. Cerca de uma hora por sessao. O objetivo principal e secar sem me sentir fraco."
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-05T08:48:00Z",
+          "content": "Perfect. For that profile I'm recommending a 4-day upper/lower split. It gives you enough frequency to hold strength during a cut without smashing recovery around work.",
+          "translations": {
+            "pt-BR": "Perfeito. Pra esse perfil eu recomendo uma divisao upper/lower de 4 dias. Ela te da frequencia suficiente pra segurar forca durante o cutting sem arrebentar sua recuperacao no meio da rotina de trabalho."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-05T08:54:00Z",
+          "content": "What are you actually going to save in the app?",
+          "translations": {
+            "pt-BR": "O que exatamente voce vai salvar no sistema?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-05T09:00:00Z",
+          "content": "I saved it as Upper A, Lower A, Upper B, and Lower B, with Wednesday kept lighter because that day usually gets messy for you. That gives us a clean structure the system can track.",
+          "translations": {
+            "pt-BR": "Eu salvei como Upper A, Lower A, Upper B e Lower B, com a quarta mais leve porque esse dia costuma embolar pra voce. Isso deixa uma estrutura limpa pro sistema acompanhar."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-05T09:06:00Z",
+          "content": "Why not something more advanced?",
+          "translations": {
+            "pt-BR": "Por que nao algo mais avancado?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-05T09:12:00Z",
+          "content": "Because advanced-looking plans are overrated if they don't fit the week, bro. For a busy professional cutting slowly, the science-backed move is repeatable volume, stable exercise selection, and enough room to recover. This setup does that.",
+          "translations": {
+            "pt-BR": "Porque treino com cara de avancado vale pouco se nao encaixa na sua semana, bro. Pra um profissional ocupado fazendo um cutting leve, o que funciona de verdade e volume repetivel, selecao de exercicios estavel e espaco suficiente pra recuperar. Essa configuracao faz exatamente isso."
+          }
+        }
+      ]
+    },
+    {
+      "episode_id": "ep02_first_weekly_training_structure",
+      "primary_domain": "workout",
+      "started_at": "2026-01-05T09:40:00Z",
+      "title": "Hevy routine creation from the saved split",
+      "messages": [
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-05T09:40:00Z",
+          "content": "Could you create those workouts in Hevy for me too?",
+          "translations": {
+            "pt-BR": "Voce pode criar esses treinos no Hevy pra mim tambem?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-05T09:46:00Z",
+          "content": "Done. I created the four routines in Hevy and matched the names to the app: Upper A, Lower A, Upper B, and Lower B. That keeps imports and coaching aligned.",
+          "translations": {
+            "pt-BR": "Fechado. Eu criei as quatro rotinas no Hevy e deixei os nomes iguais aos do app: Upper A, Lower A, Upper B e Lower B. Assim a importacao e o coaching ficam alinhados."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-05T09:52:00Z",
+          "content": "Nice. What did you put in the upper days?",
+          "translations": {
+            "pt-BR": "Boa. O que voce colocou nos dias de upper?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-05T09:58:00Z",
+          "content": "Upper A is built around bench and horizontal pulling. Upper B is overhead work plus vertical pulling. I kept the accessories tight so you can finish inside an hour and still progress.",
+          "translations": {
+            "pt-BR": "O Upper A gira em torno de supino e puxada horizontal. O Upper B fica com press acima da cabeca e puxada vertical. Eu deixei os acessorios enxutos pra voce terminar em uma hora e ainda conseguir progredir."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-05T10:04:00Z",
+          "content": "And the lower days?",
+          "translations": {
+            "pt-BR": "E os dias de lower?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-05T10:10:00Z",
+          "content": "Lower A is squat plus Romanian deadlift. Lower B is trap bar deadlift plus unilateral work. Nothing fancy, just the lifts that actually carry over.",
+          "translations": {
+            "pt-BR": "O Lower A e agachamento com levantamento terra romeno. O Lower B e trap bar deadlift com trabalho unilateral. Nada mirabolante, so os movimentos que realmente entregam resultado."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-05T10:16:00Z",
+          "content": "So when Hevy syncs, you'll be reading the exact structure you created?",
+          "translations": {
+            "pt-BR": "Entao quando o Hevy sincronizar voce vai ler exatamente a estrutura que criou?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-05T10:22:00Z",
+          "content": "Exactly. That's the win. I can coach from the work you actually did instead of guessing from a rough recap in chat.",
+          "translations": {
+            "pt-BR": "Exatamente. Esse e o ganho. Eu consigo te orientar em cima do que voce realmente fez, em vez de ficar adivinhando com base num resumo solto no chat."
+          }
+        }
+      ]
+    },
+    {
+      "episode_id": "ep03_hevy_connection_first_import",
+      "primary_domain": "nutrition",
+      "started_at": "2026-01-06T12:20:00Z",
+      "title": "Calorie target explanation from account data",
+      "messages": [
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-06T12:20:00Z",
+          "content": "Could you explain how you got to 2,320 calories and 180 protein?",
+          "translations": {
+            "pt-BR": "Voce pode me explicar como chegou em 2.320 calorias e 180 de proteina?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-06T12:26:00Z",
+          "content": "For sure. I set that from the data already in your account: body weight, goal rate, training frequency, and the logging history we already have. We're aiming for a mild cut, not a crash diet.",
+          "translations": {
+            "pt-BR": "Claro. Eu defini isso com base no que ja tem na sua conta: peso corporal, ritmo da meta, frequencia de treino e o historico de logs que ja acumulamos. A ideia aqui e um cutting leve, nao uma dieta maluca."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-06T12:32:00Z",
+          "content": "What does mild cut mean here?",
+          "translations": {
+            "pt-BR": "O que significa esse cutting leve nesse caso?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-06T12:38:00Z",
+          "content": "Enough deficit to keep trend weight moving, but not so much that your work week and training quality fall apart. That's why protein stays high, carbs stay useful, and fats don't get buried.",
+          "translations": {
+            "pt-BR": "Deficit suficiente pra fazer a trend de peso andar, mas nao tao agressivo a ponto de destruir sua semana de trabalho e a qualidade do treino. Por isso a proteina fica alta, os carbs continuam uteis e a gordura nao some do mapa."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-06T12:44:00Z",
+          "content": "So this is not just a formula?",
+          "translations": {
+            "pt-BR": "Entao isso nao e so uma formula?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-06T12:50:00Z",
+          "content": "No. If this were a generic calculator, I'd give you a number and hope. Here the target is meant to hold up once Hevy workouts, weigh-ins, and nutrition logs start piling up.",
+          "translations": {
+            "pt-BR": "Nao. Se isso fosse uma calculadora generica, eu te daria um numero e torceria. Aqui a meta foi feita pra continuar fazendo sentido quando os treinos do Hevy, as pesagens e os logs de nutricao comecarem a se acumular."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-06T12:56:00Z",
+          "content": "What should I care about most?",
+          "translations": {
+            "pt-BR": "No que eu tenho que prestar mais atencao?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-06T13:02:00Z",
+          "content": "Hit calories consistently, keep protein near 180, and let the trend tell us whether the target is doing its job. That's the game.",
+          "translations": {
+            "pt-BR": "Bate as calorias com consistencia, mantem a proteina perto de 180 e deixa a trend mostrar se a meta esta fazendo o trabalho dela. Esse e o jogo."
+          }
+        }
+      ]
+    },
+    {
+      "episode_id": "ep04_calorie_macro_target_setup",
+      "primary_domain": "nutrition",
+      "started_at": "2026-01-28T20:20:00Z",
+      "title": "Save today's macros and explain adherence",
+      "messages": [
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-28T20:20:00Z",
+          "content": "My macros for today were 2,249 calories, 172 protein, 221 carbs, and 76 fat. Can you save that?",
+          "translations": {
+            "pt-BR": "Minhas macros de hoje foram 2.249 calorias, 172 de proteina, 221 de carbo e 76 de gordura. Voce consegue salvar isso?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-28T20:26:00Z",
+          "content": "Done, bro. I saved today's nutrition log in the system: 2,249 kcal, 172.2 g protein, 221.3 g carbs, and 76.1 g fat. You're a little under the 2,320 target, but still right in the pocket.",
+          "translations": {
+            "pt-BR": "Fechado, bro. Ja salvei o log de nutricao de hoje no sistema: 2.249 kcal, 172,2 g de proteina, 221,3 g de carbo e 76,1 g de gordura. Voce ficou um pouco abaixo da meta de 2.320, mas ainda totalmente dentro do plano."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-28T20:32:00Z",
+          "content": "Is protein too low there?",
+          "translations": {
+            "pt-BR": "A proteina ficou muito baixa?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-28T20:38:00Z",
+          "content": "Slightly under the 180 goal, but not enough to make today a problem. I care way more about the weekly pattern than one day landing 8 grams short.",
+          "translations": {
+            "pt-BR": "Ficou um pouco abaixo da meta de 180, mas nao o suficiente pra transformar hoje num problema. Eu ligo muito mais pro padrao da semana do que pra um dia ficar 8 gramas curto."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-28T20:44:00Z",
+          "content": "What does that tell you about adherence?",
+          "translations": {
+            "pt-BR": "O que isso te diz sobre aderencia?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-28T20:50:00Z",
+          "content": "It tells me the plan is livable. You're close enough on calories and macros that the dashboard can trust the trend instead of guessing through sloppy data.",
+          "translations": {
+            "pt-BR": "Me diz que o plano e viavel na vida real. Voce esta perto o bastante em calorias e macros pra dashboard confiar na trend em vez de tentar adivinhar no meio de dado baguncado."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-28T20:56:00Z",
+          "content": "So logging like this actually improves the coaching?",
+          "translations": {
+            "pt-BR": "Entao registrar assim realmente melhora o coaching?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-01-28T21:02:00Z",
+          "content": "Big time. Clean logs give me something real to coach off. That's where the system starts separating signal from noise.",
+          "translations": {
+            "pt-BR": "Demais. Log limpo me da algo real pra trabalhar em cima. E ai que o sistema comeca a separar sinal de ruido."
+          }
+        }
+      ]
+    },
+    {
+      "episode_id": "ep05_weight_trend_interpretation",
+      "primary_domain": "workout",
+      "started_at": "2026-02-18T07:45:00Z",
+      "title": "First Hevy import review and training adjustments",
+      "messages": [
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-18T07:45:00Z",
+          "content": "Hevy just synced again. What do you see in the imported workouts now?",
+          "translations": {
+            "pt-BR": "O Hevy acabou de sincronizar de novo. O que voce esta vendo nos treinos importados agora?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-18T07:51:00Z",
+          "content": "I pulled 28 workouts into the system, and the structure held exactly the way we set it up. Upper A / Lower A / Upper B / Lower B is clear, frequency is solid, and progression is readable.",
+          "translations": {
+            "pt-BR": "Eu puxei 28 treinos pro sistema, e a estrutura ficou exatamente como a gente montou. Upper A / Lower A / Upper B / Lower B esta claro, a frequencia esta consistente e a progressao esta facil de ler."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-18T07:57:00Z",
+          "content": "Anything stand out?",
+          "translations": {
+            "pt-BR": "Tem algo que chamou mais atencao?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-18T08:03:00Z",
+          "content": "Yeah. Pressing is moving well, but pulling volume is still a little behind it. Not broken, just the first place I'd tighten things.",
+          "translations": {
+            "pt-BR": "Tem sim. O volume de empurrar esta andando bem, mas o de puxar ainda esta um pouco atras. Nao esta ruim, so e o primeiro ponto que eu ajustaria."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-18T08:09:00Z",
+          "content": "So the sync is doing more than just archiving sessions.",
+          "translations": {
+            "pt-BR": "Entao essa sincronizacao faz mais do que so guardar sessao."
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-18T08:15:00Z",
+          "content": "Way more. It lets me compare what I programmed against what you actually executed. That's the difference between coaching and just storing data.",
+          "translations": {
+            "pt-BR": "Muito mais. Ela me deixa comparar o que eu programei com o que voce realmente executou. Essa e a diferenca entre coaching de verdade e so armazenamento de dado."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-18T08:21:00Z",
+          "content": "What would you change off this import?",
+          "translations": {
+            "pt-BR": "O que voce mudaria a partir dessa importacao?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-18T08:27:00Z",
+          "content": "Keep the split, keep the main lifts, and nudge upper-back work up a bit so the plan keeps paying off long term.",
+          "translations": {
+            "pt-BR": "Eu manteria a divisao, manteria os levantamentos principais e subiria um pouco o trabalho de upper back pra esse plano continuar rendendo no longo prazo."
+          }
+        }
+      ]
+    },
+    {
+      "episode_id": "ep06_busy_week_training_adjustment",
+      "primary_domain": "weight",
+      "started_at": "2026-02-20T08:15:00Z",
+      "title": "Save today's weigh-in and explain trend",
+      "messages": [
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-20T08:15:00Z",
+          "content": "I weighed 82.1 kg this morning. Can you save it and tell me what the trend says?",
+          "translations": {
+            "pt-BR": "Pesei 82,1 kg hoje cedo. Voce consegue salvar isso e me dizer o que a trend esta mostrando?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-20T08:21:00Z",
+          "content": "Done. I saved today's weigh-in at 82.1 kg. Your smoothed trend is 82.26 kg, which is exactly why the app shows trend and not just the raw scale number.",
+          "translations": {
+            "pt-BR": "Fechado. Eu salvei a pesagem de hoje em 82,1 kg. A sua trend suavizada esta em 82,26 kg, e e exatamente por isso que o app mostra a trend e nao so o numero bruto da balanca."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-20T08:27:00Z",
+          "content": "So if the trend is slightly higher than today's weight, that's normal?",
+          "translations": {
+            "pt-BR": "Entao se a trend ficar um pouco acima do peso de hoje, isso e normal?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-20T08:33:00Z",
+          "content": "Totally normal. Trend weight is there to smooth the day-to-day noise from sodium, sleep, stress, and meal timing.",
+          "translations": {
+            "pt-BR": "Totalmente normal. O trend weight existe justamente pra suavizar o ruido do dia a dia vindo de sodio, sono, estresse e horario das refeicoes."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-20T08:39:00Z",
+          "content": "What does the recent data actually say?",
+          "translations": {
+            "pt-BR": "O que os dados mais recentes realmente estao dizendo?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-20T08:45:00Z",
+          "content": "Over the last 4 weeks, trend weight moved from 83.18 kg to 82.26 kg. That's a clean drop without the kind of crash that usually trashes performance.",
+          "translations": {
+            "pt-BR": "Nas ultimas 4 semanas, o trend weight saiu de 83,18 kg pra 82,26 kg. E uma queda limpa, sem aquele crash que normalmente destroi performance."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-20T08:51:00Z",
+          "content": "So the cut is doing what we wanted.",
+          "translations": {
+            "pt-BR": "Entao o cutting esta fazendo o que a gente queria."
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-20T08:57:00Z",
+          "content": "Yep. This is the sweet spot: lighter, still training well, and no drama-driven adjustments.",
+          "translations": {
+            "pt-BR": "Exato. Esse e o ponto ideal: mais leve, ainda treinando bem e sem ajuste feito no impulso."
+          }
+        }
+      ]
+    },
+    {
+      "episode_id": "ep07_recovery_and_fatigue_adjustment",
+      "primary_domain": "memory",
+      "started_at": "2026-02-20T09:10:00Z",
+      "title": "Save memory for travel and lighter Wednesdays",
+      "messages": [
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-20T09:10:00Z",
+          "content": "Please remember two things for me: I travel twice a month for work, and Wednesdays are usually my worst day for training.",
+          "translations": {
+            "pt-BR": "Guarda duas coisas pra mim: eu viajo a trabalho duas vezes por mes, e quarta-feira costuma ser meu pior dia pra treinar."
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-20T09:16:00Z",
+          "content": "Done. I saved both to memory. I'll keep travel in mind when I adjust nutrition, and I'll keep Wednesday lighter when I build or update training.",
+          "translations": {
+            "pt-BR": "Fechado. Ja salvei as duas coisas na memoria. Vou levar as viagens em conta quando ajustar a nutricao, e vou deixar a quarta mais leve quando eu montar ou atualizar o treino."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-20T09:22:00Z",
+          "content": "Is that just stored as notes, or does it affect the plan?",
+          "translations": {
+            "pt-BR": "Isso fica so como anotacao ou realmente afeta o plano?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-20T09:28:00Z",
+          "content": "It affects the plan. Memory is there so I stop asking the same things and make better calls when the week gets messy.",
+          "translations": {
+            "pt-BR": "Afeta o plano sim. A memoria existe pra eu parar de te perguntar a mesma coisa toda hora e conseguir tomar decisoes melhores quando a semana apertar."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-20T09:34:00Z",
+          "content": "So next time I ask for an adjustment, you'll use this automatically?",
+          "translations": {
+            "pt-BR": "Entao na proxima vez que eu pedir um ajuste voce vai usar isso automaticamente?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-20T09:40:00Z",
+          "content": "Exactly. That's the point. The app should remember your real life so the coaching gets sharper over time.",
+          "translations": {
+            "pt-BR": "Exatamente. Esse e o ponto. O app precisa lembrar da sua vida real pra o coaching ficar mais afiado com o tempo."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-20T09:46:00Z",
+          "content": "Good. I don't want to re-explain the same context every week.",
+          "translations": {
+            "pt-BR": "Boa. Eu nao quero ficar repetindo o mesmo contexto toda semana."
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-20T09:52:00Z",
+          "content": "And you shouldn't have to, man. Once it's saved, it should work for you.",
+          "translations": {
+            "pt-BR": "E nem deveria, mano. Depois que esta salvo, isso tem que trabalhar a seu favor."
+          }
+        }
+      ]
+    },
+    {
+      "episode_id": "ep08_progress_review_after_few_weeks",
+      "primary_domain": "nutrition",
+      "started_at": "2026-02-24T19:05:00Z",
+      "title": "Travel-week nutrition adjustment using saved memory",
+      "messages": [
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-24T19:05:00Z",
+          "content": "You saved that I travel twice a month. I have two client dinners this week. Can you adjust the plan around that?",
+          "translations": {
+            "pt-BR": "Voce salvou que eu viajo duas vezes por mes. Essa semana eu tenho dois jantares com clientes. Consegue ajustar o plano em volta disso?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-24T19:11:00Z",
+          "content": "Yep. I used the travel note from memory and kept the day structure simple: lighter earlier meals, protein locked in, and the restaurant meal as the flexible slot instead of the whole day going off the rails.",
+          "translations": {
+            "pt-BR": "Sim. Eu usei a nota de viagem da memoria e mantive a estrutura do dia simples: refeicoes mais leves antes, proteina garantida, e o jantar no restaurante como a janela flexivel em vez de deixar o dia inteiro sair do trilho."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-24T19:17:00Z",
+          "content": "Did you change my calorie target?",
+          "translations": {
+            "pt-BR": "Voce mexeu na minha meta de calorias?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-24T19:23:00Z",
+          "content": "No big change. I kept the target where it is and adjusted execution, not the whole plan. One flexible meal is easier to manage than trying to micromanage the entire trip.",
+          "translations": {
+            "pt-BR": "Nao teve mudanca grande. Eu mantive a meta onde estava e ajustei a execucao, nao o plano inteiro. Uma refeicao flexivel e muito mais facil de controlar do que tentar microgerenciar a viagem toda."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-24T19:29:00Z",
+          "content": "What should I aim for at those dinners?",
+          "translations": {
+            "pt-BR": "O que eu deveria buscar nesses jantares?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-24T19:35:00Z",
+          "content": "Protein first, reasonable portions, and no turning one dinner into a two-day spiral. If the rest of the day is tight, the dashboard will barely feel it.",
+          "translations": {
+            "pt-BR": "Proteina primeiro, porcoes razoaveis, e nada de transformar um jantar numa espiral de dois dias. Se o resto do dia estiver bem controlado, a dashboard mal vai sentir isso."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-24T19:41:00Z",
+          "content": "So memory is basically helping you make the nutrition advice more personal.",
+          "translations": {
+            "pt-BR": "Entao a memoria basicamente te ajuda a deixar a orientacao de nutricao mais pessoal."
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-02-24T19:47:00Z",
+          "content": "Exactly. Same system, better context, better call.",
+          "translations": {
+            "pt-BR": "Exatamente. Mesmo sistema, contexto melhor, decisao melhor."
+          }
+        }
+      ]
+    },
+    {
+      "episode_id": "ep09_restaurant_travel_nutrition_scenario",
+      "primary_domain": "workout",
+      "started_at": "2026-03-01T18:25:00Z",
+      "title": "Busy-week plan update inside the system",
+      "messages": [
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-01T18:25:00Z",
+          "content": "Next week is rough. I can only train three times. Could you adjust the plan for me?",
+          "translations": {
+            "pt-BR": "Semana que vem vai ser puxada. Eu so vou conseguir treinar tres vezes. Voce pode ajustar o plano pra mim?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-01T18:31:00Z",
+          "content": "Done. I collapsed next week's structure into three priority sessions and kept the biggest lifts in. Bench pattern, squat pattern, hinge pattern, rows. The fluff can wait.",
+          "translations": {
+            "pt-BR": "Fechado. Eu comprimi a estrutura da proxima semana em tres sessoes prioritarias e mantive os maiores levantamentos. Padrao de supino, padrao de agachamento, padrao de hinge e remadas. O resto pode esperar."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-01T18:37:00Z",
+          "content": "So you actually changed the plan here in the system?",
+          "translations": {
+            "pt-BR": "Entao voce realmente mudou o plano aqui no sistema?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-01T18:43:00Z",
+          "content": "Yep. The update is saved. The point is to protect the backbone of the week instead of pretending a busy week needs a perfect program.",
+          "translations": {
+            "pt-BR": "Sim. A atualizacao ja esta salva. O objetivo e proteger a espinha dorsal da semana em vez de fingir que uma semana corrida precisa de um programa perfeito."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-01T18:49:00Z",
+          "content": "What happens to calories when training drops a bit?",
+          "translations": {
+            "pt-BR": "E o que acontece com as calorias quando o treino cai um pouco?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-01T18:55:00Z",
+          "content": "Mostly we just keep execution cleaner. I don't want to slash food and make the whole week feel worse unless the data gives us a real reason.",
+          "translations": {
+            "pt-BR": "Na maior parte do tempo a gente so deixa a execucao mais limpa. Eu nao quero cortar comida e piorar a semana toda sem que os dados deem um motivo real pra isso."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-01T19:01:00Z",
+          "content": "So this is more floor protection than optimization.",
+          "translations": {
+            "pt-BR": "Entao isso e mais protecao de base do que otimizacao."
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-01T19:07:00Z",
+          "content": "Exactly. Busy weeks are where good systems stay sane.",
+          "translations": {
+            "pt-BR": "Exatamente. E nas semanas corridas que os bons sistemas mostram que conseguem manter tudo no eixo."
+          }
+        }
+      ]
+    },
+    {
+      "episode_id": "ep10_consistency_correction_after_noisy_stretch",
+      "primary_domain": "nutrition",
+      "started_at": "2026-03-11T08:10:00Z",
+      "title": "Save today's macros and explain the plan",
+      "messages": [
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-11T08:10:00Z",
+          "content": "My macros today were 2,249 calories, 172 protein, 221 carbs, and 76 fat. Can you save that here?",
+          "translations": {
+            "pt-BR": "Minhas macros hoje foram 2.249 calorias, 172 de proteina, 221 de carbo e 76 de gordura. Voce consegue salvar isso aqui?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-11T08:16:00Z",
+          "content": "Done, bro. I saved today's nutrition log in the system: 2,249 kcal, 172.2 g protein, 221.3 g carbs, and 76.1 g fat. That's close enough to keep the plan moving.",
+          "translations": {
+            "pt-BR": "Fechado, bro. Ja salvei o log de nutricao de hoje no sistema: 2.249 kcal, 172,2 g de proteina, 221,3 g de carbo e 76,1 g de gordura. Isso esta perto o suficiente pra manter o plano andando."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-11T08:22:00Z",
+          "content": "Is protein too low there?",
+          "translations": {
+            "pt-BR": "A proteina ficou muito baixa?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-11T08:28:00Z",
+          "content": "A little under the 180 target, but not enough to matter for one day. The system cares about the weekly average, not a single short landing.",
+          "translations": {
+            "pt-BR": "Ficou um pouco abaixo da meta de 180, mas nao o suficiente pra importar em um unico dia. O sistema olha pra media da semana, nao pra um dia isolado que ficou curto."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-11T08:34:00Z",
+          "content": "So what does that tell you about the cut?",
+          "translations": {
+            "pt-BR": "Entao o que isso te diz sobre o cutting?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-11T08:40:00Z",
+          "content": "It tells me the cut is still livable. You're close enough on calories and macros that the dashboard can trust the trend instead of guessing through sloppy data.",
+          "translations": {
+            "pt-BR": "Me diz que o cutting ainda esta viavel. Voce esta perto o suficiente em calorias e macros pra dashboard confiar na trend em vez de ficar adivinhando em cima de dado baguncado."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-11T08:46:00Z",
+          "content": "So clean logging actually changes the quality of the coaching?",
+          "translations": {
+            "pt-BR": "Entao logar direitinho realmente muda a qualidade do coaching?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-11T08:52:00Z",
+          "content": "Big time. Clean logs give me something real to coach off, and that's where the system starts separating signal from noise.",
+          "translations": {
+            "pt-BR": "Demais. Log limpo me da algo real pra trabalhar em cima, e e ai que o sistema comeca a separar sinal de ruido."
+          }
+        }
+      ]
+    },
+    {
+      "episode_id": "ep11_performance_win_pr_reflection",
+      "primary_domain": "workout",
+      "started_at": "2026-03-12T17:50:00Z",
+      "title": "Create the next training week in Hevy",
+      "messages": [
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-12T17:50:00Z",
+          "content": "Could you create next week's workouts in Hevy too?",
+          "translations": {
+            "pt-BR": "Voce pode criar tambem os treinos da proxima semana no Hevy?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-12T17:56:00Z",
+          "content": "Done. I created the four routines in Hevy and matched them to the app: Upper A, Lower A, Upper B, and Lower B. That keeps the training screen, the import, and the coach on the same page.",
+          "translations": {
+            "pt-BR": "Fechado. Eu criei as quatro rotinas no Hevy e alinhei tudo com o app: Upper A, Lower A, Upper B e Lower B. Assim a tela de treino, a importacao e o coach continuam falando a mesma lingua."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-12T18:02:00Z",
+          "content": "What did you actually put in them?",
+          "translations": {
+            "pt-BR": "O que exatamente voce colocou nelas?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-12T18:08:00Z",
+          "content": "Upper A is bench plus horizontal pulling, Upper B is overhead plus vertical pulling, Lower A is squat plus Romanian deadlift, and Lower B is trap bar deadlift plus unilateral work. Tight and repeatable.",
+          "translations": {
+            "pt-BR": "Upper A fica com supino e puxada horizontal, Upper B com trabalho acima da cabeca e puxada vertical, Lower A com agachamento e levantamento terra romeno, e Lower B com trap bar deadlift e trabalho unilateral. Enxuto e repetivel."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-12T18:14:00Z",
+          "content": "Why that setup for this profile?",
+          "translations": {
+            "pt-BR": "Por que essa estrutura faz sentido pra esse perfil?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-12T18:20:00Z",
+          "content": "Because it fits your schedule, keeps sessions inside an hour, and gives the system a clean structure to coach from. That's the whole point of the app.",
+          "translations": {
+            "pt-BR": "Porque ela encaixa na sua rotina, mantem as sessoes dentro de uma hora e da pro sistema uma estrutura limpa pra fazer coaching. Esse e o ponto do app."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-12T18:26:00Z",
+          "content": "So once Hevy syncs, you'll be reading that exact structure?",
+          "translations": {
+            "pt-BR": "Entao depois que o Hevy sincronizar voce vai ler exatamente essa estrutura?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-12T18:32:00Z",
+          "content": "Exactly. I can coach from the work you actually did instead of guessing from a rough recap in chat.",
+          "translations": {
+            "pt-BR": "Exatamente. Eu consigo te orientar em cima do que voce realmente fez, em vez de ficar adivinhando com base num resumo solto no chat."
+          }
+        }
+      ]
+    },
+    {
+      "episode_id": "ep12_next_block_planning",
+      "primary_domain": "nutrition",
+      "started_at": "2026-03-13T12:20:00Z",
+      "title": "Explain the calorie target from the account data",
+      "messages": [
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-13T12:20:00Z",
+          "content": "Could you explain how you got to 2,320 calories and 180 protein?",
+          "translations": {
+            "pt-BR": "Voce pode me explicar como chegou em 2.320 calorias e 180 de proteina?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-13T12:26:00Z",
+          "content": "For sure. I set that from the data already in your account: body weight, goal rate, training frequency, and the logging history we already have. We're aiming for a mild cut, not a crash diet.",
+          "translations": {
+            "pt-BR": "Claro. Eu defini isso com base no que ja tem na sua conta: peso corporal, ritmo da meta, frequencia de treino e o historico de logs que ja acumulamos. A ideia aqui e um cutting leve, nao uma dieta maluca."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-13T12:32:00Z",
+          "content": "What does mild cut mean here?",
+          "translations": {
+            "pt-BR": "O que significa esse cutting leve nesse caso?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-13T12:38:00Z",
+          "content": "Enough deficit to keep trend weight moving, but not so much that your work week and training quality fall apart. That's why protein stays high, carbs stay useful, and fats don't get buried.",
+          "translations": {
+            "pt-BR": "Deficit suficiente pra fazer a trend de peso andar, mas nao tao agressivo a ponto de destruir sua semana de trabalho e a qualidade do treino. Por isso a proteina fica alta, os carbs continuam uteis e a gordura nao some do mapa."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-13T12:44:00Z",
+          "content": "So this isn't just a formula?",
+          "translations": {
+            "pt-BR": "Entao isso nao e so uma formula?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-13T12:50:00Z",
+          "content": "No. If this were a generic calculator, I'd give you a number and hope. Here the target is meant to hold up once Hevy workouts, weigh-ins, and nutrition logs start piling up.",
+          "translations": {
+            "pt-BR": "Nao. Se isso fosse uma calculadora generica, eu te daria um numero e torceria. Aqui a meta foi feita pra continuar fazendo sentido quando os treinos do Hevy, as pesagens e os logs de nutricao comecarem a se acumular."
+          }
+        },
+        {
+          "role": "human",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-13T12:56:00Z",
+          "content": "What should I care about most?",
+          "translations": {
+            "pt-BR": "No que eu tenho que prestar mais atencao?"
+          }
+        },
+        {
+          "role": "ai",
+          "trainer_type": "gymbro",
+          "timestamp": "2026-03-13T13:02:00Z",
+          "content": "Hit calories consistently, keep protein near 180, and let the trend tell us whether the target is doing its job. That's the game.",
+          "translations": {
+            "pt-BR": "Bate as calorias com consistencia, mantem a proteina perto de 180 e deixa a trend mostrar se a meta esta fazendo o trabalho dela. Esse e o jogo."
+          }
+        }
+      ]
+    }
+  ]
+}

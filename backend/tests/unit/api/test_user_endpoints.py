@@ -9,7 +9,7 @@ import pytest
 
 from src.api.main import app
 from src.services.auth import verify_token
-from src.core.deps import get_ai_trainer_brain
+from src.core.deps import get_ai_trainer_brain, get_mongo_database
 from src.api.models.user_profile import UserProfile
 
 
@@ -17,6 +17,17 @@ client = TestClient(app)
 
 
 # Fixtures
+@pytest.fixture(autouse=True)
+def clear_dependency_overrides():
+    app.dependency_overrides = {}
+    mock_db = MagicMock()
+    mock_db.is_demo_user.return_value = False
+    mock_db.get_user_profile.return_value = None
+    app.dependency_overrides[get_mongo_database] = lambda: mock_db
+    yield
+    app.dependency_overrides = {}
+
+
 @pytest.fixture
 def mock_user_email():
     return "test@example.com"
@@ -161,6 +172,25 @@ def test_get_current_user_success(sample_user_profile):
     app.dependency_overrides = {}
 
 
+def test_get_current_user_exposes_demo_flag(sample_user_profile):
+    """Test /me exposes the demo marker for frontend read-only UX."""
+    app.dependency_overrides[verify_token] = lambda: "test@example.com"
+    mock_brain = MagicMock()
+    demo_profile = sample_user_profile.model_copy(update={"is_demo": True})
+    mock_brain.get_user_profile.return_value = demo_profile
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+    response = client.get(
+        "/user/me",
+        headers={"Authorization": "Bearer test_token"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["is_demo"] is True
+
+    app.dependency_overrides = {}
+
+
 # Test: GET /me - Unauthorized (No Token)
 def test_get_current_user_unauthorized():
     """Test accessing /me without authentication token."""
@@ -198,6 +228,40 @@ def test_update_profile_success(sample_user_profile):
     data = response.json()
     assert "Profile updated successfully" in data["message"]
     mock_brain.save_user_profile.assert_called_once()
+
+    app.dependency_overrides = {}
+
+
+def test_update_profile_rejects_demo_user(sample_user_profile):
+    """Test demo users cannot update profile fields."""
+    app.dependency_overrides[verify_token] = lambda: "demo@example.com"
+    mock_brain = MagicMock()
+    mock_brain.get_user_profile.return_value = sample_user_profile
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    mock_db = MagicMock()
+    mock_db.get_user_profile.return_value = sample_user_profile.model_copy(
+        update={"email": "demo@example.com", "is_demo": True}
+    )
+    app.dependency_overrides[get_mongo_database] = lambda: mock_db
+
+    update_payload = {
+        "gender": "Masculino",
+        "age": 31,
+        "weight": 74.0,
+        "height": 180,
+        "goal_type": "lose",
+        "weekly_rate": 0.5,
+    }
+
+    response = client.post(
+        "/user/update_profile",
+        json=update_payload,
+        headers={"Authorization": "Bearer test_token"}
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "demo_read_only"
+    mock_brain.save_user_profile.assert_not_called()
 
     app.dependency_overrides = {}
 

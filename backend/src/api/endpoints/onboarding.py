@@ -14,6 +14,7 @@ from src.api.models.onboarding import (
 from src.api.models.user_profile import UserProfile
 from src.api.models.trainer_profile import TrainerProfile
 from src.api.models.weight_log import WeightLog
+from src.core.demo_access import WritableCurrentUser
 from src.core.deps import get_mongo_database
 from src.core.logs import logger
 from src.services.auth import create_token, verify_token
@@ -170,7 +171,7 @@ def complete_onboarding(request: OnboardingCompleteRequest):
 
 @router.post("/profile", response_model=OnboardingCompleteResponse)
 def complete_public_onboarding(
-    request: PublicOnboardingRequest, user_email: CurrentUser
+    request: PublicOnboardingRequest, user_email: WritableCurrentUser
 ):
     """
     Completes onboarding for a user that is already authenticated (open registration).

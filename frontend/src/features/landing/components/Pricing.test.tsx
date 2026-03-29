@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import esES from '../../../locales/es-ES.json';
 import { useAuthStore } from '../../../shared/hooks/useAuth';
 import { render, screen, fireEvent } from '../../../shared/utils/test-utils';
 
@@ -45,6 +46,26 @@ describe('Pricing Component', () => {
     const freeBtn = screen.getByTestId('plan-button-free');
     fireEvent.click(freeBtn);
     expect(mockNavigate).toHaveBeenCalledWith('/login?mode=register&plan=free');
+  });
+
+  it('renders a translated CTA for each pricing plan', () => {
+    render(<Pricing />);
+
+    expect(screen.getByRole('button', { name: /come[cç]ar gr[aá]tis/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /assinar basic/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /assinar pro/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /assinar premium/i })).toBeInTheDocument();
+  });
+
+  it('keeps the spanish pricing locale contract complete', () => {
+    expect(esES.landing.plans.items.free.description).toBeTruthy();
+    expect(esES.landing.plans.items.free.button).toBeTruthy();
+    expect(esES.landing.plans.items.basic.description).toBeTruthy();
+    expect(esES.landing.plans.items.basic.button).toBeTruthy();
+    expect(esES.landing.plans.items.pro.description).toBeTruthy();
+    expect(esES.landing.plans.items.pro.button).toBeTruthy();
+    expect(esES.landing.plans.items.premium.description).toBeTruthy();
+    expect(esES.landing.plans.items.premium.button).toBeTruthy();
   });
 
   it('should navigate to login with pro plan if not authenticated', () => {

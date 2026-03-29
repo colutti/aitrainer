@@ -14,6 +14,7 @@ interface NutritionLogDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   mode?: 'view' | 'edit';
+  isReadOnly?: boolean;
   // Form props (only used in edit mode)
   register?: UseFormRegister<NutritionFormData>;
   control?: Control<NutritionFormData>;
@@ -35,10 +36,12 @@ export function NutritionLogDrawer({
   isSaving,
   handleSubmit,
   onSubmit,
-  onCancelEdit
+  onCancelEdit,
+  isReadOnly = false,
 }: NutritionLogDrawerProps) {
   const { t } = useTranslation();
-  const isEditMode = mode === 'edit';
+  const isEditMode = mode === 'edit' && !isReadOnly;
+  const canEdit = mode === 'edit' && !isReadOnly;
 
   if (!log && !isEditMode) return null;
 
@@ -91,10 +94,17 @@ export function NutritionLogDrawer({
             <X size={20} />
           </Button>
         </div>
+        {isReadOnly && (
+          <div className="px-6 pb-4">
+            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-amber-200">
+              Demo Read-Only
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         <div className="p-6">
-          {isEditMode && handleSubmit && onSubmit && register && control && errors ? (
+          {canEdit && handleSubmit && onSubmit && register && control && errors ? (
             <form onSubmit={(e) => { void handleSubmit(onSubmit)(e); }} className="space-y-6">
               <div className="space-y-4">
                 <Controller
@@ -162,6 +172,7 @@ export function NutritionLogDrawer({
                   variant="primary" 
                   type="submit" 
                   isLoading={isSaving}
+                  disabled={isReadOnly}
                   className="shadow-orange"
                 >
                   <Save size={18} className="mr-2" />

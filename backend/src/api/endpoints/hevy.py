@@ -11,6 +11,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from src.core.demo_access import WritableCurrentUser
 from src.services.auth import verify_token
 from src.core.deps import get_hevy_service, get_ai_trainer_brain, get_telegram_service
 from src.services.hevy_service import HevyService
@@ -73,7 +74,9 @@ async def validate_key(request: ValidateRequest, hevy_service: HevyServiceDep):
 
 
 @router.post("/config")
-def save_config(request: HevyConfigRequest, user_email: CurrentUser, brain: BrainDep):
+def save_config(
+    request: HevyConfigRequest, user_email: WritableCurrentUser, brain: BrainDep
+):
     """Updates Hevy integration configuration."""
     profile = brain.get_user_profile(user_email)
     if not profile:
@@ -133,7 +136,7 @@ async def get_workout_count(
 @router.post("/import")
 async def import_workouts(
     request: ImportRequest,
-    user_email: CurrentUser,
+    user_email: WritableCurrentUser,
     brain: BrainDep,
     hevy_service: HevyServiceDep,
 ):

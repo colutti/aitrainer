@@ -856,14 +856,19 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             settings.QDRANT_COLLECTION_NAME,
         )
 
-    async def add_memory(self, text: str, user_id: str) -> str:
+    async def add_memory(
+        self,
+        text: str,
+        user_id: str,
+        translations: dict[str, str] | None = None,
+    ) -> str:
         """Adds a memory to Qdrant."""
         if self._qdrant_client is None:
             raise HTTPException(status_code=500, detail="Qdrant not initialized")
 
         return service_add_memory(
             user_id=user_id,
-            text=text,
+            memory_data={"text": text, "translations": translations},
             qdrant_client=self._qdrant_client,
             collection_name=settings.QDRANT_COLLECTION_NAME,
         )

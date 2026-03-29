@@ -100,6 +100,10 @@ class MongoDatabase:
         """Retrieves user profile."""
         return self.users.get_profile(email)
 
+    def is_demo_user(self, email: str) -> bool:
+        """Returns whether the account is a protected demo user."""
+        return self.users.is_demo_user(email)
+
     def increment_user_message_counts(
         self, email: str, new_cycle_start: datetime | None = None
     ) -> None:

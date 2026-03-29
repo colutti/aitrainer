@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 export const HowItWorks = () => {
   const { t } = useTranslation();
 
-  const steps = t('landing.how.steps', { returnObjects: true }) as { title: string; description: string }[];
+  const steps = t('landing.how.steps', { returnObjects: true }) as { title: string; desc: string }[];
 
   return (
     <section id="como-funciona" className="py-20 px-4 sm:px-6 lg:px-8 border-t border-border">
@@ -28,7 +28,7 @@ export const HowItWorks = () => {
                 {item.title}
               </h3>
               <p className="text-text-secondary leading-relaxed">
-                {item.description}
+                {item.desc}
               </p>
               {idx < 2 && (
                 <div className="hidden md:block absolute top-12 -right-6 text-border">

@@ -14,6 +14,7 @@ from src.api.models.auth import FirebaseLoginRequest
 from src.api.models.user_profile import UserProfile, UserProfileInput
 from src.core.config import settings
 from src.core.deps import get_ai_trainer_brain, get_mongo_database
+from src.core.demo_access import WritableCurrentUser
 from src.core.limiter import limiter, RATE_LIMITING_ENABLED
 from src.core.logs import logger
 from src.services.auth import user_logout, oauth2_scheme, verify_token, create_token
@@ -160,6 +161,7 @@ def get_current_user(user_email: CurrentUser, brain: AITrainerBrainDep) -> dict:
         "photo_base64": user_profile.photo_base64,
         "onboarding_completed": getattr(user_profile, "onboarding_completed", True),
         "subscription_plan": user_profile.subscription_plan,
+        "is_demo": user_profile.is_demo,
         "custom_message_limit": user_profile.custom_message_limit,
         "custom_trial_days": user_profile.custom_trial_days,
         "messages_sent_today": user_profile.messages_sent_today,
@@ -173,7 +175,9 @@ def get_current_user(user_email: CurrentUser, brain: AITrainerBrainDep) -> dict:
 
 @router.post("/update_profile")
 def update_profile(
-    profile_data: UserProfileInput, user_email: CurrentUser, brain: AITrainerBrainDep
+    profile_data: UserProfileInput,
+    user_email: WritableCurrentUser,
+    brain: AITrainerBrainDep,
 ) -> JSONResponse:
     """
     Updates the user profile with the provided information.
@@ -238,7 +242,9 @@ class E2ETestLoginRequest(BaseModel):
 
 @router.post("/update_identity")
 def update_identity(
-    data: UpdateIdentityRequest, user_email: CurrentUser, brain: AITrainerBrainDep
+    data: UpdateIdentityRequest,
+    user_email: WritableCurrentUser,
+    brain: AITrainerBrainDep,
 ) -> JSONResponse:
     """
     Updates the user's display name and/or profile photo.
@@ -311,7 +317,7 @@ class TelegramNotificationSettings(BaseModel):
 @router.post("/telegram-notifications")
 def update_telegram_notifications(
     settings_data: TelegramNotificationSettings,
-    user_email: CurrentUser,
+    user_email: WritableCurrentUser,
     brain: AITrainerBrainDep,
 ) -> JSONResponse:
     """

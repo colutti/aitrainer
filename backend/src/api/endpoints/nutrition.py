@@ -8,6 +8,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, HTTPException, File, UploadFile
 from pydantic import BaseModel
 
+from src.core.demo_access import WritableCurrentUser
 from src.services.auth import verify_token
 from src.core.deps import get_mongo_database
 from src.core.logs import logger
@@ -128,7 +129,7 @@ class CreateNutritionLogRequest(BaseModel):
 
 @router.post("/log", response_model=NutritionWithId)
 def create_nutrition_log(
-    user_email: CurrentUser,
+    user_email: WritableCurrentUser,
     db: DatabaseDep,
     log_data: CreateNutritionLogRequest,
 ) -> NutritionWithId:
@@ -182,7 +183,7 @@ def create_nutrition_log(
 
 @router.post("/import/myfitnesspal", response_model=ImportResult)
 async def import_myfitnesspal(
-    user_email: CurrentUser, db: DatabaseDep, file: UploadFile = File(...)
+    user_email: WritableCurrentUser, db: DatabaseDep, file: UploadFile = File(...)
 ) -> ImportResult:
     """
     Import nutrition data from MyFitnessPal CSV export.
@@ -211,7 +212,9 @@ async def import_myfitnesspal(
 
 
 @router.delete("/{log_id}")
-def delete_nutrition(log_id: str, user_email: CurrentUser, db: DatabaseDep) -> dict:
+def delete_nutrition(
+    log_id: str, user_email: WritableCurrentUser, db: DatabaseDep
+) -> dict:
     """
     Deletes a specific nutrition log for the authenticated user.
     """

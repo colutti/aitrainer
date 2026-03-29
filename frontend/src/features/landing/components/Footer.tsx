@@ -13,13 +13,13 @@ export const Footer = () => {
         
         <div className="flex items-center gap-8">
           <a href="#" className="text-sm text-text-secondary hover:text-text-primary transition-colors">
-            Terms
+            {t('landing.footer.terms')}
           </a>
           <a href="#" className="text-sm text-text-secondary hover:text-text-primary transition-colors">
-            Privacy
+            {t('landing.footer.privacy')}
           </a>
           <a href="#" className="text-sm text-text-secondary hover:text-text-primary transition-colors">
-            Contact
+            {t('landing.footer.contact')}
           </a>
         </div>
         

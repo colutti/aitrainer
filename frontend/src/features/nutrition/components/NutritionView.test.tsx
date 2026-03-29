@@ -38,6 +38,7 @@ const mockProps = {
   onRegisterMeal: vi.fn(),
   onImport: vi.fn(),
   onDeleteLog: vi.fn(),
+  isReadOnly: false,
   pagination: {
     currentPage: 1,
     totalPages: 1,
@@ -71,5 +72,11 @@ describe('NutritionView', () => {
     const addBtn = screen.getByText(/nutrition\.register_meal/i);
     fireEvent.click(addBtn);
     expect(mockProps.onRegisterMeal).toHaveBeenCalled();
+  });
+
+  it('disables actions in read-only mode', () => {
+    render(<NutritionView {...mockProps} isReadOnly />);
+    expect(screen.getByRole('button', { name: /nutrition\.register_meal/i })).toBeDisabled();
+    expect(screen.queryByLabelText(/Delete/i)).not.toBeInTheDocument();
   });
 });

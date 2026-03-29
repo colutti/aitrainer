@@ -21,6 +21,7 @@ export interface SubscriptionViewProps {
   isInitialLoading: boolean;
   isPt: boolean;
   hasStripeCustomer: boolean;
+  isReadOnly?: boolean;
   onSubscribe: (planId: string) => void;
   onManage: (loadingKey?: string) => void;
 }
@@ -32,6 +33,7 @@ export function SubscriptionView({
   isInitialLoading,
   isPt,
   hasStripeCustomer,
+  isReadOnly = false,
   onSubscribe,
   onManage,
 }: SubscriptionViewProps) {
@@ -56,6 +58,11 @@ export function SubscriptionView({
 
   return (
     <div className={cn(PREMIUM_UI.animation.fadeIn, "space-y-10")}>
+      {isReadOnly && (
+        <PremiumCard className="p-4 border-amber-500/20 bg-amber-500/5 text-amber-200 text-[10px] font-black uppercase tracking-[0.2em]">
+          Demo Read-Only
+        </PremiumCard>
+      )}
       
       {/* HEADER SECTION */}
       <div className="flex items-center gap-4">
@@ -123,8 +130,9 @@ export function SubscriptionView({
               </ul>
 
               <button
-                disabled={isCurrent || planIdLower === 'free' || loading !== null}
+                disabled={isReadOnly || isCurrent || planIdLower === 'free' || loading !== null}
                 onClick={() => {
+                  if (isReadOnly) return;
                   if (currentPlan !== 'free' && planIdLower !== 'free' && hasStripeCustomer) {
                     onManage(planIdLower);
                   } else {
@@ -158,7 +166,7 @@ export function SubscriptionView({
       </div>
 
       {/* MANAGE SUBSCRIPTION CALLOUT */}
-      {currentPlan !== 'free' && (
+              {currentPlan !== 'free' && (
         <PremiumCard className="p-8 flex flex-col md:flex-row items-center justify-between gap-8 bg-gradient-to-r from-indigo-900/20 to-transparent border-indigo-500/20">
           <div className="flex items-center gap-5">
              <div className="w-14 h-14 bg-indigo-500/20 rounded-full flex items-center justify-center shrink-0 border border-indigo-500/30">
@@ -173,13 +181,13 @@ export function SubscriptionView({
           </div>
           
           <button 
-            onClick={() => { onManage(); }} 
-            disabled={loading !== null}
+            onClick={() => { if (!isReadOnly) onManage(); }} 
+            disabled={isReadOnly || loading !== null}
             data-testid="btn-manage-subscription"
             className="w-full md:w-auto px-8 py-4 rounded-full bg-white/5 border border-white/10 text-white font-black hover:bg-white/10 transition-all flex items-center justify-center gap-2"
           >
-            {loading === 'manage' && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-            {t('settings.subscription.manage_button')}
+            {loading === 'manage' && !isReadOnly && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+            {isReadOnly ? t('settings.subscription.read_only', 'Somente leitura') : t('settings.subscription.manage_button')}
           </button>
         </PremiumCard>
       )}

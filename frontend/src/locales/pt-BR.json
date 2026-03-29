@@ -252,7 +252,15 @@
       "muscle": "Massa Muscular",
       "trend": "Tendência de Peso"
     },
-    "weekly_days": ["S", "T", "Q", "Q", "S", "S", "D"],
+    "weekly_days": [
+      "S",
+      "T",
+      "Q",
+      "Q",
+      "S",
+      "S",
+      "D"
+    ],
     "streak": "Sequência",
     "streak_w": "semanas",
     "streak_d": "dias",
@@ -366,7 +374,8 @@
     "delete_confirm_btn": "Excluir",
     "delete_success": "Treino removido!",
     "delete_error": "Erro ao remover treino.",
-    "search_placeholder": "Buscar treinos..."
+    "search_placeholder": "Buscar treinos...",
+    "record_details": "Detalhes do Treino"
   },
   "nutrition": {
     "title": "Nutrição",
@@ -384,7 +393,15 @@
     "adherence_title": "Aderência",
     "stability_score": "Estabilidade",
     "stability_description": "Consistência calórica semanal",
-    "weekly_days": ["S", "T", "Q", "Q", "S", "S", "D"],
+    "weekly_days": [
+      "S",
+      "T",
+      "Q",
+      "Q",
+      "S",
+      "S",
+      "D"
+    ],
     "delete_confirm_title": "Excluir Refeição",
     "delete_confirm_message": "Deseja remover este registro de refeição?",
     "delete_confirm_btn": "Excluir",
@@ -450,11 +467,11 @@
       "description": "O único app que integra nutrição, treinos e metabolismo usando memória AI real.",
       "subtitle": "O Treinador IA que conhece seu corpo melhor que você.",
       "badge": "Nova Era Fitness",
-      "cta": "Começar Jornada",
+      "cta": "Começar agora",
       "daily_goal": "Meta Diária",
       "macro_protein": "Proteína",
       "macro_fat": "Gordura",
-      "macro_carbs": "Carbs"
+      "macro_carbs": "Carboidratos"
     },
     "nav": {
       "trainers": "Treinadores",
@@ -468,12 +485,14 @@
       "description": "Visualize sua evolução física e metabólica em tempo real.",
       "dashboard_title": "Dashboard",
       "chat_title": "Chat",
+      "active_now": "Ativa agora",
       "meta_calorie_title": "Calorias AI",
       "accuracy": "Precisão",
       "weekly_target_title": "Meta Semanal",
       "vs_previous": "vs anterior",
       "data_used": "Dados processados",
-      "days_count": "dias",
+      "days_count": "{{count}} dias",
+      "weight_30d": "Peso 30 dias",
       "meta_title": "Metabolismo",
       "dashboard_desc": "Sua central de comando corporal."
     },
@@ -481,33 +500,105 @@
       "title": "Como Funciona",
       "subtitle": "3 passos para sua melhor versão",
       "steps": [
-        { "title": "Conecte", "desc": "Sincronize com Hevy ou MFP." },
-        { "title": "Treine", "desc": "Registre suas atividades normalmente." },
-        { "title": "Evolua", "desc": "Receba insights baseados em dados reais." }
+        {
+          "title": "Conecte",
+          "desc": "Sincronize com Hevy ou MFP."
+        },
+        {
+          "title": "Treine",
+          "desc": "Registre suas atividades normalmente."
+        },
+        {
+          "title": "Evolua",
+          "desc": "Receba insights baseados em dados reais."
+        }
       ]
     },
     "diff": {
-      "title": "Differentiators",
+      "title": "Diferenciais",
       "subtitle": "Por que o FityQ é diferente?",
       "features": {
-        "meta": { "title": "Análise Metabólica", "description": "Cálculo real de TDEE e gasto diário." },
-        "vision": { "title": "Visão Computacional", "description": "Analise sua forma via vídeo." },
-        "trainers": { "title": "Personas Reais", "description": "Treinadores com personalidades distintas." },
-        "integrations": { "title": "Ecossistema Aberto", "description": "Conecta seus apps favoritos." },
-        "journey": { "title": "Jornada Adaptativa", "description": "Metas que mudam com seu progresso." },
-        "available": { "title": "Sempre Online", "description": "Seu treinador 24/7 no seu bolso." }
+        "meta": {
+          "title": "Análise Metabólica",
+          "description": "Cálculo real de TDEE e gasto diário."
+        },
+        "vision": {
+          "title": "Visão Computacional",
+          "description": "Analise sua execução via vídeo."
+        },
+        "trainers": {
+          "title": "Personas Reais",
+          "description": "Treinadores com personalidades distintas."
+        },
+        "integrations": {
+          "title": "Ecossistema Aberto",
+          "description": "Conecta seus apps favoritos."
+        },
+        "journey": {
+          "title": "Jornada Adaptativa",
+          "description": "Metas que mudam com seu progresso."
+        },
+        "available": {
+          "title": "Sempre Online",
+          "description": "Seu treinador 24/7 no seu bolso."
+        }
       }
     },
     "trainers": {
       "title": "Conheça seu Mentor",
       "description": "Escolha a personalidade que melhor se adapta ao seu estilo.",
-      "talk_with": "Falar com",
+      "talk_with": "Falar com {{name}}",
       "profiles": {
-        "atlas": { "tagline": "Performance Pura", "catchphrase": "Os números não mentem.", "specialties": "Biomecânica", "style": "Analítico" },
-        "luna": { "tagline": "Equilíbrio Total", "catchphrase": "Respire e supere.", "specialties": "Bem-estar", "style": "Empático" },
-        "sofia": { "tagline": "Ciência do Esporte", "catchphrase": "Baseado em evidências.", "specialties": "Fisiologia", "style": "Educativo" },
-        "sargento": { "tagline": "Disciplina Máxima", "catchphrase": "Sem desculpas!", "specialties": "Hardcore", "style": "Rigoroso" },
-        "gymbro": { "tagline": "Seu Parceiro", "catchphrase": "Bora pra cima!", "specialties": "Motivação", "style": "Energético" }
+        "atlas": {
+          "tagline": "Performance Pura",
+          "catchphrase": "Os números não mentem.",
+          "specialties": [
+            "Biomecânica",
+            "Força",
+            "Performance"
+          ],
+          "style": "Analítico"
+        },
+        "luna": {
+          "tagline": "Equilíbrio Total",
+          "catchphrase": "Respire e supere.",
+          "specialties": [
+            "Bem-estar",
+            "Recuperação",
+            "Constância"
+          ],
+          "style": "Empático"
+        },
+        "sofia": {
+          "tagline": "Ciência do Esporte",
+          "catchphrase": "Baseado em evidências.",
+          "specialties": [
+            "Fisiologia",
+            "Nutrição",
+            "Estratégia"
+          ],
+          "style": "Educativo"
+        },
+        "sargento": {
+          "tagline": "Disciplina Máxima",
+          "catchphrase": "Sem desculpas!",
+          "specialties": [
+            "Disciplina",
+            "Execução",
+            "Resultado"
+          ],
+          "style": "Rigoroso"
+        },
+        "gymbro": {
+          "tagline": "Seu Parceiro",
+          "catchphrase": "Bora pra cima!",
+          "specialties": [
+            "Motivação",
+            "Hipertrofia",
+            "Energia"
+          ],
+          "style": "Energético"
+        }
       }
     },
     "plans": {
@@ -516,17 +607,59 @@
       "total": "Total",
       "per_month": "/mês",
       "items": {
-        "free": { "name": "Free", "features": ["Chat Básico", "Log de Peso", "Dashboard"] },
-        "basic": { "name": "Basic", "features": ["Memória AI", "Integras", "Análise Macros"] },
-        "pro": { "name": "Pro", "features": ["Todos os Mentores", "TDEE Dinámico", "Suporte"] },
-        "premium": { "name": "Premium", "features": ["Visão Computacional", "Priority AI", "Full Pack"] }
+        "free": {
+          "name": "Free",
+          "description": "Entrada ideal para testar a plataforma e organizar sua rotina.",
+          "button": "Começar grátis",
+          "features": [
+            "Chat básico",
+            "Log de peso",
+            "Dashboard"
+          ]
+        },
+        "basic": {
+          "name": "Basic",
+          "description": "Memória AI, integrações e leitura mais útil da sua rotina diária.",
+          "button": "Assinar Basic",
+          "features": [
+            "Memória AI",
+            "Integrações",
+            "Análise de macros"
+          ]
+        },
+        "pro": {
+          "name": "Pro",
+          "description": "Mais contexto, mais personalização e acesso completo aos mentores.",
+          "button": "Assinar Pro",
+          "features": [
+            "Todos os mentores",
+            "TDEE dinâmico",
+            "Suporte prioritário"
+          ]
+        },
+        "premium": {
+          "name": "Premium",
+          "description": "Camada máxima de acompanhamento para quem quer usar todo o stack.",
+          "button": "Assinar Premium",
+          "features": [
+            "Visão computacional",
+            "Prioridade AI",
+            "Pacote completo"
+          ]
+        }
       }
     },
     "faq": {
       "title": "FAQ",
       "items": [
-        { "q": "Como funciona a memória AI?", "a": "A IA lembra de cada treino e refeição sua." },
-        { "q": "Posso cancelar a qualquer momento?", "a": "Sim, sem multas ou taxas." }
+        {
+          "q": "Como funciona a memória AI?",
+          "a": "A IA lembra de cada treino e refeição sua."
+        },
+        {
+          "q": "Posso cancelar a qualquer momento?",
+          "a": "Sim, sem multas ou taxas."
+        }
       ]
     },
     "cta": {
@@ -541,13 +674,30 @@
       "title": "Experimente agora",
       "subtitle": "Simule uma conversa com Sofia ou GymBro"
     },
+    "conversations": {
+      "sofia": {
+        "user_1": "Montei um plano bom para essa semana?",
+        "trainer_1": "Sim. Ajustei volume, descanso e distribuição de proteína com base na sua recuperação recente.",
+        "user_2": "O que eu priorizo hoje para bater a meta?",
+        "trainer_2": "Proteína no almoço, carbo antes do treino e um jantar leve para fechar o dia."
+      },
+      "gymbro": {
+        "user_1": "Meu treino de peito travou hoje.",
+        "trainer_1": "Então vamos subir a intensidade sem perder técnica. Menos ego, mais execução.",
+        "user_2": "Fecha um cardio curto depois?",
+        "trainer_2": "Fecha. Quinze minutos bem feitos já ajudam na recuperação e no déficit."
+      }
+    },
     "sticky_cta": "Começar agora",
     "subscription": {
       "payment_success_message": "Pagamento confirmado! Bem-vindo.",
       "payment_cancelled_message": "Pagamento cancelado."
     },
     "footer": {
-      "rights": "© 2026 FitYQ. Todos os direitos reservados."
+      "terms": "Termos",
+      "privacy": "Privacidade",
+      "contact": "Contato",
+      "rights": "© {{year}} FitYQ. Todos os direitos reservados."
     },
     "trust_badge_free": "Grátis por 7 dias",
     "trust_badge_card": "Sem cartão",
@@ -559,11 +709,21 @@
     },
     "integrations_section": {
       "title": "Ecossistema Aberto",
-      "subtitle": "Conecte seus dados favoritos",
-      "hevy_desc": "Sincronize seus treinos",
-      "mfp_desc": "Importe suas refeições",
-      "zepp_desc": "Dados de saúde e sono",
-      "coming_soon": "Em breve"
+      "subtitle": "Conecte e importe seus dados reais",
+      "hevy_desc": "Conecte sua conta e sincronize seus treinos automaticamente.",
+      "mfp_desc": "Importe seu histórico nutricional do MyFitnessPal.",
+      "zepp_desc": "Importe dados de saúde, peso e sono do Zepp Life.",
+      "items": {
+        "hevy": {
+          "status": "Sincronização disponível"
+        },
+        "mfp": {
+          "status": "Importação disponível"
+        },
+        "zepp": {
+          "status": "Importação disponível"
+        }
+      }
     }
   },
   "validation": {

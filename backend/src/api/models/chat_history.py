@@ -3,7 +3,7 @@ This module contains the models for chat history entries.
 """
 
 from datetime import datetime, MINYEAR
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from src.api.models.sender import Sender
 
 
@@ -18,6 +18,7 @@ class ChatHistory(BaseModel):
     """
 
     text: str
+    translations: dict[str, str] | None = Field(default=None)
     sender: Sender
     timestamp: str  # ISO formatted timestamp
     trainer_type: str | None = None  # Track which trainer was active
@@ -91,6 +92,7 @@ class ChatHistory(BaseModel):
             chat_history.append(
                 ChatHistory(
                     text=msg.content,
+                    translations=msg.additional_kwargs.get("translations"),
                     sender=sender,
                     timestamp=msg.additional_kwargs.get(
                         "timestamp", datetime(MINYEAR, 1, 1).isoformat()

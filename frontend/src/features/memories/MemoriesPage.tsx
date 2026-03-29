@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useConfirmation } from '../../shared/hooks/useConfirmation';
+import { useDemoMode } from '../../shared/hooks/useDemoMode';
 import { useMemoryStore } from '../../shared/hooks/useMemory';
 import { useNotificationStore } from '../../shared/hooks/useNotification';
 
@@ -29,12 +30,14 @@ export default function MemoriesPage() {
   const { confirm } = useConfirmation();
   const notify = useNotificationStore();
   const { t } = useTranslation();
+  const { isReadOnly: isDemoUser } = useDemoMode();
 
   useEffect(() => {
     void fetchMemories();
   }, [fetchMemories]);
 
   const handleDelete = async (memoryId: string) => {
+    if (isDemoUser) return;
     const isConfirmed = await confirm({
       title: t('memories.delete_confirm_title'),
       message: t('memories.delete_confirm_message'),
@@ -59,6 +62,7 @@ export default function MemoriesPage() {
       totalMemories={totalMemories}
       currentPage={currentPage}
       totalPages={totalPages}
+      isReadOnly={isDemoUser}
       onDelete={(id) => { void handleDelete(id); }}
       onPageChange={(page) => {
         if (page > currentPage) void nextPage();

@@ -5,6 +5,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from src.core.demo_access import WritableCurrentUser
 from src.services.auth import verify_token
 from src.core.deps import get_ai_trainer_brain
 from src.core.logs import logger
@@ -20,7 +21,7 @@ AITrainerBrainDep = Annotated[AITrainerBrain, Depends(get_ai_trainer_brain)]
 
 @router.post("", response_model=MemoryItem)
 async def create_memory(
-    user_email: CurrentUser,
+    user_email: WritableCurrentUser,
     brain: AITrainerBrainDep,
     memory_data: dict,
 ) -> MemoryItem:
@@ -78,6 +79,7 @@ async def list_memories(
             MemoryItem(
                 id=mem.get("id", ""),
                 memory=mem.get("memory", ""),
+                translations=mem.get("translations"),
                 created_at=mem.get("created_at"),
                 updated_at=mem.get("updated_at"),
             )
@@ -109,7 +111,7 @@ async def list_memories(
 
 @router.delete("/{memory_id}")
 def delete_memory(
-    memory_id: str, user_email: CurrentUser, brain: AITrainerBrainDep
+    memory_id: str, user_email: WritableCurrentUser, brain: AITrainerBrainDep
 ) -> dict:
     """
     Deletes a specific memory for the authenticated user.

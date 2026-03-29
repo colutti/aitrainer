@@ -77,7 +77,7 @@ describe('useNutritionStore', () => {
       expect(state.logs).toEqual(mockLogs);
       expect(state.total).toBe(2);
       expect(state.isLoading).toBe(false);
-      expect(httpClient).toHaveBeenCalledWith('/nutrition?page=1&limit=20');
+      expect(httpClient).toHaveBeenCalledWith('/nutrition/list?page=1&page_size=20');
       });
 
       it('should fetch logs with custom page and days', async () => {
@@ -91,7 +91,7 @@ describe('useNutritionStore', () => {
 
       await useNutritionStore.getState().fetchLogs(2, 7);
 
-      expect(httpClient).toHaveBeenCalledWith('/nutrition?page=2&limit=7');
+      expect(httpClient).toHaveBeenCalledWith('/nutrition/list?page=2&page_size=7');
       });
 
       it('should handle undefined response', async () => {
@@ -165,8 +165,8 @@ describe('useNutritionStore', () => {
       };
       await useNutritionStore.getState().createLog(newLog);
 
-      expect(httpClient).toHaveBeenNthCalledWith(1, '/nutrition', expect.anything());
-      expect(httpClient).toHaveBeenNthCalledWith(2, '/nutrition?page=1&limit=20');
+      expect(httpClient).toHaveBeenNthCalledWith(1, '/nutrition/log', expect.anything());
+      expect(httpClient).toHaveBeenNthCalledWith(2, '/nutrition/list?page=1&page_size=20');
       expect(httpClient).toHaveBeenNthCalledWith(3, '/nutrition/stats');
       
       const state = useNutritionStore.getState();

@@ -8,16 +8,19 @@ export const IntegrationLogos = () => {
     {
       name: 'Hevy',
       desc: t('landing.integrations_section.hevy_desc'),
+      status: t('landing.integrations_section.items.hevy.status'),
       icon: Activity,
     },
     {
       name: 'MyFitnessPal',
       desc: t('landing.integrations_section.mfp_desc'),
+      status: t('landing.integrations_section.items.mfp.status'),
       icon: Utensils,
     },
     {
       name: 'Zepp Life',
       desc: t('landing.integrations_section.zepp_desc'),
+      status: t('landing.integrations_section.items.zepp.status'),
       icon: Smartphone,
     },
   ];
@@ -50,7 +53,7 @@ export const IntegrationLogos = () => {
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary" />
                 <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">
-                  {t('landing.integrations_section.coming_soon')}
+                  {item.status}
                 </span>
               </div>
             </div>

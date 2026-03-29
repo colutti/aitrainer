@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useConfirmation } from '../../shared/hooks/useConfirmation';
+import { useDemoMode } from '../../shared/hooks/useDemoMode';
 import { useNotificationStore } from '../../shared/hooks/useNotification';
 import { useWorkoutStore } from '../../shared/hooks/useWorkout';
 import { type Workout } from '../../shared/types/workout';
@@ -27,6 +28,7 @@ export default function WorkoutsPage() {
   const { t } = useTranslation();
   const confirm = useConfirmation();
   const notify = useNotificationStore();
+  const { isReadOnly, blockIfReadOnly } = useDemoMode();
   
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -36,9 +38,12 @@ export default function WorkoutsPage() {
   }, [fetchWorkouts]);
 
   const handleRegisterWorkout = useCallback(() => {
+    if (blockIfReadOnly()) {
+      return;
+    }
     setSelectedWorkout(null);
     setIsDrawerOpen(true);
-  }, []);
+  }, [blockIfReadOnly]);
 
   const handleSelectWorkout = useCallback((workout: Workout) => {
     setSelectedWorkout(workout);
@@ -46,6 +51,9 @@ export default function WorkoutsPage() {
   }, []);
 
   const handleDeleteWorkout = useCallback((id: string) => {
+    if (blockIfReadOnly()) {
+      return;
+    }
     const run = async () => {
       const confirmed = await confirm.confirm({
         title: t('workouts.delete_confirm_title'),
@@ -63,7 +71,7 @@ export default function WorkoutsPage() {
       }
     };
     void run();
-  }, [confirm, deleteWorkout, notify, t]);
+  }, [blockIfReadOnly, confirm, deleteWorkout, notify, t]);
 
   // Map workout logs to workout objects for the view
   const workoutList: Workout[] = workouts.map(mapWorkoutLogToWorkout);
@@ -74,6 +82,7 @@ export default function WorkoutsPage() {
         workouts={workoutList}
         isLoading={isLoading}
         error={error}
+        isReadOnly={isReadOnly}
         onRegisterWorkout={handleRegisterWorkout}
         onDeleteWorkout={handleDeleteWorkout}
         onSelectWorkout={handleSelectWorkout}
@@ -83,6 +92,7 @@ export default function WorkoutsPage() {
       <WorkoutDrawer 
         workout={selectedWorkout}
         isOpen={isDrawerOpen}
+        isReadOnly={isReadOnly}
         onClose={() => { setIsDrawerOpen(false); setSelectedWorkout(null); }}
       />
     </>

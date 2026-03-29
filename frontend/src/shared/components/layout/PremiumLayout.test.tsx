@@ -50,4 +50,36 @@ describe('PremiumLayout', () => {
     const initials = screen.getAllByText('A');
     expect(initials.length).toBeGreaterThan(0);
   });
+
+  it('shows demo badge and hides quick actions for demo users', () => {
+    (useAuthStore as any).mockReturnValue({
+      userInfo: { name: 'Demo User', email: 'demo@fityq.it', is_demo: true },
+    });
+
+    render(
+      <MemoryRouter>
+        <PremiumLayout />
+      </MemoryRouter>
+    );
+
+    expect(screen.getAllByText(/Demo Read-Only/i).length).toBeGreaterThan(0);
+    expect(screen.queryByTestId('quick-add-fab')).not.toBeInTheDocument();
+  });
+
+  it('renders logout action in the top navigation', () => {
+    const logout = vi.fn();
+    (useAuthStore as any).mockReturnValue({
+      userInfo: { name: 'Logout User', email: 'logout@fityq.it' },
+      logout,
+    });
+
+    render(
+      <MemoryRouter>
+        <PremiumLayout />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId('desktop-logout')).toBeInTheDocument();
+    expect(screen.getByTestId('mobile-logout')).toBeInTheDocument();
+  });
 });

@@ -9,15 +9,27 @@ import pytest
 
 from src.api.main import app
 from src.services.auth import verify_token
-from src.core.deps import get_ai_trainer_brain
+from src.core.deps import get_ai_trainer_brain, get_mongo_database
 from src.api.models.sender import Sender
 from src.api.models.chat_history import ChatHistory
+from src.api.models.user_profile import UserProfile
 
 
 client = TestClient(app)
 
 
 # Fixtures
+@pytest.fixture(autouse=True)
+def clear_dependency_overrides():
+    app.dependency_overrides = {}
+    mock_db = MagicMock()
+    mock_db.is_demo_user.return_value = False
+    mock_db.get_user_profile.return_value = None
+    app.dependency_overrides[get_mongo_database] = lambda: mock_db
+    yield
+    app.dependency_overrides = {}
+
+
 @pytest.fixture
 def mock_user_email():
     return "test@example.com"
@@ -257,5 +269,36 @@ def test_message_ai_special_characters():
     assert response.status_code == 200
     call_args = mock_brain.send_message_ai.call_args
     assert call_args[1]["user_input"] == payload["user_message"]
+
+    app.dependency_overrides = {}
+
+
+def test_message_ai_rejects_demo_user():
+    """Test demo users cannot send new messages."""
+    app.dependency_overrides[verify_token] = lambda: "demo@example.com"
+    mock_brain = MagicMock()
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    mock_db = MagicMock()
+    mock_db.get_user_profile.return_value = UserProfile(
+        email="demo@example.com",
+        gender="Masculino",
+        age=30,
+        weight=75.0,
+        height=180,
+        goal_type="maintain",
+        weekly_rate=0.5,
+        is_demo=True,
+    )
+    app.dependency_overrides[get_mongo_database] = lambda: mock_db
+
+    response = client.post(
+        "/message",
+        json={"user_message": "Hello"},
+        headers={"Authorization": "Bearer demo_token"},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "demo_read_only"
+    mock_brain.send_message_ai.assert_not_called()
 
     app.dependency_overrides = {}

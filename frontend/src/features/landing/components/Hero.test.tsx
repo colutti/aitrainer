@@ -25,7 +25,7 @@ describe('Hero Component', () => {
   it('should navigate to register when CTA clicked', () => {
     render(<Hero />);
     
-    const ctaBtn = screen.getByText(/Começar Jornada/i);
+    const ctaBtn = screen.getByText(/Começar agora/i);
     fireEvent.click(ctaBtn);
     expect(mockNavigate).toHaveBeenCalledWith('/login?mode=register');
   });

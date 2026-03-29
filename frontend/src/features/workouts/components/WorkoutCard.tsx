@@ -6,6 +6,7 @@ import { formatDate } from '../../../shared/utils/format-date';
 
 interface WorkoutCardProps {
   workout: Workout;
+  isReadOnly?: boolean;
   onDelete?: (id: string) => void;
   onClick?: (workout: Workout) => void;
 }
@@ -15,7 +16,7 @@ interface WorkoutCardProps {
  * 
  * Displays a summary of a workout session with premium Glassmorphism aesthetic.
  */
-export function WorkoutCard({ workout, onDelete, onClick }: WorkoutCardProps) {
+export function WorkoutCard({ workout, isReadOnly = false, onDelete, onClick }: WorkoutCardProps) {
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onDelete) {
@@ -31,7 +32,7 @@ export function WorkoutCard({ workout, onDelete, onClick }: WorkoutCardProps) {
 
   return (
     <PremiumCard 
-      onClick={() => onClick?.(workout)}
+      onClick={() => { onClick?.(workout); }}
       data-testid="workout-card"
       className="p-6 md:p-8 cursor-pointer group flex flex-col justify-between min-h-[180px]"
     >
@@ -52,7 +53,7 @@ export function WorkoutCard({ workout, onDelete, onClick }: WorkoutCardProps) {
         </div>
         
         <div className="flex items-center gap-2">
-          {onDelete && (
+          {!isReadOnly && onDelete && (
             <button 
               onClick={handleDelete}
               data-testid="btn-delete-workout"

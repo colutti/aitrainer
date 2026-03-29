@@ -7,6 +7,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from fastapi.responses import StreamingResponse
 
+from src.core.demo_access import WritableCurrentUser
 from src.services.auth import verify_token
 from src.core.deps import get_ai_trainer_brain
 from src.api.models.message import MessageRequest
@@ -41,7 +42,7 @@ def get_history(
 async def message_ai(
     message: MessageRequest,
     request: Request,
-    user_email: CurrentUser,
+    user_email: WritableCurrentUser,
     brain: AITrainerBrainDep,
     background_tasks: BackgroundTasks,
 ) -> StreamingResponse:

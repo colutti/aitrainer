@@ -2,6 +2,7 @@ import { Home, Scale, Dumbbell, Settings, MessageCircle, Flame } from 'lucide-re
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 
 import { useAuthStore } from '../../hooks/useAuth';
+import { useDemoMode } from '../../hooks/useDemoMode';
 import { useInactivityLogout } from '../../hooks/useInactivityLogout';
 import { useTokenRefresh } from '../../hooks/useTokenRefresh';
 import { cn } from '../../utils/cn';
@@ -15,7 +16,8 @@ import { QuickAddFAB } from '../ui/QuickAddFAB';
  * Integrated Language Switcher and Logo.
  */
 export function PremiumLayout() {
-  const { userInfo } = useAuthStore();
+  const { userInfo, logout } = useAuthStore();
+  const { isReadOnly: isDemoUser } = useDemoMode();
   const location = useLocation();
   
   // Initialize session management hooks
@@ -24,7 +26,6 @@ export function PremiumLayout() {
 
   const isChatPage = location.pathname.includes('/chat');
   const isSubscriptionPage = location.pathname.includes('/settings/subscription');
-
   // Helper to check if a path is active (including sub-routes)
   const isPathActive = (path: string) => {
     if (path === '/dashboard') return location.pathname === '/dashboard';
@@ -32,7 +33,7 @@ export function PremiumLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-zinc-50 font-sans selection:bg-white/20 relative overflow-hidden">
+    <div className="h-[100dvh] bg-[#09090b] text-zinc-50 font-sans selection:bg-white/20 relative overflow-hidden flex flex-col">
       
       {/* --- EFEITOS DE FUNDO (AMBIENT LIGHT) --- */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[400px] bg-indigo-500/5 blur-[150px] pointer-events-none rounded-full" />
@@ -45,6 +46,11 @@ export function PremiumLayout() {
             <img src="/logo_icon.png" alt="FityQ Logo" className="w-full h-full object-contain" />
           </div>
           <span className="font-black tracking-widest uppercase text-base bg-gradient-to-r from-white to-zinc-500 bg-clip-text text-transparent">FityQ</span>
+          {isDemoUser && (
+            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-amber-300 border border-amber-500/30 bg-amber-500/10">
+              Demo Read-Only
+            </span>
+          )}
         </div>
         
         <div className="flex-1 flex justify-center">
@@ -77,6 +83,14 @@ export function PremiumLayout() {
           <NavLink to="/dashboard/settings" data-testid="desktop-nav-settings" className={({ isActive }) => cn("p-2.5 rounded-xl transition-all border", isActive ? "bg-white/10 border-white/10 text-white" : "border-transparent text-zinc-400 hover:bg-white/5 hover:text-zinc-200")}>
             <Settings size={20} />
           </NavLink>
+          <button
+            type="button"
+            data-testid="desktop-logout"
+            onClick={logout}
+            className="px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-sm font-bold tracking-wide text-zinc-300 transition-all hover:bg-white/10 hover:text-white"
+          >
+            Logout
+          </button>
           <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-white/10 overflow-hidden flex items-center justify-center shadow-inner">
             {userInfo?.photo_base64 ? (
               <img src={userInfo.photo_base64} alt="Profile" className="w-full h-full object-cover" />
@@ -96,6 +110,7 @@ export function PremiumLayout() {
           <div>
             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">FityQ Premium</p>
             <p className="text-sm font-black text-white">{userInfo?.name.split(' ')[0] ?? 'Atleta'}</p>
+            {isDemoUser && <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-300">Demo Read-Only</p>}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -107,12 +122,21 @@ export function PremiumLayout() {
           <NavLink to="/dashboard/settings" data-testid="nav-settings" className="p-3 -m-1 text-zinc-400 hover:text-white relative z-50">
             <Settings size={22} />
           </NavLink>
+          <button
+            type="button"
+            data-testid="mobile-logout"
+            onClick={logout}
+            className="p-3 -m-1 text-zinc-400 hover:text-white relative z-50"
+            aria-label="Logout"
+          >
+            Logout
+          </button>
         </div>
       </header>
 
       {/* --- CONTEÚDO PRINCIPAL (Expanded for 4K) --- */}
-      <main className="pb-32 pt-2 md:pt-28 min-h-screen">
-        <div className="max-w-[1600px] mx-auto px-4 md:px-12">
+      <main className="pb-32 pt-2 md:pt-28 min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="max-w-[1600px] mx-auto px-4 md:px-12 h-full min-h-0">
           <Outlet />
         </div>
       </main>
@@ -139,7 +163,7 @@ export function PremiumLayout() {
       </nav>
 
       {/* --- GLOBAL SYSTEM COMPONENTS --- */}
-      {!isSubscriptionPage && !isChatPage && <QuickAddFAB />}
+      {!isSubscriptionPage && !isChatPage && !isDemoUser && <QuickAddFAB />}
 
     </div>
   );

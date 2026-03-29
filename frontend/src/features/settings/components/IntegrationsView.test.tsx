@@ -44,6 +44,8 @@ const mockProps = {
     onUpload: vi.fn(),
     importing: false,
   }
+  ,
+  isReadOnly: false
 };
 
 describe('IntegrationsView', () => {
@@ -70,5 +72,12 @@ describe('IntegrationsView', () => {
     const checkbox = screen.getByRole('checkbox');
     fireEvent.click(checkbox);
     expect(mockProps.telegram.onToggleNotify).toHaveBeenCalled();
+  });
+
+  it('disables integration controls in read-only mode', () => {
+    render(<IntegrationsView {...mockProps} isReadOnly />);
+    expect(screen.getByText('Demo Read-Only')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'settings.integrations.hevy.sync_button' })).toBeDisabled();
+    expect(screen.getByRole('checkbox')).toBeDisabled();
   });
 });

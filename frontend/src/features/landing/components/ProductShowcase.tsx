@@ -77,13 +77,13 @@ export const ProductShowcase = () => {
             <div className="flex-1 rounded-lg border border-border bg-light-bg p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border">
                 <img
-                  src="/assets/avatars/atlas.png"
-                  alt="Atlas"
+                  src="/assets/avatars/sofia.png"
+                  alt="Sofia"
                   className="w-10 h-10 rounded object-cover border border-border"
                 />
                 <div>
-                  <p className="font-bold text-sm text-text-primary">Atlas Prime</p>
-                  <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold">Active Now</p>
+                  <p className="font-bold text-sm text-text-primary">Dra. Sofia Pulse</p>
+                  <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold">{t('landing.showcase.active_now')}</p>
                 </div>
               </div>
 

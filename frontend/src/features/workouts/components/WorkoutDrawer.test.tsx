@@ -132,4 +132,15 @@ describe('WorkoutDrawer', () => {
       expect(defaultProps.onClose).toHaveBeenCalled();
     });
   });
+
+  it('disables form controls in read-only mode', () => {
+    act(() => {
+      render(<WorkoutDrawer {...defaultProps} isReadOnly />);
+    });
+
+    expect(screen.getByText(/Demo Read-Only/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Tipo de Treino/i)).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Salvar treino/i })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /Adicionar exercício/i })).toBeDisabled();
+  });
 });

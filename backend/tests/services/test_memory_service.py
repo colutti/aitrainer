@@ -48,7 +48,13 @@ def test_add_memory_builds_point_and_returns_memory_id():
         mock_datetime.utcnow.return_value.isoformat.return_value = (
             "2026-03-27T10:00:00"
         )
-        memory_id = add_memory("u-1", "hydrate more", client, "memories", "habit")
+        memory_id = add_memory(
+            "u-1",
+            {"text": "hydrate more", "translations": {"pt-BR": "hidrate mais"}},
+            client,
+            "memories",
+            "habit",
+        )
 
     assert memory_id == "fixed-id"
     client.upsert.assert_called_once()

@@ -51,7 +51,7 @@ export function Button({
   return (
     <button
       className={cn(buttonVariants({ variant, size, fullWidth }), className)}
-      disabled={isLoading ?? disabled ?? false}
+      disabled={Boolean(isLoading) || Boolean(disabled)}
       {...props}
     >
       {isLoading ? (

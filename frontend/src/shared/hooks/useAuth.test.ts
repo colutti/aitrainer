@@ -77,6 +77,44 @@ describe('useAuth', () => {
   });
 
   describe('login', () => {
+    it('should bypass firebase for the local demo account', async () => {
+      const mockLoginResponse = { token: 'demo-token-123' };
+      const mockUserApiData = {
+        email: 'demo@fityq.it',
+        role: 'user',
+        name: 'Ethan Parker',
+        onboarding_completed: true,
+        has_stripe_customer: false,
+        is_demo: true,
+      };
+
+      vi.mocked(httpClient).mockResolvedValueOnce(mockLoginResponse);
+      vi.mocked(httpClient).mockResolvedValueOnce(mockUserApiData);
+
+      const { result } = renderHook(() => useAuthStore());
+
+      await act(async () => {
+        await result.current.login('demo@fityq.it', 'anything-here');
+      });
+
+      expect(signInWithEmailAndPassword).not.toHaveBeenCalled();
+      expect(httpClient).toHaveBeenNthCalledWith(1, '/user/e2e-login', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: 'demo@fityq.it',
+          display_name: 'Ethan Parker',
+        }),
+      });
+      expect(httpClient).toHaveBeenNthCalledWith(2, '/user/me');
+      expect(localStorage.getItem('auth_token')).toBe('demo-token-123');
+      expect(result.current.isAuthenticated).toBe(true);
+      expect(result.current.userInfo).toEqual(expect.objectContaining({
+        email: 'demo@fityq.it',
+        name: 'Ethan Parker',
+        is_demo: true,
+      }));
+    });
+
     it('should login with valid credentials and set token', async () => {
       const mockLoginResponse = { token: 'test-token-123' };
       const mockUserApiData = {
@@ -119,7 +157,7 @@ describe('useAuth', () => {
 
       expect(localStorage.getItem('auth_token')).toBe('test-token-123');
       expect(result.current.isAuthenticated).toBe(true);
-      expect(result.current.userInfo).toEqual(expectedUserInfo);
+      expect(result.current.userInfo).toEqual(expect.objectContaining(expectedUserInfo));
     });
 
     it('should throw error with invalid credentials', async () => {
@@ -205,7 +243,7 @@ describe('useAuth', () => {
       });
 
       expect(httpClient).toHaveBeenCalledWith('/user/me');
-      expect(result.current.userInfo).toEqual(expectedUserInfo);
+      expect(result.current.userInfo).toEqual(expect.objectContaining(expectedUserInfo));
       expect(result.current.isAdmin).toBe(true);
     });
 
@@ -216,6 +254,7 @@ describe('useAuth', () => {
         name: 'Regular User',
         onboarding_completed: true,
         has_stripe_customer: false,
+        is_demo: true,
       };
       
       const expectedUserInfo = {
@@ -224,6 +263,7 @@ describe('useAuth', () => {
         is_admin: false,
         onboarding_completed: true,
         has_stripe_customer: false,
+        is_demo: true,
       };
 
       vi.mocked(httpClient).mockResolvedValueOnce(mockUserApiData);
@@ -234,7 +274,7 @@ describe('useAuth', () => {
         await result.current.loadUserInfo();
       });
 
-      expect(result.current.userInfo).toEqual(expectedUserInfo);
+      expect(result.current.userInfo).toEqual(expect.objectContaining(expectedUserInfo));
       expect(result.current.isAdmin).toBe(false);
     });
 
@@ -262,7 +302,7 @@ describe('useAuth', () => {
           await result.current.loadUserInfo();
         });
   
-        expect(result.current.userInfo).toEqual(expectedUserInfo);
+        expect(result.current.userInfo).toEqual(expect.objectContaining(expectedUserInfo));
     });
 
     it('should handle error when loading user info fails', async () => {
@@ -339,7 +379,7 @@ describe('useAuth', () => {
 
       await waitFor(() => {
         expect(result.current.isAuthenticated).toBe(true);
-        expect(result.current.userInfo).toEqual(expectedUserInfo);
+        expect(result.current.userInfo).toEqual(expect.objectContaining(expectedUserInfo));
       });
     });
 

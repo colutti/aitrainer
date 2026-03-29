@@ -6,6 +6,7 @@ import { formatDate } from '../../../shared/utils/format-date';
 
 interface NutritionLogCardProps {
   log: NutritionLog;
+  isReadOnly?: boolean;
   onDelete?: (id: string) => void;
   onEdit?: (log: NutritionLog) => void;
   onClick?: (log: NutritionLog) => void;
@@ -16,7 +17,7 @@ interface NutritionLogCardProps {
  * 
  * Displays a summary of a nutrition log entry with premium Glassmorphism aesthetic.
  */
-export function NutritionLogCard({ log, onDelete, onEdit, onClick }: NutritionLogCardProps) {
+export function NutritionLogCard({ log, isReadOnly = false, onDelete, onEdit, onClick }: NutritionLogCardProps) {
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onDelete) {
@@ -33,7 +34,7 @@ export function NutritionLogCard({ log, onDelete, onEdit, onClick }: NutritionLo
 
   return (
     <PremiumCard 
-      onClick={() => { onClick?.(log); }}
+      onClick={() => { if (!isReadOnly) onClick?.(log); }}
       data-testid="nutrition-log-card"
       className="p-4 md:p-5 cursor-pointer group flex items-center gap-4 w-full"
     >
@@ -71,7 +72,7 @@ export function NutritionLogCard({ log, onDelete, onEdit, onClick }: NutritionLo
         
         {/* Actions */}
         <div className="md:col-span-3 flex justify-end items-center gap-2">
-            {onEdit && (
+            {!isReadOnly && onEdit && (
               <button 
                 onClick={handleEdit}
                 className="p-2.5 rounded-full bg-white/5 text-zinc-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-white/10 hover:text-white"
@@ -80,7 +81,7 @@ export function NutritionLogCard({ log, onDelete, onEdit, onClick }: NutritionLo
                 <Edit2 size={16} />
               </button>
             )}
-            {onDelete && (
+            {!isReadOnly && onDelete && (
               <button 
                 onClick={handleDelete}
                 data-testid="btn-delete-nutrition"

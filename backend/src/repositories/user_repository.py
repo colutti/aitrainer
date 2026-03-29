@@ -59,6 +59,11 @@ class UserRepository(BaseRepository):
         self.logger.debug("User profile retrieved for email: %s", email)
         return UserProfile(**user_data)
 
+    def is_demo_user(self, email: str) -> bool:
+        """Returns whether the user is a protected demo account."""
+        user_data = self.collection.find_one({"email": email}, {"is_demo": 1})
+        return bool(user_data and user_data.get("is_demo"))
+
     def find_by_stripe_customer_id(self, customer_id: str) -> UserProfile | None:
         """
         Retrieves a user profile by Stripe Customer ID.

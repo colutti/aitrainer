@@ -8,6 +8,7 @@ import { cn } from '../../../shared/utils/cn';
 
 interface MessageBubbleProps {
   message: ChatMessage;
+  resolveText?: (message: ChatMessage) => string;
   trainerId?: string;
   userPhoto?: string;
   userName?: string;
@@ -19,10 +20,11 @@ interface MessageBubbleProps {
  * Renders an individual chat message with premium glassmorphism aesthetic,
  * Markdown support, and smooth Framer Motion animations.
  */
-export function MessageBubble({ message, trainerId, userPhoto, userName }: MessageBubbleProps) {
+export function MessageBubble({ message, resolveText, trainerId, userPhoto, userName }: MessageBubbleProps) {
   const { t } = useTranslation();
   const isTrainer = message.sender === 'Trainer';
-  const isEmpty = !message.text || message.text.trim() === '';
+  const displayText = resolveText ? resolveText(message) : message.text;
+  const isEmpty = !displayText || displayText.trim() === '';
 
   const containerVariants = {
     hidden: { opacity: 0, y: 10, scale: 0.95 },
@@ -87,7 +89,7 @@ export function MessageBubble({ message, trainerId, userPhoto, userName }: Messa
                  <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                </div>
              ) : (
-               <ReactMarkdown>{message.text}</ReactMarkdown>
+               <ReactMarkdown>{displayText}</ReactMarkdown>
              )}
           </div>
         </div>

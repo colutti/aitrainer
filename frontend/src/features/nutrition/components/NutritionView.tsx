@@ -24,6 +24,7 @@ export interface NutritionViewProps {
   logs: NutritionLog[];
   stats: NutritionStats | null;
   isLoading: boolean;
+  isReadOnly?: boolean;
   onRegisterMeal: () => void;
   onImport: () => void;
   onDeleteLog: (id: string) => void;
@@ -38,6 +39,7 @@ export function NutritionView({
   logs,
   stats,
   isLoading,
+  isReadOnly = false,
   onRegisterMeal,
   onImport,
   onDeleteLog,
@@ -85,6 +87,7 @@ export function NutritionView({
         <div className="flex gap-3">
           <button 
             onClick={onImport}
+            disabled={isReadOnly}
             className="flex items-center gap-2 px-5 py-3 rounded-full bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all"
           >
             <Upload size={18} />
@@ -92,6 +95,7 @@ export function NutritionView({
           </button>
           <button 
             onClick={onRegisterMeal}
+            disabled={isReadOnly}
             className="flex items-center gap-2 px-6 py-3 rounded-full bg-white text-black font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/10"
           >
             <Plus size={20} strokeWidth={3} />
@@ -189,7 +193,7 @@ export function NutritionView({
            
            <div className="space-y-3">
               {logs.map(log => (
-                <NutritionLogCard key={log.id} log={log} onDelete={onDeleteLog} />
+              <NutritionLogCard key={log.id} log={log} isReadOnly={isReadOnly} onDelete={onDeleteLog} />
               ))}
               {logs.length === 0 && !isLoading && (
                 <PremiumCard className="p-12 text-center opacity-40">

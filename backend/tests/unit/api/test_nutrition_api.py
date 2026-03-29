@@ -14,9 +14,11 @@ from src.core.deps import get_mongo_database
 from src.api.models.nutrition_log import NutritionWithId
 from src.api.models.nutrition_stats import NutritionStats, DailyMacros
 from src.api.models.import_result import ImportResult
+from src.api.models.user_profile import UserProfile
 
 class TestNutritionApi(unittest.TestCase):
     def setUp(self):
+        app.dependency_overrides = {}
         self.client = TestClient(app)
 
     def tearDown(self):
@@ -181,6 +183,38 @@ class TestNutritionApi(unittest.TestCase):
 
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.json()["created"], 5)
+
+    def test_create_nutrition_log_rejects_demo_user(self):
+        """Demo users cannot create nutrition logs."""
+        app.dependency_overrides[verify_token] = lambda: "demo@test.com"
+        mock_db = MagicMock()
+        mock_db.get_user_profile.return_value = UserProfile(
+            email="demo@test.com",
+            gender="Masculino",
+            age=30,
+            weight=75.0,
+            height=180,
+            goal_type="maintain",
+            weekly_rate=0.5,
+            is_demo=True,
+        )
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
+
+        response = self.client.post(
+            "/nutrition/log",
+            json={
+                "date": "2024-01-01T00:00:00",
+                "calories": 2000,
+                "protein_grams": 150,
+                "carbs_grams": 200,
+                "fat_grams": 60,
+            },
+            headers={"Authorization": "Bearer token"},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["detail"], "demo_read_only")
+        mock_db.save_nutrition_log.assert_not_called()
 
 if __name__ == "__main__":
     unittest.main()

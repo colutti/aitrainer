@@ -24,6 +24,7 @@ describe('UserProfileView', () => {
     isLoading: false,
     isSaving: false,
     photoBase64: null,
+    isReadOnly: false,
     onSubmit: vi.fn().mockResolvedValue(undefined),
     onPhotoUpload: vi.fn().mockResolvedValue(undefined),
   };
@@ -75,5 +76,13 @@ describe('UserProfileView', () => {
     await waitFor(() => {
       expect(onSubmit).toHaveBeenCalled();
     });
+  });
+
+  it('should disable editing controls in read-only mode', () => {
+    render(<UserProfileView {...mockProps} isReadOnly />);
+
+    expect(screen.getByTestId('profile-name')).toBeDisabled();
+    expect(screen.getByTestId('profile-age')).toBeDisabled();
+    expect(screen.getByText('Demo Read-Only')).toBeInTheDocument();
   });
 });

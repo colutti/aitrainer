@@ -23,6 +23,7 @@ export interface MemoriesViewProps {
   totalMemories: number;
   currentPage: number;
   totalPages: number;
+  isReadOnly?: boolean;
   onDelete: (id: string) => void;
   onPageChange: (page: number) => void;
 }
@@ -33,10 +34,30 @@ export function MemoriesView({
   totalMemories,
   currentPage,
   totalPages,
+  isReadOnly = false,
   onDelete,
   onPageChange,
 }: MemoriesViewProps) {
   const { t, i18n } = useTranslation();
+  const locale = i18n.language.toLowerCase();
+  const localeKey = locale.startsWith('pt')
+    ? 'pt-BR'
+    : locale.startsWith('es')
+      ? 'es-ES'
+      : 'en-US';
+
+  const getMemoryText = (memory: typeof memories[number]) => {
+    const translations = memory.translations;
+    const localeTranslation = translations?.[localeKey];
+    if (localeTranslation) {
+      return localeTranslation;
+    }
+    const fallbackTranslation = translations?.[locale] ?? translations?.[locale.slice(0, 2)];
+    if (fallbackTranslation) {
+      return fallbackTranslation;
+    }
+    return memory.memory;
+  };
 
   if (isLoading && memories.length === 0) {
     return (
@@ -54,6 +75,11 @@ export function MemoriesView({
 
   return (
     <div className={cn(PREMIUM_UI.animation.fadeIn, "space-y-10 pb-20")}>
+      {isReadOnly && (
+        <PremiumCard className="p-4 border-amber-500/20 bg-amber-500/5 text-amber-200 text-[10px] font-black uppercase tracking-[0.2em]">
+          Demo Read-Only
+        </PremiumCard>
+      )}
       
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -110,7 +136,7 @@ export function MemoriesView({
                 </div>
                 
                 <div className="flex-1 space-y-3 min-w-0">
-                  <p className="text-white text-base font-medium leading-relaxed">{m.memory}</p>
+                  <p className="text-white text-base font-medium leading-relaxed">{getMemoryText(m)}</p>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-black uppercase tracking-widest">
                       <Calendar size={12} />
@@ -125,11 +151,13 @@ export function MemoriesView({
                 <button 
                   onClick={(e) => { 
                     e.stopPropagation();
+                    if (isReadOnly) return;
                     onDelete(m.id); 
                   }}
                   aria-label="shared.delete"
                   data-testid="btn-delete-memory"
-                  className="shrink-0 p-2.5 rounded-full bg-red-500/5 text-red-500 md:opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/20"
+                  disabled={isReadOnly}
+                  className="shrink-0 p-2.5 rounded-full bg-red-500/5 text-red-500 md:opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/20 disabled:opacity-30 disabled:hover:bg-red-500/5"
                   title={t('shared.delete')}
                 >
                   <Trash2 size={18} />
@@ -145,7 +173,7 @@ export function MemoriesView({
         <div className="flex items-center justify-center gap-6 pt-6 border-t border-white/5">
           <button
             onClick={() => { onPageChange(currentPage - 1); }}
-            disabled={currentPage === 1 || isLoading}
+            disabled={isReadOnly || currentPage === 1 || isLoading}
             className="flex items-center gap-2 px-6 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-20 transition-all"
           >
             <ChevronLeft size={16} />
@@ -158,7 +186,7 @@ export function MemoriesView({
 
           <button
             onClick={() => { onPageChange(currentPage + 1); }}
-            disabled={currentPage === totalPages || isLoading}
+            disabled={isReadOnly || currentPage === totalPages || isLoading}
             className="flex items-center gap-2 px-6 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-20 transition-all"
           >
             {t('memories.next')}

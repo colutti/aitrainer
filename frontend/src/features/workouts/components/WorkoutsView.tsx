@@ -14,6 +14,7 @@ interface WorkoutsViewProps {
   workouts: Workout[];
   isLoading: boolean;
   error?: unknown;
+  isReadOnly?: boolean;
   onRegisterWorkout: () => void;
   onDeleteWorkout: (id: string) => void;
   onSelectWorkout: (workout: Workout) => void;
@@ -29,6 +30,7 @@ export function WorkoutsView({
   workouts, 
   isLoading, 
   error,
+  isReadOnly = false,
   onRegisterWorkout, 
   onDeleteWorkout,
   onSelectWorkout,
@@ -52,7 +54,8 @@ export function WorkoutsView({
         action={{
           label: t('workouts.register_workout'),
           icon: <Plus size={20} strokeWidth={3} />,
-          onClick: onRegisterWorkout
+          onClick: onRegisterWorkout,
+          disabled: isReadOnly,
         }}
       />
 
@@ -74,6 +77,7 @@ export function WorkoutsView({
             <WorkoutCard 
               key={workout.id} 
               workout={workout} 
+              isReadOnly={isReadOnly}
               onDelete={onDeleteWorkout}
               onClick={onSelectWorkout}
             />

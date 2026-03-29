@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useAuthStore } from '../../../shared/hooks/useAuth';
+import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
 import { useSettingsStore } from '../../../shared/hooks/useSettings';
 
@@ -26,6 +27,7 @@ export default function TrainerSettingsPage() {
   } = useSettingsStore();
   
   const notify = useNotificationStore();
+  const { isDemoUser } = useDemoMode();
   const { userInfo } = useAuthStore();
   
   const [selectedTrainerId, setSelectedTrainerId] = useState<string>('');
@@ -45,6 +47,7 @@ export default function TrainerSettingsPage() {
   }, [trainer, selectedTrainerId]);
 
   const handleSelect = (id: string) => {
+    if (isDemoUser) return;
     const isFreePlan = userInfo?.subscription_plan === 'Free' || userInfo?.subscription_plan === 'FREE';
     const trainerId = id.toLowerCase();
     const isLocked = isFreePlan && trainerId !== 'gymbro';
@@ -58,6 +61,7 @@ export default function TrainerSettingsPage() {
   };
 
   const onSave = () => {
+    if (isDemoUser) return;
     const runSave = async () => {
       if (!selectedTrainerId) return;
       try {
@@ -77,6 +81,7 @@ export default function TrainerSettingsPage() {
       isSaving={isSaving}
       isLoading={isLoading}
       isFreePlan={userInfo?.subscription_plan === 'Free' || userInfo?.subscription_plan === 'FREE'}
+      isReadOnly={isDemoUser}
       onSelect={handleSelect}
       onSave={onSave}
       onRetry={() => { void fetchAvailableTrainers(); }}

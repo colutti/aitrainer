@@ -11,6 +11,7 @@ class MemoryItem(BaseModel):
 
     id: str
     memory: str
+    translations: dict[str, str] | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 

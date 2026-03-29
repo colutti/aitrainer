@@ -40,7 +40,9 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
   fetchLogs: async (page = 1, limit = 20) => {
     set({ isLoading: true, error: null });
     try {
-      const data = await httpClient<NutritionListResponse>(`/nutrition?page=${String(page)}&limit=${String(limit)}`);
+      const data = await httpClient<NutritionListResponse>(
+        `/nutrition/list?page=${String(page)}&page_size=${String(limit)}`
+      );
       if (data) {
         set({
           logs: data.logs,
@@ -72,7 +74,7 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
   createLog: async (data: CreateNutritionLogRequest) => {
     set({ isLoading: true });
     try {
-      await httpClient('/nutrition', { method: 'POST', body: JSON.stringify(data) });
+      await httpClient('/nutrition/log', { method: 'POST', body: JSON.stringify(data) });
       await Promise.all([get().fetchLogs(), get().fetchStats()]);
     } catch (err) {
       set({ 

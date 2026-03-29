@@ -42,10 +42,11 @@ interface WeightLogDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: WeightLogFormData) => Promise<void>;
+  isReadOnly?: boolean;
   log?: WeightLog | null;
 }
 
-export function WeightLogDrawer({ isOpen, onClose, onSubmit, log }: WeightLogDrawerProps) {
+export function WeightLogDrawer({ isOpen, onClose, onSubmit, isReadOnly = false, log }: WeightLogDrawerProps) {
   const { t } = useTranslation();
   
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<WeightLogFormData>({
@@ -53,6 +54,9 @@ export function WeightLogDrawer({ isOpen, onClose, onSubmit, log }: WeightLogDra
   });
 
   const handleFormSubmit = async (data: WeightLogFormData) => {
+    if (isReadOnly) {
+      return;
+    }
     // Format date to YYYY-MM-DD for backend
     const formattedData = {
       ...data,
@@ -87,6 +91,11 @@ export function WeightLogDrawer({ isOpen, onClose, onSubmit, log }: WeightLogDra
       subtitle={log ? log.date : t('body.weight_subtitle')}
       icon={<Scale size={24} />}
     >
+      {isReadOnly && (
+        <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-amber-200">
+          Demo Read-Only
+        </div>
+      )}
       <form onSubmit={(e) => { void handleSubmit(handleFormSubmit)(e); }} className="space-y-8">
         <input type="hidden" {...register('date')} />
         
@@ -100,6 +109,7 @@ export function WeightLogDrawer({ isOpen, onClose, onSubmit, log }: WeightLogDra
                 data-testid="weight-kg"
                 type="number"
                 step="0.1"
+                disabled={isReadOnly}
                 {...register('weight_kg')}
                 placeholder="0.0"
                 className="pl-14 h-20 text-4xl font-black bg-transparent border-transparent focus:border-white/10 rounded-2xl"
@@ -118,19 +128,19 @@ export function WeightLogDrawer({ isOpen, onClose, onSubmit, log }: WeightLogDra
           
           <div className="grid grid-cols-2 gap-6">
             <FormField label={t('body.weight.body_fat')} id="body-fat-pct" icon={<Flame size={14} className="text-orange-400" />} error={errors.body_fat_pct?.message}>
-              <Input id="body-fat-pct" data-testid="body-fat-pct" type="number" step="0.1" {...register('body_fat_pct')} placeholder="%" className="h-14 bg-white/5 border-white/5 rounded-2xl font-bold" />
+              <Input id="body-fat-pct" data-testid="body-fat-pct" type="number" step="0.1" disabled={isReadOnly} {...register('body_fat_pct')} placeholder="%" className="h-14 bg-white/5 border-white/5 rounded-2xl font-bold" />
             </FormField>
             
             <FormField label={t('body.weight.muscle_mass')} id="muscle-mass-kg" icon={<Bone size={14} className="text-emerald-400" />} error={errors.muscle_mass_kg?.message}>
-              <Input id="muscle-mass-kg" type="number" step="0.1" {...register('muscle_mass_kg')} placeholder="kg" className="h-14 bg-white/5 border-white/5 rounded-2xl font-bold" />
+              <Input id="muscle-mass-kg" type="number" step="0.1" disabled={isReadOnly} {...register('muscle_mass_kg')} placeholder="kg" className="h-14 bg-white/5 border-white/5 rounded-2xl font-bold" />
             </FormField>
 
             <FormField label={t('body.weight.visceral_fat')} id="visceral-fat" icon={<Ruler size={14} className="text-blue-400" />} error={errors.visceral_fat?.message}>
-              <Input id="visceral-fat" type="number" step="1" {...register('visceral_fat')} placeholder="1-20" className="h-14 bg-white/5 border-white/5 rounded-2xl font-bold" />
+              <Input id="visceral-fat" type="number" step="1" disabled={isReadOnly} {...register('visceral_fat')} placeholder="1-20" className="h-14 bg-white/5 border-white/5 rounded-2xl font-bold" />
             </FormField>
 
             <FormField label={t('body.weight.water')} id="body-water-pct" icon={<Droplets size={14} className="text-cyan-400" />} error={errors.body_water_pct?.message}>
-              <Input id="body-water-pct" type="number" step="0.1" {...register('body_water_pct')} placeholder="%" className="h-14 bg-white/5 border-white/5 rounded-2xl font-bold" />
+              <Input id="body-water-pct" type="number" step="0.1" disabled={isReadOnly} {...register('body_water_pct')} placeholder="%" className="h-14 bg-white/5 border-white/5 rounded-2xl font-bold" />
             </FormField>
           </div>
         </div>
@@ -140,6 +150,7 @@ export function WeightLogDrawer({ isOpen, onClose, onSubmit, log }: WeightLogDra
           <textarea
             id="notes"
             {...register('notes')}
+            disabled={isReadOnly}
             className="w-full h-32 bg-white/5 border border-white/5 rounded-2xl p-4 text-sm font-medium focus:outline-none focus:border-white/20 transition-all resize-none custom-scrollbar"
             placeholder={t('body.weight.notes_placeholder')}
           />
@@ -147,11 +158,12 @@ export function WeightLogDrawer({ isOpen, onClose, onSubmit, log }: WeightLogDra
 
         {/* SUBMIT */}
         <Button 
-          type="submit" 
-          fullWidth 
-          isLoading={isSubmitting}
-          className="btn-premium h-16"
-        >
+        type="submit" 
+        fullWidth 
+        isLoading={isSubmitting}
+        disabled={isReadOnly}
+        className="btn-premium h-16"
+      >
           <Save size={20} strokeWidth={3} />
           {t('common.save')}
         </Button>

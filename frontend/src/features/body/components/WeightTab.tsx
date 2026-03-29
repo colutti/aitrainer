@@ -7,6 +7,7 @@ import { Pagination } from '../../../shared/components/ui/premium/Pagination';
 import { ViewHeader } from '../../../shared/components/ui/premium/ViewHeader';
 import { Skeleton } from '../../../shared/components/ui/Skeleton';
 import { useBodyStore } from '../../../shared/hooks/useBody';
+import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import type { WeightLog, WeightLogFormData } from '../../../shared/types/body';
 
 import { WeightLogCard } from './WeightLogCard';
@@ -29,6 +30,7 @@ export function WeightTab() {
   } = useBodyStore();
   
   const { t } = useTranslation();
+  const { isReadOnly, blockIfReadOnly } = useDemoMode();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedLog, setSelectedLog] = useState<WeightLog | null>(null);
 
@@ -37,11 +39,25 @@ export function WeightTab() {
     void fetchStats();
   }, [fetchLogs, fetchStats]);
 
-  const handleOpenDrawer = useCallback((log?: WeightLog) => {
+  const handleViewDrawer = useCallback((log?: WeightLog) => {
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     setSelectedLog(log || null);
     setIsDrawerOpen(true);
   }, []);
+
+  const handleRegisterWeight = useCallback(() => {
+    if (blockIfReadOnly()) {
+      return;
+    }
+    handleViewDrawer();
+  }, [blockIfReadOnly, handleViewDrawer]);
+
+  const handleEditWeight = useCallback((log: WeightLog) => {
+    if (blockIfReadOnly()) {
+      return;
+    }
+    handleViewDrawer(log);
+  }, [blockIfReadOnly, handleViewDrawer]);
 
   const handleCloseDrawer = useCallback(() => {
     setIsDrawerOpen(false);
@@ -49,6 +65,9 @@ export function WeightTab() {
   }, []);
 
   const onSave = async (data: WeightLogFormData) => {
+    if (blockIfReadOnly()) {
+      return;
+    }
     try {
       await logWeight(data as Partial<WeightLog>);
       handleCloseDrawer();
@@ -61,6 +80,9 @@ export function WeightTab() {
   };
 
   const onDelete = (date: string) => {
+    if (blockIfReadOnly()) {
+      return;
+    }
     void deleteLog(date);
   };
 
@@ -81,7 +103,8 @@ export function WeightTab() {
         action={{
           label: t('body.weight.register_weight'),
           icon: <Plus size={20} strokeWidth={3} />,
-          onClick: () => { handleOpenDrawer(); }
+          onClick: handleRegisterWeight,
+          disabled: isReadOnly,
         }}
         className="px-2"
       />
@@ -103,8 +126,10 @@ export function WeightTab() {
             <WeightLogCard 
               key={log.id ?? log.date} 
               log={log} 
+              isReadOnly={isReadOnly}
               onDelete={onDelete} 
-              onEdit={() => { handleOpenDrawer(log); }}
+              onEdit={handleEditWeight}
+              onClick={handleViewDrawer}
             />
           ))}
         </div>
@@ -121,6 +146,7 @@ export function WeightTab() {
       <WeightLogDrawer 
         log={selectedLog}
         isOpen={isDrawerOpen} 
+        isReadOnly={isReadOnly}
         onClose={handleCloseDrawer} 
         onSubmit={onSave}
       />

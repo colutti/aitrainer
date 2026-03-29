@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useConfirmation } from '../../shared/hooks/useConfirmation';
+import { useDemoMode } from '../../shared/hooks/useDemoMode';
 import { useNotificationStore } from '../../shared/hooks/useNotification';
 import { useNutritionStore } from '../../shared/hooks/useNutrition';
 
@@ -28,6 +29,7 @@ export default function NutritionPage() {
   const { confirm } = useConfirmation();
   const notify = useNotificationStore();
   const { t } = useTranslation();
+  const { isReadOnly, blockIfReadOnly } = useDemoMode();
 
   useEffect(() => {
     void fetchLogs();
@@ -35,6 +37,9 @@ export default function NutritionPage() {
   }, [fetchLogs, fetchStats]);
 
   const handleDelete = async (id: string) => {
+    if (blockIfReadOnly()) {
+      return;
+    }
     const isConfirmed = await confirm({
       title: t('nutrition.delete_confirm_title'),
       message: t('nutrition.delete_confirm_message'),
@@ -57,11 +62,17 @@ export default function NutritionPage() {
       logs={logs}
       stats={stats}
       isLoading={isLoading}
+      isReadOnly={isReadOnly}
       onRegisterMeal={() => {
-        // Lógica de abertura do drawer de registro (TODO na próxima task)
+        if (blockIfReadOnly()) {
+          return;
+        }
         notify.info("Registro manual em breve nesta UI Premium");
       }}
       onImport={() => {
+        if (blockIfReadOnly()) {
+          return;
+        }
         notify.info("Importação em breve nesta UI Premium");
       }}
       onDeleteLog={(id) => { void handleDelete(id); }}

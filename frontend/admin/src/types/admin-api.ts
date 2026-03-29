@@ -8,6 +8,7 @@ export interface AdminUser {
   name?: string;
   display_name?: string;
   is_admin: boolean;
+  is_demo?: boolean;
   created_at?: string;
   last_login?: string;
   photo_base64?: string;
@@ -26,6 +27,40 @@ export interface UserListResponse {
   page: number;
   page_size: number;
   total_pages: number;
+}
+
+export interface DemoSnapshot {
+  snapshot_id: string;
+  demo_email: string;
+  source_user_email?: string;
+  episode_count?: number;
+  message_count?: number;
+  created_at?: string;
+}
+
+export interface DemoEpisode {
+  snapshot_id?: string;
+  episode_id: string;
+  title: string;
+  started_at: string;
+  ended_at: string;
+  primary_domain: string;
+  trainers: string[];
+  published_message_ids?: string[];
+  message_count?: number;
+  score?: number;
+  status?: string;
+}
+
+export interface DemoMessage {
+  snapshot_id?: string;
+  episode_id: string;
+  message_id: string;
+  role: string;
+  trainer_type?: string;
+  timestamp: string;
+  content: string;
+  status?: string;
 }
 
 export interface AdminOverview {

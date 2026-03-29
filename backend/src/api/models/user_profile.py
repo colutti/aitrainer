@@ -83,6 +83,9 @@ class UserProfile(UserProfileInput):
         default=None, description="Hashed password for authentication"
     )
     role: str = Field(default="user", description="User role: user or admin")
+    is_demo: bool = Field(
+        default=False, description="Whether this account is a protected read-only demo"
+    )
 
     # Hevy Integration
     hevy_api_key: str | None = Field(

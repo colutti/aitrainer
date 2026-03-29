@@ -49,4 +49,13 @@ describe('WeightLogDrawer', () => {
       expect(submittedData.body_fat_pct).toBe(16.2);
     });
   });
+
+  it('should disable form controls in read-only mode', () => {
+    render(<WeightLogDrawer {...mockProps} isReadOnly />);
+
+    expect(screen.getByTestId('weight-kg')).toBeDisabled();
+    expect(screen.getByTestId('body-fat-pct')).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Salvar/i })).toBeDisabled();
+    expect(screen.getByText('Demo Read-Only')).toBeInTheDocument();
+  });
 });

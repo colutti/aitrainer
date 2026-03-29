@@ -6,6 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, HTTPException
 from pydantic import BaseModel, Field
 
+from src.core.demo_access import WritableCurrentUser
 from src.services.auth import verify_token
 from src.core.deps import get_mongo_database
 from src.core.logs import logger
@@ -36,7 +37,7 @@ class CreateWorkoutRequest(BaseModel):
 
 @router.post("", response_model=WorkoutWithId)
 def create_workout(
-    user_email: CurrentUser,
+    user_email: WritableCurrentUser,
     db: DatabaseDep,
     workout_data: CreateWorkoutRequest,
 ) -> WorkoutWithId:
@@ -157,7 +158,9 @@ def get_exercises(user_email: CurrentUser, db: DatabaseDep) -> list[str]:
 
 
 @router.delete("/{workout_id}")
-def delete_workout(workout_id: str, user_email: CurrentUser, db: DatabaseDep) -> dict:
+def delete_workout(
+    workout_id: str, user_email: WritableCurrentUser, db: DatabaseDep
+) -> dict:
     """
     Deletes a specific workout log for the authenticated user.
     """

@@ -148,6 +148,23 @@ describe('DashboardPage', () => {
     expect(screen.getByTestId('frequency-widget')).toBeInTheDocument();
   });
 
+  it('should render dashboard content without an inner scroll container', () => {
+    vi.mocked(useDashboardStore).mockReturnValue({
+      ...defaultHookValues,
+      data: defaultData as any,
+    });
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    const dashboard = screen.getByTestId('dashboard-bento');
+    expect(dashboard.className).not.toContain('overflow-y-auto');
+    expect(dashboard.className).not.toContain('h-full');
+  });
+
   it('should handle different metabolism confidence levels', () => {
     const confidenceLevels = ['high', 'medium', 'low', null];
     confidenceLevels.forEach(level => {
@@ -291,5 +308,3 @@ describe('DashboardPage', () => {
     );
   });
 });
-
-

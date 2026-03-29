@@ -5,8 +5,9 @@ Stripe payment and webhook endpoints.
 from datetime import datetime, timezone
 import stripe
 from fastapi import APIRouter, Header, Request, HTTPException
+from src.api.endpoints.user import AITrainerBrainDep
 from src.core.config import settings
-from src.api.endpoints.user import CurrentUser, AITrainerBrainDep
+from src.core.demo_access import WritableCurrentUser
 from src.services.stripe import create_checkout_session, create_customer_portal_session
 from src.api.models.stripe import CheckoutSessionRequest, PortalSessionRequest
 from src.core.logs import logger
@@ -17,7 +18,7 @@ router = APIRouter()
 @router.post("/create-checkout-session")
 async def checkout_session(
     request: CheckoutSessionRequest,
-    user_email: CurrentUser,
+    user_email: WritableCurrentUser,
     brain: AITrainerBrainDep,
 ):
     """Create a Stripe checkout session for a user."""
@@ -39,7 +40,9 @@ async def checkout_session(
 
 @router.post("/create-portal-session")
 async def portal_session(
-    request: PortalSessionRequest, user_email: CurrentUser, brain: AITrainerBrainDep
+    request: PortalSessionRequest,
+    user_email: WritableCurrentUser,
+    brain: AITrainerBrainDep,
 ):
     """Create a Stripe customer portal session for a user."""
     profile = brain.get_user_profile(user_email)

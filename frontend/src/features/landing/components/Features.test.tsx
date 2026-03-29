@@ -7,7 +7,7 @@ import { Features } from './Features';
 describe('Features Component', () => {
   it('should render features section', () => {
     render(<Features />);
-    expect(screen.getByText(/Differentiators/i)).toBeInTheDocument();
+    expect(screen.getByText(/Diferenciais/i)).toBeInTheDocument();
     expect(screen.getByText(/Análise Metabólica/i)).toBeInTheDocument();
   });
 });

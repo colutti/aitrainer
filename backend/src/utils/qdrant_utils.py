@@ -34,6 +34,7 @@ def point_to_dict(point: Any) -> dict:
     return {
         "id": payload.get("id", str(point.id)),
         "memory": payload.get("memory", payload.get("data", "")),
+        "translations": payload.get("translations"),
         "user_id": payload.get("user_id"),
         "created_at": payload.get("created_at"),
         "updated_at": payload.get("updated_at"),

@@ -7,6 +7,7 @@ import { DataView } from '../../../shared/components/ui/premium/DataView';
 import { Pagination } from '../../../shared/components/ui/premium/Pagination';
 import { ViewHeader } from '../../../shared/components/ui/premium/ViewHeader';
 import { Skeleton } from '../../../shared/components/ui/Skeleton';
+import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { useNutritionStore } from '../../../shared/hooks/useNutrition';
 import { MacroCard } from '../../nutrition/components/MacroCard';
 import { NutritionLogCard } from '../../nutrition/components/NutritionLogCard';
@@ -30,6 +31,7 @@ export function NutritionTab() {
   } = useNutritionStore();
   
   const { t } = useTranslation();
+  const { isReadOnly, blockIfReadOnly } = useDemoMode();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -52,6 +54,9 @@ export function NutritionTab() {
   };
 
   const onDelete = (id: string) => {
+    if (blockIfReadOnly()) {
+      return;
+    }
     void deleteLog(id);
   };
 
@@ -116,7 +121,8 @@ export function NutritionTab() {
         action={{
           label: t('nutrition.register_meal'),
           icon: <Plus size={20} strokeWidth={3} />,
-          onClick: () => { void navigate('/dashboard/chat'); }
+          onClick: () => { if (!blockIfReadOnly()) void navigate('/dashboard/chat'); },
+          disabled: isReadOnly,
         }}
         className="px-2"
       />
@@ -138,6 +144,7 @@ export function NutritionTab() {
             <NutritionLogCard 
               key={log.id} 
               log={log} 
+              isReadOnly={isReadOnly}
               onDelete={onDelete} 
             />
           ))}

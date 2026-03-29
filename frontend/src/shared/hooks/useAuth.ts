@@ -3,11 +3,14 @@ import { create } from 'zustand';
 import { httpClient } from '../api/http-client';
 
 const AUTH_TOKEN_KEY = 'auth_token';
+const DEMO_EMAIL = 'demo@fityq.it';
+const DEMO_DISPLAY_NAME = 'Ethan Parker';
 
 export interface UserInfo {
   email: string;
   name: string;
   is_admin: boolean;
+  is_demo?: boolean;
   photo_base64?: string;
   onboarding_completed: boolean;
   subscription_plan?: string;
@@ -54,6 +57,27 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true });
 
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+      if (normalizedEmail === DEMO_EMAIL) {
+        const response = await httpClient<{ token: string }>('/user/e2e-login', {
+          method: 'POST',
+          body: JSON.stringify({
+            email: DEMO_EMAIL,
+            display_name: DEMO_DISPLAY_NAME,
+          }),
+        });
+
+        if (!response?.token) {
+          throw new Error('Invalid response from server');
+        }
+
+        localStorage.setItem(AUTH_TOKEN_KEY, response.token);
+        set({ isAuthenticated: true });
+
+        await get().loadUserInfo();
+        return;
+      }
+
       const { auth } = await import('../../features/auth/firebase');
       const { signInWithEmailAndPassword } = await import('firebase/auth');
       
@@ -138,6 +162,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       current_plan_limit: number | null;
       effective_remaining_messages: number | null;
       has_stripe_customer: boolean;
+      is_demo?: boolean;
     }>('/user/me');
 
     if (!data) {
@@ -149,6 +174,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         email: data.email,
         name: data.name ?? data.email.split('@')[0] ?? 'User',
         is_admin: data.role === 'admin',
+        is_demo: data.is_demo ?? false,
         photo_base64: data.photo_base64,
         onboarding_completed: data.onboarding_completed,
         subscription_plan: data.subscription_plan,

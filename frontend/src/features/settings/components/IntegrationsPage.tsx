@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
 import type { HevyStatus, HevyWebhookConfig, HevyWebhookCredentials, ImportResult, TelegramStatus } from '../../../shared/types/integration';
 import { integrationsApi } from '../api/integrations-api';
@@ -16,6 +17,7 @@ import { IntegrationsView } from './IntegrationsView';
 export default function IntegrationsPage() {
   const { t } = useTranslation();
   const notify = useNotificationStore();
+  const { isReadOnly: isDemoUser } = useDemoMode();
   
   // Hevy & Webhook State
   const [hevyStatus, setHevyStatus] = useState<HevyStatus | null>(null);
@@ -66,6 +68,7 @@ export default function IntegrationsPage() {
   }, [loadHevyStatus, loadTelegramStatus, loadWebhookConfig]);
 
   const handleSaveHevy = () => {
+    if (isDemoUser) return;
     const run = async () => {
       if (!hevyKey) return;
       setHevyLoading(true);
@@ -84,6 +87,7 @@ export default function IntegrationsPage() {
   };
 
   const handleSyncHevy = () => {
+    if (isDemoUser) return;
     const run = async () => {
       setHevySyncing(true);
       try {
@@ -105,6 +109,7 @@ export default function IntegrationsPage() {
   };
 
   const handleRemoveHevy = () => {
+    if (isDemoUser) return;
     const run = async () => {
       setHevyLoading(true);
       try {
@@ -121,6 +126,7 @@ export default function IntegrationsPage() {
   };
 
   const handleGenerateWebhook = () => {
+    if (isDemoUser) return;
     const run = async () => {
       setWebhookLoading(true);
       try {
@@ -140,6 +146,7 @@ export default function IntegrationsPage() {
   };
 
   const handleRevokeWebhook = () => {
+    if (isDemoUser) return;
     const run = async () => {
       setWebhookLoading(true);
       try {
@@ -157,6 +164,7 @@ export default function IntegrationsPage() {
   };
 
   const handleGenerateTelegram = () => {
+    if (isDemoUser) return;
     const run = async () => {
       setTelegramLoading(true);
       try {
@@ -172,6 +180,7 @@ export default function IntegrationsPage() {
   };
 
   const handleTelegramNotificationChange = (value: boolean) => {
+    if (isDemoUser) return;
     const run = async () => {
       try {
         await integrationsApi.updateTelegramNotifications({
@@ -187,6 +196,7 @@ export default function IntegrationsPage() {
   };
 
   const handleUpload = (file: File, type: 'mfp' | 'zepp') => {
+    if (isDemoUser) return;
     const run = async () => {
       setImporting(true);
       try {
@@ -258,6 +268,7 @@ export default function IntegrationsPage() {
         onUpload: handleUpload,
         importing: importing
       }}
+      isReadOnly={isDemoUser}
     />
   );
 }

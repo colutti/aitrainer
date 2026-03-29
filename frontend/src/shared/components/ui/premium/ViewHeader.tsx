@@ -11,6 +11,7 @@ interface ViewHeaderProps {
     label: string;
     onClick: () => void;
     icon?: ReactNode;
+    disabled?: boolean;
   };
   className?: string;
 }
@@ -37,6 +38,7 @@ export function ViewHeader({ title, subtitle, icon, action, className }: ViewHea
       {action && (
         <button 
           onClick={action.onClick}
+          disabled={action.disabled}
           data-testid="view-header-action"
           className={PREMIUM_UI.button.premium}
         >

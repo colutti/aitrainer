@@ -63,7 +63,7 @@ def get_memories_paginated(
 
 def add_memory(
     user_id: str,
-    text: str,
+    memory_data: Dict[str, Any],
     qdrant_client: QdrantClient,
     collection_name: str,
     category: str = "context",
@@ -73,6 +73,8 @@ def add_memory(
 
     try:
         _ensure_collection(qdrant_client, collection_name)
+        text = str(memory_data.get("text", ""))
+        translations = memory_data.get("translations")
         # Generate embedding
         embedding = _embed_text(text)
 
@@ -85,6 +87,7 @@ def add_memory(
             payload={
                 "id": memory_id,
                 "memory": text,
+                "translations": translations,
                 "category": category,
                 "user_id": user_id,
                 "created_at": now,

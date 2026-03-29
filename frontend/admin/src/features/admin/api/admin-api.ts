@@ -1,6 +1,8 @@
 import { httpClient } from '../../../shared/api/http-client';
 import type {
   AdminOverview,
+  DemoEpisode,
+  DemoMessage,
   AdminUser,
   PromptListResponse,
   PromptLog,
@@ -32,6 +34,15 @@ export const adminApi = {
     return httpClient<AdminUser>(`/admin/users/${email}`);
   },
 
+  getDemoEpisode: async (
+    email: string,
+    episodeId: string,
+  ): Promise<{ episode: DemoEpisode; messages: DemoMessage[] }> => {
+    return httpClient<{ episode: DemoEpisode; messages: DemoMessage[] }>(
+      `/admin/users/${email}/demo-episodes/${episodeId}`,
+    );
+  },
+
   updateUser: async (email: string, data: Partial<AdminUser>): Promise<AdminUser> => {
     return httpClient<AdminUser>(`/admin/users/${email}`, {
       method: 'PATCH',
@@ -41,6 +52,18 @@ export const adminApi = {
 
   deleteUser: async (email: string): Promise<{ success: boolean }> => {
     return httpClient<{ success: boolean }>(`/admin/users/${email}`, {
+      method: 'DELETE',
+    });
+  },
+
+  deleteDemoEpisode: async (email: string, episodeId: string): Promise<{ message: string }> => {
+    return httpClient<{ message: string }>(`/admin/users/${email}/demo-episodes/${episodeId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  deleteDemoMessage: async (email: string, messageId: string): Promise<{ message: string }> => {
+    return httpClient<{ message: string }>(`/admin/users/${email}/demo-messages/${messageId}`, {
       method: 'DELETE',
     });
   },

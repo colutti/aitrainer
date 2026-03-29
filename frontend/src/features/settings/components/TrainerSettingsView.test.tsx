@@ -20,6 +20,7 @@ const mockProps = {
   isSaving: false,
   isLoading: false,
   isFreePlan: true,
+  isReadOnly: false,
   onSelect: vi.fn(),
   onSave: vi.fn(),
   onRetry: vi.fn(),
@@ -51,5 +52,11 @@ describe('TrainerSettingsView', () => {
     const saveBtn = screen.getByText('settings.trainer.save_button');
     fireEvent.click(saveBtn);
     expect(mockProps.onSave).toHaveBeenCalled();
+  });
+
+  it('disables trainer changes in read-only mode', () => {
+    render(<TrainerSettingsView {...mockProps} isReadOnly />);
+    expect(screen.getByTestId('trainer-card-gymbro')).toBeInTheDocument();
+    expect(screen.getByText('settings.trainer.read_only')).toBeInTheDocument();
   });
 });

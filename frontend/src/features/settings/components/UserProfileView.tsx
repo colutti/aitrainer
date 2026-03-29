@@ -16,6 +16,7 @@ interface UserProfileViewProps {
   isLoading: boolean;
   isSaving: boolean;
   photoBase64: string | null;
+  isReadOnly?: boolean;
   onSubmit: (data: UserProfileForm) => Promise<void>;
   onPhotoUpload: (file: File) => Promise<void>;
 }
@@ -25,6 +26,7 @@ export default function UserProfileView({
   isLoading,
   isSaving,
   photoBase64,
+  isReadOnly = false,
   onSubmit,
   onPhotoUpload,
 }: UserProfileViewProps) {
@@ -69,7 +71,7 @@ export default function UserProfileView({
       {/* SIDEBAR: PHOTO & QUICK STATS */}
       <div className="lg:col-span-1 space-y-6">
         <PremiumCard className="p-8 text-center flex flex-col items-center">
-           <div className="relative group cursor-pointer" onClick={() => document.getElementById('photo-upload')?.click()}>
+           <div className={`relative group ${isReadOnly ? 'cursor-default' : 'cursor-pointer'}`} onClick={() => { if (!isReadOnly) document.getElementById('photo-upload')?.click(); }}>
               <div className="w-32 h-32 rounded-[40px] bg-zinc-800 border-4 border-white/10 overflow-hidden shadow-2xl transition-transform group-hover:scale-105">
                  {photoUrl ? (
                    <img src={photoUrl} alt="Profile" className="w-full h-full object-cover" />
@@ -85,6 +87,7 @@ export default function UserProfileView({
                 type="file" 
                 className="hidden" 
                 accept="image/*"
+                disabled={isReadOnly}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) void onPhotoUpload(file);
@@ -94,6 +97,11 @@ export default function UserProfileView({
                  <Camera size={16} />
               </div>
            </div>
+           {isReadOnly && (
+             <div className="mt-4 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-[0.2em] text-amber-300">
+               Demo Read-Only
+             </div>
+           )}
 
            <div className="mt-6 mb-8">
               <h2 data-testid="profile-header-name" className="text-xl font-black text-white leading-tight">{userName}</h2>
@@ -127,18 +135,20 @@ export default function UserProfileView({
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField label={t('settings.profile.name')} id="profile-name" icon={<User size={18} />} error={errors.display_name?.message}>
-                <Input 
-                  id="profile-name" 
-                  data-testid="profile-name"
-                  {...register('display_name')} 
+                  <Input 
+                    id="profile-name" 
+                    data-testid="profile-name"
+                    disabled={isReadOnly}
+                    {...register('display_name')} 
                   className="pl-12 h-14 bg-white/5 border-white/5 rounded-2xl focus:border-white/20 text-white"
                 />
               </FormField>
 
               <FormField label={t('common.gender')} id="profile-gender" icon={<User size={18} />} error={errors.gender?.message}>
-                <select 
-                  id="profile-gender"
-                  {...register('gender')}
+                  <select 
+                    id="profile-gender"
+                    disabled={isReadOnly}
+                    {...register('gender')}
                   className="flex h-14 w-full rounded-2xl bg-white/5 border border-white/5 px-4 py-2 text-sm text-white transition-all focus:outline-none focus:border-white/20"
                 >
                   <option value="male">{t('onboarding.genders.male')}</option>
@@ -147,11 +157,12 @@ export default function UserProfileView({
               </FormField>
 
               <FormField label={t('common.age')} id="profile-age" icon={<Activity size={18} />} error={errors.age?.message}>
-                <Input 
-                  id="profile-age"
-                  data-testid="profile-age"
-                  type="number"
-                  {...register('age', { valueAsNumber: true })}
+                  <Input 
+                    id="profile-age"
+                    data-testid="profile-age"
+                    type="number"
+                    disabled={isReadOnly}
+                    {...register('age', { valueAsNumber: true })}
                   className="pl-12 h-14 bg-white/5 border-white/5 rounded-2xl focus:border-white/20 text-white"
                 />
               </FormField>
@@ -162,6 +173,7 @@ export default function UserProfileView({
                     id="profile-height"
                     data-testid="profile-height"
                     type="number"
+                    disabled={isReadOnly}
                     {...register('height', { valueAsNumber: true })}
                     className="pl-12 h-14 bg-white/5 border-white/5 rounded-2xl focus:border-white/20 text-white"
                   />
@@ -181,9 +193,10 @@ export default function UserProfileView({
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField label={t('settings.profile.goal_type')} id="profile-goal" icon={<Target size={18} />}>
-                <select 
-                  id="profile-goal"
-                  {...register('goal_type')}
+                  <select 
+                    id="profile-goal"
+                    disabled={isReadOnly}
+                    {...register('goal_type')}
                   className="flex h-14 w-full rounded-2xl bg-white/5 border border-white/5 px-4 py-2 text-sm text-white transition-all focus:outline-none focus:border-white/20"
                 >
                   <option value="lose">{t('onboarding.goals.lose')}</option>
@@ -198,6 +211,7 @@ export default function UserProfileView({
                     id="profile-target"
                     data-testid="profile-target"
                     type="number"
+                    disabled={isReadOnly}
                     {...register('target_weight', { valueAsNumber: true })}
                     className="pl-12 h-14 bg-white/5 border-white/5 rounded-2xl focus:border-white/20 text-white"
                   />
@@ -212,6 +226,7 @@ export default function UserProfileView({
                     data-testid="profile-weekly-rate"
                     type="number"
                     step="0.1"
+                    disabled={isReadOnly}
                     {...register('weekly_rate', { valueAsNumber: true })}
                     className="pl-12 h-14 bg-white/5 border-white/5 rounded-2xl focus:border-white/20 text-white"
                   />
@@ -223,10 +238,10 @@ export default function UserProfileView({
            <div className="mt-10 flex justify-end">
               <Button 
                 type="submit" 
-                disabled={isSaving}
+                disabled={isSaving || isReadOnly}
                 className="btn-premium h-14 px-10 rounded-2xl text-base shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
-                {isSaving ? t('common.loading') : t('common.save')}
+                {isReadOnly ? t('settings.profile.read_only', 'Somente leitura') : isSaving ? t('common.loading') : t('common.save')}
                 <ChevronRight className="ml-2 w-5 h-5" />
               </Button>
            </div>

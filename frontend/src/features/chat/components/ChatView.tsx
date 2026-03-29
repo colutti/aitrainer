@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
 import type { UserInfo } from '../../../shared/hooks/useAuth';
+import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { PREMIUM_UI } from '../../../shared/styles/ui-variants';
 import type { ChatMessage } from '../../../shared/types/chat';
 import type { TrainerCard } from '../../../shared/types/settings';
@@ -43,13 +44,31 @@ export function ChatView({
   messagesEndRef,
   textareaRef,
 }: ChatViewProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const trainerName = trainer?.name ?? t('chat.default_trainer_name');
+  const { isReadOnly: isDemoUser } = useDemoMode(userInfo);
+  const normalizedLocale = i18n.language.toLowerCase();
+
+  const resolveMessageText = (message: ChatMessage) => {
+    if (normalizedLocale.startsWith('pt')) {
+      const translated = message.translations?.['pt-BR'] ?? message.translations?.pt;
+      if (translated?.trim()) return translated;
+      return message.text;
+    }
+
+    if (normalizedLocale.startsWith('es')) {
+      const translated = message.translations?.['es-ES'] ?? message.translations?.es;
+      if (translated?.trim()) return translated;
+      return message.text;
+    }
+
+    return message.text;
+  };
 
   const isLimitError = error === 'TRIAL_EXPIRED' || error === 'DAILY_LIMIT_REACHED';
 
   return (
-    <div className="flex flex-col h-full relative overflow-hidden">
+    <div className="flex flex-col h-[calc(100dvh-6rem)] md:h-[calc(100dvh-5rem)] min-h-0 relative overflow-hidden">
       
       {/* CHAT HEADER (DOCK STYLE) */}
       <div className="flex-none h-16 md:h-20 bg-[#09090b]/60 backdrop-blur-xl border-b border-white/5 px-6 flex items-center justify-between z-50">
@@ -83,7 +102,7 @@ export function ChatView({
       <div 
         ref={scrollContainerRef}
         onScroll={onScroll}
-        className="flex-1 overflow-y-auto custom-scrollbar pt-6"
+        className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pt-6"
       >
         <div className="max-w-6xl mx-auto w-full p-4 md:p-6 pb-32 space-y-8">
           {isLoading && hasMore && messages.length > 0 && (
@@ -105,6 +124,7 @@ export function ChatView({
                 <MessageBubble
                   key={`${msg.timestamp}-${i.toString()}`}
                   message={msg}
+                  resolveText={resolveMessageText}
                   trainerId={trainer?.trainer_id}
                   userPhoto={userInfo?.photo_base64}
                   userName={userInfo?.name}
@@ -117,12 +137,18 @@ export function ChatView({
       </div>
 
       {/* INPUT AREA (FLOATING PILL) */}
-      <div className="flex-none p-4 md:p-6 w-full absolute bottom-0 left-0 right-0 z-50">
+      <div className="flex-none p-4 md:p-6 w-full z-50">
         <div className="max-w-6xl mx-auto w-full">
             {error !== null && !isLimitError && (
               <div className="bg-red-500/10 text-red-400 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full border border-red-500/20 text-center mb-4 backdrop-blur-md animate-in slide-in-from-bottom-2">
                 <AlertCircle size={12} className="inline mr-2 -mt-0.5" />
                 {t(`errors.${error}`, error)}
+              </div>
+            )}
+
+            {isDemoUser && (
+              <div className="bg-amber-500/10 text-amber-300 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full border border-amber-500/20 text-center mb-4 backdrop-blur-md">
+                Demo read-only
               </div>
             )}
 
@@ -157,21 +183,21 @@ export function ChatView({
                     value={inputValue}
                     onChange={(e) => { setInputValue(e.target.value); }} 
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
+                      if (!isDemoUser && e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
                         const result = onSend();
                         if (result instanceof Promise) void result;
                       }
                     }}
-                    disabled={isStreaming}
+                    disabled={isStreaming || isDemoUser}
                     rows={1}
                   />
                   <button
                     type="submit"
-                    disabled={!inputValue.trim() || isStreaming}
+                    disabled={!inputValue.trim() || isStreaming || isDemoUser}
                     className={cn(
                       "w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg shrink-0 mb-0.5",
-                      inputValue.trim() && !isStreaming
+                      inputValue.trim() && !isStreaming && !isDemoUser
                         ? "bg-white text-black active:scale-90"
                         : "bg-white/5 text-zinc-700 cursor-not-allowed"
                     )}

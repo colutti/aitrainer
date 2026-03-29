@@ -252,7 +252,15 @@
       "muscle": "Muscle Mass",
       "trend": "Weight Trend"
     },
-    "weekly_days": ["M", "T", "W", "T", "F", "S", "S"],
+    "weekly_days": [
+      "M",
+      "T",
+      "W",
+      "T",
+      "F",
+      "S",
+      "S"
+    ],
     "streak": "Streak",
     "streak_w": "weeks",
     "streak_d": "days",
@@ -366,7 +374,8 @@
     "delete_confirm_btn": "Delete",
     "delete_success": "Workout removed!",
     "delete_error": "Error removing workout.",
-    "search_placeholder": "Search workouts..."
+    "search_placeholder": "Search workouts...",
+    "record_details": "Workout Details"
   },
   "nutrition": {
     "title": "Nutrition",
@@ -384,7 +393,15 @@
     "adherence_title": "Adherence",
     "stability_score": "Stability",
     "stability_description": "Weekly calorie consistency",
-    "weekly_days": ["M", "T", "W", "T", "F", "S", "S"],
+    "weekly_days": [
+      "M",
+      "T",
+      "W",
+      "T",
+      "F",
+      "S",
+      "S"
+    ],
     "delete_confirm_title": "Delete Meal",
     "delete_confirm_message": "Do you want to remove this meal log?",
     "delete_confirm_btn": "Delete",
@@ -468,12 +485,14 @@
       "description": "Visualize your physical and metabolic evolution in real-time.",
       "dashboard_title": "Dashboard",
       "chat_title": "Chat",
+      "active_now": "Active now",
       "meta_calorie_title": "AI Calories",
       "accuracy": "Accuracy",
       "weekly_target_title": "Weekly Goal",
       "vs_previous": "vs previous",
       "data_used": "Processed data",
-      "days_count": "days",
+      "days_count": "{{count}} days",
+      "weight_30d": "Weight 30 days",
       "meta_title": "Metabolism",
       "dashboard_desc": "Your body command center."
     },
@@ -481,33 +500,105 @@
       "title": "How it Works",
       "subtitle": "3 steps to your best version",
       "steps": [
-        { "title": "Connect", "desc": "Sync with Hevy or MFP." },
-        { "title": "Train", "desc": "Log your activities normally." },
-        { "title": "Evolve", "desc": "Get insights based on real data." }
+        {
+          "title": "Connect",
+          "desc": "Sync with Hevy or MFP."
+        },
+        {
+          "title": "Train",
+          "desc": "Log your activities normally."
+        },
+        {
+          "title": "Evolve",
+          "desc": "Get insights based on real data."
+        }
       ]
     },
     "diff": {
       "title": "Differentiators",
       "subtitle": "Why FityQ is different?",
       "features": {
-        "meta": { "title": "Metabolic Analysis", "description": "Real TDEE and daily burn calculation." },
-        "vision": { "title": "Computer Vision", "description": "Analyze your form via video." },
-        "trainers": { "title": "Real Personas", "description": "Trainers with distinct personalities." },
-        "integrations": { "title": "Open Ecosystem", "description": "Connect your favorite apps." },
-        "journey": { "title": "Adaptive Journey", "description": "Goals that change with your progress." },
-        "available": { "title": "Always Online", "description": "Your 24/7 trainer in your pocket." }
+        "meta": {
+          "title": "Metabolic Analysis",
+          "description": "Real TDEE and daily burn calculation."
+        },
+        "vision": {
+          "title": "Computer Vision",
+          "description": "Analyze your form via video."
+        },
+        "trainers": {
+          "title": "Real Personas",
+          "description": "Trainers with distinct personalities."
+        },
+        "integrations": {
+          "title": "Open Ecosystem",
+          "description": "Connect your favorite apps."
+        },
+        "journey": {
+          "title": "Adaptive Journey",
+          "description": "Goals that change with your progress."
+        },
+        "available": {
+          "title": "Always Online",
+          "description": "Your 24/7 trainer in your pocket."
+        }
       }
     },
     "trainers": {
       "title": "Meet your Mentor",
       "description": "Choose the personality that best fits your style.",
-      "talk_with": "Talk with",
+      "talk_with": "Talk with {{name}}",
       "profiles": {
-        "atlas": { "tagline": "Pure Performance", "catchphrase": "Numbers don't lie.", "specialties": "Biomechanics", "style": "Analytical" },
-        "luna": { "tagline": "Total Balance", "catchphrase": "Breathe and overcome.", "specialties": "Well-being", "style": "Empathetic" },
-        "sofia": { "tagline": "Sports Science", "catchphrase": "Evidence-based.", "specialties": "Physiology", "style": "Educational" },
-        "sargento": { "tagline": "Max Discipline", "catchphrase": "No excuses!", "specialties": "Hardcore", "style": "Rigorous" },
-        "gymbro": { "tagline": "Your Partner", "catchphrase": "Let's get it!", "specialties": "Motivation", "style": "Energetic" }
+        "atlas": {
+          "tagline": "Pure Performance",
+          "catchphrase": "Numbers don't lie.",
+          "specialties": [
+            "Biomechanics",
+            "Strength",
+            "Performance"
+          ],
+          "style": "Analytical"
+        },
+        "luna": {
+          "tagline": "Total Balance",
+          "catchphrase": "Breathe and overcome.",
+          "specialties": [
+            "Well-being",
+            "Recovery",
+            "Consistency"
+          ],
+          "style": "Empathetic"
+        },
+        "sofia": {
+          "tagline": "Sports Science",
+          "catchphrase": "Evidence-based.",
+          "specialties": [
+            "Physiology",
+            "Nutrition",
+            "Strategy"
+          ],
+          "style": "Educational"
+        },
+        "sargento": {
+          "tagline": "Max Discipline",
+          "catchphrase": "No excuses!",
+          "specialties": [
+            "Discipline",
+            "Execution",
+            "Results"
+          ],
+          "style": "Rigorous"
+        },
+        "gymbro": {
+          "tagline": "Your Partner",
+          "catchphrase": "Let's get it!",
+          "specialties": [
+            "Motivation",
+            "Hypertrophy",
+            "Energy"
+          ],
+          "style": "Energetic"
+        }
       }
     },
     "plans": {
@@ -516,17 +607,59 @@
       "total": "Total",
       "per_month": "/month",
       "items": {
-        "free": { "name": "Free", "features": ["Basic Chat", "Weight Log", "Dashboard"] },
-        "basic": { "name": "Basic", "features": ["AI Memory", "Integrations", "Macro Analysis"] },
-        "pro": { "name": "Pro", "features": ["All Mentors", "Dynamic TDEE", "Support"] },
-        "premium": { "name": "Premium", "features": ["Vision AI", "Priority AI", "Full Pack"] }
+        "free": {
+          "name": "Free",
+          "description": "Best for trying the platform and organizing your baseline routine.",
+          "button": "Start free",
+          "features": [
+            "Basic chat",
+            "Weight log",
+            "Dashboard"
+          ]
+        },
+        "basic": {
+          "name": "Basic",
+          "description": "AI memory, integrations, and clearer daily nutrition guidance.",
+          "button": "Subscribe Basic",
+          "features": [
+            "AI memory",
+            "Integrations",
+            "Macro analysis"
+          ]
+        },
+        "pro": {
+          "name": "Pro",
+          "description": "More context, more personalization, and full mentor access.",
+          "button": "Subscribe Pro",
+          "features": [
+            "All mentors",
+            "Dynamic TDEE",
+            "Priority support"
+          ]
+        },
+        "premium": {
+          "name": "Premium",
+          "description": "The full experience for users who want the whole product stack.",
+          "button": "Subscribe Premium",
+          "features": [
+            "Computer vision",
+            "Priority AI",
+            "Full package"
+          ]
+        }
       }
     },
     "faq": {
       "title": "FAQ",
       "items": [
-        { "q": "How does AI memory work?", "a": "The AI remembers every workout and meal of yours." },
-        { "q": "Can I cancel anytime?", "a": "Yes, without any fines or fees." }
+        {
+          "q": "How does AI memory work?",
+          "a": "The AI remembers every workout and meal of yours."
+        },
+        {
+          "q": "Can I cancel anytime?",
+          "a": "Yes, without any fines or fees."
+        }
       ]
     },
     "cta": {
@@ -541,13 +674,30 @@
       "title": "Try it now",
       "subtitle": "Simulate a conversation with Sofia or GymBro"
     },
+    "conversations": {
+      "sofia": {
+        "user_1": "Did I build a good plan for this week?",
+        "trainer_1": "Yes. I adjusted volume, rest, and protein distribution using your recent recovery data.",
+        "user_2": "What should I prioritize today to hit the goal?",
+        "trainer_2": "Protein at lunch, carbs before training, and a lighter dinner to close the day."
+      },
+      "gymbro": {
+        "user_1": "My chest workout felt flat today.",
+        "trainer_1": "Then we raise intensity without losing technique. Less ego, better execution.",
+        "user_2": "Should we finish with a short cardio block?",
+        "trainer_2": "Yes. Fifteen focused minutes already help recovery and the deficit."
+      }
+    },
     "sticky_cta": "Start now",
     "subscription": {
       "payment_success_message": "Payment confirmed! Welcome.",
       "payment_cancelled_message": "Payment cancelled."
     },
     "footer": {
-      "rights": "© 2026 FitYQ. All rights reserved."
+      "terms": "Terms",
+      "privacy": "Privacy",
+      "contact": "Contact",
+      "rights": "© {{year}} FitYQ. All rights reserved."
     },
     "trust_badge_free": "Free for 7 days",
     "trust_badge_card": "No card needed",
@@ -559,11 +709,21 @@
     },
     "integrations_section": {
       "title": "Open Ecosystem",
-      "subtitle": "Connect your favorite data",
-      "hevy_desc": "Sync your workouts",
-      "mfp_desc": "Import your meals",
-      "zepp_desc": "Health and sleep data",
-      "coming_soon": "Coming soon"
+      "subtitle": "Connect and import your real-world data",
+      "hevy_desc": "Connect your account and sync your workouts automatically.",
+      "mfp_desc": "Import your nutrition history from MyFitnessPal.",
+      "zepp_desc": "Import health, weight, and sleep data from Zepp Life.",
+      "items": {
+        "hevy": {
+          "status": "Sync available"
+        },
+        "mfp": {
+          "status": "Import available"
+        },
+        "zepp": {
+          "status": "Import available"
+        }
+      }
     }
   },
   "validation": {

@@ -304,6 +304,50 @@ class TestWorkoutRepositoryGetStats:
         assert hasattr(result, 'current_streak_weeks')
         assert hasattr(result, 'weekly_frequency')
 
+    def test_get_stats_handles_string_dates(self, workout_repo, mock_db):
+        """Workout stats should accept ISO date strings from the demo snapshot."""
+        cursor = MagicMock()
+        cursor.sort.return_value = [
+            {
+                "_id": ObjectId(),
+                "user_email": "user@example.com",
+                "date": "2026-03-29T10:00:00",
+                "workout_type": "Upper",
+                "duration_minutes": 60,
+                "exercises": [
+                    {
+                        "name": "Bench Press",
+                        "sets": 3,
+                        "reps_per_set": [8, 6, 5],
+                        "weights_per_set": [80.0, 82.5, 85.0],
+                    }
+                ],
+            },
+            {
+                "_id": ObjectId(),
+                "user_email": "user@example.com",
+                "date": "2026-03-22T10:00:00",
+                "workout_type": "Upper",
+                "duration_minutes": 55,
+                "exercises": [
+                    {
+                        "name": "Bench Press",
+                        "sets": 3,
+                        "reps_per_set": [8, 8, 6],
+                        "weights_per_set": [77.5, 80.0, 82.5],
+                    }
+                ],
+            },
+        ]
+
+        mock_db.__getitem__.return_value.find.return_value = cursor
+
+        result = workout_repo.get_stats("user@example.com")
+
+        assert isinstance(result, WorkoutStats)
+        assert result.total_workouts == 2
+        assert len(result.weekly_frequency) == 7
+
 
 class TestWorkoutRepositoryCalculateWeeklyStreak:
     """Test _calculate_weekly_streak method."""

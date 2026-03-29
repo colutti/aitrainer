@@ -22,6 +22,7 @@ const mockProps = {
   isInitialLoading: false,
   isPt: true,
   hasStripeCustomer: false,
+  isReadOnly: false,
   onSubscribe: vi.fn(),
   onManage: vi.fn(),
 };
@@ -51,5 +52,11 @@ describe('SubscriptionView', () => {
     const manageBtn = screen.getByText('settings.subscription.manage_button');
     fireEvent.click(manageBtn);
     expect(mockProps.onManage).toHaveBeenCalled();
+  });
+
+  it('disables plan actions in read-only mode', () => {
+    render(<SubscriptionView {...mockProps} isReadOnly />);
+    expect(screen.getByTestId('subscription-plan-btn-pro')).toBeDisabled();
+    expect(screen.getByText('Demo Read-Only')).toBeInTheDocument();
   });
 });

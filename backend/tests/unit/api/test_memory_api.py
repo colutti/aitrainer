@@ -8,6 +8,7 @@ from fastapi import HTTPException, status
 from fastapi.testclient import TestClient
 
 from src.api.main import app
+from src.core.deps import get_mongo_database
 from src.services.auth import verify_token
 from src.core.deps import get_ai_trainer_brain, get_qdrant_client
 
@@ -27,6 +28,10 @@ class TestMemoryApi(unittest.TestCase):
         Set up the test client before each test.
         """
         self.client = TestClient(app)
+        mock_db = MagicMock()
+        mock_db.is_demo_user.return_value = False
+        mock_db.get_user_profile.return_value = None
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     def tearDown(self):
         """
@@ -56,12 +61,14 @@ class TestMemoryApi(unittest.TestCase):
             {
                 "id": "mem_123",
                 "memory": "User prefers morning workouts",
+                "translations": {"pt-BR": "Usuário prefere treinar de manhã"},
                 "created_at": "2026-01-03T08:00:00Z",
                 "updated_at": None,
             },
             {
                 "id": "mem_456",
                 "memory": "User has left knee problem",
+                "translations": {"pt-BR": "Usuário tem problema no joelho esquerdo"},
                 "created_at": "2026-01-02T10:30:00Z",
                 "updated_at": None,
             },
@@ -83,6 +90,7 @@ class TestMemoryApi(unittest.TestCase):
         self.assertEqual(data["page_size"], 10)
         self.assertEqual(data["total_pages"], 3)
         self.assertEqual(data["memories"][0]["memory"], "User prefers morning workouts")
+        self.assertEqual(data["memories"][0]["translations"]["pt-BR"], "Usuário prefere treinar de manhã")
         mock_brain.get_memories_paginated.assert_called_once()
 
     def test_list_memories_pagination(self):

@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import { useAuthStore } from '../../shared/hooks/useAuth';
 import { useConfirmation } from '../../shared/hooks/useConfirmation';
 import { useNutritionStore } from '../../shared/hooks/useNutrition';
 
@@ -10,6 +11,10 @@ import NutritionPage from './NutritionPage';
 // Mocks
 vi.mock('../../shared/hooks/useNutrition', () => ({
   useNutritionStore: vi.fn(),
+}));
+
+vi.mock('../../shared/hooks/useAuth', () => ({
+  useAuthStore: vi.fn(),
 }));
 
 vi.mock('../../shared/hooks/useConfirmation', () => ({
@@ -50,6 +55,7 @@ describe('NutritionPage', () => {
     vi.clearAllMocks();
     vi.mocked(useNutritionStore).mockReturnValue(mockStore as any);
     vi.mocked(useConfirmation).mockReturnValue({ confirm: vi.fn().mockResolvedValue(true) } as any);
+    vi.mocked(useAuthStore).mockReturnValue({ userInfo: { is_demo: false } } as any);
   });
 
   it('should render page title and progress cards', () => {
@@ -87,5 +93,18 @@ describe('NutritionPage', () => {
       </MemoryRouter>
     );
     expect(screen.getByText(/90%/)).toBeInTheDocument();
+  });
+
+  it('should disable nutrition actions for demo users', () => {
+    vi.mocked(useAuthStore).mockReturnValue({ userInfo: { is_demo: true } } as any);
+
+    render(
+      <MemoryRouter>
+        <NutritionPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('button', { name: /nutrition\.register_meal/i })).toBeDisabled();
+    expect(screen.queryByLabelText(/Delete/i)).not.toBeInTheDocument();
   });
 });
