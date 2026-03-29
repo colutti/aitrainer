@@ -179,14 +179,13 @@ def sync_qdrant(
         dest_client.get_collection(dest_collection)
     except Exception:
         print(f"   Destination collection '{dest_collection}' missing. Creating...")
-        # Get config from source to replicate? 
-        # For simplicity, we assume the app has created it or we rely on default settings.
-        # But correct way is to use settings params.
-        # Let's rely on standard creation params available in settings if we can, 
-        # or else just hope the app initialized it.
-        # Actually, if we use Qdrant, we might want to recreate it with same config.
-        # For now, let's assume it exists or the user has run the app once.
-        pass
+        dest_client.create_collection(
+            collection_name=dest_collection,
+            vectors_config=models.VectorParams(
+                size=settings.EMBEDDING_MODEL_DIMS,
+                distance=models.Distance.COSINE,
+            ),
+        )
 
     print("   Fetching points from Source...")
     while True:
@@ -225,6 +224,40 @@ def sync_qdrant(
         points=upsert_points
     )
     print(f"✅ Qdrant Sync Complete: {len(points)} points transferred.")
+
+
+def validate_local_import(dest_db, user_email: str) -> None:
+    """Validates that the local import contains the expected user data."""
+    expected_queries = {
+        "users": {"email": user_email},
+        "trainer_profiles": {"user_email": user_email},
+        "workout_logs": {"user_email": user_email},
+        "nutrition_logs": {"user_email": user_email},
+        "weight_logs": {"user_email": user_email},
+        "prompt_logs": {"user_email": user_email},
+        "message_store": {"SessionId": user_email},
+    }
+    minimum_counts = {
+        "users": 1,
+        "trainer_profiles": 1,
+        "workout_logs": 1,
+        "nutrition_logs": 1,
+        "weight_logs": 1,
+        "prompt_logs": 1,
+        "message_store": 1,
+    }
+
+    print("\n✅ Running post-import validation...")
+    for collection_name, query in expected_queries.items():
+        count = dest_db[collection_name].count_documents(query)
+        print(f"   Validation {collection_name}: {count} document(s)")
+        if count < minimum_counts[collection_name]:
+            raise RuntimeError(
+                f"Validation failed for {collection_name}: "
+                f"expected at least {minimum_counts[collection_name]}, got {count}"
+            )
+
+    print("✅ Post-import validation passed.")
 
 
 def main():
@@ -309,6 +342,8 @@ def main():
             print("⚠️ Skipping Qdrant sync: Could not initialize source client.")
     else:
         print("\n⏭️  Skipping Qdrant Sync (No PROD URL provided).")
+
+    validate_local_import(dest_db, args.email)
 
     print("\n✨ Sync Completed Successfully! ✨\n")
 

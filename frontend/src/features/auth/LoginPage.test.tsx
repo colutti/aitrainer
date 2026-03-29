@@ -36,6 +36,7 @@ describe('LoginPage', () => {
   const mockAuth = {
     login: vi.fn(),
     register: vi.fn(),
+    socialLogin: vi.fn(),
     logout: vi.fn(),
     initialize: vi.fn(),
     isAuthenticated: false,
@@ -72,7 +73,8 @@ describe('LoginPage', () => {
 
     expect(screen.getByPlaceholderText(/exemplo@email\.com/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/••••••••/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Entrar/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Entrar$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Entrar com Google/i })).toBeInTheDocument();
   });
 
   it('should show validation errors for empty fields', async () => {
@@ -84,7 +86,7 @@ describe('LoginPage', () => {
       </MemoryRouter>
     );
 
-    await user.click(screen.getByRole('button', { name: /Entrar/i }));
+    await user.click(screen.getByRole('button', { name: /^Entrar$/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/E-mail inválido/i)).toBeInTheDocument();
@@ -113,7 +115,7 @@ describe('LoginPage', () => {
     await user.type(screen.getByPlaceholderText(/exemplo@email\.com/i), 'test@example.com');
     await user.type(screen.getByPlaceholderText(/••••••••/i), 'password123');
 
-    await user.click(screen.getByRole('button', { name: /Entrar/i }));
+    await user.click(screen.getByRole('button', { name: /^Entrar$/i }));
 
     await waitFor(() => {
       expect(loginMock).toHaveBeenCalledWith('test@example.com', 'password123');
@@ -173,11 +175,36 @@ describe('LoginPage', () => {
     await user.type(screen.getByPlaceholderText(/exemplo@email\.com/i), 'test@example.com');
     await user.type(screen.getByPlaceholderText(/••••••••/i), 'password123');
 
-    await user.click(screen.getByRole('button', { name: /Entrar/i }));
+    await user.click(screen.getByRole('button', { name: /^Entrar$/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/E-mail ou senha incorreto/i)).toBeInTheDocument();
     });
     consoleSpy.mockRestore();
+  });
+
+  it('should call social login when clicking Google button', async () => {
+    const user = userEvent.setup();
+    const socialLoginMock = vi.fn().mockResolvedValue(undefined);
+
+    vi.mocked(useAuthStore).mockImplementation((selector?: unknown) => {
+      const state = { ...mockAuth, socialLogin: socialLoginMock };
+      if (typeof selector === 'function') {
+        return (selector as (s: typeof state) => unknown)(state);
+      }
+      return state;
+    });
+
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    );
+
+    await user.click(screen.getByRole('button', { name: /Entrar com Google/i }));
+
+    await waitFor(() => {
+      expect(socialLoginMock).toHaveBeenCalledWith('google');
+    });
   });
 });

@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
-import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
+import { Mail, Lock, LogIn, AlertCircle, SquareAsterisk } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -36,6 +36,7 @@ export default function LoginPage() {
   const location = useLocation();
   const login = useAuthStore((state) => state.login);
   const register = useAuthStore((state) => state.register);
+  const socialLogin = useAuthStore((state) => state.socialLogin);
   const initialMode = new URLSearchParams(location.search).get('mode') === 'register' ? 'register' : 'login';
   const [isLogin, setIsLogin] = useState(initialMode === 'login');
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +73,19 @@ export default function LoginPage() {
       void navigate('/onboarding', { replace: true });
     } catch {
       setError(t('auth.login_error'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await socialLogin('google');
+      void navigate(from, { replace: true });
+    } catch {
+      setError(t('auth.social_error'));
     } finally {
       setIsLoading(false);
     }
@@ -178,6 +192,20 @@ export default function LoginPage() {
                 <LogIn className="mr-2 w-5 h-5" />
                 Entrar
               </Button>
+
+              <div className="grid grid-cols-1 gap-3 pt-2">
+                <Button
+                  type="button"
+                  fullWidth
+                  size="lg"
+                  isLoading={isLoading}
+                  onClick={() => { void handleGoogleLogin(); }}
+                  className="h-14 rounded-2xl bg-white/5 text-white border border-white/10 hover:bg-white/10 font-black shadow-xl transition-all"
+                >
+                  <SquareAsterisk className="mr-2 w-5 h-5" />
+                  Entrar com Google
+                </Button>
+              </div>
             </form>
           ) : (
             <form onSubmit={(e) => { void handleSubmitSignup(onSubmitSignup)(e); }} className="space-y-5">
