@@ -14,6 +14,7 @@ const shouldManageWebServer = process.env.PLAYWRIGHT_SKIP_WEB_SERVER !== '1';
 
 export default defineConfig({
   testDir: './e2e',
+  testIgnore: ['**/auth.setup.ts'],
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -31,30 +32,68 @@ export default defineConfig({
   },
 
   projects: [
-    { name: 'setup', testMatch: /auth\.setup\.ts/ },
     {
-      name: 'chromium',
-      use: { 
-        ...devices['Desktop Chrome'],
-        storageState: 'playwright/.auth/user.json' 
-      },
-      dependencies: ['setup'],
+      name: 'smoke-chromium',
+      testMatch: [
+        '**/00-connectivity.spec.ts',
+        '**/01-landing.spec.ts',
+        '**/02-auth-guards.spec.ts',
+        '**/03-onboarding.spec.ts',
+        '**/04-navigation.spec.ts',
+        '**/05-dashboard.spec.ts',
+      ],
+      use: { ...devices['Desktop Chrome'] },
     },
     {
-      name: 'firefox',
-      use: { 
-        ...devices['Desktop Firefox'],
-        storageState: 'playwright/.auth/user.json' 
-      },
-      dependencies: ['setup'],
+      name: 'core-chromium',
+      testMatch: [
+        '**/06-profile.spec.ts',
+        '**/07-workout.spec.ts',
+        '**/08-nutrition.spec.ts',
+        '**/09-weight.spec.ts',
+        '**/10-metabolism.spec.ts',
+        '**/11-memories.spec.ts',
+        '**/12-chat.spec.ts',
+        '**/13-settings.spec.ts',
+        '**/14-integrations.spec.ts',
+        '**/15-subscription.spec.ts',
+        '**/16-ui-components.spec.ts',
+        '**/17-dashboard-empty-states.spec.ts',
+        '**/18-settings-reload.spec.ts',
+        '**/20-landing-locale.spec.ts',
+        '**/21-profile-photo.spec.ts',
+        '**/22-memory-locale.spec.ts',
+      ],
+      use: { ...devices['Desktop Chrome'] },
     },
     {
-      name: 'webkit',
-      use: { 
-        ...devices['Desktop Safari'],
-        storageState: 'playwright/.auth/user.json' 
-      },
-      dependencies: ['setup'],
+      name: 'demo-readonly',
+      testMatch: ['**/19-demo-readonly.spec.ts'],
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox-smoke',
+      testMatch: [
+        '**/00-connectivity.spec.ts',
+        '**/01-landing.spec.ts',
+        '**/02-auth-guards.spec.ts',
+        '**/03-onboarding.spec.ts',
+        '**/04-navigation.spec.ts',
+        '**/05-dashboard.spec.ts',
+      ],
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit-smoke',
+      testMatch: [
+        '**/00-connectivity.spec.ts',
+        '**/01-landing.spec.ts',
+        '**/02-auth-guards.spec.ts',
+        '**/03-onboarding.spec.ts',
+        '**/04-navigation.spec.ts',
+        '**/05-dashboard.spec.ts',
+      ],
+      use: { ...devices['Desktop Safari'] },
     },
   ],
 
