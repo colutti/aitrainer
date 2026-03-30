@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 
 import { DataList } from './DataList';
 
@@ -46,6 +47,29 @@ describe('DataList', () => {
     render(<DataList {...defaultProps} data={[]} isLoading={true} />);
     
     expect(screen.queryByText('No Items')).not.toBeInTheDocument();
+  });
+
+  it('renders pagination when provided', () => {
+    const onPageChange = vi.fn();
+
+    render(
+      <DataList
+        {...defaultProps}
+        pagination={{
+          currentPage: 1,
+          totalPages: 3,
+          onPageChange,
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Próxima/i }));
+    expect(onPageChange).toHaveBeenCalledWith(2);
+  });
+
+  it('supports grid layout classes', () => {
+    const { container } = render(<DataList {...defaultProps} layout="grid" gridClassName="grid-cols-1 md:grid-cols-2" />);
+    expect(container.querySelector('.grid')).not.toBeNull();
   });
   
   it('renders actions', () => {

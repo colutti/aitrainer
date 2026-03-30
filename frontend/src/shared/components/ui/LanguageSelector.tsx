@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 
 import { cn } from '../../utils/cn';
 
+import { Button } from './Button';
+
 interface Language {
   code: string;
   label: string;
@@ -47,11 +49,13 @@ export function LanguageSelector() {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="sm"
         onClick={() => { setIsOpen(!isOpen); }}
         className={cn(
-          "flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300",
+          "h-auto flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300",
           "hover:bg-white/10 text-text-secondary hover:text-white border border-transparent",
           isOpen && "bg-white/10 text-white border-white/10 shadow-lg"
         )}
@@ -60,19 +64,19 @@ export function LanguageSelector() {
       >
         <Globe size={18} className={cn("transition-transform duration-500", isOpen && "rotate-180")} />
         <span className="text-sm font-bold tracking-wider">{currentLanguage?.short}</span>
-      </button>
+      </Button>
 
       {isOpen && (
         <div 
           className="absolute right-0 mt-2 w-48 rounded-2xl bg-dark-card border border-white/10 shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-200"
         >
           {languages.map((lang) => (
-            <button
+            <Button
               key={lang.code}
+              variant="ghost"
               onClick={() => { handleLanguageChange(lang.code); }}
               className={cn(
-                "w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors",
-                "hover:bg-white/5",
+                "h-auto w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors rounded-none hover:bg-white/5",
                 i18n.language === lang.code ? "text-gradient-start font-bold" : "text-text-secondary"
               )}
             >
@@ -81,7 +85,7 @@ export function LanguageSelector() {
                 <span>{lang.label}</span>
               </div>
               {i18n.language === lang.code && <Check size={16} className="text-gradient-start" />}
-            </button>
+            </Button>
           ))}
         </div>
       )}

@@ -1,6 +1,7 @@
 import { Check, Dumbbell, AlertCircle, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { Button } from '../../../shared/components/ui/Button';
 import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
 import { Skeleton } from '../../../shared/components/ui/Skeleton';
 import { PREMIUM_UI } from '../../../shared/styles/ui-variants';
@@ -143,22 +144,23 @@ export function TrainerSettingsView({
         <div className="text-center py-20 opacity-40 flex flex-col items-center">
              <AlertCircle className="mx-auto text-red-400 mb-4" size={48} />
              <p className="font-bold text-white">{t('settings.trainer.load_error')}</p>
-             <button onClick={onRetry} className="mt-6 px-8 py-3 rounded-full border border-white/10 font-black text-sm uppercase tracking-widest hover:bg-white/5">
+             <Button type="button" variant="secondary" onClick={onRetry} className="mt-6 px-8 py-3 rounded-full border border-white/10 font-black text-sm uppercase tracking-widest hover:bg-white/5">
                  {t('settings.trainer.retry')}
-             </button>
+             </Button>
         </div>
       )}
 
       {/* FOOTER ACTIONS */}
       <div className="flex justify-end pt-10 border-t border-white/5">
-          <button 
+          <Button
+            type="button"
             onClick={() => { if (!isReadOnly) onSave(); }} 
             disabled={isReadOnly || isSaving || !selectedTrainerId} 
             className="w-full md:w-auto px-12 py-4 rounded-full bg-white text-black font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/10 disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-3"
           >
              {isSaving && !isReadOnly && <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />}
              {isReadOnly ? t('settings.trainer.read_only', 'Somente leitura') : isSaving ? t('settings.trainer.saving') : t('settings.trainer.save_button')}
-          </button>
+          </Button>
       </div>
     </div>
   );

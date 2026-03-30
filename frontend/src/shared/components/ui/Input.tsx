@@ -32,7 +32,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             type={type}
             className={cn(
-              'flex h-11 w-full rounded-lg bg-dark-card border border-border px-3 py-2 text-sm text-text-primary transition-all focus:outline-none focus:ring-2 focus:ring-gradient-start/20 focus:border-gradient-start placeholder:text-text-tertiary disabled:cursor-not-allowed disabled:opacity-50',
+              'form-field flex h-11 w-full px-3 py-2 text-sm',
               leftIcon && 'pl-10',
               error && 'border-red-500 focus:ring-red-500/20 focus:border-red-500',
               className

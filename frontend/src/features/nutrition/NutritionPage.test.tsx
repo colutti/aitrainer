@@ -107,4 +107,21 @@ describe('NutritionPage', () => {
     expect(screen.getByRole('button', { name: /nutrition\.register_meal/i })).toBeDisabled();
     expect(screen.queryByLabelText(/Delete/i)).not.toBeInTheDocument();
   });
+
+  it('should render pagination when nutrition has multiple pages', () => {
+    vi.mocked(useNutritionStore).mockReturnValue({
+      ...mockStore,
+      page: 2,
+      totalPages: 4,
+    } as any);
+
+    render(
+      <MemoryRouter>
+        <NutritionPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText((_content, element) => element?.textContent === '2 / 4')).toBeInTheDocument();
+    expect(mockStore.fetchLogs).toHaveBeenCalled();
+  });
 });

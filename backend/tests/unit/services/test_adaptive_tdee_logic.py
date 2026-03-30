@@ -1504,6 +1504,59 @@ class TestCalculateTDEEV3MainFlow:
         assert "tdee" in result
         assert "confidence" in result
 
+    def test_stale_window_fallback_uses_recent_logs_for_scores(self, service, mock_db):
+        """
+        If lookback window has no data, fallback should still use recent stored logs
+        to avoid zeroing consistency/stability for users with older history (e.g. demo data).
+        """
+        start = date(2025, 1, 1)
+        profile = self._make_profile()
+        recent_weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0 - (i * 0.05))
+            for i in range(7)
+        ]
+        recent_nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2460)
+            for i in range(7)
+        ]
+
+        mock_db.get_weight_logs_by_date_range.return_value = []
+        mock_db.get_nutrition_logs_by_date_range.return_value = []
+        mock_db.get_weight_logs.return_value = recent_weight_logs
+        mock_db.get_nutrition_logs.return_value = recent_nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result["consistency_score"] > 0
+        assert "stability_score" in result
+        assert result["stability_score"] > 0
+
+    def test_fallback_handles_descending_recent_weight_logs(self, service, mock_db):
+        """Fallback should compute adherence correctly even when recent logs come newest-first."""
+        start = date(2025, 1, 1)
+        profile = self._make_profile()
+        asc_weight_logs = [
+            self._make_weight_log("test@test.com", start + timedelta(days=i), 75.0 - (i * 0.05))
+            for i in range(7)
+        ]
+        desc_weight_logs = list(reversed(asc_weight_logs))
+        recent_nutrition_logs = [
+            self._make_nutrition_log("test@test.com", start + timedelta(days=i), 2460)
+            for i in range(7)
+        ]
+
+        mock_db.get_weight_logs_by_date_range.return_value = []
+        mock_db.get_nutrition_logs_by_date_range.return_value = []
+        mock_db.get_weight_logs.return_value = desc_weight_logs
+        mock_db.get_nutrition_logs.return_value = recent_nutrition_logs
+        mock_db.get_user_profile.return_value = profile
+
+        result = service.calculate_tdee("test@test.com")
+
+        assert result["consistency_score"] > 0
+        assert result["stability_score"] > 0
+
     def test_no_nutrition_logs_returns_fallback(self, service, mock_db):
         """No nutrition logs should trigger fallback."""
         start = date(2025, 1, 1)

@@ -210,7 +210,7 @@ export function WorkoutDrawer({ workout, isOpen, isReadOnly = false, onClose }: 
               list="workout-type-suggestions"
               disabled={isReadOnly}
               {...register('workout_type')}
-              className="h-14 bg-white/5 border-white/5 rounded-2xl font-bold"
+              className="h-14 rounded-2xl font-bold"
             />
           </FormField>
 
@@ -225,7 +225,7 @@ export function WorkoutDrawer({ workout, isOpen, isReadOnly = false, onClose }: 
               type="number"
               disabled={isReadOnly}
               {...register('duration_minutes')}
-              className="h-14 bg-white/5 border-white/5 rounded-2xl font-bold"
+              className="h-14 rounded-2xl font-bold"
             />
           </FormField>
         </div>
@@ -328,7 +328,7 @@ function ExerciseCard({
             placeholder="Nome do Exercício"
             disabled={isReadOnly}
             {...register(exerciseTitlePath(exerciseIndex))}
-            className="h-12 bg-transparent border-white/10 rounded-2xl font-bold"
+            className="h-12 rounded-2xl font-bold"
           />
         </FormField>
         <Button type="button" variant="ghost" size="sm" disabled={isReadOnly} onClick={() => { if (!isReadOnly) removeExercise(); }}>

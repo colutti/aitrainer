@@ -3,6 +3,8 @@ import { AlertTriangle, Info } from 'lucide-react';
 import { type ConfirmationOptions } from '../../hooks/useConfirmation';
 import { cn } from '../../utils/cn';
 
+import { Button } from './Button';
+
 interface ConfirmationModalProps {
   isOpen: boolean;
   options: ConfirmationOptions;
@@ -62,28 +64,30 @@ export function ConfirmationModal({
 
         {/* Buttons */}
         <div className="flex gap-3">
-          <button
+          <Button
             data-testid="confirm-cancel"
             onClick={onCancel}
-            className="flex-1 h-11 px-4 rounded-xl bg-dark-bg border border-border text-text-primary font-medium hover:bg-white/5 transition-all active:scale-95"
+            variant="secondary"
+            fullWidth
+            className="h-11"
           >
             {options.cancelText ?? 'Cancelar'}
-          </button>
-          <button
+          </Button>
+          <Button
             data-testid="confirm-accept"
             onClick={onAccept}
+            fullWidth
             className={cn(
-              "flex-1 h-11 px-4 rounded-xl text-white font-bold transition-all active:scale-95 shadow-lg",
+              "h-11 font-bold text-white",
               isDanger 
-                ? "bg-red-500 hover:bg-red-600 shadow-red-500/20" 
-                : "bg-gradient-to-r from-gradient-start to-gradient-end hover:opacity-90 shadow-orange"
+                ? "bg-red-500 hover:bg-red-600 border-red-500 shadow-none" 
+                : "bg-[#14b8a6] hover:bg-[#0d9488] text-black border-[#2dd4bf]/30 shadow-none"
             )}
           >
             {options.confirmText ?? 'Confirmar'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
   );
 }
-

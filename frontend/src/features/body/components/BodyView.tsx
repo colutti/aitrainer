@@ -1,6 +1,7 @@
 import { Scale, Flame } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { Button } from '../../../shared/components/ui/Button';
 import { PREMIUM_UI } from '../../../shared/styles/ui-variants';
 import { cn } from '../../../shared/utils/cn';
 
@@ -18,8 +19,8 @@ export function BodyView({ activeTab, onTabChange }: BodyViewProps) {
   const { t } = useTranslation();
 
   const tabs = [
-    { id: 'weight', label: t('body.weight_title'), icon: Scale },
-    { id: 'nutrition', label: t('body.nutrition_title'), icon: Flame },
+    { id: 'weight', label: t('body.weight_tab'), icon: Scale },
+    { id: 'nutrition', label: t('body.nutrition_tab'), icon: Flame },
   ] as const;
 
   return (
@@ -27,7 +28,7 @@ export function BodyView({ activeTab, onTabChange }: BodyViewProps) {
       
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
+        <div className="space-y-1">
           <p className={PREMIUM_UI.text.label}>
             {activeTab === 'nutrition' ? t('body.nutrition_subtitle') : t('body.weight_subtitle')}
           </p>
@@ -42,9 +43,10 @@ export function BodyView({ activeTab, onTabChange }: BodyViewProps) {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
-              <button
+              <Button
                 key={tab.id}
                 type="button"
+                variant="ghost"
                 data-testid={`body-tab-${tab.id}`}
                 onClick={() => { onTabChange(tab.id as BodyTab); }}
                 className={cn(
@@ -56,7 +58,7 @@ export function BodyView({ activeTab, onTabChange }: BodyViewProps) {
               >
                 <Icon size={16} />
                 <span className={cn(isActive ? "block" : "hidden md:block")}>{tab.label}</span>
-              </button>
+              </Button>
             );
           })}
         </div>

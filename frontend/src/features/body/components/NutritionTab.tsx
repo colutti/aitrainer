@@ -3,12 +3,12 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-import { DataView } from '../../../shared/components/ui/premium/DataView';
-import { Pagination } from '../../../shared/components/ui/premium/Pagination';
-import { ViewHeader } from '../../../shared/components/ui/premium/ViewHeader';
-import { Skeleton } from '../../../shared/components/ui/Skeleton';
+import { Button } from '../../../shared/components/ui/Button';
+import { DataList } from '../../../shared/components/ui/DataList';
 import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { useNutritionStore } from '../../../shared/hooks/useNutrition';
+import { PREMIUM_UI } from '../../../shared/styles/ui-variants';
+import { cn } from '../../../shared/utils/cn';
 import { MacroCard } from '../../nutrition/components/MacroCard';
 import { NutritionLogCard } from '../../nutrition/components/NutritionLogCard';
 
@@ -22,7 +22,6 @@ export function NutritionTab() {
     logs,
     stats,
     isLoading,
-    error,
     page,
     totalPages,
     fetchLogs,
@@ -48,11 +47,6 @@ export function NutritionTab() {
     return Math.round((current / target) * 100);
   };
 
-  const onRetry = () => {
-    void fetchLogs();
-    void fetchStats();
-  };
-
   const onDelete = (id: string) => {
     if (blockIfReadOnly()) {
       return;
@@ -63,17 +57,6 @@ export function NutritionTab() {
   const onPageChange = (p: number) => {
     void fetchLogs(p);
   };
-
-  const loadingSkeleton = (
-    <div className="space-y-8 animate-pulse">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-3xl bg-white/5" />)}
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
-        {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-3xl bg-white/5" />)}
-      </div>
-    </div>
-  );
 
   return (
     <div className="space-y-10">
@@ -113,50 +96,43 @@ export function NutritionTab() {
         />
       </div>
 
-      {/* HEADER SECTION */}
-      <ViewHeader 
-        title={t('nutrition.history_title')}
-        subtitle={t('body.nutrition_subtitle')}
-        icon={<History size={20} className="text-zinc-500" />}
-        action={{
-          label: t('nutrition.register_meal'),
-          icon: <Plus size={20} strokeWidth={3} />,
-          onClick: () => { if (!blockIfReadOnly()) void navigate('/dashboard/chat'); },
-          disabled: isReadOnly,
-        }}
-        className="px-2"
-      />
-
       {/* DATA ORCHESTRATION LAYER */}
-      <DataView 
-        isLoading={isLoading && logs.length === 0}
-        error={error}
-        isEmpty={logs.length === 0}
-        onRetry={onRetry}
-        loadingSkeleton={loadingSkeleton}
+      <DataList
+        data={logs}
+        actions={(
+          <Button
+            type="button"
+            onClick={() => { if (!blockIfReadOnly()) void navigate('/dashboard/chat'); }}
+            disabled={isReadOnly}
+            className={cn(PREMIUM_UI.button.premium, "px-5")}
+          >
+            <Plus size={20} strokeWidth={3} />
+            {t('nutrition.register_meal')}
+          </Button>
+        )}
+        renderItem={(log) => (
+          <NutritionLogCard
+            log={log}
+            isReadOnly={isReadOnly}
+            onDelete={onDelete}
+          />
+        )}
+        keyExtractor={(log) => log.id}
+        isLoading={isLoading}
+        layout="grid"
         emptyState={{
           title: t('nutrition.empty_history_title'),
+          description: '',
           icon: <History size={40} className="text-zinc-500" />
         }}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {logs.map(log => (
-            <NutritionLogCard 
-              key={log.id} 
-              log={log} 
-              isReadOnly={isReadOnly}
-              onDelete={onDelete} 
-            />
-          ))}
-        </div>
-
-        <Pagination 
-          currentPage={page}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
-          isLoading={isLoading}
-        />
-      </DataView>
+        pagination={{
+          currentPage: page,
+          totalPages,
+          onPageChange,
+        }}
+        className="space-y-8"
+        gridClassName="grid-cols-1 md:grid-cols-2"
+      />
     </div>
   );
 }

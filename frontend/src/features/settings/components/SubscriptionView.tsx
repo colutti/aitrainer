@@ -1,6 +1,7 @@
 import { Check, CreditCard, Sparkles, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { Button } from '../../../shared/components/ui/Button';
 import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
 import { Skeleton } from '../../../shared/components/ui/Skeleton';
 import { PREMIUM_UI } from '../../../shared/styles/ui-variants';
@@ -129,7 +130,8 @@ export function SubscriptionView({
                 ))}
               </ul>
 
-              <button
+              <Button
+                type="button"
                 disabled={isReadOnly || isCurrent || planIdLower === 'free' || loading !== null}
                 onClick={() => {
                   if (isReadOnly) return;
@@ -155,11 +157,11 @@ export function SubscriptionView({
                     ? t('settings.subscription.active') 
                     : planIdLower === 'free' 
                       ? t('settings.subscription.unavailable', 'Indisponível') 
-                      : currentPlan !== 'free' && hasStripeCustomer
+                    : currentPlan !== 'free' && hasStripeCustomer
                         ? t('settings.subscription.change_plan')
                         : t('settings.subscription.upgrade')}
                 </span>
-              </button>
+              </Button>
             </PremiumCard>
           );
         })}
@@ -180,7 +182,8 @@ export function SubscriptionView({
              </div>
           </div>
           
-          <button 
+          <Button
+            type="button"
             onClick={() => { if (!isReadOnly) onManage(); }} 
             disabled={isReadOnly || loading !== null}
             data-testid="btn-manage-subscription"
@@ -188,7 +191,7 @@ export function SubscriptionView({
           >
             {loading === 'manage' && !isReadOnly && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
             {isReadOnly ? t('settings.subscription.read_only', 'Somente leitura') : t('settings.subscription.manage_button')}
-          </button>
+          </Button>
         </PremiumCard>
       )}
 

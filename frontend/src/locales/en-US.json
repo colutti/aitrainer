@@ -36,7 +36,8 @@
   },
   "auth": {
     "login_error": "Invalid email or password.",
-    "social_error": "Social authentication failed. Please try again."
+    "social_error": "Social authentication failed. Please try again.",
+    "google_sign_in": "Sign in with Google"
   },
   "nav": {
     "home": "Home",
@@ -164,10 +165,11 @@
   "body": {
     "weight_title": "Weight & Composition",
     "nutrition_title": "Diet & Macros",
+    "weight_tab": "Weight",
+    "nutrition_tab": "Nutrition",
     "weight_subtitle": "Manage your weight history and body evolution.",
     "nutrition_subtitle": "Track your calorie intake and macronutrients.",
     "weight": {
-      "history_title": "Recent History",
       "register_weight": "Log Weight",
       "empty_history": "No weight logs yet.",
       "weight": "Weight",

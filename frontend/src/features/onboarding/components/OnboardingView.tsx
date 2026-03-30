@@ -91,19 +91,20 @@ export function OnboardingView({
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">{t('settings.gender')}</label>
                 <div className="grid grid-cols-2 gap-3">
                   {['male', 'female'].map((g) => (
-                    <button
+                    <Button
                       key={g}
                       type="button"
+                      variant="ghost"
                       onClick={() => { setFormData({...formData, gender: t(`onboarding.genders.${g}`)}); }}
                       className={cn(
-                        "py-4 rounded-2xl border font-bold transition-all text-sm",
+                        "h-auto py-4 rounded-2xl border font-bold transition-all text-sm",
                         formData.gender === t(`onboarding.genders.${g}`)
                           ? "bg-white/10 border-white/20 text-white shadow-xl shadow-white/5"
                           : "bg-white/[0.02] border-white/5 text-zinc-500 hover:border-white/10"
                       )}
                     >
                       {t(`onboarding.genders.${g}`)}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -117,7 +118,7 @@ export function OnboardingView({
                     placeholder={t('onboarding.name_placeholder')} 
                     value={formData.name ?? ''}
                     onChange={e => { setFormData({...formData, name: e.target.value}); }}
-                    className="h-14 bg-white/5 border-white/5 rounded-2xl focus:border-white/20"
+                    className="h-14 rounded-2xl"
                   />
                 </div>
                 <Input 
@@ -127,7 +128,7 @@ export function OnboardingView({
                   type="number" 
                   value={formData.age ?? ''}
                   onChange={e => { setFormData({...formData, age: Number(e.target.value)}); }}
-                  className="h-14 bg-white/5 border-white/5 rounded-2xl"
+                  className="h-14 rounded-2xl"
                 />
                 <Input 
                   id="onboarding-height"
@@ -136,7 +137,7 @@ export function OnboardingView({
                   type="number" 
                   value={formData.height ?? ''}
                   onChange={e => { setFormData({...formData, height: Number(e.target.value)}); }}
-                  className="h-14 bg-white/5 border-white/5 rounded-2xl"
+                  className="h-14 rounded-2xl"
                 />
                 <Input 
                   id="onboarding-weight"
@@ -145,7 +146,7 @@ export function OnboardingView({
                   type="number" 
                   value={formData.weight ?? ''}
                   onChange={e => { setFormData({...formData, weight: Number(e.target.value)}); }}
-                  className="h-14 bg-white/5 border-white/5 rounded-2xl md:col-span-2"
+                  className="h-14 rounded-2xl md:col-span-2"
                 />
               </div>
             </div>
@@ -202,9 +203,9 @@ export function OnboardingView({
             </div>
 
             <div className="flex gap-4">
-              <button onClick={() => { onBack(); }} className="p-4 rounded-2xl bg-white/5 border border-white/5 text-zinc-400 hover:text-white transition-all">
+              <Button type="button" variant="ghost" size="icon" onClick={() => { onBack(); }} className="h-14 w-14 rounded-2xl bg-white/5 border border-white/5 text-zinc-400 hover:text-white transition-all">
                 <ChevronLeft size={24} />
-              </button>
+              </Button>
               <Button 
                 fullWidth 
                 size="lg" 
@@ -269,9 +270,9 @@ export function OnboardingView({
             </div>
 
             <div className="flex gap-4">
-              <button onClick={() => { onBack(); }} className="p-4 rounded-2xl bg-white/5 border border-white/5 text-zinc-400 hover:text-white transition-all">
+              <Button type="button" variant="ghost" size="icon" onClick={() => { onBack(); }} className="h-14 w-14 rounded-2xl bg-white/5 border border-white/5 text-zinc-400 hover:text-white transition-all">
                 <ChevronLeft size={24} />
-              </button>
+              </Button>
               <Button 
                 fullWidth 
                 size="lg" 
@@ -312,15 +313,16 @@ export function OnboardingView({
                     value={hevyApiKey}
                     onChange={e => { setHevyApiKey(e.target.value); }}
                     placeholder="Hevy API Key"
-                    className="flex-1 h-12 bg-black/20 border-white/5 focus:border-white/20 rounded-xl text-sm font-bold"
+                    className="flex-1 h-12 rounded-xl text-sm font-bold"
                   />
-                  <button 
+                  <Button
+                    type="button"
                     onClick={() => { void onHevyConnect(); }} 
                     disabled={!hevyApiKey || connectingHevy}
-                    className="px-6 rounded-xl bg-indigo-500 text-white font-black hover:bg-indigo-600 active:scale-95 transition-all shadow-lg shadow-indigo-500/20"
+                    className="h-12 px-6 rounded-xl bg-indigo-500 text-white font-black hover:bg-indigo-600 active:scale-95 transition-all shadow-lg shadow-indigo-500/20 border-indigo-500"
                   >
                     {connectingHevy ? <RefreshCw className="animate-spin" size={18} /> : t('common.connect')}
-                  </button>
+                  </Button>
                 </div>
               </PremiumCard>
 

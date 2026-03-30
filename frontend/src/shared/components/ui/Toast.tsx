@@ -2,6 +2,8 @@ import { CheckCircle, Info, X, XCircle } from 'lucide-react';
 
 import type { NotificationType } from '../../hooks/useNotification';
 
+import { Button } from './Button';
+
 interface ToastProps {
   id: string;
   message: string;
@@ -52,14 +54,16 @@ export function Toast({ id: _id, message, type, onClose }: ToastProps) {
 
       <p className="flex-1 text-sm font-medium text-text-primary">{message}</p>
 
-      <button
+      <Button
         data-testid="toast-close"
         onClick={onClose}
-        className="flex-shrink-0 p-1 rounded-md hover:bg-white/10 transition-colors"
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6 flex-shrink-0 rounded-md hover:bg-white/10"
         aria-label="Close notification"
       >
         <X className="h-4 w-4" />
-      </button>
+      </Button>
     </div>
   );
 }

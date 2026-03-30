@@ -81,5 +81,6 @@ describe('PremiumLayout', () => {
 
     expect(screen.getByTestId('desktop-logout')).toBeInTheDocument();
     expect(screen.getByTestId('mobile-logout')).toBeInTheDocument();
+    expect(screen.getByLabelText('Logout')).toBeInTheDocument();
   });
 });

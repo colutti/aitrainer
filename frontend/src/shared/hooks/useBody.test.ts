@@ -38,7 +38,25 @@ describe('useBodyStore', () => {
       expect(state.logs).toEqual(mockLogs);
       expect(state.isLoading).toBe(false);
       expect(state.error).toBeNull();
-      expect(httpClient).toHaveBeenCalledWith('/weight?limit=30');
+      expect(httpClient).toHaveBeenCalledWith('/weight?page=1&page_size=10');
+    });
+
+    it('should request paginated logs with page and page_size', async () => {
+      vi.mocked(httpClient).mockResolvedValue({
+        logs: mockLogs,
+        total: 2,
+        page: 2,
+        page_size: 15,
+        total_pages: 4,
+      });
+
+      await useBodyStore.getState().fetchLogs(2, 15);
+
+      expect(httpClient).toHaveBeenCalledWith('/weight?page=2&page_size=15');
+
+      const state = useBodyStore.getState();
+      expect(state.page).toBe(2);
+      expect(state.totalPages).toBe(4);
     });
 
     it('should handle fetch logs error', async () => {

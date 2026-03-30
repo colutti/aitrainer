@@ -17,6 +17,7 @@ const mockLog = {
   protein_grams: 150,
   carbs_grams: 200,
   fat_grams: 70,
+  notes: 'Meal prep',
 } as any;
 
 describe('NutritionLogCard', () => {
@@ -30,6 +31,7 @@ describe('NutritionLogCard', () => {
     expect(screen.getByText(/150/)).toBeInTheDocument();
     expect(screen.getByText(/200/)).toBeInTheDocument();
     expect(screen.getByText(/70/)).toBeInTheDocument();
+    expect(screen.getByText(/"Meal prep"/i)).toBeInTheDocument();
   });
 
   it('should call onDelete when delete button is clicked', () => {

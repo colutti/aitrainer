@@ -471,6 +471,22 @@ class AdaptiveTDEEService:
             datetime(start_date.year, start_date.month, start_date.day),
             datetime(end_date.year, end_date.month, end_date.day),
         )
+        recent_weight_logs = self.db.get_weight_logs(user_email, limit=28)
+        recent_nutrition_logs = self.db.get_nutrition_logs(user_email, limit=28)
+        fallback_weight_logs = (
+            weight_logs
+            if weight_logs
+            else recent_weight_logs
+            if isinstance(recent_weight_logs, list)
+            else []
+        )
+        fallback_nutrition_logs = (
+            nutrition_logs
+            if nutrition_logs
+            else recent_nutrition_logs
+            if isinstance(recent_nutrition_logs, list)
+            else []
+        )
 
         # Step 2: Calculate formula TDEE as prior/fallback
         profile = self.db.get_user_profile(user_email)
@@ -514,7 +530,7 @@ class AdaptiveTDEEService:
                 user_email,
             )
             return self._calculate_fallback_tdee(
-                user_email, weight_logs, nutrition_logs
+                user_email, fallback_weight_logs, fallback_nutrition_logs
             )
 
         # Capture actual latest weight BEFORE filtering
@@ -531,7 +547,7 @@ class AdaptiveTDEEService:
         if days_elapsed < self.MIN_DATA_DAYS:
             logger.info("Data range too short for user %s. Using fallback.", user_email)
             return self._calculate_fallback_tdee(
-                user_email, weight_logs_raw, nutrition_logs
+                user_email, weight_logs_raw, fallback_nutrition_logs
             )
 
         # Step 5: Interpolate weight gaps and compute daily trend (Task 2)
@@ -546,7 +562,7 @@ class AdaptiveTDEEService:
                 "No complete nutrition logs for user %s. Using fallback.", user_email
             )
             return self._calculate_fallback_tdee(
-                user_email, weight_logs, nutrition_logs
+                user_email, weight_logs, fallback_nutrition_logs
             )
 
         # Step 7: Create nutrition_by_date dict
@@ -856,19 +872,21 @@ class AdaptiveTDEEService:
     def _calculate_fallback_tdee(self, user_email, weight_logs, nutrition_logs) -> dict:
         """Safe TDEE estimate when adaptive data is missing."""
         profile = self.db.get_user_profile(user_email)
+        complete_nutrition = [log for log in nutrition_logs if not log.partial_logged]
+        sorted_weight_logs = sorted(weight_logs, key=lambda x: x.date) if weight_logs else []
         latest_weight = (
-            sorted(weight_logs, key=lambda x: x.date)[-1].weight_kg
-            if weight_logs
+            sorted_weight_logs[-1].weight_kg
+            if sorted_weight_logs
             else 70.0
         )
         tdee_est = self._calculate_formula_tdee(profile, latest_weight, weight_logs)
 
         days = (
-            (weight_logs[-1].date - weight_logs[0].date).days
-            if weight_logs and len(weight_logs) >= 2
+            (sorted_weight_logs[-1].date - sorted_weight_logs[0].date).days
+            if len(sorted_weight_logs) >= 2
             else 7
         )
-        adh = len(nutrition_logs) / (days + 1) if days > 0 else 0
+        adh = len(complete_nutrition) / (days + 1) if days > 0 else 0
         target = int(round(tdee_est))
         goal_type, goal_rate = "maintain", 0.0
         if profile:
@@ -885,26 +903,32 @@ class AdaptiveTDEEService:
             "tdee": int(round(tdee_est)),
             "confidence": "none",
             "avg_calories": int(
-                round(sum(n.calories for n in nutrition_logs) / len(nutrition_logs))
+                round(
+                    sum(n.calories for n in complete_nutrition)
+                    / len(complete_nutrition)
+                )
             )
-            if nutrition_logs
+            if complete_nutrition
             else 0,
             "weight_change_per_week": 0.0,
             "status": "maintenance",
             "is_stable": True,
-            "logs_count": len(nutrition_logs),
-            "nutrition_logs_count": len(nutrition_logs),
-            "startDate": weight_logs[0].date.isoformat()
-            if weight_logs
+            "logs_count": len(complete_nutrition),
+            "nutrition_logs_count": len(complete_nutrition),
+            "startDate": sorted_weight_logs[0].date.isoformat()
+            if sorted_weight_logs
             else date.today().isoformat(),
-            "endDate": weight_logs[-1].date.isoformat()
-            if weight_logs
+            "endDate": sorted_weight_logs[-1].date.isoformat()
+            if sorted_weight_logs
             else date.today().isoformat(),
             "latest_weight": latest_weight,
             "daily_target": target,
             "goal_weekly_rate": goal_rate,
             "goal_type": goal_type,
             "consistency_score": int(round(adh * 100)),
+            "stability_score": self._calculate_stability_score(
+                target, complete_nutrition
+            ),
             "macro_targets": calculate_macro_targets(target, latest_weight),
             "weight_trend": [],
             "consistency": [],
@@ -914,7 +938,7 @@ class AdaptiveTDEEService:
                 "devido a histórico de dados insuficiente ou instável."
             ),
         }
-        comp = calculate_body_composition_changes(weight_logs)
+        comp = calculate_body_composition_changes(sorted_weight_logs)
         if comp:
             res.update(comp)
         return res

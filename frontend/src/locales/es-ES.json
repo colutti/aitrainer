@@ -36,7 +36,8 @@
   },
   "auth": {
     "login_error": "Correo electrónico o contraseña incorrectos.",
-    "social_error": "Error en la autenticación social. Inténtelo de nuevo."
+    "social_error": "Error en la autenticación social. Inténtelo de nuevo.",
+    "google_sign_in": "Iniciar sesión con Google"
   },
   "nav": {
     "home": "Inicio",
@@ -164,10 +165,11 @@
   "body": {
     "weight_title": "Peso y Composición",
     "nutrition_title": "Dieta y Macros",
+    "weight_tab": "Peso",
+    "nutrition_tab": "Nutrición",
     "weight_subtitle": "Administre su historial de peso e evolución corporal.",
     "nutrition_subtitle": "Siga su ingesta calórica y macronutrientes.",
     "weight": {
-      "history_title": "Historial Reciente",
       "register_weight": "Registrar Peso",
       "empty_history": "No hay registros de peso.",
       "weight": "Peso",

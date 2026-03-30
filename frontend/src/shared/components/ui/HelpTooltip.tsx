@@ -3,6 +3,8 @@ import { useState } from 'react';
 
 import { cn } from '../../utils/cn';
 
+import { Button } from './Button';
+
 interface HelpTooltipProps {
   content: string;
   className?: string;
@@ -13,15 +15,17 @@ export function HelpTooltip({ content, className }: HelpTooltipProps) {
 
   return (
     <div className={cn("relative inline-flex items-center", className)}>
-      <button
+      <Button
         type="button"
-        className="text-text-muted/50 hover:text-text-primary transition-colors focus:outline-none"
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6 text-text-muted/50 hover:text-text-primary hover:bg-transparent"
         onMouseEnter={() => { setIsVisible(true); }}
         onMouseLeave={() => { setIsVisible(false); }}
         onTouchStart={() => { setIsVisible(!isVisible); }}
       >
         <HelpCircle size={16} />
-      </button>
+      </Button>
 
       {isVisible && (
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 p-4 z-50 rounded-2xl bg-dark-card border border-border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">

@@ -67,4 +67,13 @@ describe('LanguageSelector', () => {
 
     expect(screen.queryByText('Português')).not.toBeInTheDocument();
   });
+
+  it('should render language options without primary button background', async () => {
+    render(<LanguageSelector />);
+    fireEvent.click(screen.getByRole('button'));
+
+    expect(screen.getByText('Português').closest('button')).not.toHaveClass('bg-[#14b8a6]');
+    expect(screen.getByText('Español').closest('button')).not.toHaveClass('bg-[#14b8a6]');
+    expect(screen.getByText('English').closest('button')).not.toHaveClass('bg-[#14b8a6]');
+  });
 });

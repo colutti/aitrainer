@@ -348,27 +348,31 @@ export function AdminUsersPage() {
 
         {totalPages > 1 && (
           <div className="border-t border-border p-1 md:p-4 bg-zinc-900/50 flex justify-center items-center gap-0.5 md:gap-2 mt-auto">
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               disabled={page === 1 || isLoading}
               onClick={() => {
                 handlePageChange(page - 1);
               }}
-              className="p-1 md:p-2 disabled:opacity-50"
+              className="h-8 w-8 md:h-10 md:w-10 disabled:opacity-50"
             >
               <ArrowLeft size={14} className="md:w-4 md:h-4" />
-            </button>
+            </Button>
             <span className="text-[10px] md:text-sm text-text-secondary flex-shrink-0 px-1 md:px-2">
               {page}/{totalPages}
             </span>
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               disabled={page === totalPages || isLoading}
               onClick={() => {
                 handlePageChange(page + 1);
               }}
-              className="p-1 md:p-2 disabled:opacity-50"
+              className="h-8 w-8 md:h-10 md:w-10 disabled:opacity-50"
             >
               <ArrowRight size={14} className="md:w-4 md:h-4" />
-            </button>
+            </Button>
           </div>
         )}
       </div>

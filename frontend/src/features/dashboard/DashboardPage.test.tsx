@@ -148,6 +148,24 @@ describe('DashboardPage', () => {
     expect(screen.getByTestId('frequency-widget')).toBeInTheDocument();
   });
 
+  it('should render the daily goal widget before the other dashboard widgets', () => {
+    vi.mocked(useDashboardStore).mockReturnValue({
+      ...defaultHookValues,
+      data: defaultData as any,
+    });
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    const dailyGoal = screen.getByTestId('widget-metabolism');
+    const fatWidget = screen.getByTestId('widget-fat');
+
+    expect(dailyGoal.compareDocumentPosition(fatWidget) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('should render dashboard content without an inner scroll container', () => {
     vi.mocked(useDashboardStore).mockReturnValue({
       ...defaultHookValues,
@@ -248,6 +266,8 @@ describe('DashboardPage', () => {
            ...defaultData.stats,
            body: {
              ...defaultData.stats.body,
+             weight_diff_15: -0.8,
+             weight_diff_30: -1.6,
              body_fat_pct: 15.0,
              fat_diff: null,
              fat_diff_15: -1.0,
@@ -268,6 +288,9 @@ describe('DashboardPage', () => {
 
     // Fat checks
     expect(screen.getAllByText(/15\.0/)[0]).toBeInTheDocument();
+    expect(screen.getAllByText(/\(7d\)/).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/\(15d\)/).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/\(30d\)/).length).toBeGreaterThanOrEqual(2);
 
     // Muscle checks
     expect(screen.getAllByText(/35\.0/)[0]).toBeInTheDocument();

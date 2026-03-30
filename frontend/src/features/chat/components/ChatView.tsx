@@ -1,6 +1,7 @@
 import { Bot, Send, Sparkles, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { Button } from '../../../shared/components/ui/Button';
 import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
 import type { UserInfo } from '../../../shared/hooks/useAuth';
 import { useDemoMode } from '../../../shared/hooks/useDemoMode';
@@ -192,8 +193,10 @@ export function ChatView({
                     disabled={isStreaming || isDemoUser}
                     rows={1}
                   />
-                  <button
+                  <Button
                     type="submit"
+                    variant="ghost"
+                    size="icon"
                     disabled={!inputValue.trim() || isStreaming || isDemoUser}
                     className={cn(
                       "w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg shrink-0 mb-0.5",
@@ -203,7 +206,7 @@ export function ChatView({
                     )}
                   >
                     <Send size={20} className={cn(isStreaming && "animate-pulse", "ml-0.5")} />
-                  </button>
+                  </Button>
                 </form>
               </div>
             ) : (
@@ -220,12 +223,13 @@ export function ChatView({
                       {error === 'TRIAL_EXPIRED' ? t('chat.trial_ended.description') : t('chat.daily_limit.description')}
                     </p>
                   </div>
-                  <button 
+                  <Button
+                    type="button"
                     onClick={() => { window.location.href = '/dashboard/settings/subscription'; }}
                     className="w-full max-w-xs bg-white text-black font-black py-3.5 px-8 rounded-full transition-transform active:scale-95 shadow-xl shadow-white/10"
                   >
                     {t('chat.upgrade_button')}
-                  </button>
+                  </Button>
                 </div>
               </PremiumCard>
             )}

@@ -67,4 +67,10 @@ describe('WorkoutCard', () => {
     fireEvent.click(screen.getByTestId('workout-card'));
     expect(onClick).toHaveBeenCalledWith(mockWorkout);
   });
+
+  it('should keep delete action visible and accessible', () => {
+    render(<WorkoutCard workout={mockWorkout} onDelete={vi.fn()} />);
+
+    expect(screen.getByLabelText(/Delete/i)).toBeInTheDocument();
+  });
 });

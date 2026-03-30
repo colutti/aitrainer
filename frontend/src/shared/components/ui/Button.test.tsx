@@ -42,4 +42,18 @@ describe('Button', () => {
     render(<Button fullWidth>Full Width</Button>);
     expect(screen.getByRole('button')).toHaveClass('w-full');
   });
+
+  it('should disable native mobile tap highlight color', () => {
+    render(<Button>Tap safe</Button>);
+    expect(screen.getByRole('button')).toHaveClass('[-webkit-tap-highlight-color:transparent]');
+  });
+
+  it('should use neutral focus ring and explicit ghost active state', () => {
+    const { rerender } = render(<Button>Neutral focus</Button>);
+    expect(screen.getByRole('button')).toHaveClass('focus-visible:ring-white/30');
+    expect(screen.getByRole('button')).not.toHaveClass('focus-visible:ring-gradient-start');
+
+    rerender(<Button variant="ghost">Ghost</Button>);
+    expect(screen.getByRole('button')).toHaveClass('active:bg-white/10');
+  });
 });

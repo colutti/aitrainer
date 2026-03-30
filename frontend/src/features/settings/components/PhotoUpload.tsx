@@ -130,15 +130,17 @@ export function PhotoUpload({
         {/* Avatar Preview */}
         <div className="relative group">
           <UserAvatar photo={preview} name={nameForDisplay} size="2xl" />
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={handleClick}
             disabled={processing || isLoading}
-            className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            className="absolute inset-0 h-full w-full flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 hover:bg-black/50 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Change profile photo"
           >
             <Upload size={24} className="text-white" />
-          </button>
+          </Button>
         </div>
 
         {/* Hidden File Input */}

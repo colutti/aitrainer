@@ -140,7 +140,7 @@ export default function UserProfileView({
                     data-testid="profile-name"
                     disabled={isReadOnly}
                     {...register('display_name')} 
-                  className="pl-12 h-14 bg-white/5 border-white/5 rounded-2xl focus:border-white/20 text-white"
+                  className="pl-12 h-14 rounded-2xl"
                 />
               </FormField>
 
@@ -149,7 +149,7 @@ export default function UserProfileView({
                     id="profile-gender"
                     disabled={isReadOnly}
                     {...register('gender')}
-                  className="flex h-14 w-full rounded-2xl bg-white/5 border border-white/5 px-4 py-2 text-sm text-white transition-all focus:outline-none focus:border-white/20"
+                  className="form-field flex h-14 w-full rounded-2xl px-4 py-2 text-sm"
                 >
                   <option value="male">{t('onboarding.genders.male')}</option>
                   <option value="female">{t('onboarding.genders.female')}</option>
@@ -163,7 +163,7 @@ export default function UserProfileView({
                     type="number"
                     disabled={isReadOnly}
                     {...register('age', { valueAsNumber: true })}
-                  className="pl-12 h-14 bg-white/5 border-white/5 rounded-2xl focus:border-white/20 text-white"
+                  className="pl-12 h-14 rounded-2xl"
                 />
               </FormField>
 
@@ -175,7 +175,7 @@ export default function UserProfileView({
                     type="number"
                     disabled={isReadOnly}
                     {...register('height', { valueAsNumber: true })}
-                    className="pl-12 h-14 bg-white/5 border-white/5 rounded-2xl focus:border-white/20 text-white"
+                    className="pl-12 h-14 rounded-2xl"
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-500 uppercase tracking-widest">cm</span>
                 </div>
@@ -197,7 +197,7 @@ export default function UserProfileView({
                     id="profile-goal"
                     disabled={isReadOnly}
                     {...register('goal_type')}
-                  className="flex h-14 w-full rounded-2xl bg-white/5 border border-white/5 px-4 py-2 text-sm text-white transition-all focus:outline-none focus:border-white/20"
+                  className="form-field flex h-14 w-full rounded-2xl px-4 py-2 text-sm"
                 >
                   <option value="lose">{t('onboarding.goals.lose')}</option>
                   <option value="maintain">{t('onboarding.goals.maintain')}</option>
@@ -213,7 +213,7 @@ export default function UserProfileView({
                     type="number"
                     disabled={isReadOnly}
                     {...register('target_weight', { valueAsNumber: true })}
-                    className="pl-12 h-14 bg-white/5 border-white/5 rounded-2xl focus:border-white/20 text-white"
+                    className="pl-12 h-14 rounded-2xl"
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-500 uppercase tracking-widest">kg</span>
                 </div>
@@ -228,7 +228,7 @@ export default function UserProfileView({
                     step="0.1"
                     disabled={isReadOnly}
                     {...register('weekly_rate', { valueAsNumber: true })}
-                    className="pl-12 h-14 bg-white/5 border-white/5 rounded-2xl focus:border-white/20 text-white"
+                    className="pl-12 h-14 rounded-2xl"
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-500 uppercase tracking-widest">kg/sem</span>
                 </div>

@@ -20,7 +20,7 @@ export function DashboardMiniChart({ data, dataKey, color, id }: DashboardMiniCh
   if (!data || data.length === 0) return null;
 
   return (
-    <div className="absolute inset-x-0 bottom-0 h-32 z-0 opacity-40 group-hover:opacity-100 transition-opacity">
+    <div className="mt-4 h-24 md:h-32 md:absolute md:inset-x-0 md:bottom-0 md:z-0 md:opacity-40 md:group-hover:opacity-100 transition-opacity">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data}>
           <defs>

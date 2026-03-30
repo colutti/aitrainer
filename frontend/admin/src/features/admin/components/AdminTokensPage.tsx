@@ -1,3 +1,4 @@
+import { Button } from '@shared/components/ui/Button';
 import { useNotificationStore } from '@shared/hooks/useNotification';
 import type { TokenSummary, TokenTimeseries } from '@shared/types/admin';
 import { RotateCw } from 'lucide-react';
@@ -61,22 +62,25 @@ export function AdminTokensPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold text-text-primary">Token Analytics</h1>
-          <button 
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => { void fetchTokenData(days); }}
             disabled={isLoading}
-            className="p-2 hover:bg-white/5 rounded-full transition-colors disabled:opacity-50"
+            className="rounded-full disabled:opacity-50"
             title="Atualizar"
             aria-label="Atualizar tokens"
           >
             <RotateCw size={20} className={`text-text-secondary ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
+          </Button>
         </div>
 
         {/* Period Selector */}
         <div className="flex gap-2">
           {[7, 30, 90].map((d) => (
-            <button
+            <Button
               key={d}
+              type="button"
               onClick={() => {
                 handleDaysChange(d);
               }}
@@ -87,7 +91,7 @@ export function AdminTokensPage() {
               }`}
             >
               {d}d
-            </button>
+            </Button>
           ))}
         </div>
       </div>

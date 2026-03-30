@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { Button } from '../../../shared/components/ui/Button';
 import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
 import { PREMIUM_UI } from '../../../shared/styles/ui-variants';
 import type { HevyStatus, HevyWebhookConfig, HevyWebhookCredentials, TelegramStatus } from '../../../shared/types/integration';
@@ -97,16 +98,17 @@ export function IntegrationsView({
                     value={hevy.key}
                     disabled={isReadOnly}
                     onChange={(e) => { hevy.setKey(e.target.value); }}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 px-5 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                    className="form-field w-full rounded-2xl py-3.5 px-5"
                   />
                 </div>
-                <button 
+                <Button
+                  type="button"
                   onClick={hevy.onSave}
                   disabled={isReadOnly || hevy.loading || !hevy.key}
                   className="w-full py-4 rounded-full bg-white text-black font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/10 disabled:opacity-50"
                 >
                   {hevy.loading ? '...' : t('common.confirm')}
-                </button>
+                </Button>
               </div>
             ) : (
               <div className="space-y-6 flex-1 flex flex-col">
@@ -115,23 +117,26 @@ export function IntegrationsView({
                       <Check size={16} className="text-emerald-400" />
                       {t('settings.integrations.shared.active', { key: hevy.status.apiKeyMasked })}
                    </div>
-                  <button 
+                  <Button
+                     type="button"
+                     variant="ghost"
                      onClick={hevy.onRemove}
                      disabled={isReadOnly || hevy.loading}
-                     className="text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 transition-colors"
+                     className="h-auto p-0 text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 hover:bg-transparent transition-colors"
                    >
                      {t('settings.integrations.shared.remove')}
-                   </button>
+                   </Button>
                 </div>
 
-                <button 
+                <Button
+                  type="button"
                   onClick={hevy.onSync}
                   disabled={isReadOnly || hevy.syncing}
                   className="w-full py-4 rounded-full bg-white/5 border border-white/10 text-white font-black hover:bg-white/10 transition-all flex items-center justify-center gap-3"
                 >
                   <RefreshCw size={18} className={cn(hevy.syncing && "animate-spin")} />
                   {t('settings.integrations.hevy.sync_button')}
-                </button>
+                </Button>
 
                 <div className="pt-6 border-t border-white/5 mt-auto">
                    <h4 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2 mb-4">
@@ -139,31 +144,34 @@ export function IntegrationsView({
                    </h4>
                    
                    {!webhook.config?.hasWebhook ? (
-                     <button 
+                     <Button
+                       type="button"
                        onClick={webhook.onGenerate}
                        disabled={isReadOnly || webhook.loading}
                        className="w-full py-3 rounded-2xl bg-white/5 border border-dashed border-white/10 text-xs font-bold text-zinc-500 hover:border-indigo-500/50 hover:text-indigo-400 transition-all"
                      >
                        {t('settings.integrations.hevy.webhook_setup')}
-                     </button>
+                     </Button>
                    ) : (
                      <div className="space-y-3">
                         <div className="bg-black/20 p-3 rounded-xl border border-white/5 group relative">
                            <p className="text-[9px] text-zinc-600 font-black uppercase mb-1">{t('settings.integrations.hevy.webhook_url')}</p>
                            <div className="flex items-center justify-between gap-4">
                               <code className="text-[10px] text-indigo-300 truncate font-mono">{webhook.config.webhookUrl}</code>
-                              <button onClick={() => { webhook.onCopy(webhook.config?.webhookUrl ?? ''); }} className="text-zinc-500 hover:text-white transition-colors">
+                              <Button type="button" variant="ghost" size="icon" onClick={() => { webhook.onCopy(webhook.config?.webhookUrl ?? ''); }} className="h-6 w-6 text-zinc-500 hover:text-white hover:bg-transparent">
                                  <Copy size={14} />
-                              </button>
+                              </Button>
                            </div>
                         </div>
-                        <button 
+                        <Button
+                          type="button"
+                          variant="ghost"
                           onClick={webhook.onRevoke}
                           disabled={isReadOnly || webhook.loading}
-                          className="w-full text-center text-[10px] font-black text-red-500/50 uppercase tracking-widest hover:text-red-400 transition-colors"
+                          className="w-full h-auto p-0 text-center text-[10px] font-black text-red-500/50 uppercase tracking-widest hover:text-red-400 hover:bg-transparent transition-colors"
                         >
                           {t('settings.integrations.hevy.webhook_revoke')}
-                        </button>
+                        </Button>
                      </div>
                    )}
                 </div>
@@ -237,14 +245,15 @@ export function IntegrationsView({
                    </a>
                 </div>
               ) : (
-                <button 
+                <Button
+                  type="button"
                   onClick={telegram.onGenerate}
                   disabled={isReadOnly || telegram.loading}
                   className="w-full py-4 rounded-full bg-white text-black font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/10 disabled:opacity-50 flex items-center justify-center gap-3"
                 >
                   <Smartphone size={20} />
                   {t('settings.integrations.telegram.generate_code')}
-                </button>
+                </Button>
               )}
             </div>
           </PremiumCard>

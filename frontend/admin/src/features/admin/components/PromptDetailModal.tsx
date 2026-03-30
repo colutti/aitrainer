@@ -261,9 +261,11 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
 
                 return (
                   <div key={section.tag} className={`${colors.bg} rounded-lg border border-white/5 overflow-hidden`}>
-                    <button
+                    <Button
+                      type="button"
+                      variant="ghost"
                       onClick={() => { toggleSection(section.tag); }}
-                      className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+                      className="w-full h-auto rounded-none flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
                     >
                       <h3 className={`font-semibold ${colors.text} text-sm`}>
                         {colors.emoji} {formatTagName(section.tag)}
@@ -273,7 +275,7 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
                       ) : (
                         <ChevronDown size={16} className={colors.text} />
                       )}
-                    </button>
+                    </Button>
                     {isExpanded && (
                       <div className="border-t border-white/5 p-4 max-h-[300px] overflow-y-auto">
                         {renderSectionContent(section.tag, section.content)}
@@ -287,9 +289,11 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
 
           {/* Full System Prompt (Raw) - Always available as fallback or for detail */}
           <div className="bg-black/40 rounded-lg border border-white/5 overflow-hidden">
-            <button
+            <Button
+              type="button"
+              variant="ghost"
               onClick={() => { toggleSection('system'); }}
-              className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+              className="w-full h-auto rounded-none flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
             >
               <h3 className="font-semibold text-text-primary text-sm flex items-center gap-2">
                 ⚙️ {hasXmlSections ? 'Full System Message (Raw)' : 'System Prompt'}
@@ -299,7 +303,7 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
               ) : (
                 <ChevronDown size={16} className="text-text-secondary" />
               )}
-            </button>
+            </Button>
             {expandedSections.system && (
               <div className="border-t border-white/5 p-4 max-h-[400px] overflow-y-auto">
                 <div className="prose prose-invert prose-sm max-w-none text-zinc-300 whitespace-pre-wrap">
@@ -314,9 +318,11 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
           {/* Chat History Section */}
           {hasMessages && (
                 <div className="bg-black/40 rounded-lg border border-white/5 overflow-hidden">
-                  <button
+                  <Button
+                    type="button"
+                    variant="ghost"
                     onClick={() => { toggleSection('history'); }}
-                    className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+                    className="w-full h-auto rounded-none flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
                   >
                     <h3 className="font-semibold text-text-primary text-sm">
                       Chat History ({selectedPrompt.prompt?.messages?.length ?? 0} mensagens)
@@ -326,7 +332,7 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
                     ) : (
                       <ChevronDown size={16} className="text-text-secondary" />
                     )}
-                  </button>
+                  </Button>
                   {expandedSections.history && (
                     <div className="border-t border-white/5 p-4 max-h-[400px] overflow-y-auto space-y-3">
                       {selectedPrompt.prompt?.messages
@@ -377,9 +383,11 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
               {/* Tools Section */}
               {hasTools && (
                 <div className="bg-black/40 rounded-lg border border-white/5 overflow-hidden">
-                  <button
+                  <Button
+                    type="button"
+                    variant="ghost"
                     onClick={() => { toggleSection('tools'); }}
-                    className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+                    className="w-full h-auto rounded-none flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
                   >
                     <h3 className="font-semibold text-text-primary text-sm">
                       Tools ({selectedPrompt.prompt?.tools?.length ?? 0})
@@ -389,7 +397,7 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
                     ) : (
                       <ChevronDown size={16} className="text-text-secondary" />
                     )}
-                  </button>
+                  </Button>
                   {expandedSections.tools && (
                     <div className="border-t border-white/5 p-4 flex flex-wrap gap-2">
                       {selectedPrompt.prompt?.tools?.map((tool) => (

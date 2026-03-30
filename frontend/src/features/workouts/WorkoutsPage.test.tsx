@@ -20,6 +20,10 @@ vi.mock('../../shared/hooks/useConfirmation', () => ({
   useConfirmation: vi.fn(),
 }));
 
+vi.mock('./components/WorkoutDrawer', () => ({
+  WorkoutDrawer: () => <div data-testid="workout-drawer" />,
+}));
+
 describe('WorkoutsPage', () => {
   const mockFetchWorkouts = vi.fn();
   const mockDeleteWorkout = vi.fn();
@@ -102,6 +106,25 @@ describe('WorkoutsPage', () => {
 
     fireEvent.click(screen.getByTestId('workout-card'));
 
-    expect(screen.getByRole('heading', { name: /Detalhes do Treino|Workout Details/i })).toBeInTheDocument();
+    expect(screen.getByTestId('workout-drawer')).toBeInTheDocument();
+  });
+
+  it('should render pagination when workouts span multiple pages', () => {
+    render(<WorkoutsPage />);
+
+    expect(screen.getByText((_content, element) => element?.textContent === '1 / 2')).toBeInTheDocument();
+    expect(screen.getAllByRole('button').length).toBeGreaterThan(3);
+  });
+
+  it('should fetch the next workout page when pagination advances', () => {
+    render(<WorkoutsPage />);
+
+    const buttons = screen.getAllByRole('button');
+    const nextButton = buttons.at(buttons.length - 1);
+
+    expect(nextButton).toBeTruthy();
+    nextButton?.click();
+
+    expect(mockFetchWorkouts).toHaveBeenCalledWith(2);
   });
 });

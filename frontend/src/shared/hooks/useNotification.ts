@@ -43,7 +43,7 @@ type NotificationStore = NotificationState & NotificationActions;
  *     }
  *   };
  *
- *   return <button onClick={handleSave}>Save</button>;
+ *   return <Button onClick={handleSave}>Save</Button>;
  * }
  * ```
  */

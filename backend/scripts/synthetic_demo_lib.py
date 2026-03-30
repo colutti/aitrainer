@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterable
-from datetime import UTC, datetime, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from hashlib import sha1
 from pathlib import Path
 from typing import Any
@@ -225,6 +225,12 @@ def _stable_signed(seed: str, scale: float) -> float:
     return (_stable_fraction(seed) * 2.0 - 1.0) * scale
 
 
+def _resolve_recent_anchor_day(scenario: dict[str, Any]) -> date:
+    """Anchor generated telemetry close to the present for meaningful dashboard metrics."""
+    last_episode_day = _parse_iso_datetime(scenario["episodes"][-1]["started_at"]).date()
+    return max(last_episode_day, datetime.now(UTC).date() - timedelta(days=1))
+
+
 def _ordered_unique(items: Iterable[str]) -> list[str]:
     seen: set[str] = set()
     ordered: list[str] = []
@@ -430,7 +436,7 @@ def _build_workout_logs(*, scenario: dict[str, Any], demo_email: str) -> list[di
 
 def _build_nutrition_logs(*, scenario: dict[str, Any], demo_email: str) -> list[dict[str, Any]]:
     count = min(max(scenario["data_windows"]["nutrition_days"], 35), 45)
-    last_episode_day = _parse_iso_datetime(scenario["episodes"][-1]["started_at"]).date()
+    last_episode_day = _resolve_recent_anchor_day(scenario)
     start_day = last_episode_day - timedelta(days=count - 1)
     target_weight = scenario["persona"]["target_weight"]
 
@@ -466,7 +472,7 @@ def _build_nutrition_logs(*, scenario: dict[str, Any], demo_email: str) -> list[
 
 def _build_weight_logs(*, scenario: dict[str, Any], demo_email: str) -> list[dict[str, Any]]:
     count = min(max(scenario["data_windows"]["weight_days"], 56), 72)
-    last_episode_day = _parse_iso_datetime(scenario["episodes"][-1]["started_at"]).date()
+    last_episode_day = _resolve_recent_anchor_day(scenario)
     start_day = last_episode_day - timedelta(days=count - 1)
     start_weight = float(scenario["persona"]["weight"])
     target_weight = float(scenario["persona"]["target_weight"])

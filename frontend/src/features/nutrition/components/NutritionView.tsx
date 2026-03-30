@@ -5,12 +5,12 @@ import {
   Beef,
   Wheat,
   Droplets,
-  ChevronLeft,
-  ChevronRight,
   AlertCircle
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { Button } from '../../../shared/components/ui/Button';
+import { DataList } from '../../../shared/components/ui/DataList';
 import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
 import { Skeleton } from '../../../shared/components/ui/Skeleton';
 import { PREMIUM_UI } from '../../../shared/styles/ui-variants';
@@ -85,22 +85,25 @@ export function NutritionView({
         </div>
         
         <div className="flex gap-3">
-          <button 
+          <Button
+            type="button"
+            variant="secondary"
             onClick={onImport}
             disabled={isReadOnly}
             className="flex items-center gap-2 px-5 py-3 rounded-full bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all"
           >
             <Upload size={18} />
             <span className="hidden sm:inline">{t('nutrition.import')}</span>
-          </button>
-          <button 
+          </Button>
+          <Button
+            type="button"
             onClick={onRegisterMeal}
             disabled={isReadOnly}
             className="flex items-center gap-2 px-6 py-3 rounded-full bg-white text-black font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/10"
           >
             <Plus size={20} strokeWidth={3} />
             {t('nutrition.register_meal')}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -186,46 +189,31 @@ export function NutritionView({
         <div className="lg:col-span-2 space-y-4">
            <div className="flex items-center justify-between px-2">
               <h2 className="text-xl font-black text-white tracking-tight uppercase">{t('nutrition.history_title')}</h2>
-              <button className="text-[10px] font-black text-zinc-500 uppercase tracking-widest hover:text-white transition-colors">
+              <Button type="button" variant="ghost" size="sm" className="h-auto p-0 text-[10px] font-black text-zinc-500 uppercase tracking-widest hover:text-white hover:bg-transparent transition-colors">
                  {t('nutrition.view_charts')}
-              </button>
+              </Button>
            </div>
            
-           <div className="space-y-3">
-              {logs.map(log => (
-              <NutritionLogCard key={log.id} log={log} isReadOnly={isReadOnly} onDelete={onDeleteLog} />
-              ))}
-              {logs.length === 0 && !isLoading && (
-                <PremiumCard className="p-12 text-center opacity-40">
-                   <p className="text-sm font-bold">{t('nutrition.empty_history_title')}</p>
-                </PremiumCard>
-              )}
-           </div>
-
-           {/* Pagination */}
-           {pagination.totalPages > 1 && (
-              <div className="flex justify-center items-center gap-4 mt-8">
-                <button 
-                  disabled={pagination.currentPage === 1}
-                  onClick={() => { pagination.onPageChange(pagination.currentPage - 1); }}
-                  className="px-6 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-20 transition-all"
-                >
-                  <ChevronLeft size={16} />
-                  {t('memories.previous')}
-                </button>
-                <span className="text-zinc-500 font-black text-xs uppercase tracking-widest">
-                  {pagination.currentPage} <span className="mx-1 opacity-30">/</span> {pagination.totalPages}
-                </span>
-                <button 
-                  disabled={pagination.currentPage === pagination.totalPages}
-                  onClick={() => { pagination.onPageChange(pagination.currentPage + 1); }}
-                  className="flex items-center gap-2 px-6 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-20 transition-all"
-                >
-                  {t('memories.next')}
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-           )}
+           <DataList
+             data={logs}
+             renderItem={(log) => (
+               <NutritionLogCard log={log} isReadOnly={isReadOnly} onDelete={onDeleteLog} />
+             )}
+             keyExtractor={(log) => log.id}
+             isLoading={isLoading}
+             layout="grid"
+             emptyState={{
+               title: t('nutrition.empty_history_title'),
+               description: '',
+             }}
+             pagination={{
+               currentPage: pagination.currentPage,
+               totalPages: pagination.totalPages,
+               onPageChange: pagination.onPageChange,
+             }}
+             className="space-y-8"
+             gridClassName="grid-cols-1 md:grid-cols-2"
+           />
         </div>
 
         {/* Adherence Sidebar */}

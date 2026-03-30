@@ -1,3 +1,4 @@
+import { Button } from '@shared/components/ui/Button';
 import { Lock, Mail, Loader2, ShieldCheck, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -11,7 +12,6 @@ export function LoginPage() {
   const loginError = useAdminLoginError();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const [isHovered, setIsHovered] = useState(false);
 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -113,15 +113,14 @@ export function LoginPage() {
             </div>
 
             {/* Action Button */}
-            <button
+            <Button
               type="submit"
               disabled={isLoading}
-              onMouseEnter={() => { setIsHovered(true); }}
-              onMouseLeave={() => { setIsHovered(false); }}
-              className="w-full mt-4 relative group/btn h-14 bg-gradient-to-r from-[#6366f1] to-[#22d3ee] rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed shadow-[0_10px_30px_rgba(99,102,241,0.3)]"
+              fullWidth
+              size="lg"
+              className="mt-4 relative group/btn h-14 rounded-2xl bg-[#14b8a6] text-black border border-[#2dd4bf]/30 shadow-none transition-all duration-300 hover:bg-[#0d9488] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed"
             >
-              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
-              <div className="relative flex items-center justify-center gap-2 font-bold text-white tracking-wide">
+              <div className="relative flex items-center justify-center gap-2 font-bold tracking-wide">
                 {isLoading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -130,11 +129,11 @@ export function LoginPage() {
                 ) : (
                   <>
                     <span>ENTRAR NO PAINEL</span>
-                    <ChevronRight className={`w-5 h-5 transition-transform duration-300 ${isHovered ? 'translate-x-1' : ''}`} />
+                    <ChevronRight className="w-5 h-5 transition-transform duration-300 group-hover/btn:translate-x-1" />
                   </>
                 )}
               </div>
-            </button>
+            </Button>
           </form>
 
           {/* Meta Information */}

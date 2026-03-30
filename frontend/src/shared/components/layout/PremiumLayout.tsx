@@ -1,4 +1,4 @@
-import { Home, Scale, Dumbbell, Settings, MessageCircle, Flame } from 'lucide-react';
+import { Home, Scale, Dumbbell, Settings, MessageCircle, LogOut } from 'lucide-react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 
 import { useAuthStore } from '../../hooks/useAuth';
@@ -6,6 +6,7 @@ import { useDemoMode } from '../../hooks/useDemoMode';
 import { useInactivityLogout } from '../../hooks/useInactivityLogout';
 import { useTokenRefresh } from '../../hooks/useTokenRefresh';
 import { cn } from '../../utils/cn';
+import { Button } from '../ui/Button';
 import { LanguageSelector } from '../ui/LanguageSelector';
 import { QuickAddFAB } from '../ui/QuickAddFAB';
 
@@ -83,14 +84,14 @@ export function PremiumLayout() {
           <NavLink to="/dashboard/settings" data-testid="desktop-nav-settings" className={({ isActive }) => cn("p-2.5 rounded-xl transition-all border", isActive ? "bg-white/10 border-white/10 text-white" : "border-transparent text-zinc-400 hover:bg-white/5 hover:text-zinc-200")}>
             <Settings size={20} />
           </NavLink>
-          <button
+          <Button
             type="button"
             data-testid="desktop-logout"
             onClick={logout}
             className="px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-sm font-bold tracking-wide text-zinc-300 transition-all hover:bg-white/10 hover:text-white"
           >
             Logout
-          </button>
+          </Button>
           <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-white/10 overflow-hidden flex items-center justify-center shadow-inner">
             {userInfo?.photo_base64 ? (
               <img src={userInfo.photo_base64} alt="Profile" className="w-full h-full object-cover" />
@@ -102,8 +103,8 @@ export function PremiumLayout() {
       </nav>
 
       {/* --- MOBILE HEADER --- */}
-      <header className="md:hidden flex items-center justify-between p-6 pt-10 sticky top-0 z-40 bg-gradient-to-b from-[#09090b] to-transparent backdrop-blur-sm">
-        <div className="flex items-center gap-3">
+      <header className="md:hidden sticky top-0 z-40 bg-gradient-to-b from-[#09090b] to-transparent backdrop-blur-sm p-6 pt-10 flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-3">
           <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 p-1.5 flex items-center justify-center">
              <img src="/logo_icon.png" alt="Logo" className="w-full h-full object-contain opacity-80" />
           </div>
@@ -112,25 +113,7 @@ export function PremiumLayout() {
             <p className="text-sm font-black text-white">{userInfo?.name.split(' ')[0] ?? 'Atleta'}</p>
             {isDemoUser && <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-300">Demo Read-Only</p>}
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="px-3 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-500 flex items-center gap-1.5 mr-2">
-            <Flame size={14} fill="currentColor" />
-            <span className="text-xs font-black">12</span>
-          </div>
           <LanguageSelector />
-          <NavLink to="/dashboard/settings" data-testid="nav-settings" className="p-3 -m-1 text-zinc-400 hover:text-white relative z-50">
-            <Settings size={22} />
-          </NavLink>
-          <button
-            type="button"
-            data-testid="mobile-logout"
-            onClick={logout}
-            className="p-3 -m-1 text-zinc-400 hover:text-white relative z-50"
-            aria-label="Logout"
-          >
-            Logout
-          </button>
         </div>
       </header>
 
@@ -150,9 +133,6 @@ export function PremiumLayout() {
           <Dumbbell size={22} />
         </NavLink>
         
-        {/* BIG FAB SPACER - QuickAddFAB will position itself here */}
-        <div className="w-14 h-14" />
-
         <NavLink to="/dashboard/body" data-testid="nav-body" className={() => cn("p-3 rounded-full transition-all duration-300 flex-1 flex justify-center", isPathActive('/dashboard/body') ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300")}>
           <Scale size={22} />
         </NavLink>
@@ -160,6 +140,20 @@ export function PremiumLayout() {
           <MessageCircle size={22} />
           <span className="absolute top-2 right-1/2 translate-x-3 w-2 h-2 rounded-full bg-indigo-500 border-2 border-zinc-900 shadow-glow shadow-indigo-500"></span>
         </NavLink>
+        <NavLink to="/dashboard/settings" data-testid="nav-settings" className={() => cn("p-3 rounded-full transition-all duration-300 flex-1 flex justify-center", isPathActive('/dashboard/settings') ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300")}>
+          <Settings size={22} />
+        </NavLink>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          data-testid="mobile-logout"
+          onClick={logout}
+          className="p-3 rounded-full transition-all duration-300 flex-1 text-zinc-500 hover:text-zinc-300 hover:bg-transparent"
+          aria-label="Logout"
+        >
+          <LogOut size={22} aria-hidden="true" />
+        </Button>
       </nav>
 
       {/* --- GLOBAL SYSTEM COMPONENTS --- */}

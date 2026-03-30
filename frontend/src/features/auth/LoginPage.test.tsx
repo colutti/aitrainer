@@ -77,6 +77,27 @@ describe('LoginPage', () => {
     expect(screen.getByRole('button', { name: /Entrar com Google/i })).toBeInTheDocument();
   });
 
+  it('should not use white background in auth tab active indicator', () => {
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    );
+
+    const activeIndicator = screen.getByTestId('auth-tab-indicator');
+    expect(activeIndicator.className).not.toContain('bg-white');
+  });
+
+  it('should not render the Deep Space Premium badge', () => {
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByText(/Deep Space Premium/i)).not.toBeInTheDocument();
+  });
+
   it('should show validation errors for empty fields', async () => {
     const user = userEvent.setup();
 

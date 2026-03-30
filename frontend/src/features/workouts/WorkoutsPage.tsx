@@ -20,7 +20,8 @@ export default function WorkoutsPage() {
   const { 
     workouts, 
     isLoading, 
-    error,
+    page,
+    totalPages,
     fetchWorkouts, 
     deleteWorkout 
   } = useWorkoutStore();
@@ -35,6 +36,10 @@ export default function WorkoutsPage() {
 
   useEffect(() => {
     void fetchWorkouts();
+  }, [fetchWorkouts]);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    void fetchWorkouts(newPage);
   }, [fetchWorkouts]);
 
   const handleRegisterWorkout = useCallback(() => {
@@ -81,12 +86,13 @@ export default function WorkoutsPage() {
       <WorkoutsView 
         workouts={workoutList}
         isLoading={isLoading}
-        error={error}
+        currentPage={page}
+        totalPages={totalPages}
         isReadOnly={isReadOnly}
         onRegisterWorkout={handleRegisterWorkout}
         onDeleteWorkout={handleDeleteWorkout}
         onSelectWorkout={handleSelectWorkout}
-        onRetry={() => { void fetchWorkouts(); }}
+        onPageChange={handlePageChange}
       />
 
       <WorkoutDrawer 

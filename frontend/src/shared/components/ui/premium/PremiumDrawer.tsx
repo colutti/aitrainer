@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { type ReactNode, useEffect } from 'react';
 
 import { cn } from '../../../utils/cn';
+import { Button } from '../Button';
 
 interface PremiumDrawerProps {
   isOpen: boolean;
@@ -75,12 +76,15 @@ export function PremiumDrawer({
                 </div>
               </div>
               
-              <button 
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
                 onClick={onClose}
                 className="p-2.5 rounded-xl bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-all"
               >
                 <X size={20} />
-              </button>
+              </Button>
             </header>
 
             {/* SCROLLABLE BODY */}

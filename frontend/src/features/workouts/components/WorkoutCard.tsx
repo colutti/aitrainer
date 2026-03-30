@@ -1,5 +1,6 @@
 import { Dumbbell, Trash2, ChevronRight, Calendar, Clock } from 'lucide-react';
 
+import { Button } from '../../../shared/components/ui/Button';
 import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
 import { type Workout } from '../../../shared/types/workout';
 import { formatDate } from '../../../shared/utils/format-date';
@@ -54,15 +55,18 @@ export function WorkoutCard({ workout, isReadOnly = false, onDelete, onClick }: 
         
         <div className="flex items-center gap-2">
           {!isReadOnly && onDelete && (
-            <button 
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
               onClick={handleDelete}
               data-testid="btn-delete-workout"
-              className="p-2 rounded-full bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/20"
+              className="h-9 w-9 rounded-full bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/20"
               title="Excluir treino"
               aria-label="Delete"
             >
               <Trash2 size={18} />
-            </button>
+            </Button>
           )}
           <div className="p-2 rounded-full bg-white/5 text-zinc-500 group-hover:text-white group-hover:bg-white/10 transition-all">
              <ChevronRight size={20} />
@@ -70,7 +74,7 @@ export function WorkoutCard({ workout, isReadOnly = false, onDelete, onClick }: 
         </div>
       </div>
 
-      <div className="flex items-end justify-between mt-4">
+      <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div className="flex flex-wrap gap-2">
            {workout.exercises.slice(0, 3).map((ex, idx) => (
              <span key={idx} className="px-3 py-1 rounded-full bg-white/5 border border-white/5 text-[10px] font-bold text-zinc-400">
@@ -84,11 +88,13 @@ export function WorkoutCard({ workout, isReadOnly = false, onDelete, onClick }: 
            )}
         </div>
 
-        <div className="text-right">
-           <p className="text-[9px] uppercase font-black text-zinc-600 tracking-widest mb-0.5">Volume Total</p>
-           <p className="text-lg font-black text-orange-400 tabular-nums leading-none">
+        <div className="text-left md:text-right md:self-end">
+           <p className="mb-1 text-[9px] font-black uppercase tracking-[0.22em] text-zinc-500">
+             Volume Total
+           </p>
+           <p className="text-lg font-black leading-none text-orange-400 tabular-nums">
               {totalVolume >= 1000 ? (totalVolume / 1000).toFixed(1) : totalVolume.toLocaleString()}
-              <span className="text-[10px] ml-0.5 opacity-60 font-bold">{totalVolume >= 1000 ? 't' : 'kg'}</span>
+              <span className="ml-1 text-[10px] font-bold opacity-60">{totalVolume >= 1000 ? 't' : 'kg'}</span>
            </p>
         </div>
       </div>

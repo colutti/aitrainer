@@ -16,4 +16,15 @@ describe('SettingsPage', () => {
     expect(screen.getByText(/Assinatura/i)).toBeInTheDocument();
     expect(screen.getByText(/Memórias/i)).toBeInTheDocument();
   });
+
+  it('should use mobile-safe tab layout classes to prevent overlap', () => {
+    const { container } = render(<SettingsPage />);
+    const nav = container.querySelector('nav');
+
+    expect(nav).toBeInTheDocument();
+    expect(nav).toHaveClass('grid');
+    expect(nav).toHaveClass('grid-cols-2');
+    expect(nav).toHaveClass('w-full');
+    expect(nav).toHaveClass('md:flex');
+  });
 });

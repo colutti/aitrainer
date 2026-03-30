@@ -2,6 +2,7 @@ import { type ReactNode } from 'react';
 
 import { PREMIUM_UI } from '../../../styles/ui-variants';
 import { cn } from '../../../utils/cn';
+import { Button } from '../Button';
 
 interface ViewHeaderProps {
   title: string;
@@ -36,7 +37,8 @@ export function ViewHeader({ title, subtitle, icon, action, className }: ViewHea
       </div>
       
       {action && (
-        <button 
+        <Button
+          type="button"
           onClick={action.onClick}
           disabled={action.disabled}
           data-testid="view-header-action"
@@ -44,7 +46,7 @@ export function ViewHeader({ title, subtitle, icon, action, className }: ViewHea
         >
           {action.icon}
           {action.label}
-        </button>
+        </Button>
       )}
     </div>
   );

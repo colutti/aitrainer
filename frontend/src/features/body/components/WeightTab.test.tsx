@@ -22,6 +22,8 @@ describe('WeightTab', () => {
     logs: [],
     isLoading: false,
     error: null,
+    page: 1,
+    totalPages: 1,
     fetchLogs: vi.fn(),
     fetchStats: vi.fn(),
     deleteLog: vi.fn(),
@@ -84,5 +86,19 @@ describe('WeightTab', () => {
 
     expect(screen.getByRole('heading', { name: /Detalhes do Registro|Record Details/i })).toBeInTheDocument();
     expect(screen.getByText('80.0')).toBeInTheDocument();
+  });
+
+  it('should render pagination when there are multiple pages', () => {
+    vi.mocked(useBodyStore).mockReturnValue({
+      ...defaultStore,
+      totalPages: 3,
+      page: 2,
+      logs: mockLogs,
+    } as any);
+
+    render(<WeightTab />);
+
+    expect(screen.getByText(/2\s*\/\s*3/)).toBeInTheDocument();
+    expect(screen.getAllByRole('button').length).toBeGreaterThan(3);
   });
 });

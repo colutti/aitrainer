@@ -57,13 +57,15 @@ export const Navbar = () => {
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
-            <button
+            <Button
               key={link.name}
+              type="button"
+              variant="ghost"
               onClick={() => { handleNavClick(link.href); }}
-              className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+              className="h-auto p-0 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-transparent transition-colors cursor-pointer"
             >
               {link.name}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -80,26 +82,31 @@ export const Navbar = () => {
         </div>
 
         {/* Mobile menu toggle */}
-        <button
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
           className="md:hidden text-text-primary p-2"
           onClick={() => { setIsMenuOpen(!isMenuOpen); }}
           aria-label="Toggle menu"
         >
           {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        </Button>
       </div>
 
       {/* Mobile menu */}
       {isMenuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-dark-bg border-b border-border p-6 flex flex-col gap-6 animate-fade-in">
           {navLinks.map((link) => (
-            <button
+            <Button
               key={link.name}
+              type="button"
+              variant="ghost"
               onClick={() => { handleNavClick(link.href); }}
-              className="text-lg font-medium text-text-primary text-left"
+              className="h-auto justify-start p-0 text-lg font-medium text-text-primary hover:bg-transparent"
             >
               {link.name}
-            </button>
+            </Button>
           ))}
           <div className="h-px bg-border" />
           <div className="flex items-center justify-between">

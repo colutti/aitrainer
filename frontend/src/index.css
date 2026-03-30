@@ -53,6 +53,10 @@
   @apply text-5xl md:text-7xl font-black tracking-tighter text-white leading-none;
 }
 
+@utility form-field {
+  @apply rounded-2xl border border-white/10 bg-zinc-900/70 text-white placeholder:text-zinc-500 transition-all focus:outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
 @utility custom-scrollbar {
   &::-webkit-scrollbar {
     @apply w-1.5;
@@ -68,6 +72,15 @@
 body {
   font-family: var(--font-body);
   @apply bg-[#09090b] text-zinc-50 selection:bg-white/20;
+}
+
+a,
+button,
+input,
+textarea,
+select,
+label {
+  -webkit-tap-highlight-color: transparent;
 }
 
 .font-display {
@@ -102,6 +115,27 @@ input::-webkit-inner-spin-button {
 
 input[type='number'] {
   -moz-appearance: textfield;
+}
+
+input,
+textarea,
+select {
+  color-scheme: dark;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-text-fill-color: #fafafa !important;
+  -webkit-box-shadow: 0 0 0 1000px #18181b inset !important;
+  box-shadow: 0 0 0 1000px #18181b inset !important;
+  caret-color: #fafafa;
 }
 
 /* Markdown Table Styling */

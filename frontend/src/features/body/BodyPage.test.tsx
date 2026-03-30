@@ -24,6 +24,8 @@ vi.mock('react-i18next', () => ({
     t: (key: string) => {
       if (key === 'body.weight_title') return 'Peso';
       if (key === 'body.nutrition_title') return 'Nutrição';
+      if (key === 'body.weight_tab') return 'Peso';
+      if (key === 'body.nutrition_tab') return 'Nutrição';
       return key;
     },
   }),

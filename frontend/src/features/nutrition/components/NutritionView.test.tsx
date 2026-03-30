@@ -74,6 +74,19 @@ describe('NutritionView', () => {
     expect(mockProps.onRegisterMeal).toHaveBeenCalled();
   });
 
+  it('renders pagination and advances pages', () => {
+    render(
+      <NutritionView
+        {...mockProps}
+        pagination={{ currentPage: 2, totalPages: 5, onPageChange: mockProps.pagination.onPageChange }}
+      />
+    );
+
+    expect(screen.getByText((_content, element) => element?.textContent === '2 / 5')).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText(/Próxima/i));
+    expect(mockProps.pagination.onPageChange).toHaveBeenCalledWith(3);
+  });
+
   it('disables actions in read-only mode', () => {
     render(<NutritionView {...mockProps} isReadOnly />);
     expect(screen.getByRole('button', { name: /nutrition\.register_meal/i })).toBeDisabled();

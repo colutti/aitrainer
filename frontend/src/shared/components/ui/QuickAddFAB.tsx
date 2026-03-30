@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 
 import { cn } from '../../utils/cn';
 
+import { Button } from './Button';
+
 interface QuickAction {
   id: string;
   labelKey: string;
@@ -67,8 +69,10 @@ export function QuickAddFAB() {
             <span className="px-3 py-1.5 rounded bg-dark-card border border-border text-xs font-black uppercase tracking-wider text-text-primary shadow-lg">
               {t(action.labelKey)}
             </span>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               aria-label={t(action.labelKey)}
               onClick={() => { action.onClick(); setIsOpen(false); }}
               className={cn(
@@ -77,14 +81,16 @@ export function QuickAddFAB() {
               )}
             >
               <action.icon size={22} />
-            </button>
+            </Button>
           </div>
         ))}
       </div>
 
       {/* Main FAB */}
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="icon"
         data-testid="quick-add-fab"
         onClick={() => { setIsOpen(!isOpen); }}
         className={cn(
@@ -95,7 +101,7 @@ export function QuickAddFAB() {
         )}
       >
         <Plus size={32} />
-      </button>
+      </Button>
     </div>
   );
 }

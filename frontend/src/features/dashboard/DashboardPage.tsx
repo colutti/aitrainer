@@ -16,7 +16,7 @@ import { DashboardView } from './components/DashboardView';
  */
 export default function DashboardPage() {
   const { data, isLoading, fetchData } = useDashboardStore();
-  const { userInfo, loadUserInfo } = useAuthStore();
+  const { loadUserInfo } = useAuthStore();
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const notification = useNotificationStore();
@@ -177,7 +177,6 @@ export default function DashboardPage() {
   return (
     <DashboardView 
       isLoading={isLoading && !data}
-      userName={userInfo?.name ?? t('common.athlete', { defaultValue: 'Athlete' })}
       metabolism={metabolism}
       body={body}
       mergedWeightData={getMergedWeightData()}
@@ -196,4 +195,3 @@ export default function DashboardPage() {
     />
   );
   }
-

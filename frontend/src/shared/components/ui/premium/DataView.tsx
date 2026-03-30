@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { PREMIUM_UI } from '../../../styles/ui-variants';
 import { cn } from '../../../utils/cn';
+import { Button } from '../Button';
 
 interface DataViewProps {
   isLoading: boolean;
@@ -47,13 +48,15 @@ export function DataView({
         <h3 className="text-2xl font-black text-white mb-2">{t('common.error_loading', 'Erro ao carregar')}</h3>
         <p className="text-zinc-500 max-w-xs mb-8 text-sm">{t('common.error_loading_desc', 'Não foi possível carregar os dados.')}</p>
         {onRetry && (
-          <button 
+          <Button
+            type="button"
+            variant="secondary"
             onClick={onRetry}
             className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all active:scale-95"
           >
             <RefreshCcw size={18} />
             {t('common.retry', 'Tentar novamente')}
-          </button>
+          </Button>
         )}
       </div>
     );

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { Button } from '../../../shared/components/ui/Button';
 import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
 import { Skeleton } from '../../../shared/components/ui/Skeleton';
 import { PREMIUM_UI } from '../../../shared/styles/ui-variants';
@@ -148,7 +149,9 @@ export function MemoriesView({
                   </div>
                 </div>
 
-                <button 
+                <Button
+                  type="button"
+                  variant="ghost"
                   onClick={(e) => { 
                     e.stopPropagation();
                     if (isReadOnly) return;
@@ -157,11 +160,11 @@ export function MemoriesView({
                   aria-label="shared.delete"
                   data-testid="btn-delete-memory"
                   disabled={isReadOnly}
-                  className="shrink-0 p-2.5 rounded-full bg-red-500/5 text-red-500 md:opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/20 disabled:opacity-30 disabled:hover:bg-red-500/5"
+                  className="shrink-0 h-10 w-10 rounded-full bg-red-500/5 text-red-500 md:opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/20 disabled:opacity-30 disabled:hover:bg-red-500/5"
                   title={t('shared.delete')}
                 >
                   <Trash2 size={18} />
-                </button>
+                </Button>
               </div>
             </PremiumCard>
           ))
@@ -171,27 +174,31 @@ export function MemoriesView({
       {/* PAGINATION */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-6 pt-6 border-t border-white/5">
-          <button
+          <Button
+            type="button"
+            variant="ghost"
             onClick={() => { onPageChange(currentPage - 1); }}
             disabled={isReadOnly || currentPage === 1 || isLoading}
             className="flex items-center gap-2 px-6 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-20 transition-all"
           >
             <ChevronLeft size={16} />
             {t('memories.previous')}
-          </button>
+          </Button>
           
           <span className="text-zinc-500 font-black text-xs uppercase tracking-widest">
             {currentPage} <span className="mx-1 opacity-30">/</span> {totalPages}
           </span>
 
-          <button
+          <Button
+            type="button"
+            variant="ghost"
             onClick={() => { onPageChange(currentPage + 1); }}
             disabled={isReadOnly || currentPage === totalPages || isLoading}
             className="flex items-center gap-2 px-6 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-black uppercase tracking-widest text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-20 transition-all"
           >
             {t('memories.next')}
             <ChevronRight size={16} />
-          </button>
+          </Button>
         </div>
       )}
 

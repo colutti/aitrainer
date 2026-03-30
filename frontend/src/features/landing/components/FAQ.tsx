@@ -2,6 +2,8 @@ import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { Button } from '../../../shared/components/ui/Button';
+
 export const FAQ = () => {
   const { t } = useTranslation();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -23,9 +25,11 @@ export const FAQ = () => {
                 key={idx}
                 className="border-b border-border last:border-0"
               >
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
                   onClick={() => { setOpenIndex(isOpen ? null : idx); }}
-                  className="w-full flex items-center justify-between py-6 text-left group"
+                  className="w-full h-auto flex items-center justify-between py-6 px-0 text-left group hover:bg-transparent"
                 >
                   <span className={`text-base font-bold transition-colors ${isOpen ? 'text-primary' : 'text-text-primary group-hover:text-text-secondary'}`}>
                     {item.q}
@@ -35,7 +39,7 @@ export const FAQ = () => {
                       isOpen ? 'rotate-180 text-primary' : ''
                     }`} 
                   />
-                </button>
+                </Button>
                 <div 
                   className={`overflow-hidden transition-all duration-300 ${
                     isOpen ? 'max-h-96 opacity-100 mb-6' : 'max-h-0 opacity-0'

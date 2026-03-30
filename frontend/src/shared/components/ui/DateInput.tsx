@@ -4,6 +4,8 @@ import 'react-day-picker/src/style.css';
 
 import { cn } from '../../utils/cn';
 
+import { Button } from './Button';
+
 export interface DateInputProps {
   label?: string;
   value?: string;
@@ -50,7 +52,7 @@ const formatWeekdayName = (day: Date) =>
   new Intl.DateTimeFormat('pt-BR', { weekday: 'short' }).format(day).replace('.', '');
 
 function CustomDayButton({ day: _day, modifiers: _modifiers, ...buttonProps }: DayButtonProps) {
-  return <button {...buttonProps} />;
+  return <Button type="button" variant="ghost" size="sm" {...buttonProps} />;
 }
 
 export function DateInput({
@@ -103,7 +105,7 @@ export function DateInput({
         </label>
       )}
       <div className="relative">
-        <button
+        <Button
           id={id}
           type="button"
           disabled={disabled}
@@ -114,17 +116,15 @@ export function DateInput({
             setOpen(prev => !prev);
           }}
           className={cn(
-            'flex h-11 w-full items-center rounded-lg bg-dark-card border px-3 py-2 text-sm transition-all',
-            'focus:outline-none focus:ring-2 focus:ring-gradient-start/20 focus:border-gradient-start',
-            'disabled:cursor-not-allowed disabled:opacity-50',
+            'form-field flex h-11 w-full items-center px-3 py-2 text-sm',
             value ? 'text-text-primary' : 'text-text-muted',
             error
               ? 'border-red-500 focus:ring-red-500/20 focus:border-red-500'
-              : 'border-border',
+              : '',
           )}
         >
           {formatDisplay(value)}
-        </button>
+        </Button>
         {open && (
           <div className="absolute z-50 mt-1 rounded-xl border border-border bg-dark-card shadow-lg p-3">
             <DayPicker

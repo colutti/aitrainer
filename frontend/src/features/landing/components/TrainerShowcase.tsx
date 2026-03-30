@@ -73,8 +73,10 @@ export const TrainerShowcase = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
           {TRAINERS.map((trainer) => (
-            <button
+            <Button
               key={trainer.id}
+              type="button"
+              variant="ghost"
               onClick={() => { setSelectedId(selectedId === trainer.id ? null : trainer.id); }}
               className={`flex flex-col p-6 rounded-lg border transition-all text-left ${
                 selectedId === trainer.id
@@ -93,7 +95,7 @@ export const TrainerShowcase = () => {
               <p className="text-xs text-text-secondary line-clamp-2">
                 {trainer.tagline}
               </p>
-            </button>
+            </Button>
           ))}
         </div>
 

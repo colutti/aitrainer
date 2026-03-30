@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { Button } from '../../../shared/components/ui/Button';
 interface ChatMessageData {
   role: 'user' | 'trainer';
   text: string;
@@ -184,7 +185,9 @@ export const ChatCarousel = () => {
         {/* Indicators */}
         <div className="flex justify-center gap-2 mt-8">
           {CONVERSATIONS.map((_, i) => (
-            <button
+            <Button
+              type="button"
+              variant="ghost"
               key={i.toString()}
               onClick={() => { setCurrentConvo(i); }}
               className={`h-1.5 rounded-full transition-all ${
