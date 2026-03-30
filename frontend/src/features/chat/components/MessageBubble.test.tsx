@@ -73,9 +73,9 @@ describe('MessageBubble', () => {
     const { container } = render(<MessageBubble message={message} trainerId="marcus" />);
 
     const avatarWrapper = container.querySelector('[data-testid="chat-message-avatar"]');
-    expect(avatarWrapper).toHaveClass('hidden', 'sm:flex');
+    expect(avatarWrapper).toHaveClass('hidden', 'lg:flex');
 
     const bubbleWrapper = container.querySelector('[data-testid="chat-message-bubble"]');
-    expect(bubbleWrapper).toHaveClass('max-w-full', 'sm:max-w-[80%]', 'md:max-w-[70%]');
+    expect(bubbleWrapper).toHaveClass('max-w-full', 'lg:max-w-[80%]', 'xl:max-w-[70%]');
   });
 });
