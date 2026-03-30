@@ -17,13 +17,13 @@ describe('SettingsPage', () => {
     expect(screen.getByText(/Memórias/i)).toBeInTheDocument();
   });
 
-  it('should use mobile-safe tab layout classes to prevent overlap', () => {
+  it('should use icon-first mobile tab layout to prevent label overflow', () => {
     const { container } = render(<SettingsPage />);
     const nav = container.querySelector('nav');
 
     expect(nav).toBeInTheDocument();
     expect(nav).toHaveClass('grid');
-    expect(nav).toHaveClass('grid-cols-2');
+    expect(nav).toHaveClass('grid-cols-5');
     expect(nav).toHaveClass('w-full');
     expect(nav).toHaveClass('md:flex');
   });
