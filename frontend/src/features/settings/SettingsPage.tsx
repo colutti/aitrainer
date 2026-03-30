@@ -36,22 +36,23 @@ export default function SettingsPage() {
         </div>
 
         {/* PILL TABS */}
-        <nav className="grid grid-cols-2 gap-1 bg-white/5 backdrop-blur-md rounded-2xl p-1 border border-white/5 w-full md:w-fit md:flex md:rounded-full md:overflow-x-auto md:hide-scrollbar shrink-0 max-w-full">
+        <nav className="grid grid-cols-5 gap-1 bg-white/5 backdrop-blur-md rounded-2xl p-1 border border-white/5 w-full md:w-fit md:flex md:rounded-full md:overflow-x-auto md:hide-scrollbar shrink-0 max-w-full">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <NavLink
                 key={tab.to}
                 to={tab.to}
+                aria-label={tab.label}
                 className={({ isActive }) => cn(
-                  "flex items-center justify-center gap-2 px-3 md:px-6 py-2 rounded-xl md:rounded-full text-[10px] md:text-xs font-black transition-all uppercase tracking-widest whitespace-nowrap",
+                  "flex items-center justify-center gap-2 px-0 md:px-6 py-2 rounded-xl md:rounded-full text-[10px] md:text-xs font-black transition-all uppercase tracking-widest whitespace-nowrap",
                   isActive 
                     ? "bg-white text-black shadow-lg" 
                     : "text-zinc-500 hover:text-zinc-300"
                 )}
               >
-                <Icon size={14} />
-                <span>{tab.label}</span>
+                <Icon size={16} />
+                <span className="sr-only md:not-sr-only md:inline">{tab.label}</span>
               </NavLink>
             );
           })}

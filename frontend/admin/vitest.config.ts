@@ -5,8 +5,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-    // @ts-expect-error - Vite version conflict between nested node_modules
-    plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       '@shared': path.resolve(__dirname, '../src/shared'),

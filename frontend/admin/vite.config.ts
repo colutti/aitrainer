@@ -6,8 +6,7 @@ import { defineConfig } from 'vite';
 
 // https://vite.dev/config/
 export default defineConfig({
-    // @ts-expect-error - Vite version conflict between nested node_modules
-    plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       '@shared': path.resolve(__dirname, '../src/shared'),
