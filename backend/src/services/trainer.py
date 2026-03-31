@@ -75,6 +75,7 @@ from src.api.models.chat_history import ChatHistory
 from src.api.models.user_profile import UserProfile
 from src.api.models.sender import Sender
 from src.api.models.trainer_profile import TrainerProfile
+from src.api.models.workout_log import WorkoutLog
 
 if TYPE_CHECKING:
     from qdrant_client import QdrantClient
