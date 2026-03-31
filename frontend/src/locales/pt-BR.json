@@ -114,15 +114,7 @@
         "sync_success": "Treinos sincronizados!",
         "sync_error": "Erro na sincronização",
         "remove_success": "Hevy desconectado",
-        "remove_error": "Erro ao desconectar Hevy",
-        "webhook_success": "Webhook configurado!",
-        "webhook_error": "Erro no webhook",
-        "webhook_revoke_success": "Webhook removido!",
-        "webhook_revoke_error": "Erro ao remover webhook",
-        "webhook_title": "Hevy Webhook",
-        "webhook_setup": "Configurar Webhook",
-        "webhook_url": "URL do Webhook",
-        "webhook_revoke": "Revogar Webhook"
+        "remove_error": "Erro ao desconectar Hevy"
       },
       "telegram": {
         "connected": "Conectado: {{username}}",
