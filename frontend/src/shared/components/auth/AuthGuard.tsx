@@ -25,6 +25,13 @@ export function AuthGuard({ children }: AuthGuardProps) {
     }
   }, [isAuthenticated, isInviteLink, logout]);
 
+  useEffect(() => {
+    // Recover from inconsistent auth state that can leave public routes blank.
+    if (isAuthenticated && !isLoading && !userInfo && !isInviteLink) {
+      logout();
+    }
+  }, [isAuthenticated, isLoading, userInfo, isInviteLink, logout]);
+
   if (isLoading) {
     return null;
   }
@@ -36,7 +43,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     }
 
     if (!userInfo) {
-      return null;
+      return <>{children}</>;
     }
 
     // Allow authenticated users to stay on onboarding if they haven't completed it

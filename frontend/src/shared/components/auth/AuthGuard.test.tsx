@@ -11,12 +11,31 @@ vi.mock('../../hooks/useAuth', () => ({
   useAuthStore: vi.fn(),
 }));
 
+const createAuthStoreMock = (overrides: Partial<AuthStore> = {}): AuthStore => ({
+  isAuthenticated: false,
+  userInfo: null,
+  isAdmin: false,
+  isLoading: false,
+  login: vi.fn(async () => {}),
+  register: vi.fn(async () => {}),
+  socialLogin: vi.fn(async () => {}),
+  logout: vi.fn(),
+  loadUserInfo: vi.fn(async () => {}),
+  getToken: vi.fn(() => null),
+  init: vi.fn(async () => {}),
+  refreshToken: vi.fn(async () => false),
+  ...overrides,
+});
+
 describe('AuthGuard', () => {
   it('should render children when not authenticated', () => {
-    vi.mocked(useAuthStore).mockReturnValue({
+    vi.mocked(useAuthStore).mockReturnValue(createAuthStoreMock({
       isAuthenticated: false,
       isLoading: false,
-    } as AuthStore);
+      userInfo: null,
+      isAdmin: false,
+      logout: vi.fn(),
+    }));
 
     render(
       <MemoryRouter initialEntries={['/login']}>
@@ -37,11 +56,13 @@ describe('AuthGuard', () => {
   });
 
   it('should redirect to dashboard when already authenticated', () => {
-    vi.mocked(useAuthStore).mockReturnValue({
+    vi.mocked(useAuthStore).mockReturnValue(createAuthStoreMock({
       isAuthenticated: true,
       isLoading: false,
       userInfo: { onboarding_completed: true } as any,
-    } as AuthStore);
+      isAdmin: false,
+      logout: vi.fn(),
+    }));
 
     render(
       <MemoryRouter initialEntries={['/login']}>
@@ -64,11 +85,13 @@ describe('AuthGuard', () => {
   });
 
   it('should redirect authenticated onboarding-incomplete users to onboarding', () => {
-    vi.mocked(useAuthStore).mockReturnValue({
+    vi.mocked(useAuthStore).mockReturnValue(createAuthStoreMock({
       isAuthenticated: true,
       isLoading: false,
       userInfo: { onboarding_completed: false } as any,
-    } as AuthStore);
+      isAdmin: false,
+      logout: vi.fn(),
+    }));
 
     render(
       <MemoryRouter initialEntries={['/login']}>
@@ -90,12 +113,14 @@ describe('AuthGuard', () => {
     expect(screen.getByTestId('onboarding-page')).toBeInTheDocument();
   });
 
-  it('should stay hidden while authenticated user info is still loading', () => {
-    vi.mocked(useAuthStore).mockReturnValue({
+  it('should render children when auth state is inconsistent (authenticated without user info)', () => {
+    vi.mocked(useAuthStore).mockReturnValue(createAuthStoreMock({
       isAuthenticated: true,
       isLoading: false,
       userInfo: null,
-    } as AuthStore);
+      isAdmin: false,
+      logout: vi.fn(),
+    }));
 
     render(
       <MemoryRouter initialEntries={['/login']}>
@@ -113,7 +138,7 @@ describe('AuthGuard', () => {
       </MemoryRouter>
     );
 
-    expect(screen.queryByTestId('login-content')).not.toBeInTheDocument();
+    expect(screen.getByTestId('login-content')).toBeInTheDocument();
     expect(screen.queryByTestId('dashboard-page')).not.toBeInTheDocument();
   });
 });
