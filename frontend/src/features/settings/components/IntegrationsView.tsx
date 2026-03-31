@@ -70,9 +70,9 @@ export function IntegrationsView({
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* HEVY INTEGRATION */}
-        <div className="space-y-6">
+        <div className="space-y-6 flex flex-col">
           <h2 className="text-xl font-black text-white tracking-tight uppercase px-2">{t('settings.integrations.hevy.title')}</h2>
-          <PremiumCard className="p-8 space-y-8 h-full flex flex-col">
+          <PremiumCard className="p-8 space-y-8 flex-1 flex flex-col">
             <div className="flex items-center gap-4">
                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
                   <Dumbbell size={24} />
@@ -181,9 +181,9 @@ export function IntegrationsView({
         </div>
 
         {/* TELEGRAM INTEGRATION */}
-        <div className="space-y-6">
+        <div className="space-y-6 flex flex-col">
           <h2 className="text-xl font-black text-white tracking-tight uppercase px-2">{t('settings.integrations.telegram.title')}</h2>
-          <PremiumCard className="p-8 space-y-8 h-full">
+          <PremiumCard className="p-8 space-y-8 flex-1 flex flex-col">
             <div className="flex items-center gap-4">
                <div className="w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
                   <Send size={22} />
@@ -199,7 +199,7 @@ export function IntegrationsView({
                </div>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-6 flex-1 flex flex-col">
               {telegram.status?.linked ? (
                 <>
                   <div className="bg-white/5 border border-white/5 p-6 rounded-3xl text-center">
@@ -209,7 +209,7 @@ export function IntegrationsView({
                      <p className="text-xs text-zinc-500">{t('settings.integrations.telegram.ready')}</p>
                   </div>
 
-                  <div className="pt-6 border-t border-white/5">
+                  <div className="pt-6 border-t border-white/5 mt-auto">
                      <h4 className="text-xs font-black text-white uppercase tracking-widest mb-4">{t('settings.integrations.telegram.notifications_title')}</h4>
                      <label 
                        className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/[0.08] transition-all cursor-pointer group"
@@ -229,9 +229,9 @@ export function IntegrationsView({
                   </div>
                 </>
               ) : telegram.code ? (
-                <div className="space-y-6 text-center">
+                <div className="space-y-6 text-center flex-1 flex flex-col justify-center">
                    <p className="text-sm font-medium text-zinc-400 leading-relaxed">{t('settings.integrations.telegram.send_code')}</p>
-                   <div className="text-4xl font-black text-white tracking-[0.3em] bg-black/40 py-6 px-4 rounded-3xl border border-white/10 select-all shadow-inner tabular-nums">
+                   <div className="text-4xl font-black text-white tracking-[0.3em] bg-black/40 py-6 px-4 rounded-3xl border border-white/10 select-all shadow-inner tabular-nums my-4">
                       {telegram.code.code}
                    </div>
                    <a 
@@ -245,15 +245,17 @@ export function IntegrationsView({
                    </a>
                 </div>
               ) : (
-                <Button
-                  type="button"
-                  onClick={telegram.onGenerate}
-                  disabled={isReadOnly || telegram.loading}
-                  className="w-full py-4 rounded-full bg-white text-black font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/10 disabled:opacity-50 flex items-center justify-center gap-3"
-                >
-                  <Smartphone size={20} />
-                  {t('settings.integrations.telegram.generate_code')}
-                </Button>
+                <div className="flex-1 flex flex-col justify-center">
+                  <Button
+                    type="button"
+                    onClick={telegram.onGenerate}
+                    disabled={isReadOnly || telegram.loading}
+                    className="w-full py-4 rounded-full bg-white text-black font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/10 disabled:opacity-50 flex items-center justify-center gap-3"
+                  >
+                    <Smartphone size={20} />
+                    {t('settings.integrations.telegram.generate_code')}
+                  </Button>
+                </div>
               )}
             </div>
           </PremiumCard>
@@ -261,7 +263,7 @@ export function IntegrationsView({
       </div>
 
       {/* IMPORTS BENTO */}
-      <div className="space-y-6 relative z-10 pt-10">
+      <div className="space-y-6 relative z-10 !mt-20 pt-4">
          <h2 className="text-xl font-black text-white tracking-tight uppercase px-2">{t('settings.integrations.imports.title')}</h2>
          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <PremiumCard className="p-8 space-y-4 bg-gradient-to-br from-blue-900/20 to-transparent border-blue-500/20 group">
