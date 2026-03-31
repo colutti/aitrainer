@@ -81,12 +81,12 @@ describe('IntegrationsView', () => {
     expect(screen.getByRole('checkbox')).toBeDisabled();
   });
 
-  it('keeps imports heading separated from previous cards', () => {
+  it('keeps imports heading separated and layered above previous cards', () => {
     render(<IntegrationsView {...mockProps} />);
     const heading = screen.getByText(/settings\.integrations\.imports\.title/i);
     const section = heading.closest('div');
     expect(section).toHaveClass('relative');
-    expect(section).not.toHaveClass('z-10');
-    expect(section).toHaveClass('pt-4');
+    expect(section).toHaveClass('z-10');
+    expect(section).toHaveClass('mt-8');
   });
 });
