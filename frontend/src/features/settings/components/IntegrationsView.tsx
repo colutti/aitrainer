@@ -261,7 +261,7 @@ export function IntegrationsView({
       </div>
 
       {/* IMPORTS BENTO */}
-      <div className="space-y-6">
+      <div className="space-y-6 relative z-10">
          <h2 className="text-xl font-black text-white tracking-tight uppercase px-2">{t('settings.integrations.imports.title')}</h2>
          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <PremiumCard className="p-8 space-y-4 bg-gradient-to-br from-blue-900/20 to-transparent border-blue-500/20 group">

@@ -80,4 +80,12 @@ describe('IntegrationsView', () => {
     expect(screen.getByRole('button', { name: 'settings.integrations.hevy.sync_button' })).toBeDisabled();
     expect(screen.getByRole('checkbox')).toBeDisabled();
   });
+
+  it('keeps imports section above previous cards', () => {
+    render(<IntegrationsView {...mockProps} />);
+    const heading = screen.getByText(/settings\.integrations\.imports\.title/i);
+    const section = heading.closest('div');
+    expect(section).toHaveClass('relative');
+    expect(section).toHaveClass('z-10');
+  });
 });
