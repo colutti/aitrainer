@@ -71,6 +71,59 @@ def create_workout(
         raise HTTPException(status_code=500, detail="Failed to create workout") from e
 
 
+@router.put("/{workout_id}", response_model=WorkoutWithId)
+def update_workout(
+    workout_id: str,
+    user_email: WritableCurrentUser,
+    db: DatabaseDep,
+    workout_data: CreateWorkoutRequest,
+) -> WorkoutWithId:
+    """
+    Updates an existing workout log for the authenticated user.
+    """
+    logger.info("Updating workout log %s for user: %s", workout_id, user_email)
+    try:
+        # Validate ownership first
+        existing_workout = db.get_workout_by_id(workout_id)
+        if not existing_workout:
+            raise HTTPException(status_code=404, detail="Workout not found")
+
+        if existing_workout.get("user_email") != user_email:
+            raise HTTPException(
+                status_code=403, detail="Not authorized to update this workout"
+            )
+
+        # Create updated workout log
+        workout_log = WorkoutLog(
+            user_email=user_email,
+            date=workout_data.date,
+            workout_type=workout_data.workout_type,
+            exercises=workout_data.exercises,
+            duration_minutes=workout_data.duration_minutes,
+            source=workout_data.source,
+        )
+
+        updated = db.update_workout_log(workout_id, user_email, workout_log)
+        if not updated:
+            raise HTTPException(
+                status_code=500, detail="Failed to update workout"
+            )
+
+        # Retrieve the updated log
+        saved_workout = db.get_workout_by_id(workout_id)
+        if not saved_workout:
+            raise HTTPException(
+                status_code=500, detail="Failed to retrieve updated workout"
+            )
+
+        return WorkoutWithId(**saved_workout)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error updating workout %s for user %s: %s", workout_id, user_email, e)
+        raise HTTPException(status_code=500, detail="Failed to update workout") from e
+
+
 @router.get("/list", response_model=WorkoutListResponse)
 def list_workouts(
     user_email: CurrentUser,
