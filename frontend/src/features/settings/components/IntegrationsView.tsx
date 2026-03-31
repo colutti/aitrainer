@@ -61,14 +61,14 @@ export function IntegrationsView({
   const { t } = useTranslation();
 
   return (
-    <div className={cn(PREMIUM_UI.animation.fadeIn, "space-y-8 pb-20")}>
+    <div className={cn(PREMIUM_UI.animation.fadeIn, "space-y-12 pb-20")}>
       {isReadOnly && (
         <PremiumCard className="p-4 border-amber-500/20 bg-amber-500/5 text-amber-200 text-[10px] font-black uppercase tracking-[0.2em]">
           Demo Read-Only
         </PremiumCard>
       )}
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* HEVY INTEGRATION */}
         <div className="space-y-6">
           <h2 className="text-xl font-black text-white tracking-tight uppercase px-2">{t('settings.integrations.hevy.title')}</h2>
@@ -261,7 +261,7 @@ export function IntegrationsView({
       </div>
 
       {/* IMPORTS BENTO */}
-      <div className="space-y-6 relative z-10">
+      <div className="space-y-6 relative z-10 pt-10">
          <h2 className="text-xl font-black text-white tracking-tight uppercase px-2">{t('settings.integrations.imports.title')}</h2>
          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <PremiumCard className="p-8 space-y-4 bg-gradient-to-br from-blue-900/20 to-transparent border-blue-500/20 group">
