@@ -91,6 +91,48 @@ class HevyService:
                 logger.error("Failed to fetch workouts page %d: %s", page, e)
                 return []
 
+    async def fetch_workout_by_id(
+        self, api_key: str, workout_id: str
+    ) -> Optional[dict]:
+        """
+        Fetches a single workout by ID from Hevy API.
+        """
+        async with httpx.AsyncClient() as client:
+            try:
+                logger.debug(
+                    "[Hevy] Fetching workout %s with key ****%s",
+                    workout_id,
+                    api_key[-4:],
+                )
+                response = await client.get(
+                    f"{self.BASE_URL}/workouts/{workout_id}",
+                    headers={"api-key": api_key},
+                    timeout=10.0,
+                )
+                logger.debug("[Hevy] Response status: %s", response.status_code)
+
+                if response.status_code == 200:
+                    # Hevy API returns the workout object directly
+                    data = response.json()
+                    logger.debug("[Hevy] Response JSON keys: %s", list(data.keys()))
+                    logger.debug("[Hevy] Returning workout directly from response")
+                    return data
+
+                # Log detailed error for debugging
+                logger.error(
+                    "[Hevy] Workout fetch failed for %s. Status: %s, Body: %s",
+                    workout_id,
+                    response.status_code,
+                    response.text,
+                )
+                return None
+            except Exception as e:
+                logger.error("[Hevy] Exception fetching workout %s: %s", workout_id, e)
+                import traceback
+
+                logger.error(traceback.format_exc())
+                return None
+
     def transform_to_workout_log(
         self, hevy_workout: dict, user_email: str
     ) -> Optional[WorkoutLog]:
