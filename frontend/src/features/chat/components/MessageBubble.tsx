@@ -43,7 +43,7 @@ export function MessageBubble({ message, resolveText, trainerId, userPhoto, user
       )}
     >
       {/* AVATAR */}
-      <div className="flex-none mb-1">
+      <div data-testid="chat-message-avatar" className="hidden lg:flex flex-none mb-1">
         <div className={cn(
           "w-10 h-10 rounded-2xl border flex items-center justify-center overflow-hidden shadow-lg",
           isTrainer 
@@ -64,9 +64,9 @@ export function MessageBubble({ message, resolveText, trainerId, userPhoto, user
 
       {/* BUBBLE */}
       <div className={cn(
-        "flex flex-col max-w-[80%] md:max-w-[70%]",
+        "flex flex-col max-w-full lg:max-w-[80%] xl:max-w-[70%]",
         isTrainer ? "items-start" : "items-end"
-      )}>
+      )} data-testid="chat-message-bubble">
         <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600 mb-1.5 ml-1">
           {isTrainer ? (trainerId ?? 'AI Trainer') : (userName ?? t('common.athlete'))}
         </span>

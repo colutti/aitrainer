@@ -61,4 +61,21 @@ describe('MessageBubble', () => {
     expect(avatarImg).toBeInTheDocument();
     expect(avatarImg).toHaveAttribute('src', '/assets/avatars/marcus.png');
   });
+
+  it('should preserve message width on mobile by hiding inline avatar', () => {
+    const message = {
+      id: '5',
+      sender: 'Trainer' as const,
+      text: 'Mensagem longa para ocupar o maximo de espaco no mobile.',
+      timestamp: new Date().toISOString(),
+    };
+
+    const { container } = render(<MessageBubble message={message} trainerId="marcus" />);
+
+    const avatarWrapper = container.querySelector('[data-testid="chat-message-avatar"]');
+    expect(avatarWrapper).toHaveClass('hidden', 'lg:flex');
+
+    const bubbleWrapper = container.querySelector('[data-testid="chat-message-bubble"]');
+    expect(bubbleWrapper).toHaveClass('max-w-full', 'lg:max-w-[80%]', 'xl:max-w-[70%]');
+  });
 });
