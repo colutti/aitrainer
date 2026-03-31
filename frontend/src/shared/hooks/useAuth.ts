@@ -73,9 +73,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         }
 
         localStorage.setItem(AUTH_TOKEN_KEY, response.token);
-        set({ isAuthenticated: true });
-
         await get().loadUserInfo();
+        set({ isAuthenticated: true });
         return;
       }
 
@@ -95,9 +94,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       }
 
       localStorage.setItem(AUTH_TOKEN_KEY, response.token);
-      set({ isAuthenticated: true });
-
       await get().loadUserInfo();
+      set({ isAuthenticated: true });
+    } catch (error) {
+      console.error('Login error:', error);
+      get().logout();
+      throw error;
     } finally {
       set({ isLoading: false });
     }
@@ -123,9 +125,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       }
 
       localStorage.setItem(AUTH_TOKEN_KEY, response.token);
-      set({ isAuthenticated: true });
-
       await get().loadUserInfo();
+      set({ isAuthenticated: true });
+    } catch (error) {
+      console.error('Registration error:', error);
+      get().logout();
+      throw error;
     } finally {
       set({ isLoading: false });
     }
@@ -155,11 +160,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       }
 
       localStorage.setItem(AUTH_TOKEN_KEY, response.token);
-      set({ isAuthenticated: true });
-
       await get().loadUserInfo();
+      set({ isAuthenticated: true });
     } catch (error) {
       console.error('Social login error:', error);
+      get().logout();
       throw error;
     } finally {
       set({ isLoading: false });
@@ -168,6 +173,18 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   logout: () => {
     localStorage.removeItem(AUTH_TOKEN_KEY);
+
+    // Also sign out from Firebase if we have it imported
+    import('../../features/auth/firebase')
+      .then(({ auth }) => {
+        import('firebase/auth')
+          .then(({ signOut }) => {
+            signOut(auth).catch((err) => console.error('Firebase signOut error:', err));
+          })
+          .catch(() => {});
+      })
+      .catch(() => {});
+
     set({
       isAuthenticated: false,
       userInfo: null,
@@ -235,8 +252,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true });
 
     try {
-      set({ isAuthenticated: true });
       await get().loadUserInfo();
+      set({ isAuthenticated: true });
     } catch {
       get().logout();
     } finally {
