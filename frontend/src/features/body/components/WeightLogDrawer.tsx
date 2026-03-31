@@ -108,7 +108,7 @@ export function WeightLogDrawer({ isOpen, onClose, onSubmit, isReadOnly = false,
                 id="weight-kg"
                 data-testid="weight-kg"
                 type="number"
-                step="0.1"
+                step="any"
                 disabled={isReadOnly}
                 {...register('weight_kg')}
                 placeholder="0.0"
@@ -128,19 +128,19 @@ export function WeightLogDrawer({ isOpen, onClose, onSubmit, isReadOnly = false,
           
           <div className="grid grid-cols-2 gap-6">
             <FormField label={t('body.weight.body_fat')} id="body-fat-pct" icon={<Flame size={14} className="text-orange-400" />} error={errors.body_fat_pct?.message}>
-              <Input id="body-fat-pct" data-testid="body-fat-pct" type="number" step="0.1" disabled={isReadOnly} {...register('body_fat_pct')} placeholder="%" className="h-14 rounded-2xl font-bold" />
+              <Input id="body-fat-pct" data-testid="body-fat-pct" type="number" step="any" disabled={isReadOnly} {...register('body_fat_pct')} placeholder="%" className="h-14 rounded-2xl font-bold" />
             </FormField>
             
             <FormField label={t('body.weight.muscle_mass')} id="muscle-mass-kg" icon={<Bone size={14} className="text-emerald-400" />} error={errors.muscle_mass_kg?.message}>
-              <Input id="muscle-mass-kg" type="number" step="0.1" disabled={isReadOnly} {...register('muscle_mass_kg')} placeholder="kg" className="h-14 rounded-2xl font-bold" />
+              <Input id="muscle-mass-kg" type="number" step="any" disabled={isReadOnly} {...register('muscle_mass_kg')} placeholder="kg" className="h-14 rounded-2xl font-bold" />
             </FormField>
 
             <FormField label={t('body.weight.visceral_fat')} id="visceral-fat" icon={<Ruler size={14} className="text-blue-400" />} error={errors.visceral_fat?.message}>
-              <Input id="visceral-fat" type="number" step="1" disabled={isReadOnly} {...register('visceral_fat')} placeholder="1-20" className="h-14 rounded-2xl font-bold" />
+              <Input id="visceral-fat" type="number" step="any" disabled={isReadOnly} {...register('visceral_fat')} placeholder="1-20" className="h-14 rounded-2xl font-bold" />
             </FormField>
 
             <FormField label={t('body.weight.water')} id="body-water-pct" icon={<Droplets size={14} className="text-cyan-400" />} error={errors.body_water_pct?.message}>
-              <Input id="body-water-pct" type="number" step="0.1" disabled={isReadOnly} {...register('body_water_pct')} placeholder="%" className="h-14 rounded-2xl font-bold" />
+              <Input id="body-water-pct" type="number" step="any" disabled={isReadOnly} {...register('body_water_pct')} placeholder="%" className="h-14 rounded-2xl font-bold" />
             </FormField>
           </div>
         </div>

@@ -203,7 +203,7 @@ export function WorkoutDrawer({ workout, isOpen, isReadOnly = false, onClose }: 
             label={t('workouts.workout_type')}
             id="workout-type"
             icon={<Activity size={14} />}
-            error={errors.workout_type?.message}
+            error={errors.workout_type?.message ? t(errors.workout_type.message) : undefined}
           >
             <Input
               id="workout-type"
@@ -269,6 +269,7 @@ export function WorkoutDrawer({ workout, isOpen, isReadOnly = false, onClose }: 
                 exerciseIndex={exerciseIndex}
                 getValues={getValues}
                 register={register}
+                error={errors.exercises?.[exerciseIndex]?.exercise_title?.message}
                 removeExercise={() => { remove(exerciseIndex); }}
                 exerciseSuggestions={exerciseSuggestions}
                 isReadOnly={isReadOnly}
@@ -296,6 +297,7 @@ interface ExerciseCardProps {
   exerciseIndex: number;
   getValues: ReturnType<typeof useForm<WorkoutFormData>>['getValues'];
   register: ReturnType<typeof useForm<WorkoutFormData>>['register'];
+  error?: string;
   removeExercise: () => void;
   exerciseSuggestions: string[];
   isReadOnly: boolean;
@@ -306,6 +308,7 @@ function ExerciseCard({
   exerciseIndex,
   getValues,
   register,
+  error,
   removeExercise,
   exerciseSuggestions,
   isReadOnly,
@@ -323,6 +326,7 @@ function ExerciseCard({
           label={t('workouts.exercise_name')}
           id={`exercise-${String(exerciseIndex)}`}
           className="flex-1"
+          error={error ? t(error) : undefined}
         >
           <Input
             id={`exercise-${String(exerciseIndex)}`}

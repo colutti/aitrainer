@@ -126,6 +126,7 @@ export function OnboardingView({
                   data-testid="onboarding-age"
                   label={t('onboarding.age')} 
                   type="number" 
+                  step="any"
                   value={formData.age ?? ''}
                   onChange={e => { setFormData({...formData, age: Number(e.target.value)}); }}
                   className="h-14 rounded-2xl"
@@ -135,6 +136,7 @@ export function OnboardingView({
                   data-testid="onboarding-height"
                   label={t('settings.height')} 
                   type="number" 
+                  step="any"
                   value={formData.height ?? ''}
                   onChange={e => { setFormData({...formData, height: Number(e.target.value)}); }}
                   className="h-14 rounded-2xl"
@@ -144,6 +146,7 @@ export function OnboardingView({
                   data-testid="onboarding-weight"
                   label={t('body.weight.weight')} 
                   type="number" 
+                  step="any"
                   value={formData.weight ?? ''}
                   onChange={e => { setFormData({...formData, weight: Number(e.target.value)}); }}
                   className="h-14 rounded-2xl md:col-span-2"
