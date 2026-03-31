@@ -2,8 +2,6 @@
 API endpoints for Hevy integration.
 """
 
-import asyncio
-import secrets
 from datetime import datetime
 from typing import Annotated, Optional
 
