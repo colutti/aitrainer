@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
-import type { HevyStatus, HevyWebhookConfig, HevyWebhookCredentials, ImportResult, TelegramStatus } from '../../../shared/types/integration';
+import type { HevyStatus, ImportResult, TelegramStatus } from '../../../shared/types/integration';
 import { integrationsApi } from '../api/integrations-api';
 
 import { IntegrationsView } from './IntegrationsView';

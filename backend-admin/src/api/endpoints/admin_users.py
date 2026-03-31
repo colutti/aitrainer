@@ -44,7 +44,6 @@ def list_users(
         "_id": 0,
         "password_hash": 0,
         "hevy_api_key": 0,
-        "hevy_webhook_secret": 0,
         "photo_base64": 0
     }
     users = list(
@@ -82,7 +81,6 @@ def get_user_details(email: str, _admin: CURRENT_ADMIN_DEP, db: MAIN_DB_DEP) -> 
     user.pop("_id", None)
     user.pop("password_hash", None)
     user.pop("hevy_api_key", None)
-    user.pop("hevy_webhook_secret", None)
 
     response = {
         "profile": user,

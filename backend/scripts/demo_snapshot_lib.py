@@ -17,8 +17,6 @@ SENSITIVE_PROFILE_FIELDS = {
     "password_hash",
     "photo_base64",
     "hevy_api_key",
-    "hevy_webhook_token",
-    "hevy_webhook_secret",
     "stripe_customer_id",
     "stripe_subscription_id",
     "telegram_chat_id",
@@ -86,8 +84,6 @@ def build_demo_profile(source: dict[str, Any], demo_email: str) -> dict[str, Any
     profile["display_name"] = profile.get("display_name") or "Demo Athlete"
     profile["photo_base64"] = None
     profile["hevy_api_key"] = None
-    profile["hevy_webhook_token"] = None
-    profile["hevy_webhook_secret"] = None
     profile["stripe_customer_id"] = None
     profile["stripe_subscription_id"] = None
     profile["stripe_subscription_status"] = None

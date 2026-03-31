@@ -272,8 +272,6 @@ def _build_profile(
         "hevy_enabled": integration_state["hevy_enabled"],
         "hevy_last_sync": hevy_last_sync,
         "hevy_api_key": None,
-        "hevy_webhook_token": None,
-        "hevy_webhook_secret": None,
         "timezone": "UTC",
         "photo_base64": None,
         "preferred_locale": locale,
