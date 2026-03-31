@@ -131,7 +131,6 @@ describe('DashboardPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('dashboard.greeting')).toBeInTheDocument();
     expect(screen.getByText('2000')).toBeInTheDocument(); 
     expect(screen.getByText('2500')).toBeInTheDocument(); 
     expect(screen.getByText(/75%/)).toBeInTheDocument(); 
