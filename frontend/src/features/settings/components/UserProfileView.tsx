@@ -161,6 +161,7 @@ export default function UserProfileView({
                     id="profile-age"
                     data-testid="profile-age"
                     type="number"
+                    step="any"
                     disabled={isReadOnly}
                     {...register('age', { valueAsNumber: true })}
                   className="pl-12 h-14 rounded-2xl"
@@ -173,6 +174,7 @@ export default function UserProfileView({
                     id="profile-height"
                     data-testid="profile-height"
                     type="number"
+                    step="any"
                     disabled={isReadOnly}
                     {...register('height', { valueAsNumber: true })}
                     className="pl-12 h-14 rounded-2xl"
@@ -211,6 +213,7 @@ export default function UserProfileView({
                     id="profile-target"
                     data-testid="profile-target"
                     type="number"
+                    step="any"
                     disabled={isReadOnly}
                     {...register('target_weight', { valueAsNumber: true })}
                     className="pl-12 h-14 rounded-2xl"
@@ -225,7 +228,7 @@ export default function UserProfileView({
                     id="profile-weekly-rate"
                     data-testid="profile-weekly-rate"
                     type="number"
-                    step="0.1"
+                    step="any"
                     disabled={isReadOnly}
                     {...register('weekly_rate', { valueAsNumber: true })}
                     className="pl-12 h-14 rounded-2xl"

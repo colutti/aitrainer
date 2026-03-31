@@ -377,7 +377,20 @@
     "delete_success": "Workout removed!",
     "delete_error": "Error removing workout.",
     "search_placeholder": "Search workouts...",
-    "record_details": "Workout Details"
+    "record_details": "Workout Details",
+    "add_exercise": "Add exercise",
+    "exercise_name": "Exercise Name",
+    "weight": "Weight (kg)",
+    "reps": "Reps",
+    "duration_seconds": "Duration (s)",
+    "distance_meters": "Distance (m)",
+    "set": "Set",
+    "add_set": "Add set",
+    "duplicate_set": "Duplicate last set",
+    "save_workout": "Save Workout",
+    "workout_type_required": "Workout type is required",
+    "exercise_name_required": "Exercise name is required",
+    "add_at_least_one_exercise": "Add at least one exercise"
   },
   "nutrition": {
     "title": "Nutrition",

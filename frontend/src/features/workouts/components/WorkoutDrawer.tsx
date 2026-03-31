@@ -26,15 +26,15 @@ const setSchema = z.object({
 });
 
 const exerciseSchema = z.object({
-  exercise_title: z.string().min(2, 'Nome do exercício obrigatório'),
+  exercise_title: z.string().min(2, 'workouts.exercise_name_required'),
   sets: z.array(setSchema).min(1),
 });
 
 const workoutSchema = z.object({
-  workout_type: z.string().min(2, 'Tipo de treino obrigatório'),
+  workout_type: z.string().min(2, 'workouts.workout_type_required'),
   duration_minutes: z.coerce.number().min(1).optional(),
   date: z.string().min(1),
-  exercises: z.array(exerciseSchema).min(1, 'Adicione pelo menos um exercício'),
+  exercises: z.array(exerciseSchema).min(1, 'workouts.add_at_least_one_exercise'),
 });
 
 type WorkoutFormData = z.infer<typeof workoutSchema>;
@@ -203,7 +203,7 @@ export function WorkoutDrawer({ workout, isOpen, isReadOnly = false, onClose }: 
             label={t('workouts.workout_type')}
             id="workout-type"
             icon={<Activity size={14} />}
-            error={errors.workout_type?.message}
+            error={errors.workout_type?.message ? t(errors.workout_type.message) : undefined}
           >
             <Input
               id="workout-type"
@@ -218,11 +218,12 @@ export function WorkoutDrawer({ workout, isOpen, isReadOnly = false, onClose }: 
             label={t('workouts.duration')}
             id="workout-duration"
             icon={<Clock3 size={14} />}
-            error={errors.duration_minutes?.message}
+            error={errors.duration_minutes?.message ? t(errors.duration_minutes.message) : undefined}
           >
             <Input
               id="workout-duration"
               type="number"
+              step="any"
               disabled={isReadOnly}
               {...register('duration_minutes')}
               className="h-14 rounded-2xl font-bold"
@@ -252,12 +253,12 @@ export function WorkoutDrawer({ workout, isOpen, isReadOnly = false, onClose }: 
               onClick={() => { append(emptyExercise); }}
             >
               <Plus size={14} />
-              Adicionar exercício
+              {t('workouts.add_exercise')}
             </Button>
           </div>
 
           {errors.exercises?.message && (
-            <p className="text-sm text-red-400">{errors.exercises.message}</p>
+            <p className="text-sm text-red-400">{t(errors.exercises.message)}</p>
           )}
 
           <div className="space-y-4">
@@ -268,6 +269,7 @@ export function WorkoutDrawer({ workout, isOpen, isReadOnly = false, onClose }: 
                 exerciseIndex={exerciseIndex}
                 getValues={getValues}
                 register={register}
+                error={errors.exercises?.[exerciseIndex]?.exercise_title?.message}
                 removeExercise={() => { remove(exerciseIndex); }}
                 exerciseSuggestions={exerciseSuggestions}
                 isReadOnly={isReadOnly}
@@ -282,7 +284,7 @@ export function WorkoutDrawer({ workout, isOpen, isReadOnly = false, onClose }: 
           </Button>
           <Button fullWidth type="submit" isLoading={isSubmitting} disabled={isReadOnly} className="btn-premium">
             <Save size={18} />
-            Salvar treino
+            {t('workouts.save_workout')}
           </Button>
         </div>
       </form>
@@ -295,6 +297,7 @@ interface ExerciseCardProps {
   exerciseIndex: number;
   getValues: ReturnType<typeof useForm<WorkoutFormData>>['getValues'];
   register: ReturnType<typeof useForm<WorkoutFormData>>['register'];
+  error?: string;
   removeExercise: () => void;
   exerciseSuggestions: string[];
   isReadOnly: boolean;
@@ -305,10 +308,12 @@ function ExerciseCard({
   exerciseIndex,
   getValues,
   register,
+  error,
   removeExercise,
   exerciseSuggestions,
   isReadOnly,
 }: ExerciseCardProps) {
+  const { t } = useTranslation();
   const setArray = useFieldArray({
     control,
     name: exerciseSetsPath(exerciseIndex),
@@ -318,14 +323,15 @@ function ExerciseCard({
     <div className="p-6 rounded-3xl bg-white/5 border border-white/5 space-y-4">
       <div className="flex items-start gap-3">
         <FormField
-          label="Nome do exercício"
+          label={t('workouts.exercise_name')}
           id={`exercise-${String(exerciseIndex)}`}
           className="flex-1"
+          error={error ? t(error) : undefined}
         >
           <Input
             id={`exercise-${String(exerciseIndex)}`}
             list={`exercise-suggestions-${String(exerciseIndex)}`}
-            placeholder="Nome do Exercício"
+            placeholder={t('workouts.exercise_name')}
             disabled={isReadOnly}
             {...register(exerciseTitlePath(exerciseIndex))}
             className="h-12 rounded-2xl font-bold"
@@ -347,7 +353,7 @@ function ExerciseCard({
           <div key={setField.id} className="rounded-2xl border border-white/5 bg-black/20 p-4 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-black uppercase tracking-widest text-zinc-400">
-                Série {setIndex + 1}
+                {t('workouts.set')} {setIndex + 1}
               </span>
               {setArray.fields.length > 1 && (
                 <Button
@@ -366,7 +372,8 @@ function ExerciseCard({
               <Input
                 id={exerciseSetFieldId(exerciseIndex, setIndex, 'weight')}
                 type="number"
-                label="Peso"
+                step="any"
+                label={t('workouts.weight')}
                 disabled={isReadOnly}
                 // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
                 {...register(`exercises.${exerciseIndex}.sets.${setIndex}.weight_kg` as const)}
@@ -374,7 +381,8 @@ function ExerciseCard({
               <Input
                 id={exerciseSetFieldId(exerciseIndex, setIndex, 'reps')}
                 type="number"
-                label="Reps"
+                step="any"
+                label={t('workouts.reps')}
                 disabled={isReadOnly}
                 // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
                 {...register(`exercises.${exerciseIndex}.sets.${setIndex}.reps` as const)}
@@ -382,7 +390,8 @@ function ExerciseCard({
               <Input
                 id={exerciseSetFieldId(exerciseIndex, setIndex, 'duration')}
                 type="number"
-                label="Tempo"
+                step="any"
+                label={t('workouts.duration_seconds')}
                 disabled={isReadOnly}
                 // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
                 {...register(`exercises.${exerciseIndex}.sets.${setIndex}.duration_seconds` as const)}
@@ -390,7 +399,8 @@ function ExerciseCard({
               <Input
                 id={exerciseSetFieldId(exerciseIndex, setIndex, 'distance')}
                 type="number"
-                label="Distância"
+                step="any"
+                label={t('workouts.distance_meters')}
                 disabled={isReadOnly}
                 // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
                 {...register(`exercises.${exerciseIndex}.sets.${setIndex}.distance_meters` as const)}
@@ -409,7 +419,7 @@ function ExerciseCard({
           onClick={() => { setArray.append(emptySet); }}
         >
           <Plus size={14} />
-          Adicionar série
+          {t('workouts.add_set')}
         </Button>
         <Button
           type="button"
@@ -431,7 +441,7 @@ function ExerciseCard({
           }}
         >
           <Copy size={14} />
-          Duplicar última série
+          {t('workouts.duplicate_set')}
         </Button>
       </div>
     </div>
