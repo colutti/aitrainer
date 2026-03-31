@@ -320,8 +320,6 @@ def test_generate_synthetic_snapshot_builds_publishable_demo_dataset():
     assert snapshot["profile"]["is_demo"] is True
     assert snapshot["profile"]["hevy_last_sync"] is not None
     assert snapshot["profile"]["hevy_api_key"] is None
-    assert snapshot["profile"]["hevy_webhook_token"] is None
-    assert snapshot["profile"]["hevy_webhook_secret"] is None
     assert snapshot["profile"]["messages_sent_today"] == 0
     assert snapshot["profile"]["messages_sent_this_month"] == 0
     assert snapshot["profile"]["total_messages_sent"] == 0

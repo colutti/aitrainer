@@ -5,15 +5,14 @@ API endpoints for Hevy integration.
 import asyncio
 import secrets
 from datetime import datetime
-from typing import Annotated, Optional, Any
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from src.core.demo_access import WritableCurrentUser
 from src.services.auth import verify_token
-from src.core.deps import get_hevy_service, get_ai_trainer_brain, get_telegram_service
+from src.core.deps import get_hevy_service, get_ai_trainer_brain
 from src.services.hevy_service import HevyService
 from src.services.trainer import AITrainerBrain
 from src.core.logs import logger
@@ -23,20 +22,6 @@ router = APIRouter()
 CurrentUser = Annotated[str, Depends(verify_token)]
 HevyServiceDep = Annotated[HevyService, Depends(get_hevy_service)]
 BrainDep = Annotated[AITrainerBrain, Depends(get_ai_trainer_brain)]
-
-
-class WebhookDeps:  # pylint: disable=too-few-public-methods
-    """Combines dependencies for Hevy webhook to reduce argument count."""
-
-    def __init__(
-        self,
-        brain: BrainDep,
-        hevy_service: HevyServiceDep,
-        background_tasks: BackgroundTasks,
-    ):
-        self.brain = brain
-        self.hevy_service = hevy_service
-        self.background_tasks = background_tasks
 
 
 class ValidateRequest(BaseModel):

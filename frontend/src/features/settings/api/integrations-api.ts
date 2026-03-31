@@ -1,5 +1,5 @@
 import { httpClient } from '../../../shared/api/http-client';
-import type { HevyStatus, HevyWebhookConfig, HevyWebhookCredentials, ImportResult, TelegramStatus } from '../../../shared/types/integration';
+import type { HevyStatus, ImportResult, TelegramStatus } from '../../../shared/types/integration';
 
 export const integrationsApi = {
   // Hevy
@@ -26,19 +26,6 @@ export const integrationsApi = {
       method: 'POST',
       body: JSON.stringify({ mode: 'skip_duplicates' })
     });
-  },
-
-  // Webhook
-  getWebhookConfig: async (): Promise<HevyWebhookConfig | undefined> => {
-    return httpClient('/integrations/hevy/webhook/config');
-  },
-
-  generateWebhook: async (): Promise<HevyWebhookCredentials | undefined> => {
-    return httpClient('/integrations/hevy/webhook/generate', { method: 'POST' });
-  },
-
-  revokeWebhook: async (): Promise<void> => {
-    await httpClient('/integrations/hevy/webhook', { method: 'DELETE' });
   },
 
   // MyFitnessPal (CSV Import)
