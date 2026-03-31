@@ -87,7 +87,7 @@ function exerciseTitlePath(exerciseIndex: number) {
 
 export function WorkoutDrawer({ workout, isOpen, isReadOnly = false, onClose }: WorkoutDrawerProps) {
   const { t } = useTranslation();
-  const { createWorkout, fetchWorkoutTypes, fetchExerciseSuggestions } = useWorkoutStore();
+  const { createWorkout, updateWorkout, fetchWorkoutTypes, fetchExerciseSuggestions } = useWorkoutStore();
   const [workoutTypeSuggestions, setWorkoutTypeSuggestions] = useState<string[]>([]);
   const [exerciseSuggestions, setExerciseSuggestions] = useState<string[]>([]);
 
@@ -180,7 +180,11 @@ export function WorkoutDrawer({ workout, isOpen, isReadOnly = false, onClose }: 
       })),
     };
 
-    await createWorkout(payload);
+    if (workout?.id) {
+      await updateWorkout(workout.id, payload);
+    } else {
+      await createWorkout(payload);
+    }
     onClose();
   };
 
