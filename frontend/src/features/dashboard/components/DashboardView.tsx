@@ -187,7 +187,7 @@ export function DashboardView({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         {/* PESO */}
-        <PremiumCard className="p-6 md:p-8 h-auto md:h-72 flex flex-col group overflow-hidden relative">
+        <PremiumCard className="p-6 md:p-8 h-auto md:min-h-[18rem] flex flex-col group overflow-hidden relative">
            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-3xl pointer-events-none group-hover:bg-emerald-500/10 transition-colors" />
            <div className="relative z-10">
               <div className="flex justify-between items-start mb-4">
@@ -214,7 +214,7 @@ export function DashboardView({
         </PremiumCard>
 
         {/* GORDURA */}
-        <PremiumCard data-testid="widget-fat" className="p-6 md:p-8 h-auto md:h-72 flex flex-col group overflow-hidden relative">
+        <PremiumCard data-testid="widget-fat" className="p-6 md:p-8 h-auto md:min-h-[18rem] flex flex-col group overflow-hidden relative">
            <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 blur-3xl pointer-events-none group-hover:bg-orange-500/10 transition-colors" />
            <div className="relative z-10">
               <div className="flex justify-between items-start mb-4">
@@ -243,7 +243,7 @@ export function DashboardView({
         </PremiumCard>
 
         {/* MÚSCULO */}
-        <PremiumCard className="p-6 md:p-8 h-auto md:h-72 flex flex-col group overflow-hidden relative">
+        <PremiumCard className="p-6 md:p-8 h-auto md:min-h-[18rem] flex flex-col group overflow-hidden relative">
            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl pointer-events-none group-hover:bg-blue-500/10 transition-colors" />
            <div className="relative z-10">
               <div className="flex justify-between items-start mb-4">
