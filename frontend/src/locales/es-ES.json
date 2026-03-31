@@ -114,15 +114,7 @@
         "sync_success": "¡Entrenos sincronizados!",
         "sync_error": "Error en la sincronización",
         "remove_success": "Hevy desconectado",
-        "remove_error": "Error al desconectar Hevy",
-        "webhook_success": "¡Webhook configurado!",
-        "webhook_error": "Error en el webhook",
-        "webhook_revoke_success": "¡Webhook revocado!",
-        "webhook_revoke_error": "Error al revocar el webhook",
-        "webhook_title": "Hevy Webhook",
-        "webhook_setup": "Configurar Webhook",
-        "webhook_url": "URL del Webhook",
-        "webhook_revoke": "Revocar Webhook"
+        "remove_error": "Error al desconectar Hevy"
       },
       "telegram": {
         "connected": "Conectado: {{username}}",

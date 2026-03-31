@@ -4,8 +4,6 @@ import {
   Check, 
   RefreshCw, 
   Smartphone, 
-  Copy, 
-  Link2, 
   Upload, 
   ExternalLink
 } from 'lucide-react';
@@ -14,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '../../../shared/components/ui/Button';
 import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
 import { PREMIUM_UI } from '../../../shared/styles/ui-variants';
-import type { HevyStatus, HevyWebhookConfig, HevyWebhookCredentials, TelegramStatus } from '../../../shared/types/integration';
+import type { HevyStatus, TelegramStatus } from '../../../shared/types/integration';
 import { cn } from '../../../shared/utils/cn';
 
 export interface IntegrationsViewProps {
@@ -28,14 +26,6 @@ export interface IntegrationsViewProps {
     onRemove: () => void;
     loading: boolean;
     syncing: boolean;
-  };
-  webhook: {
-    config: HevyWebhookConfig | null;
-    credentials: HevyWebhookCredentials | null;
-    onGenerate: () => void;
-    onRevoke: () => void;
-    onCopy: (text: string) => void;
-    loading: boolean;
   };
   telegram: {
     status: TelegramStatus | null;
@@ -54,7 +44,6 @@ export interface IntegrationsViewProps {
 export function IntegrationsView({
   isReadOnly = false,
   hevy,
-  webhook,
   telegram,
   imports,
 }: IntegrationsViewProps) {
@@ -137,44 +126,6 @@ export function IntegrationsView({
                   <RefreshCw size={18} className={cn(hevy.syncing && "animate-spin")} />
                   {t('settings.integrations.hevy.sync_button')}
                 </Button>
-
-                <div className="pt-6 border-t border-white/5 mt-auto">
-                   <h4 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2 mb-4">
-                      <Link2 size={14} /> {t('settings.integrations.hevy.webhook_title')}
-                   </h4>
-                   
-                   {!webhook.config?.hasWebhook ? (
-                     <Button
-                       type="button"
-                       onClick={webhook.onGenerate}
-                       disabled={isReadOnly || webhook.loading}
-                       className="w-full py-3 rounded-2xl bg-white/5 border border-dashed border-white/10 text-xs font-bold text-zinc-500 hover:border-indigo-500/50 hover:text-indigo-400 transition-all"
-                     >
-                       {t('settings.integrations.hevy.webhook_setup')}
-                     </Button>
-                   ) : (
-                     <div className="space-y-3">
-                        <div className="bg-black/20 p-3 rounded-xl border border-white/5 group relative">
-                           <p className="text-[9px] text-zinc-600 font-black uppercase mb-1">{t('settings.integrations.hevy.webhook_url')}</p>
-                           <div className="flex items-center justify-between gap-4">
-                              <code className="text-[10px] text-indigo-300 truncate font-mono">{webhook.config.webhookUrl}</code>
-                              <Button type="button" variant="ghost" size="icon" onClick={() => { webhook.onCopy(webhook.config?.webhookUrl ?? ''); }} className="h-6 w-6 text-zinc-500 hover:text-white hover:bg-transparent">
-                                 <Copy size={14} />
-                              </Button>
-                           </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          onClick={webhook.onRevoke}
-                          disabled={isReadOnly || webhook.loading}
-                          className="w-full h-auto p-0 text-center text-[10px] font-black text-red-500/50 uppercase tracking-widest hover:text-red-400 hover:bg-transparent transition-colors"
-                        >
-                          {t('settings.integrations.hevy.webhook_revoke')}
-                        </Button>
-                     </div>
-                   )}
-                </div>
               </div>
             )}
           </PremiumCard>

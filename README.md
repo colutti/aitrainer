@@ -9,7 +9,7 @@
 - **Real Long-Term Memory**: The AI remembers your history, injuries, preferences, and goals through a 3-layer memory system (short, medium, and long-term with semantic search).
 - **Adaptive TDEE**: Calculates your actual metabolism from weight and nutrition data using linear regression with outlier filtering, not just static formulas.
 - **Deep Integrations**:
-  - **Hevy**: Import workouts in real-time via webhooks and create routines directly in Hevy.
+  - **Hevy**: Sync your workout history and create routines directly in Hevy.
   - **MyFitnessPal**: Sync nutrition data.
   - **Zepp Life/Xiaomi**: Import body composition from smart scales.
 - **Multi-Platform**: Chat via the web app or directly through **Telegram** with automatic workout analysis.
@@ -32,7 +32,7 @@
 - **Database**: MongoDB (NoSQL) + Qdrant (Vector Database for Memory)
 - **AI/LLM**: LangChain + LiteLLM (Gemini, OpenAI, Ollama)
 - **Task Queue**: BackgroundTasks (FastAPI internal)
-- **Automation**: Telegram Bot API + Webhooks (Hevy)
+- **Automation**: Telegram Bot API
 
 ---
 

@@ -244,66 +244,6 @@ class TestUserRepositoryUpdateProfileFields:
 
 
 
-class TestUserRepositoryFindByWebhookToken:
-    """Test find_by_webhook_token method."""
-
-    def test_find_by_webhook_token_found(self, user_repo, mock_db, sample_user_profile):
-        """Test finding user by webhook token."""
-        token = "webhook_token_12345"
-        mock_data = sample_user_profile.model_dump()
-        mock_data["hevy_webhook_token"] = token
-
-        mock_db.__getitem__.return_value.find_one.return_value = mock_data
-
-        result = user_repo.find_by_webhook_token(token)
-
-        assert result is not None
-        assert isinstance(result, UserProfile)
-        mock_db.__getitem__.return_value.find_one.assert_called_once_with(
-            {"hevy_webhook_token": token}
-        )
-
-    def test_find_by_webhook_token_not_found(self, user_repo, mock_db):
-        """Test webhook token lookup when no user found."""
-        mock_db.__getitem__.return_value.find_one.return_value = None
-
-        result = user_repo.find_by_webhook_token("nonexistent_token")
-
-        assert result is None
-
-    def test_find_by_webhook_token_creates_index(self, user_repo, mock_db):
-        """Test that sparse index is created on webhook token field."""
-        mock_db.__getitem__.return_value.find_one.return_value = None
-
-        user_repo.find_by_webhook_token("token")
-
-        # Verify index creation
-        collection = mock_db.__getitem__.return_value
-        collection.create_index.assert_called_once_with("hevy_webhook_token", sparse=True)
-
-    def test_find_by_webhook_token_index_idempotent(self, user_repo, mock_db):
-        """Test that index creation is idempotent."""
-        mock_db.__getitem__.return_value.find_one.return_value = None
-
-        # Call multiple times
-        user_repo.find_by_webhook_token("token1")
-        user_repo.find_by_webhook_token("token2")
-
-        # Index should be created each time (or implementation handles idempotency)
-        collection = mock_db.__getitem__.return_value
-        assert collection.create_index.call_count >= 1
-
-    def test_find_by_webhook_token_with_special_characters(self, user_repo, mock_db):
-        """Test webhook token lookup with special characters."""
-        token = "token_!@#$%^&*()"
-        mock_db.__getitem__.return_value.find_one.return_value = None
-
-        result = user_repo.find_by_webhook_token(token)
-
-        assert result is None
-        mock_db.__getitem__.return_value.find_one.assert_called()
-
-
 class TestUserRepositoryEdgeCases:
     """Test edge cases and error handling."""
 

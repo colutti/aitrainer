@@ -57,8 +57,6 @@ def sample_user_profile():
         hevy_api_key=None,
         hevy_enabled=False,
         hevy_last_sync=None,
-        hevy_webhook_token=None,
-        hevy_webhook_secret=None,
     )
 
 

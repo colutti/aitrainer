@@ -62,31 +62,6 @@ describe('integrationsApi', () => {
     expect(res).toEqual(mockRes);
   });
 
-  it('should get webhook config', async () => {
-    const mockRes = { hasWebhook: true, webhookUrl: 'https://example.com/webhook', authHeader: 'Bearer ****' };
-    vi.mocked(httpClient).mockResolvedValue(mockRes);
-
-    const res = await integrationsApi.getWebhookConfig();
-
-    expect(httpClient).toHaveBeenCalledWith('/integrations/hevy/webhook/config');
-    expect(res).toEqual(mockRes);
-  });
-
-  it('should generate webhook', async () => {
-    const mockRes = { webhookUrl: 'https://example.com/webhook/new', authHeader: 'Bearer secret' };
-    vi.mocked(httpClient).mockResolvedValue(mockRes);
-
-    const res = await integrationsApi.generateWebhook();
-
-    expect(httpClient).toHaveBeenCalledWith('/integrations/hevy/webhook/generate', { method: 'POST' });
-    expect(res).toEqual(mockRes);
-  });
-
-  it('should revoke webhook', async () => {
-    await integrationsApi.revokeWebhook();
-    expect(httpClient).toHaveBeenCalledWith('/integrations/hevy/webhook', { method: 'DELETE' });
-  });
-
   it('should upload MFP CSV', async () => {
     const file = new File(['content'], 'test.csv', { type: 'text/csv' });
     const mockRes = { imported: 10 };

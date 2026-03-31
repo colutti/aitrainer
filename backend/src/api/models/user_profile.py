@@ -97,12 +97,6 @@ class UserProfile(UserProfileInput):
     hevy_last_sync: datetime | None = Field(
         default=None, description="Last successful sync timestamp"
     )
-    hevy_webhook_token: str | None = Field(
-        default=None, description="Unique token for webhook URL path"
-    )
-    hevy_webhook_secret: str | None = Field(
-        default=None, description="Secret for Authorization header validation"
-    )
 
     # Telegram Notifications
     telegram_notify_on_workout: bool = Field(

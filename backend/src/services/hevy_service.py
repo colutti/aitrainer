@@ -96,7 +96,6 @@ class HevyService:
     ) -> Optional[dict]:
         """
         Fetches a single workout by ID from Hevy API.
-        Used by webhook handler.
         """
         async with httpx.AsyncClient() as client:
             try:

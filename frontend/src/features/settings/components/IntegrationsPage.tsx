@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
-import type { HevyStatus, HevyWebhookConfig, HevyWebhookCredentials, ImportResult, TelegramStatus } from '../../../shared/types/integration';
+import type { HevyStatus, ImportResult, TelegramStatus } from '../../../shared/types/integration';
 import { integrationsApi } from '../api/integrations-api';
 
 import { IntegrationsView } from './IntegrationsView';
@@ -19,14 +19,11 @@ export default function IntegrationsPage() {
   const notify = useNotificationStore();
   const { isReadOnly: isDemoUser } = useDemoMode();
   
-  // Hevy & Webhook State
+  // Hevy State
   const [hevyStatus, setHevyStatus] = useState<HevyStatus | null>(null);
   const [hevyKey, setHevyKey] = useState('');
   const [hevyLoading, setHevyLoading] = useState(false);
   const [hevySyncing, setHevySyncing] = useState(false);
-  const [webhookConfig, setWebhookConfig] = useState<HevyWebhookConfig | null>(null);
-  const [webhookCredentials, setWebhookCredentials] = useState<HevyWebhookCredentials | null>(null);
-  const [webhookLoading, setWebhookLoading] = useState(false);
 
   // Telegram State
   const [telegramStatus, setTelegramStatus] = useState<TelegramStatus | null>(null);
@@ -54,18 +51,10 @@ export default function IntegrationsPage() {
     } catch { /* ignore */ }
   }, []);
 
-  const loadWebhookConfig = useCallback(async () => {
-    try {
-      const config = await integrationsApi.getWebhookConfig();
-      setWebhookConfig(config ?? null);
-    } catch { /* ignore */ }
-  }, []);
-
   useEffect(() => {
     void loadHevyStatus();
     void loadTelegramStatus();
-    void loadWebhookConfig();
-  }, [loadHevyStatus, loadTelegramStatus, loadWebhookConfig]);
+  }, [loadHevyStatus, loadTelegramStatus]);
 
   const handleSaveHevy = () => {
     if (isDemoUser) return;
@@ -120,44 +109,6 @@ export default function IntegrationsPage() {
         notify.error(t('settings.integrations.hevy.remove_error'));
       } finally {
         setHevyLoading(false);
-      }
-    };
-    void run();
-  };
-
-  const handleGenerateWebhook = () => {
-    if (isDemoUser) return;
-    const run = async () => {
-      setWebhookLoading(true);
-      try {
-        const creds = await integrationsApi.generateWebhook();
-        if (creds) {
-          setWebhookCredentials(creds);
-          await loadWebhookConfig();
-          notify.success(t('settings.integrations.hevy.webhook_success'));
-        }
-      } catch {
-        notify.error(t('settings.integrations.hevy.webhook_error'));
-      } finally {
-        setWebhookLoading(false);
-      }
-    };
-    void run();
-  };
-
-  const handleRevokeWebhook = () => {
-    if (isDemoUser) return;
-    const run = async () => {
-      setWebhookLoading(true);
-      try {
-        await integrationsApi.revokeWebhook();
-        setWebhookConfig({ hasWebhook: false, webhookUrl: null, authHeader: null });
-        setWebhookCredentials(null);
-        notify.success(t('settings.integrations.hevy.webhook_revoke_success'));
-      } catch {
-        notify.error(t('settings.integrations.hevy.webhook_revoke_error'));
-      } finally {
-        setWebhookLoading(false);
       }
     };
     void run();
@@ -224,18 +175,6 @@ export default function IntegrationsPage() {
     void run();
   };
 
-  const copyToClipboard = (text: string) => {
-    const run = async () => {
-      try {
-        await navigator.clipboard.writeText(text);
-        notify.success(t('settings.integrations.shared.copy_success'));
-      } catch {
-        notify.error(t('settings.integrations.shared.copy_error'));
-      }
-    };
-    void run();
-  };
-
   return (
     <IntegrationsView 
       hevy={{
@@ -247,14 +186,6 @@ export default function IntegrationsPage() {
         onRemove: handleRemoveHevy,
         loading: hevyLoading,
         syncing: hevySyncing
-      }}
-      webhook={{
-        config: webhookConfig,
-        credentials: webhookCredentials,
-        onGenerate: handleGenerateWebhook,
-        onRevoke: handleRevokeWebhook,
-        onCopy: copyToClipboard,
-        loading: webhookLoading
       }}
       telegram={{
         status: telegramStatus,

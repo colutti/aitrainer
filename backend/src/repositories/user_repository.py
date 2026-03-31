@@ -73,20 +73,6 @@ class UserRepository(BaseRepository):
             return None
         return UserProfile(**user_data)
 
-    def find_by_webhook_token(self, token: str) -> UserProfile | None:
-        """
-        Finds a user by their Hevy webhook token.
-        """
-        # Ensure index exists (idempotent)
-        self.collection.create_index("hevy_webhook_token", sparse=True)
-
-        user_data = self.collection.find_one({"hevy_webhook_token": token})
-        if not user_data:
-            self.logger.debug("No user found for webhook token")
-            return None
-        self.logger.debug("Found user %s for webhook token", user_data.get("email"))
-        return UserProfile(**user_data)
-
     def increment_message_counts(
         self, email: str, new_cycle_start: datetime | None = None
     ) -> None:

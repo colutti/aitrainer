@@ -20,7 +20,6 @@ def test_build_demo_profile_strips_sensitive_fields():
         "display_name": "Rafael",
         "photo_base64": "base64",
         "hevy_api_key": "secret",
-        "hevy_webhook_secret": "secret",
         "stripe_customer_id": "cus_123",
         "stripe_subscription_id": "sub_123",
         "telegram_notify_on_workout": True,
@@ -34,7 +33,6 @@ def test_build_demo_profile_strips_sensitive_fields():
     assert result["is_demo"] is True
     assert result["photo_base64"] is None
     assert result["hevy_api_key"] is None
-    assert result["hevy_webhook_secret"] is None
     assert result["stripe_customer_id"] is None
     assert result["stripe_subscription_id"] is None
     assert "_id" not in result
