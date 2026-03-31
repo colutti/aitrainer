@@ -350,8 +350,6 @@ def build_synthetic_profile(
         "hevy_enabled": integration_state["hevy_enabled"],
         "hevy_last_sync": "2026-02-25T07:15:00Z",
         "hevy_api_key": None,
-        "hevy_webhook_token": None,
-        "hevy_webhook_secret": None,
         "messages_sent_today": 0,
         "messages_sent_this_month": 0,
         "total_messages_sent": 0,
