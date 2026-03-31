@@ -49,7 +49,7 @@ O projeto tem 20 arquivos E2E mockados em `frontend/e2e/`. Após deep-dive nas 6
 | `/api/memory/` `/delete` | ✅ Sim |
 | `/api/metabolism/stats` | ✅ Sim |
 | `/api/stripe/create-checkout-session` `/create-portal-session` `/webhook` | ✅ Sim (webhook simulado) |
-| `/api/integrations/hevy/**` (status, save, sync, remove, webhook) | ✅ Sim |
+| `/api/integrations/hevy/**` (status, save, sync, remove) | ✅ Sim |
 | `/api/integrations/telegram/**` (status, generate-code, notifications) | ✅ Sim |
 | `/api/integrations/imports/**` (mfp, zepp) | ✅ Sim |
 
@@ -254,12 +254,10 @@ Testada sem login (página pública).
 | 2 | Hevy: mostrar status conectado |
 | 3 | Hevy: sync workouts |
 | 4 | Hevy: remover API key |
-| 5 | Hevy: gerar webhook |
-| 6 | Hevy: revogar webhook |
-| 7 | Telegram: gerar código de link |
-| 8 | Telegram: mostrar status linkado |
-| 9 | Telegram: toggle notificações |
-| 10 | CSV import (MFP/Zepp): upload e resultado |
+| 5 | Telegram: gerar código de link |
+| 6 | Telegram: mostrar status linkado |
+| 7 | Telegram: toggle notificações |
+| 8 | CSV import (MFP/Zepp): upload e resultado |
 
 ### 15. `15-subscription.spec.ts` — Assinatura (10 testes) ⬆️ EXPANDIDO
 
