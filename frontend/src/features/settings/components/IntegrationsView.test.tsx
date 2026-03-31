@@ -24,14 +24,6 @@ const mockProps = {
     loading: false,
     syncing: false,
   },
-  webhook: {
-    config: { hasWebhook: true, webhookUrl: 'http://test.com', authHeader: 'Bearer 123' },
-    credentials: null,
-    onGenerate: vi.fn(),
-    onRevoke: vi.fn(),
-    onCopy: vi.fn(),
-    loading: false,
-  },
   telegram: {
     status: { linked: true, telegram_username: 'test_user', telegram_notify_on_workout: true },
     code: null,

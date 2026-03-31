@@ -19,7 +19,7 @@ export default function IntegrationsPage() {
   const notify = useNotificationStore();
   const { isReadOnly: isDemoUser } = useDemoMode();
   
-  // Hevy & Webhook State
+  // Hevy State
   const [hevyStatus, setHevyStatus] = useState<HevyStatus | null>(null);
   const [hevyKey, setHevyKey] = useState('');
   const [hevyLoading, setHevyLoading] = useState(false);
@@ -170,18 +170,6 @@ export default function IntegrationsPage() {
         notify.error(t('settings.integrations.imports.error'));
       } finally {
         setImporting(false);
-      }
-    };
-    void run();
-  };
-
-  const copyToClipboard = (text: string) => {
-    const run = async () => {
-      try {
-        await navigator.clipboard.writeText(text);
-        notify.success(t('settings.integrations.shared.copy_success'));
-      } catch {
-        notify.error(t('settings.integrations.shared.copy_error'));
       }
     };
     void run();

@@ -11,7 +11,6 @@ vi.mock('../api/integrations-api', () => ({
   integrationsApi: {
     getHevyStatus: vi.fn(),
     getTelegramStatus: vi.fn(),
-    getWebhookConfig: vi.fn(),
     saveHevyKey: vi.fn(),
     removeHevyKey: vi.fn(),
     syncHevy: vi.fn(),
@@ -47,7 +46,6 @@ describe('IntegrationsPage', () => {
     vi.mocked(useNotificationStore).mockReturnValue(mockNotify as any);
     vi.mocked(integrationsApi.getHevyStatus).mockResolvedValue({ hasKey: false } as any);
     vi.mocked(integrationsApi.getTelegramStatus).mockResolvedValue({ linked: false } as any);
-    vi.mocked(integrationsApi.getWebhookConfig).mockResolvedValue({ hasWebhook: false } as any);
   });
 
   it('should load initial statuses on mount', async () => {

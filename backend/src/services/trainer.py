@@ -761,7 +761,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         workout_summary: str,
     ) -> str:
         """
-        Gera análise de treino de forma assíncrona (para webhooks/background tasks).
+        Gera análise de treino de forma assíncrona (para background tasks).
 
         Usa o fluxo completo da IA com memória, perfil e personalidade do trainer,
         mas sem BackgroundTasks (não streama para usuário).
@@ -796,7 +796,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         self._database.prompts.log_prompt(
             user_email=user_email,
             prompt_data={
-                "source": "webhook_analysis",
+                "source": "async_analysis",
                 "user_input": user_input,
                 "response": response,
                 "workout_summary": workout_summary,
