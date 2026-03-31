@@ -26,17 +26,17 @@ export default function SettingsPage() {
   return (
     <div className={cn(PREMIUM_UI.animation.fadeIn, "flex flex-col space-y-8 pb-20")}>
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
         <div>
           <p className={PREMIUM_UI.text.label}>{t('settings.subtitle')}</p>
-          <h1 className={PREMIUM_UI.text.heading}>
-            <SettingsIcon className="inline-block mr-3 text-indigo-400 mb-1" size={32} />
-            {t('settings.title')}
+          <h1 className={cn(PREMIUM_UI.text.heading, "flex items-center")}>
+            <SettingsIcon className="mr-3 text-indigo-400 shrink-0" size={32} />
+            <span className="leading-tight">{t('settings.title')}</span>
           </h1>
         </div>
 
         {/* PILL TABS */}
-        <nav className="grid grid-cols-5 gap-1 bg-white/5 backdrop-blur-md rounded-2xl p-1 border border-white/5 w-full md:w-fit md:flex md:rounded-full md:overflow-x-auto md:hide-scrollbar shrink-0 max-w-full">
+        <nav className="grid grid-cols-5 gap-1 bg-white/5 backdrop-blur-md rounded-2xl p-1 border border-white/5 w-full lg:w-fit md:flex md:rounded-full md:overflow-x-auto md:hide-scrollbar max-w-full">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
