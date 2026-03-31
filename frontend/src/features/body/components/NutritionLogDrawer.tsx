@@ -124,7 +124,7 @@ export function NutritionLogDrawer({
                   id="calories"
                   label={t('body.nutrition.calories')} 
                   type="number" 
-                  step="1"
+                  step="any"
                   placeholder="Ex: 500" 
                   error={errors.calories?.message}
                   {...register('calories', { valueAsNumber: true })}
@@ -135,7 +135,7 @@ export function NutritionLogDrawer({
                     id="protein_grams"
                     label={t('body.nutrition.protein')} 
                     type="number" 
-                    step="0.1"
+                    step="any"
                     error={errors.protein_grams?.message}
                     {...register('protein_grams', { valueAsNumber: true })}
                   />
@@ -143,7 +143,7 @@ export function NutritionLogDrawer({
                     id="carbs_grams"
                     label={t('body.nutrition.carbs')} 
                     type="number" 
-                    step="0.1"
+                    step="any"
                     error={errors.carbs_grams?.message}
                     {...register('carbs_grams', { valueAsNumber: true })}
                   />
@@ -151,7 +151,7 @@ export function NutritionLogDrawer({
                     id="fat_grams"
                     label={t('body.nutrition.fat')} 
                     type="number" 
-                    step="0.1"
+                    step="any"
                     error={errors.fat_grams?.message}
                     {...register('fat_grams', { valueAsNumber: true })}
                   />

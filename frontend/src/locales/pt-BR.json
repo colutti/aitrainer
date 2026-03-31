@@ -377,7 +377,20 @@
     "delete_success": "Treino removido!",
     "delete_error": "Erro ao remover treino.",
     "search_placeholder": "Buscar treinos...",
-    "record_details": "Detalhes do Treino"
+    "record_details": "Detalhes do Treino",
+    "add_exercise": "Adicionar exercício",
+    "exercise_name": "Nome do exercício",
+    "weight": "Peso (kg)",
+    "reps": "Reps",
+    "duration_seconds": "Tempo (s)",
+    "distance_meters": "Distância (m)",
+    "set": "Série",
+    "add_set": "Adicionar série",
+    "duplicate_set": "Duplicar última série",
+    "save_workout": "Salvar Treino",
+    "workout_type_required": "Tipo de treino obrigatório",
+    "exercise_name_required": "Nome do exercício obrigatório",
+    "add_at_least_one_exercise": "Adicione pelo menos um exercício"
   },
   "nutrition": {
     "title": "Nutrição",
