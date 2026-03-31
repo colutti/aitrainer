@@ -87,6 +87,6 @@ describe('IntegrationsView', () => {
     const section = heading.closest('div');
     expect(section).toHaveClass('relative');
     expect(section).toHaveClass('z-10');
-    expect(section).toHaveClass('mt-8');
+    expect(section).toHaveClass('pt-12');
   });
 });
