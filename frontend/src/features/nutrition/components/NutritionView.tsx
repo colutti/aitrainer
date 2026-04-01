@@ -80,8 +80,8 @@ export function NutritionView({
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <p className={PREMIUM_UI.text.label}>{t('nutrition.subtitle')}</p>
           <h1 className={PREMIUM_UI.text.heading}>{t('nutrition.title')}</h1>
+          <p className={PREMIUM_UI.text.label}>{t('nutrition.subtitle')}</p>
         </div>
         
         <div className="flex gap-3">

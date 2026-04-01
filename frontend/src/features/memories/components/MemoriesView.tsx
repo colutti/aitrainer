@@ -85,11 +85,11 @@ export function MemoriesView({
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <p className={PREMIUM_UI.text.label}>{t('memories.subtitle')}</p>
           <h1 className={PREMIUM_UI.text.heading}>
             <Brain className="inline-block mr-3 text-indigo-400 mb-1" size={32} />
             {t('memories.title')}
           </h1>
+          <p className={PREMIUM_UI.text.label}>{t('memories.subtitle')}</p>
         </div>
         
         <PremiumCard className="px-6 py-3 flex items-center gap-4 bg-indigo-500/5 border-indigo-500/20 ring-1 ring-indigo-500/10">

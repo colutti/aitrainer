@@ -28,11 +28,11 @@ export default function SettingsPage() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
         <div>
-          <p className={PREMIUM_UI.text.label}>{t('settings.subtitle')}</p>
           <h1 className={cn(PREMIUM_UI.text.heading, "flex items-center")}>
             <SettingsIcon className="mr-3 text-indigo-400 shrink-0" size={32} />
             <span className="leading-tight">{t('settings.title')}</span>
           </h1>
+          <p className={PREMIUM_UI.text.label}>{t('settings.subtitle')}</p>
         </div>
 
         {/* PILL TABS */}

@@ -17,6 +17,15 @@ describe('SettingsPage', () => {
     expect(screen.getByText(/Memórias/i)).toBeInTheDocument();
   });
 
+  it('should render title before subtitle in header', () => {
+    render(<SettingsPage />);
+
+    const title = screen.getByRole('heading', { name: /Configurações/i });
+    const subtitle = screen.getByText(/Gerencie sua conta e preferências/i);
+
+    expect(title.compareDocumentPosition(subtitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('should use icon-first mobile tab layout to prevent label overflow', () => {
     const { container } = render(<SettingsPage />);
     const nav = container.querySelector('nav');
