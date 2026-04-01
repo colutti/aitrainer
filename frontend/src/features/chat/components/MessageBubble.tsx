@@ -43,7 +43,7 @@ export function MessageBubble({ message, resolveText, trainerId, userPhoto, user
       )}
     >
       {/* AVATAR */}
-      <div data-testid="chat-message-avatar" className="hidden lg:flex flex-none mb-1">
+      <div data-testid="chat-message-avatar" className="flex flex-none mb-1">
         <div className={cn(
           "w-10 h-10 rounded-2xl border flex items-center justify-center overflow-hidden shadow-lg",
           isTrainer 
