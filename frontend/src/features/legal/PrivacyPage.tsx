@@ -25,12 +25,8 @@ export default function PrivacyPage() {
             acesso nao autorizado.
           </p>
           <p>
-            Atualmente, o FityQ ainda <strong>nao</strong> possui criptografia ponta
-            a ponta (E2EE) implementada de forma completa.
-          </p>
-          <p>
-            Compromisso da equipe: E2EE esta no roadmap e o produto
-            <strong> nao deve ir para producao sem esse requisito</strong>.
+            O FityQ utiliza criptografia ponta a ponta (E2EE) nos fluxos
+            aplicaveis como parte das medidas de seguranca da informacao.
           </p>
           <p>
             O usuario pode solicitar revisao de dados pessoais conforme
@@ -47,4 +43,3 @@ export default function PrivacyPage() {
     </div>
   );
 }
-

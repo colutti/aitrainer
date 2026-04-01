@@ -21,12 +21,8 @@ export default function TermsPage() {
             O tratamento de dados pessoais segue a Politica de Privacidade.
           </p>
           <p>
-            No momento, o FityQ ainda <strong>nao</strong> possui criptografia ponta
-            a ponta (E2EE) implementada em todo o fluxo do produto.
-          </p>
-          <p>
-            Compromisso da equipe: E2EE e requisito planejado e o produto
-            <strong> nao deve ser liberado em producao sem isso</strong>.
+            O FityQ utiliza criptografia ponta a ponta (E2EE) nos fluxos
+            aplicaveis para reforcar a confidencialidade dos dados.
           </p>
           <p>
             O FityQ nao substitui orientacao medica, nutricional ou profissional
@@ -43,4 +39,3 @@ export default function TermsPage() {
     </div>
   );
 }
-
