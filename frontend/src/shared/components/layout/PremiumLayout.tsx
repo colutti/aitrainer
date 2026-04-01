@@ -103,14 +103,14 @@ export function PremiumLayout() {
       </nav>
 
       {/* --- MOBILE HEADER --- */}
-      <header className="md:hidden sticky top-0 z-40 bg-gradient-to-b from-[#09090b] to-transparent backdrop-blur-sm p-6 pt-10 flex flex-col gap-4">
+      <header className="md:hidden sticky top-0 z-40 bg-gradient-to-b from-[#09090b] to-transparent backdrop-blur-sm px-4 py-3 pt-7 flex flex-col gap-2">
         <div className="flex items-center justify-between gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 p-1.5 flex items-center justify-center">
+          <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 p-1 flex items-center justify-center">
              <img src="/logo_icon.png" alt="Logo" className="w-full h-full object-contain opacity-80" />
           </div>
-          <div>
+          <div className="flex-1">
             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">FityQ Premium</p>
-            <p className="text-sm font-black text-white">{userInfo?.name.split(' ')[0] ?? 'Atleta'}</p>
+            <p className="text-sm font-black text-white leading-tight">{userInfo?.name.split(' ')[0] ?? 'Atleta'}</p>
             {isDemoUser && <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-300">Demo Read-Only</p>}
           </div>
           <LanguageSelector />

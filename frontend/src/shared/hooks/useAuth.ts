@@ -175,15 +175,21 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     localStorage.removeItem(AUTH_TOKEN_KEY);
 
     // Also sign out from Firebase if we have it imported
-    import('../../features/auth/firebase')
+    void import('../../features/auth/firebase')
       .then(({ auth }) => {
-        import('firebase/auth')
+        void import('firebase/auth')
           .then(({ signOut }) => {
-            signOut(auth).catch((err) => console.error('Firebase signOut error:', err));
+            void signOut(auth).catch((err: unknown) => {
+              console.error('Firebase signOut error:', err);
+            });
           })
-          .catch(() => {});
+          .catch(() => {
+            // Ignore if firebase/auth cannot be loaded
+          });
       })
-      .catch(() => {});
+      .catch(() => {
+        // Ignore if firebase config cannot be loaded
+      });
 
     set({
       isAuthenticated: false,
