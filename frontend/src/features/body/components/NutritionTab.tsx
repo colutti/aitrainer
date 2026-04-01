@@ -96,7 +96,7 @@ export function NutritionTab() {
                 disabled={isReadOnly}
                 className={cn(PREMIUM_UI.button.premium, "w-full md:w-auto px-5")}
               >
-                {t('common.add')}
+                {t('nutrition.register_meal')}
               </Button>
           </div>
         )}

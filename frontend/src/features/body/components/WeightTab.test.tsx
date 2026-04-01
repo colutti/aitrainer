@@ -59,7 +59,8 @@ describe('WeightTab', () => {
 
   it('should open drawer when add button is clicked', () => {
     render(<WeightTab />);
-    const addBtn = screen.getByText(/Registrar Peso/i);
+    const addBtn = screen.getByRole('button', { name: /Registrar Peso/i });
+    expect(addBtn.className).toContain('w-full');
     fireEvent.click(addBtn);
     expect(screen.getByRole('heading', { name: /Registrar Peso/i })).toBeInTheDocument();
   });

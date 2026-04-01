@@ -1,4 +1,4 @@
-import { History, Plus } from 'lucide-react';
+import { History } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -94,11 +94,11 @@ export function WeightTab() {
         actions={(
           <Button
             type="button"
+            fullWidth
             onClick={handleRegisterWeight}
             disabled={isReadOnly}
-            className={cn(PREMIUM_UI.button.premium, "px-5")}
+            className={cn(PREMIUM_UI.button.premium, "w-full md:w-auto px-5")}
           >
-            <Plus size={20} strokeWidth={3} />
             {t('body.weight.register_weight')}
           </Button>
         )}
