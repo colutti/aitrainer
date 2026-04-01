@@ -74,10 +74,53 @@ describe('NutritionTab', () => {
     expect(screen.getByText(/2.*000/)).toBeInTheDocument();
   });
 
-  it('should navigate to chat when register meal clicked', () => {
+  it('should navigate to chat when register meal clicked (AI)', () => {
     render(<NutritionTab />);
-    const addBtn = screen.getByText(/Registrar Refeição/i);
-    fireEvent.click(addBtn);
+    const aiBtn = screen.getByText(/AI/i);
+    fireEvent.click(aiBtn);
     expect(mockNavigate).toHaveBeenCalledWith('/dashboard/chat');
+  });
+
+  it('should open manual add drawer when Adicionar clicked', () => {
+    render(<NutritionTab />);
+    const addBtn = screen.getByText(/Adicionar/i);
+    fireEvent.click(addBtn);
+    // Use getAllByText and check the one that is a heading (h2)
+    const titles = screen.getAllByText(/Registrar Refeição/i);
+    expect(titles.some(t => t.tagName === 'H2')).toBe(true);
+  });
+
+  it('should open edit drawer when edit button clicked on log card', () => {
+    vi.mocked(useNutritionStore).mockReturnValue({
+      ...defaultStore,
+      logs: mockLogs,
+      stats: mockStats,
+    } as any);
+
+    render(<NutritionTab />);
+    
+    // Find edit button (Edit2 icon is usually rendered as a button with title or aria-label)
+    // In NutritionLogCard it has title="Editar registro"
+    const editBtn = screen.getByTitle(/Editar registro/i);
+    fireEvent.click(editBtn);
+    
+    expect(screen.getByText(/Editar Refeição/i)).toBeInTheDocument();
+    expect(screen.getByDisplayValue('2000')).toBeInTheDocument();
+  });
+
+  it('should open view drawer when clicking on log card', () => {
+    vi.mocked(useNutritionStore).mockReturnValue({
+      ...defaultStore,
+      logs: mockLogs,
+      stats: mockStats,
+    } as any);
+
+    render(<NutritionTab />);
+    
+    const logCard = screen.getByTestId('nutrition-log-card');
+    fireEvent.click(logCard);
+    
+    expect(screen.getByText(/Detalhes/i)).toBeInTheDocument();
+    expect(screen.getByText('2000')).toBeInTheDocument();
   });
 });

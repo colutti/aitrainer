@@ -1,5 +1,5 @@
 import { Flame, History, Plus, Beef, Wheat, Droplets } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
@@ -8,9 +8,12 @@ import { DataList } from '../../../shared/components/ui/DataList';
 import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { useNutritionStore } from '../../../shared/hooks/useNutrition';
 import { PREMIUM_UI } from '../../../shared/styles/ui-variants';
+import { type NutritionLog, type NutritionFormData } from '../../../shared/types/nutrition';
 import { cn } from '../../../shared/utils/cn';
 import { MacroCard } from '../../nutrition/components/MacroCard';
 import { NutritionLogCard } from '../../nutrition/components/NutritionLogCard';
+
+import { NutritionLogDrawer } from './NutritionLogDrawer';
 
 /**
  * NutritionTab component
@@ -27,11 +30,16 @@ export function NutritionTab() {
     fetchLogs,
     fetchStats,
     deleteLog,
+    createLog,
   } = useNutritionStore();
   
   const { t } = useTranslation();
   const { isReadOnly, blockIfReadOnly } = useDemoMode();
   const navigate = useNavigate();
+
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedLog, setSelectedLog] = useState<NutritionLog | null>(null);
+  const [drawerMode, setDrawerMode] = useState<'view' | 'edit'>('view');
 
   useEffect(() => {
     void fetchLogs();
@@ -45,6 +53,35 @@ export function NutritionTab() {
   const calculatePercent = (current: number, target: number) => {
     if (!target) return 0;
     return Math.round((current / target) * 100);
+  };
+
+  const handleOpenDrawer = useCallback((log: NutritionLog | null, mode: 'view' | 'edit') => {
+    setSelectedLog(log);
+    setDrawerMode(mode);
+    setIsDrawerOpen(true);
+  }, []);
+
+  const handleCloseDrawer = useCallback(() => {
+    setIsDrawerOpen(false);
+    setSelectedLog(null);
+  }, []);
+
+  const onSave = async (data: NutritionFormData) => {
+    if (blockIfReadOnly()) return;
+    
+    try {
+      await createLog({
+        date: data.date,
+        source: data.source,
+        calories: data.calories,
+        protein_grams: data.protein_grams ?? 0,
+        carbs_grams: data.carbs_grams ?? 0,
+        fat_grams: data.fat_grams ?? 0,
+      });
+      handleCloseDrawer();
+    } catch {
+      // Handled by store
+    }
   };
 
   const onDelete = (id: string) => {
@@ -100,21 +137,35 @@ export function NutritionTab() {
       <DataList
         data={logs}
         actions={(
-          <Button
-            type="button"
-            onClick={() => { if (!blockIfReadOnly()) void navigate('/dashboard/chat'); }}
-            disabled={isReadOnly}
-            className={cn(PREMIUM_UI.button.premium, "px-5")}
-          >
-            <Plus size={20} strokeWidth={3} />
-            {t('nutrition.register_meal')}
-          </Button>
+          <div className="flex gap-3">
+             <Button
+                type="button"
+                variant="secondary"
+                onClick={() => { if (!blockIfReadOnly()) void navigate('/dashboard/chat'); }}
+                disabled={isReadOnly}
+                className="px-5 rounded-full bg-white/5 border-white/10"
+              >
+                <Plus size={20} />
+                <span className="hidden sm:inline">{t('nutrition.register_meal')} (AI)</span>
+              </Button>
+              <Button
+                type="button"
+                onClick={() => { handleOpenDrawer(null, 'edit'); }}
+                disabled={isReadOnly}
+                className={cn(PREMIUM_UI.button.premium, "px-5")}
+              >
+                <Plus size={20} strokeWidth={3} />
+                {t('common.add')}
+              </Button>
+          </div>
         )}
         renderItem={(log) => (
           <NutritionLogCard
             log={log}
             isReadOnly={isReadOnly}
             onDelete={onDelete}
+            onEdit={(l) => { handleOpenDrawer(l, 'edit'); }}
+            onClick={(l) => { handleOpenDrawer(l, 'view'); }}
           />
         )}
         keyExtractor={(log) => log.id}
@@ -132,6 +183,15 @@ export function NutritionTab() {
         }}
         className="space-y-8"
         gridClassName="grid-cols-1 md:grid-cols-2"
+      />
+
+      <NutritionLogDrawer
+        log={selectedLog}
+        isOpen={isDrawerOpen}
+        onClose={handleCloseDrawer}
+        onSubmit={onSave}
+        mode={drawerMode}
+        isReadOnly={isReadOnly}
       />
     </div>
   );
