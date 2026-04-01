@@ -38,7 +38,10 @@
   "auth": {
     "login_error": "Correo electrónico o contraseña incorrectos.",
     "social_error": "Error en la autenticación social. Inténtelo de nuevo.",
-    "google_sign_in": "Iniciar sesión con Google"
+    "google_sign_in": "Iniciar sesión con Google",
+    "forgot_password": "Olvidé mi contraseña",
+    "forgot_password_requires_email": "Ingresa tu correo electrónico para recuperar tu contraseña.",
+    "forgot_password_sent_generic": "Si el correo está registrado, enviaremos un enlace para restablecer tu contraseña."
   },
   "nav": {
     "home": "Inicio",
@@ -365,13 +368,26 @@
     "workout_type": "Tipo de Entreno",
     "duration": "Duración (min)",
     "exercises": "Ejercicios",
+    "add_exercise": "Agregar ejercicio",
     "delete_confirm_title": "Eliminar Entreno",
     "delete_confirm_message": "¿Estás seguro de que quieres eliminar este registro?",
     "delete_confirm_btn": "Eliminar",
     "delete_success": "¡Entreno eliminado!",
     "delete_error": "Error al eliminar el entreno.",
     "search_placeholder": "Buscar entrenos...",
-    "record_details": "Detalles del Entreno"
+    "record_details": "Detalles del Entreno",
+    "exercise_name": "Nombre del ejercicio",
+    "weight": "Peso (kg)",
+    "reps": "Reps",
+    "duration_seconds": "Duración (s)",
+    "distance_meters": "Distancia (m)",
+    "set": "Serie",
+    "add_set": "Agregar serie",
+    "duplicate_set": "Duplicar última serie",
+    "save_workout": "Guardar Entreno",
+    "workout_type_required": "El tipo de entreno es obligatorio",
+    "exercise_name_required": "El nombre del ejercicio es obligatorio",
+    "add_at_least_one_exercise": "Agrega al menos un ejercicio"
   },
   "nutrition": {
     "title": "Nutrición",

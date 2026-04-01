@@ -19,6 +19,7 @@ const createAuthStoreMock = (overrides: Partial<AuthStore> = {}): AuthStore => (
   login: vi.fn(async () => {}),
   register: vi.fn(async () => {}),
   socialLogin: vi.fn(async () => {}),
+  requestPasswordReset: vi.fn(async () => {}),
   logout: vi.fn(),
   loadUserInfo: vi.fn(async () => ({
     email: 'test@example.com',

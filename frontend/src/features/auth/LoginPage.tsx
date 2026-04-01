@@ -16,6 +16,7 @@ const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
 });
+const forgotPasswordEmailSchema = z.string().email();
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -37,14 +38,16 @@ export default function LoginPage() {
   const login = useAuthStore((state) => state.login);
   const register = useAuthStore((state) => state.register);
   const socialLogin = useAuthStore((state) => state.socialLogin);
+  const requestPasswordReset = useAuthStore((state) => state.requestPasswordReset);
   const initialMode = new URLSearchParams(location.search).get('mode') === 'register' ? 'register' : 'login';
   const [isLogin, setIsLogin] = useState(initialMode === 'login');
   const [error, setError] = useState<string | null>(null);
+  const [forgotPasswordMessage, setForgotPasswordMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? '/dashboard';
 
-  const { register: registerLogin, handleSubmit: handleSubmitLogin, formState: { errors: loginErrors } } = useForm<LoginForm>({
+  const { register: registerLogin, handleSubmit: handleSubmitLogin, getValues, formState: { errors: loginErrors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   });
 
@@ -55,6 +58,7 @@ export default function LoginPage() {
   const onSubmitLogin = async (data: LoginForm) => {
     setIsLoading(true);
     setError(null);
+    setForgotPasswordMessage(null);
     try {
       await login(data.email, data.password);
       void navigate(from, { replace: true });
@@ -68,6 +72,7 @@ export default function LoginPage() {
   const onSubmitSignup = async (data: RegisterForm) => {
     setIsLoading(true);
     setError(null);
+    setForgotPasswordMessage(null);
     try {
       await register(data.name, data.email, data.password);
       void navigate('/onboarding', { replace: true });
@@ -81,6 +86,7 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError(null);
+    setForgotPasswordMessage(null);
     try {
       await socialLogin('google');
       void navigate(from, { replace: true });
@@ -89,6 +95,21 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleForgotPassword = async () => {
+    const email = getValues('email').trim();
+    if (!forgotPasswordEmailSchema.safeParse(email).success) {
+      setForgotPasswordMessage(t('auth.forgot_password_requires_email'));
+      return;
+    }
+
+    try {
+      await requestPasswordReset(email);
+    } catch {
+      // Keep generic feedback to prevent account enumeration.
+    }
+    setForgotPasswordMessage(t('auth.forgot_password_sent_generic'));
   };
 
   return (
@@ -147,6 +168,15 @@ export default function LoginPage() {
               <p className="text-xs font-bold">{error}</p>
             </motion.div>
           )}
+          {forgotPasswordMessage && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="bg-teal-500/10 border border-teal-500/20 text-teal-300 p-4 rounded-2xl mb-6"
+            >
+              <p className="text-xs font-bold">{forgotPasswordMessage}</p>
+            </motion.div>
+          )}
 
           {isLogin ? (
             <form onSubmit={(e) => { void handleSubmitLogin(onSubmitLogin)(e); }} className="space-y-5">
@@ -168,8 +198,14 @@ export default function LoginPage() {
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center px-1">
                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Senha</label>
-                  <Button type="button" variant="ghost" size="sm" className="h-auto p-0 text-[9px] font-black uppercase text-indigo-400 hover:text-indigo-300 transition-colors hover:bg-transparent">
-                    Esqueci a senha
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { void handleForgotPassword(); }}
+                    className="h-auto p-0 text-[9px] font-black uppercase text-indigo-400 hover:text-indigo-300 transition-colors hover:bg-transparent"
+                  >
+                    {t('auth.forgot_password')}
                   </Button>
                 </div>
                 <div className="relative">

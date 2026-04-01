@@ -35,6 +35,7 @@ export interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   socialLogin: (provider: 'google' | 'apple') => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
   logout: () => void;
   loadUserInfo: () => Promise<UserInfo>;
   getToken: () => string | null;
@@ -169,6 +170,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     } finally {
       set({ isLoading: false });
     }
+  },
+
+  requestPasswordReset: async (email: string) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const { auth } = await import('../../features/auth/firebase');
+    const { sendPasswordResetEmail } = await import('firebase/auth');
+    await sendPasswordResetEmail(auth, normalizedEmail);
   },
 
   logout: () => {

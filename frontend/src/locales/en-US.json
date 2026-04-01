@@ -38,7 +38,10 @@
   "auth": {
     "login_error": "Invalid email or password.",
     "social_error": "Social authentication failed. Please try again.",
-    "google_sign_in": "Sign in with Google"
+    "google_sign_in": "Sign in with Google",
+    "forgot_password": "Forgot password",
+    "forgot_password_requires_email": "Enter your email to recover your password.",
+    "forgot_password_sent_generic": "If the email is registered, we'll send a password reset link."
   },
   "nav": {
     "home": "Home",

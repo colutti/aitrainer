@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { sendPasswordResetEmail, signInWithEmailAndPassword } from 'firebase/auth';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
 import { httpClient } from '../api/http-client';
@@ -31,6 +31,7 @@ vi.mock('firebase/auth', () => ({
   }),
   GoogleAuthProvider: vi.fn(),
   OAuthProvider: vi.fn(),
+  sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
 
@@ -226,6 +227,21 @@ describe('useAuth', () => {
         name: 'New User',
         onboarding_completed: false,
       }));
+    });
+  });
+
+  describe('requestPasswordReset', () => {
+    it('should normalize email and call firebase reset password API', async () => {
+      const { result } = renderHook(() => useAuthStore());
+
+      await act(async () => {
+        await result.current.requestPasswordReset('  USER@Example.Com  ');
+      });
+
+      expect(sendPasswordResetEmail).toHaveBeenCalledWith(
+        expect.anything(),
+        'user@example.com'
+      );
     });
   });
 
