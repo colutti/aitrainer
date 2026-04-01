@@ -7,14 +7,6 @@ import { NutritionTab } from './NutritionTab';
 
 // Mocks
 vi.mock('../../../shared/hooks/useNutrition');
-const mockNavigate = vi.fn();
-vi.mock('react-router-dom', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('react-router-dom')>();
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-  };
-});
 
 describe('NutritionTab', () => {
   const mockLogs = [
@@ -50,15 +42,15 @@ describe('NutritionTab', () => {
     expect(defaultStore.fetchStats).toHaveBeenCalled();
   });
 
-  it('should render macro cards correctly', () => {
+  it('should not render macro widgets section', () => {
     vi.mocked(useNutritionStore).mockReturnValue({
       ...defaultStore,
       stats: mockStats,
     } as any);
 
     render(<NutritionTab />);
-    expect(screen.getByText(/1500/)).toBeInTheDocument();
-    expect(screen.getByText(/100/)).toBeInTheDocument();
+    expect(screen.queryByText(/^1500$/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^100$/)).not.toBeInTheDocument();
   });
 
   it('should render logs list', () => {
@@ -74,16 +66,15 @@ describe('NutritionTab', () => {
     expect(screen.getByText(/2.*000/)).toBeInTheDocument();
   });
 
-  it('should navigate to chat when register meal clicked (AI)', () => {
+  it('should not render AI quick action button', () => {
     render(<NutritionTab />);
-    const aiBtn = screen.getByText(/AI/i);
-    fireEvent.click(aiBtn);
-    expect(mockNavigate).toHaveBeenCalledWith('/dashboard/chat');
+    expect(screen.queryByText(/\(AI\)/i)).not.toBeInTheDocument();
   });
 
-  it('should open manual add drawer when Adicionar clicked', () => {
+  it('should open manual add drawer when Adicionar clicked and keep button full width on mobile', () => {
     render(<NutritionTab />);
-    const addBtn = screen.getByText(/Adicionar/i);
+    const addBtn = screen.getByRole('button', { name: /Adicionar/i });
+    expect(addBtn.className).toContain('w-full');
     fireEvent.click(addBtn);
     // Use getAllByText and check the one that is a heading (h2)
     const titles = screen.getAllByText(/Registrar Refeição/i);
