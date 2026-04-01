@@ -38,7 +38,10 @@
   "auth": {
     "login_error": "Correo electrónico o contraseña incorrectos.",
     "social_error": "Error en la autenticación social. Inténtelo de nuevo.",
-    "google_sign_in": "Iniciar sesión con Google"
+    "google_sign_in": "Iniciar sesión con Google",
+    "forgot_password": "Olvidé mi contraseña",
+    "forgot_password_requires_email": "Ingresa tu correo electrónico para recuperar tu contraseña.",
+    "forgot_password_sent_generic": "Si el correo está registrado, enviaremos un enlace para restablecer tu contraseña."
   },
   "nav": {
     "home": "Inicio",
