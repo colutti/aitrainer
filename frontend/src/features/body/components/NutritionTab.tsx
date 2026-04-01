@@ -150,7 +150,7 @@ export function NutritionTab() {
               </Button>
               <Button
                 type="button"
-                onClick={() => handleOpenDrawer(null, 'edit')}
+                onClick={() => { handleOpenDrawer(null, 'edit'); }}
                 disabled={isReadOnly}
                 className={cn(PREMIUM_UI.button.premium, "px-5")}
               >
@@ -164,8 +164,8 @@ export function NutritionTab() {
             log={log}
             isReadOnly={isReadOnly}
             onDelete={onDelete}
-            onEdit={(l) => handleOpenDrawer(l, 'edit')}
-            onClick={(l) => handleOpenDrawer(l, 'view')}
+            onEdit={(l) => { handleOpenDrawer(l, 'edit'); }}
+            onClick={(l) => { handleOpenDrawer(l, 'view'); }}
           />
         )}
         keyExtractor={(log) => log.id}
