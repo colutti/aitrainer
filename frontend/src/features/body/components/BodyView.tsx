@@ -29,12 +29,12 @@ export function BodyView({ activeTab, onTabChange }: BodyViewProps) {
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
-          <p className={PREMIUM_UI.text.label}>
-            {activeTab === 'nutrition' ? t('body.nutrition_subtitle') : t('body.weight_subtitle')}
-          </p>
           <h1 className={PREMIUM_UI.text.heading}>
             {activeTab === 'nutrition' ? t('body.nutrition_title') : t('body.weight_title')}
           </h1>
+          <p className={PREMIUM_UI.text.label}>
+            {activeTab === 'nutrition' ? t('body.nutrition_subtitle') : t('body.weight_subtitle')}
+          </p>
         </div>
 
         {/* PILL TABS */}

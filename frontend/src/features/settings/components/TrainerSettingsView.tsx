@@ -69,8 +69,8 @@ export function TrainerSettingsView({
           <Dumbbell size={28} />
         </div>
         <div>
-          <p className={PREMIUM_UI.text.label}>{t('settings.trainer.subtitle')}</p>
           <h1 className={PREMIUM_UI.text.heading}>{t('settings.trainer.title')}</h1>
+          <p className={PREMIUM_UI.text.label}>{t('settings.trainer.subtitle')}</p>
         </div>
       </div>
 

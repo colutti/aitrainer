@@ -71,8 +71,8 @@ export function SubscriptionView({
           <CreditCard size={28} />
         </div>
         <div>
-          <p className={PREMIUM_UI.text.label}>{t('settings.subscription.subtitle')}</p>
           <h1 className={PREMIUM_UI.text.heading}>{t('settings.subscription.title')}</h1>
+          <p className={PREMIUM_UI.text.label}>{t('settings.subscription.subtitle')}</p>
         </div>
       </div>
 

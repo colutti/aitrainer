@@ -31,8 +31,8 @@ export function ViewHeader({ title, subtitle, icon, action, className }: ViewHea
           </div>
         )}
         <div>
-          {subtitle && <p data-testid="view-header-subtitle" className={PREMIUM_UI.text.label}>{subtitle}</p>}
           <h1 data-testid="view-header-title" className={PREMIUM_UI.text.heading}>{title}</h1>
+          {subtitle && <p data-testid="view-header-subtitle" className={PREMIUM_UI.text.label}>{subtitle}</p>}
         </div>
       </div>
       
