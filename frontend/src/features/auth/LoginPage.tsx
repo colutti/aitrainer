@@ -11,6 +11,7 @@ import { Button } from '../../shared/components/ui/Button';
 import { Input } from '../../shared/components/ui/Input';
 import { PremiumCard } from '../../shared/components/ui/premium/PremiumCard';
 import { useAuthStore } from '../../shared/hooks/useAuth';
+import { useNotificationStore } from '../../shared/hooks/useNotification';
 
 const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -39,6 +40,7 @@ export default function LoginPage() {
   const register = useAuthStore((state) => state.register);
   const socialLogin = useAuthStore((state) => state.socialLogin);
   const requestPasswordReset = useAuthStore((state) => state.requestPasswordReset);
+  const notifyError = useNotificationStore((state) => state.error);
   const initialMode = new URLSearchParams(location.search).get('mode') === 'register' ? 'register' : 'login';
   const [isLogin, setIsLogin] = useState(initialMode === 'login');
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +65,9 @@ export default function LoginPage() {
       await login(data.email, data.password);
       void navigate(from, { replace: true });
     } catch {
-      setError(t('auth.login_error'));
+      const loginErrorMessage = t('auth.login_error');
+      setError(loginErrorMessage);
+      notifyError(loginErrorMessage);
     } finally {
       setIsLoading(false);
     }

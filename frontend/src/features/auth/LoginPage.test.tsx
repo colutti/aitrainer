@@ -201,6 +201,7 @@ describe('LoginPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/E-mail ou senha incorreto/i)).toBeInTheDocument();
+      expect(mockNotification.error).toHaveBeenCalled();
     });
     consoleSpy.mockRestore();
   });

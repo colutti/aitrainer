@@ -176,7 +176,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     const normalizedEmail = email.trim().toLowerCase();
     const { auth } = await import('../../features/auth/firebase');
     const { sendPasswordResetEmail } = await import('firebase/auth');
-    await sendPasswordResetEmail(auth, normalizedEmail);
+    const appBaseUrl = window.location.origin;
+    await sendPasswordResetEmail(auth, normalizedEmail, {
+      url: `${appBaseUrl}/reset-password`,
+      handleCodeInApp: true,
+    });
   },
 
   logout: () => {

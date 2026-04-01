@@ -240,7 +240,11 @@ describe('useAuth', () => {
 
       expect(sendPasswordResetEmail).toHaveBeenCalledWith(
         expect.anything(),
-        'user@example.com'
+        'user@example.com',
+        expect.objectContaining({
+          url: expect.stringContaining('/reset-password'),
+          handleCodeInApp: true,
+        })
       );
     });
   });
