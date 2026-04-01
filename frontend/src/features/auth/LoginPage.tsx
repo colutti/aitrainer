@@ -274,7 +274,7 @@ export default function LoginPage() {
         </PremiumCard>
 
         <p className="text-center mt-10 text-[10px] font-bold text-zinc-600 uppercase tracking-widest leading-loose">
-          Ao continuar, você aceita nossos <Link to="/terms" className="text-zinc-400 hover:text-white transition-colors">Termos de Uso</Link> e <Link to="/privacy" className="text-zinc-400 hover:text-white transition-colors">Privacidade</Link>
+          Ao continuar, você aceita nossos <Link to="/termos-de-uso" className="text-zinc-400 hover:text-white transition-colors">Termos de Uso</Link> e <Link to="/politica-de-privacidade" className="text-zinc-400 hover:text-white transition-colors">Política de Privacidade</Link>
         </p>
       </motion.div>
     </div>
