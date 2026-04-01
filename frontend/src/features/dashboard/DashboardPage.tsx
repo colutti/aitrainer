@@ -32,12 +32,36 @@ export default function DashboardPage() {
     const paymentStatus = searchParams.get('payment');
     if (paymentStatus === 'success' && !hasTriggeredPaymentToast.current) {
       hasTriggeredPaymentToast.current = true;
-      void loadUserInfo();
-      notification.success(t('landing.subscription.payment_success_message', { defaultValue: 'Pagamento realizado com sucesso! Bem-vindo ao time FityQ.' }));
-      
-      const newParams = new URLSearchParams(searchParams);
-      newParams.delete('payment');
-      setSearchParams(newParams, { replace: true });
+      const handlePaymentSuccess = async () => {
+        try {
+          const updatedUser = await loadUserInfo();
+          const updatedPlan = (updatedUser.subscription_plan ?? 'Free').toLowerCase().trim();
+          if (updatedPlan !== 'free') {
+            notification.success(
+              t('landing.subscription.payment_success_message', {
+                defaultValue: 'Pagamento realizado com sucesso! Bem-vindo ao time FityQ.',
+              })
+            );
+          } else {
+            notification.info(
+              t('landing.subscription.payment_pending_message', {
+                defaultValue: 'Pagamento recebido, mas o plano ainda está pendente de confirmação. Tente atualizar em instantes.',
+              })
+            );
+          }
+        } catch {
+          notification.info(
+            t('landing.subscription.payment_pending_message', {
+              defaultValue: 'Pagamento recebido, mas o plano ainda está pendente de confirmação. Tente atualizar em instantes.',
+            })
+          );
+        } finally {
+          const newParams = new URLSearchParams(searchParams);
+          newParams.delete('payment');
+          setSearchParams(newParams, { replace: true });
+        }
+      };
+      void handlePaymentSuccess();
     } else if (paymentStatus === 'cancelled' && !hasTriggeredPaymentToast.current) {
       hasTriggeredPaymentToast.current = true;
       notification.info(t('landing.subscription.payment_cancelled_message', { defaultValue: 'O processo de pagamento foi interrompido. Você pode tentar novamente quando quiser.' }));
