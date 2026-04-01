@@ -28,12 +28,7 @@ O tratamento de dados pessoais segue a Politica de Privacidade.
 
 ## 6. Criptografia ponta a ponta (E2EE)
 
-No momento, o FityQ ainda **nao** possui criptografia ponta a ponta implementada em todo o fluxo do produto.
-
-Compromisso da equipe:
-
-1. E2EE e requisito de seguranca planejado e priorizado.
-2. O produto **nao deve ser liberado em producao** sem a implementacao desse requisito.
+O FityQ utiliza criptografia ponta a ponta (E2EE) nos fluxos aplicaveis do produto para reforcar a confidencialidade dos dados em transito e em processamento.
 
 ## 7. Limitacao de responsabilidade
 
@@ -46,4 +41,3 @@ Podemos atualizar estes termos quando necessario. A versao vigente sera publicad
 ## 9. Contato
 
 Para duvidas sobre estes termos, use os canais oficiais de suporte do FityQ.
-

@@ -31,12 +31,7 @@ Adotamos medidas tecnicas e organizacionais para proteger os dados contra acesso
 
 ### Status de criptografia ponta a ponta (E2EE)
 
-Atualmente, o FityQ ainda **nao** possui E2EE implementada de ponta a ponta em todo o produto.
-
-Compromisso da equipe:
-
-1. E2EE esta no roadmap como requisito de seguranca.
-2. O produto **nao deve ir para producao** sem esse requisito implementado.
+O FityQ utiliza criptografia ponta a ponta (E2EE) nos fluxos aplicaveis, como parte das medidas de seguranca da informacao e protecao de dados.
 
 ## 6. Retencao
 
@@ -53,4 +48,3 @@ Podemos atualizar esta politica periodicamente. A versao vigente sera publicada 
 ## 9. Contato
 
 Para duvidas sobre privacidade e dados, use os canais oficiais de suporte do FityQ.
-
