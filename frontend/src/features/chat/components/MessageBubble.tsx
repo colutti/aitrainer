@@ -75,14 +75,14 @@ export function MessageBubble({ message, resolveText, trainerId, userPhoto, user
         <div className={cn(
           "px-5 py-4 rounded-[24px] relative overflow-hidden",
           isTrainer 
-            ? "bg-white/[0.03] backdrop-blur-2xl border border-white/5 rounded-bl-none text-zinc-200" 
-            : "bg-gradient-to-br from-indigo-500 to-indigo-600 border border-white/10 rounded-br-none text-white shadow-xl shadow-indigo-500/10"
+            ? "bg-white/[0.03] backdrop-blur-2xl border border-white/5 rounded-bl-none text-zinc-200 message-bubble-trainer" 
+            : "bg-gradient-to-br from-indigo-500 to-indigo-600 border border-white/10 rounded-br-none text-white shadow-xl shadow-indigo-500/10 message-bubble-user"
         )}>
           {isTrainer && (
             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none" />
           )}
           
-          <div className="prose prose-invert prose-sm max-w-none font-medium leading-relaxed selection:bg-white/20">
+          <div className="prose prose-invert prose-sm max-w-none font-medium leading-relaxed selection:bg-white/20 markdown-content">
              {isEmpty && isTrainer ? (
                <div className="flex gap-1 py-2 px-1">
                  <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
