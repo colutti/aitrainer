@@ -147,20 +147,44 @@ select:-webkit-autofill:focus {
 
 /* Markdown Table Styling */
 .markdown-content table {
-  @apply w-full border-collapse my-4 text-sm;
-}
-
-.markdown-content th,
-.markdown-content td {
-  @apply border border-white/10 p-3 text-left;
+  @apply w-full border-collapse my-6 text-sm overflow-hidden rounded-xl border border-white/10 bg-black/20;
 }
 
 .markdown-content th {
-  @apply bg-white/5 font-bold text-indigo-400;
+  @apply bg-white/10 font-black text-indigo-300 uppercase tracking-widest text-[10px] p-4 text-left border-b border-white/10;
+}
+
+.markdown-content td {
+  @apply p-4 text-left border-b border-white/5 text-zinc-200;
+}
+
+.markdown-content tr:last-child td {
+  @apply border-b-0;
 }
 
 .markdown-content tr:nth-child(even) {
-  @apply bg-white/[0.02];
+  @apply bg-white/[0.03];
+}
+
+.markdown-content tr:hover {
+  @apply bg-white/[0.05] transition-colors;
+}
+
+/* Ensure table looks good on indigo background (user messages) */
+.message-bubble-user .markdown-content table {
+  @apply border-white/20 bg-indigo-900/30;
+}
+
+.message-bubble-user .markdown-content th {
+  @apply bg-white/20 text-white border-white/20;
+}
+
+.message-bubble-user .markdown-content td {
+  @apply border-white/10 text-indigo-50;
+}
+
+.message-bubble-user .markdown-content tr:nth-child(even) {
+  @apply bg-white/10;
 }
 
 /* Mobile Touch Targets */
