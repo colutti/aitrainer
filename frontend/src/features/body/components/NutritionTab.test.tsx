@@ -71,9 +71,9 @@ describe('NutritionTab', () => {
     expect(screen.queryByText(/\(AI\)/i)).not.toBeInTheDocument();
   });
 
-  it('should open manual add drawer when Adicionar clicked and keep button full width on mobile', () => {
+  it('should open manual add drawer when Registrar Refeicao clicked and keep button full width on mobile', () => {
     render(<NutritionTab />);
-    const addBtn = screen.getByRole('button', { name: /Adicionar/i });
+    const addBtn = screen.getByRole('button', { name: /Registrar Refeição/i });
     expect(addBtn.className).toContain('w-full');
     fireEvent.click(addBtn);
     // Use getAllByText and check the one that is a heading (h2)
