@@ -8,6 +8,8 @@ import BodyPage from './features/body/BodyPage';
 import ChatPage from './features/chat/ChatPage';
 import DashboardPage from './features/dashboard/DashboardPage';
 import LandingPage from './features/landing/LandingPage';
+import PrivacyPage from './features/legal/PrivacyPage';
+import TermsPage from './features/legal/TermsPage';
 import MemoriesPage from './features/memories/MemoriesPage';
 import OnboardingPage from './features/onboarding/components/OnboardingPage';
 import IntegrationsPage from './features/settings/components/IntegrationsPage';
@@ -44,6 +46,10 @@ export function AppRoutes() {
         {/* Public Routes */}
         <Route path="/" element={<AuthGuard><LandingPage /></AuthGuard>} />
         <Route path="/login" element={<AuthGuard><LoginPage /></AuthGuard>} />
+        <Route path="/termos-de-uso" element={<TermsPage />} />
+        <Route path="/politica-de-privacidade" element={<PrivacyPage />} />
+        <Route path="/terms" element={<Navigate to="/termos-de-uso" replace />} />
+        <Route path="/privacy" element={<Navigate to="/politica-de-privacidade" replace />} />
         
         {/* Protected Onboarding */}
         <Route 
