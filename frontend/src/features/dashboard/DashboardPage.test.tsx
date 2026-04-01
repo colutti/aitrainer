@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
@@ -94,6 +94,14 @@ describe('DashboardPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockLoadUserInfo.mockResolvedValue({
+      email: 'test@example.com',
+      name: 'Test User',
+      is_admin: false,
+      onboarding_completed: true,
+      has_stripe_customer: true,
+      subscription_plan: 'Basic',
+    });
     vi.mocked(useDashboardStore).mockReturnValue(defaultHookValues);
     vi.mocked(useAuthStore).mockReturnValue({
       userInfo: { name: 'Test User' },
@@ -295,7 +303,7 @@ describe('DashboardPage', () => {
     expect(screen.getAllByText(/35\.0/)[0]).toBeInTheDocument();
   });
 
-  it('should trigger user info refresh and show success notification when payment is successful', () => {
+  it('should trigger user info refresh and show success notification when payment is successful', async () => {
     vi.mocked(useDashboardStore).mockReturnValue({
       ...defaultHookValues,
       data: defaultData as any,
@@ -308,9 +316,39 @@ describe('DashboardPage', () => {
     );
 
     expect(mockLoadUserInfo).toHaveBeenCalled();
-    expect(mockNotifySuccess).toHaveBeenCalledWith(
-      expect.stringContaining('landing.subscription.payment_success_message')
+    await waitFor(() =>
+      expect(mockNotifySuccess).toHaveBeenCalledWith(
+        expect.stringContaining('landing.subscription.payment_success_message')
+      )
     );
+  });
+
+  it('should show pending info notification when payment is successful but plan is still free', async () => {
+    mockLoadUserInfo.mockResolvedValue({
+      email: 'test@example.com',
+      name: 'Test User',
+      is_admin: false,
+      onboarding_completed: true,
+      has_stripe_customer: true,
+      subscription_plan: 'Free',
+    });
+    vi.mocked(useDashboardStore).mockReturnValue({
+      ...defaultHookValues,
+      data: defaultData as any,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/dashboard?payment=success']}>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() =>
+      expect(mockNotifyInfo).toHaveBeenCalledWith(
+        expect.stringContaining('landing.subscription.payment_pending_message')
+      )
+    );
+    expect(mockNotifySuccess).not.toHaveBeenCalled();
   });
 
   it('should show info notification when payment is cancelled', () => {

@@ -36,7 +36,7 @@ export interface AuthActions {
   register: (name: string, email: string, password: string) => Promise<void>;
   socialLogin: (provider: 'google' | 'apple') => Promise<void>;
   logout: () => void;
-  loadUserInfo: () => Promise<void>;
+  loadUserInfo: () => Promise<UserInfo>;
   getToken: () => string | null;
   init: () => Promise<void>;
   refreshToken: () => Promise<boolean>;
@@ -221,26 +221,30 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       throw new Error('Failed to load user info');
     }
 
+    const userInfo = {
+      email: data.email,
+      name: data.name ?? data.email.split('@')[0] ?? 'User',
+      is_admin: data.role === 'admin',
+      is_demo: data.is_demo ?? false,
+      photo_base64: data.photo_base64,
+      onboarding_completed: data.onboarding_completed,
+      subscription_plan: data.subscription_plan,
+      custom_message_limit: data.custom_message_limit,
+      custom_trial_days: data.custom_trial_days,
+      messages_sent_today: data.messages_sent_today,
+      trial_remaining_days: data.trial_remaining_days,
+      current_daily_limit: data.current_daily_limit,
+      current_plan_limit: data.current_plan_limit,
+      effective_remaining_messages: data.effective_remaining_messages,
+      has_stripe_customer: data.has_stripe_customer,
+    };
+
     set({
-      userInfo: {
-        email: data.email,
-        name: data.name ?? data.email.split('@')[0] ?? 'User',
-        is_admin: data.role === 'admin',
-        is_demo: data.is_demo ?? false,
-        photo_base64: data.photo_base64,
-        onboarding_completed: data.onboarding_completed,
-        subscription_plan: data.subscription_plan,
-        custom_message_limit: data.custom_message_limit,
-        custom_trial_days: data.custom_trial_days,
-        messages_sent_today: data.messages_sent_today,
-        trial_remaining_days: data.trial_remaining_days,
-        current_daily_limit: data.current_daily_limit,
-        current_plan_limit: data.current_plan_limit,
-        effective_remaining_messages: data.effective_remaining_messages,
-        has_stripe_customer: data.has_stripe_customer,
-      },
+      userInfo,
       isAdmin: data.role === 'admin',
     });
+
+    return userInfo;
   },
 
   getToken: () => {
