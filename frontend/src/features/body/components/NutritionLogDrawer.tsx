@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { X, Flame, Beef, Wheat, Droplets, Pencil, Save, History, Calendar } from 'lucide-react';
+import { Flame, Beef, Wheat, Droplets, Pencil, Save, History, Calendar } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
