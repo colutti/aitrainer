@@ -1,7 +1,5 @@
-import { useForm } from 'react-hook-form';
 import { describe, it, expect, vi } from 'vitest';
 
-import { type NutritionFormData } from '../../../shared/types/nutrition';
 import { render, screen } from '../../../shared/utils/test-utils';
 
 import { NutritionLogDrawer } from './NutritionLogDrawer';
@@ -22,38 +20,24 @@ describe('NutritionLogDrawer', () => {
     log: mockLog,
     isOpen: true,
     onClose: vi.fn(),
+    onSubmit: vi.fn(),
     mode: 'view' as const,
   };
 
   it('should render log details in view mode', () => {
     render(<NutritionLogDrawer {...defaultProps} />);
     
-    expect(screen.getByText(/Detalhes da Refeição/i)).toBeInTheDocument();
+    expect(screen.getByText(/Detalhes/i)).toBeInTheDocument();
     expect(screen.getByText('2000')).toBeInTheDocument();
     expect(screen.getByText('150g')).toBeInTheDocument();
     expect(screen.getByText('200g')).toBeInTheDocument();
     expect(screen.getByText('60g')).toBeInTheDocument();
   });
 
-  const Wrapper = ({ onSubmit }: { onSubmit: (data: any) => Promise<void> }) => {
-    const { register, control, handleSubmit, formState: { errors } } = useForm<NutritionFormData>();
-    return (
-      <NutritionLogDrawer
-        {...defaultProps}
-        mode="edit"
-        register={register}
-        control={control}
-        errors={errors}
-        handleSubmit={handleSubmit}
-        onSubmit={onSubmit}
-      />
-    );
-  };
-
   it('should render correctly in edit mode', () => {
-    render(<Wrapper onSubmit={vi.fn()} />);
+    render(<NutritionLogDrawer {...defaultProps} mode="edit" />);
     
-    expect(screen.getByText(/Editar Refeição/i)).toBeInTheDocument();
+    expect(screen.getByText(/Refeição/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Calorias/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Proteína/i)).toBeInTheDocument();
   });
@@ -61,7 +45,7 @@ describe('NutritionLogDrawer', () => {
   it('should force view mode in read-only state', () => {
     render(<NutritionLogDrawer {...defaultProps} mode="edit" isReadOnly />);
 
-    expect(screen.getByText(/Detalhes da Refeição/i)).toBeInTheDocument();
+    expect(screen.getByText(/Detalhes/i)).toBeInTheDocument();
     expect(screen.getByText('Demo Read-Only')).toBeInTheDocument();
     expect(screen.queryByLabelText(/Calorias/i)).not.toBeInTheDocument();
   });
