@@ -78,4 +78,38 @@ describe('MessageBubble', () => {
     const bubbleWrapper = container.querySelector('[data-testid="chat-message-bubble"]');
     expect(bubbleWrapper).toHaveClass('max-w-full', 'lg:max-w-[80%]', 'xl:max-w-[70%]');
   });
+
+  it('should render a markdown table correctly', () => {
+    const tableMarkdown = `
+| Food | Calories | Protein |
+| :--- | :--- | :--- |
+| Chicken Breast | 165 | 31g |
+| Broccoli | 55 | 3.7g |
+    `;
+
+    const message = {
+      id: 'table-1',
+      sender: 'Trainer' as const,
+      text: tableMarkdown,
+      timestamp: new Date().toISOString(),
+    };
+
+    const { container } = render(<MessageBubble message={message} />);
+
+    // If it's rendering as a table, we should find <table>, <thead>, <tbody>, <tr>, <th>, <td> tags
+    const table = container.querySelector('table');
+    expect(table).toBeInTheDocument();
+    
+    const headers = container.querySelectorAll('th');
+    expect(headers).toHaveLength(3);
+    expect(headers[0]).toHaveTextContent('Food');
+    expect(headers[1]).toHaveTextContent('Calories');
+    expect(headers[2]).toHaveTextContent('Protein');
+
+    const cells = container.querySelectorAll('td');
+    expect(cells).toHaveLength(6);
+    expect(cells[0]).toHaveTextContent('Chicken Breast');
+    expect(cells[1]).toHaveTextContent('165');
+    expect(cells[2]).toHaveTextContent('31g');
+  });
 });
