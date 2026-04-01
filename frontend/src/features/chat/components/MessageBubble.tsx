@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Bot, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 import { type ChatMessage } from '../../../shared/types/chat';
 import { cn } from '../../../shared/utils/cn';
@@ -89,7 +90,7 @@ export function MessageBubble({ message, resolveText, trainerId, userPhoto, user
                  <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                </div>
              ) : (
-               <ReactMarkdown>{displayText}</ReactMarkdown>
+               <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayText}</ReactMarkdown>
              )}
           </div>
         </div>
