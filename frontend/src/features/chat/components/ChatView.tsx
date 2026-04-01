@@ -69,7 +69,7 @@ export function ChatView({
   const isLimitError = error === 'TRIAL_EXPIRED' || error === 'DAILY_LIMIT_REACHED';
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-6rem)] md:h-[calc(100dvh-5rem)] min-h-0 relative overflow-hidden">
+    <div className="flex flex-col h-full min-h-0 relative overflow-hidden">
       
       {/* CHAT HEADER (DOCK STYLE) */}
       <div className="flex-none h-16 md:h-20 bg-[#09090b]/60 backdrop-blur-xl border-b border-white/5 px-6 flex items-center justify-between z-50">

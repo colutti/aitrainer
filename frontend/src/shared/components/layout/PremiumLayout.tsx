@@ -118,7 +118,10 @@ export function PremiumLayout() {
       </header>
 
       {/* --- CONTEÚDO PRINCIPAL (Expanded for 4K) --- */}
-      <main className="pb-32 pt-2 md:pt-28 min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+      <main className={cn(
+        "pb-32 pt-2 md:pt-28 min-h-0 flex-1 overflow-x-hidden",
+        isChatPage ? "overflow-hidden md:pb-0" : "overflow-y-auto"
+      )}>
         <div className="max-w-[1600px] mx-auto px-4 md:px-12 h-full min-h-0">
           <Outlet />
         </div>
