@@ -90,6 +90,7 @@
       "active": "Plan Activo",
       "change_plan": "Cambiar Plan",
       "upgrade": "Actualizar Ahora",
+      "downgrade": "Cambiar a un plan inferior",
       "manage_button": "Gestionar Suscripción",
       "manage_title": "Portal de Pagos",
       "manage_subtitle": "Redirigiendo a Stripe...",

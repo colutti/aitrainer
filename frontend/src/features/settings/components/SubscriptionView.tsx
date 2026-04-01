@@ -7,6 +7,13 @@ import { Skeleton } from '../../../shared/components/ui/Skeleton';
 import { PREMIUM_UI } from '../../../shared/styles/ui-variants';
 import { cn } from '../../../shared/utils/cn';
 
+const PLAN_PRIORITY: Record<string, number> = {
+  free: 0,
+  basic: 1,
+  pro: 2,
+  premium: 3,
+};
+
 export interface Plan {
   id: string;
   name: string;
@@ -39,6 +46,24 @@ export function SubscriptionView({
   onManage,
 }: SubscriptionViewProps) {
   const { t } = useTranslation();
+
+  const getPlanActionLabel = (targetPlanId: string, isCurrent: boolean) => {
+    if (isCurrent) return t('settings.subscription.active');
+    if (targetPlanId === 'free') return t('settings.subscription.unavailable', 'Indisponível');
+
+    const currentPriority = PLAN_PRIORITY[currentPlan];
+    const targetPriority = PLAN_PRIORITY[targetPlanId];
+
+    if (currentPriority !== undefined && targetPriority !== undefined) {
+      if (targetPriority > currentPriority) return t('settings.subscription.upgrade');
+      if (targetPriority < currentPriority) return t('settings.subscription.downgrade');
+      return t('settings.subscription.change_plan');
+    }
+
+    return currentPlan !== 'free' && hasStripeCustomer
+      ? t('settings.subscription.change_plan')
+      : t('settings.subscription.upgrade');
+  };
 
   if (isInitialLoading) {
     return (
@@ -153,13 +178,7 @@ export function SubscriptionView({
               >
                 {loading === planIdLower && <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />}
                 <span>
-                  {isCurrent 
-                    ? t('settings.subscription.active') 
-                    : planIdLower === 'free' 
-                      ? t('settings.subscription.unavailable', 'Indisponível') 
-                    : currentPlan !== 'free' && hasStripeCustomer
-                        ? t('settings.subscription.change_plan')
-                        : t('settings.subscription.upgrade')}
+                  {getPlanActionLabel(planIdLower, isCurrent)}
                 </span>
               </Button>
             </PremiumCard>
