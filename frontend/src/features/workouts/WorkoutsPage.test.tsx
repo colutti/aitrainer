@@ -1,9 +1,9 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { useAuthStore } from '../../shared/hooks/useAuth';
 import { useConfirmation } from '../../shared/hooks/useConfirmation';
 import { useWorkoutStore } from '../../shared/hooks/useWorkout';
+import { render, screen, fireEvent, waitFor } from '../../shared/utils/test-utils';
 
 import WorkoutsPage from './WorkoutsPage';
 
@@ -21,7 +21,7 @@ vi.mock('../../shared/hooks/useConfirmation', () => ({
 }));
 
 vi.mock('./components/WorkoutDrawer', () => ({
-  WorkoutDrawer: () => <div data-testid="workout-drawer" />,
+  WorkoutDrawer: ({ isOpen }: { isOpen: boolean }) => isOpen ? <div data-testid="workout-drawer" /> : null,
 }));
 
 describe('WorkoutsPage', () => {
@@ -109,10 +109,23 @@ describe('WorkoutsPage', () => {
     expect(screen.getByTestId('workout-drawer')).toBeInTheDocument();
   });
 
+  it('should open drawer automatically when action=log-workout is present in url', () => {
+    render(<WorkoutsPage />, { route: '/dashboard/workouts?action=log-workout' });
+
+    expect(screen.getByTestId('workout-drawer')).toBeInTheDocument();
+  });
+
   it('should render pagination when workouts span multiple pages', () => {
     render(<WorkoutsPage />);
 
-    expect(screen.getByText((_content, element) => element?.textContent === '1 / 2')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        (_content, element) => (
+          element?.textContent === '1/2' &&
+          element.className.includes('whitespace-nowrap')
+        )
+      )
+    ).toBeInTheDocument();
     expect(screen.getAllByRole('button').length).toBeGreaterThan(3);
   });
 

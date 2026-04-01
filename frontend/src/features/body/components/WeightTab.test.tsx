@@ -65,6 +65,12 @@ describe('WeightTab', () => {
     expect(screen.getByRole('heading', { name: /Registrar Peso/i })).toBeInTheDocument();
   });
 
+  it('should open drawer automatically when action=log-weight is present in url', () => {
+    render(<WeightTab />, { route: '/dashboard/body/weight?action=log-weight' });
+
+    expect(screen.getByRole('heading', { name: /Registrar Peso/i })).toBeInTheDocument();
+  });
+
   it('should disable weight actions for demo users', () => {
     vi.mocked(useAuthStore).mockReturnValue({ userInfo: { is_demo: true } } as any);
 

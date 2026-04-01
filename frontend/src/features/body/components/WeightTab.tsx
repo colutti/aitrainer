@@ -1,6 +1,7 @@
 import { History } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 
 import { Button } from '../../../shared/components/ui/Button';
 import { DataList } from '../../../shared/components/ui/DataList';
@@ -32,8 +33,10 @@ export function WeightTab() {
   
   const { t } = useTranslation();
   const { isReadOnly, blockIfReadOnly } = useDemoMode();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedLog, setSelectedLog] = useState<WeightLog | null>(null);
+  const shouldAutoOpenDrawer = !isReadOnly && searchParams.get('action') === 'log-weight';
 
   useEffect(() => {
     void fetchLogs();
@@ -61,9 +64,14 @@ export function WeightTab() {
   }, [blockIfReadOnly, handleViewDrawer]);
 
   const handleCloseDrawer = useCallback(() => {
+    if (searchParams.get('action') === 'log-weight') {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('action');
+      setSearchParams(nextParams, { replace: true });
+    }
     setIsDrawerOpen(false);
     setSelectedLog(null);
-  }, []);
+  }, [searchParams, setSearchParams]);
 
   const onSave = async (data: WeightLogFormData) => {
     if (blockIfReadOnly()) {
@@ -130,7 +138,7 @@ export function WeightTab() {
 
       <WeightLogDrawer 
         log={selectedLog}
-        isOpen={isDrawerOpen} 
+        isOpen={isDrawerOpen || shouldAutoOpenDrawer} 
         isReadOnly={isReadOnly}
         onClose={handleCloseDrawer} 
         onSubmit={onSave}
