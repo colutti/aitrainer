@@ -186,6 +186,10 @@ class MongoDatabase:
         """Delegates to workout repository."""
         return self.workouts_repo.save_log(workout)
 
+    def update_workout_log(self, workout_id: str, user_email: str, workout: WorkoutLog) -> bool:
+        """Delegates to workout repository."""
+        return self.workouts_repo.update_log(workout_id, user_email, workout)
+
     def get_workout_logs(self, user_email: str, limit: int = 50) -> list[WorkoutWithId]:
         """Delegates to workout repository."""
         return self.workouts_repo.get_logs(user_email, limit)

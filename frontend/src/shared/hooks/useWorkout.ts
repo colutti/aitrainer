@@ -19,6 +19,7 @@ interface WorkoutState {
   // Actions
   fetchWorkouts: (page?: number, limit?: number) => Promise<void>;
   createWorkout: (data: CreateWorkoutRequest) => Promise<WorkoutLog>;
+  updateWorkout: (id: string, data: CreateWorkoutRequest) => Promise<WorkoutLog>;
   deleteWorkout: (id: string) => Promise<void>;
   fetchWorkoutTypes: () => Promise<string[]>;
   fetchExerciseSuggestions: () => Promise<string[]>;
@@ -82,6 +83,23 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       total: total + 1,
     });
     return createdWorkout;
+  },
+
+  updateWorkout: async (id: string, data: CreateWorkoutRequest) => {
+    const updatedWorkout = await httpClient<WorkoutLog>(`/workout/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+
+    if (!updatedWorkout) {
+      throw new Error('Failed to update workout');
+    }
+
+    const { workouts } = get();
+    set({
+      workouts: workouts.map((w) => (w.id === id ? updatedWorkout : w)),
+    });
+    return updatedWorkout;
   },
 
   deleteWorkout: async (id: string) => {

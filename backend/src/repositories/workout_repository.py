@@ -35,6 +35,25 @@ class WorkoutRepository(BaseRepository):
         )
         return str(result.inserted_id)
 
+    def update_log(self, workout_id: str, user_email: str, workout: WorkoutLog) -> bool:
+        """
+        Updates an existing workout log.
+        """
+        update_data = workout.model_dump()
+        # Ensure we don't change the user_email
+        update_data["user_email"] = user_email
+
+        result = self.collection.replace_one(
+            {"_id": ObjectId(workout_id), "user_email": user_email},
+            update_data
+        )
+        updated = result.matched_count > 0
+        if updated:
+            self.logger.info("Workout log %s updated for user %s", workout_id, user_email)
+        else:
+            self.logger.warning("Workout log %s not found for update", workout_id)
+        return updated
+
     def get_logs(self, user_email: str, limit: int = 50) -> list[WorkoutWithId]:
         """
         Retrieves the most recent workout logs for a user.

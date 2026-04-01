@@ -75,6 +75,7 @@ from src.api.models.chat_history import ChatHistory
 from src.api.models.user_profile import UserProfile
 from src.api.models.sender import Sender
 from src.api.models.trainer_profile import TrainerProfile
+from src.api.models.workout_log import WorkoutLog
 
 if TYPE_CHECKING:
     from qdrant_client import QdrantClient
@@ -255,6 +256,12 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         Saves a user profile to the database.
         """
         self._database.save_user_profile(profile)
+
+    def update_workout_log(self, workout_id: str, user_email: str, workout: WorkoutLog) -> bool:
+        """
+        Updates an existing workout log.
+        """
+        return self._database.update_workout_log(workout_id, user_email, workout)
 
     def update_user_profile_fields(self, email: str, fields: dict) -> bool:
         """
