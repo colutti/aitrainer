@@ -40,11 +40,12 @@ export default function LoginPage() {
   const initialMode = new URLSearchParams(location.search).get('mode') === 'register' ? 'register' : 'login';
   const [isLogin, setIsLogin] = useState(initialMode === 'login');
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? '/dashboard';
 
-  const { register: registerLogin, handleSubmit: handleSubmitLogin, formState: { errors: loginErrors } } = useForm<LoginForm>({
+  const { register: registerLogin, handleSubmit: handleSubmitLogin, watch: watchLogin, formState: { errors: loginErrors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   });
 
@@ -52,14 +53,50 @@ export default function LoginPage() {
     resolver: zodResolver(registerSchema),
   });
 
+  const resolveLoginErrorMessage = (err: unknown): string => {
+    const authErrorCode = (
+      typeof err === 'object' &&
+      err !== null &&
+      'code' in err &&
+      typeof (err as { code?: unknown }).code === 'string'
+    )
+      ? (err as { code: string }).code
+      : undefined;
+    const authErrorMessage = err instanceof Error ? err.message : undefined;
+
+    if (authErrorCode === 'auth/email-not-verified') {
+      return t('auth.email_not_verified_error');
+    }
+    if (authErrorMessage?.toLowerCase().includes('verify your email')) {
+      return t('auth.email_not_verified_error');
+    }
+    return t('auth.login_error');
+  };
+
+  const resolveRegisterErrorMessage = (err: unknown): string => {
+    const authErrorCode = (
+      typeof err === 'object' &&
+      err !== null &&
+      'code' in err &&
+      typeof (err as { code?: unknown }).code === 'string'
+    )
+      ? (err as { code: string }).code
+      : undefined;
+    if (authErrorCode === 'auth/email-already-in-use') {
+      return t('auth.user_exists_error');
+    }
+    return t('auth.login_error');
+  };
+
   const onSubmitLogin = async (data: LoginForm) => {
     setIsLoading(true);
     setError(null);
+    setNotice(null);
     try {
       await login(data.email, data.password);
       void navigate(from, { replace: true });
-    } catch {
-      setError(t('auth.login_error'));
+    } catch (err) {
+      setError(resolveLoginErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -68,9 +105,34 @@ export default function LoginPage() {
   const onSubmitSignup = async (data: RegisterForm) => {
     setIsLoading(true);
     setError(null);
+    setNotice(null);
     try {
       await register(data.name, data.email, data.password);
-      void navigate('/onboarding', { replace: true });
+      setIsLogin(true);
+      setNotice(t('auth.verify_email_sent'));
+    } catch (err) {
+      setError(resolveRegisterErrorMessage(err));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    const normalizedEmail = watchLogin('email').trim();
+    if (!normalizedEmail) {
+      setError(t('auth.provide_email_for_reset'));
+      setNotice(null);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const { auth } = await import('./firebase');
+      const { sendPasswordResetEmail } = await import('firebase/auth');
+      await sendPasswordResetEmail(auth, normalizedEmail);
+      setNotice(t('auth.reset_email_sent'));
     } catch {
       setError(t('auth.login_error'));
     } finally {
@@ -148,6 +210,17 @@ export default function LoginPage() {
             </motion.div>
           )}
 
+          {notice && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 p-4 rounded-2xl mb-6 flex items-center gap-3"
+            >
+              <AlertCircle size={18} />
+              <p className="text-xs font-bold">{notice}</p>
+            </motion.div>
+          )}
+
           {isLogin ? (
             <form onSubmit={(e) => { void handleSubmitLogin(onSubmitLogin)(e); }} className="space-y-5">
               <div className="space-y-1.5">
@@ -168,7 +241,13 @@ export default function LoginPage() {
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center px-1">
                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Senha</label>
-                  <Button type="button" variant="ghost" size="sm" className="h-auto p-0 text-[9px] font-black uppercase text-indigo-400 hover:text-indigo-300 transition-colors hover:bg-transparent">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { void handleForgotPassword(); }}
+                    className="h-auto p-0 text-[9px] font-black uppercase text-indigo-400 hover:text-indigo-300 transition-colors hover:bg-transparent"
+                  >
                     Esqueci a senha
                   </Button>
                 </div>

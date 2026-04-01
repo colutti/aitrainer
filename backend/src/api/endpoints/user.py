@@ -71,6 +71,11 @@ def login(
             raise HTTPException(
                 status_code=400, detail="Token does not contain an email"
             )
+        if not decoded_token.get("email_verified", False):
+            raise HTTPException(
+                status_code=403,
+                detail="Please verify your email before logging in",
+            )
 
         display_name = decoded_token.get("name", "")
         photo_base64 = decoded_token.get("picture", "")
@@ -115,6 +120,8 @@ def login(
         token = create_token(email)
         return {"token": token}
 
+    except HTTPException:
+        raise
     except (firebase_admin.auth.InvalidIdTokenError, ValueError) as exc:
         logger.warning("Invalid Firebase authentication provided: %s", exc)
         raise HTTPException(status_code=401, detail="Invalid token") from exc

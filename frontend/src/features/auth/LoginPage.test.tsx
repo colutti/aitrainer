@@ -174,6 +174,40 @@ describe('LoginPage', () => {
     });
   });
 
+  it('should show duplicate email guidance when register fails with existing user', async () => {
+    const user = userEvent.setup();
+    const registerMock = vi.fn().mockRejectedValue(Object.assign(new Error('Duplicate'), {
+      code: 'auth/email-already-in-use',
+    }));
+
+    vi.mocked(useAuthStore).mockImplementation((selector?: unknown) => {
+      const state = { ...mockAuth, register: registerMock };
+      if (typeof selector === 'function') {
+        return (selector as (s: typeof state) => unknown)(state);
+      }
+      return state;
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/login?mode=register']}>
+        <LoginPage />
+      </MemoryRouter>
+    );
+
+    await user.type(screen.getByPlaceholderText(/Seu nome/i), 'Fresh User');
+    await user.type(screen.getByPlaceholderText(/exemplo@email\.com/i), 'fresh@example.com');
+    const passwordInputs = document.querySelectorAll('input[type="password"]');
+    await user.type(passwordInputs[0] as HTMLInputElement, 'password123');
+    await user.type(passwordInputs[1] as HTMLInputElement, 'password123');
+    await user.click(screen.getByRole('button', { name: /Criar Conta/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Este e-mail já está cadastrado/i)
+      ).toBeInTheDocument();
+    });
+  });
+
   it('should show error notification when login fails', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const user = userEvent.setup();
