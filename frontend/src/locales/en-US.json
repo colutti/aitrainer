@@ -90,6 +90,7 @@
       "active": "Active Plan",
       "change_plan": "Change Plan",
       "upgrade": "Upgrade Now",
+      "downgrade": "Downgrade",
       "manage_button": "Manage Subscription",
       "manage_title": "Billing Portal",
       "manage_subtitle": "Redirecting to Stripe...",

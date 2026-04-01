@@ -12,7 +12,9 @@ vi.mock('react-i18next', () => ({
 
 const mockPlans = [
   { id: 'free', name: 'Free', price: '0', icon: vi.fn() as any, features: ['F1'] },
-  { id: 'pro', name: 'Pro', price: '49', icon: vi.fn() as any, features: ['F1', 'F2'] }
+  { id: 'basic', name: 'Basic', price: '24', icon: vi.fn() as any, features: ['F1', 'F2'] },
+  { id: 'pro', name: 'Pro', price: '49', icon: vi.fn() as any, features: ['F1', 'F2'] },
+  { id: 'premium', name: 'Premium', price: '99', icon: vi.fn() as any, features: ['F1', 'F2'] },
 ];
 
 const mockProps = {
@@ -31,7 +33,9 @@ describe('SubscriptionView', () => {
   it('renders all plans correctly', () => {
     render(<SubscriptionView {...mockProps} />);
     expect(screen.getByText('Free')).toBeInTheDocument();
+    expect(screen.getByText('Basic')).toBeInTheDocument();
     expect(screen.getByText('Pro')).toBeInTheDocument();
+    expect(screen.getByText('Premium')).toBeInTheDocument();
   });
 
   it('marks current plan correctly', () => {
@@ -58,5 +62,11 @@ describe('SubscriptionView', () => {
     render(<SubscriptionView {...mockProps} isReadOnly />);
     expect(screen.getByTestId('subscription-plan-btn-pro')).toBeDisabled();
     expect(screen.getByText('Demo Read-Only')).toBeInTheDocument();
+  });
+
+  it('shows downgrade for lower plans and upgrade for higher plans based on current plan hierarchy', () => {
+    render(<SubscriptionView {...mockProps} currentPlan="pro" hasStripeCustomer={false} />);
+    expect(screen.getByTestId('subscription-plan-btn-basic')).toHaveTextContent('settings.subscription.downgrade');
+    expect(screen.getByTestId('subscription-plan-btn-premium')).toHaveTextContent('settings.subscription.upgrade');
   });
 });
