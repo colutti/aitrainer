@@ -37,6 +37,7 @@ describe('LoginPage', () => {
     login: vi.fn(),
     register: vi.fn(),
     socialLogin: vi.fn(),
+    requestPasswordReset: vi.fn(),
     logout: vi.fn(),
     initialize: vi.fn(),
     isAuthenticated: false,
@@ -227,5 +228,56 @@ describe('LoginPage', () => {
     await waitFor(() => {
       expect(socialLoginMock).toHaveBeenCalledWith('google');
     });
+  });
+
+  it('should request password reset and show generic feedback', async () => {
+    const user = userEvent.setup();
+    const requestPasswordResetMock = vi.fn().mockResolvedValue(undefined);
+
+    vi.mocked(useAuthStore).mockImplementation((selector?: unknown) => {
+      const state = { ...mockAuth, requestPasswordReset: requestPasswordResetMock };
+      if (typeof selector === 'function') {
+        return (selector as (s: typeof state) => unknown)(state);
+      }
+      return state;
+    });
+
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    );
+
+    await user.type(screen.getByTestId('login-email'), 'person@example.com');
+    await user.click(screen.getByRole('button', { name: /esqueci a senha/i }));
+
+    await waitFor(() => {
+      expect(requestPasswordResetMock).toHaveBeenCalledWith('person@example.com');
+      expect(screen.getByText(/se o e-mail estiver cadastrado/i)).toBeInTheDocument();
+    });
+  });
+
+  it('should require valid email before requesting password reset', async () => {
+    const user = userEvent.setup();
+    const requestPasswordResetMock = vi.fn().mockResolvedValue(undefined);
+
+    vi.mocked(useAuthStore).mockImplementation((selector?: unknown) => {
+      const state = { ...mockAuth, requestPasswordReset: requestPasswordResetMock };
+      if (typeof selector === 'function') {
+        return (selector as (s: typeof state) => unknown)(state);
+      }
+      return state;
+    });
+
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    );
+
+    await user.click(screen.getByRole('button', { name: /esqueci a senha/i }));
+
+    expect(requestPasswordResetMock).not.toHaveBeenCalled();
+    expect(screen.getByText(/informe seu e-mail para recuperar a senha/i)).toBeInTheDocument();
   });
 });
