@@ -81,6 +81,13 @@ describe('NutritionTab', () => {
     expect(titles.some(t => t.tagName === 'H2')).toBe(true);
   });
 
+  it('should open manual add drawer automatically when action=log-meal is present in url', () => {
+    render(<NutritionTab />, { route: '/dashboard/body/nutrition?action=log-meal' });
+
+    const titles = screen.getAllByText(/Registrar Refeição/i);
+    expect(titles.some((title) => title.tagName === 'H2')).toBe(true);
+  });
+
   it('should open edit drawer when edit button clicked on log card', () => {
     vi.mocked(useNutritionStore).mockReturnValue({
       ...defaultStore,

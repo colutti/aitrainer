@@ -1,6 +1,7 @@
 import { History } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 
 import { Button } from '../../../shared/components/ui/Button';
 import { DataList } from '../../../shared/components/ui/DataList';
@@ -32,10 +33,12 @@ export function NutritionTab() {
   
   const { t } = useTranslation();
   const { isReadOnly, blockIfReadOnly } = useDemoMode();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedLog, setSelectedLog] = useState<NutritionLog | null>(null);
   const [drawerMode, setDrawerMode] = useState<'view' | 'edit'>('view');
+  const shouldAutoOpenDrawer = !isReadOnly && searchParams.get('action') === 'log-meal';
 
   useEffect(() => {
     void fetchLogs();
@@ -49,9 +52,14 @@ export function NutritionTab() {
   }, []);
 
   const handleCloseDrawer = useCallback(() => {
+    if (searchParams.get('action') === 'log-meal') {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('action');
+      setSearchParams(nextParams, { replace: true });
+    }
     setIsDrawerOpen(false);
     setSelectedLog(null);
-  }, []);
+  }, [searchParams, setSearchParams]);
 
   const onSave = async (data: NutritionFormData) => {
     if (blockIfReadOnly()) return;
@@ -127,11 +135,11 @@ export function NutritionTab() {
       />
 
       <NutritionLogDrawer
-        log={selectedLog}
-        isOpen={isDrawerOpen}
+        log={shouldAutoOpenDrawer ? null : selectedLog}
+        isOpen={isDrawerOpen || shouldAutoOpenDrawer}
         onClose={handleCloseDrawer}
         onSubmit={onSave}
-        mode={drawerMode}
+        mode={shouldAutoOpenDrawer ? 'edit' : drawerMode}
         isReadOnly={isReadOnly}
       />
     </div>

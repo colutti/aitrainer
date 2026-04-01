@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 
 import { useConfirmation } from '../../shared/hooks/useConfirmation';
 import { useDemoMode } from '../../shared/hooks/useDemoMode';
@@ -27,12 +28,14 @@ export default function WorkoutsPage() {
   } = useWorkoutStore();
   
   const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const confirm = useConfirmation();
   const notify = useNotificationStore();
   const { isReadOnly, blockIfReadOnly } = useDemoMode();
   
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const shouldAutoOpenDrawer = !isReadOnly && searchParams.get('action') === 'log-workout';
 
   useEffect(() => {
     void fetchWorkouts();
@@ -80,6 +83,15 @@ export default function WorkoutsPage() {
 
   // Map workout logs to workout objects for the view
   const workoutList: Workout[] = workouts.map(mapWorkoutLogToWorkout);
+  const handleCloseDrawer = useCallback(() => {
+    if (searchParams.get('action') === 'log-workout') {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('action');
+      setSearchParams(nextParams, { replace: true });
+    }
+    setIsDrawerOpen(false);
+    setSelectedWorkout(null);
+  }, [searchParams, setSearchParams]);
 
   return (
     <>
@@ -96,10 +108,10 @@ export default function WorkoutsPage() {
       />
 
       <WorkoutDrawer 
-        workout={selectedWorkout}
-        isOpen={isDrawerOpen}
+        workout={shouldAutoOpenDrawer ? null : selectedWorkout}
+        isOpen={isDrawerOpen || shouldAutoOpenDrawer}
         isReadOnly={isReadOnly}
-        onClose={() => { setIsDrawerOpen(false); setSelectedWorkout(null); }}
+        onClose={handleCloseDrawer}
       />
     </>
   );
