@@ -69,6 +69,13 @@
   }
 }
 
+@utility hide-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 body {
   font-family: var(--font-body);
   @apply bg-[#09090b] text-zinc-50 selection:bg-white/20;
