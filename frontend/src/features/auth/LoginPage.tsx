@@ -42,12 +42,12 @@ export default function LoginPage() {
   const initialMode = new URLSearchParams(location.search).get('mode') === 'register' ? 'register' : 'login';
   const [isLogin, setIsLogin] = useState(initialMode === 'login');
   const [error, setError] = useState<string | null>(null);
-  const [forgotPasswordMessage, setForgotPasswordMessage] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? '/dashboard';
 
-  const { register: registerLogin, handleSubmit: handleSubmitLogin, getValues, formState: { errors: loginErrors } } = useForm<LoginForm>({
+  const { register: registerLogin, handleSubmit: handleSubmitLogin, watch: watchLogin, formState: { errors: loginErrors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   });
 
@@ -55,15 +55,50 @@ export default function LoginPage() {
     resolver: zodResolver(registerSchema),
   });
 
+  const resolveLoginErrorMessage = (err: unknown): string => {
+    const authErrorCode = (
+      typeof err === 'object' &&
+      err !== null &&
+      'code' in err &&
+      typeof (err as { code?: unknown }).code === 'string'
+    )
+      ? (err as { code: string }).code
+      : undefined;
+    const authErrorMessage = err instanceof Error ? err.message : undefined;
+
+    if (authErrorCode === 'auth/email-not-verified') {
+      return t('auth.email_not_verified_error');
+    }
+    if (authErrorMessage?.toLowerCase().includes('verify your email')) {
+      return t('auth.email_not_verified_error');
+    }
+    return t('auth.login_error');
+  };
+
+  const resolveRegisterErrorMessage = (err: unknown): string => {
+    const authErrorCode = (
+      typeof err === 'object' &&
+      err !== null &&
+      'code' in err &&
+      typeof (err as { code?: unknown }).code === 'string'
+    )
+      ? (err as { code: string }).code
+      : undefined;
+    if (authErrorCode === 'auth/email-already-in-use') {
+      return t('auth.user_exists_error');
+    }
+    return t('auth.login_error');
+  };
+
   const onSubmitLogin = async (data: LoginForm) => {
     setIsLoading(true);
     setError(null);
-    setForgotPasswordMessage(null);
+    setNotice(null);
     try {
       await login(data.email, data.password);
       void navigate(from, { replace: true });
-    } catch {
-      setError(t('auth.login_error'));
+    } catch (err) {
+      setError(resolveLoginErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -72,21 +107,43 @@ export default function LoginPage() {
   const onSubmitSignup = async (data: RegisterForm) => {
     setIsLoading(true);
     setError(null);
-    setForgotPasswordMessage(null);
+    setNotice(null);
     try {
       await register(data.name, data.email, data.password);
-      void navigate('/onboarding', { replace: true });
-    } catch {
-      setError(t('auth.login_error'));
+      setIsLogin(true);
+      setNotice(t('auth.verify_email_sent'));
+    } catch (err) {
+      setError(resolveRegisterErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleForgotPassword = async () => {
+    const email = watchLogin('email').trim();
+    if (!forgotPasswordEmailSchema.safeParse(email).success) {
+      setError(t('auth.forgot_password_requires_email'));
+      setNotice(null);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setNotice(null);
+    try {
+      await requestPasswordReset(email);
+    } catch {
+      // Keep generic feedback to prevent account enumeration.
+    } finally {
+      setIsLoading(false);
+    }
+    setNotice(t('auth.forgot_password_sent_generic'));
+  };
+
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError(null);
-    setForgotPasswordMessage(null);
+    setNotice(null);
     try {
       await socialLogin('google');
       void navigate(from, { replace: true });
@@ -95,21 +152,6 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleForgotPassword = async () => {
-    const email = getValues('email').trim();
-    if (!forgotPasswordEmailSchema.safeParse(email).success) {
-      setForgotPasswordMessage(t('auth.forgot_password_requires_email'));
-      return;
-    }
-
-    try {
-      await requestPasswordReset(email);
-    } catch {
-      // Keep generic feedback to prevent account enumeration.
-    }
-    setForgotPasswordMessage(t('auth.forgot_password_sent_generic'));
   };
 
   return (
@@ -168,13 +210,14 @@ export default function LoginPage() {
               <p className="text-xs font-bold">{error}</p>
             </motion.div>
           )}
-          {forgotPasswordMessage && (
+          {notice && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
-              className="bg-teal-500/10 border border-teal-500/20 text-teal-300 p-4 rounded-2xl mb-6"
+              className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 p-4 rounded-2xl mb-6 flex items-center gap-3"
             >
-              <p className="text-xs font-bold">{forgotPasswordMessage}</p>
+              <AlertCircle size={18} />
+              <p className="text-xs font-bold">{notice}</p>
             </motion.div>
           )}
 

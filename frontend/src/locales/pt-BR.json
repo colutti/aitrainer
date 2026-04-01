@@ -37,6 +37,11 @@
   },
   "auth": {
     "login_error": "E-mail ou senha incorretos.",
+    "user_exists_error": "Este e-mail já está cadastrado. Faça login ou use \"Esqueci a senha\" para redefinir.",
+    "email_not_verified_error": "Seu e-mail ainda não foi verificado. Verifique sua caixa de entrada para continuar.",
+    "verify_email_sent": "Conta criada. Enviamos um link para confirmar seu e-mail antes de continuar.",
+    "provide_email_for_reset": "Informe seu e-mail para receber o link de redefinição.",
+    "reset_email_sent": "Enviamos um link para redefinir sua senha no seu e-mail.",
     "social_error": "Falha na autenticação social. Tente novamente.",
     "google_sign_in": "Entrar com Google",
     "forgot_password": "Esqueci a senha",

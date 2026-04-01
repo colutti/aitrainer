@@ -37,6 +37,11 @@
   },
   "auth": {
     "login_error": "Correo electrónico o contraseña incorrectos.",
+    "user_exists_error": "Este correo ya está registrado. Inicia sesión o usa \"Olvidé mi contraseña\" para restablecerla.",
+    "email_not_verified_error": "Tu correo aún no está verificado. Revisa tu bandeja de entrada antes de continuar.",
+    "verify_email_sent": "Cuenta creada. Te enviamos un enlace para verificar tu correo antes de continuar.",
+    "provide_email_for_reset": "Ingresa tu correo para recibir el enlace de restablecimiento.",
+    "reset_email_sent": "Te enviamos un enlace para restablecer tu contraseña.",
     "social_error": "Error en la autenticación social. Inténtelo de nuevo.",
     "google_sign_in": "Iniciar sesión con Google",
     "forgot_password": "Olvidé mi contraseña",
