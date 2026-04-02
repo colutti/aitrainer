@@ -15,7 +15,7 @@ interface ChatState {
 interface ChatActions {
   fetchHistory: () => Promise<void>;
   loadMore: () => Promise<void>;
-  sendMessage: (text: string, image?: MessageImagePayload) => Promise<void>;
+  sendMessage: (text: string, images?: MessageImagePayload[]) => Promise<void>;
   clearHistory: () => void;
   reset: () => void;
 }
@@ -97,9 +97,10 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
     }
   },
 
-  sendMessage: async (text: string, image?: MessageImagePayload) => {
+  sendMessage: async (text: string, images?: MessageImagePayload[]) => {
     const userMessage: ChatMessage = {
       text,
+      images,
       sender: 'Student',
       timestamp: new Date().toISOString(),
     };
@@ -121,12 +122,27 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
         },
         body: JSON.stringify({
           user_message: text,
-          image_base64: image?.base64,
-          image_mime_type: image?.mimeType,
+          images: images?.map((image) => ({
+            base64: image.base64,
+            mime_type: image.mimeType,
+          })),
         }),
       });
 
       if (!response.ok) {
+        if (response.status === 422) {
+          try {
+            const errorData = await response.json() as { detail?: { msg?: string }[] };
+            const messages = errorData.detail?.map((item) => item.msg ?? '').join(' ') ?? '';
+            if (messages.includes('IMAGE_TOO_LARGE')) throw new Error('IMAGE_TOO_LARGE');
+            if (messages.includes('TOO_MANY_IMAGES')) throw new Error('TOO_MANY_IMAGES');
+            if (messages.includes('EMPTY_MESSAGE')) throw new Error('EMPTY_MESSAGE');
+          } catch (e: unknown) {
+            if (e instanceof Error && ['IMAGE_TOO_LARGE', 'TOO_MANY_IMAGES', 'EMPTY_MESSAGE'].includes(e.message)) {
+              throw e;
+            }
+          }
+        }
         if (response.status === 403) {
           try {
             const errorData = await response.json() as { detail?: string };
@@ -142,10 +158,23 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
             if (errorData.detail === 'IMAGE_NOT_ALLOWED_FOR_PLAN') {
               throw new Error('IMAGE_NOT_ALLOWED_FOR_PLAN');
             }
+            if (errorData.detail === 'IMAGE_TOO_LARGE') {
+              throw new Error('IMAGE_TOO_LARGE');
+            }
+            if (errorData.detail === 'TOO_MANY_IMAGES') {
+              throw new Error('TOO_MANY_IMAGES');
+            }
           } catch (e: unknown) {
             if (
               e instanceof Error
-              && ['LIMIT_EXCEEDED', 'TRIAL_EXPIRED', 'DAILY_LIMIT_REACHED', 'IMAGE_NOT_ALLOWED_FOR_PLAN'].includes(e.message)
+              && [
+                'LIMIT_EXCEEDED',
+                'TRIAL_EXPIRED',
+                'DAILY_LIMIT_REACHED',
+                'IMAGE_NOT_ALLOWED_FOR_PLAN',
+                'IMAGE_TOO_LARGE',
+                'TOO_MANY_IMAGES',
+              ].includes(e.message)
             ) {
                throw e;
             }
@@ -202,6 +231,12 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
         errorMessage = error.message;
       } else if (error instanceof Error && error.message === 'IMAGE_NOT_ALLOWED_FOR_PLAN') {
         errorMessage = 'IMAGE_NOT_ALLOWED_FOR_PLAN';
+      } else if (error instanceof Error && error.message === 'IMAGE_TOO_LARGE') {
+        errorMessage = 'IMAGE_TOO_LARGE';
+      } else if (error instanceof Error && error.message === 'TOO_MANY_IMAGES') {
+        errorMessage = 'TOO_MANY_IMAGES';
+      } else if (error instanceof Error && error.message === 'EMPTY_MESSAGE') {
+        errorMessage = 'EMPTY_MESSAGE';
       }
       
       set({ 

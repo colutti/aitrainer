@@ -170,18 +170,19 @@ describe('useChatStore', () => {
       body: { getReader: () => stream.getReader() },
     });
 
-    await useChatStore.getState().sendMessage('Analisa essa foto', {
-      base64: 'abc123',
-      mimeType: 'image/jpeg',
-    });
+    await useChatStore.getState().sendMessage('Analisa essa foto', [
+      {
+        base64: 'abc123',
+        mimeType: 'image/jpeg',
+      },
+    ]);
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining('/message'),
       expect.objectContaining({
         body: JSON.stringify({
           user_message: 'Analisa essa foto',
-          image_base64: 'abc123',
-          image_mime_type: 'image/jpeg',
+          images: [{ base64: 'abc123', mime_type: 'image/jpeg' }],
         }),
       }),
     );
@@ -195,10 +196,12 @@ describe('useChatStore', () => {
       json: async () => ({ detail: 'IMAGE_NOT_ALLOWED_FOR_PLAN' }),
     });
 
-    await useChatStore.getState().sendMessage('Analisa', {
-      base64: 'abc123',
-      mimeType: 'image/jpeg',
-    });
+    await useChatStore.getState().sendMessage('Analisa', [
+      {
+        base64: 'abc123',
+        mimeType: 'image/jpeg',
+      },
+    ]);
 
     const state = useChatStore.getState();
     expect(state.error).toBe('IMAGE_NOT_ALLOWED_FOR_PLAN');

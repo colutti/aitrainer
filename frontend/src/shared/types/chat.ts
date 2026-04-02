@@ -3,6 +3,7 @@ export type Sender = 'Student' | 'Trainer' | 'System';
 export interface ChatMessage {
   text: string;
   translations?: Record<string, string>;
+  images?: MessageImagePayload[];
   sender: Sender;
   timestamp: string;
   trainer_type?: string;
@@ -16,6 +17,8 @@ export interface MessageImagePayload {
 
 export interface MessageRequest {
   user_message: string;
-  image_base64?: string;
-  image_mime_type?: MessageImagePayload['mimeType'];
+  images?: {
+    base64: string;
+    mime_type: MessageImagePayload['mimeType'];
+  }[];
 }

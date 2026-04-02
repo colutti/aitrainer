@@ -145,7 +145,7 @@ class TestTelegramService(unittest.IsolatedAsyncioTestCase):
                 user_email="user@test.com",
                 user_input="Hello AI",
                 is_telegram=True,
-                image_payload=None,
+                image_payloads=None,
             )
             # 3. Response sent
             # Check calls. Should have called send_message twice.
@@ -230,9 +230,10 @@ class TestTelegramService(unittest.IsolatedAsyncioTestCase):
         kwargs = self.mock_brain.send_message_sync.call_args.kwargs
         self.assertEqual(kwargs["user_email"], "user@test.com")
         self.assertEqual(kwargs["is_telegram"], True)
-        self.assertIn("image_payload", kwargs)
-        self.assertEqual(kwargs["image_payload"]["mime_type"], "image/jpeg")
-        self.assertTrue(kwargs["image_payload"]["base64"])
+        self.assertIn("image_payloads", kwargs)
+        self.assertEqual(len(kwargs["image_payloads"]), 1)
+        self.assertEqual(kwargs["image_payloads"][0]["mime_type"], "image/jpeg")
+        self.assertTrue(kwargs["image_payloads"][0]["base64"])
 
     @patch("src.services.telegram_service.Bot")
     @patch("src.services.telegram_service.Update")

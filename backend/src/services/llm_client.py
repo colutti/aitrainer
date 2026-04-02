@@ -116,7 +116,7 @@ class LLMClient:
             "Invoking LLM with tools (LangGraph) for input: %s",
             input_data.get("user_message"),
         )
-        if input_data.get("user_image") and not self.supports_multimodal:
+        if input_data.get("user_images") and not self.supports_multimodal:
             raise ValueError("IMAGE_INPUT_NOT_SUPPORTED_BY_PROVIDER")
 
         tools_called: list[str] = []
@@ -131,20 +131,24 @@ class LLMClient:
                 key: value for key, value in input_data.items() if key != "user_image"
             }
             messages = list(prompt_template.format_messages(**format_input))
-            if input_data.get("user_image"):
-                user_image = input_data["user_image"]
-                image_data_uri = (
-                    f"data:{user_image['mime_type']};base64,{user_image['base64']}"
-                )
+            if input_data.get("user_images"):
+                user_images = input_data["user_images"]
+                content_blocks = [
+                    {"type": "text", "text": input_data.get("user_message", "")}
+                ]
+                for user_image in user_images:
+                    image_data_uri = (
+                        f"data:{user_image['mime_type']};base64,{user_image['base64']}"
+                    )
+                    content_blocks.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": image_data_uri},
+                        }
+                    )
                 messages.append(
                     HumanMessage(
-                        content=[
-                            {"type": "text", "text": input_data.get("user_message", "")},
-                            {
-                                "type": "image_url",
-                                "image_url": {"url": image_data_uri},
-                            },
-                        ]
+                        content=content_blocks
                     )
                 )
             prompt_str = prompt_template.format(**input_data)

@@ -123,7 +123,7 @@ class TelegramBotService:
             )
             return
 
-        image_payload = None
+        image_payloads = None
         if photo:
             profile = self.brain.get_user_profile(link.user_email)
             if not can_use_image_input(getattr(profile, "subscription_plan", None)):
@@ -138,12 +138,14 @@ class TelegramBotService:
 
             tg_file = await self.bot.get_file(photo.file_id)
             image_bytes = await tg_file.download_as_bytearray()
-            image_payload = {
-                "base64": base64.b64encode(bytes(image_bytes)).decode("utf-8"),
-                "mime_type": "image/jpeg",
-            }
+            image_payloads = [
+                {
+                    "base64": base64.b64encode(bytes(image_bytes)).decode("utf-8"),
+                    "mime_type": "image/jpeg",
+                }
+            ]
 
-        if not text.strip() and image_payload:
+        if not text.strip() and image_payloads:
             text = "Analise a imagem enviada e me dê orientações práticas."
 
         # Send "processing" message
@@ -157,7 +159,7 @@ class TelegramBotService:
                 user_email=link.user_email,
                 user_input=text,
                 is_telegram=True,
-                image_payload=image_payload,
+                image_payloads=image_payloads,
             )
 
             # Convert markdown and send

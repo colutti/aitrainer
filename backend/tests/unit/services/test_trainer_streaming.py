@@ -150,10 +150,10 @@ async def test_send_message_ai_passes_image_payload_to_llm(mock_deps):
         async for chunk in trainer.send_message_ai(
             user_email="pro@example.com",
             user_input="Analyze this",
-            message_options={"image_payload": image_payload},
+            message_options={"image_payloads": [image_payload]},
         ):
             chunks.append(chunk)
 
     assert "ok" in chunks
     called_input_data = llm.stream_with_tools.call_args.kwargs["input_data"]
-    assert called_input_data["user_image"] == image_payload
+    assert called_input_data["user_images"] == [image_payload]

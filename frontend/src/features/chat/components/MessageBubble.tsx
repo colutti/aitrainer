@@ -25,7 +25,9 @@ export function MessageBubble({ message, resolveText, trainerId, userPhoto, user
   const { t } = useTranslation();
   const isTrainer = message.sender === 'Trainer';
   const displayText = resolveText ? resolveText(message) : message.text;
-  const isEmpty = !displayText || displayText.trim() === '';
+  const hiddenFallback = displayText === 'Analyze these images and provide practical guidance.';
+  const textToRender = hiddenFallback ? '' : displayText;
+  const isEmpty = !textToRender || textToRender.trim() === '';
 
   const containerVariants = {
     hidden: { opacity: 0, y: 10, scale: 0.95 },
@@ -90,9 +92,21 @@ export function MessageBubble({ message, resolveText, trainerId, userPhoto, user
                  <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                </div>
              ) : (
-               <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayText}</ReactMarkdown>
+               <ReactMarkdown remarkPlugins={[remarkGfm]}>{textToRender}</ReactMarkdown>
              )}
           </div>
+          {message.images && message.images.length > 0 && (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {message.images.map((image, index) => (
+                <img
+                  key={`${image.base64.slice(0, 12)}-${index.toString()}`}
+                  src={`data:${image.mimeType};base64,${image.base64}`}
+                  alt={`attachment-${index.toString()}`}
+                  className="w-28 h-28 object-cover rounded-xl border border-white/10"
+                />
+              ))}
+            </div>
+          )}
         </div>
         
         <span className="text-[9px] font-bold text-zinc-700 mt-1.5 uppercase tracking-tighter">

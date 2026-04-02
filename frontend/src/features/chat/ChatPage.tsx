@@ -91,14 +91,14 @@ export default function ChatPage() {
     }
   }, [inputValue]);
 
-  const handleSend = (params?: { event?: React.BaseSyntheticEvent; image?: MessageImagePayload | null }) => {
+  const handleSend = (params?: { event?: React.BaseSyntheticEvent; images?: MessageImagePayload[] }) => {
     params?.event?.preventDefault();
     if (isStreaming) return;
 
-    const text = inputValue.trim() || (params?.image ? 'Analyze this image and provide practical guidance.' : '');
+    const text = inputValue.trim() || (params?.images?.length ? 'Analyze these images and provide practical guidance.' : '');
     if (!text) return;
     setInputValue('');
-    void sendMessage(text, params?.image ?? undefined);
+    void sendMessage(text, params?.images);
   };
 
   return (
