@@ -15,3 +15,4 @@ def test_create_checkout_session(mock_create):
     mock_create.assert_called_once()
     args, kwargs = mock_create.call_args
     assert kwargs["customer"] == "cus_123"
+    assert kwargs["branding_settings"] == {"display_name": "FityQ"}

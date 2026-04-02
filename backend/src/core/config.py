@@ -147,6 +147,7 @@ class Settings(BaseSettings):
     STRIPE_PRICE_ID_BASIC: str = ""
     STRIPE_PRICE_ID_PRO: str = ""
     STRIPE_PRICE_ID_PREMIUM: str = ""
+    STRIPE_BRAND_DISPLAY_NAME: str = "FityQ"
 
     def get_mem0_config(self) -> dict:
         """

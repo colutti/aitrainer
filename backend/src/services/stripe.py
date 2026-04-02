@@ -24,6 +24,12 @@ def create_checkout_session(
     Creates a Stripe Checkout session for a user.
     """
     try:
+        branding_settings = None
+        if settings.STRIPE_BRAND_DISPLAY_NAME.strip():
+            branding_settings = {
+                "display_name": settings.STRIPE_BRAND_DISPLAY_NAME.strip()
+            }
+
         session = CheckoutSession.create(
             customer=user.stripe_customer_id,
             customer_email=user.email if not user.stripe_customer_id else None,
@@ -39,6 +45,7 @@ def create_checkout_session(
             cancel_url=cancel_url,
             metadata={"user_email": user.email},
             subscription_data={"metadata": {"user_email": user.email}},
+            branding_settings=branding_settings,
         )
         return str(session.url)
     except (ValueError, TypeError, AttributeError, StripeError) as e:
