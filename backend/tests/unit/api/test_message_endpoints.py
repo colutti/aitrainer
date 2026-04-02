@@ -3,6 +3,7 @@ Comprehensive tests for message/chat endpoints.
 Tests cover message history retrieval and AI message processing with streaming.
 """
 
+import base64
 from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 import pytest
@@ -324,8 +325,7 @@ def test_message_ai_rejects_image_for_basic_plan():
         "/message",
         json={
             "user_message": "Analisa essa imagem",
-            "image_base64": "ZmFrZS1pbWFnZQ==",
-            "image_mime_type": "image/jpeg",
+            "images": [{"base64": "ZmFrZS1pbWFnZQ==", "mime_type": "image/jpeg"}],
         },
         headers={"Authorization": "Bearer basic_token"},
     )
@@ -333,5 +333,52 @@ def test_message_ai_rejects_image_for_basic_plan():
     assert response.status_code == 403
     assert response.json()["detail"] == "IMAGE_NOT_ALLOWED_FOR_PLAN"
     mock_brain.send_message_ai.assert_not_called()
+
+    app.dependency_overrides = {}
+
+
+def test_message_ai_rejects_too_many_images():
+    """Test payload with too many images is rejected by validation."""
+    app.dependency_overrides[verify_token] = lambda: "pro@example.com"
+    mock_brain = MagicMock()
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+    payload = {
+        "user_message": "Analisa",
+        "images": [
+            {"base64": "ZmFrZQ==", "mime_type": "image/jpeg"},
+            {"base64": "ZmFrZQ==", "mime_type": "image/jpeg"},
+            {"base64": "ZmFrZQ==", "mime_type": "image/jpeg"},
+            {"base64": "ZmFrZQ==", "mime_type": "image/jpeg"},
+            {"base64": "ZmFrZQ==", "mime_type": "image/jpeg"},
+        ],
+    }
+    response = client.post(
+        "/message",
+        json=payload,
+        headers={"Authorization": "Bearer pro_token"},
+    )
+    assert response.status_code == 422
+
+    app.dependency_overrides = {}
+
+
+def test_message_ai_rejects_oversized_image():
+    """Test payload with image above max size is rejected by validation."""
+    app.dependency_overrides[verify_token] = lambda: "pro@example.com"
+    mock_brain = MagicMock()
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+    oversized = base64.b64encode(b"a" * (3 * 1024 * 1024 + 1)).decode("utf-8")
+    payload = {
+        "user_message": "Analisa",
+        "images": [{"base64": oversized, "mime_type": "image/jpeg"}],
+    }
+    response = client.post(
+        "/message",
+        json=payload,
+        headers={"Authorization": "Bearer pro_token"},
+    )
+    assert response.status_code == 422
 
     app.dependency_overrides = {}

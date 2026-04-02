@@ -99,7 +99,7 @@ describe('ChatView', () => {
 
     fireEvent.change(input, { target: { files: [file] } });
     await waitFor(() => {
-      expect(screen.getByTestId('chat-image-clear')).toBeInTheDocument();
+      expect(screen.getByTestId('chat-image-clear-0')).toBeInTheDocument();
     });
 
     const form = screen.getByTestId('chat-form');
@@ -107,8 +107,9 @@ describe('ChatView', () => {
 
     expect(onSend).toHaveBeenCalled();
     const callArg = onSend.mock.calls[0]?.[0];
-    expect(callArg?.image?.mimeType).toBe('image/jpeg');
-    expect(typeof callArg?.image?.base64).toBe('string');
+    expect(callArg?.images?.length).toBe(1);
+    expect(callArg?.images?.[0]?.mimeType).toBe('image/jpeg');
+    expect(typeof callArg?.images?.[0]?.base64).toBe('string');
 
     vi.unstubAllGlobals();
   });

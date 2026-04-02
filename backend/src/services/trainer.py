@@ -371,7 +371,11 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         return trainer_profile_obj
 
     def add_to_mongo_history(
-        self, user_email: str, user_input: str, response_text: str, trainer_type: str
+        self,
+        user_email: str,
+        user_input: str,
+        response_text: str,
+        metadata: dict | None = None,
     ):
         """
         Adds the user input and AI response to MongoDB chat history (synchronous).
@@ -383,9 +387,13 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             trainer_type (str): The active trainer profile type.
         """
         now = datetime.now().isoformat()
+        metadata = metadata or {}
+        trainer_type = metadata.get("trainer_type", "atlas")
+        user_images = metadata.get("user_images")
         user_message = ChatHistory(
             sender=Sender.STUDENT,
             text=user_input,
+            images=user_images,
             timestamp=now,
             trainer_type=trainer_type,
         )
@@ -589,7 +597,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         logger.info("Generating workout stream for user: %s", user_email)
         options = message_options or {}
         is_telegram = bool(options.get("is_telegram", False))
-        image_payload = options.get("image_payload")
+        image_payloads = options.get("image_payloads")
 
         # 1. Retrieve profiles (sequentially to avoid redundant DB calls and plan mismatch)
         profile = await asyncio.wrap_future(
@@ -630,8 +638,8 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
                 EventRepository(self._database.database).get_active_events, user_email
             ),
         )
-        if image_payload:
-            input_data["user_image"] = image_payload
+        if image_payloads:
+            input_data["user_images"] = image_payloads
 
         full_response: list[str] = []
         async for chunk in self._llm_client.stream_with_tools(
@@ -656,6 +664,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
                 "needs_cycle_reset": needs_cycle_reset,
                 "background_tasks": background_tasks,
                 "log_callback": self.get_log_callback(background_tasks),
+                "user_images": image_payloads,
             },
         )
 
@@ -686,6 +695,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         train_type = metadata.get("trainer_type", "atlas")
         reset = metadata.get("needs_cycle_reset", False)
         callback = metadata.get("log_callback")
+        user_images = metadata.get("user_images")
 
         if bg_tasks:
             # Async FastAPI environment
@@ -695,7 +705,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
                 user_email,
                 user_input,
                 final_response,
-                train_type,
+                {"trainer_type": train_type, "user_images": user_images},
             )
             bg_tasks.add_task(
                 self.compactor.compact_history,
@@ -709,7 +719,10 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             # Fallback for sync callers (like Telegram)
             self.increment_counts(user_email, reset)
             self.add_to_mongo_history(
-                user_email, user_input, final_response, train_type
+                user_email,
+                user_input,
+                final_response,
+                {"trainer_type": train_type, "user_images": user_images},
             )
             await self.compactor.compact_history(
                 user_email=user_email,
@@ -723,7 +736,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         user_email: str,
         user_input: str,
         is_telegram: bool = False,
-        image_payload: dict | None = None,
+        image_payloads: list[dict[str, str]] | None = None,
     ) -> str:
         """
         Synchronous version of send_message_ai for Telegram.
@@ -751,7 +764,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
                 background_tasks=None,
                 message_options={
                     "is_telegram": is_telegram,
-                    "image_payload": image_payload,
+                    "image_payloads": image_payloads,
                 },
             ):
                 if isinstance(chunk, str):

@@ -23,7 +23,7 @@ export interface ChatViewProps {
   userInfo: UserInfo | null;
   inputValue: string;
   setInputValue: (val: string) => void;
-  onSend: (params?: { event?: React.BaseSyntheticEvent; image?: MessageImagePayload | null }) => void | Promise<void>;
+  onSend: (params?: { event?: React.BaseSyntheticEvent; images?: MessageImagePayload[] }) => void | Promise<void>;
   onScroll: (e: React.UIEvent<HTMLDivElement>) => void;
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
@@ -47,9 +47,11 @@ export function ChatView({
   textareaRef,
 }: ChatViewProps) {
   const { t, i18n } = useTranslation();
-  const [selectedImage, setSelectedImage] = useState<MessageImagePayload | null>(null);
-  const [selectedImagePreview, setSelectedImagePreview] = useState<string | null>(null);
+  const [selectedImages, setSelectedImages] = useState<MessageImagePayload[]>([]);
+  const [selectedImagePreviews, setSelectedImagePreviews] = useState<string[]>([]);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const MAX_IMAGES_PER_MESSAGE = 4;
+  const MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024;
   const trainerName = trainer?.name ?? t('chat.default_trainer_name');
   const { isReadOnly: isDemoUser } = useDemoMode(userInfo);
   const normalizedLocale = i18n.language.toLowerCase();
@@ -71,43 +73,67 @@ export function ChatView({
   };
 
   const isLimitError = error === 'TRIAL_EXPIRED' || error === 'DAILY_LIMIT_REACHED';
-  const canSubmit = (!!inputValue.trim() || !!selectedImage) && !isStreaming && !isDemoUser;
+  const canSubmit = (!!inputValue.trim() || selectedImages.length > 0) && !isStreaming && !isDemoUser;
+  const resolveErrorLabel = (errorCode: string | null) => {
+    if (!errorCode) return null;
+    if (errorCode === 'IMAGE_TOO_LARGE') return 'Imagem muito grande. Use até 3MB por imagem.';
+    if (errorCode === 'TOO_MANY_IMAGES') return 'Você pode enviar até 4 imagens por mensagem.';
+    if (errorCode === 'IMAGE_NOT_ALLOWED_FOR_PLAN') return 'Análise de imagem disponível apenas para Pro e Premium.';
+    return t(`errors.${errorCode}`, errorCode);
+  };
 
-  const clearSelectedImage = () => {
-    setSelectedImage(null);
-    setSelectedImagePreview(null);
+  const clearSelectedImages = () => {
+    setSelectedImages([]);
+    setSelectedImagePreviews([]);
     if (imageInputRef.current) imageInputRef.current.value = '';
   };
 
-  const handleImageSelect = async (file?: File | null) => {
-    if (!file) return;
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return;
+  const readFileAsDataUrl = async (file: File): Promise<string> =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') resolve(reader.result);
+        else reject(new Error('Invalid image data'));
+      };
+      reader.onerror = () => {
+        reject(new Error('Failed to read file'));
+      };
+      reader.readAsDataURL(file);
+    });
 
-    const readDataUrl = () =>
-      new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          if (typeof reader.result === 'string') resolve(reader.result);
-          else reject(new Error('Invalid image data'));
-        };
-        reader.onerror = () => {
-          reject(new Error('Failed to read file'));
-        };
-        reader.readAsDataURL(file);
-      });
+  const handleImageSelect = async (files?: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    const acceptedFiles = Array.from(files)
+      .filter((file) => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type))
+      .filter((file) => file.size <= MAX_IMAGE_SIZE_BYTES)
+      .slice(0, Math.max(0, MAX_IMAGES_PER_MESSAGE - selectedImages.length));
+
+    if (acceptedFiles.length === 0) return;
 
     try {
-      const dataUrl = await readDataUrl();
-      const [, base64Part] = dataUrl.split(',');
-      if (!base64Part) return;
-      setSelectedImage({
-        base64: base64Part,
-        mimeType: file.type as MessageImagePayload['mimeType'],
-      });
-      setSelectedImagePreview(dataUrl);
+      const nextImages: MessageImagePayload[] = [];
+      const nextPreviews: string[] = [];
+      for (const file of acceptedFiles) {
+        const dataUrl = await readFileAsDataUrl(file);
+        const [, base64Part] = dataUrl.split(',');
+        if (!base64Part) continue;
+        nextImages.push({
+          base64: base64Part,
+          mimeType: file.type as MessageImagePayload['mimeType'],
+        });
+        nextPreviews.push(dataUrl);
+      }
+      setSelectedImages((prev) => [...prev, ...nextImages]);
+      setSelectedImagePreviews((prev) => [...prev, ...nextPreviews]);
     } catch {
-      clearSelectedImage();
+      clearSelectedImages();
     }
+  };
+
+  const removeSelectedImageAt = (index: number) => {
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+    setSelectedImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -185,7 +211,7 @@ export function ChatView({
             {error !== null && !isLimitError && (
               <div className="bg-red-500/10 text-red-400 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full border border-red-500/20 text-center mb-4 backdrop-blur-md animate-in slide-in-from-bottom-2">
                 <AlertCircle size={12} className="inline mr-2 -mt-0.5" />
-                {t(`errors.${error}`, error)}
+                {resolveErrorLabel(error)}
               </div>
             )}
 
@@ -213,8 +239,8 @@ export function ChatView({
                 <form 
                   data-testid="chat-form"
                   onSubmit={(e) => { 
-                    const result = onSend({ event: e, image: selectedImage });
-                    clearSelectedImage();
+                    const result = onSend({ event: e, images: selectedImages });
+                    clearSelectedImages();
                     if (result instanceof Promise) void result;
                   }} 
                   className="flex items-end gap-2"
@@ -224,9 +250,10 @@ export function ChatView({
                     data-testid="chat-image-input"
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
+                    multiple
                     className="hidden"
                     onChange={(e) => {
-                      void handleImageSelect(e.target.files?.[0] ?? null);
+                      void handleImageSelect(e.target.files);
                     }}
                     disabled={isStreaming || isDemoUser}
                   />
@@ -251,8 +278,8 @@ export function ChatView({
                     onKeyDown={(e) => {
                       if (!isDemoUser && e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
-                        const result = onSend({ image: selectedImage });
-                        clearSelectedImage();
+                        const result = onSend({ images: selectedImages });
+                        clearSelectedImages();
                         if (result instanceof Promise) void result;
                       }
                     }}
@@ -274,21 +301,38 @@ export function ChatView({
                     <Send size={20} className={cn(isStreaming && "animate-pulse", "ml-0.5")} />
                   </Button>
                 </form>
-                {selectedImagePreview && (
+                {selectedImagePreviews.length > 0 && (
                   <div className="px-4 pt-2 pb-1">
-                    <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/10">
-                      <img src={selectedImagePreview} alt="preview" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={clearSelectedImage}
-                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center"
-                        data-testid="chat-image-clear"
-                      >
-                        <X size={12} />
-                      </button>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-semibold text-zinc-400">
+                        {selectedImagePreviews.length}/{MAX_IMAGES_PER_MESSAGE} imagens selecionadas
+                      </span>
+                      <span className="text-[10px] text-zinc-500">
+                        Máx. {MAX_IMAGE_SIZE_BYTES / (1024 * 1024)}MB por imagem
+                      </span>
+                    </div>
+                    <div className="flex gap-2 overflow-x-auto">
+                      {selectedImagePreviews.map((preview, index) => (
+                        <div key={`${preview.slice(0, 20)}-${index.toString()}`} className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/10 shrink-0">
+                          <img src={preview} alt="preview" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => { removeSelectedImageAt(index); }}
+                            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center"
+                            data-testid={`chat-image-clear-${index.toString()}`}
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
+                <div className="px-4 pt-1 pb-1">
+                  <p className="text-[10px] text-zinc-500">
+                    Anexe at&eacute; 4 imagens por mensagem (JPG, PNG, WEBP, m&aacute;x. 3MB cada).
+                  </p>
+                </div>
               </div>
             ) : (
               <PremiumCard className={cn(PREMIUM_UI.card.padding, "bg-gradient-to-br from-indigo-900/20 to-purple-900/10 border-indigo-500/30")}>

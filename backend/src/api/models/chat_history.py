@@ -19,6 +19,7 @@ class ChatHistory(BaseModel):
 
     text: str
     translations: dict[str, str] | None = Field(default=None)
+    images: list[dict[str, str]] | None = Field(default=None)
     sender: Sender
     timestamp: str  # ISO formatted timestamp
     trainer_type: str | None = None  # Track which trainer was active
@@ -93,6 +94,7 @@ class ChatHistory(BaseModel):
                 ChatHistory(
                     text=msg.content,
                     translations=msg.additional_kwargs.get("translations"),
+                    images=msg.additional_kwargs.get("images"),
                     sender=sender,
                     timestamp=msg.additional_kwargs.get(
                         "timestamp", datetime(MINYEAR, 1, 1).isoformat()

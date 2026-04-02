@@ -105,6 +105,8 @@ class ChatRepository(BaseRepository):
         additional_kwargs = {"timestamp": now}
         if trainer_type:
             additional_kwargs["trainer_type"] = trainer_type
+        if chat_history.images:
+            additional_kwargs["images"] = chat_history.images
 
         if chat_history.sender == Sender.TRAINER:
             chat_history_mongo.add_message(
