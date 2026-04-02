@@ -78,7 +78,7 @@ export const TrainerShowcase = () => {
               type="button"
               variant="ghost"
               onClick={() => { setSelectedId(selectedId === trainer.id ? null : trainer.id); }}
-              className={`flex flex-col p-6 rounded-lg border transition-all text-left ${
+              className={`h-auto min-h-44 w-full items-start flex-col p-6 rounded-lg border transition-all text-left ${
                 selectedId === trainer.id
                   ? 'bg-secondary border-primary'
                   : 'bg-dark-bg border-border hover:border-text-muted'
@@ -100,11 +100,11 @@ export const TrainerShowcase = () => {
         </div>
 
         {selectedTrainer && (
-          <div className="mt-8 p-8 rounded-lg border border-border bg-light-bg flex flex-col md:flex-row gap-8 items-start animate-fade-in">
+          <div className="mt-8 p-6 sm:p-8 rounded-lg border border-border bg-light-bg flex flex-col md:flex-row gap-6 md:gap-8 items-start animate-fade-in">
             <img
               src={selectedTrainer.avatar}
               alt={selectedTrainer.name}
-              className="w-24 h-24 rounded object-cover border border-border"
+              className="w-24 h-24 rounded object-cover border border-border shrink-0"
             />
             <div className="flex-1">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">

@@ -562,54 +562,54 @@
       "talk_with": "Talk with {{name}}",
       "profiles": {
         "atlas": {
-          "tagline": "Pure Performance",
-          "catchphrase": "Numbers don't lie.",
+          "tagline": "Efficiency and biomechanics first.",
+          "catchphrase": "Your muscles are biological machines. Let's optimize them.",
           "specialties": [
             "Biomechanics",
-            "Strength",
-            "Performance"
+            "Hypertrophy",
+            "Data-driven training"
           ],
-          "style": "Analytical"
+          "style": "Scientific and precise"
         },
         "luna": {
-          "tagline": "Total Balance",
-          "catchphrase": "Breathe and overcome.",
+          "tagline": "Mind-body connection with calm consistency.",
+          "catchphrase": "Inhale the universe, exhale tension.",
           "specialties": [
-            "Well-being",
-            "Recovery",
-            "Consistency"
+            "Yoga",
+            "Mindfulness",
+            "Flow and recovery"
           ],
-          "style": "Empathetic"
+          "style": "Holistic and gentle"
         },
         "sofia": {
-          "tagline": "Sports Science",
-          "catchphrase": "Evidence-based.",
+          "tagline": "Women's health guided by science and hormonal context.",
+          "catchphrase": "Let's hack your metabolism with science and care.",
           "specialties": [
-            "Physiology",
-            "Nutrition",
-            "Strategy"
+            "Women's health",
+            "Hormones",
+            "Metabolism"
           ],
-          "style": "Educational"
+          "style": "Empathetic medical specialist"
         },
         "sargento": {
-          "tagline": "Max Discipline",
-          "catchphrase": "No excuses!",
+          "tagline": "High-discipline coaching for direct accountability.",
+          "catchphrase": "DROP DOWN AND GIVE ME TWENTY, RECRUIT!",
           "specialties": [
             "Discipline",
-            "Execution",
-            "Results"
+            "Strength",
+            "No-excuses execution"
           ],
-          "style": "Rigorous"
+          "style": "Military bootcamp"
         },
         "gymbro": {
-          "tagline": "Your Partner",
-          "catchphrase": "Let's get it!",
+          "tagline": "Workout partnership with high energy and consistency.",
+          "catchphrase": "Let's go, beast! Today we LEVEL UP! 🔥",
           "specialties": [
             "Motivation",
-            "Hypertrophy",
-            "Energy"
+            "Partnership",
+            "Fitness lifestyle"
           ],
-          "style": "Energetic"
+          "style": "Motivational gym bro"
         }
       }
     },

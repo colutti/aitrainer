@@ -562,54 +562,54 @@
       "talk_with": "Falar com {{name}}",
       "profiles": {
         "atlas": {
-          "tagline": "Performance Pura",
-          "catchphrase": "Os números não mentem.",
+          "tagline": "Eficiência e biomecânica em primeiro lugar.",
+          "catchphrase": "Seus músculos são máquinas biológicas. Vamos otimizá-las.",
           "specialties": [
             "Biomecânica",
-            "Força",
-            "Performance"
+            "Hipertrofia",
+            "Treino orientado por dados"
           ],
-          "style": "Analítico"
+          "style": "Científico e precisionista"
         },
         "luna": {
-          "tagline": "Equilíbrio Total",
-          "catchphrase": "Respire e supere.",
+          "tagline": "Conexão mente-corpo com leveza e constância.",
+          "catchphrase": "Respire o universo, expire as tensões.",
           "specialties": [
-            "Bem-estar",
-            "Recuperação",
-            "Constância"
+            "Yoga",
+            "Mindfulness",
+            "Fluxo e recuperação"
           ],
-          "style": "Empático"
+          "style": "Holística e acolhedora"
         },
         "sofia": {
-          "tagline": "Ciência do Esporte",
-          "catchphrase": "Baseado em evidências.",
+          "tagline": "Saúde feminina guiada por ciência e contexto hormonal.",
+          "catchphrase": "Vamos hackear seu metabolismo com ciência e carinho.",
           "specialties": [
-            "Fisiologia",
-            "Nutrição",
-            "Estratégia"
+            "Saúde feminina",
+            "Hormônios",
+            "Metabolismo"
           ],
-          "style": "Educativo"
+          "style": "Médica especialista empática"
         },
         "sargento": {
-          "tagline": "Disciplina Máxima",
-          "catchphrase": "Sem desculpas!",
+          "tagline": "Disciplina alta para quem precisa de cobrança direta.",
+          "catchphrase": "CAIA NO CHÃO E ME PAGUE VINTE, RECRUTA!",
           "specialties": [
             "Disciplina",
-            "Execução",
-            "Resultado"
+            "Força",
+            "Execução sem desculpas"
           ],
-          "style": "Rigoroso"
+          "style": "Bootcamp militar"
         },
         "gymbro": {
-          "tagline": "Seu Parceiro",
-          "catchphrase": "Bora pra cima!",
+          "tagline": "Parceria de treino com energia e constância.",
+          "catchphrase": "Bora, monstro! Hoje é dia de EVOLUIR! 🔥",
           "specialties": [
             "Motivação",
-            "Hipertrofia",
-            "Energia"
+            "Parceria",
+            "Lifestyle fitness"
           ],
-          "style": "Energético"
+          "style": "Brother motivador"
         }
       }
     },

@@ -562,54 +562,54 @@
       "talk_with": "Hablar con {{name}}",
       "profiles": {
         "atlas": {
-          "tagline": "Rendimiento Puro",
-          "catchphrase": "Los números no mienten.",
+          "tagline": "Eficiencia y biomecánica por encima de todo.",
+          "catchphrase": "Tus músculos son máquinas biológicas. Vamos a optimizarlos.",
           "specialties": [
             "Biomecánica",
-            "Fuerza",
-            "Rendimiento"
+            "Hipertrofia",
+            "Entrenamiento guiado por datos"
           ],
-          "style": "Analítico"
+          "style": "Científico y preciso"
         },
         "luna": {
-          "tagline": "Equilibrio Total",
-          "catchphrase": "Respira y supera.",
+          "tagline": "Conexión mente-cuerpo con calma y constancia.",
+          "catchphrase": "Respira el universo, expulsa las tensiones.",
           "specialties": [
-            "Bienestar",
-            "Recuperación",
-            "Constancia"
+            "Yoga",
+            "Mindfulness",
+            "Flujo y recuperación"
           ],
-          "style": "Empático"
+          "style": "Holística y cercana"
         },
         "sofia": {
-          "tagline": "Ciencia del Deporte",
-          "catchphrase": "Basado en evidencia.",
+          "tagline": "Salud femenina guiada por ciencia y contexto hormonal.",
+          "catchphrase": "Vamos a optimizar tu metabolismo con ciencia y cuidado.",
           "specialties": [
-            "Fisiología",
-            "Nutrición",
-            "Estrategia"
+            "Salud femenina",
+            "Hormonas",
+            "Metabolismo"
           ],
-          "style": "Educativo"
+          "style": "Médica especialista empática"
         },
         "sargento": {
-          "tagline": "Disciplina Máxima",
-          "catchphrase": "¡Sin excusas!",
+          "tagline": "Disciplina máxima para quien necesita exigencia directa.",
+          "catchphrase": "¡AL SUELO Y VEINTE FLEXIONES, RECLUTA!",
           "specialties": [
             "Disciplina",
-            "Ejecución",
-            "Resultado"
+            "Fuerza",
+            "Ejecución sin excusas"
           ],
-          "style": "Riguroso"
+          "style": "Bootcamp militar"
         },
         "gymbro": {
-          "tagline": "Tu Compañero",
-          "catchphrase": "¡Vamos con todo!",
+          "tagline": "Compañero de entrenamiento con energía y constancia.",
+          "catchphrase": "¡Vamos, máquina! ¡Hoy toca EVOLUCIONAR! 🔥",
           "specialties": [
             "Motivación",
-            "Hipertrofia",
-            "Energía"
+            "Compañerismo",
+            "Lifestyle fitness"
           ],
-          "style": "Enérgico"
+          "style": "Gym bro motivador"
         }
       }
     },
