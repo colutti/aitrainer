@@ -114,6 +114,18 @@ describe('ChatView', () => {
     vi.unstubAllGlobals();
   });
 
+  it('shows validation message when unsupported file format is selected', async () => {
+    render(<ChatView {...mockProps} />);
+
+    const file = new File(['fake'], 'photo.heic', { type: 'image/heic' });
+    const input = screen.getByTestId('chat-image-input');
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('chat-upload-error')).toHaveTextContent(/formato não suportado/i);
+    });
+  });
+
   it('renders typing indicator when streaming', () => {
     render(<ChatView {...mockProps} isStreaming={true} />);
     expect(screen.getByText('chat.typing')).toBeInTheDocument();
