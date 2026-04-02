@@ -13,7 +13,6 @@ from src.services.auth import verify_token
 from src.core.deps import get_hevy_service, get_ai_trainer_brain
 from src.services.hevy_service import HevyService
 from src.services.trainer import AITrainerBrain
-from src.core.logs import logger
 
 router = APIRouter()
 
