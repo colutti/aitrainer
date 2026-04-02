@@ -302,6 +302,11 @@
     "default_trainer_name": "AI Trainer",
     "welcome_message": "Hello! How can I help you today?",
     "upgrade_button": "Upgrade Now",
+    "image_upload": {
+      "supported_formats": "JPG, PNG and WebP",
+      "helper_tooltip": "Accepted formats: {{formats}}. Up to {{maxImages}} images per message, {{maxSizeMb}}MB per image.",
+      "helper_aria": "Image upload help"
+    },
     "trial_ended": {
       "title": "Free Trial Ended",
       "description": "You've reached the free message limit."

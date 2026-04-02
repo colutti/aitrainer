@@ -36,6 +36,7 @@ Source of truth for project operations is the codebase, especially:
 - The official full test path is containerized. Prefer `make test-once` over host-local mixed execution.
 - `make verify` is the fast verification gate; `make verify-all` adds e2e; `make test-once` is the documented full-suite entrypoint.
 - Playwright E2E must run through the containerized stack via `make e2e`, `make verify-all`, or `make test-once`. Do not treat host-local `npx playwright test` as the supported validation path.
+- Any new or changed user-facing text must be translated for all app locales (`pt-BR`, `en-US`, `es-ES`) in the same task; do not ship partial localization.
 
 ## Validation Gates
 
