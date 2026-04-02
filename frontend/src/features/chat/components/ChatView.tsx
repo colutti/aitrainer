@@ -54,6 +54,9 @@ export function ChatView({
   const imageInputRef = useRef<HTMLInputElement>(null);
   const MAX_IMAGES_PER_MESSAGE = 4;
   const MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024;
+  const maxImageSizeMb = (MAX_IMAGE_SIZE_BYTES / (1024 * 1024)).toString();
+  const supportedFormatsLabel = 'JPG, PNG e WebP';
+  const imageHintLabel = `Formatos aceitos: ${supportedFormatsLabel}. Até ${MAX_IMAGES_PER_MESSAGE.toString()} imagens por mensagem, ${maxImageSizeMb}MB por imagem.`;
   const trainerName = trainer?.name ?? t('chat.default_trainer_name');
   const { isReadOnly: isDemoUser } = useDemoMode(userInfo);
   const normalizedLocale = i18n.language.toLowerCase();
@@ -134,7 +137,7 @@ export function ChatView({
 
     if (acceptedFiles.length === 0) {
       if (unsupportedCount > 0) {
-        setLocalUploadError('Formato não suportado. Use JPG, PNG ou WEBP.');
+        setLocalUploadError(`Formato de arquivo não suportado. Envie ${supportedFormatsLabel}.`);
       } else if (oversizedCount > 0) {
         setLocalUploadError('Imagem muito grande. Use até 3MB por imagem.');
       } else if (skippedByLimit > 0 || availableSlots === 0) {
@@ -159,7 +162,7 @@ export function ChatView({
       setSelectedImages((prev) => [...prev, ...nextImages]);
       setSelectedImagePreviews((prev) => [...prev, ...nextPreviews]);
       if (unsupportedCount > 0) {
-        setLocalUploadError('Alguns arquivos foram ignorados: formato não suportado (use JPG, PNG ou WEBP).');
+        setLocalUploadError(`Alguns arquivos foram ignorados por formato. Envie apenas ${supportedFormatsLabel}.`);
       } else if (oversizedCount > 0) {
         setLocalUploadError('Alguns arquivos foram ignorados por tamanho (máximo 3MB por imagem).');
       } else if (skippedByLimit > 0) {
@@ -307,6 +310,12 @@ export function ChatView({
                   >
                     <Paperclip size={18} />
                   </Button>
+                  <HelpTooltip
+                    content={imageHintLabel}
+                    className="opacity-80 mb-0.5"
+                    align="start"
+                    ariaLabel="Ajuda sobre envio de imagens"
+                  />
                   <textarea
                     ref={textareaRef}
                     data-testid="chat-input"
@@ -347,7 +356,7 @@ export function ChatView({
                         {selectedImagePreviews.length}/{MAX_IMAGES_PER_MESSAGE} imagens selecionadas
                       </span>
                       <span className="text-[10px] text-zinc-500">
-                        Máx. {MAX_IMAGE_SIZE_BYTES / (1024 * 1024)}MB por imagem
+                        Máx. {maxImageSizeMb}MB por imagem
                       </span>
                     </div>
                     <div className="flex gap-2 overflow-x-auto">
@@ -367,11 +376,7 @@ export function ChatView({
                     </div>
                   </div>
                 )}
-                <div className="px-4 pt-1 pb-1 flex items-center justify-between">
-                  <HelpTooltip
-                    content="Anexe até 4 imagens por mensagem (JPG, PNG ou WEBP, máximo de 3MB cada)."
-                    className="opacity-80"
-                  />
+                <div className="px-4 pt-1 pb-1 flex justify-end">
                   {localUploadError && (
                     <p
                       data-testid="chat-upload-error"

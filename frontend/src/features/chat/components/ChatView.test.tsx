@@ -122,7 +122,7 @@ describe('ChatView', () => {
     fireEvent.change(input, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByTestId('chat-upload-error')).toHaveTextContent(/formato não suportado/i);
+      expect(screen.getByTestId('chat-upload-error')).toHaveTextContent(/formato de arquivo não suportado/i);
     });
   });
 
