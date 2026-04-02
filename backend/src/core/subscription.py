@@ -65,3 +65,13 @@ SUBSCRIPTION_PLANS = {
         price_usd=19.99,
     ),
 }
+
+IMAGE_INPUT_ALLOWED_PLANS = {SubscriptionPlan.PRO, SubscriptionPlan.PREMIUM}
+
+
+def can_use_image_input(subscription_plan: str | None) -> bool:
+    """Return whether the current plan can submit image input to AI chat."""
+    try:
+        return SubscriptionPlan(subscription_plan) in IMAGE_INPUT_ALLOWED_PLANS
+    except (ValueError, TypeError):
+        return False

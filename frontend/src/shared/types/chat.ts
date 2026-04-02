@@ -9,6 +9,13 @@ export interface ChatMessage {
   summarized?: boolean;
 }
 
+export interface MessageImagePayload {
+  base64: string;
+  mimeType: 'image/jpeg' | 'image/png' | 'image/webp';
+}
+
 export interface MessageRequest {
   user_message: string;
+  image_base64?: string;
+  image_mime_type?: MessageImagePayload['mimeType'];
 }

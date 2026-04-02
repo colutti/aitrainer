@@ -1,4 +1,5 @@
-import { Bot, Send, Sparkles, AlertCircle } from 'lucide-react';
+import { Bot, Send, Sparkles, AlertCircle, Paperclip, X } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '../../../shared/components/ui/Button';
@@ -6,7 +7,7 @@ import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
 import type { UserInfo } from '../../../shared/hooks/useAuth';
 import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { PREMIUM_UI } from '../../../shared/styles/ui-variants';
-import type { ChatMessage } from '../../../shared/types/chat';
+import type { ChatMessage, MessageImagePayload } from '../../../shared/types/chat';
 import type { TrainerCard } from '../../../shared/types/settings';
 import { cn } from '../../../shared/utils/cn';
 
@@ -22,7 +23,7 @@ export interface ChatViewProps {
   userInfo: UserInfo | null;
   inputValue: string;
   setInputValue: (val: string) => void;
-  onSend: (e?: React.BaseSyntheticEvent) => void | Promise<void>;
+  onSend: (params?: { event?: React.BaseSyntheticEvent; image?: MessageImagePayload | null }) => void | Promise<void>;
   onScroll: (e: React.UIEvent<HTMLDivElement>) => void;
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
@@ -46,6 +47,9 @@ export function ChatView({
   textareaRef,
 }: ChatViewProps) {
   const { t, i18n } = useTranslation();
+  const [selectedImage, setSelectedImage] = useState<MessageImagePayload | null>(null);
+  const [selectedImagePreview, setSelectedImagePreview] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const trainerName = trainer?.name ?? t('chat.default_trainer_name');
   const { isReadOnly: isDemoUser } = useDemoMode(userInfo);
   const normalizedLocale = i18n.language.toLowerCase();
@@ -67,6 +71,44 @@ export function ChatView({
   };
 
   const isLimitError = error === 'TRIAL_EXPIRED' || error === 'DAILY_LIMIT_REACHED';
+  const canSubmit = (!!inputValue.trim() || !!selectedImage) && !isStreaming && !isDemoUser;
+
+  const clearSelectedImage = () => {
+    setSelectedImage(null);
+    setSelectedImagePreview(null);
+    if (imageInputRef.current) imageInputRef.current.value = '';
+  };
+
+  const handleImageSelect = async (file?: File | null) => {
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return;
+
+    const readDataUrl = () =>
+      new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === 'string') resolve(reader.result);
+          else reject(new Error('Invalid image data'));
+        };
+        reader.onerror = () => {
+          reject(new Error('Failed to read file'));
+        };
+        reader.readAsDataURL(file);
+      });
+
+    try {
+      const dataUrl = await readDataUrl();
+      const [, base64Part] = dataUrl.split(',');
+      if (!base64Part) return;
+      setSelectedImage({
+        base64: base64Part,
+        mimeType: file.type as MessageImagePayload['mimeType'],
+      });
+      setSelectedImagePreview(dataUrl);
+    } catch {
+      clearSelectedImage();
+    }
+  };
 
   return (
     <div className="flex flex-col h-full min-h-0 relative overflow-hidden">
@@ -171,11 +213,34 @@ export function ChatView({
                 <form 
                   data-testid="chat-form"
                   onSubmit={(e) => { 
-                    const result = onSend(e);
+                    const result = onSend({ event: e, image: selectedImage });
+                    clearSelectedImage();
                     if (result instanceof Promise) void result;
                   }} 
                   className="flex items-end gap-2"
                 >
+                  <input
+                    ref={imageInputRef}
+                    data-testid="chat-image-input"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      void handleImageSelect(e.target.files?.[0] ?? null);
+                    }}
+                    disabled={isStreaming || isDemoUser}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={isStreaming || isDemoUser}
+                    className="w-11 h-11 rounded-full bg-white/5 text-zinc-200"
+                    onClick={() => { imageInputRef.current?.click(); }}
+                    data-testid="chat-image-trigger"
+                  >
+                    <Paperclip size={18} />
+                  </Button>
                   <textarea
                     ref={textareaRef}
                     data-testid="chat-input"
@@ -186,7 +251,8 @@ export function ChatView({
                     onKeyDown={(e) => {
                       if (!isDemoUser && e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
-                        const result = onSend();
+                        const result = onSend({ image: selectedImage });
+                        clearSelectedImage();
                         if (result instanceof Promise) void result;
                       }
                     }}
@@ -197,10 +263,10 @@ export function ChatView({
                     type="submit"
                     variant="ghost"
                     size="icon"
-                    disabled={!inputValue.trim() || isStreaming || isDemoUser}
+                    disabled={!canSubmit}
                     className={cn(
                       "w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg shrink-0 mb-0.5",
-                      inputValue.trim() && !isStreaming && !isDemoUser
+                      canSubmit
                         ? "bg-white text-black active:scale-90"
                         : "bg-white/5 text-zinc-700 cursor-not-allowed"
                     )}
@@ -208,6 +274,21 @@ export function ChatView({
                     <Send size={20} className={cn(isStreaming && "animate-pulse", "ml-0.5")} />
                   </Button>
                 </form>
+                {selectedImagePreview && (
+                  <div className="px-4 pt-2 pb-1">
+                    <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/10">
+                      <img src={selectedImagePreview} alt="preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={clearSelectedImage}
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center"
+                        data-testid="chat-image-clear"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <PremiumCard className={cn(PREMIUM_UI.card.padding, "bg-gradient-to-br from-indigo-900/20 to-purple-900/10 border-indigo-500/30")}>

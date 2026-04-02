@@ -641,9 +641,10 @@
         },
         "pro": {
           "name": "Pro",
-          "description": "Más contexto, más personalización y acceso completo a los mentores.",
+          "description": "Análisis de fotos en el chat y Telegram, con más personalización y acceso completo a los mentores.",
           "button": "Suscribirse Pro",
           "features": [
+            "Análisis de fotos (chat + Telegram)",
             "Todos los mentores",
             "TDEE dinámico",
             "Soporte prioritario"
@@ -651,10 +652,10 @@
         },
         "premium": {
           "name": "Premium",
-          "description": "La experiencia completa para quien quiere usar todo el stack del producto.",
+          "description": "Acompañamiento máximo con análisis avanzado de fotos en chat y Telegram.",
           "button": "Suscribirse Premium",
           "features": [
-            "Visión computacional",
+            "Análisis avanzado de fotos (chat + Telegram)",
             "Prioridad AI",
             "Paquete completo"
           ]

@@ -11,6 +11,7 @@ from src.core.demo_access import WritableCurrentUser
 from src.services.auth import verify_token
 from src.core.deps import get_ai_trainer_brain
 from src.api.models.message import MessageRequest
+from src.core.subscription import can_use_image_input
 from src.services.trainer import AITrainerBrain
 from src.core.logs import logger
 
@@ -62,11 +63,24 @@ async def message_ai(
         # Pre-flight limits check to avoid StreamingResponse generator crash
         profile = brain.get_or_create_user_profile(user_email)
         brain.check_message_limits(profile)
+        if message.image_base64 and not can_use_image_input(profile.subscription_plan):
+            raise HTTPException(status_code=403, detail="IMAGE_NOT_ALLOWED_FOR_PLAN")
 
         response_generator = brain.send_message_ai(
             user_email=user_email,
             user_input=message.user_message,
             background_tasks=background_tasks,
+            message_options={
+                "is_telegram": False,
+                "image_payload": (
+                    {
+                        "base64": message.image_base64,
+                        "mime_type": message.image_mime_type,
+                    }
+                    if message.image_base64 and message.image_mime_type
+                    else None
+                ),
+            },
         )
         return StreamingResponse(
             response_generator,

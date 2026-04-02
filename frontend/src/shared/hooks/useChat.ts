@@ -2,7 +2,7 @@ import i18next from 'i18next';
 import { create } from 'zustand';
 
 import { httpClient, API_BASE_URL } from '../api/http-client';
-import type { ChatMessage } from '../types/chat';
+import type { ChatMessage, MessageImagePayload } from '../types/chat';
 
 interface ChatState {
   messages: ChatMessage[];
@@ -15,7 +15,7 @@ interface ChatState {
 interface ChatActions {
   fetchHistory: () => Promise<void>;
   loadMore: () => Promise<void>;
-  sendMessage: (text: string) => Promise<void>;
+  sendMessage: (text: string, image?: MessageImagePayload) => Promise<void>;
   clearHistory: () => void;
   reset: () => void;
 }
@@ -97,7 +97,7 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
     }
   },
 
-  sendMessage: async (text: string) => {
+  sendMessage: async (text: string, image?: MessageImagePayload) => {
     const userMessage: ChatMessage = {
       text,
       sender: 'Student',
@@ -119,7 +119,11 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
           'Authorization': token ? `Bearer ${token}` : '',
           'X-User-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
         },
-        body: JSON.stringify({ user_message: text }),
+        body: JSON.stringify({
+          user_message: text,
+          image_base64: image?.base64,
+          image_mime_type: image?.mimeType,
+        }),
       });
 
       if (!response.ok) {
@@ -135,8 +139,14 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
             if (errorData.detail === 'DAILY_LIMIT_REACHED') {
               throw new Error('DAILY_LIMIT_REACHED');
             }
+            if (errorData.detail === 'IMAGE_NOT_ALLOWED_FOR_PLAN') {
+              throw new Error('IMAGE_NOT_ALLOWED_FOR_PLAN');
+            }
           } catch (e: unknown) {
-            if (e instanceof Error && ['LIMIT_EXCEEDED', 'TRIAL_EXPIRED', 'DAILY_LIMIT_REACHED'].includes(e.message)) {
+            if (
+              e instanceof Error
+              && ['LIMIT_EXCEEDED', 'TRIAL_EXPIRED', 'DAILY_LIMIT_REACHED', 'IMAGE_NOT_ALLOWED_FOR_PLAN'].includes(e.message)
+            ) {
                throw e;
             }
           }
@@ -190,6 +200,8 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
         errorMessage = 'Você atingiu o limite de mensagens do seu plano. Atualize sua assinatura ou aguarde o próximo mês.';
       } else if (error instanceof Error && (error.message === 'TRIAL_EXPIRED' || error.message === 'DAILY_LIMIT_REACHED')) {
         errorMessage = error.message;
+      } else if (error instanceof Error && error.message === 'IMAGE_NOT_ALLOWED_FOR_PLAN') {
+        errorMessage = 'IMAGE_NOT_ALLOWED_FOR_PLAN';
       }
       
       set({ 

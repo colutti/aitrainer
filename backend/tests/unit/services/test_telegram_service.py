@@ -142,7 +142,10 @@ class TestTelegramService(unittest.IsolatedAsyncioTestCase):
             # 1. Processing message sent
             # 2. AI called
             self.mock_brain.send_message_sync.assert_called_with(
-                user_email="user@test.com", user_input="Hello AI", is_telegram=True
+                user_email="user@test.com",
+                user_input="Hello AI",
+                is_telegram=True,
+                image_payload=None,
             )
             # 3. Response sent
             # Check calls. Should have called send_message twice.
@@ -183,3 +186,85 @@ class TestTelegramService(unittest.IsolatedAsyncioTestCase):
         # Should still be 1
         self.assertEqual(self.mock_brain.send_message_sync.call_count, 1)
         self.assertEqual(self.mock_repo.try_record_update.call_count, 2)
+
+    @patch("src.services.telegram_service.Bot")
+    @patch("src.services.telegram_service.Update")
+    async def test_handle_message_photo_allowed_plan_calls_ai(
+        self, MockUpdate, MockBot
+    ):
+        mock_bot_instance = MockBot.return_value
+        mock_bot_instance.send_message = AsyncMock()
+        mock_file = MagicMock()
+        mock_file.download_as_bytearray = AsyncMock(return_value=bytearray(b"img"))
+        mock_bot_instance.get_file = AsyncMock(return_value=mock_file)
+
+        mock_processing_msg = MagicMock()
+        mock_processing_msg.delete = AsyncMock()
+        mock_bot_instance.send_message.return_value = mock_processing_msg
+
+        service = TelegramBotService(self.mock_token, self.mock_repo, self.mock_brain)
+        mock_update = MagicMock()
+        mock_update.update_id = 999
+        mock_update.message.text = ""
+        mock_update.message.caption = "Analisa"
+        mock_photo = MagicMock()
+        mock_photo.file_id = "photo_1"
+        mock_update.message.photo = [mock_photo]
+        mock_update.effective_chat.id = 12345
+        MockUpdate.de_json.return_value = mock_update
+
+        self.mock_repo.try_record_update.return_value = True
+        mock_link = MagicMock()
+        mock_link.user_email = "user@test.com"
+        self.mock_repo.get_link_by_chat_id.return_value = mock_link
+        self.mock_brain.get_user_profile.return_value = MagicMock(
+            subscription_plan="Premium"
+        )
+        self.mock_brain.send_message_sync.return_value = "AI Response"
+
+        with patch("src.services.telegram_service.safe_telegram_send") as mock_safe_send:
+            mock_safe_send.return_value = ("AI Response", "MarkdownV2")
+            await service.handle_update({})
+
+        self.mock_brain.send_message_sync.assert_called_once()
+        kwargs = self.mock_brain.send_message_sync.call_args.kwargs
+        self.assertEqual(kwargs["user_email"], "user@test.com")
+        self.assertEqual(kwargs["is_telegram"], True)
+        self.assertIn("image_payload", kwargs)
+        self.assertEqual(kwargs["image_payload"]["mime_type"], "image/jpeg")
+        self.assertTrue(kwargs["image_payload"]["base64"])
+
+    @patch("src.services.telegram_service.Bot")
+    @patch("src.services.telegram_service.Update")
+    async def test_handle_message_photo_disallowed_plan_returns_upgrade_message(
+        self, MockUpdate, MockBot
+    ):
+        mock_bot_instance = MockBot.return_value
+        mock_bot_instance.send_message = AsyncMock()
+        mock_bot_instance.get_file = AsyncMock()
+        service = TelegramBotService(self.mock_token, self.mock_repo, self.mock_brain)
+
+        mock_update = MagicMock()
+        mock_update.update_id = 1000
+        mock_update.message.text = ""
+        mock_update.message.caption = ""
+        mock_photo = MagicMock()
+        mock_photo.file_id = "photo_2"
+        mock_update.message.photo = [mock_photo]
+        mock_update.effective_chat.id = 12345
+        MockUpdate.de_json.return_value = mock_update
+
+        self.mock_repo.try_record_update.return_value = True
+        mock_link = MagicMock()
+        mock_link.user_email = "user@test.com"
+        self.mock_repo.get_link_by_chat_id.return_value = mock_link
+        self.mock_brain.get_user_profile.return_value = MagicMock(
+            subscription_plan="Basic"
+        )
+
+        await service.handle_update({})
+
+        self.mock_brain.send_message_sync.assert_not_called()
+        self.assertTrue(mock_bot_instance.send_message.called)
+        _, kwargs = mock_bot_instance.send_message.call_args
+        self.assertIn("Pro e Premium", kwargs["text"])

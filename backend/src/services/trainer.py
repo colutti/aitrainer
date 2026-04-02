@@ -567,7 +567,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         user_email: str,
         user_input: str,
         background_tasks: Optional[BackgroundTasks] = None,
-        is_telegram: bool = False,
+        message_options: dict | None = None,
     ):
         """
         Generates LLM response, summarizing history if needed.
@@ -587,6 +587,9 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             str: Individual chunks of the AI trainer's response.
         """
         logger.info("Generating workout stream for user: %s", user_email)
+        options = message_options or {}
+        is_telegram = bool(options.get("is_telegram", False))
+        image_payload = options.get("image_payload")
 
         # 1. Retrieve profiles (sequentially to avoid redundant DB calls and plan mismatch)
         profile = await asyncio.wrap_future(
@@ -627,6 +630,8 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
                 EventRepository(self._database.database).get_active_events, user_email
             ),
         )
+        if image_payload:
+            input_data["user_image"] = image_payload
 
         full_response: list[str] = []
         async for chunk in self._llm_client.stream_with_tools(
@@ -714,7 +719,11 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             )
 
     def send_message_sync(
-        self, user_email: str, user_input: str, is_telegram: bool = False
+        self,
+        user_email: str,
+        user_input: str,
+        is_telegram: bool = False,
+        image_payload: dict | None = None,
     ) -> str:
         """
         Synchronous version of send_message_ai for Telegram.
@@ -740,7 +749,10 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
                 user_email=user_email,
                 user_input=user_input,
                 background_tasks=None,
-                is_telegram=is_telegram,
+                message_options={
+                    "is_telegram": is_telegram,
+                    "image_payload": image_payload,
+                },
             ):
                 if isinstance(chunk, str):
                     response_parts.append(chunk)
@@ -792,7 +804,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             user_email=user_email,
             user_input=user_input,
             background_tasks=None,  # Sem BackgroundTasks (não envia para SSE)
-            is_telegram=False,  # Resposta detalhada (não resumida)
+            message_options={"is_telegram": False},  # Resposta detalhada
         ):
             if isinstance(chunk, str):
                 response_parts.append(chunk)

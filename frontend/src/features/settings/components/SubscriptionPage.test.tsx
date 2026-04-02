@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import ptBR from '../../../locales/pt-BR.json';
 import { useAuthStore } from '../../../shared/hooks/useAuth';
 
 import SubscriptionPage from './SubscriptionPage';
@@ -67,5 +68,10 @@ describe('SubscriptionPage', () => {
     // The "Plano Atual" text is rendered when isCurrent is true (both in badge and button)
     const elements = screen.getAllByText('Plano Atual');
     expect(elements.length).toBeGreaterThan(0);
+  });
+
+  it('keeps subscription features synced with landing copy for pro and premium', () => {
+    expect(ptBR.landing.plans.items.pro.features.join(' ')).toMatch(/chat \+ Telegram/i);
+    expect(ptBR.landing.plans.items.premium.features.join(' ')).toMatch(/chat \+ Telegram/i);
   });
 });

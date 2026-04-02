@@ -157,6 +157,54 @@ describe('useChatStore', () => {
     consoleSpy.mockRestore();
   });
 
+  it('sends message with image payload when provided', async () => {
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('ok'));
+        controller.close();
+      }
+    });
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      body: { getReader: () => stream.getReader() },
+    });
+
+    await useChatStore.getState().sendMessage('Analisa essa foto', {
+      base64: 'abc123',
+      mimeType: 'image/jpeg',
+    });
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/message'),
+      expect.objectContaining({
+        body: JSON.stringify({
+          user_message: 'Analisa essa foto',
+          image_base64: 'abc123',
+          image_mime_type: 'image/jpeg',
+        }),
+      }),
+    );
+  });
+
+  it('should handle image entitlement error', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 403,
+      json: async () => ({ detail: 'IMAGE_NOT_ALLOWED_FOR_PLAN' }),
+    });
+
+    await useChatStore.getState().sendMessage('Analisa', {
+      base64: 'abc123',
+      mimeType: 'image/jpeg',
+    });
+
+    const state = useChatStore.getState();
+    expect(state.error).toBe('IMAGE_NOT_ALLOWED_FOR_PLAN');
+    consoleSpy.mockRestore();
+  });
+
   it('should clear history successfully', () => {
     // Setup state
     useChatStore.setState({ messages: [{ text: 'Hi', sender: 'Student', timestamp: 'now' }] });
