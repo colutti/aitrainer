@@ -55,8 +55,13 @@ export function ChatView({
   const MAX_IMAGES_PER_MESSAGE = 4;
   const MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024;
   const maxImageSizeMb = (MAX_IMAGE_SIZE_BYTES / (1024 * 1024)).toString();
-  const supportedFormatsLabel = 'JPG, PNG e WebP';
-  const imageHintLabel = `Formatos aceitos: ${supportedFormatsLabel}. Até ${MAX_IMAGES_PER_MESSAGE.toString()} imagens por mensagem, ${maxImageSizeMb}MB por imagem.`;
+  const supportedFormatsLabel = t('chat.image_upload.supported_formats');
+  const imageHintLabel = t('chat.image_upload.helper_tooltip', {
+    formats: supportedFormatsLabel,
+    maxImages: MAX_IMAGES_PER_MESSAGE.toString(),
+    maxSizeMb: maxImageSizeMb,
+  });
+  const imageHelperAriaLabel = t('chat.image_upload.helper_aria');
   const trainerName = trainer?.name ?? t('chat.default_trainer_name');
   const { isReadOnly: isDemoUser } = useDemoMode(userInfo);
   const normalizedLocale = i18n.language.toLowerCase();
@@ -314,7 +319,7 @@ export function ChatView({
                     content={imageHintLabel}
                     className="opacity-80 mb-0.5"
                     align="start"
-                    ariaLabel="Ajuda sobre envio de imagens"
+                    ariaLabel={imageHelperAriaLabel}
                   />
                   <textarea
                     ref={textareaRef}

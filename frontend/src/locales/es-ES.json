@@ -302,6 +302,11 @@
     "default_trainer_name": "Entrenador AI",
     "welcome_message": "¡Hola! ¿Cómo puedo ayudarte hoy?",
     "upgrade_button": "Actualizar Ahora",
+    "image_upload": {
+      "supported_formats": "JPG, PNG y WebP",
+      "helper_tooltip": "Formatos aceptados: {{formats}}. Hasta {{maxImages}} imágenes por mensaje, {{maxSizeMb}}MB por imagen.",
+      "helper_aria": "Ayuda para subir imágenes"
+    },
     "trial_ended": {
       "title": "Prueba Gratuita Finalizada",
       "description": "Has alcanzado el límite de mensajes del plan gratuito."
