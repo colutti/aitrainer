@@ -100,48 +100,46 @@ export const TrainerShowcase = () => {
         </div>
 
         {selectedTrainer && (
-          <div className="mt-8 p-6 sm:p-8 rounded-lg border border-border bg-light-bg flex flex-col md:flex-row gap-6 md:gap-8 items-start animate-fade-in">
+          <div className="mt-8 p-6 sm:p-10 rounded-2xl border border-border bg-light-bg/95 shadow-[0_18px_45px_rgba(0,0,0,0.25)] flex flex-col items-center text-center gap-6 animate-fade-in">
             <img
               src={selectedTrainer.avatar}
               alt={selectedTrainer.name}
-              className="w-24 h-24 rounded object-cover border border-border shrink-0"
+              className="w-28 h-28 sm:w-32 sm:h-32 rounded-xl object-cover border-2 border-primary/40 shadow-[0_10px_28px_rgba(20,184,166,0.2)] shrink-0"
             />
-            <div className="flex-1">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                <div>
-                  <h3 className="text-2xl font-bold text-text-primary">
-                    {selectedTrainer.name}
-                  </h3>
-                  <p className="text-sm text-primary font-medium">
-                    {selectedTrainer.style}
-                  </p>
-                </div>
-                <Button
-                  onClick={() => { void navigate('/login'); }}
-                  variant="primary"
-                  size="sm"
-                  className="rounded-md"
-                >
-                  <MessageCircle size={16} className="mr-2" />
-                  {t('landing.trainers.talk_with', { name: selectedTrainer.name.split(' ')[0] })}
-                </Button>
-              </div>
-              
-              <p className="text-lg italic text-text-secondary mb-6 leading-relaxed">
-                "{selectedTrainer.catchphrase}"
+
+            <div>
+              <h3 className="text-2xl sm:text-3xl font-bold text-text-primary">
+                {selectedTrainer.name}
+              </h3>
+              <p className="mt-2 text-sm sm:text-base text-primary font-semibold tracking-wide">
+                {selectedTrainer.style}
               </p>
-              
-              <div className="flex flex-wrap gap-2">
-                {selectedTrainer.specialties.map((spec) => (
-                  <span
-                    key={spec}
-                    className="px-2.5 py-1 rounded bg-secondary border border-border text-xs text-text-secondary"
-                  >
-                    {spec}
-                  </span>
-                ))}
-              </div>
             </div>
+
+            <p className="max-w-2xl text-base sm:text-lg italic text-text-secondary leading-relaxed">
+              "{selectedTrainer.catchphrase}"
+            </p>
+
+            <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+              {selectedTrainer.specialties.map((spec) => (
+                <span
+                  key={spec}
+                  className="px-3 py-1 rounded-full bg-secondary border border-border text-xs sm:text-sm text-text-secondary"
+                >
+                  {spec}
+                </span>
+              ))}
+            </div>
+
+            <Button
+              onClick={() => { void navigate('/login'); }}
+              variant="primary"
+              size="sm"
+              className="rounded-md w-full sm:w-auto"
+            >
+              <MessageCircle size={16} className="mr-2" />
+              {t('landing.trainers.talk_with', { name: selectedTrainer.name.split(' ')[0] })}
+            </Button>
           </div>
         )}
 
