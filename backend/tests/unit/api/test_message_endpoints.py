@@ -302,3 +302,36 @@ def test_message_ai_rejects_demo_user():
     mock_brain.send_message_ai.assert_not_called()
 
     app.dependency_overrides = {}
+
+
+def test_message_ai_rejects_image_for_basic_plan():
+    """Test image payload is blocked for non-Pro/Premium plans."""
+    app.dependency_overrides[verify_token] = lambda: "basic@example.com"
+    mock_brain = MagicMock()
+    mock_brain.get_or_create_user_profile.return_value = UserProfile(
+        email="basic@example.com",
+        gender="Masculino",
+        age=30,
+        weight=75.0,
+        height=180,
+        goal_type="maintain",
+        weekly_rate=0.5,
+        subscription_plan="Basic",
+    )
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+    response = client.post(
+        "/message",
+        json={
+            "user_message": "Analisa essa imagem",
+            "image_base64": "ZmFrZS1pbWFnZQ==",
+            "image_mime_type": "image/jpeg",
+        },
+        headers={"Authorization": "Bearer basic_token"},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "IMAGE_NOT_ALLOWED_FOR_PLAN"
+    mock_brain.send_message_ai.assert_not_called()
+
+    app.dependency_overrides = {}

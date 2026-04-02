@@ -14,3 +14,7 @@ class MessageRequest(BaseModel):
     """
 
     user_message: str = Field(..., min_length=1, max_length=5000)
+    image_base64: str | None = Field(default=None, max_length=8_000_000)
+    image_mime_type: str | None = Field(
+        default=None, pattern=r"^image/(jpeg|png|webp)$"
+    )

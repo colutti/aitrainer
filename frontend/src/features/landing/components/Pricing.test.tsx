@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import enUS from '../../../locales/en-US.json';
 import esES from '../../../locales/es-ES.json';
+import ptBR from '../../../locales/pt-BR.json';
 import { useAuthStore } from '../../../shared/hooks/useAuth';
 import { render, screen, fireEvent } from '../../../shared/utils/test-utils';
 
@@ -66,6 +68,19 @@ describe('Pricing Component', () => {
     expect(esES.landing.plans.items.pro.button).toBeTruthy();
     expect(esES.landing.plans.items.premium.description).toBeTruthy();
     expect(esES.landing.plans.items.premium.button).toBeTruthy();
+  });
+
+  it('keeps pro and premium copy aligned with photo analysis for all locales', () => {
+    expect(ptBR.landing.plans.items.pro.description).toMatch(/fotos/i);
+    expect(ptBR.landing.plans.items.pro.description).toMatch(/Telegram/i);
+    expect(enUS.landing.plans.items.pro.description).toMatch(/photo/i);
+    expect(enUS.landing.plans.items.pro.description).toMatch(/Telegram/i);
+    expect(esES.landing.plans.items.pro.description).toMatch(/fotos/i);
+    expect(esES.landing.plans.items.pro.description).toMatch(/Telegram/i);
+
+    expect(ptBR.landing.plans.items.premium.features.join(' ')).toMatch(/chat \+ Telegram/i);
+    expect(enUS.landing.plans.items.premium.features.join(' ')).toMatch(/chat \+ Telegram/i);
+    expect(esES.landing.plans.items.premium.features.join(' ')).toMatch(/chat \+ Telegram/i);
   });
 
   it('should navigate to login with pro plan if not authenticated', () => {

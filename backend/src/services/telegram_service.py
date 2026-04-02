@@ -1,5 +1,6 @@
 """Telegram bot service for handling updates."""
 
+import base64
 from typing import Optional
 
 from telegram import Update, Bot
@@ -7,6 +8,7 @@ from telegram.constants import ParseMode
 from telegram.error import TelegramError
 
 from src.core.logs import logger
+from src.core.subscription import can_use_image_input
 from src.repositories.telegram_repository import TelegramRepository
 from src.services.trainer import AITrainerBrain
 from src.services.markdown_converter import safe_telegram_send
@@ -35,7 +37,13 @@ class TelegramBotService:
         if not update.message or not update.effective_chat:
             return
 
-        text = update.message.text or ""
+        text = update.message.text or update.message.caption or ""
+        message_photos = getattr(update.message, "photo", None)
+        photo = (
+            message_photos[-1]
+            if isinstance(message_photos, list) and message_photos
+            else None
+        )
         chat_id = update.effective_chat.id
         username = update.effective_user.username if update.effective_user else None
 
@@ -46,7 +54,7 @@ class TelegramBotService:
         elif text.startswith("/desvincular"):
             await self._handle_desvincular(chat_id)
         else:
-            await self._handle_message(chat_id, text)
+            await self._handle_message(chat_id, text, photo)
 
     async def _handle_start(self, chat_id: int) -> None:
         """Send welcome message."""
@@ -104,7 +112,7 @@ class TelegramBotService:
                 chat_id=chat_id, text="⚠️ Nenhuma conta vinculada."
             )
 
-    async def _handle_message(self, chat_id: int, text: str) -> None:
+    async def _handle_message(self, chat_id: int, text: str, photo=None) -> None:
         """Handle regular message - forward to AI."""
         link = self.repository.get_link_by_chat_id(chat_id)
 
@@ -115,6 +123,29 @@ class TelegramBotService:
             )
             return
 
+        image_payload = None
+        if photo:
+            profile = self.brain.get_user_profile(link.user_email)
+            if not can_use_image_input(getattr(profile, "subscription_plan", None)):
+                await self.bot.send_message(
+                    chat_id=chat_id,
+                    text=(
+                        "📸 Análise de fotos está disponível apenas "
+                        "nos planos Pro e Premium."
+                    ),
+                )
+                return
+
+            tg_file = await self.bot.get_file(photo.file_id)
+            image_bytes = await tg_file.download_as_bytearray()
+            image_payload = {
+                "base64": base64.b64encode(bytes(image_bytes)).decode("utf-8"),
+                "mime_type": "image/jpeg",
+            }
+
+        if not text.strip() and image_payload:
+            text = "Analise a imagem enviada e me dê orientações práticas."
+
         # Send "processing" message
         processing_msg = await self.bot.send_message(
             chat_id=chat_id, text="⏳ Processando..."
@@ -123,7 +154,10 @@ class TelegramBotService:
         try:
             # Call AI (synchronous version)
             response = self.brain.send_message_sync(
-                user_email=link.user_email, user_input=text, is_telegram=True
+                user_email=link.user_email,
+                user_input=text,
+                is_telegram=True,
+                image_payload=image_payload,
             )
 
             # Convert markdown and send

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useMemo, useLayoutEffect } from 'react';
 import { useAuthStore } from '../../shared/hooks/useAuth';
 import { useChatStore } from '../../shared/hooks/useChat';
 import { useSettingsStore } from '../../shared/hooks/useSettings';
+import type { MessageImagePayload } from '../../shared/types/chat';
 
 import { ChatView } from './components/ChatView';
 
@@ -90,13 +91,14 @@ export default function ChatPage() {
     }
   }, [inputValue]);
 
-  const handleSend = (e?: React.BaseSyntheticEvent) => {
-    e?.preventDefault();
-    if (!inputValue.trim() || isStreaming) return;
+  const handleSend = (params?: { event?: React.BaseSyntheticEvent; image?: MessageImagePayload | null }) => {
+    params?.event?.preventDefault();
+    if (isStreaming) return;
 
-    const text = inputValue.trim();
+    const text = inputValue.trim() || (params?.image ? 'Analyze this image and provide practical guidance.' : '');
+    if (!text) return;
     setInputValue('');
-    void sendMessage(text);
+    void sendMessage(text, params?.image ?? undefined);
   };
 
   return (

@@ -7,7 +7,7 @@ import warnings
 import time
 from typing import AsyncGenerator, Any
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.messages import AIMessage, ToolMessage
+from langchain_core.messages import AIMessage, ToolMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 
 try:
@@ -46,6 +46,7 @@ class LLMClient:
     _initialized = False
     _llm: Any = None
     model_name: str = ""
+    supports_multimodal: bool = True
 
     @classmethod
     def from_config(cls) -> "LLMClient":
@@ -115,6 +116,8 @@ class LLMClient:
             "Invoking LLM with tools (LangGraph) for input: %s",
             input_data.get("user_message"),
         )
+        if input_data.get("user_image") and not self.supports_multimodal:
+            raise ValueError("IMAGE_INPUT_NOT_SUPPORTED_BY_PROVIDER")
 
         tools_called: list[str] = []
         start_time = time.time()
@@ -124,7 +127,26 @@ class LLMClient:
 
         messages: list[Any] = []
         try:
-            messages = list(prompt_template.format_messages(**input_data))
+            format_input = {
+                key: value for key, value in input_data.items() if key != "user_image"
+            }
+            messages = list(prompt_template.format_messages(**format_input))
+            if input_data.get("user_image"):
+                user_image = input_data["user_image"]
+                image_data_uri = (
+                    f"data:{user_image['mime_type']};base64,{user_image['base64']}"
+                )
+                messages.append(
+                    HumanMessage(
+                        content=[
+                            {"type": "text", "text": input_data.get("user_message", "")},
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": image_data_uri},
+                            },
+                        ]
+                    )
+                )
             prompt_str = prompt_template.format(**input_data)
             agent: Any = create_agent(self._llm, tools)
             config: RunnableConfig = {"recursion_limit": 50}
@@ -340,6 +362,7 @@ class OllamaClient(LLMClient):
         from langchain_ollama import ChatOllama  # pylint: disable=import-outside-toplevel
 
         self.model_name = model
+        self.supports_multimodal = False
         self._llm = ChatOllama(
             model=model,
             base_url=base_url,

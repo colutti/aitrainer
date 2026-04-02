@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { afterEach, describe, it, expect, vi } from 'vitest';
 
 import { ChatView } from './ChatView';
@@ -78,6 +78,39 @@ describe('ChatView', () => {
     const form = screen.getByTestId('chat-form');
     fireEvent.submit(form);
     expect(onSend).toHaveBeenCalled();
+  });
+
+  it('allows selecting an image and submits with attachment payload', async () => {
+    const onSend = vi.fn();
+    render(<ChatView {...mockProps} onSend={onSend} />);
+
+    class MockFileReader {
+      result: string | ArrayBuffer | null = 'data:image/jpeg;base64,ZmFrZQ==';
+      onload: null | (() => void) = null;
+      onerror: null | (() => void) = null;
+      readAsDataURL() {
+        if (this.onload) this.onload();
+      }
+    }
+    vi.stubGlobal('FileReader', MockFileReader as unknown as typeof FileReader);
+
+    const file = new File(['fake'], 'photo.jpg', { type: 'image/jpeg' });
+    const input = screen.getByTestId('chat-image-input');
+
+    fireEvent.change(input, { target: { files: [file] } });
+    await waitFor(() => {
+      expect(screen.getByTestId('chat-image-clear')).toBeInTheDocument();
+    });
+
+    const form = screen.getByTestId('chat-form');
+    fireEvent.submit(form);
+
+    expect(onSend).toHaveBeenCalled();
+    const callArg = onSend.mock.calls[0]?.[0];
+    expect(callArg?.image?.mimeType).toBe('image/jpeg');
+    expect(typeof callArg?.image?.base64).toBe('string');
+
+    vi.unstubAllGlobals();
   });
 
   it('renders typing indicator when streaming', () => {
