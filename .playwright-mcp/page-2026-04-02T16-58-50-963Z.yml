@@ -1,0 +1,240 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - img "FityQ" [ref=e7]
+        - generic [ref=e8]: FityQ
+      - generic [ref=e9]:
+        - link "Trainers" [ref=e10] [cursor=pointer]:
+          - /url: "#treinadores"
+        - link "Features" [ref=e11] [cursor=pointer]:
+          - /url: "#diferenciais"
+        - link "How It Works" [ref=e12] [cursor=pointer]:
+          - /url: "#como-funciona"
+      - generic [ref=e13]:
+        - button "EN" [ref=e16]:
+          - img [ref=e17]
+          - generic [ref=e20]: EN
+        - button "Login" [ref=e21]
+  - generic [ref=e24]:
+    - generic [ref=e25]: A New Era of Fitness
+    - heading "Your Body is a System. Let AI Optimize It." [level=1] [ref=e26]
+    - paragraph [ref=e27]: Forget spreadsheets and guesswork. Have an elite trainer analyzing your data in real-time to deliver the perfect plan.
+    - button "Secure My Access" [ref=e29]:
+      - text: Secure My Access
+      - img [ref=e30]
+    - paragraph [ref=e32]: 7-day free trial. No commitment.
+    - generic [ref=e33]:
+      - generic [ref=e34]:
+        - img [ref=e35]
+        - text: 24/7 Support
+      - generic [ref=e38]:
+        - img [ref=e39]
+        - text: Personal AI
+      - generic [ref=e49]:
+        - img [ref=e50]
+        - text: Integrations
+  - generic [ref=e55]:
+    - generic [ref=e56]:
+      - generic [ref=e57]:
+        - img "FityQ" [ref=e58]
+        - generic [ref=e59]: FityQ
+      - heading "Chat with Your Trainer Now" [level=2] [ref=e60]
+      - paragraph [ref=e61]: Each trainer has personality, expertise, and a unique way to guide you.
+    - generic [ref=e62]:
+      - generic [ref=e63]:
+        - img "Dra. Sofia Pulse" [ref=e64]
+        - generic [ref=e65]:
+          - heading "Dra. Sofia Pulse" [level=3] [ref=e66]
+          - paragraph [ref=e67]: "\"Let's hack your metabolism with science and care.\""
+          - generic [ref=e68]:
+            - generic [ref=e69]: "#womenshealth"
+            - generic [ref=e70]: "#hormones"
+            - generic [ref=e71]: "#metabolism"
+      - generic [ref=e72]:
+        - generic [ref=e74]: I've been on a diet for 3 weeks, but my weight is not moving. What's wrong?
+        - generic [ref=e76]: "I looked at your records here. In the last 7 days you ate an average of 1,640 kcal — but your current goal is 1,580. That's not it. The problem is on Thursday and Saturday: you compensated after your workout and went to 2,100 kcal on both days. This zeroed out your deficit for the week."
+        - generic [ref=e78]: Wow, I hadn't realized that. Why do I get so hungry on those days?
+        - generic [ref=e80]: Your Thursday workout burns a lot — I see you do HIIT. Protein on that day was 89g, but you'd need at least 130g not to arrive hungry for dinner. It's not a lack of willpower. It's just adjusting the distribution of meals on training days. Do you want me to set that up for you?
+    - paragraph [ref=e91]: Every conversation shows the AI adapting to your context. Your data feeds increasingly better intelligence.
+  - generic [ref=e95]:
+    - generic [ref=e96]:
+      - heading "Meet Your Trainers" [level=2] [ref=e97]
+      - paragraph [ref=e98]: 5 unique personalities, each with their own style, expertise, and approach. Choose who fits you best.
+    - generic [ref=e99]:
+      - 'button "Atlas Prime Atlas Prime Efficiency is the only metric that matters. #biomechanics #data #hypertrophy \"Your muscles are biological machines. Let''s optimize them.\"" [ref=e100] [cursor=pointer]':
+        - img "Atlas Prime" [ref=e102]
+        - heading "Atlas Prime" [level=3] [ref=e103]
+        - paragraph [ref=e104]: Efficiency is the only metric that matters.
+        - generic [ref=e105]:
+          - generic [ref=e106]: "#biomechanics"
+          - generic [ref=e107]: "#data"
+          - generic [ref=e108]: "#hypertrophy"
+        - paragraph [ref=e109]: "\"Your muscles are biological machines. Let's optimize them.\""
+      - 'button "Luna Stardust Luna Stardust Your body is a stellar temple. #yoga #mindfulness #flow \"Breathe the universe, exhale the tension.\"" [ref=e110] [cursor=pointer]':
+        - img "Luna Stardust" [ref=e112]
+        - heading "Luna Stardust" [level=3] [ref=e113]
+        - paragraph [ref=e114]: Your body is a stellar temple.
+        - generic [ref=e115]:
+          - generic [ref=e116]: "#yoga"
+          - generic [ref=e117]: "#mindfulness"
+          - generic [ref=e118]: "#flow"
+        - paragraph [ref=e119]: "\"Breathe the universe, exhale the tension.\""
+      - 'button "Dra. Sofia Pulse Dra. Sofia Pulse Smart health for modern women. #womenshealth #hormones #metabolism \"Let''s hack your metabolism with science and care.\"" [ref=e120] [cursor=pointer]':
+        - img "Dra. Sofia Pulse" [ref=e122]
+        - heading "Dra. Sofia Pulse" [level=3] [ref=e123]
+        - paragraph [ref=e124]: Smart health for modern women.
+        - generic [ref=e125]:
+          - generic [ref=e126]: "#womenshealth"
+          - generic [ref=e127]: "#hormones"
+          - generic [ref=e128]: "#metabolism"
+        - paragraph [ref=e129]: "\"Let's hack your metabolism with science and care.\""
+      - 'button "Major Steel Major Steel Pain is weakness leaving the body! #discipline #strength #noexcuses \"No excuses, recruit. LET''S GO!\"" [ref=e130] [cursor=pointer]':
+        - img "Major Steel" [ref=e132]
+        - heading "Major Steel" [level=3] [ref=e133]
+        - paragraph [ref=e134]: Pain is weakness leaving the body!
+        - generic [ref=e135]:
+          - generic [ref=e136]: "#discipline"
+          - generic [ref=e137]: "#strength"
+          - generic [ref=e138]: "#noexcuses"
+        - paragraph [ref=e139]: "\"No excuses, recruit. LET'S GO!\""
+      - 'button "Breno ''The Bro'' Silva Breno ''The Bro'' Silva Your workout partner who always hypes you up! #partnership #motivation #lifestyle \"Let''s go, monster! Today is the day to EVOLVE! 🔥\"" [ref=e140] [cursor=pointer]':
+        - img "Breno 'The Bro' Silva" [ref=e142]
+        - heading "Breno 'The Bro' Silva" [level=3] [ref=e143]
+        - paragraph [ref=e144]: Your workout partner who always hypes you up!
+        - generic [ref=e145]:
+          - generic [ref=e146]: "#partnership"
+          - generic [ref=e147]: "#motivation"
+          - generic [ref=e148]: "#lifestyle"
+        - paragraph [ref=e149]: "\"Let's go, monster! Today is the day to EVOLVE! 🔥\""
+  - generic [ref=e153]:
+    - generic [ref=e154]:
+      - heading "See FityQ in Action" [level=2] [ref=e155]
+      - paragraph [ref=e156]: Smart dashboard, contextual chat, and metabolic analysis — all in one place.
+    - generic [ref=e157]:
+      - generic [ref=e158]:
+        - generic [ref=e159]:
+          - paragraph [ref=e164]: Daily Goal
+          - paragraph [ref=e165]: 2.150 kcal
+          - generic [ref=e166]:
+            - generic [ref=e168]:
+              - generic [ref=e169]: Protein
+              - generic [ref=e170]: 88%
+            - generic [ref=e174]:
+              - generic [ref=e175]: Fat
+              - generic [ref=e176]: 80%
+            - generic [ref=e180]:
+              - generic [ref=e181]: Carbs
+              - generic [ref=e182]: 78%
+          - generic [ref=e185]:
+            - paragraph [ref=e186]: Weight (30 days)
+            - img [ref=e187]
+        - paragraph [ref=e189]: Smart Dashboard
+      - generic [ref=e190]:
+        - generic [ref=e191]:
+          - generic [ref=e192]:
+            - img "Atlas" [ref=e193]
+            - generic [ref=e194]:
+              - paragraph [ref=e195]: Atlas Prime
+              - paragraph [ref=e196]: "#força #hipertrofia #dados"
+          - generic [ref=e198]:
+            - generic [ref=e200]: I've been on a diet for 3 weeks, but my weight is not moving. What's wrong?
+            - generic [ref=e202]: "I looked at your records here. In the last 7 days you ate an average of 1,640 kcal — but your current goal is 1,580. That's not it. The problem is on Thursday and Saturday: you compensated after your workout and went to 2,100 kcal on both days. This zeroed out your deficit for the week."
+            - generic [ref=e204]: Error validating invitation.
+        - paragraph [ref=e211]: AI Chat
+      - generic [ref=e212]:
+        - generic [ref=e213]:
+          - paragraph [ref=e214]: Smart Calorie Goal
+          - generic [ref=e216]:
+            - img [ref=e217]
+            - generic [ref=e220]:
+              - generic [ref=e221]: 87%
+              - generic [ref=e222]: accuracy
+          - generic [ref=e223]:
+            - paragraph [ref=e224]: 2.487 kcal
+            - paragraph [ref=e225]: Your goal this week
+          - generic [ref=e227]: High Confidence
+          - generic [ref=e228]:
+            - generic [ref=e229]:
+              - paragraph [ref=e230]: +87 kcal
+              - paragraph [ref=e231]: Vs. previous week
+            - generic [ref=e232]:
+              - paragraph [ref=e233]: 14 days
+              - paragraph [ref=e234]: Data used
+        - paragraph [ref=e235]: Smart Goal
+  - generic [ref=e238]:
+    - generic [ref=e239]:
+      - heading "Why FityQ?" [level=2] [ref=e240]
+      - paragraph [ref=e241]: We combine cutting-edge technology with sports science to create the ultimate experience.
+    - generic [ref=e242]:
+      - generic [ref=e246]:
+        - img [ref=e248]
+        - heading "Metabolic Analysis" [level=3] [ref=e250]
+        - paragraph [ref=e251]: We calculate your real TDEE based on your history, not generic formulas.
+      - generic [ref=e255]:
+        - img [ref=e257]
+        - heading "Computer Vision" [level=3] [ref=e267]
+        - paragraph [ref=e268]: Analyze your form in real-time to prevent injuries and maximize gains.
+      - generic [ref=e272]:
+        - img [ref=e274]
+        - heading "Diverse Trainers" [level=3] [ref=e279]
+        - paragraph [ref=e280]: Choose from 5 unique personalities to guide your journey.
+        - generic [ref=e281]:
+          - img "atlas" [ref=e282]
+          - img "luna" [ref=e283]
+          - img "sofia" [ref=e284]
+          - img "sargento" [ref=e285]
+          - img "gymbro" [ref=e286]
+      - generic [ref=e290]:
+        - img [ref=e292]
+        - heading "Connected" [level=3] [ref=e294]
+        - paragraph [ref=e295]: We integrate with leading apps to centralize your health data.
+        - generic [ref=e296]:
+          - generic [ref=e297]: Hevy
+          - generic [ref=e298]: MyFitnessPal
+          - generic [ref=e299]: Zepp Life
+      - generic [ref=e303]:
+        - img [ref=e305]
+        - heading "Long-term Journey" [level=3] [ref=e311]
+        - paragraph [ref=e312]: Contextual memory that remembers every detail of your evolution.
+        - generic [ref=e313]:
+          - generic [ref=e316]: Focus on Longevity
+          - generic [ref=e319]: Constant Evolution
+          - generic [ref=e322]: Holistic Approach
+      - generic [ref=e326]:
+        - img [ref=e328]
+        - heading "Always Available" [level=3] [ref=e331]
+        - paragraph [ref=e332]: Your trainer never takes vacations and responds in seconds.
+        - generic [ref=e335]: Online & Ready
+  - generic [ref=e338]:
+    - generic [ref=e339]:
+      - heading "How It Works" [level=2] [ref=e340]
+      - paragraph [ref=e341]: Simple, direct, and highly effective.
+    - generic [ref=e342]:
+      - generic [ref=e344]:
+        - generic [ref=e345]: "01"
+        - heading "Connect Your Data" [level=3] [ref=e346]
+        - paragraph [ref=e347]: Import your history from Hevy, MyFitnessPal, or Apple Health.
+        - img [ref=e349]
+      - generic [ref=e352]:
+        - generic [ref=e353]: "02"
+        - heading "Choose Your Mentor" [level=3] [ref=e354]
+        - paragraph [ref=e355]: Select the trainer that best fits your lifestyle.
+        - img [ref=e357]
+      - generic [ref=e360]:
+        - generic [ref=e361]: "03"
+        - heading "Real Evolution" [level=3] [ref=e362]
+        - paragraph [ref=e363]: Receive daily feedback and precise adjustments to your plan.
+  - generic [ref=e366]:
+    - heading "Ready for your best version?" [level=2] [ref=e367]
+    - paragraph [ref=e368]: Join thousands of athletes who have already optimized their results with FityQ.
+    - button "Start Journey Now" [ref=e369]:
+      - text: Start Journey Now
+      - img [ref=e370]
+    - paragraph [ref=e372]: 7-day free trial. Cancel anytime.
+  - contentinfo [ref=e373]:
+    - generic [ref=e374]:
+      - generic [ref=e375]:
+        - img "FityQ" [ref=e376]
+        - generic [ref=e377]: FityQ
+      - paragraph [ref=e378]: © 2026 FityQ. All rights reserved.

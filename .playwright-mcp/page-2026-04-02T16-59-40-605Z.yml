@@ -1,0 +1,25 @@
+- generic [ref=e381]:
+  - generic [ref=e382]:
+    - img "FityQ" [ref=e383]
+    - heading "FityQ" [level=1] [ref=e384]
+  - generic [ref=e385]:
+    - heading "Login" [level=2] [ref=e386]
+    - paragraph [ref=e387]: Welcome to the future of training.
+  - generic [ref=e388]:
+    - generic [ref=e389]:
+      - generic [ref=e390]:
+        - text: Email Address
+        - generic [ref=e391]:
+          - img [ref=e393]
+          - textbox "Email Address" [ref=e396]:
+            - /placeholder: name@example.com
+      - generic [ref=e397]:
+        - text: Password
+        - generic [ref=e398]:
+          - img [ref=e400]
+          - textbox "Password" [ref=e403]:
+            - /placeholder: Your secret password
+    - button "Forgot password?" [active] [ref=e405]
+    - button "Enter Platform" [ref=e406]:
+      - text: Enter Platform
+      - img [ref=e407]
