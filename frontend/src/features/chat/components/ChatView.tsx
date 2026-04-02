@@ -49,6 +49,7 @@ export function ChatView({
   const { t, i18n } = useTranslation();
   const [selectedImages, setSelectedImages] = useState<MessageImagePayload[]>([]);
   const [selectedImagePreviews, setSelectedImagePreviews] = useState<string[]>([]);
+  const [localUploadError, setLocalUploadError] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const MAX_IMAGES_PER_MESSAGE = 4;
   const MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024;
@@ -85,6 +86,7 @@ export function ChatView({
   const clearSelectedImages = () => {
     setSelectedImages([]);
     setSelectedImagePreviews([]);
+    setLocalUploadError(null);
     if (imageInputRef.current) imageInputRef.current.value = '';
   };
 
@@ -103,13 +105,42 @@ export function ChatView({
 
   const handleImageSelect = async (files?: FileList | null) => {
     if (!files || files.length === 0) return;
+    setLocalUploadError(null);
 
-    const acceptedFiles = Array.from(files)
-      .filter((file) => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type))
-      .filter((file) => file.size <= MAX_IMAGE_SIZE_BYTES)
-      .slice(0, Math.max(0, MAX_IMAGES_PER_MESSAGE - selectedImages.length));
+    const incomingFiles = Array.from(files);
+    const availableSlots = Math.max(0, MAX_IMAGES_PER_MESSAGE - selectedImages.length);
+    let unsupportedCount = 0;
+    let oversizedCount = 0;
+    let skippedByLimit = 0;
+    const acceptedFiles: File[] = [];
 
-    if (acceptedFiles.length === 0) return;
+    for (const file of incomingFiles) {
+      const supportedType = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
+      if (!supportedType) {
+        unsupportedCount += 1;
+        continue;
+      }
+      if (file.size > MAX_IMAGE_SIZE_BYTES) {
+        oversizedCount += 1;
+        continue;
+      }
+      if (acceptedFiles.length >= availableSlots) {
+        skippedByLimit += 1;
+        continue;
+      }
+      acceptedFiles.push(file);
+    }
+
+    if (acceptedFiles.length === 0) {
+      if (unsupportedCount > 0) {
+        setLocalUploadError('Formato não suportado. Use JPG, PNG ou WEBP.');
+      } else if (oversizedCount > 0) {
+        setLocalUploadError('Imagem muito grande. Use até 3MB por imagem.');
+      } else if (skippedByLimit > 0 || availableSlots === 0) {
+        setLocalUploadError(`Você pode anexar até ${MAX_IMAGES_PER_MESSAGE.toString()} imagens por mensagem.`);
+      }
+      return;
+    }
 
     try {
       const nextImages: MessageImagePayload[] = [];
@@ -126,6 +157,13 @@ export function ChatView({
       }
       setSelectedImages((prev) => [...prev, ...nextImages]);
       setSelectedImagePreviews((prev) => [...prev, ...nextPreviews]);
+      if (unsupportedCount > 0) {
+        setLocalUploadError('Alguns arquivos foram ignorados: formato não suportado (use JPG, PNG ou WEBP).');
+      } else if (oversizedCount > 0) {
+        setLocalUploadError('Alguns arquivos foram ignorados por tamanho (máximo 3MB por imagem).');
+      } else if (skippedByLimit > 0) {
+        setLocalUploadError(`Limite de ${MAX_IMAGES_PER_MESSAGE.toString()} imagens por mensagem atingido.`);
+      }
     } catch {
       clearSelectedImages();
     }
@@ -249,7 +287,7 @@ export function ChatView({
                     ref={imageInputRef}
                     data-testid="chat-image-input"
                     type="file"
-                    accept="image/jpeg,image/png,image/webp"
+                    accept="image/*"
                     multiple
                     className="hidden"
                     onChange={(e) => {
@@ -332,6 +370,17 @@ export function ChatView({
                   <p className="text-[10px] text-zinc-500">
                     Anexe at&eacute; 4 imagens por mensagem (JPG, PNG, WEBP, m&aacute;x. 3MB cada).
                   </p>
+                  <p className="text-[10px] text-zinc-600 mt-1">
+                    No celular: selecione pela galeria ou c&acirc;mera.
+                  </p>
+                  {localUploadError && (
+                    <p
+                      data-testid="chat-upload-error"
+                      className="text-[10px] text-amber-400 mt-1"
+                    >
+                      {localUploadError}
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (
