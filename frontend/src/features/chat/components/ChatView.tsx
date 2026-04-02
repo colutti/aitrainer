@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '../../../shared/components/ui/Button';
+import { HelpTooltip } from '../../../shared/components/ui/HelpTooltip';
 import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
 import type { UserInfo } from '../../../shared/hooks/useAuth';
 import { useDemoMode } from '../../../shared/hooks/useDemoMode';
@@ -366,17 +367,15 @@ export function ChatView({
                     </div>
                   </div>
                 )}
-                <div className="px-4 pt-1 pb-1">
-                  <p className="text-[10px] text-zinc-500">
-                    Anexe at&eacute; 4 imagens por mensagem (JPG, PNG, WEBP, m&aacute;x. 3MB cada).
-                  </p>
-                  <p className="text-[10px] text-zinc-600 mt-1">
-                    No celular: selecione pela galeria ou c&acirc;mera.
-                  </p>
+                <div className="px-4 pt-1 pb-1 flex items-center justify-between">
+                  <HelpTooltip
+                    content="Anexe até 4 imagens por mensagem (JPG, PNG ou WEBP, máximo de 3MB cada)."
+                    className="opacity-80"
+                  />
                   {localUploadError && (
                     <p
                       data-testid="chat-upload-error"
-                      className="text-[10px] text-amber-400 mt-1"
+                      className="text-[10px] text-amber-400 mt-1 text-right"
                     >
                       {localUploadError}
                     </p>
