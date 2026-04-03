@@ -7,6 +7,8 @@ from unittest.mock import MagicMock, patch
 
 from src.api.models.user_profile import UserProfile
 from src.api.models.trainer_profile import TrainerProfile
+from src.api.models.chat_history import ChatHistory
+from src.api.models.sender import Sender
 from src.services.trainer import AITrainerBrain
 
 
@@ -166,6 +168,30 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response, "Response")
         # Verify save_trainer_profile was called to create the default profile
         self.mock_db.save_trainer_profile.assert_called_once()
+
+    def test_get_chat_history_sanitizes_only_trainer_internal_tags(self):
+        """
+        Trainer messages from old history should have only protocol wrappers removed.
+        Student content must remain unchanged.
+        """
+        user_email = "test@test.com"
+        self.mock_db.get_chat_history.return_value = [
+            ChatHistory(
+                text='<msg data="03/04" hora="14:57"><treinador name="Atlas">Resposta antiga</treinador></msg>',
+                sender=Sender.TRAINER,
+                timestamp="2026-04-03T14:57:00",
+            ),
+            ChatHistory(
+                text='Dados do usuário: <msg data="arquivo.csv">linha 1</msg>',
+                sender=Sender.STUDENT,
+                timestamp="2026-04-03T14:58:00",
+            ),
+        ]
+
+        messages = self.brain.get_chat_history(user_email, limit=20, offset=0)
+
+        assert messages[0].text == "Resposta antiga"
+        assert messages[1].text == 'Dados do usuário: <msg data="arquivo.csv">linha 1</msg>'
 
 
 if __name__ == "__main__":
