@@ -46,7 +46,6 @@ def test_build_input_data_returns_all_required_keys(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="Trainer: Atlas",
         user_profile_summary="User: 30y, 80kg",
-        chat_history_summary="",
         formatted_history_msgs=[],
         user_input="Como vou treinar?",
         current_date="2026-02-15",
@@ -56,7 +55,6 @@ def test_build_input_data_returns_all_required_keys(sample_profile):
         "trainer_profile",
         "user_profile",
         "user_profile_obj",
-        "chat_history_summary",
         "chat_history",
         "user_message",
         "current_date",
@@ -76,7 +74,6 @@ def test_build_input_data_uses_provided_date(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="",
         user_profile_summary="",
-        chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
         current_date=provided_date,
@@ -90,7 +87,6 @@ def test_build_input_data_generates_date_when_not_provided(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="",
         user_profile_summary="",
-        chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
         current_date=None,
@@ -101,12 +97,11 @@ def test_build_input_data_generates_date_when_not_provided(sample_profile):
 
 
 def test_get_prompt_template_injects_long_term_summary(sample_profile_with_summary):
-    """Verify long_term_summary is injected into the system prompt."""
+    """Verify prompt no longer injects a conversation summary section."""
     input_data = PromptBuilder.build_input_data(
         profile=sample_profile_with_summary,
         trainer_profile_summary="Trainer",
         user_profile_summary="User",
-        chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
         current_date="2026-02-15",
@@ -115,11 +110,9 @@ def test_get_prompt_template_injects_long_term_summary(sample_profile_with_summa
     prompt_template = PromptBuilder.get_prompt_template(input_data, is_telegram=False)
     rendered = prompt_template.format(**input_data)
 
-    # Verify markdown summary section is present
-    assert "## Resumo de conversas anteriores" in rendered
-    # Verify the summary content is there
-    assert "Perder 5kg" in rendered
-    assert "Treinar 2x/semana" in rendered
+    assert "<resumo_conversas>" not in rendered
+    assert "</resumo_conversas>" not in rendered
+    assert "## Resumo de conversas anteriores" not in rendered
 
 
 def test_get_prompt_template_handles_null_summary(sample_profile):
@@ -128,7 +121,6 @@ def test_get_prompt_template_handles_null_summary(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="Trainer",
         user_profile_summary="User",
-        chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
         current_date="2026-02-15",
@@ -136,9 +128,10 @@ def test_get_prompt_template_handles_null_summary(sample_profile):
 
     PromptBuilder.get_prompt_template(input_data, is_telegram=False)
 
-    # [HISTÓRICO] section should not appear if summary is None
-    # Or should appear but be empty
-    assert input_data["long_term_summary_section"] == ""
+    rendered = PromptBuilder.get_prompt_template(
+        input_data, is_telegram=False
+    ).format(**input_data)
+    assert "<resumo_conversas>" not in rendered
 
 
 def test_get_prompt_template_handles_empty_string_summary(sample_profile):
@@ -148,14 +141,14 @@ def test_get_prompt_template_handles_empty_string_summary(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="Trainer",
         user_profile_summary="User",
-        chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
     )
 
-    PromptBuilder.get_prompt_template(input_data, is_telegram=False)
-
-    assert input_data["long_term_summary_section"] == ""
+    rendered = PromptBuilder.get_prompt_template(
+        input_data, is_telegram=False
+    ).format(**input_data)
+    assert "<resumo_conversas>" not in rendered
 
 
 def test_get_prompt_template_adds_telegram_format(sample_profile):
@@ -164,7 +157,6 @@ def test_get_prompt_template_adds_telegram_format(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="Trainer",
         user_profile_summary="User",
-        chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
     )
@@ -181,7 +173,6 @@ def test_get_prompt_template_no_telegram_by_default(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="Trainer",
         user_profile_summary="User",
-        chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
     )
@@ -192,19 +183,17 @@ def test_get_prompt_template_no_telegram_by_default(sample_profile):
     assert "FORMATO TELEGRAM" not in rendered
 
 
-def test_get_prompt_template_removes_legacy_placeholder(sample_profile):
-    """Verify legacy {chat_history_summary} placeholder is removed."""
+def test_get_prompt_template_renders_without_legacy_summary_placeholder(sample_profile):
+    """Verify prompt renders without requiring any summary placeholder."""
     input_data = PromptBuilder.build_input_data(
         profile=sample_profile,
         trainer_profile_summary="Trainer",
         user_profile_summary="User",
-        chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
     )
 
     prompt_template = PromptBuilder.get_prompt_template(input_data, is_telegram=False)
-    # Should not raise KeyError about chat_history_summary
     rendered = prompt_template.format(**input_data)
     assert isinstance(rendered, str)
 
@@ -215,7 +204,6 @@ def test_get_prompt_template_returns_chat_prompt_template(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="Trainer",
         user_profile_summary="User",
-        chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
     )
@@ -232,7 +220,6 @@ def test_build_input_data_passes_profile_object(sample_profile_with_summary):
         profile=sample_profile_with_summary,
         trainer_profile_summary="",
         user_profile_summary="",
-        chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
     )
@@ -247,7 +234,6 @@ def test_build_input_data_extracts_trainer_name(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="## Trainer\n**Nome:** Atlas\n**Gender:** Male",
         user_profile_summary="User",
-        chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
     )
@@ -261,7 +247,6 @@ def test_build_input_data_uses_display_name(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="Trainer",
         user_profile_summary="User",
-        chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
     )
@@ -275,7 +260,6 @@ def test_build_input_data_defaults_user_name(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="Trainer",
         user_profile_summary="User",
-        chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
     )
@@ -288,7 +272,6 @@ def test_prompt_renders_security_section(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="Trainer",
         user_profile_summary="User",
-        chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
     )
@@ -309,7 +292,6 @@ def test_prompt_renders_new_section_names(sample_profile):
         profile=sample_profile,
         trainer_profile_summary="Trainer",
         user_profile_summary="User",
-        chat_history_summary="",
         formatted_history_msgs=[],
         user_input="test",
         agenda_events=[sample_event],

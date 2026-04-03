@@ -5,7 +5,7 @@ This module contains the configuration settings for the application.
 import logging
 import os
 
-from pydantic import ValidationError, field_validator, model_validator, Field
+from pydantic import ValidationError, field_validator, Field
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -49,11 +49,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str = Field(default="")
     API_SERVER_PORT: int = 8000
 
-    MAX_SHORT_TERM_MEMORY_MESSAGES: int = 20
-    # Must be > MAX_SHORT_TERM_MEMORY_MESSAGES (the active window size)
-    COMPACTION_THRESHOLD: int = 60
+    MAX_SHORT_TERM_MEMORY_MESSAGES: int = 50
     MAX_LONG_TERM_MEMORY_MESSAGES: int = Field(default=50)
-    SUMMARY_MAX_TOKEN_LIMIT: int = 200
     ALLOWED_ORIGINS: str | list[str] = Field(default="*")
     LOG_LEVEL: str = "INFO"
     RATE_LIMIT_LOGIN: str = "5/minute"
@@ -76,17 +73,6 @@ class Settings(BaseSettings):
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]
         return v  # type: ignore
-
-    @model_validator(mode="after")
-    def validate_compaction_config(self) -> "Settings":
-        """Ensures COMPACTION_THRESHOLD is always above the active window size."""
-        if self.COMPACTION_THRESHOLD <= self.MAX_SHORT_TERM_MEMORY_MESSAGES:
-            raise ValueError(
-                f"COMPACTION_THRESHOLD ({self.COMPACTION_THRESHOLD}) must be greater than "
-                f"MAX_SHORT_TERM_MEMORY_MESSAGES ({self.MAX_SHORT_TERM_MEMORY_MESSAGES}). "
-                "Compaction would never fire otherwise."
-            )
-        return self
 
     # ====== AI PROVIDER SELECTION ======
     AI_PROVIDER: str = "gemini"

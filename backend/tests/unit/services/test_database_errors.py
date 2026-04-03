@@ -236,32 +236,26 @@ def test_add_to_history(mock_settings):
         assert mock_history_instance.add_message.call_count == 2
 
 
-def test_get_conversation_memory(mock_settings):
-    """Test creating conversation summary buffer memory."""
-    # Patch where it is USED: src.repositories.chat_repository
+def test_get_window_memory(mock_settings):
+    """Test retrieving short-term conversation window memory."""
     with (
         patch("pymongo.MongoClient") as mock_client,
+        patch("src.repositories.chat_repository.MongoDBChatMessageHistory"),
         patch(
-            "src.repositories.chat_repository.MongoDBChatMessageHistory"
-        ),
-        patch(
-            "src.repositories.chat_repository.ConversationSummaryBufferMemory"
+            "src.repositories.chat_repository.ConversationBufferWindowMemory"
         ) as mock_memory_cls,
-        patch("src.repositories.chat_repository.settings") as repo_settings,
-    ):  # Patch usage of settings in repo
-        repo_settings.SUMMARY_MAX_TOKEN_LIMIT = 2000
+    ):
 
         db_mock = MagicMock()
         mock_client.return_value.__getitem__.return_value = db_mock
 
         mongo = MongoDatabase()
-        llm = MagicMock()
 
-        mongo.get_conversation_memory("session_id", llm)
+        mongo.get_window_memory("session_id", 50)
 
         mock_memory_cls.assert_called_once()
         call_kwargs = mock_memory_cls.call_args[1]
-        assert call_kwargs["llm"] == llm
+        assert call_kwargs["k"] == 50
         assert "chat_memory" in call_kwargs
 
 

@@ -200,49 +200,6 @@ class TestChatRepositoryAddMessage:
         assert 'trainer_type' not in call_kwargs.get('additional_kwargs', {})
 
 
-class TestChatRepositoryGetMemoryBuffer:
-    """Test get_memory_buffer method."""
-
-    @patch('src.repositories.chat_repository.MongoDBChatMessageHistory')
-    @patch('src.repositories.chat_repository.ConversationSummaryBufferMemory')
-    def test_get_memory_buffer_default_token_limit(self, mock_memory_class, mock_mongo_history, chat_repo, mock_llm):
-        """Test getting memory buffer with default token limit."""
-        mock_mongo_instance = MagicMock()
-        mock_mongo_history.return_value = mock_mongo_instance
-
-        chat_repo.get_memory_buffer("session_123", mock_llm)
-
-        # Verify ConversationSummaryBufferMemory was created
-        mock_memory_class.assert_called_once()
-
-    @patch('src.repositories.chat_repository.MongoDBChatMessageHistory')
-    @patch('src.repositories.chat_repository.ConversationSummaryBufferMemory')
-    def test_get_memory_buffer_custom_token_limit(self, mock_memory_class, mock_mongo_history, chat_repo, mock_llm):
-        """Test getting memory buffer with custom token limit."""
-        mock_mongo_instance = MagicMock()
-        mock_mongo_history.return_value = mock_mongo_instance
-
-        chat_repo.get_memory_buffer("session_123", mock_llm, max_token_limit=2000)
-
-        # Verify token limit was passed
-        mock_memory_class.assert_called_once()
-        call_kwargs = mock_memory_class.call_args[1]
-        assert call_kwargs['max_token_limit'] == 2000
-
-    @patch('src.repositories.chat_repository.MongoDBChatMessageHistory')
-    @patch('src.repositories.chat_repository.ConversationSummaryBufferMemory')
-    def test_get_memory_buffer_with_llm(self, mock_memory_class, mock_mongo_history, chat_repo, mock_llm):
-        """Test memory buffer receives correct LLM."""
-        mock_mongo_instance = MagicMock()
-        mock_mongo_history.return_value = mock_mongo_instance
-
-        chat_repo.get_memory_buffer("session_123", mock_llm)
-
-        mock_memory_class.assert_called_once()
-        call_kwargs = mock_memory_class.call_args[1]
-        assert call_kwargs['llm'] == mock_llm
-
-
 class TestChatRepositoryGetWindowMemory:
     """Test get_window_memory method."""
 
@@ -284,33 +241,6 @@ class TestChatRepositoryGetWindowMemory:
         result = chat_repo.get_window_memory("session_123")
 
         assert result == mock_memory_instance
-
-
-class TestChatRepositoryGetUnsummarizedMessages:
-    """Test get_unsummarized_messages method."""
-
-    def test_get_unsummarized_messages_returns_empty_list(self, chat_repo):
-        """Test that get_unsummarized_messages returns empty list."""
-        result = chat_repo.get_unsummarized_messages("session_123")
-
-        assert isinstance(result, list)
-        assert len(result) == 0
-
-    def test_get_unsummarized_messages_custom_skip_last(self, chat_repo):
-        """Test get_unsummarized_messages with custom skip_last."""
-        result = chat_repo.get_unsummarized_messages("session_123", skip_last=50)
-
-        assert isinstance(result, list)
-
-    def test_get_unsummarized_messages_placeholder_behavior(self, chat_repo):
-        """Test placeholder behavior is documented."""
-        # This is a placeholder method that returns empty list
-        # Used for future implementation of message compaction
-        result = chat_repo.get_unsummarized_messages("any_session")
-
-        # Should return empty list until full implementation
-        assert result == []
-
 
 class TestChatRepositoryInitialization:
     """Test ChatRepository initialization."""

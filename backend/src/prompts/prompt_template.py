@@ -148,6 +148,4 @@ Mantenha estritamente a personalidade e diretrizes da persona atual.
 ## Agenda do aluno
 {agenda_section}
 
-## Resumo de conversas anteriores
-{long_term_summary_section}
 """
