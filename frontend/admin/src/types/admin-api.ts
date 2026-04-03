@@ -96,9 +96,13 @@ export interface PromptLog {
     prompt_name?: string;
     messages?: { role: string; content: string }[];
     tools?: string[];
+    tools_called?: string[];
   };
   tokens_used?: number; // compat
   xml_content?: string; // compat
+  prompt_format?: 'markdown' | 'xml_like' | 'plain_text' | 'unknown';
+  raw_tools_called_count?: number;
+  raw_tools_called?: string[];
 }
 
 export interface PromptListResponse {

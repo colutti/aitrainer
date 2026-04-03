@@ -219,6 +219,14 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
               <span className="px-2 py-1 bg-purple-500/10 text-purple-400 rounded">
                 {durationSec}s
               </span>
+              {selectedPrompt.prompt_format && (
+                <span className="px-2 py-1 bg-cyan-500/10 text-cyan-400 rounded uppercase">
+                  {selectedPrompt.prompt_format}
+                </span>
+              )}
+              <span className="px-2 py-1 bg-orange-500/10 text-orange-400 rounded">
+                raw calls: {selectedPrompt.raw_tools_called_count ?? 0}
+              </span>
               <span
                 className={`px-2 py-1 rounded ${
                   selectedPrompt.status === 'success'
@@ -399,7 +407,8 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
                     )}
                   </Button>
                   {expandedSections.tools && (
-                    <div className="border-t border-white/5 p-4 flex flex-wrap gap-2">
+                    <div className="border-t border-white/5 p-4 space-y-3">
+                      <div className="flex flex-wrap gap-2">
                       {selectedPrompt.prompt?.tools?.map((tool) => (
                         <span
                           key={tool}
@@ -408,6 +417,24 @@ export function PromptDetailModal({ selectedPrompt, onClose }: PromptDetailModal
                           {tool}
                         </span>
                       ))}
+                      </div>
+                      {!!selectedPrompt.raw_tools_called?.length && (
+                        <div>
+                          <h4 className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2">
+                            Raw Tools Called
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedPrompt.raw_tools_called.map((tool) => (
+                              <span
+                                key={tool}
+                                className="px-2 py-1 bg-cyan-500/10 text-cyan-300 text-xs rounded font-mono"
+                              >
+                                {tool}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

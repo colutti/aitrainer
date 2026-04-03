@@ -168,7 +168,7 @@ class PromptBuilder:
         # Avoids injecting <agenda>\n\n</agenda> for users with no planned events
         if not input_data.get("agenda_section"):
             system_content = system_content.replace(
-                "<agenda>\n{agenda_section}\n</agenda>\n\n", ""
+                "## Agenda do aluno\n{agenda_section}\n\n", ""
             )
             input_data.setdefault("agenda_section", "")
 
@@ -191,8 +191,8 @@ class PromptBuilder:
         # 6. Verify formatting and log
         try:
             rendered_prompt = prompt_template.format(**input_data)
-            has_critical = "[CRÍTICO]" in rendered_prompt
-            critical_check = "✅ Presente" if has_critical else "⚠️ Ausente"
+            has_security = "## Regras de segurança e escopo" in rendered_prompt
+            critical_check = "✅ Presente" if has_security else "⚠️ Ausente"
             logger.debug(
                 "🛡️ PROMPT BUILT: Critical Section: %s | Chars: %d",
                 critical_check,

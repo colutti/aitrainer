@@ -199,6 +199,7 @@ class LLMClient:
                                 for msg in messages
                             ],
                             "tools": [t.name for t in tools],
+                            "tools_called": tools_called,
                             "tokens_input": tokens_in,
                             "tokens_output": tokens_out,
                             "duration_ms": duration_ms,

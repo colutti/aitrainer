@@ -32,14 +32,28 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
     "get_workouts": ToolMetadata(
         "get_workouts", ToolMemoryType.EPHEMERAL, "Fetch workouts"
     ),
+    "get_workouts_raw": ToolMetadata(
+        "get_workouts_raw", ToolMemoryType.EPHEMERAL, "Fetch raw workouts"
+    ),
     "get_nutrition": ToolMetadata(
         "get_nutrition", ToolMemoryType.EPHEMERAL, "Fetch nutrition"
+    ),
+    "get_nutrition_raw": ToolMetadata(
+        "get_nutrition_raw", ToolMemoryType.EPHEMERAL, "Fetch raw nutrition"
     ),
     "get_body_composition": ToolMetadata(
         "get_body_composition", ToolMemoryType.EPHEMERAL, "Fetch weight"
     ),
+    "get_body_composition_raw": ToolMetadata(
+        "get_body_composition_raw",
+        ToolMemoryType.EPHEMERAL,
+        "Fetch raw body composition",
+    ),
     "get_user_goal": ToolMetadata(
         "get_user_goal", ToolMemoryType.EPHEMERAL, "Fetch goal"
+    ),
+    "get_goal_history_raw": ToolMetadata(
+        "get_goal_history_raw", ToolMemoryType.EPHEMERAL, "Fetch raw goal history"
     ),
     "list_hevy_routines": ToolMetadata(
         "list_hevy_routines", ToolMemoryType.EPHEMERAL, "List Hevy routines"
@@ -114,6 +128,12 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
     ),
     "list_events": ToolMetadata(
         "list_events", ToolMemoryType.EPHEMERAL, "List active events and plans"
+    ),
+    "get_events_raw": ToolMetadata(
+        "get_events_raw", ToolMemoryType.EPHEMERAL, "Fetch raw events"
+    ),
+    "get_memories_raw": ToolMetadata(
+        "get_memories_raw", ToolMemoryType.EPHEMERAL, "Fetch raw memories"
     ),
     "delete_event": ToolMetadata(
         "delete_event", ToolMemoryType.MEMORABLE, "Delete scheduled event"

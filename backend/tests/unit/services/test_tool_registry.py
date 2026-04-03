@@ -21,6 +21,14 @@ class TestIsToolEphemeral:
     def test_search_memory_is_ephemeral(self):
         assert is_tool_ephemeral("search_memory") is True
 
+    def test_raw_tools_are_ephemeral(self):
+        assert is_tool_ephemeral("get_workouts_raw") is True
+        assert is_tool_ephemeral("get_nutrition_raw") is True
+        assert is_tool_ephemeral("get_body_composition_raw") is True
+        assert is_tool_ephemeral("get_goal_history_raw") is True
+        assert is_tool_ephemeral("get_events_raw") is True
+        assert is_tool_ephemeral("get_memories_raw") is True
+
     def test_save_memory_is_memorable(self):
         assert is_tool_ephemeral("save_memory") is False
 

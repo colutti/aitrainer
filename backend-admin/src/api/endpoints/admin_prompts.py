@@ -5,6 +5,28 @@ from src.core.deps import CURRENT_ADMIN_DEP, MAIN_DB_DEP
 
 router = APIRouter(prefix="/admin/prompts", tags=["admin"])
 
+
+def _detect_prompt_format(prompt_value: str) -> str:
+    stripped = (prompt_value or "").strip()
+    if not stripped:
+        return "unknown"
+    if stripped.startswith("#"):
+        return "markdown"
+    if "<" in stripped and ">" in stripped:
+        return "xml_like"
+    return "plain_text"
+
+
+def _raw_tools_metrics(prompt_data: dict) -> tuple[int, list[str]]:
+    tools_called = prompt_data.get("tools_called")
+    called = tools_called if isinstance(tools_called, list) else []
+    raw_tools = [
+        name
+        for name in called
+        if isinstance(name, str) and name.endswith("_raw")
+    ]
+    return len(raw_tools), raw_tools
+
 @router.get("/")
 def list_prompts(
     _admin: CURRENT_ADMIN_DEP,
@@ -43,6 +65,12 @@ def list_prompts(
 
         if "prompt" in p and isinstance(p["prompt"], dict):
             prompt_data = p["prompt"]
+            prompt_text = prompt_data.get("prompt", "")
+            p["prompt_format"] = _detect_prompt_format(prompt_text)
+            raw_count, raw_tools = _raw_tools_metrics(prompt_data)
+            p["raw_tools_called_count"] = raw_count
+            p["raw_tools_called"] = raw_tools
+
             if "messages" in prompt_data:
                 messages = prompt_data["messages"]
                 p["messages_count"] = len(messages) if isinstance(messages, list) else 0
@@ -78,4 +106,10 @@ def get_prompt_details(
         raise HTTPException(status_code=404, detail="Prompt not found")
 
     prompt["_id"] = str(prompt["_id"])
+    prompt_data = prompt.get("prompt", {})
+    if isinstance(prompt_data, dict):
+        prompt["prompt_format"] = _detect_prompt_format(prompt_data.get("prompt", ""))
+        raw_count, raw_tools = _raw_tools_metrics(prompt_data)
+        prompt["raw_tools_called_count"] = raw_count
+        prompt["raw_tools_called"] = raw_tools
     return prompt
