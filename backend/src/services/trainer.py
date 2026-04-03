@@ -3,6 +3,7 @@ This module contains the AI trainer brain, which is responsible for interacting 
 """
 
 import asyncio
+import re
 from typing import Optional, TYPE_CHECKING
 from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor
@@ -93,6 +94,8 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
     Service class responsible for orchestrating AI trainer interactions.
     Uses LLMClient for LLM operations (abstracted from specific providers).
     """
+    _MSG_OPEN_PATTERN = re.compile(r'<msg(?:\s+data="[^"]*")?(?:\s+hora="[^"]*")?>')
+    _TREINADOR_OPEN_PATTERN = re.compile(r'<treinador(?:\s+name="[^"]*")?>')
 
     def __init__(
         self,
@@ -513,6 +516,38 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
 
         return formatted_msgs
 
+    @classmethod
+    def strip_internal_wrappers(cls, text: str) -> str:
+        """
+        Remove only internal wrapper tags used by the prompt protocol.
+        Keeps all other tags/content intact.
+        """
+        if not text:
+            return ""
+
+        cleaned = cls._MSG_OPEN_PATTERN.sub("", text)
+        cleaned = cleaned.replace("</msg>", "")
+        cleaned = cls._TREINADOR_OPEN_PATTERN.sub("", cleaned)
+        cleaned = cleaned.replace("</treinador>", "")
+        return cleaned
+
+    @classmethod
+    def split_stream_visible_text(cls, buffer: str) -> tuple[str, str]:
+        """
+        Split a stream buffer into visible text and an optional partial tag tail.
+        Only handles the internal wrapper tags (<msg>, <treinador>).
+        """
+        if not buffer:
+            return "", ""
+
+        last_lt = buffer.rfind("<")
+        last_gt = buffer.rfind(">")
+        has_partial_tag = last_lt > last_gt
+
+        stable = buffer[:last_lt] if has_partial_tag else buffer
+        pending = buffer[last_lt:] if has_partial_tag else ""
+        return cls.strip_internal_wrappers(stable), pending
+
     def get_tools(self, user_email: str) -> list[BaseTool]:
         """
         Creates and returns a list of tools available to the AI.
@@ -646,7 +681,8 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         if image_payloads:
             input_data["user_images"] = image_payloads
 
-        full_response: list[str] = []
+        raw_response: list[str] = []
+        stream_buffer = ""
         async for chunk in self._llm_client.stream_with_tools(
             prompt_template=self.prompt_builder.get_prompt_template(
                 input_data, is_telegram
@@ -657,13 +693,21 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             log_callback=self.get_log_callback(background_tasks),
         ):
             if isinstance(chunk, str):
-                full_response.append(chunk)
-                yield chunk
+                raw_response.append(chunk)
+                stream_buffer += chunk
+                visible, stream_buffer = self.split_stream_visible_text(stream_buffer)
+                if visible:
+                    yield visible
+
+        if stream_buffer:
+            visible_tail = self.strip_internal_wrappers(stream_buffer)
+            if visible_tail:
+                yield visible_tail
 
         await self.finalize_ai_response(
             user_email=user_email,
             user_input=user_input,
-            final_response="".join(full_response),
+            final_response=self.strip_internal_wrappers("".join(raw_response)),
             metadata={
                 "trainer_type": trainer_profile_obj.trainer_type or "atlas",
                 "needs_cycle_reset": needs_cycle_reset,
