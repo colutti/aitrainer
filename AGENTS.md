@@ -188,6 +188,12 @@ These files are guidance, not executable commands. If they drift from the reposi
 Project-specific design skill:
 - [`.agent/skills/ui-ux-pro-max/SKILL.md`](/home/colutti/projects/personal/.agent/skills/ui-ux-pro-max/SKILL.md)
 
+## Task Completion Output
+
+- Sempre que uma tarefa for finalizada, incluir casos de teste manuais em formato de tabela.
+- A tabela deve seguir o mesmo padrão usado neste projeto: colunas `ID`, `Cenário`, `Passos`, `Resultado Esperado` e `Status`.
+- Os test cases devem cobrir fluxo feliz, erros principais, edge cases e regressões relevantes da funcionalidade entregue.
+
 ## Maintenance
 
 Keep this document updated when stack, commands, app boundaries, or validation workflow change.
