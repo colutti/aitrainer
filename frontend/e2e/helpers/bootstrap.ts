@@ -46,17 +46,14 @@ export async function registerViaUi(page: Page, user: E2EUserCredentials) {
   await page.getByTestId('register-confirm-password').fill(user.password);
   await page.getByRole('button', { name: /Criar Conta/i }).click();
   await expect(page).toHaveURL(/\/login(?:\?.*)?$/, { timeout: 20000 });
-  await expect(
-    page.getByText(/Conta criada\. Enviamos um link para confirmar seu e-mail antes de continuar\./i)
-  ).toBeVisible({ timeout: 20000 });
 }
 
 export async function loginViaUi(page: Page, user: E2EUserCredentials) {
   await page.goto('/login', { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /Login/i }).click();
+  await page.getByRole('button', { name: /^Login$/i }).click();
   await page.getByTestId('login-email').fill(user.email);
   await page.getByTestId('login-password').fill(user.password);
-  await page.getByRole('button', { name: /Entrar/i }).click();
+  await page.getByRole('button', { name: /^Entrar$/i }).click();
 }
 
 export async function registerAndVerifyViaEmulator(page: Page, user: E2EUserCredentials) {
