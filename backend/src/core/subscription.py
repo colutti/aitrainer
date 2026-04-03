@@ -12,7 +12,6 @@ class SubscriptionPlan(str, Enum):
     FREE = "Free"
     BASIC = "Basic"
     PRO = "Pro"
-    PREMIUM = "Premium"
 
 
 class PlanDetails(BaseModel):
@@ -25,6 +24,10 @@ class PlanDetails(BaseModel):
     validity_days: int | None
     allowed_trainers: list[str] | None
     price_usd: float
+    image_input_enabled: bool = False
+    integrations_enabled: bool = False
+    telegram_enabled: bool = False
+    imports_enabled: bool = False
 
 
 SUBSCRIPTION_PLANS = {
@@ -54,24 +57,36 @@ SUBSCRIPTION_PLANS = {
         validity_days=None,
         allowed_trainers=None,
         price_usd=9.99,
-    ),
-    SubscriptionPlan.PREMIUM: PlanDetails(
-        name="Premium",
-        monthly_limit=1000,
-        total_limit=None,
-        daily_limit=None,
-        validity_days=None,
-        allowed_trainers=None,
-        price_usd=19.99,
+        image_input_enabled=True,
+        integrations_enabled=True,
+        telegram_enabled=True,
+        imports_enabled=True,
     ),
 }
 
-IMAGE_INPUT_ALLOWED_PLANS = {SubscriptionPlan.PRO, SubscriptionPlan.PREMIUM}
+def get_plan_details(subscription_plan: str | None) -> PlanDetails:
+    """Return normalized plan details, falling back to Free."""
+    try:
+        return SUBSCRIPTION_PLANS[SubscriptionPlan(subscription_plan)]
+    except (ValueError, TypeError, KeyError):
+        return SUBSCRIPTION_PLANS[SubscriptionPlan.FREE]
 
 
 def can_use_image_input(subscription_plan: str | None) -> bool:
     """Return whether the current plan can submit image input to AI chat."""
-    try:
-        return SubscriptionPlan(subscription_plan) in IMAGE_INPUT_ALLOWED_PLANS
-    except (ValueError, TypeError):
-        return False
+    return get_plan_details(subscription_plan).image_input_enabled
+
+
+def can_use_integrations(subscription_plan: str | None) -> bool:
+    """Return whether the current plan can use app integrations."""
+    return get_plan_details(subscription_plan).integrations_enabled
+
+
+def can_use_telegram(subscription_plan: str | None) -> bool:
+    """Return whether the current plan can use Telegram features."""
+    return get_plan_details(subscription_plan).telegram_enabled
+
+
+def can_use_imports(subscription_plan: str | None) -> bool:
+    """Return whether the current plan can import external data."""
+    return get_plan_details(subscription_plan).imports_enabled
