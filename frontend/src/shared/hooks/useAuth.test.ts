@@ -1,10 +1,16 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { sendPasswordResetEmail, signInWithEmailAndPassword } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signOut,
+} from 'firebase/auth';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
 import { httpClient } from '../api/http-client';
 
-import { useAuthStore } from './useAuth';
+import { shouldEnableUnsafeLocalAuthBypass, useAuthStore } from './useAuth';
 
 // Mock the http-client module
 vi.mock('../api/http-client');
@@ -21,9 +27,18 @@ vi.mock('../../features/auth/firebase', () => ({
 vi.mock('firebase/auth', () => ({
   signInWithEmailAndPassword: vi.fn().mockResolvedValue({
     user: {
+      emailVerified: true,
       getIdToken: vi.fn().mockResolvedValue('fake-id-token'),
     },
   }),
+  createUserWithEmailAndPassword: vi.fn().mockResolvedValue({
+    user: {
+      email: 'new@example.com',
+      emailVerified: false,
+    },
+  }),
+  sendEmailVerification: vi.fn().mockResolvedValue(undefined),
+  signOut: vi.fn().mockResolvedValue(undefined),
   signInWithPopup: vi.fn().mockResolvedValue({
     user: {
       getIdToken: vi.fn().mockResolvedValue('fake-id-token'),
@@ -46,6 +61,52 @@ const mockLocalStorage = {
 };
 
 describe('useAuth', () => {
+  describe('shouldEnableUnsafeLocalAuthBypass', () => {
+    it('should return false when bypass flag is disabled', () => {
+      expect(
+        shouldEnableUnsafeLocalAuthBypass({
+          VITE_ENABLE_UNSAFE_LOCAL_AUTH_BYPASS: 'false',
+          DEV: true,
+          MODE: 'development',
+          PROD: false,
+        })
+      ).toBe(false);
+    });
+
+    it('should return true in dev when bypass flag is enabled', () => {
+      expect(
+        shouldEnableUnsafeLocalAuthBypass({
+          VITE_ENABLE_UNSAFE_LOCAL_AUTH_BYPASS: 'true',
+          DEV: true,
+          MODE: 'development',
+          PROD: false,
+        })
+      ).toBe(true);
+    });
+
+    it('should return true in test mode when bypass flag is enabled', () => {
+      expect(
+        shouldEnableUnsafeLocalAuthBypass({
+          VITE_ENABLE_UNSAFE_LOCAL_AUTH_BYPASS: 'true',
+          DEV: false,
+          MODE: 'test',
+          PROD: false,
+        })
+      ).toBe(true);
+    });
+
+    it('should return false in production even when bypass flag is enabled', () => {
+      expect(
+        shouldEnableUnsafeLocalAuthBypass({
+          VITE_ENABLE_UNSAFE_LOCAL_AUTH_BYPASS: 'true',
+          DEV: false,
+          MODE: 'production',
+          PROD: true,
+        })
+      ).toBe(false);
+    });
+  });
+
   beforeEach(() => {
     vi.stubGlobal('localStorage', mockLocalStorage);
     vi.clearAllMocks();
@@ -78,7 +139,7 @@ describe('useAuth', () => {
   });
 
   describe('login', () => {
-    it('should bypass firebase for the local demo account', async () => {
+    it('should not bypass firebase for the demo email when local bypass flag is disabled', async () => {
       const mockLoginResponse = { token: 'demo-token-123' };
       const mockUserApiData = {
         email: 'demo@fityq.it',
@@ -88,7 +149,6 @@ describe('useAuth', () => {
         has_stripe_customer: false,
         is_demo: true,
       };
-
       vi.mocked(httpClient).mockResolvedValueOnce(mockLoginResponse);
       vi.mocked(httpClient).mockResolvedValueOnce(mockUserApiData);
 
@@ -98,12 +158,11 @@ describe('useAuth', () => {
         await result.current.login('demo@fityq.it', 'anything-here');
       });
 
-      expect(signInWithEmailAndPassword).not.toHaveBeenCalled();
-      expect(httpClient).toHaveBeenNthCalledWith(1, '/user/e2e-login', {
+      expect(signInWithEmailAndPassword).toHaveBeenCalledTimes(1);
+      expect(httpClient).toHaveBeenNthCalledWith(1, '/user/login', {
         method: 'POST',
         body: JSON.stringify({
-          email: 'demo@fityq.it',
-          display_name: 'Ethan Parker',
+          token: 'fake-id-token',
         }),
       });
       expect(httpClient).toHaveBeenNthCalledWith(2, '/user/me');
@@ -176,6 +235,26 @@ describe('useAuth', () => {
       expect(localStorage.getItem('auth_token')).toBeNull();
     });
 
+    it('should block login when firebase email is not verified and resend verification email', async () => {
+      vi.mocked(signInWithEmailAndPassword).mockResolvedValueOnce({
+        user: {
+          emailVerified: false,
+          getIdToken: vi.fn().mockResolvedValue('fake-id-token'),
+        },
+      } as unknown as Awaited<ReturnType<typeof signInWithEmailAndPassword>>);
+
+      const { result } = renderHook(() => useAuthStore());
+
+      await expect(
+        act(async () => {
+          await result.current.login('test@example.com', 'password123');
+        })
+      ).rejects.toMatchObject({ code: 'auth/email-not-verified' });
+
+      expect(httpClient).not.toHaveBeenCalledWith('/user/login', expect.anything());
+      expect(result.current.isAuthenticated).toBe(false);
+    });
+
     it('should throw error if login response is invalid (missing token)', async () => {
         vi.mocked(httpClient).mockResolvedValueOnce({}); // Empty object
   
@@ -192,41 +271,51 @@ describe('useAuth', () => {
   });
 
   describe('register', () => {
-    it('should bootstrap a new app user through e2e-login and set token', async () => {
-      const mockLoginResponse = { token: 'register-token-123' };
-      const mockUserApiData = {
-        email: 'new@example.com',
-        role: 'user',
-        name: 'New User',
-        onboarding_completed: false,
-        has_stripe_customer: false,
-      };
-
-      vi.mocked(httpClient).mockResolvedValueOnce(mockLoginResponse);
-      vi.mocked(httpClient).mockResolvedValueOnce(mockUserApiData);
-
+    it('should register with firebase and send verification email without creating app session', async () => {
       const { result } = renderHook(() => useAuthStore());
 
       await act(async () => {
         await result.current.register('New User', 'new@example.com', 'password123');
       });
 
-      expect(httpClient).toHaveBeenNthCalledWith(1, '/user/e2e-login', {
-        method: 'POST',
-        body: JSON.stringify({
-          email: 'new@example.com',
-          display_name: 'New User',
-          onboarding_completed: false,
-          password: 'password123',
-        }),
+      expect(createUserWithEmailAndPassword).toHaveBeenCalledTimes(1);
+      expect(sendEmailVerification).toHaveBeenCalledTimes(1);
+      expect(signOut).toHaveBeenCalledTimes(1);
+      expect(httpClient).not.toHaveBeenCalled();
+      expect(localStorage.getItem('auth_token')).toBeNull();
+      expect(result.current.isAuthenticated).toBe(false);
+    });
+
+    it('should throw firebase duplicate email error when registering existing email', async () => {
+      const duplicateError = Object.assign(new Error('Already in use'), {
+        code: 'auth/email-already-in-use',
       });
-      expect(localStorage.getItem('auth_token')).toBe('register-token-123');
-      expect(result.current.isAuthenticated).toBe(true);
-      expect(result.current.userInfo).toEqual(expect.objectContaining({
-        email: 'new@example.com',
-        name: 'New User',
-        onboarding_completed: false,
-      }));
+      vi.mocked(createUserWithEmailAndPassword).mockRejectedValueOnce(duplicateError);
+
+      const { result } = renderHook(() => useAuthStore());
+
+      await expect(
+        act(async () => {
+          await result.current.register('Existing User', 'existing@example.com', 'password123');
+        })
+      ).rejects.toMatchObject({ code: 'auth/email-already-in-use' });
+
+      expect(sendEmailVerification).not.toHaveBeenCalled();
+      expect(result.current.isAuthenticated).toBe(false);
+    });
+
+    it('should normalize email before creating firebase user', async () => {
+      const { result } = renderHook(() => useAuthStore());
+
+      await act(async () => {
+        await result.current.register('New User', '  New.User@Example.COM  ', 'password123');
+      });
+
+      expect(createUserWithEmailAndPassword).toHaveBeenCalledWith(
+        expect.anything(),
+        'new.user@example.com',
+        'password123'
+      );
     });
   });
 

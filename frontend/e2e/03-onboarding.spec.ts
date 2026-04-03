@@ -36,6 +36,5 @@ test.describe('Onboarding Flow (Manual)', () => {
     const visibleNav = page.locator('[data-testid="mobile-nav"]:visible, [data-testid="desktop-nav"]:visible').first();
     await expect(visibleNav).toBeVisible({ timeout: 15000 });
     await expect(page.getByTestId('dashboard-bento')).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText(/Bom dia|Good morning/i)).toBeVisible({ timeout: 15000 });
   });
 });

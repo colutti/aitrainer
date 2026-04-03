@@ -37,6 +37,11 @@
   },
   "auth": {
     "login_error": "Invalid email or password.",
+    "user_exists_error": "This email is already registered. Log in or use \"Forgot password\" to reset it.",
+    "email_not_verified_error": "Your email is not verified yet. Please check your inbox before continuing.",
+    "verify_email_sent": "Account created. We sent a verification link to your email before you continue.",
+    "provide_email_for_reset": "Enter your email to receive a password reset link.",
+    "reset_email_sent": "We sent a password reset link to your email.",
     "social_error": "Social authentication failed. Please try again.",
     "google_sign_in": "Sign in with Google",
     "forgot_password": "Forgot password",

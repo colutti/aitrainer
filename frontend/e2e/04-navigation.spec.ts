@@ -17,12 +17,12 @@ test.describe('Navigation Flow', () => {
     await expect(authenticatedPage).toHaveURL(/.*body/);
     
     // Check Tabs in Body View
-    const weightTabTitle = t('body.weight_title');
-    const nutritionTabTitle = t('body.nutrition_title');
-    
-    await expect(authenticatedPage.getByRole('button', { name: weightTabTitle })).toBeVisible();
-    await ui.switchToTab(nutritionTabTitle);
-    await expect(authenticatedPage.getByRole('button', { name: nutritionTabTitle })).toBeVisible();
+    const weightTab = authenticatedPage.getByTestId('body-tab-weight');
+    const nutritionTab = authenticatedPage.getByTestId('body-tab-nutrition');
+
+    await expect(weightTab).toBeVisible();
+    await nutritionTab.click();
+    await expect(nutritionTab).toBeVisible();
     await expect(authenticatedPage.getByTestId('body-tab-nutrition')).toBeVisible();
 
     // 4. Navigate back to Home

@@ -1,5 +1,4 @@
 import { test, expect } from './fixtures';
-import { t } from './helpers/translations';
 
 test.describe('Mobile core navigation', () => {
   test('keeps navigation, tabs, drawers, and chat usable on a mobile viewport', async ({ authenticatedPage, ui }) => {
@@ -14,15 +13,15 @@ test.describe('Mobile core navigation', () => {
     await expect(authenticatedPage.getByTestId('mobile-nav')).toBeVisible();
 
     await ui.navigateTo('body');
-    await expect(authenticatedPage.getByRole('button', { name: t('body.weight_title') })).toBeVisible({ timeout: 15000 });
+    await expect(authenticatedPage.getByTestId('body-tab-weight')).toBeVisible({ timeout: 15000 });
 
-    await ui.switchToTab(t('body.nutrition_title'));
-    await expect(authenticatedPage.getByTestId('view-header-title')).toContainText(t('nutrition.history_title'));
+    await authenticatedPage.getByTestId('body-tab-nutrition').click();
+    await expect(authenticatedPage.getByRole('button', { name: /Registrar Refeição|Register Meal|Registrar Comida/i })).toBeVisible({ timeout: 15000 });
 
     await ui.navigateTo('body');
-    await ui.switchToTab(t('body.weight_title'));
-    await ui.openDrawer(t('body.weight.register_weight'));
-    await expect(authenticatedPage.getByRole('heading', { name: t('body.weight.register_weight') })).toBeVisible({
+    await authenticatedPage.getByTestId('body-tab-weight').click();
+    await authenticatedPage.getByRole('button', { name: /Registrar Peso|Register Weight|Registrar Peso/i }).click();
+    await expect(authenticatedPage.getByRole('heading', { name: /Registrar Peso|Register Weight/i })).toBeVisible({
       timeout: 15000,
     });
     await expect(authenticatedPage.getByTestId('weight-kg')).toBeVisible();

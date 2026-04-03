@@ -42,7 +42,7 @@ class TestEndpoints(unittest.TestCase):
         Test successful user login with token.
         """
         # Arrange
-        mock_verify.return_value = {"email": "test@test.com"}
+        mock_verify.return_value = {"email": "test@test.com", "email_verified": True}
 
         # Act
         response = self.client.post(
@@ -52,6 +52,21 @@ class TestEndpoints(unittest.TestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertIn("token", response.json())
+
+    @patch("src.api.endpoints.user.verify_id_token")
+    def test_login_requires_verified_email(self, mock_verify):
+        """Test login fails when Firebase email is not verified."""
+        mock_verify.return_value = {
+            "email": "test@test.com",
+            "email_verified": False,
+        }
+
+        response = self.client.post("/user/login", json={"token": "valid_token"})
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(
+            response.json(), {"detail": "Please verify your email before logging in"}
+        )
 
     @patch("src.api.endpoints.user.verify_id_token")
     def test_login_failure(self, mock_verify):

@@ -37,6 +37,24 @@ services:
     networks:
       - test-network
 
+  firebase-emulator:
+    image: docker.io/library/node:22-slim
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - firebase_emulator_npm_cache:/root/.npm
+    command: >
+      sh -lc "npm install -g firebase-tools@14.26.0 &&
+      firebase emulators:start --project demo-fityq --only auth --config /workspace/firebase.emulator.json"
+    healthcheck:
+      test: ["CMD", "node", "/workspace/scripts/test/firebase_auth_emulator_healthcheck.cjs"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
+    networks:
+      - test-network
+
   backend:
     build:
       context: ./backend
@@ -53,6 +71,8 @@ services:
       QDRANT_PORT: "6333"
       QDRANT_COLLECTION_NAME: aitrainer_test
       RUNNING_IN_CONTAINER: "true"
+      FIREBASE_AUTH_EMULATOR_HOST: firebase-emulator:9099
+      FIREBASE_PROJECT_ID: demo-fityq
     command: python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000
     depends_on:
       mongo:
@@ -86,6 +106,8 @@ services:
       QDRANT_PORT: "6333"
       QDRANT_COLLECTION_NAME: aitrainer_test
       RUNNING_IN_CONTAINER: "true"
+      FIREBASE_AUTH_EMULATOR_HOST: firebase-emulator:9099
+      FIREBASE_PROJECT_ID: demo-fityq
     depends_on:
       mongo:
         condition: service_healthy
@@ -125,9 +147,19 @@ services:
       - frontend_dev_node_modules:/workspace/frontend/node_modules
     environment:
       VITE_API_PROXY_TARGET: http://backend:8000
+      VITE_FIREBASE_API_KEY: demo-api-key
+      VITE_FIREBASE_AUTH_DOMAIN: demo-fityq.firebaseapp.com
+      VITE_FIREBASE_PROJECT_ID: demo-fityq
+      VITE_FIREBASE_STORAGE_BUCKET: demo-fityq.appspot.com
+      VITE_FIREBASE_MESSAGING_SENDER_ID: "1234567890"
+      VITE_FIREBASE_APP_ID: 1:1234567890:web:demofityq123
+      VITE_USE_FIREBASE_AUTH_EMULATOR: "true"
+      VITE_FIREBASE_AUTH_EMULATOR_URL: http://firebase-emulator:9099
     command: sh -lc "npm ci && npm run dev -- --host 0.0.0.0 --port 3000"
     depends_on:
       backend:
+        condition: service_healthy
+      firebase-emulator:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "/workspace/scripts/test/frontend_healthcheck.cjs"]
@@ -150,16 +182,22 @@ services:
       E2E_API_BASE_URL: http://backend:8000
       PLAYWRIGHT_SKIP_WEB_SERVER: "1"
       VITE_E2E_USER_EMAIL: bot-real@fityq.it
+      E2E_FIREBASE_AUTH_EMULATOR_URL: http://firebase-emulator:9099
+      E2E_FIREBASE_PROJECT_ID: demo-fityq
+      E2E_FIREBASE_API_KEY: demo-api-key
     depends_on:
       backend:
         condition: service_healthy
       frontend:
+        condition: service_healthy
+      firebase-emulator:
         condition: service_healthy
     command: sh -lc "npm ci && npx playwright test --project=chromium --reporter=list"
     networks:
       - test-network
 
 volumes:
+  firebase_emulator_npm_cache:
   frontend_dev_node_modules:
   frontend_playwright_node_modules:
   frontend_test_node_modules:

@@ -5,6 +5,37 @@ import { httpClient } from '../api/http-client';
 const AUTH_TOKEN_KEY = 'auth_token';
 const DEMO_EMAIL = 'demo@fityq.it';
 const DEMO_DISPLAY_NAME = 'Ethan Parker';
+interface AuthBypassEnv {
+  VITE_ENABLE_UNSAFE_LOCAL_AUTH_BYPASS?: string;
+  PROD?: boolean;
+  DEV?: boolean;
+  MODE?: string;
+}
+
+export const shouldEnableUnsafeLocalAuthBypass = (env: AuthBypassEnv): boolean => {
+  const flagEnabled = env.VITE_ENABLE_UNSAFE_LOCAL_AUTH_BYPASS === 'true';
+  if (!flagEnabled) {
+    return false;
+  }
+
+  // Hard stop: bypass is never allowed in production builds.
+  if (env.PROD) {
+    console.error('VITE_ENABLE_UNSAFE_LOCAL_AUTH_BYPASS is ignored in production.');
+    return false;
+  }
+
+  if (env.DEV === true) {
+    return true;
+  }
+
+  return env.MODE === 'test';
+};
+
+const UNSAFE_LOCAL_AUTH_BYPASS_ENABLED = shouldEnableUnsafeLocalAuthBypass(import.meta.env);
+
+const createAuthError = (code: string, message: string): Error & { code: string } => {
+  return Object.assign(new Error(message), { code });
+};
 
 export interface UserInfo {
   email: string;
@@ -60,7 +91,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
     try {
       const normalizedEmail = email.trim().toLowerCase();
-      if (normalizedEmail === DEMO_EMAIL) {
+      if (UNSAFE_LOCAL_AUTH_BYPASS_ENABLED && normalizedEmail === DEMO_EMAIL) {
         const response = await httpClient<{ token: string }>('/user/e2e-login', {
           method: 'POST',
           body: JSON.stringify({
@@ -80,9 +111,19 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       }
 
       const { auth } = await import('../../features/auth/firebase');
-      const { signInWithEmailAndPassword } = await import('firebase/auth');
+      const { signInWithEmailAndPassword, sendEmailVerification, signOut } = await import('firebase/auth');
       
       const result = await signInWithEmailAndPassword(auth, email, password);
+
+      if (!result.user.emailVerified) {
+        await sendEmailVerification(result.user);
+        await signOut(auth);
+        throw createAuthError(
+          'auth/email-not-verified',
+          'Please verify your email before logging in',
+        );
+      }
+
       const token = await result.user.getIdToken();
 
       const response = await httpClient<{ token: string }>('/user/login', {
@@ -111,23 +152,35 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
     try {
       const normalizedEmail = email.trim().toLowerCase();
-      const response = await httpClient<{ token: string }>('/user/e2e-login', {
-        method: 'POST',
-        body: JSON.stringify({
-          email: normalizedEmail,
-          display_name: name.trim(),
-          onboarding_completed: false,
-          password,
-        }),
-      });
+      if (UNSAFE_LOCAL_AUTH_BYPASS_ENABLED) {
+        const response = await httpClient<{ token: string }>('/user/e2e-login', {
+          method: 'POST',
+          body: JSON.stringify({
+            email: normalizedEmail,
+            display_name: name.trim(),
+            onboarding_completed: false,
+            password,
+          }),
+        });
 
-      if (!response?.token) {
-        throw new Error('Invalid response from server');
+        if (!response?.token) {
+          throw new Error('Invalid response from server');
+        }
+
+        localStorage.setItem(AUTH_TOKEN_KEY, response.token);
+        await get().loadUserInfo();
+        set({ isAuthenticated: true });
+        return;
       }
 
-      localStorage.setItem(AUTH_TOKEN_KEY, response.token);
-      await get().loadUserInfo();
-      set({ isAuthenticated: true });
+      const { auth } = await import('../../features/auth/firebase');
+      const { createUserWithEmailAndPassword, sendEmailVerification, signOut } = await import('firebase/auth');
+
+      const result = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
+      await sendEmailVerification(result.user);
+      await signOut(auth);
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      set({ isAuthenticated: false, userInfo: null, isAdmin: false });
     } catch (error) {
       console.error('Registration error:', error);
       get().logout();

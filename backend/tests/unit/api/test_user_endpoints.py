@@ -64,7 +64,7 @@ def sample_user_profile():
 def test_login_success():
     """Test successful user login with valid Firebase token."""
     with patch("src.api.endpoints.user.verify_id_token") as mock_verify:
-        mock_verify.return_value = {"email": "test@example.com"}
+        mock_verify.return_value = {"email": "test@example.com", "email_verified": True}
 
         payload = {
             "token": "valid_firebase_token"
@@ -76,6 +76,20 @@ def test_login_success():
         data = response.json()
         assert "token" in data
         mock_verify.assert_called_once_with("valid_firebase_token")
+
+
+def test_login_requires_verified_email():
+    """Test login rejects Firebase users with unverified email."""
+    with patch("src.api.endpoints.user.verify_id_token") as mock_verify:
+        mock_verify.return_value = {
+            "email": "test@example.com",
+            "email_verified": False,
+        }
+
+        response = client.post("/user/login", json={"token": "valid_firebase_token"})
+
+        assert response.status_code == 403
+        assert response.json()["detail"] == "Please verify your email before logging in"
 
 
 # Test: POST /login - Invalid Token

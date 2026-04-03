@@ -26,9 +26,6 @@ export default defineConfig({
     locale: 'pt-BR',
     // Default to Desktop for business flow stability
     viewport: { width: 1280, height: 720 },
-    launchOptions: {
-      args: ['--disable-web-security']
-    }
   },
 
   projects: [
@@ -80,6 +77,7 @@ export default defineConfig({
         '**/23-dashboard-reflection.spec.ts',
         '**/24-settings-imports.spec.ts',
         '**/26-settings-tabs.spec.ts',
+        '**/27-auth-email-flows.spec.ts',
       ],
       use: { ...devices['Desktop Chrome'] },
     },

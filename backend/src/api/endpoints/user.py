@@ -71,6 +71,11 @@ def login(
             raise HTTPException(
                 status_code=400, detail="Token does not contain an email"
             )
+        if not decoded_token.get("email_verified", False):
+            raise HTTPException(
+                status_code=403,
+                detail="Please verify your email before logging in",
+            )
 
         display_name = decoded_token.get("name", "")
         photo_base64 = decoded_token.get("picture", "")
@@ -115,6 +120,8 @@ def login(
         token = create_token(email)
         return {"token": token}
 
+    except HTTPException:
+        raise
     except (firebase_admin.auth.InvalidIdTokenError, ValueError) as exc:
         logger.warning("Invalid Firebase authentication provided: %s", exc)
         raise HTTPException(status_code=401, detail="Invalid token") from exc
@@ -240,6 +247,7 @@ class E2ETestLoginRequest(BaseModel):
     email: str = "bot-real@fityq.it"
     display_name: str = "Real QA Bot"
     onboarding_completed: bool = True
+    is_demo: bool = False
 
 
 @router.post("/update_identity")
@@ -295,6 +303,7 @@ def e2e_login(data: E2ETestLoginRequest, brain: AITrainerBrainDep) -> dict:
         existing_profile.display_name = data.display_name
         existing_profile.subscription_plan = "Free"
         existing_profile.onboarding_completed = data.onboarding_completed
+        existing_profile.is_demo = data.is_demo
         brain.save_user_profile(existing_profile)
     else:
         profile = UserProfile(
@@ -308,6 +317,7 @@ def e2e_login(data: E2ETestLoginRequest, brain: AITrainerBrainDep) -> dict:
             subscription_plan="Free",
             display_name=data.display_name,
             onboarding_completed=data.onboarding_completed,
+            is_demo=data.is_demo,
         )
         brain.save_user_profile(profile)
 

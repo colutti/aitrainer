@@ -188,6 +188,15 @@ These files are guidance, not executable commands. If they drift from the reposi
 Project-specific design skill:
 - [`.agent/skills/ui-ux-pro-max/SKILL.md`](/home/colutti/projects/personal/.agent/skills/ui-ux-pro-max/SKILL.md)
 
+## Task Completion Output
+
+- Sempre que uma tarefa for finalizada, gerar um conjunto de test cases para a funcionalidade entregue.
+- Antes de encerrar, automatizar todos os test cases que forem tecnicamente automatizáveis (unit, integration, e2e quando aplicável ao escopo).
+- Expandir a cobertura de testes da funcionalidade com cenários além do fluxo feliz, incluindo falhas, condições não ideais, regressões, casos de borda e contorno.
+- Na resposta final ao usuário, **não** listar todos os test cases: retornar apenas os casos que **não puderam ser automatizados** e que precisam de validação manual.
+- Os casos manuais retornados devem ser apresentados em tabela com colunas `ID`, `Cenário`, `Passos`, `Resultado Esperado` e `Status`.
+- O conjunto final (automatizado + manual residual) deve cobrir a tarefa em nível aceitável de qualidade.
+
 ## Maintenance
 
 Keep this document updated when stack, commands, app boundaries, or validation workflow change.

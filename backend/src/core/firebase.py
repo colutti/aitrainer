@@ -3,6 +3,7 @@ Firebase Admin initialization module.
 """
 
 import json
+import os
 from firebase_admin import credentials, initialize_app  # type: ignore
 from src.core.config import settings
 from src.core.logs import logger
@@ -12,6 +13,23 @@ def init_firebase() -> None:
     """
     Initializes the Firebase Admin SDK using credentials from settings.
     """
+    firebase_auth_emulator_host = os.getenv("FIREBASE_AUTH_EMULATOR_HOST")
+
+    if firebase_auth_emulator_host and not settings.FIREBASE_CREDENTIALS:
+        try:
+            initialize_app(
+                options={
+                    "projectId": os.getenv("FIREBASE_PROJECT_ID", "demo-fityq"),
+                }
+            )
+            logger.info(
+                "Firebase Admin initialized with Auth Emulator at %s.",
+                firebase_auth_emulator_host,
+            )
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.error("Failed to initialize Firebase Admin emulator mode: %s", e)
+        return
+
     if not settings.FIREBASE_CREDENTIALS:
         logger.warning(
             "FIREBASE_CREDENTIALS not set. Firebase Admin will not be initialized."

@@ -10,29 +10,26 @@ test.describe('Nutrition Feature', () => {
     await ui.switchToTab(t('body.nutrition_title'));
 
     // 3. Verify Empty State or Action button
-    const addButton = authenticatedPage.getByTestId('view-header-action').first();
+    const addButton = authenticatedPage.getByRole('button', { name: t('nutrition.register_meal') }).first();
     await expect(addButton).toBeVisible({ timeout: 10000 });
   });
 
-  test('should redirect to chat when clicking to register meal', async ({ authenticatedPage, ui }) => {
+  test('should open nutrition drawer when clicking to register meal', async ({ authenticatedPage, ui }) => {
     await ui.navigateTo('body');
     await ui.switchToTab(t('body.nutrition_title'));
 
-    const addButton = authenticatedPage.getByTestId('view-header-action').first();
+    const addButton = authenticatedPage.getByRole('button', { name: t('nutrition.register_meal') }).first();
     await addButton.click();
 
-    await expect(authenticatedPage).toHaveURL(/.*chat/);
-    await expect(authenticatedPage.getByTestId('chat-form')).toBeVisible({ timeout: 15000 });
-    await expect(authenticatedPage.getByTestId('chat-input')).toBeVisible({ timeout: 15000 });
+    await expect(authenticatedPage.getByRole('heading', { name: /Registrar Refei..o|Register Meal|Registrar Comida/i })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(authenticatedPage.locator('#calories')).toBeVisible({ timeout: 15000 });
   });
 
-  test('should persist a nutrition log after the chat handoff', async ({ authenticatedPage, ui, api }) => {
+  test('should persist a nutrition log after manual creation', async ({ authenticatedPage, ui, api }) => {
     await ui.navigateTo('body');
     await ui.switchToTab(t('body.nutrition_title'));
-
-    await authenticatedPage.getByTestId('view-header-action').first().click();
-    await expect(authenticatedPage).toHaveURL(/.*chat/);
-    await expect(authenticatedPage.getByTestId('chat-input')).toBeVisible({ timeout: 15000 });
 
     const calories = 612;
     const protein = 41;
