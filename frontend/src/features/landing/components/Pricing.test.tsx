@@ -40,6 +40,7 @@ describe('Pricing Component', () => {
     expect(screen.getByText(/Escolha o nível da sua performance/i)).toBeInTheDocument();
     expect(screen.getByText('Free')).toBeInTheDocument();
     expect(screen.getByText('Pro')).toBeInTheDocument();
+    expect(screen.queryByText('Premium')).not.toBeInTheDocument();
   });
 
   it('should navigate to register with free plan when clicked', () => {
@@ -56,7 +57,6 @@ describe('Pricing Component', () => {
     expect(screen.getByRole('button', { name: /come[cç]ar gr[aá]tis/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /assinar basic/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /assinar pro/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /assinar premium/i })).toBeInTheDocument();
   });
 
   it('keeps the spanish pricing locale contract complete', () => {
@@ -66,21 +66,20 @@ describe('Pricing Component', () => {
     expect(esES.landing.plans.items.basic.button).toBeTruthy();
     expect(esES.landing.plans.items.pro.description).toBeTruthy();
     expect(esES.landing.plans.items.pro.button).toBeTruthy();
-    expect(esES.landing.plans.items.premium.description).toBeTruthy();
-    expect(esES.landing.plans.items.premium.button).toBeTruthy();
+    expect(esES.landing.plans.recommended).toBeTruthy();
   });
 
-  it('keeps pro and premium copy aligned with photo analysis for all locales', () => {
+  it('keeps pro copy aligned with photo analysis for all locales', () => {
     expect(ptBR.landing.plans.items.pro.description).toMatch(/fotos/i);
-    expect(ptBR.landing.plans.items.pro.description).toMatch(/Telegram/i);
+    expect(ptBR.landing.plans.items.pro.description).toMatch(/automa/i);
     expect(enUS.landing.plans.items.pro.description).toMatch(/photo/i);
-    expect(enUS.landing.plans.items.pro.description).toMatch(/Telegram/i);
+    expect(enUS.landing.plans.items.pro.description).toMatch(/automation/i);
     expect(esES.landing.plans.items.pro.description).toMatch(/fotos/i);
-    expect(esES.landing.plans.items.pro.description).toMatch(/Telegram/i);
+    expect(esES.landing.plans.items.pro.description).toMatch(/automatiza/i);
 
-    expect(ptBR.landing.plans.items.premium.features.join(' ')).toMatch(/chat \+ Telegram/i);
-    expect(enUS.landing.plans.items.premium.features.join(' ')).toMatch(/chat \+ Telegram/i);
-    expect(esES.landing.plans.items.premium.features.join(' ')).toMatch(/chat \+ Telegram/i);
+    expect(ptBR.landing.plans.items.pro.features.join(' ')).toMatch(/Telegram/i);
+    expect(enUS.landing.plans.items.pro.features.join(' ')).toMatch(/Telegram/i);
+    expect(esES.landing.plans.items.pro.features.join(' ')).toMatch(/Telegram/i);
   });
 
   it('should navigate to login with pro plan if not authenticated', () => {

@@ -17,6 +17,11 @@ import { cn } from '../../../shared/utils/cn';
 
 export interface IntegrationsViewProps {
   isReadOnly?: boolean;
+  planCapabilities?: {
+    integrationsEnabled: boolean;
+    telegramEnabled: boolean;
+    importsEnabled: boolean;
+  };
   hevy: {
     status: HevyStatus | null;
     key: string;
@@ -43,11 +48,15 @@ export interface IntegrationsViewProps {
 
 export function IntegrationsView({
   isReadOnly = false,
+  planCapabilities,
   hevy,
   telegram,
   imports,
 }: IntegrationsViewProps) {
   const { t } = useTranslation();
+  const integrationsEnabled = planCapabilities?.integrationsEnabled ?? true;
+  const telegramEnabled = planCapabilities?.telegramEnabled ?? true;
+  const importsEnabled = planCapabilities?.importsEnabled ?? true;
 
   return (
     <div className={cn(PREMIUM_UI.animation.fadeIn, "space-y-12 pb-20")}>
@@ -79,13 +88,18 @@ export function IntegrationsView({
 
             {!hevy.status?.hasKey ? (
               <div className="space-y-4">
+                {!integrationsEnabled && (
+                  <p className="text-xs font-bold uppercase tracking-wider text-amber-300">
+                    {t('settings.integrations.pro_only')}
+                  </p>
+                )}
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">API Key</label>
                   <input 
                     type="password"
                     placeholder={t('settings.integrations.hevy.hevy_placeholder')}
                     value={hevy.key}
-                    disabled={isReadOnly}
+                    disabled={isReadOnly || !integrationsEnabled}
                     onChange={(e) => { hevy.setKey(e.target.value); }}
                     className="form-field w-full rounded-2xl py-3.5 px-5"
                   />
@@ -93,7 +107,7 @@ export function IntegrationsView({
                 <Button
                   type="button"
                   onClick={hevy.onSave}
-                  disabled={isReadOnly || hevy.loading || !hevy.key}
+                  disabled={isReadOnly || hevy.loading || !hevy.key || !integrationsEnabled}
                   className="w-full py-4 rounded-full bg-white text-black font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/10 disabled:opacity-50"
                 >
                   {hevy.loading ? '...' : t('common.confirm')}
@@ -110,7 +124,7 @@ export function IntegrationsView({
                      type="button"
                      variant="ghost"
                      onClick={hevy.onRemove}
-                     disabled={isReadOnly || hevy.loading}
+                     disabled={isReadOnly || hevy.loading || !integrationsEnabled}
                      className="h-auto p-0 text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 hover:bg-transparent transition-colors"
                    >
                      {t('settings.integrations.shared.remove')}
@@ -120,7 +134,7 @@ export function IntegrationsView({
                 <Button
                   type="button"
                   onClick={hevy.onSync}
-                  disabled={isReadOnly || hevy.syncing}
+                  disabled={isReadOnly || hevy.syncing || !integrationsEnabled}
                   className="w-full py-4 rounded-full bg-white/5 border border-white/10 text-white font-black hover:bg-white/10 transition-all flex items-center justify-center gap-3"
                 >
                   <RefreshCw size={18} className={cn(hevy.syncing && "animate-spin")} />
@@ -151,7 +165,13 @@ export function IntegrationsView({
             </div>
 
             <div className="space-y-6 flex flex-col">
-              {telegram.status?.linked ? (
+              {!telegramEnabled ? (
+                <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-center">
+                  <p className="text-xs font-bold uppercase tracking-wider text-amber-200">
+                    {t('settings.integrations.pro_only')}
+                  </p>
+                </div>
+              ) : telegram.status?.linked ? (
                 <>
                   <div className="bg-white/5 border border-white/5 p-6 rounded-3xl text-center">
                      <p className="text-sm font-bold text-white mb-1">
@@ -168,7 +188,7 @@ export function IntegrationsView({
                   <input 
                           type="checkbox"
                           checked={telegram.notifyOnWorkout}
-                          disabled={isReadOnly}
+                          disabled={isReadOnly || !telegramEnabled}
                           onChange={(e) => { telegram.onToggleNotify(e.target.checked); }}
                           className="mt-1 w-4 h-4 rounded border-white/10 bg-black/40 text-indigo-500 focus:ring-indigo-500/20 cursor-pointer"
                         />
@@ -200,7 +220,7 @@ export function IntegrationsView({
                   <Button
                     type="button"
                     onClick={telegram.onGenerate}
-                    disabled={isReadOnly || telegram.loading}
+                    disabled={isReadOnly || telegram.loading || !telegramEnabled}
                     className="w-full py-4 rounded-full bg-white text-black font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/10 disabled:opacity-50 flex items-center justify-center gap-3"
                   >
                     <Smartphone size={20} />
@@ -216,6 +236,11 @@ export function IntegrationsView({
       {/* IMPORTS BENTO */}
       <div className="space-y-6 pt-12 border-t border-white/5">
          <h2 className="text-xl font-black text-white tracking-tight uppercase px-2">{t('settings.integrations.imports.title')}</h2>
+         {!importsEnabled && (
+           <p className="px-2 text-xs font-bold uppercase tracking-wider text-amber-300">
+             {t('settings.integrations.pro_only')}
+           </p>
+         )}
          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <PremiumCard className="p-8 space-y-4 bg-gradient-to-br from-blue-900/20 to-transparent border-blue-500/20 group">
                <div className="flex items-center gap-3">
@@ -234,7 +259,7 @@ export function IntegrationsView({
                       const file = e.target.files?.[0];
                       if (file) imports.onUpload(file, 'mfp');
                     }}
-                    disabled={imports.importing}
+                    disabled={imports.importing || !importsEnabled}
                   />
                </label>
             </PremiumCard>
@@ -256,7 +281,7 @@ export function IntegrationsView({
                       const file = e.target.files?.[0];
                       if (file) imports.onUpload(file, 'zepp');
                     }}
-                    disabled={imports.importing}
+                    disabled={imports.importing || !importsEnabled}
                   />
                </label>
             </PremiumCard>

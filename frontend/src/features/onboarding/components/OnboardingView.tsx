@@ -1,21 +1,22 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Check, 
-  ArrowRight, 
+  ArrowRight,
   Dumbbell, 
   Database, 
   RefreshCw, 
   Lock,
-  Zap,
   ChevronRight,
   ChevronLeft,
   Scale
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { PlanCard } from '../../../shared/components/plans/PlanCard';
 import { Button } from '../../../shared/components/ui/Button';
 import { Input } from '../../../shared/components/ui/Input';
 import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
+import { PLAN_CATALOG, buildPlanCardModel } from '../../../shared/constants/plan-catalog';
 import { cn } from '../../../shared/utils/cn';
 import { type OnboardingPayload } from '../api/onboarding-api';
 
@@ -53,7 +54,7 @@ export function OnboardingView({
   onUpload,
   importing
 }: OnboardingViewProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const TRAINERS = [
     { id: 'atlas', name: 'Atlas', description: t('onboarding.trainers.atlas'), color: 'from-orange-500 to-red-600' },
@@ -63,12 +64,8 @@ export function OnboardingView({
     { id: 'gymbro', name: 'GymBro', description: t('onboarding.trainers.gymbro'), color: 'from-yellow-400 to-orange-500' },
   ];
 
-  const PLANS = [
-    { id: 'Free', name: 'Free', icon: <Zap size={20} className="text-emerald-400" /> },
-    { id: 'Basic', name: 'Basic', icon: <Zap size={20} className="text-blue-400" /> },
-    { id: 'Pro', name: 'Pro', icon: <Zap size={20} className="text-orange-400" /> },
-    { id: 'Premium', name: 'Premium', icon: <Zap size={20} className="text-purple-400" /> }
-  ];
+  const isPt = i18n.language.startsWith('pt');
+  const plans = PLAN_CATALOG.map((entry) => buildPlanCardModel(entry, t, isPt));
 
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -175,34 +172,29 @@ export function OnboardingView({
               <p className="text-zinc-500 text-sm font-medium">{t('onboarding.step_plan_subtitle')}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {PLANS.map((plan) => (
-                <PremiumCard
-                  key={plan.id}
-                  onClick={() => { setFormData({ ...formData, subscription_plan: plan.id }); }}
-                  className={cn(
-                    "p-6 cursor-pointer border transition-all relative overflow-hidden group",
-                    formData.subscription_plan === plan.id
-                      ? "bg-white/10 border-white/20 ring-1 ring-white/20"
-                      : "bg-white/[0.02] border-white/5 hover:border-white/10"
-                  )}
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="p-3 rounded-xl bg-black/20 border border-white/5">
-                      {plan.icon}
-                    </div>
-                    {formData.subscription_plan === plan.id && (
-                      <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white">
-                        <Check size={14} strokeWidth={4} />
-                      </div>
-                    )}
-                  </div>
-                  <h3 className="text-xl font-black text-white mb-1 uppercase tracking-tight">{plan.name}</h3>
-                  <p className="text-[10px] text-zinc-500 font-bold leading-tight uppercase tracking-wider">
-                    {t(`landing.plans.items.${plan.id.toLowerCase()}.description`)}
-                  </p>
-                </PremiumCard>
-              ))}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {plans.map((plan) => {
+                const normalizedPlanName = plan.id.charAt(0).toUpperCase() + plan.id.slice(1);
+                return (
+                  <PlanCard
+                    key={plan.id}
+                    plan={{
+                      id: plan.id,
+                      name: plan.name,
+                      subtitle: plan.subtitle,
+                      priceLabel: plan.priceLabel,
+                      features: plan.features,
+                      badge: plan.badge,
+                      highlight: plan.highlight,
+                    }}
+                    context="selection"
+                    selected={formData.subscription_plan?.toLowerCase() === plan.id}
+                    actionLabel={plan.buttonLabel}
+                    onAction={() => { setFormData({ ...formData, subscription_plan: normalizedPlanName }); }}
+                    className="bg-black/20"
+                  />
+                );
+              })}
             </div>
 
             <div className="flex gap-4">

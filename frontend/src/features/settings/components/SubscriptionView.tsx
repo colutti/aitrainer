@@ -1,9 +1,11 @@
-import { Check, CreditCard, Sparkles, AlertCircle } from 'lucide-react';
+import { CreditCard, Sparkles, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { PlanCard } from '../../../shared/components/plans/PlanCard';
 import { Button } from '../../../shared/components/ui/Button';
 import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
 import { Skeleton } from '../../../shared/components/ui/Skeleton';
+import type { PlanCardModel } from '../../../shared/constants/plan-catalog';
 import { PREMIUM_UI } from '../../../shared/styles/ui-variants';
 import { cn } from '../../../shared/utils/cn';
 
@@ -11,23 +13,15 @@ const PLAN_PRIORITY: Record<string, number> = {
   free: 0,
   basic: 1,
   pro: 2,
-  premium: 3,
 };
 
-export interface Plan {
-  id: string;
-  name: string;
-  price: string;
-  icon: React.ElementType;
-  features: string[];
-}
+export type Plan = PlanCardModel;
 
 export interface SubscriptionViewProps {
   currentPlan: string;
   plans: Plan[];
   loading: string | null;
   isInitialLoading: boolean;
-  isPt: boolean;
   hasStripeCustomer: boolean;
   isReadOnly?: boolean;
   onSubscribe: (planId: string) => void;
@@ -39,7 +33,6 @@ export function SubscriptionView({
   plans,
   loading,
   isInitialLoading,
-  isPt,
   hasStripeCustomer,
   isReadOnly = false,
   onSubscribe,
@@ -75,8 +68,8 @@ export function SubscriptionView({
               <Skeleton className="h-8 w-64 bg-white/5" />
            </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-           {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-96 rounded-[32px] bg-white/5" />)}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+           {[1, 2, 3].map(i => <Skeleton key={i} className="h-96 rounded-[32px] bg-white/5" />)}
         </div>
       </div>
     );
@@ -102,86 +95,39 @@ export function SubscriptionView({
       </div>
 
       {/* PLANS GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {plans.map((plan) => {
           const planIdLower = plan.id.toLowerCase().trim();
           const isCurrent = currentPlan === planIdLower;
-          const Icon = plan.icon;
-          
+
           return (
-            <PremiumCard 
-              key={plan.id} 
-              className={cn(
-                "p-8 flex flex-col h-full",
-                isCurrent && "border-indigo-500/50 bg-indigo-500/[0.05] ring-1 ring-indigo-500/20"
-              )}
-            >
-              <div className="mb-8">
-                <div className={cn(
-                  "w-12 h-12 rounded-2xl flex items-center justify-center mb-6 border transition-colors",
-                  isCurrent 
-                    ? "bg-indigo-500/20 text-indigo-400 border-indigo-500/30" 
-                    : "bg-white/5 text-zinc-500 border-white/5"
-                )}>
-                  <Icon size={24} />
-                </div>
-                
-                <h3 className="text-xl font-black text-white tracking-tight">{plan.name}</h3>
-                
-                <div className="mt-2 flex items-baseline gap-1">
-                  <span className="text-3xl font-black text-white tracking-tighter">
-                    {isPt ? 'R$' : '$'}{plan.price}
-                  </span>
-                  <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">
-                    {t('common.per_month')}
-                  </span>
-                </div>
-              </div>
-
-              {isCurrent && (
-                <div className="mb-6 px-3 py-1 bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full self-start shadow-lg shadow-indigo-500/20 animate-in zoom-in-95">
-                  {t('settings.subscription.active')}
-                </div>
-              )}
-
-              <ul className="space-y-4 mb-10 flex-1">
-                {plan.features.map((feature, i) => (
-                  <li key={i} className="flex gap-3 text-xs font-medium text-zinc-400 leading-tight">
-                    <div className="w-4 h-4 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
-                       <Check size={10} className="text-emerald-400" strokeWidth={4} />
-                    </div>
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Button
-                type="button"
-                disabled={isReadOnly || isCurrent || planIdLower === 'free' || loading !== null}
-                onClick={() => {
-                  if (isReadOnly) return;
-                  if (currentPlan !== 'free' && planIdLower !== 'free' && hasStripeCustomer) {
-                    onManage(planIdLower);
-                  } else {
-                    onSubscribe(planIdLower);
-                  }
-                }}
-                data-testid={`subscription-plan-btn-${planIdLower}`}
-                className={cn(
-                  "w-full py-4 rounded-full font-black text-sm transition-all flex items-center justify-center gap-2",
-                  isCurrent 
-                    ? "bg-white/5 text-zinc-500 border border-white/5 cursor-default" 
-                    : planIdLower === 'free'
-                      ? "bg-white/5 text-zinc-700 border border-white/5 cursor-not-allowed"
-                      : "bg-white text-black hover:scale-105 active:scale-95 shadow-xl shadow-white/10"
-                )}
-              >
-                {loading === planIdLower && <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />}
-                <span>
-                  {getPlanActionLabel(planIdLower, isCurrent)}
-                </span>
-              </Button>
-            </PremiumCard>
+            <PlanCard
+              key={plan.id}
+              plan={{
+                id: plan.id,
+                name: plan.name,
+                subtitle: plan.subtitle,
+                priceLabel: plan.priceLabel,
+                features: plan.features,
+                badge: plan.badge,
+                highlight: isCurrent || plan.highlight,
+              }}
+              context="management"
+              current={isCurrent}
+              actionLabel={getPlanActionLabel(planIdLower, isCurrent)}
+              disabled={isReadOnly || isCurrent || planIdLower === 'free' || loading !== null}
+              loading={loading === planIdLower}
+              actionTestId={`subscription-plan-btn-${planIdLower}`}
+              onAction={() => {
+                if (isReadOnly) return;
+                if (currentPlan !== 'free' && planIdLower !== 'free' && hasStripeCustomer) {
+                  onManage(planIdLower);
+                } else {
+                  onSubscribe(planIdLower);
+                }
+              }}
+              className="bg-black/20"
+            />
           );
         })}
       </div>

@@ -45,7 +45,7 @@ describe('SubscriptionPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (useAuthStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-      userInfo: { subscription_plan: 'Premium', has_stripe_customer: true },
+      userInfo: { subscription_plan: 'Pro', has_stripe_customer: true },
       loadUserInfo: mockLoadUserInfo,
     });
   });
@@ -57,7 +57,7 @@ describe('SubscriptionPage', () => {
     });
   });
 
-  it('should show "Premium" as active plan after loading', async () => {
+  it('should show active plan after loading', async () => {
     render(<SubscriptionPage />);
 
     // Wait for loading to finish
@@ -70,8 +70,8 @@ describe('SubscriptionPage', () => {
     expect(elements.length).toBeGreaterThan(0);
   });
 
-  it('keeps subscription features synced with landing copy for pro and premium', () => {
-    expect(ptBR.landing.plans.items.pro.features.join(' ')).toMatch(/chat \+ Telegram/i);
-    expect(ptBR.landing.plans.items.premium.features.join(' ')).toMatch(/chat \+ Telegram/i);
+  it('keeps subscription features synced with landing copy for pro and basic', () => {
+    expect(ptBR.landing.plans.items.pro.features.join(' ')).toMatch(/Telegram/i);
+    expect(ptBR.landing.plans.items.basic.features.join(' ')).toMatch(/100/i);
   });
 });

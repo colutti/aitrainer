@@ -107,6 +107,7 @@
       "portal_error": "Error opening billing portal"
     },
     "integrations": {
+      "pro_only": "Available on Pro",
       "shared": {
         "active": "Active: {{key}}",
         "remove": "Remove",
@@ -626,48 +627,41 @@
     "plans": {
       "title": "Plans",
       "subtitle": "Choose your performance level",
+      "recommended": "Recommended",
       "total": "Total",
       "per_month": "/month",
       "items": {
         "free": {
           "name": "Free",
-          "description": "Best for trying the platform and organizing your baseline routine.",
+          "description": "Try FityQ coaching for 7 days.",
           "button": "Start free",
           "features": [
-            "Basic chat",
-            "Weight log",
-            "Dashboard"
+            "20 messages per day",
+            "1 trainer",
+            "No integrations",
+            "No photos"
           ]
         },
         "basic": {
           "name": "Basic",
-          "description": "AI memory, integrations, and clearer daily nutrition guidance.",
+          "description": "Your personal trainer for daily use, without automations.",
           "button": "Subscribe Basic",
           "features": [
-            "AI memory",
-            "Integrations",
-            "Macro analysis"
+            "100 messages per month",
+            "All trainers",
+            "Manual and focused usage",
+            "No integrations and no photos"
           ]
         },
         "pro": {
           "name": "Pro",
-          "description": "Photo analysis in app chat and Telegram with deeper personalization and full mentor access.",
+          "description": "The full experience with data, photos, and automations.",
           "button": "Subscribe Pro",
           "features": [
-            "Photo analysis (chat + Telegram)",
-            "All mentors",
-            "Dynamic TDEE",
-            "Priority support"
-          ]
-        },
-        "premium": {
-          "name": "Premium",
-          "description": "Maximum coaching with advanced photo analysis in both chat and Telegram.",
-          "button": "Subscribe Premium",
-          "features": [
-            "Advanced photo analysis (chat + Telegram)",
-            "Priority AI",
-            "Full package"
+            "300 messages per month",
+            "Chat photo analysis",
+            "Hevy, Telegram, and imports",
+            "All trainers"
           ]
         }
       }

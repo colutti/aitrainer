@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useAuthStore } from '../../../shared/hooks/useAuth';
 import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
 import type { HevyStatus, ImportResult, TelegramStatus } from '../../../shared/types/integration';
@@ -18,6 +19,9 @@ export default function IntegrationsPage() {
   const { t } = useTranslation();
   const notify = useNotificationStore();
   const { isReadOnly: isDemoUser } = useDemoMode();
+  const { userInfo } = useAuthStore();
+  const currentPlan = (userInfo?.subscription_plan ?? 'Free').toLowerCase();
+  const isPro = currentPlan === 'pro';
   
   // Hevy State
   const [hevyStatus, setHevyStatus] = useState<HevyStatus | null>(null);
@@ -198,6 +202,11 @@ export default function IntegrationsPage() {
       imports={{
         onUpload: handleUpload,
         importing: importing
+      }}
+      planCapabilities={{
+        integrationsEnabled: isPro,
+        telegramEnabled: isPro,
+        importsEnabled: isPro,
       }}
       isReadOnly={isDemoUser}
     />
