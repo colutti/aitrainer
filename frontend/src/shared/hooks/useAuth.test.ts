@@ -9,7 +9,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
 import { httpClient } from '../api/http-client';
 
-import { useAuthStore } from './useAuth';
+import { shouldEnableUnsafeLocalAuthBypass, useAuthStore } from './useAuth';
 
 // Mock the http-client module
 vi.mock('../api/http-client');
@@ -59,6 +59,52 @@ const mockLocalStorage = {
 };
 
 describe('useAuth', () => {
+  describe('shouldEnableUnsafeLocalAuthBypass', () => {
+    it('should return false when bypass flag is disabled', () => {
+      expect(
+        shouldEnableUnsafeLocalAuthBypass({
+          VITE_ENABLE_UNSAFE_LOCAL_AUTH_BYPASS: 'false',
+          DEV: true,
+          MODE: 'development',
+          PROD: false,
+        })
+      ).toBe(false);
+    });
+
+    it('should return true in dev when bypass flag is enabled', () => {
+      expect(
+        shouldEnableUnsafeLocalAuthBypass({
+          VITE_ENABLE_UNSAFE_LOCAL_AUTH_BYPASS: 'true',
+          DEV: true,
+          MODE: 'development',
+          PROD: false,
+        })
+      ).toBe(true);
+    });
+
+    it('should return true in test mode when bypass flag is enabled', () => {
+      expect(
+        shouldEnableUnsafeLocalAuthBypass({
+          VITE_ENABLE_UNSAFE_LOCAL_AUTH_BYPASS: 'true',
+          DEV: false,
+          MODE: 'test',
+          PROD: false,
+        })
+      ).toBe(true);
+    });
+
+    it('should return false in production even when bypass flag is enabled', () => {
+      expect(
+        shouldEnableUnsafeLocalAuthBypass({
+          VITE_ENABLE_UNSAFE_LOCAL_AUTH_BYPASS: 'true',
+          DEV: false,
+          MODE: 'production',
+          PROD: true,
+        })
+      ).toBe(false);
+    });
+  });
+
   beforeEach(() => {
     vi.stubGlobal('localStorage', mockLocalStorage);
     vi.clearAllMocks();
@@ -254,6 +300,20 @@ describe('useAuth', () => {
 
       expect(sendEmailVerification).not.toHaveBeenCalled();
       expect(result.current.isAuthenticated).toBe(false);
+    });
+
+    it('should normalize email before creating firebase user', async () => {
+      const { result } = renderHook(() => useAuthStore());
+
+      await act(async () => {
+        await result.current.register('New User', '  New.User@Example.COM  ', 'password123');
+      });
+
+      expect(createUserWithEmailAndPassword).toHaveBeenCalledWith(
+        expect.anything(),
+        'new.user@example.com',
+        'password123'
+      );
     });
   });
 

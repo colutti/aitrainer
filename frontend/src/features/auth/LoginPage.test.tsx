@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { sendPasswordResetEmail } from 'firebase/auth';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
@@ -260,6 +261,42 @@ describe('LoginPage', () => {
 
     await waitFor(() => {
       expect(socialLoginMock).toHaveBeenCalledWith('google');
+    });
+  });
+
+  it('should show error when forgot password is clicked without email', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    );
+
+    await user.click(screen.getByRole('button', { name: /Esqueci a senha/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Informe seu e-mail para receber o link de redefinição/i)).toBeInTheDocument();
+    });
+
+    expect(sendPasswordResetEmail).not.toHaveBeenCalled();
+  });
+
+  it('should send password reset email when forgot password is clicked with valid email', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    );
+
+    await user.type(screen.getByPlaceholderText(/exemplo@email\.com/i), 'recover@example.com');
+    await user.click(screen.getByRole('button', { name: /Esqueci a senha/i }));
+
+    await waitFor(() => {
+      expect(sendPasswordResetEmail).toHaveBeenCalledWith({}, 'recover@example.com');
+      expect(screen.getByText(/Enviamos um link para redefinir sua senha no seu e-mail/i)).toBeInTheDocument();
     });
   });
 });

@@ -5,20 +5,33 @@ import { httpClient } from '../api/http-client';
 const AUTH_TOKEN_KEY = 'auth_token';
 const DEMO_EMAIL = 'demo@fityq.it';
 const DEMO_DISPLAY_NAME = 'Ethan Parker';
-const UNSAFE_LOCAL_AUTH_BYPASS_ENABLED = (() => {
-  const flagEnabled = import.meta.env.VITE_ENABLE_UNSAFE_LOCAL_AUTH_BYPASS === 'true';
+interface AuthBypassEnv {
+  VITE_ENABLE_UNSAFE_LOCAL_AUTH_BYPASS?: string;
+  PROD?: boolean;
+  DEV?: boolean;
+  MODE?: string;
+}
+
+export const shouldEnableUnsafeLocalAuthBypass = (env: AuthBypassEnv): boolean => {
+  const flagEnabled = env.VITE_ENABLE_UNSAFE_LOCAL_AUTH_BYPASS === 'true';
   if (!flagEnabled) {
     return false;
   }
 
   // Hard stop: bypass is never allowed in production builds.
-  if (import.meta.env.PROD) {
+  if (env.PROD) {
     console.error('VITE_ENABLE_UNSAFE_LOCAL_AUTH_BYPASS is ignored in production.');
     return false;
   }
 
-  return import.meta.env.DEV || import.meta.env.MODE === 'test';
-})();
+  if (env.DEV === true) {
+    return true;
+  }
+
+  return env.MODE === 'test';
+};
+
+const UNSAFE_LOCAL_AUTH_BYPASS_ENABLED = shouldEnableUnsafeLocalAuthBypass(import.meta.env);
 
 const createAuthError = (code: string, message: string): Error & { code: string } => {
   return Object.assign(new Error(message), { code });
