@@ -5,8 +5,6 @@ This module contains the database logic for the application.
 from datetime import datetime, date
 import pymongo
 from langchain_mongodb.chat_message_histories import MongoDBChatMessageHistory
-from langchain_core.language_models import BaseChatModel
-from langchain_classic.memory import ConversationSummaryBufferMemory
 
 from src.core.config import settings
 from src.api.models.trainer_profile import TrainerProfile
@@ -161,15 +159,6 @@ class MongoDatabase:
             database_name=settings.DB_NAME,
             history_size=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
         )
-
-    def get_conversation_memory(
-        self,
-        session_id: str,
-        llm: BaseChatModel,
-        max_token_limit: int | None = None,
-    ) -> ConversationSummaryBufferMemory:
-        """Retrieves conversation memory buffer."""
-        return self.chat.get_memory_buffer(session_id, llm, max_token_limit)
 
     def get_window_memory(
         self,

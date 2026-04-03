@@ -10,8 +10,8 @@ Extracts prompt template construction from AITrainerBrain for better modularity:
 from datetime import datetime
 from typing import Any
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from src.core.config import settings
 from src.core.logs import logger
+from src.core.config import settings
 
 
 class PromptBuilder:
@@ -49,7 +49,6 @@ class PromptBuilder:
         profile,
         trainer_profile_summary: str,
         user_profile_summary: str,
-        chat_history_summary: str,
         formatted_history_msgs,
         user_input: str,
         current_date: str | None = None,
@@ -62,7 +61,6 @@ class PromptBuilder:
             profile: UserProfile object
             trainer_profile_summary: Trainer description string
             user_profile_summary: User profile description string
-            chat_history_summary: Legacy chat history string (for compatibility)
             formatted_history_msgs: List[BaseMessage] for MessagesPlaceholder
             user_input: Current user message
             current_date: Current date string (YYYY-MM-DD)
@@ -104,7 +102,6 @@ class PromptBuilder:
             "user_profile_obj": profile,  # Passed for extraction
             "user_name": profile.display_name or "Aluno",
             "user_timezone": getattr(profile, "timezone", None) or "Europe/Madrid",
-            "chat_history_summary": chat_history_summary,  # Legacy (removed from template V3)
             "chat_history": formatted_history_msgs,  # For MessagesPlaceholder
             "user_message": user_message_with_tag,
             "agenda_section": agenda_section,  # Agenda section for dynamic context
@@ -148,23 +145,14 @@ class PromptBuilder:
         # Get base template
         system_content = settings.PROMPT_TEMPLATE
 
-        # 1. Inject Long-Term Summary
-        user_profile = input_data.get("user_profile_obj")
-        if user_profile and user_profile.long_term_summary:
-            input_data["long_term_summary_section"] = (
-                f"\n\n{user_profile.long_term_summary}"
-            )
-        else:
-            input_data["long_term_summary_section"] = ""
-
-        # 2. Ensure current_date exists
+        # 1. Ensure current_date exists
         if "current_date" not in input_data:
             input_data["current_date"] = datetime.now().strftime("%Y-%m-%d")
 
-        # 3. Handle empty agenda block
+        # 2. Handle empty agenda block
         # Avoids injecting <agenda>\n\n</agenda> for users with no planned events
 
-        # 3b. Remove empty agenda block when no events exist
+        # 2b. Remove empty agenda block when no events exist
         # Avoids injecting <agenda>\n\n</agenda> for users with no planned events
         if not input_data.get("agenda_section"):
             system_content = system_content.replace(
@@ -172,7 +160,7 @@ class PromptBuilder:
             )
             input_data.setdefault("agenda_section", "")
 
-        # 4. Add Telegram format if needed
+        # 3. Add Telegram format if needed
         if is_telegram:
             system_content += (
                 "\n\n--- \n"
@@ -181,14 +169,14 @@ class PromptBuilder:
                 "Evite tabelas e blocos de código extensos."
             )
 
-        # 5. Build messages with MessagesPlaceholder for history
+        # 4. Build messages with MessagesPlaceholder for history
         messages: list[Any] = [("system", system_content)]
         messages.append(MessagesPlaceholder(variable_name="chat_history"))
         messages.append(("human", "{user_message}"))
 
         prompt_template = ChatPromptTemplate.from_messages(messages)
 
-        # 6. Verify formatting and log
+        # 5. Verify formatting and log
         try:
             rendered_prompt = prompt_template.format(**input_data)
             has_security = "## Regras de segurança e escopo" in rendered_prompt

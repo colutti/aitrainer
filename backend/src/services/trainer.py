@@ -14,7 +14,6 @@ from src.core.config import settings
 from src.core.subscription import SUBSCRIPTION_PLANS, SubscriptionPlan
 from src.services.database import MongoDatabase
 from src.services.llm_client import LLMClient
-from src.services.history_compactor import HistoryCompactor
 from src.services.prompt_builder import PromptBuilder
 from src.utils.date_utils import parse_cycle_start
 from src.services.workout_tools import (
@@ -104,7 +103,6 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         self._database: MongoDatabase = database
         self._llm_client: LLMClient = llm_client
         self._qdrant_client = qdrant_client
-        self.compactor = HistoryCompactor(database, llm_client)
         self.prompt_builder = PromptBuilder()
         self._executor = ThreadPoolExecutor(max_workers=10)
 
@@ -592,14 +590,8 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         message_options: dict | None = None,
     ):
         """
-        Generates LLM response, summarizing history if needed.
+        Generates LLM response using the latest chat window only.
         This function assumes one chat session per user (user_email is used as session_id).
-
-        If the conversation history exceeds 20 messages, it will:
-        1. Separate old messages (first 10) from recent messages (remaining)
-        2. Summarize old messages and merge with existing summary
-        3. Prune the chat history, keeping only recent messages
-        4. Update the conversation summary in the database
 
         Args:
             user_email (str): The user's email, also used as session ID.
@@ -642,7 +634,6 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             profile=profile,
             trainer_profile_summary=trainer_profile_obj.get_trainer_profile_summary(),
             user_profile_summary=profile.get_profile_summary(),
-            chat_history_summary="",
             formatted_history_msgs=self.format_history_as_messages(
                 chat_history_messages
             ),
@@ -708,7 +699,6 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         bg_tasks = metadata.get("background_tasks")
         train_type = metadata.get("trainer_type", "atlas")
         reset = metadata.get("needs_cycle_reset", False)
-        callback = metadata.get("log_callback")
         user_images = metadata.get("user_images")
 
         if bg_tasks:
@@ -721,13 +711,6 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
                 final_response,
                 {"trainer_type": train_type, "user_images": user_images},
             )
-            bg_tasks.add_task(
-                self.compactor.compact_history,
-                user_email=user_email,
-                active_window_size=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
-                log_callback=callback,
-                compaction_threshold=settings.COMPACTION_THRESHOLD,
-            )
             logger.info("Scheduled background tasks for user: %s", user_email)
         else:
             # Fallback for sync callers (like Telegram)
@@ -737,12 +720,6 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
                 user_input,
                 final_response,
                 {"trainer_type": train_type, "user_images": user_images},
-            )
-            await self.compactor.compact_history(
-                user_email=user_email,
-                active_window_size=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
-                log_callback=callback,
-                compaction_threshold=settings.COMPACTION_THRESHOLD,
             )
 
     def send_message_sync(

@@ -3,7 +3,7 @@ Tests for the AITrainerBrain service.
 """
 
 import unittest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
 
 from src.api.models.user_profile import UserProfile
 from src.api.models.trainer_profile import TrainerProfile
@@ -37,15 +37,8 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         # Need to mock _llm attribute for the summarization LLM
         self.mock_llm._llm = MagicMock()
 
-        with (
-            patch("src.services.trainer.settings") as mock_settings,
-            patch("src.services.trainer.HistoryCompactor") as mock_compactor_cls,
-        ):
-            self.mock_compactor = mock_compactor_cls.return_value
-            # Mock compact_history as an async function
-            self.mock_compactor.compact_history = AsyncMock()
+        with patch("src.services.trainer.settings") as mock_settings:
             mock_settings.MAX_LONG_TERM_MEMORY_MESSAGES = 20
-            mock_settings.SUMMARY_MAX_TOKEN_LIMIT = 2000
             mock_settings.MAX_SHORT_TERM_MEMORY_MESSAGES = 10
 
             # Mock get_window_memory to return our mock
@@ -55,9 +48,6 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
             self.brain = AITrainerBrain(
                 database=self.mock_db, llm_client=self.mock_llm
             )
-
-            # Ensure compactor was instantiated
-            mock_compactor_cls.assert_called_with(self.mock_db, self.mock_llm)
 
     async def test_send_message_ai_success(self):
         """

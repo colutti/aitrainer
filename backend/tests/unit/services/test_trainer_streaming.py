@@ -21,8 +21,7 @@ async def test_send_message_ai_streaming_error(mock_deps):
     """Test streaming response when an error occurs mid-stream."""
     db, llm, memory = mock_deps
 
-    with patch("src.services.trainer.HistoryCompactor"):
-        trainer = AITrainerBrain(db, llm)
+    trainer = AITrainerBrain(db, llm)
 
     # Mock user and trainer profiles
     db.get_user_profile.return_value = MagicMock(
@@ -65,8 +64,7 @@ async def test_get_memories_paginated_error(mock_deps):
     db, llm, memory = mock_deps
     db, llm, memory = mock_deps
     mock_qdrant = MagicMock()
-    with patch("src.services.trainer.HistoryCompactor"):
-        trainer = AITrainerBrain(db, llm, qdrant_client=mock_qdrant)
+    trainer = AITrainerBrain(db, llm, qdrant_client=mock_qdrant)
 
     mock_qdrant.count.side_effect = Exception("Qdrant unavailable")
 
@@ -82,8 +80,7 @@ def test_get_memory_by_id_error(mock_deps):
     """Test get_memory_by_id handling error gracefully."""
     db, llm, memory = mock_deps
     qdrant_client = MagicMock()
-    with patch("src.services.trainer.HistoryCompactor"):
-        trainer = AITrainerBrain(db, llm, qdrant_client)
+    trainer = AITrainerBrain(db, llm, qdrant_client)
 
     qdrant_client.retrieve.side_effect = Exception("Not found")
 
@@ -94,8 +91,7 @@ def test_get_memory_by_id_error(mock_deps):
 def test_format_memory_messages_unknown_type(mock_deps):
     """Test _format_memory_messages with unknown message type."""
     db, llm, memory = mock_deps
-    with patch("src.services.trainer.HistoryCompactor"):
-        trainer = AITrainerBrain(db, llm)
+    trainer = AITrainerBrain(db, llm)
 
     class UnknownMessage:
         content = "Unknown content"
@@ -114,8 +110,7 @@ def test_format_memory_messages_unknown_type(mock_deps):
 async def test_send_message_ai_passes_image_payload_to_llm(mock_deps):
     """Ensure image payload is forwarded to LLM input data for multimodal flow."""
     db, llm, _ = mock_deps
-    with patch("src.services.trainer.HistoryCompactor"):
-        trainer = AITrainerBrain(db, llm)
+    trainer = AITrainerBrain(db, llm)
 
     profile = MagicMock(subscription_plan="Pro", get_profile_summary=lambda: "User")
     trainer_profile = MagicMock(
