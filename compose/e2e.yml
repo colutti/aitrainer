@@ -7,7 +7,7 @@ services:
       - firebase_emulator_npm_cache:/root/.npm
     command: >
       sh -lc "npm install -g firebase-tools@14.26.0 &&
-      firebase emulators:start --project demo-fityq --only auth --config /workspace/firebase.emulator.json --host 0.0.0.0"
+      firebase emulators:start --project demo-fityq --only auth --config /workspace/firebase.emulator.json"
     healthcheck:
       test: ["CMD", "node", "/workspace/scripts/test/firebase_auth_emulator_healthcheck.cjs"]
       interval: 10s
@@ -34,6 +34,8 @@ services:
       QDRANT_COLLECTION_NAME: aitrainer_test
       RUNNING_IN_CONTAINER: "true"
       STRIPE_API_BASE: http://stripe-mock:12111
+      FIREBASE_AUTH_EMULATOR_HOST: firebase-emulator:9099
+      FIREBASE_PROJECT_ID: demo-fityq
     command: python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000
     depends_on:
       mongo:
