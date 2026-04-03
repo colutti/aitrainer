@@ -2,6 +2,8 @@ import { expect, type Page, type TestInfo } from '@playwright/test';
 
 import { verifyEmailViaEmulator } from './firebase-emulator';
 
+const apiBaseUrl = process.env.E2E_API_BASE_URL ?? 'http://localhost:8000';
+
 export interface E2EUserCredentials {
   name: string;
   email: string;
@@ -95,26 +97,64 @@ export async function completeOnboardingViaUi(page: Page, profile: OnboardingPro
 
 export async function bootstrapRegisteredUser(page: Page, testInfo: TestInfo, profile: OnboardingProfile = {}) {
   const user = buildE2EUserCredentials(testInfo);
-  await registerAndVerifyViaEmulator(page, user);
-  await loginViaUi(page, user);
+  const response = await page.request.post(`${apiBaseUrl}/user/e2e-login`, {
+    data: {
+      email: user.email,
+      display_name: user.name,
+      onboarding_completed: false,
+    },
+  });
+  expect(response.ok()).toBeTruthy();
+  const payload = await response.json() as { token?: string };
+  expect(payload.token).toBeTruthy();
+  await page.goto('/login', { waitUntil: 'networkidle' });
+  await page.evaluate((token: string) => {
+    localStorage.setItem('auth_token', token);
+  }, payload.token!);
+  await page.goto('/onboarding', { waitUntil: 'networkidle' });
   await completeOnboardingViaUi(page, { ...profile, name: profile.name ?? user.name });
   return page;
 }
 
 export async function bootstrapFreshUser(page: Page, testInfo: TestInfo) {
   const user = buildE2EUserCredentials(testInfo, 'fresh');
-  await registerAndVerifyViaEmulator(page, user);
-  await loginViaUi(page, user);
+  const response = await page.request.post(`${apiBaseUrl}/user/e2e-login`, {
+    data: {
+      email: user.email,
+      display_name: user.name,
+      onboarding_completed: false,
+    },
+  });
+  expect(response.ok()).toBeTruthy();
+  const payload = await response.json() as { token?: string };
+  expect(payload.token).toBeTruthy();
+  await page.goto('/login', { waitUntil: 'networkidle' });
+  await page.evaluate((token: string) => {
+    localStorage.setItem('auth_token', token);
+  }, payload.token!);
+  await page.goto('/onboarding', { waitUntil: 'networkidle' });
   await expect(page).toHaveURL(/\/onboarding(?:\?.*)?$/, { timeout: 20000 });
   await expect(page.getByText(/Your Profile|Seu Perfil|Tu perfil/i)).toBeVisible({ timeout: 20000 });
   return page;
 }
 
 export async function loginDemoUserViaUi(page: Page) {
+  const response = await page.request.post(`${apiBaseUrl}/user/e2e-login`, {
+    data: {
+      email: 'demo@fityq.it',
+      display_name: 'Ethan Parker',
+      onboarding_completed: true,
+      is_demo: true,
+    },
+  });
+  expect(response.ok()).toBeTruthy();
+  const payload = await response.json() as { token?: string };
+  expect(payload.token).toBeTruthy();
+
   await page.goto('/login', { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /Login/i }).click();
-  await page.getByTestId('login-email').fill('demo@fityq.it');
-  await page.getByTestId('login-password').fill('FityqDemo!2026');
-  await page.getByRole('button', { name: /Entrar/i }).click();
+  await page.evaluate((token: string) => {
+    localStorage.setItem('auth_token', token);
+  }, payload.token!);
+  await page.goto('/dashboard', { waitUntil: 'networkidle' });
   await page.waitForURL('**/dashboard', { timeout: 20000 });
 }

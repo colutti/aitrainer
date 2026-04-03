@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 
 import { loginDemoUserViaUi } from './helpers/bootstrap';
-import { t } from './helpers/translations';
 
 // Override global storageState to ensure unauthenticated access for landing page tests
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -14,17 +13,12 @@ test.describe('Landing Page (Public Access)', () => {
     // 2. Verify we did NOT get redirected to dashboard
     await expect(page).toHaveURL(/.*\//);
 
-    // 3. Verify Hero section elements (using translations if possible or generic robust locators)
-    // Looking for the main call to action button which usually points to login or signup
-    const loginButton = page.getByRole('button', { name: /Entrar|Login/i }).first();
-    if (await loginButton.isVisible().catch(() => false)) {
-      await expect(loginButton).toBeVisible();
-    } else {
-      const mobileMenuToggle = page.getByRole('button', { name: /Toggle menu/i });
-      await expect(mobileMenuToggle).toBeVisible();
-      await mobileMenuToggle.click();
-      await expect(page.getByRole('button', { name: /Entrar|Login/i }).first()).toBeVisible();
-    }
+    // 3. Verify Hero section elements
+    await expect(
+      page.getByRole('heading', {
+        name: /Seu Treinador IA Pessoal|Your AI Personal Trainer|Tu entrenador personal con IA/i,
+      })
+    ).toBeVisible();
 
     // 4. Verify Pricing section is present
     // Looking for some generic text that appears in the pricing or comparison tables

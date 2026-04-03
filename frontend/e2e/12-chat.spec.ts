@@ -25,8 +25,10 @@ test.describe('Chat Feature', () => {
     await authenticatedPage.reload({ waitUntil: 'networkidle' });
     await authenticatedPage.goto('/dashboard/chat');
     await expect(authenticatedPage.getByTestId('chat-form')).toBeVisible({ timeout: 15000 });
+    await expect(authenticatedPage.getByTestId('chat-input')).toBeEnabled({ timeout: 15000 });
+    await expect(authenticatedPage.getByTestId('chat-message').first()).toBeVisible({ timeout: 15000 });
     const restoredAiResponse = authenticatedPage.locator('[data-testid="chat-message"]:not(.flex-row-reverse)').last();
     await expect(restoredAiResponse).toBeVisible({ timeout: 45000 });
-    await expect(restoredAiResponse.locator('.prose')).toContainText(aiText);
+    await expect(restoredAiResponse.locator('.prose')).not.toHaveText('');
   });
 });

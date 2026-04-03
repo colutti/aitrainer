@@ -26,9 +26,6 @@ export default defineConfig({
     locale: 'pt-BR',
     // Default to Desktop for business flow stability
     viewport: { width: 1280, height: 720 },
-    launchOptions: {
-      args: ['--disable-web-security']
-    }
   },
 
   projects: [

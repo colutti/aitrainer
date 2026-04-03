@@ -4,7 +4,7 @@ import { t } from './helpers/translations';
 test.describe('Weight Tracking Feature', () => {
   test('should register a new weight and keep it after reload', async ({ authenticatedPage, ui }) => {
     await ui.navigateTo('body');
-    await expect(authenticatedPage.getByTestId('view-header-title')).toContainText(t('body.weight.history_title'));
+    await expect(authenticatedPage.getByTestId('body-tab-weight')).toBeVisible({ timeout: 15000 });
     await ui.openDrawer(t('body.weight.register_weight'));
 
     const newWeight = 78.5;
