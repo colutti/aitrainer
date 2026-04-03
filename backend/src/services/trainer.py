@@ -246,7 +246,11 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             limit,
             offset,
         )
-        return self._database.get_chat_history(session_id, limit, offset)
+        messages = self._database.get_chat_history(session_id, limit, offset)
+        for message in messages:
+            if message.sender == Sender.TRAINER:
+                message.text = self.strip_internal_wrappers(message.text)
+        return messages
 
     def get_user_profile(self, email: str) -> UserProfile | None:
         """
