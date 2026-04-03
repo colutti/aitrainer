@@ -80,6 +80,7 @@ export default defineConfig({
         '**/23-dashboard-reflection.spec.ts',
         '**/24-settings-imports.spec.ts',
         '**/26-settings-tabs.spec.ts',
+        '**/27-auth-email-flows.spec.ts',
       ],
       use: { ...devices['Desktop Chrome'] },
     },

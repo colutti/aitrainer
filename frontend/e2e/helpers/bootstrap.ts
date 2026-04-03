@@ -1,5 +1,7 @@
 import { expect, type Page, type TestInfo } from '@playwright/test';
 
+import { verifyEmailViaEmulator } from './firebase-emulator';
+
 export interface E2EUserCredentials {
   name: string;
   email: string;
@@ -43,8 +45,23 @@ export async function registerViaUi(page: Page, user: E2EUserCredentials) {
   await page.getByTestId('register-password').fill(user.password);
   await page.getByTestId('register-confirm-password').fill(user.password);
   await page.getByRole('button', { name: /Criar Conta/i }).click();
-  await expect(page).toHaveURL(/\/onboarding(?:\?.*)?$/, { timeout: 20000 });
-  await expect(page.getByText(/Your Profile|Seu Perfil|Tu perfil/i)).toBeVisible({ timeout: 20000 });
+  await expect(page).toHaveURL(/\/login(?:\?.*)?$/, { timeout: 20000 });
+  await expect(
+    page.getByText(/Conta criada\. Enviamos um link para confirmar seu e-mail antes de continuar\./i)
+  ).toBeVisible({ timeout: 20000 });
+}
+
+export async function loginViaUi(page: Page, user: E2EUserCredentials) {
+  await page.goto('/login', { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: /Login/i }).click();
+  await page.getByTestId('login-email').fill(user.email);
+  await page.getByTestId('login-password').fill(user.password);
+  await page.getByRole('button', { name: /Entrar/i }).click();
+}
+
+export async function registerAndVerifyViaEmulator(page: Page, user: E2EUserCredentials) {
+  await registerViaUi(page, user);
+  await verifyEmailViaEmulator(page.request, user.email);
 }
 
 export async function completeOnboardingViaUi(page: Page, profile: OnboardingProfile = {}) {
@@ -81,14 +98,18 @@ export async function completeOnboardingViaUi(page: Page, profile: OnboardingPro
 
 export async function bootstrapRegisteredUser(page: Page, testInfo: TestInfo, profile: OnboardingProfile = {}) {
   const user = buildE2EUserCredentials(testInfo);
-  await registerViaUi(page, user);
+  await registerAndVerifyViaEmulator(page, user);
+  await loginViaUi(page, user);
   await completeOnboardingViaUi(page, { ...profile, name: profile.name ?? user.name });
   return page;
 }
 
 export async function bootstrapFreshUser(page: Page, testInfo: TestInfo) {
   const user = buildE2EUserCredentials(testInfo, 'fresh');
-  await registerViaUi(page, user);
+  await registerAndVerifyViaEmulator(page, user);
+  await loginViaUi(page, user);
+  await expect(page).toHaveURL(/\/onboarding(?:\?.*)?$/, { timeout: 20000 });
+  await expect(page.getByText(/Your Profile|Seu Perfil|Tu perfil/i)).toBeVisible({ timeout: 20000 });
   return page;
 }
 
