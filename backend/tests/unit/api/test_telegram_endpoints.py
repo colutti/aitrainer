@@ -11,6 +11,13 @@ from src.api.models.telegram_link import TelegramLink
 client = TestClient(app)
 
 
+@pytest.fixture(autouse=True)
+def clear_overrides():
+    app.dependency_overrides = {}
+    yield
+    app.dependency_overrides = {}
+
+
 @pytest.fixture
 def mock_telegram_repo():
     repo = Mock()
@@ -32,6 +39,7 @@ def mock_brain():
     """Mock AI trainer brain to avoid Qdrant connection."""
     brain = Mock()
     brain.get_user_profile = Mock(return_value=Mock(
+        subscription_plan="Pro",
         telegram_notify_on_workout=True,
         telegram_notify_on_nutrition=False,
         telegram_notify_on_weight=False,
@@ -39,24 +47,35 @@ def mock_brain():
     return brain
 
 
-def test_generate_code_authenticated(mock_telegram_repo):
+def test_generate_code_authenticated(mock_telegram_repo, mock_brain):
     """Test generating linking code with authentication."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     app.dependency_overrides[get_telegram_repository] = lambda: mock_telegram_repo
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
     response = client.post("/telegram/generate-code")
     assert response.status_code == 200
     assert response.json()["code"] == "ABC123"
     assert response.json()["expires_in_seconds"] == 600
 
-    app.dependency_overrides = {}
-
-
 def test_generate_code_unauthenticated():
     """Test generating code without authentication."""
     response = client.post("/telegram/generate-code")
     assert response.status_code == 401
 
+
+def test_generate_code_forbidden_for_basic_plan(mock_telegram_repo):
+    """Basic plan cannot use Telegram endpoints."""
+    app.dependency_overrides[verify_token] = lambda: "test@example.com"
+    app.dependency_overrides[get_telegram_repository] = lambda: mock_telegram_repo
+
+    mock_brain = Mock()
+    mock_brain.get_user_profile = Mock(return_value=Mock(subscription_plan="Basic"))
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+    response = client.post("/telegram/generate-code")
+    assert response.status_code == 403
+    assert response.json()["detail"] == "TELEGRAM_NOT_ALLOWED_FOR_PLAN"
 
 def test_status_not_linked(mock_telegram_repo, mock_brain):
     """Test status endpoint when not linked."""
@@ -69,9 +88,6 @@ def test_status_not_linked(mock_telegram_repo, mock_brain):
     response = client.get("/telegram/status")
     assert response.status_code == 200
     assert response.json()["linked"] is False
-
-    app.dependency_overrides = {}
-
 
 def test_status_linked(mock_telegram_repo, mock_brain):
     """Test status endpoint when linked."""
@@ -94,20 +110,15 @@ def test_status_linked(mock_telegram_repo, mock_brain):
     assert data["linked"] is True
     assert data["telegram_username"] == "testuser"
 
-    app.dependency_overrides = {}
-
-
-def test_unlink_success(mock_telegram_repo):
+def test_unlink_success(mock_telegram_repo, mock_brain):
     """Test unlinking successfully."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     app.dependency_overrides[get_telegram_repository] = lambda: mock_telegram_repo
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
     response = client.post("/telegram/unlink")
     assert response.status_code == 200
     assert "Unlinked successfully" in response.json()["message"]
-
-    app.dependency_overrides = {}
-
 
 def test_webhook_valid_request(mock_telegram_service):
     """Test webhook with valid request."""
@@ -119,5 +130,3 @@ def test_webhook_valid_request(mock_telegram_service):
 
     assert response.status_code == 200
     assert response.json()["ok"] is True
-
-    app.dependency_overrides = {}

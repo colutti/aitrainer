@@ -87,6 +87,7 @@ class TestHevyConfig:
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
 
         profile = MagicMock()
+        profile.subscription_plan = "Pro"
         profile.hevy_api_key = None
         profile.hevy_enabled = False
         profile.hevy_last_sync = None
@@ -111,11 +112,35 @@ class TestHevyConfig:
         assert data["lastSync"] is None
         app.dependency_overrides = {}
 
+    def test_save_config_forbidden_for_basic_plan(self, client, mock_brain):
+        """Test Hevy config is blocked for plans without integration entitlement."""
+        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+
+        profile = MagicMock()
+        profile.subscription_plan = "Basic"
+        profile.hevy_api_key = None
+        profile.hevy_enabled = False
+        mock_brain.get_user_profile.return_value = profile
+
+        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+        response = client.post(
+            "/integrations/hevy/config",
+            json={"api_key": "new_key_123", "enabled": True},
+            headers={"Authorization": "Bearer token"},
+        )
+
+        assert response.status_code == 403
+        assert response.json()["detail"] == "INTEGRATION_NOT_ALLOWED_FOR_PLAN"
+        mock_brain.save_user_profile.assert_not_called()
+        app.dependency_overrides = {}
+
     def test_save_config_clear_key(self, client, mock_brain):
         """Test clearing Hevy API key with empty string."""
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
 
         profile = MagicMock()
+        profile.subscription_plan = "Pro"
         profile.hevy_api_key = "old_key"
         profile.hevy_enabled = True
         profile.hevy_last_sync = None
@@ -142,6 +167,7 @@ class TestHevyConfig:
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
 
         profile = MagicMock()
+        profile.subscription_plan = "Pro"
         profile.hevy_api_key = None
         profile.hevy_enabled = False
         profile.hevy_last_sync = None
@@ -170,6 +196,7 @@ class TestHevyStatus:
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
 
         profile = MagicMock()
+        profile.subscription_plan = "Pro"
         profile.hevy_api_key = "secret_key_12345"
         profile.hevy_enabled = True
         profile.hevy_last_sync = "2024-01-15T10:30:00"
@@ -195,6 +222,7 @@ class TestHevyStatus:
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
 
         profile = MagicMock()
+        profile.subscription_plan = "Pro"
         profile.hevy_api_key = None
         profile.hevy_enabled = False
         mock_brain.get_user_profile.return_value = profile
@@ -221,6 +249,7 @@ class TestHevyCount:
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
 
         profile = MagicMock()
+        profile.subscription_plan = "Pro"
         profile.hevy_api_key = "valid_key_123"
         mock_brain.get_user_profile.return_value = profile
 
@@ -244,6 +273,7 @@ class TestHevyCount:
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
 
         profile = MagicMock()
+        profile.subscription_plan = "Pro"
         profile.hevy_api_key = None
         mock_brain.get_user_profile.return_value = profile
 
@@ -268,6 +298,7 @@ class TestHevyImport:
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
 
         profile = MagicMock()
+        profile.subscription_plan = "Pro"
         profile.hevy_api_key = "valid_key_123"
         mock_brain.get_user_profile.return_value = profile
 
@@ -295,6 +326,7 @@ class TestHevyImport:
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
 
         profile = MagicMock()
+        profile.subscription_plan = "Pro"
         profile.hevy_api_key = None
         mock_brain.get_user_profile.return_value = profile
 
@@ -310,5 +342,3 @@ class TestHevyImport:
         assert response.status_code == 400
         assert "Hevy API key not configured" in response.json()["detail"]
         app.dependency_overrides = {}
-
-

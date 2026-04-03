@@ -11,13 +11,20 @@ from pydantic import BaseModel, Field
 from src.core.demo_access import WritableCurrentUser
 from src.services.auth import verify_token
 from src.core.deps import get_hevy_service, get_ai_trainer_brain
+from src.core.subscription import can_use_integrations
 from src.services.hevy_service import HevyService
 from src.services.trainer import AITrainerBrain
+
 router = APIRouter()
 
 CurrentUser = Annotated[str, Depends(verify_token)]
 HevyServiceDep = Annotated[HevyService, Depends(get_hevy_service)]
 BrainDep = Annotated[AITrainerBrain, Depends(get_ai_trainer_brain)]
+
+
+def _ensure_integrations_allowed(profile) -> None:
+    if not can_use_integrations(getattr(profile, "subscription_plan", None)):
+        raise HTTPException(status_code=403, detail="INTEGRATION_NOT_ALLOWED_FOR_PLAN")
 
 
 class ValidateRequest(BaseModel):
@@ -62,6 +69,7 @@ def save_config(
     profile = brain.get_user_profile(user_email)
     if not profile:
         raise HTTPException(status_code=404, detail="User profile not found")
+    _ensure_integrations_allowed(profile)
 
     # Update Integration fields
     if request.api_key is not None:
@@ -89,6 +97,7 @@ def get_status(user_email: CurrentUser, brain: BrainDep):
     profile = brain.get_user_profile(user_email)
     if not profile:
         raise HTTPException(status_code=404, detail="User profile not found")
+    _ensure_integrations_allowed(profile)
 
     api_key = getattr(profile, "hevy_api_key", None)
     api_key_masked = f"****{api_key[-4:]}" if api_key else None
@@ -107,7 +116,10 @@ async def get_workout_count(
 ):
     """Get count of available workouts from Hevy."""
     profile = brain.get_user_profile(user_email)
-    if not profile or not profile.hevy_api_key:
+    if not profile:
+        raise HTTPException(status_code=404, detail="User profile not found")
+    _ensure_integrations_allowed(profile)
+    if not profile.hevy_api_key:
         raise HTTPException(status_code=400, detail="Hevy API key not configured")
 
     count = await hevy_service.get_workout_count(profile.hevy_api_key)
@@ -123,7 +135,10 @@ async def import_workouts(
 ):
     """Triggers import of workouts from Hevy."""
     profile = brain.get_user_profile(user_email)
-    if not profile or not profile.hevy_api_key:
+    if not profile:
+        raise HTTPException(status_code=404, detail="User profile not found")
+    _ensure_integrations_allowed(profile)
+    if not profile.hevy_api_key:
         raise HTTPException(status_code=400, detail="Hevy API key not configured")
 
     result = await hevy_service.import_workouts(

@@ -124,6 +124,30 @@ def test_update_trainer_profile_invalid_type():
     app.dependency_overrides = {}
 
 
+def test_update_trainer_profile_forbidden_for_free_locked_trainer():
+    """Free plan should not allow selecting trainers outside allowlist."""
+    app.dependency_overrides[verify_token] = lambda: "test@example.com"
+    mock_brain = MagicMock()
+    mock_user = MagicMock()
+    mock_user.subscription_plan = "Free"
+    mock_brain.get_user_profile.return_value = mock_user
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+    update_payload = {
+        "trainer_type": "atlas"
+    }
+
+    response = client.put(
+        "/trainer/update_trainer_profile",
+        json=update_payload,
+        headers={"Authorization": "Bearer test_token"}
+    )
+
+    assert response.status_code == 403
+
+    app.dependency_overrides = {}
+
+
 # Test: GET /trainer/trainer_profile - Success Case
 def test_get_trainer_profile_success(sample_trainer_profile):
     """Test retrieving existing trainer profile."""

@@ -18,6 +18,7 @@ from src.services.database import MongoDatabase
 from src.api.models.import_result import ImportResult
 from src.services.myfitnesspal_import_service import import_nutrition_from_csv
 from src.services.import_utils import read_csv_file
+from src.core.subscription import can_use_imports
 
 router = APIRouter()
 
@@ -189,6 +190,12 @@ async def import_myfitnesspal(
     Import nutrition data from MyFitnessPal CSV export.
     """
     logger.info("Importing MyFitnessPal data for user: %s", user_email)
+    profile = db.get_user_profile(user_email)
+    if not profile:
+        raise HTTPException(status_code=404, detail="User profile not found")
+    if not can_use_imports(getattr(profile, "subscription_plan", None)):
+        raise HTTPException(status_code=403, detail="IMPORT_NOT_ALLOWED_FOR_PLAN")
+
     csv_content = await read_csv_file(file)
 
     try:
