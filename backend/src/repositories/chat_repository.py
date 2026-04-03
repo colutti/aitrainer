@@ -13,18 +13,12 @@ from langchain_core.messages import (
     SystemMessage,
     messages_from_dict,
 )
-from langchain_core.language_models import BaseChatModel
-from langchain_core.prompts import PromptTemplate
-from langchain_classic.memory import (
-    ConversationSummaryBufferMemory,
-    ConversationBufferWindowMemory,
-)
+from langchain_classic.memory import ConversationBufferWindowMemory
 
 from src.core.config import settings
 from src.api.models.chat_history import ChatHistory
 from src.api.models.sender import Sender
 from src.repositories.base import BaseRepository
-from src.prompts.summary_prompts import SUMMARY_PROMPT
 
 
 class ChatRepository(BaseRepository):
@@ -127,40 +121,6 @@ class ChatRepository(BaseRepository):
                 )
             )
 
-    def get_memory_buffer(
-        self,
-        session_id: str,
-        llm: BaseChatModel,
-        max_token_limit: int | None = None,
-    ) -> ConversationSummaryBufferMemory:
-        """
-        Returns a ConversationSummaryBufferMemory for a session.
-        """
-        if max_token_limit is None:
-            max_token_limit = settings.SUMMARY_MAX_TOKEN_LIMIT
-
-        chat_history = MongoDBChatMessageHistory(
-            connection_string=settings.MONGO_URI,
-            session_id=session_id,
-            database_name=settings.DB_NAME,
-            history_size=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
-        )
-
-        return ConversationSummaryBufferMemory(
-            llm=llm,
-            chat_memory=chat_history,
-            max_token_limit=max_token_limit,
-            return_messages=True,
-            memory_key="chat_history",
-            human_prefix="Aluno",
-            ai_prefix="Treinador",
-            prompt=PromptTemplate(
-                input_variables=["summary", "new_lines"],
-                template=SUMMARY_PROMPT.replace("{", "{{").replace("}", "}}")
-                + "\n\nResumo atual:\n{summary}\n\nNovas linhas:\n{new_lines}\n\nNovo resumo:",
-            ),
-        )
-
     def get_window_memory(
         self,
         session_id: str,
@@ -184,13 +144,3 @@ class ChatRepository(BaseRepository):
             human_prefix="Aluno",
             ai_prefix="Treinador",
         )
-
-    def get_unsummarized_messages(
-        self, session_id: str, skip_last: int = 40
-    ) -> list[dict]:
-        """
-        Retrieves messages that haven't been summarized yet. Currently returns empty list
-        as V3 structure is pending.
-        """
-        del session_id, skip_last
-        return []

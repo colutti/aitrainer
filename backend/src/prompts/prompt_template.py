@@ -45,8 +45,4 @@ Antes de dizer "hoje"/"ontem"/"anteontem", compare a data do evento com {current
 <perfil_aluno>
 {user_profile}
 </perfil_aluno>
-
-<resumo_conversas>
-{long_term_summary_section}
-</resumo_conversas>
 """
