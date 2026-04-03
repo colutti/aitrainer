@@ -65,6 +65,14 @@ from src.services.profile_tools import (
     create_get_user_goal_tool,
     create_update_user_goal_tool,
 )
+from src.services.raw_data_tools import (
+    create_get_workouts_raw_tool,
+    create_get_nutrition_raw_tool,
+    create_get_body_composition_raw_tool,
+    create_get_goal_history_raw_tool,
+    create_get_events_raw_tool,
+    create_get_memories_raw_tool,
+)
 from src.repositories.event_repository import EventRepository
 from src.services.memory_service import (
     get_memories_paginated as paginate_memories,
@@ -517,13 +525,16 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             # Workout
             create_save_workout_tool(self._database, user_email),
             create_get_workouts_tool(self._database, user_email),
+            create_get_workouts_raw_tool(self._database, user_email),
             # Nutrition
             create_save_nutrition_tool(self._database, user_email),
             create_get_nutrition_tool(self._database, user_email),
             create_sync_nutrition_text_tool(self._database, user_email),
+            create_get_nutrition_raw_tool(self._database, user_email),
             # Composition
             create_save_composition_tool(self._database, user_email),
             create_get_composition_tool(self._database, user_email),
+            create_get_body_composition_raw_tool(self._database, user_email),
             # Hevy
             create_list_hevy_routines_tool(hevy_service, self._database, user_email),
             create_create_hevy_routine_tool(hevy_service, self._database, user_email),
@@ -540,6 +551,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             # User Goals
             create_get_user_goal_tool(self._database, user_email),
             create_update_user_goal_tool(self._database, user_email),
+            create_get_goal_history_raw_tool(self._database, user_email),
             # Metabolism
             create_get_metabolism_tool(self._database, user_email),
             create_update_tdee_params_tool(self._database, user_email),
@@ -555,6 +567,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
                     create_update_memory_tool(self._qdrant_client, user_email),
                     create_delete_memory_tool(self._qdrant_client, user_email),
                     create_delete_memories_batch_tool(self._qdrant_client, user_email),
+                    create_get_memories_raw_tool(self._qdrant_client, user_email),
                 ]
             )
 
@@ -565,6 +578,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
                 create_list_events_tool(self._database.database, user_email),
                 create_delete_event_tool(self._database.database, user_email),
                 create_update_event_tool(self._database.database, user_email),
+                create_get_events_raw_tool(self._database, user_email),
             ]
         )
 

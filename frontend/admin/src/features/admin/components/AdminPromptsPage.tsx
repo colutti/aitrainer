@@ -137,11 +137,16 @@ export function AdminPromptsPage() {
                           {durationSec}s
                       </td>
                       <td className="p-2 md:p-4">
-                        <span className={`px-2 py-0.5 rounded text-[10px] md:text-xs font-bold uppercase ${
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded text-[10px] md:text-xs font-bold uppercase ${
                             log.status === 'success' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
-                        }`}>
-                          {log.status === 'success' ? '✓' : '✗'}
-                        </span>
+                          }`}>
+                            {log.status === 'success' ? '✓' : '✗'}
+                          </span>
+                          <span className="text-[10px] text-orange-300 font-mono">
+                            raw:{log.raw_tools_called_count ?? 0}
+                          </span>
+                        </div>
                       </td>
                       <td className="p-2 md:p-4 text-right">
                          <Button

@@ -2,11 +2,16 @@ import path from 'path';
 
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, type PluginOption } from 'vite';
+
+const plugins: PluginOption[] = [
+  react() as PluginOption,
+  tailwindcss() as PluginOption,
+];
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins,
   resolve: {
     alias: {
       '@shared': path.resolve(__dirname, '../src/shared'),
