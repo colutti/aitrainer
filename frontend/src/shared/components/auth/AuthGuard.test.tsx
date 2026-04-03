@@ -62,6 +62,33 @@ describe('AuthGuard', () => {
     expect(screen.getByTestId('login-content')).toBeInTheDocument();
   });
 
+  it('should keep rendering public content while loading for unauthenticated users', () => {
+    vi.mocked(useAuthStore).mockReturnValue(createAuthStoreMock({
+      isAuthenticated: false,
+      isLoading: true,
+      userInfo: null,
+      isAdmin: false,
+      logout: vi.fn(),
+    }));
+
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <Routes>
+          <Route
+            path="/login"
+            element={
+              <AuthGuard>
+                <div data-testid="login-content">Login Page</div>
+              </AuthGuard>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId('login-content')).toBeInTheDocument();
+  });
+
   it('should redirect to dashboard when already authenticated', () => {
     vi.mocked(useAuthStore).mockReturnValue(createAuthStoreMock({
       isAuthenticated: true,
