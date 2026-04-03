@@ -32,7 +32,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     }
   }, [isAuthenticated, isLoading, userInfo, isInviteLink, logout]);
 
-  if (isLoading) {
+  if (isLoading && isAuthenticated) {
     return null;
   }
 
