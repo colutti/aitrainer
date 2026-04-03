@@ -247,6 +247,7 @@ class E2ETestLoginRequest(BaseModel):
     email: str = "bot-real@fityq.it"
     display_name: str = "Real QA Bot"
     onboarding_completed: bool = True
+    is_demo: bool = False
 
 
 @router.post("/update_identity")
@@ -302,6 +303,7 @@ def e2e_login(data: E2ETestLoginRequest, brain: AITrainerBrainDep) -> dict:
         existing_profile.display_name = data.display_name
         existing_profile.subscription_plan = "Free"
         existing_profile.onboarding_completed = data.onboarding_completed
+        existing_profile.is_demo = data.is_demo
         brain.save_user_profile(existing_profile)
     else:
         profile = UserProfile(
@@ -315,6 +317,7 @@ def e2e_login(data: E2ETestLoginRequest, brain: AITrainerBrainDep) -> dict:
             subscription_plan="Free",
             display_name=data.display_name,
             onboarding_completed=data.onboarding_completed,
+            is_demo=data.is_demo,
         )
         brain.save_user_profile(profile)
 
