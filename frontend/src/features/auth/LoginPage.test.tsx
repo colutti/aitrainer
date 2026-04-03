@@ -17,15 +17,6 @@ vi.mock('../../shared/hooks/useNotification', () => ({
   useNotificationStore: vi.fn(),
 }));
 
-// Mock Firebase
-vi.mock('./firebase', () => ({
-  auth: {},
-}));
-
-vi.mock('firebase/auth', () => ({
-  sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
-}));
-
 describe('LoginPage', () => {
   const mockNotification = {
     success: vi.fn(),
@@ -264,6 +255,32 @@ describe('LoginPage', () => {
     });
   });
 
+  it('should show error when forgot password is clicked without email', async () => {
+    const user = userEvent.setup();
+    const requestPasswordResetMock = vi.fn().mockResolvedValue(undefined);
+
+    vi.mocked(useAuthStore).mockImplementation((selector?: unknown) => {
+      const state = { ...mockAuth, requestPasswordReset: requestPasswordResetMock };
+      if (typeof selector === 'function') {
+        return (selector as (s: typeof state) => unknown)(state);
+      }
+      return state;
+    });
+
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    );
+
+    await user.click(screen.getByRole('button', { name: /Esqueci a senha/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Informe seu e-mail para recuperar a senha/i)).toBeInTheDocument();
+    });
+    expect(requestPasswordResetMock).not.toHaveBeenCalled();
+  });
+
   it('should request password reset and show generic feedback', async () => {
     const user = userEvent.setup();
     const requestPasswordResetMock = vi.fn().mockResolvedValue(undefined);
@@ -283,35 +300,11 @@ describe('LoginPage', () => {
     );
 
     await user.type(screen.getByTestId('login-email'), 'person@example.com');
-    await user.click(screen.getByRole('button', { name: /esqueci a senha/i }));
+    await user.click(screen.getByRole('button', { name: /Esqueci a senha/i }));
 
     await waitFor(() => {
       expect(requestPasswordResetMock).toHaveBeenCalledWith('person@example.com');
-      expect(screen.getByText(/se o e-mail estiver cadastrado/i)).toBeInTheDocument();
+      expect(screen.getByText(/Se o e-mail estiver cadastrado/i)).toBeInTheDocument();
     });
-  });
-
-  it('should require valid email before requesting password reset', async () => {
-    const user = userEvent.setup();
-    const requestPasswordResetMock = vi.fn().mockResolvedValue(undefined);
-
-    vi.mocked(useAuthStore).mockImplementation((selector?: unknown) => {
-      const state = { ...mockAuth, requestPasswordReset: requestPasswordResetMock };
-      if (typeof selector === 'function') {
-        return (selector as (s: typeof state) => unknown)(state);
-      }
-      return state;
-    });
-
-    render(
-      <MemoryRouter>
-        <LoginPage />
-      </MemoryRouter>
-    );
-
-    await user.click(screen.getByRole('button', { name: /esqueci a senha/i }));
-
-    expect(requestPasswordResetMock).not.toHaveBeenCalled();
-    expect(screen.getByText(/informe seu e-mail para recuperar a senha/i)).toBeInTheDocument();
   });
 });
