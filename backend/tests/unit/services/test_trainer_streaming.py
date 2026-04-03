@@ -152,3 +152,69 @@ async def test_send_message_ai_passes_image_payload_to_llm(mock_deps):
     assert "ok" in chunks
     called_input_data = llm.stream_with_tools.call_args.kwargs["input_data"]
     assert called_input_data["user_images"] == [image_payload]
+
+
+@pytest.mark.asyncio
+async def test_send_message_ai_strips_internal_msg_tags_from_stream_and_history(mock_deps):
+    """Ensure internal <msg>/<treinador> tags never reach user stream or persisted history."""
+    db, llm, _ = mock_deps
+    trainer = AITrainerBrain(db, llm)
+
+    profile = MagicMock(subscription_plan="Pro", get_profile_summary=lambda: "User")
+    trainer_profile = MagicMock(
+        trainer_type="atlas", get_trainer_profile_summary=lambda: "Trainer"
+    )
+    trainer.get_or_create_user_profile = MagicMock(return_value=profile)
+    trainer.get_or_create_trainer_profile = MagicMock(return_value=trainer_profile)
+    trainer.check_message_limits = MagicMock(return_value=False)
+    trainer.finalize_ai_response = AsyncMock()
+
+    mock_memory_obj = MagicMock()
+    mock_memory_obj.load_memory_variables.return_value = {"chat_history": []}
+    db.get_window_memory.return_value = mock_memory_obj
+    db.database = MagicMock()
+
+    trainer.prompt_builder.build_input_data = MagicMock(return_value={"user_message": "Oi"})
+    prompt_template = MagicMock()
+    trainer.prompt_builder.get_prompt_template = MagicMock(return_value=prompt_template)
+
+    async def tagged_stream(**_kwargs):
+        yield '<msg data="03/04" hora="14:57">'
+        yield '<treinador name="Atlas">'
+        yield "Foco no treino hoje."
+        yield "</treinador>"
+        yield "</msg>"
+        yield {"type": "tools_summary", "tools_called": []}
+
+    llm.stream_with_tools.side_effect = tagged_stream
+
+    chunks = []
+    with patch("src.services.trainer.EventRepository") as mock_repo_cls:
+        mock_repo_cls.return_value.get_active_events.return_value = []
+        async for chunk in trainer.send_message_ai(
+            user_email="pro@example.com",
+            user_input="Oi",
+        ):
+            chunks.append(chunk)
+
+    assert "".join(chunks) == "Foco no treino hoje."
+    trainer.finalize_ai_response.assert_awaited_once()
+    assert (
+        trainer.finalize_ai_response.await_args.kwargs["final_response"]
+        == "Foco no treino hoje."
+    )
+
+
+def test_strip_internal_wrappers_preserves_generic_tags(mock_deps):
+    """Only protocol tags are removed; regular data tags remain untouched."""
+    db, llm, _ = mock_deps
+    trainer = AITrainerBrain(db, llm)
+
+    text = (
+        '<msg data="03/04" hora="14:57">'
+        '<treinador name="Atlas">'
+        'Conteúdo <xml><item id="1">ok</item></xml>'
+        "</treinador></msg>"
+    )
+    cleaned = trainer.strip_internal_wrappers(text)
+    assert cleaned == 'Conteúdo <xml><item id="1">ok</item></xml>'
