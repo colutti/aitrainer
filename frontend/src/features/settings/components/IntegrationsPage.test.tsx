@@ -1,6 +1,8 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import { useAuthStore } from '../../../shared/hooks/useAuth';
+import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
 import { integrationsApi } from '../api/integrations-api';
 
@@ -24,6 +26,12 @@ vi.mock('../api/integrations-api', () => ({
 vi.mock('../../../shared/hooks/useNotification', () => ({
   useNotificationStore: vi.fn(),
 }));
+vi.mock('../../../shared/hooks/useAuth', () => ({
+  useAuthStore: vi.fn(),
+}));
+vi.mock('../../../shared/hooks/useDemoMode', () => ({
+  useDemoMode: vi.fn(),
+}));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -43,6 +51,10 @@ describe('IntegrationsPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(useAuthStore).mockReturnValue({
+      userInfo: { subscription_plan: 'Pro' },
+    } as any);
+    vi.mocked(useDemoMode).mockReturnValue({ isReadOnly: false } as any);
     vi.mocked(useNotificationStore).mockReturnValue(mockNotify as any);
     vi.mocked(integrationsApi.getHevyStatus).mockResolvedValue({ hasKey: false } as any);
     vi.mocked(integrationsApi.getTelegramStatus).mockResolvedValue({ linked: false } as any);
@@ -87,5 +99,20 @@ describe('IntegrationsPage', () => {
       expect(integrationsApi.removeHevyKey).toHaveBeenCalled();
       expect(screen.getByPlaceholderText(/settings\.integrations\.hevy\.hevy_placeholder/i)).toBeInTheDocument();
     });
+  });
+
+  it('shows pro-only controls disabled for basic users', async () => {
+    vi.mocked(useAuthStore).mockReturnValue({
+      userInfo: { subscription_plan: 'Basic' },
+    } as any);
+
+    render(<IntegrationsPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByText(/settings\.integrations\.pro_only/i).length).toBeGreaterThan(0);
+    });
+
+    expect(screen.getByRole('button', { name: /common\.confirm/i })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /settings\.integrations\.telegram\.generate_code/i })).not.toBeInTheDocument();
   });
 });

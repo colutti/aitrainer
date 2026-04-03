@@ -35,7 +35,7 @@ export const Pricing = () => {
         window.location.origin + '/dashboard?payment=success',
         window.location.origin + '/#planos'
       );
-      window.location.href = url;
+      window.location.assign(url);
     } catch (error) {
       console.error('Stripe error:', error);
       notify.error(t('settings.subscription.error', 'Erro ao iniciar pagamento'));

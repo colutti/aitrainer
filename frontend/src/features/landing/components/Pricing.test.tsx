@@ -1,8 +1,10 @@
+import { waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import enUS from '../../../locales/en-US.json';
 import esES from '../../../locales/es-ES.json';
 import ptBR from '../../../locales/pt-BR.json';
+import { stripeApi } from '../../../shared/api/stripe-api';
 import { useAuthStore } from '../../../shared/hooks/useAuth';
 import { render, screen, fireEvent } from '../../../shared/utils/test-utils';
 
@@ -19,6 +21,11 @@ vi.mock('react-router-dom', async (importOriginal) => {
 });
 
 vi.mock('../../../shared/hooks/useAuth');
+vi.mock('../../../shared/api/stripe-api', () => ({
+  stripeApi: {
+    createCheckoutSession: vi.fn(),
+  },
+}));
 vi.mock('../../../shared/hooks/useNotification', () => ({
   useNotificationStore: () => ({
     success: vi.fn(),
@@ -88,5 +95,22 @@ describe('Pricing Component', () => {
     const proBtn = screen.getByTestId('plan-button-pro');
     fireEvent.click(proBtn);
     expect(mockNavigate).toHaveBeenCalledWith('/login?mode=register&plan=pro');
+  });
+
+  it('creates checkout session for authenticated pro users', async () => {
+    vi.mocked(useAuthStore).mockReturnValue({ isAuthenticated: true } as any);
+    vi.mocked(stripeApi.createCheckoutSession).mockRejectedValue(new Error('stripe down'));
+
+    render(<Pricing />);
+
+    fireEvent.click(screen.getByTestId('plan-button-pro'));
+
+    await waitFor(() => {
+      expect(stripeApi.createCheckoutSession).toHaveBeenCalledWith(
+        'price_1TAPTBPTisrIM5tNKY7Nxw3i',
+        `${window.location.origin}/dashboard?payment=success`,
+        `${window.location.origin}/#planos`
+      );
+    });
   });
 });

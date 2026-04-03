@@ -70,6 +70,17 @@ describe('OnboardingView', () => {
     expect(mockProps.onNext).toHaveBeenCalled();
   });
 
+  it('should persist selected plan when user chooses pro on Step 3', () => {
+    render(<OnboardingView {...mockProps} step={3} />);
+
+    const proAction = screen.getByRole('button', { name: /Assinar Pro/i });
+    fireEvent.click(proAction);
+
+    expect(mockProps.setFormData).toHaveBeenCalledWith(
+      expect.objectContaining({ subscription_plan: 'Pro' })
+    );
+  });
+
   it('should render Step 4 (Trainer) correctly', () => {
     render(<OnboardingView {...mockProps} step={4} />);
     
