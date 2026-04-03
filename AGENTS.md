@@ -190,9 +190,12 @@ Project-specific design skill:
 
 ## Task Completion Output
 
-- Sempre que uma tarefa for finalizada, incluir casos de teste manuais em formato de tabela.
-- A tabela deve seguir o mesmo padrão usado neste projeto: colunas `ID`, `Cenário`, `Passos`, `Resultado Esperado` e `Status`.
-- Os test cases devem cobrir fluxo feliz, erros principais, edge cases e regressões relevantes da funcionalidade entregue.
+- Sempre que uma tarefa for finalizada, gerar um conjunto de test cases para a funcionalidade entregue.
+- Antes de encerrar, automatizar todos os test cases que forem tecnicamente automatizáveis (unit, integration, e2e quando aplicável ao escopo).
+- Expandir a cobertura de testes da funcionalidade com cenários além do fluxo feliz, incluindo falhas, condições não ideais, regressões, casos de borda e contorno.
+- Na resposta final ao usuário, **não** listar todos os test cases: retornar apenas os casos que **não puderam ser automatizados** e que precisam de validação manual.
+- Os casos manuais retornados devem ser apresentados em tabela com colunas `ID`, `Cenário`, `Passos`, `Resultado Esperado` e `Status`.
+- O conjunto final (automatizado + manual residual) deve cobrir a tarefa em nível aceitável de qualidade.
 
 ## Maintenance
 
