@@ -4,6 +4,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 
 // STATIC IMPORTS for E2E and Build Stability
 import LoginPage from './features/auth/LoginPage';
+import ResetPasswordPage from './features/auth/ResetPasswordPage';
 import BodyPage from './features/body/BodyPage';
 import ChatPage from './features/chat/ChatPage';
 import DashboardPage from './features/dashboard/DashboardPage';
@@ -46,6 +47,7 @@ export function AppRoutes() {
         {/* Public Routes */}
         <Route path="/" element={<AuthGuard><LandingPage /></AuthGuard>} />
         <Route path="/login" element={<AuthGuard><LoginPage /></AuthGuard>} />
+        <Route path="/auth/action" element={<ResetPasswordPage />} />
         <Route path="/termos-de-uso" element={<TermsPage />} />
         <Route path="/politica-de-privacidade" element={<PrivacyPage />} />
         <Route path="/terms" element={<Navigate to="/termos-de-uso" replace />} />
