@@ -33,7 +33,7 @@ type RegisterForm = z.infer<typeof registerSchema>;
 type AuthLoadingAction = 'login' | 'register' | 'google' | 'forgot-password' | null;
 
 export default function LoginPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const login = useAuthStore((state) => state.login);
@@ -132,7 +132,7 @@ export default function LoginPage() {
     setError(null);
     setNotice(null);
     try {
-      await requestPasswordReset(email);
+      await requestPasswordReset(email, i18n.resolvedLanguage ?? i18n.language);
       setNotice(t('auth.forgot_password_sent_generic'));
     } catch (err) {
       const authErrorCode = (

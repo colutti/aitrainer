@@ -66,7 +66,7 @@ export interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   socialLogin: (provider: 'google' | 'apple') => Promise<void>;
-  requestPasswordReset: (email: string) => Promise<void>;
+  requestPasswordReset: (email: string, locale?: string) => Promise<void>;
   logout: () => void;
   loadUserInfo: () => Promise<UserInfo>;
   getToken: () => string | null;
@@ -75,6 +75,17 @@ export interface AuthActions {
 }
 
 export type AuthStore = AuthState & AuthActions;
+
+const mapToFirebaseLanguageCode = (locale?: string): string => {
+  const normalizedLocale = (locale ?? '').toLowerCase();
+  if (normalizedLocale.startsWith('pt')) {
+    return 'pt-BR';
+  }
+  if (normalizedLocale.startsWith('es')) {
+    return 'es';
+  }
+  return 'en';
+};
 
 /**
  * Authentication store using Zustand
@@ -225,10 +236,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
-  requestPasswordReset: async (email: string) => {
+  requestPasswordReset: async (email: string, locale?: string) => {
     const normalizedEmail = email.trim().toLowerCase();
     const { auth } = await import('../../features/auth/firebase');
     const { sendPasswordResetEmail } = await import('firebase/auth');
+    auth.languageCode = mapToFirebaseLanguageCode(locale);
     await sendPasswordResetEmail(auth, normalizedEmail, {
       handleCodeInApp: true,
       url: `${window.location.origin}/login`,
