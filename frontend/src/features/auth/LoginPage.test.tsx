@@ -255,6 +255,37 @@ describe('LoginPage', () => {
     });
   });
 
+  it('should show loading only on submit button when email login is pending', async () => {
+    const user = userEvent.setup();
+    const loginMock = vi.fn(() => new Promise<void>(() => {}));
+
+    vi.mocked(useAuthStore).mockImplementation((selector?: unknown) => {
+      const state = { ...mockAuth, login: loginMock };
+      if (typeof selector === 'function') {
+        return (selector as (s: typeof state) => unknown)(state);
+      }
+      return state;
+    });
+
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    );
+
+    await user.type(screen.getByPlaceholderText(/exemplo@email\.com/i), 'test@example.com');
+    await user.type(screen.getByPlaceholderText(/••••••••/i), 'password123');
+    await user.click(screen.getByRole('button', { name: /^Entrar$/i }));
+
+    await waitFor(() => {
+      const emailLoginButton = screen.getByRole('button', { name: /^Entrar$/i });
+      const googleLoginButton = screen.getByRole('button', { name: /Entrar com Google/i });
+
+      expect(emailLoginButton.querySelector('.animate-spin')).toBeInTheDocument();
+      expect(googleLoginButton.querySelector('.animate-spin')).not.toBeInTheDocument();
+    });
+  });
+
   it('should show error when forgot password is clicked without email', async () => {
     const user = userEvent.setup();
     const requestPasswordResetMock = vi.fn().mockResolvedValue(undefined);
