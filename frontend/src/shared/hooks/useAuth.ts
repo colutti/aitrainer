@@ -229,7 +229,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     const normalizedEmail = email.trim().toLowerCase();
     const { auth } = await import('../../features/auth/firebase');
     const { sendPasswordResetEmail } = await import('firebase/auth');
-    await sendPasswordResetEmail(auth, normalizedEmail);
+    await sendPasswordResetEmail(auth, normalizedEmail, {
+      handleCodeInApp: true,
+      url: `${window.location.origin}/auth/action`,
+    });
   },
 
   logout: () => {

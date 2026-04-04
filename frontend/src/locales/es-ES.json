@@ -46,7 +46,20 @@
     "google_sign_in": "Iniciar sesión con Google",
     "forgot_password": "Olvidé mi contraseña",
     "forgot_password_requires_email": "Ingresa tu correo electrónico para recuperar tu contraseña.",
-    "forgot_password_sent_generic": "Si el correo está registrado, enviaremos un enlace para restablecer tu contraseña."
+    "forgot_password_sent_generic": "Si el correo está registrado, enviaremos un enlace para restablecer tu contraseña.",
+    "reset_password_title": "Restablecer contraseña",
+    "new_password": "Nueva contraseña",
+    "confirm_new_password": "Confirmar nueva contraseña",
+    "save_new_password": "Guardar nueva contraseña",
+    "reset_password_success": "Contraseña restablecida correctamente. Inicia sesión con tu nueva contraseña.",
+    "reset_password_error": "No pudimos restablecer tu contraseña. Solicita un nuevo enlace.",
+    "reset_link_invalid": "Enlace inválido o caducado. Solicita un nuevo enlace de restablecimiento.",
+    "password_mismatch": "Las contraseñas no coinciden.",
+    "password_rule_min_length": "La contraseña debe tener al menos 8 caracteres.",
+    "password_rule_uppercase": "La contraseña debe incluir al menos 1 letra mayúscula.",
+    "password_rule_lowercase": "La contraseña debe incluir al menos 1 letra minúscula.",
+    "password_rule_number": "La contraseña debe incluir al menos 1 número.",
+    "password_rule_special": "La contraseña debe incluir al menos 1 carácter especial."
   },
   "nav": {
     "home": "Inicio",

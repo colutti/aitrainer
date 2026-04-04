@@ -320,7 +320,7 @@ describe('useAuth', () => {
   });
 
   describe('requestPasswordReset', () => {
-    it('should normalize email and call firebase reset password API', async () => {
+    it('should normalize email and call firebase reset password API with app action settings', async () => {
       const { result } = renderHook(() => useAuthStore());
 
       await act(async () => {
@@ -329,7 +329,11 @@ describe('useAuth', () => {
 
       expect(sendPasswordResetEmail).toHaveBeenCalledWith(
         expect.anything(),
-        'user@example.com'
+        'user@example.com',
+        expect.objectContaining({
+          handleCodeInApp: true,
+          url: expect.stringContaining('/auth/action'),
+        })
       );
     });
   });
