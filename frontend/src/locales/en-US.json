@@ -46,7 +46,20 @@
     "google_sign_in": "Sign in with Google",
     "forgot_password": "Forgot password",
     "forgot_password_requires_email": "Enter your email to recover your password.",
-    "forgot_password_sent_generic": "If the email is registered, we'll send a password reset link."
+    "forgot_password_sent_generic": "If the email is registered, we'll send a password reset link.",
+    "reset_password_title": "Reset password",
+    "new_password": "New password",
+    "confirm_new_password": "Confirm new password",
+    "save_new_password": "Save new password",
+    "reset_password_success": "Password reset successfully. Sign in with your new password.",
+    "reset_password_error": "We couldn't reset your password. Request a new reset link.",
+    "reset_link_invalid": "Invalid or expired link. Request a new password reset link.",
+    "password_mismatch": "Passwords do not match.",
+    "password_rule_min_length": "Password must be at least 8 characters long.",
+    "password_rule_uppercase": "Password must include at least 1 uppercase letter.",
+    "password_rule_lowercase": "Password must include at least 1 lowercase letter.",
+    "password_rule_number": "Password must include at least 1 number.",
+    "password_rule_special": "Password must include at least 1 special character."
   },
   "nav": {
     "home": "Home",

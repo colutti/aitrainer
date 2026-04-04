@@ -4,6 +4,9 @@ import { render, screen } from './shared/utils/test-utils';
 vi.mock('./features/auth/LoginPage', () => ({
   default: () => <div>Login Page</div>,
 }));
+vi.mock('./features/auth/ResetPasswordPage', () => ({
+  default: () => <div>Reset Password Page</div>,
+}));
 vi.mock('./features/body/BodyPage', () => ({
   default: () => <div>Body Page</div>,
 }));

@@ -46,7 +46,20 @@
     "google_sign_in": "Entrar com Google",
     "forgot_password": "Esqueci a senha",
     "forgot_password_requires_email": "Informe seu e-mail para recuperar a senha.",
-    "forgot_password_sent_generic": "Se o e-mail estiver cadastrado, enviaremos um link para redefinir sua senha."
+    "forgot_password_sent_generic": "Se o e-mail estiver cadastrado, enviaremos um link para redefinir sua senha.",
+    "reset_password_title": "Redefinir senha",
+    "new_password": "Nova senha",
+    "confirm_new_password": "Confirmar nova senha",
+    "save_new_password": "Salvar nova senha",
+    "reset_password_success": "Senha redefinida com sucesso. Faça login com a nova senha.",
+    "reset_password_error": "Não foi possível redefinir sua senha. Solicite um novo link.",
+    "reset_link_invalid": "Link inválido ou expirado. Solicite um novo link de recuperação.",
+    "password_mismatch": "As senhas não coincidem.",
+    "password_rule_min_length": "A senha deve conter no mínimo 8 caracteres.",
+    "password_rule_uppercase": "A senha deve conter pelo menos 1 letra maiúscula.",
+    "password_rule_lowercase": "A senha deve conter pelo menos 1 letra minúscula.",
+    "password_rule_number": "A senha deve conter pelo menos 1 número.",
+    "password_rule_special": "A senha deve conter pelo menos 1 caractere especial."
   },
   "nav": {
     "home": "Início",
