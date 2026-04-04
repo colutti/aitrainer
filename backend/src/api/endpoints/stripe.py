@@ -121,8 +121,6 @@ def _get_subscription_plan(subscription):
         return "Basic"
     if price_id == settings.STRIPE_PRICE_ID_PRO:
         return "Pro"
-    if price_id == settings.STRIPE_PRICE_ID_PREMIUM:
-        return "Premium"
 
     logger.warning("Unknown Stripe price ID received: %s. Fallback to Free.", price_id)
     return "Free"

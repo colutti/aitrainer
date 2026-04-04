@@ -169,6 +169,16 @@ class TestNutritionApi(unittest.TestCase):
         """Test successful MyFitnessPal import."""
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
         mock_db = MagicMock()
+        mock_db.get_user_profile.return_value = UserProfile(
+            email="test@test.com",
+            gender="Masculino",
+            age=30,
+            weight=75.0,
+            height=180,
+            goal_type="maintain",
+            weekly_rate=0.5,
+            subscription_plan="Pro",
+        )
         app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
         with patch('src.api.endpoints.nutrition.import_nutrition_from_csv') as mock_import:
@@ -183,6 +193,32 @@ class TestNutritionApi(unittest.TestCase):
 
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.json()["created"], 5)
+
+    def test_import_nutrition_forbidden_for_basic_plan(self):
+        """Basic plan cannot import MyFitnessPal CSV."""
+        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+        mock_db = MagicMock()
+        mock_db.get_user_profile.return_value = UserProfile(
+            email="test@test.com",
+            gender="Masculino",
+            age=30,
+            weight=75.0,
+            height=180,
+            goal_type="maintain",
+            weekly_rate=0.5,
+            subscription_plan="Basic",
+        )
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
+
+        csv_content = b"Date,Calories,Protein,Carbs,Fat\n2024-01-29,2000,150,250,70"
+        response = self.client.post(
+            "/nutrition/import/myfitnesspal",
+            files={"file": ("test.csv", BytesIO(csv_content), "text/csv")},
+            headers={"Authorization": "Bearer token"},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["detail"], "IMPORT_NOT_ALLOWED_FOR_PLAN")
 
     def test_create_nutrition_log_rejects_demo_user(self):
         """Demo users cannot create nutrition logs."""

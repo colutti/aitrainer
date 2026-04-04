@@ -195,3 +195,40 @@ def test_webhook_subscription_updated_fallback(mock_brain, mock_stripe_construct
     plan_call = mock_brain.update_user_profile_fields.call_args_list[1]
     assert plan_call[0][0] == "fallback@example.com"
     assert plan_call[0][1]["subscription_plan"] == "Basic"
+
+
+def test_webhook_subscription_updated_unknown_price_falls_back_to_free(
+    mock_brain, mock_stripe_construct_event
+):
+    now_ts = datetime.now().timestamp()
+    mock_stripe_construct_event.return_value = {
+        "type": "customer.subscription.updated",
+        "data": {
+            "object": {
+                "id": "sub_unknown",
+                "customer": "cus_123",
+                "status": "active",
+                "current_period_start": now_ts,
+                "items": {"data": [{"price": {"id": "price_unknown"}}]},
+            }
+        },
+    }
+
+    mock_user = MagicMock(email="test@example.com")
+    mock_user.subscription_plan = "Basic"
+    mock_user.current_billing_cycle_start = None
+    mock_brain.database.users.find_by_stripe_customer_id.return_value = mock_user
+
+    with patch("src.api.endpoints.stripe.settings") as mock_settings:
+        mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
+        mock_settings.STRIPE_PRICE_ID_BASIC = "price_basic"
+        mock_settings.STRIPE_PRICE_ID_PRO = "price_pro"
+        response = client.post(
+            "/stripe/webhook",
+            content=b"{}",
+            headers={"stripe-signature": "test_sig"},
+        )
+
+    assert response.status_code == 200
+    updates = mock_brain.update_user_profile_fields.call_args[0][1]
+    assert updates["subscription_plan"] == "Free"

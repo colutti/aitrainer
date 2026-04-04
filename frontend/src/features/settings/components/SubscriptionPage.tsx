@@ -1,8 +1,8 @@
-import { Crown, ShieldCheck, Zap } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { stripeApi } from '../../../shared/api/stripe-api';
+import { PLAN_CATALOG, buildPlanCardModel } from '../../../shared/constants/plan-catalog';
 import { STRIPE_PRICE_IDS } from '../../../shared/constants/stripe';
 import { useAuthStore } from '../../../shared/hooks/useAuth';
 import { useDemoMode } from '../../../shared/hooks/useDemoMode';
@@ -89,34 +89,7 @@ export default function SubscriptionPage() {
   };
 
   const plans: Plan[] = [
-    {
-      id: 'free',
-      name: t('landing.plans.items.free.name'),
-      price: '0',
-      icon: Zap,
-      features: t('landing.plans.items.free.features', { returnObjects: true }) as string[],
-    },
-    {
-      id: 'basic',
-      name: t('landing.plans.items.basic.name'),
-      price: isPt ? '24,90' : '4.99',
-      icon: ShieldCheck,
-      features: t('landing.plans.items.basic.features', { returnObjects: true }) as string[],
-    },
-    {
-      id: 'pro',
-      name: t('landing.plans.items.pro.name'),
-      price: isPt ? '49,90' : '9.99',
-      icon: Crown,
-      features: t('landing.plans.items.pro.features', { returnObjects: true }) as string[],
-    },
-    {
-      id: 'premium',
-      name: t('landing.plans.items.premium.name'),
-      price: isPt ? '99,90' : '19.99',
-      icon: Crown,
-      features: t('landing.plans.items.premium.features', { returnObjects: true }) as string[],
-    },
+    ...PLAN_CATALOG.map((entry) => buildPlanCardModel(entry, t, isPt)),
   ];
 
   return (
@@ -125,7 +98,6 @@ export default function SubscriptionPage() {
       plans={plans}
       loading={loading}
       isInitialLoading={isInitialLoading}
-      isPt={isPt}
       hasStripeCustomer={userInfo?.has_stripe_customer ?? false}
       isReadOnly={isDemoUser}
       onSubscribe={(id) => { void handleSubscribe(id); }}

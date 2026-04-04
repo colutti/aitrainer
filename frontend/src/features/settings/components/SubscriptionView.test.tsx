@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 
-import { SubscriptionView } from './SubscriptionView';
+import { SubscriptionView, type SubscriptionViewProps } from './SubscriptionView';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -10,19 +10,17 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-const mockPlans = [
-  { id: 'free', name: 'Free', price: '0', icon: vi.fn() as any, features: ['F1'] },
-  { id: 'basic', name: 'Basic', price: '24', icon: vi.fn() as any, features: ['F1', 'F2'] },
-  { id: 'pro', name: 'Pro', price: '49', icon: vi.fn() as any, features: ['F1', 'F2'] },
-  { id: 'premium', name: 'Premium', price: '99', icon: vi.fn() as any, features: ['F1', 'F2'] },
+const mockPlans: SubscriptionViewProps['plans'] = [
+  { id: 'free', name: 'Free', subtitle: 'S', priceLabel: 'Grátis', buttonLabel: 'Start', features: ['F1'] },
+  { id: 'basic', name: 'Basic', subtitle: 'S', priceLabel: 'R$ 24,90/mês', buttonLabel: 'Subscribe', features: ['F1', 'F2'] },
+  { id: 'pro', name: 'Pro', subtitle: 'S', priceLabel: 'R$ 49,90/mês', buttonLabel: 'Subscribe', features: ['F1', 'F2'] },
 ];
 
-const mockProps = {
+const mockProps: SubscriptionViewProps = {
   currentPlan: 'free',
   plans: mockPlans,
   loading: null,
   isInitialLoading: false,
-  isPt: true,
   hasStripeCustomer: false,
   isReadOnly: false,
   onSubscribe: vi.fn(),
@@ -35,7 +33,7 @@ describe('SubscriptionView', () => {
     expect(screen.getByText('Free')).toBeInTheDocument();
     expect(screen.getByText('Basic')).toBeInTheDocument();
     expect(screen.getByText('Pro')).toBeInTheDocument();
-    expect(screen.getByText('Premium')).toBeInTheDocument();
+    expect(screen.queryByText('Premium')).not.toBeInTheDocument();
   });
 
   it('marks current plan correctly', () => {
@@ -67,6 +65,6 @@ describe('SubscriptionView', () => {
   it('shows downgrade for lower plans and upgrade for higher plans based on current plan hierarchy', () => {
     render(<SubscriptionView {...mockProps} currentPlan="pro" hasStripeCustomer={false} />);
     expect(screen.getByTestId('subscription-plan-btn-basic')).toHaveTextContent('settings.subscription.downgrade');
-    expect(screen.getByTestId('subscription-plan-btn-premium')).toHaveTextContent('settings.subscription.upgrade');
+    expect(screen.getByTestId('subscription-plan-btn-free')).toHaveTextContent('settings.subscription.unavailable');
   });
 });

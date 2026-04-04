@@ -2,13 +2,18 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ptBR from '../../../locales/pt-BR.json';
+import { stripeApi } from '../../../shared/api/stripe-api';
 import { useAuthStore } from '../../../shared/hooks/useAuth';
+import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 
 import SubscriptionPage from './SubscriptionPage';
 
 // Mock the auth store
 vi.mock('../../../shared/hooks/useAuth', () => ({
   useAuthStore: vi.fn(),
+}));
+vi.mock('../../../shared/hooks/useDemoMode', () => ({
+  useDemoMode: vi.fn(),
 }));
 
 // Mock the notification store
@@ -45,8 +50,11 @@ describe('SubscriptionPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (useAuthStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-      userInfo: { subscription_plan: 'Premium', has_stripe_customer: true },
+      userInfo: { subscription_plan: 'Pro', has_stripe_customer: true },
       loadUserInfo: mockLoadUserInfo,
+    });
+    (useDemoMode as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      isReadOnly: false,
     });
   });
 
@@ -57,7 +65,7 @@ describe('SubscriptionPage', () => {
     });
   });
 
-  it('should show "Premium" as active plan after loading', async () => {
+  it('should show active plan after loading', async () => {
     render(<SubscriptionPage />);
 
     // Wait for loading to finish
@@ -70,8 +78,48 @@ describe('SubscriptionPage', () => {
     expect(elements.length).toBeGreaterThan(0);
   });
 
-  it('keeps subscription features synced with landing copy for pro and premium', () => {
-    expect(ptBR.landing.plans.items.pro.features.join(' ')).toMatch(/chat \+ Telegram/i);
-    expect(ptBR.landing.plans.items.premium.features.join(' ')).toMatch(/chat \+ Telegram/i);
+  it('keeps subscription features synced with landing copy for pro and basic', () => {
+    expect(ptBR.landing.plans.items.pro.features.join(' ')).toMatch(/Telegram/i);
+    expect(ptBR.landing.plans.items.basic.features.join(' ')).toMatch(/100/i);
+  });
+
+  it('opens stripe checkout for selected paid plan', async () => {
+    (useAuthStore as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      userInfo: { subscription_plan: 'Free', has_stripe_customer: false },
+      loadUserInfo: mockLoadUserInfo,
+    });
+    vi.mocked(stripeApi.createCheckoutSession).mockRejectedValue(new Error('stripe down'));
+
+    render(<SubscriptionPage />);
+    await waitFor(() => {
+      expect(screen.queryByText('common.loading')).not.toBeInTheDocument();
+    });
+
+    screen.getByTestId('subscription-plan-btn-basic').click();
+
+    await waitFor(() => {
+      expect(stripeApi.createCheckoutSession).toHaveBeenCalledWith(
+        'price_1TAPTBPTisrIM5tN5Dz3P2en',
+        `${window.location.origin}/dashboard?payment=success`,
+        `${window.location.origin}/dashboard/settings/subscription?payment=cancel`
+      );
+    });
+  });
+
+  it('opens stripe customer portal for paid user manage action', async () => {
+    vi.mocked(stripeApi.createPortalSession).mockRejectedValue(new Error('portal down'));
+
+    render(<SubscriptionPage />);
+    await waitFor(() => {
+      expect(screen.queryByText('common.loading')).not.toBeInTheDocument();
+    });
+
+    screen.getByTestId('btn-manage-subscription').click();
+
+    await waitFor(() => {
+      expect(stripeApi.createPortalSession).toHaveBeenCalledWith(
+        `${window.location.origin}/dashboard/settings/subscription`
+      );
+    });
   });
 });

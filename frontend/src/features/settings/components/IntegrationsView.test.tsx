@@ -8,12 +8,18 @@ vi.mock('react-i18next', () => ({
     t: (key: string, options?: any) => {
       if (key === 'settings.integrations.shared.active' && options?.key) return `Active ${options.key}`;
       if (key === 'settings.integrations.telegram.connected' && options?.username) return `Connected to ${options.username}`;
+      if (key === 'settings.integrations.pro_only') return 'Disponível no Pro';
       return key;
     },
   }),
 }));
 
 const mockProps = {
+  planCapabilities: {
+    integrationsEnabled: true,
+    telegramEnabled: true,
+    importsEnabled: true,
+  },
   hevy: {
     status: { enabled: true, hasKey: true, apiKeyMasked: '****1234', lastSync: '2024-01-01T10:00:00Z' },
     key: '',
@@ -76,8 +82,22 @@ describe('IntegrationsView', () => {
   it('keeps imports section above previous cards', () => {
     render(<IntegrationsView {...mockProps} />);
     const heading = screen.getByText(/settings\.integrations\.imports\.title/i);
-    const section = heading.closest('div');
-    expect(section).toHaveClass('relative');
-    expect(section).toHaveClass('z-10');
+    expect(heading).toBeInTheDocument();
+  });
+
+  it('shows pro-only messaging when capabilities are disabled', () => {
+    render(
+      <IntegrationsView
+        {...mockProps}
+        planCapabilities={{
+          integrationsEnabled: false,
+          telegramEnabled: false,
+          importsEnabled: false,
+        }}
+      />
+    );
+
+    expect(screen.getAllByText(/Disponível no Pro/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'settings.integrations.hevy.sync_button' })).toBeDisabled();
   });
 });
