@@ -133,12 +133,26 @@ export default function LoginPage() {
     setNotice(null);
     try {
       await requestPasswordReset(email);
-    } catch {
-      // Keep generic feedback to prevent account enumeration.
+      setNotice(t('auth.forgot_password_sent_generic'));
+    } catch (err) {
+      const authErrorCode = (
+        typeof err === 'object' &&
+        err !== null &&
+        'code' in err &&
+        typeof (err as { code?: unknown }).code === 'string'
+      )
+        ? (err as { code: string }).code
+        : undefined;
+
+      if (authErrorCode === 'auth/user-not-found' || authErrorCode === 'auth/invalid-email') {
+        // Keep generic feedback for account-enumeration-sensitive cases.
+        setNotice(t('auth.forgot_password_sent_generic'));
+      } else {
+        setError(t('auth.forgot_password_send_error'));
+      }
     } finally {
       setLoadingAction(null);
     }
-    setNotice(t('auth.forgot_password_sent_generic'));
   };
 
   const handleGoogleLogin = async () => {

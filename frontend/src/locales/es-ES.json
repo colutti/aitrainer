@@ -47,6 +47,7 @@
     "forgot_password": "Olvidé mi contraseña",
     "forgot_password_requires_email": "Ingresa tu correo electrónico para recuperar tu contraseña.",
     "forgot_password_sent_generic": "Si el correo está registrado, enviaremos un enlace para restablecer tu contraseña.",
+    "forgot_password_send_error": "No pudimos enviar el correo de recuperación ahora. Inténtalo de nuevo en unos minutos.",
     "reset_password_title": "Restablecer contraseña",
     "new_password": "Nueva contraseña",
     "confirm_new_password": "Confirmar nueva contraseña",

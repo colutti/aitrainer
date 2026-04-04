@@ -47,6 +47,7 @@
     "forgot_password": "Esqueci a senha",
     "forgot_password_requires_email": "Informe seu e-mail para recuperar a senha.",
     "forgot_password_sent_generic": "Se o e-mail estiver cadastrado, enviaremos um link para redefinir sua senha.",
+    "forgot_password_send_error": "Não foi possível enviar o e-mail de recuperação agora. Tente novamente em instantes.",
     "reset_password_title": "Redefinir senha",
     "new_password": "Nova senha",
     "confirm_new_password": "Confirmar nova senha",
