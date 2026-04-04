@@ -30,6 +30,7 @@ const registerSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 type RegisterForm = z.infer<typeof registerSchema>;
+type AuthLoadingAction = 'login' | 'register' | 'google' | 'forgot-password' | null;
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -43,7 +44,7 @@ export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(initialMode === 'login');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingAction, setLoadingAction] = useState<AuthLoadingAction>(null);
 
   const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? '/dashboard';
 
@@ -91,7 +92,7 @@ export default function LoginPage() {
   };
 
   const onSubmitLogin = async (data: LoginForm) => {
-    setIsLoading(true);
+    setLoadingAction('login');
     setError(null);
     setNotice(null);
     try {
@@ -100,12 +101,12 @@ export default function LoginPage() {
     } catch (err) {
       setError(resolveLoginErrorMessage(err));
     } finally {
-      setIsLoading(false);
+      setLoadingAction(null);
     }
   };
 
   const onSubmitSignup = async (data: RegisterForm) => {
-    setIsLoading(true);
+    setLoadingAction('register');
     setError(null);
     setNotice(null);
     try {
@@ -115,7 +116,7 @@ export default function LoginPage() {
     } catch (err) {
       setError(resolveRegisterErrorMessage(err));
     } finally {
-      setIsLoading(false);
+      setLoadingAction(null);
     }
   };
 
@@ -127,7 +128,7 @@ export default function LoginPage() {
       return;
     }
 
-    setIsLoading(true);
+    setLoadingAction('forgot-password');
     setError(null);
     setNotice(null);
     try {
@@ -135,13 +136,13 @@ export default function LoginPage() {
     } catch {
       // Keep generic feedback to prevent account enumeration.
     } finally {
-      setIsLoading(false);
+      setLoadingAction(null);
     }
     setNotice(t('auth.forgot_password_sent_generic'));
   };
 
   const handleGoogleLogin = async () => {
-    setIsLoading(true);
+    setLoadingAction('google');
     setError(null);
     setNotice(null);
     try {
@@ -150,9 +151,14 @@ export default function LoginPage() {
     } catch {
       setError(t('auth.social_error'));
     } finally {
-      setIsLoading(false);
+      setLoadingAction(null);
     }
   };
+
+  const isLoading = loadingAction !== null;
+  const isEmailLoginLoading = loadingAction === 'login';
+  const isGoogleLoginLoading = loadingAction === 'google';
+  const isRegisterLoading = loadingAction === 'register';
 
   return (
     <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-4 selection:bg-white/20 overflow-hidden relative">
@@ -244,6 +250,7 @@ export default function LoginPage() {
                   <Button
                     type="button"
                     variant="ghost"
+                    disabled={isLoading}
                     size="sm"
                     onClick={() => { void handleForgotPassword(); }}
                     className="h-auto p-0 text-[9px] font-black uppercase text-indigo-400 hover:text-indigo-300 transition-colors hover:bg-transparent"
@@ -268,7 +275,8 @@ export default function LoginPage() {
                 type="submit" 
                 fullWidth 
                 size="lg" 
-                isLoading={isLoading}
+                isLoading={isEmailLoginLoading}
+                disabled={isLoading && !isEmailLoginLoading}
                 className="h-14 rounded-2xl bg-[#14b8a6] text-black border border-[#2dd4bf]/30 shadow-none hover:bg-[#0d9488] hover:scale-[1.02] active:scale-[0.98] transition-all mt-4"
               >
                 <LogIn className="mr-2 w-5 h-5" />
@@ -280,7 +288,8 @@ export default function LoginPage() {
                   type="button"
                   fullWidth
                   size="lg"
-                  isLoading={isLoading}
+                  isLoading={isGoogleLoginLoading}
+                  disabled={isLoading && !isGoogleLoginLoading}
                   onClick={() => { void handleGoogleLogin(); }}
                   className="h-14 rounded-2xl bg-white text-[#1f1f1f] border border-[#747775] hover:bg-[#f8fafd] hover:border-[#5f6368] font-medium shadow-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a73e8]/30"
                 >
@@ -343,7 +352,8 @@ export default function LoginPage() {
                 type="submit" 
                 fullWidth 
                 size="lg" 
-                isLoading={isLoading}
+                isLoading={isRegisterLoading}
+                disabled={isLoading && !isRegisterLoading}
                 className="h-14 rounded-2xl bg-[#14b8a6] text-black border border-[#2dd4bf]/30 shadow-none hover:bg-[#0d9488] hover:scale-[1.02] active:scale-[0.98] transition-all mt-4"
               >
                 Criar Conta
