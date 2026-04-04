@@ -332,7 +332,7 @@ describe('useAuth', () => {
         'user@example.com',
         expect.objectContaining({
           handleCodeInApp: true,
-          url: expect.stringContaining('/auth/action'),
+          url: expect.stringContaining('/login'),
         })
       );
     });
