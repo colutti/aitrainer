@@ -45,6 +45,12 @@ services:
       - frontend_dev_node_modules:/workspace/frontend/node_modules
     environment:
       VITE_API_PROXY_TARGET: http://backend:8000
+      VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY:-AIzaSyCZv-226HzCoHkQ1y32NdU3xfvQIkWozWU}
+      VITE_FIREBASE_AUTH_DOMAIN: ${VITE_FIREBASE_AUTH_DOMAIN:-fityq-dev-colutti.firebaseapp.com}
+      VITE_FIREBASE_PROJECT_ID: ${VITE_FIREBASE_PROJECT_ID:-fityq-dev-colutti}
+      VITE_FIREBASE_STORAGE_BUCKET: ${VITE_FIREBASE_STORAGE_BUCKET:-fityq-dev-colutti.firebasestorage.app}
+      VITE_FIREBASE_MESSAGING_SENDER_ID: ${VITE_FIREBASE_MESSAGING_SENDER_ID:-845388270789}
+      VITE_FIREBASE_APP_ID: ${VITE_FIREBASE_APP_ID:-1:845388270789:web:313d10dbfb2c359a56f4ac}
     command: sh -lc "npm ci && npm run dev -- --host 0.0.0.0 --port 3000"
     depends_on:
       backend:
