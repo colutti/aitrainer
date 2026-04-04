@@ -338,4 +338,34 @@ describe('LoginPage', () => {
       expect(screen.getByText(/Se o e-mail estiver cadastrado/i)).toBeInTheDocument();
     });
   });
+
+  it('should show service error when reset email request fails for operational reasons', async () => {
+    const user = userEvent.setup();
+    const requestPasswordResetMock = vi.fn().mockRejectedValue(
+      Object.assign(new Error('service unavailable'), { code: 'auth/network-request-failed' })
+    );
+
+    vi.mocked(useAuthStore).mockImplementation((selector?: unknown) => {
+      const state = { ...mockAuth, requestPasswordReset: requestPasswordResetMock };
+      if (typeof selector === 'function') {
+        return (selector as (s: typeof state) => unknown)(state);
+      }
+      return state;
+    });
+
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    );
+
+    await user.type(screen.getByTestId('login-email'), 'person@example.com');
+    await user.click(screen.getByRole('button', { name: /Esqueci a senha/i }));
+
+    await waitFor(() => {
+      expect(requestPasswordResetMock).toHaveBeenCalledWith('person@example.com');
+      expect(screen.getByText(/Não foi possível enviar o e-mail de recuperação agora/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/Se o e-mail estiver cadastrado/i)).not.toBeInTheDocument();
+  });
 });

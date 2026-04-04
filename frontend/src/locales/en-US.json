@@ -47,6 +47,7 @@
     "forgot_password": "Forgot password",
     "forgot_password_requires_email": "Enter your email to recover your password.",
     "forgot_password_sent_generic": "If the email is registered, we'll send a password reset link.",
+    "forgot_password_send_error": "We couldn't send the recovery email right now. Please try again shortly.",
     "reset_password_title": "Reset password",
     "new_password": "New password",
     "confirm_new_password": "Confirm new password",
