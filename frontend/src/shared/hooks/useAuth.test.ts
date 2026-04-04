@@ -18,6 +18,7 @@ vi.mock('../api/http-client');
 // Mock Firebase
 vi.mock('../../features/auth/firebase', () => ({
   auth: {
+    languageCode: null,
     currentUser: {
       getIdToken: vi.fn().mockResolvedValue('fake-id-token'),
     },
@@ -320,11 +321,11 @@ describe('useAuth', () => {
   });
 
   describe('requestPasswordReset', () => {
-    it('should normalize email and call firebase reset password API with app action settings', async () => {
+    it('should normalize email, set firebase language and call reset password API with app action settings', async () => {
       const { result } = renderHook(() => useAuthStore());
 
       await act(async () => {
-        await result.current.requestPasswordReset('  USER@Example.Com  ');
+        await result.current.requestPasswordReset('  USER@Example.Com  ', 'es-ES');
       });
 
       expect(sendPasswordResetEmail).toHaveBeenCalledWith(
@@ -335,6 +336,7 @@ describe('useAuth', () => {
           url: expect.stringContaining('/login'),
         })
       );
+      expect((await import('../../features/auth/firebase')).auth.languageCode).toBe('es');
     });
   });
 

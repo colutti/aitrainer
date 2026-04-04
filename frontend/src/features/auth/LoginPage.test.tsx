@@ -334,7 +334,7 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: /Esqueci a senha/i }));
 
     await waitFor(() => {
-      expect(requestPasswordResetMock).toHaveBeenCalledWith('person@example.com');
+      expect(requestPasswordResetMock).toHaveBeenCalledWith('person@example.com', 'pt-BR');
       expect(screen.getByText(/Se o e-mail estiver cadastrado/i)).toBeInTheDocument();
     });
   });
@@ -363,7 +363,7 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: /Esqueci a senha/i }));
 
     await waitFor(() => {
-      expect(requestPasswordResetMock).toHaveBeenCalledWith('person@example.com');
+      expect(requestPasswordResetMock).toHaveBeenCalledWith('person@example.com', 'pt-BR');
       expect(screen.getByText(/Não foi possível enviar o e-mail de recuperação agora/i)).toBeInTheDocument();
     });
     expect(screen.queryByText(/Se o e-mail estiver cadastrado/i)).not.toBeInTheDocument();
