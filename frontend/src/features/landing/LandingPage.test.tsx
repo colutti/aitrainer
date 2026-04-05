@@ -20,6 +20,8 @@ vi.mock('react-router-dom', async (importOriginal) => {
 vi.mock('./components/Hero', () => ({ Hero: () => <div data-testid="hero" /> }));
 vi.mock('./components/Navbar', () => ({ Navbar: () => <div data-testid="navbar" /> }));
 vi.mock('./components/Footer', () => ({ Footer: () => <div data-testid="footer" /> }));
+vi.mock('./components/ChatCarousel', () => ({ ChatCarousel: () => <div data-testid="demo-section">Ver demo</div> }));
+vi.mock('./components/Pricing', () => ({ Pricing: () => <div data-testid="plans-section">Planos</div> }));
 
 describe('LandingPage', () => {
   beforeEach(() => {
@@ -32,10 +34,18 @@ describe('LandingPage', () => {
 
   it('should render landing page components', () => {
     render(<LandingPage />);
-    
+
     expect(screen.getByTestId('navbar')).toBeInTheDocument();
     expect(screen.getByTestId('hero')).toBeInTheDocument();
     expect(screen.getByTestId('footer')).toBeInTheDocument();
+  });
+
+  it('renders the landing with the demo before plans and faq', () => {
+    render(<LandingPage />);
+
+    const main = screen.getByRole('main');
+    const mainContent = main.textContent ?? '';
+    expect(mainContent.indexOf('Ver demo')).toBeLessThan(mainContent.indexOf('Planos'));
   });
 
   it('should redirect to dashboard if authenticated', () => {

@@ -29,7 +29,7 @@ export const StickyMobileCTA = () => {
         fullWidth
         className="h-12 bg-primary bg-none hover:bg-primary-hover shadow-none rounded-md"
       >
-        {t('landing.sticky_cta')}
+        {t('landing.hero.cta')}
       </Button>
     </div>
   );

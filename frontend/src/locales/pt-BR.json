@@ -499,148 +499,145 @@
       }
     },
     "hero": {
-      "title": "Seu Treinador IA Pessoal",
-      "title_gradient": "Inteligência que gera Performance",
-      "description": "O único app que integra nutrição, treinos e metabolismo usando memória AI real.",
-      "subtitle": "O Treinador IA que conhece seu corpo melhor que você.",
-      "badge": "Nova Era Fitness",
-      "cta": "Começar agora",
+      "eyebrow": "Coaching inteligente para a vida real",
+      "title": "Transforme sua rotina em evolução consistente.",
+      "description": "Treino, nutrição, composição corporal e metabolismo em um sistema de coaching com memória, contexto e orientação prática para o seu dia a dia.",
+      "cta": "Começar teste grátis",
+      "demo_cta": "Ver demo",
+      "proof_1": "Teste grátis",
+      "proof_2": "Sem rotina perfeita",
+      "proof_3": "Com contexto real",
       "daily_goal": "Meta Diária",
       "macro_protein": "Proteína",
       "macro_fat": "Gordura",
       "macro_carbs": "Carboidratos"
     },
     "nav": {
-      "trainers": "Treinadores",
+      "demo": "Ver demo",
       "plans": "Planos",
       "login": "Login",
-      "differentiators": "Diferenciais",
-      "how_it_works": "Como Funciona"
+      "differentiators": "Diferenciais"
     },
     "showcase": {
-      "title": "Tudo em um só lugar",
-      "description": "Visualize sua evolução física e metabólica em tempo real.",
+      "title": "Sistema operacional da sua evolução",
+      "description": "Painel, chat e leitura metabólica trabalhando juntos para transformar sua rotina em clareza prática.",
       "dashboard_title": "Dashboard",
-      "chat_title": "Chat",
-      "active_now": "Ativa agora",
-      "meta_calorie_title": "Calorias AI",
-      "accuracy": "Precisão",
-      "weekly_target_title": "Meta Semanal",
-      "vs_previous": "vs anterior",
-      "data_used": "Dados processados",
-      "days_count": "{{count}} dias",
-      "weight_30d": "Peso 30 dias",
-      "meta_title": "Metabolismo",
-      "dashboard_desc": "Sua central de comando corporal."
+      "dashboard_subtitle": "Vários sinais, uma leitura só",
+      "chat_title": "Chat com contexto",
+      "chat_subtitle": "Orientação que entende sua semana",
+      "metabolism_title": "Metabolismo adaptativo",
+      "metabolism_subtitle": "Menos fórmula fixa, mais realidade",
+      "widgets": {
+        "daily_target": "Meta diária",
+        "metabolic_confidence": "Confiança metabólica",
+        "weight": "Peso",
+        "fat": "Gordura",
+        "muscle": "Massa muscular",
+        "calories": "Calorias",
+        "recent_activity": "Atividade recente",
+        "weekly_frequency": "Frequência semanal",
+        "prs": "PRs recentes",
+        "strength_radar": "Radar de força"
+      },
+      "chat_example_user": "Treinei menos esta semana e saí da meta em alguns dias. O que faz mais sentido hoje?",
+      "chat_example_trainer": "Hoje o foco não é compensar no radicalismo. Vamos proteger a constância com treino curto, proteína alta e uma meta simples de cumprir.",
+      "metabolism_stats": {
+        "target": "Meta diária",
+        "confidence": "Confiança",
+        "balance": "Balanço energético",
+        "trend": "Tendência semanal",
+        "consistency": "Consistência",
+        "stability": "Estabilidade calórica"
+      }
     },
     "how": {
-      "title": "Como Funciona",
-      "subtitle": "3 passos para sua melhor versão",
+      "title": "Como funciona na prática",
+      "subtitle": "Menos adivinhação. Mais clareza sobre o que fazer hoje.",
       "steps": [
         {
-          "title": "Conecte",
-          "desc": "Sincronize com Hevy ou MFP."
+          "title": "Seus dados entram",
+          "desc": "Treinos, refeições, peso e composição corporal entram manualmente ou por importação."
         },
         {
-          "title": "Treine",
-          "desc": "Registre suas atividades normalmente."
+          "title": "O sistema organiza sinais e tendências",
+          "desc": "O FityQ transforma rotina dispersa em contexto claro sobre constância, balanço e progresso."
         },
         {
-          "title": "Evolua",
-          "desc": "Receba insights baseados em dados reais."
+          "title": "Você recebe orientação prática",
+          "desc": "Seu treinador usa memória e contexto para responder com clareza, sem conselho genérico."
         }
       ]
     },
     "diff": {
-      "title": "Diferenciais",
-      "subtitle": "Por que o FityQ é diferente?",
+      "title": "Por que o FityQ é diferente",
+      "subtitle": "Não é só um chat. É um sistema que transforma sua rotina em contexto útil.",
       "features": {
-        "meta": {
-          "title": "Análise Metabólica",
-          "description": "Cálculo real de TDEE e gasto diário."
+        "memory": {
+          "title": "Memória que aprende com sua rotina",
+          "description": "O sistema lembra do que vem acontecendo para responder com mais contexto."
         },
-        "vision": {
-          "title": "Visão Computacional",
-          "description": "Analise sua execução via vídeo."
+        "metabolism": {
+          "title": "Leitura metabólica adaptativa",
+          "description": "Seu metabolismo deixa de ser uma fórmula fixa e passa a refletir seus dados reais."
+        },
+        "dashboard": {
+          "title": "Dashboard com sinais que se conectam",
+          "description": "Peso, gordura, músculo, calorias, atividade e frequência no mesmo lugar."
         },
         "trainers": {
-          "title": "Personas Reais",
-          "description": "Treinadores com personalidades distintas."
+          "title": "Mentores com estilos diferentes",
+          "description": "O mesmo contexto pode virar orientações diferentes, de acordo com o perfil que mais combina com você."
         },
         "integrations": {
-          "title": "Ecossistema Aberto",
-          "description": "Conecta seus apps favoritos."
+          "title": "Integrações e importações reais",
+          "description": "Use o que você já registra para acelerar a utilidade do sistema."
         },
-        "journey": {
-          "title": "Jornada Adaptativa",
-          "description": "Metas que mudam com seu progresso."
-        },
-        "available": {
-          "title": "Sempre Online",
-          "description": "Seu treinador 24/7 no seu bolso."
+        "multichannel": {
+          "title": "Acompanhamento além do app",
+          "description": "No plano Pro, você também pode usar imagem no chat e acesso via Telegram."
         }
       }
     },
     "trainers": {
-      "title": "Conheça seu Mentor",
-      "description": "Escolha a personalidade que melhor se adapta ao seu estilo.",
-      "talk_with": "Falar com {{name}}",
+      "title": "Escolha o estilo de acompanhamento que combina com você",
+      "description": "Cada mentor lê o mesmo contexto com uma personalidade diferente. Você escolhe quem mais combina com a forma como gosta de evoluir.",
+      "cta": "Começar com este mentor",
       "profiles": {
         "atlas": {
-          "tagline": "Eficiência e biomecânica em primeiro lugar.",
-          "catchphrase": "Seus músculos são máquinas biológicas. Vamos otimizá-las.",
-          "specialties": [
-            "Biomecânica",
-            "Hipertrofia",
-            "Treino orientado por dados"
-          ],
-          "style": "Científico e precisionista"
+          "for_who": "Para quem gosta de clareza e decisões guiadas por dados.",
+          "style": "Direto, analítico e preciso.",
+          "best_for": "Ajustes de treino, leitura de progresso e organização da rotina.",
+          "example": "Seu progresso melhora mais com consistência simples do que com correções extremas."
         },
         "luna": {
-          "tagline": "Conexão mente-corpo com leveza e constância.",
-          "catchphrase": "Respire o universo, expire as tensões.",
-          "specialties": [
-            "Yoga",
-            "Mindfulness",
-            "Fluxo e recuperação"
-          ],
-          "style": "Holística e acolhedora"
+          "for_who": "Para quem busca constância com mais leveza e equilíbrio.",
+          "style": "Calma, acolhedora e orientada a bem-estar.",
+          "best_for": "Rotina sustentável, recuperação e reconexão com hábitos.",
+          "example": "Hoje o melhor passo é reduzir a pressão e proteger o ritmo que você consegue manter."
         },
         "sofia": {
-          "tagline": "Saúde feminina guiada por ciência e contexto hormonal.",
-          "catchphrase": "Vamos hackear seu metabolismo com ciência e carinho.",
-          "specialties": [
-            "Saúde feminina",
-            "Hormônios",
-            "Metabolismo"
-          ],
-          "style": "Médica especialista empática"
+          "for_who": "Para quem valoriza contexto fisiológico e leitura metabólica.",
+          "style": "Empática, técnica e cuidadosa.",
+          "best_for": "Metabolismo, saúde feminina e ajustes de rotina com mais contexto.",
+          "example": "Antes de apertar a dieta, precisamos entender o que essa semana realmente sinaliza."
         },
         "sargento": {
-          "tagline": "Disciplina alta para quem precisa de cobrança direta.",
-          "catchphrase": "CAIA NO CHÃO E ME PAGUE VINTE, RECRUTA!",
-          "specialties": [
-            "Disciplina",
-            "Força",
-            "Execução sem desculpas"
-          ],
-          "style": "Bootcamp militar"
+          "for_who": "Para quem responde melhor a cobrança e estrutura firme.",
+          "style": "Intenso, disciplinado e sem rodeios.",
+          "best_for": "Disciplina, aderência e execução.",
+          "example": "Seu plano não precisa ser mais complicado. Precisa ser cumprido."
         },
         "gymbro": {
-          "tagline": "Parceria de treino com energia e constância.",
-          "catchphrase": "Bora, monstro! Hoje é dia de EVOLUIR! 🔥",
-          "specialties": [
-            "Motivação",
-            "Parceria",
-            "Lifestyle fitness"
-          ],
-          "style": "Brother motivador"
+          "for_who": "Para quem quer incentivo, energia e parceria.",
+          "style": "Motivador, próximo e fácil de acompanhar.",
+          "best_for": "Constância, confiança e rotina sem peso excessivo.",
+          "example": "Bora voltar para o básico bem feito. É isso que constrói resultado de verdade."
         }
       }
     },
     "plans": {
-      "title": "Planos",
-      "subtitle": "Escolha o nível da sua performance",
+      "title": "Comece simples. Evolua com contexto.",
+      "subtitle": "O teste grátis existe para você sentir o sistema funcionando na sua rotina antes de decidir.",
       "recommended": "Recomendado",
       "total": "Total",
       "per_month": "/mês",
@@ -684,26 +681,70 @@
       "title": "FAQ",
       "items": [
         {
-          "q": "Como funciona a memória AI?",
-          "a": "A IA lembra de cada treino e refeição sua."
+          "q": "Preciso conectar apps para funcionar?",
+          "a": "Não. Você pode começar registrando manualmente e adicionar integrações depois."
+        },
+        {
+          "q": "Funciona se eu não tiver rotina perfeita?",
+          "a": "Sim. A proposta é justamente ajudar você a manter constância no mundo real, não exigir perfeição."
+        },
+        {
+          "q": "Como a memória funciona?",
+          "a": "O FityQ usa o histórico da sua rotina para responder com mais contexto e continuidade ao longo do tempo."
+        },
+        {
+          "q": "Como o metabolismo é calculado?",
+          "a": "A leitura metabólica usa seus dados de peso e nutrição para produzir uma estimativa adaptativa, em vez de depender apenas de fórmulas fixas."
+        },
+        {
+          "q": "Qual a diferença entre os planos?",
+          "a": "O teste grátis permite experimentar a proposta. Os planos pagos ampliam volume de uso, acesso a mentores e recursos como imagens, integrações e Telegram."
         },
         {
           "q": "Posso cancelar a qualquer momento?",
-          "a": "Sim, sem multas ou taxas."
+          "a": "Sim. Você pode interromper sua assinatura sem contrato de longo prazo."
+        },
+        {
+          "q": "O FityQ substitui orientação médica ou nutricional?",
+          "a": "Não. O produto oferece apoio digital para rotina, hábitos e performance, mas não substitui acompanhamento profissional individualizado."
+        },
+        {
+          "q": "Onde posso ler sobre privacidade e termos de uso?",
+          "a": "Os links para Política de Privacidade e Termos de Uso ficam disponíveis na landing e no rodapé."
         }
       ]
     },
     "cta": {
-      "title": "Pronto para evoluir?",
-      "subtitle": "Comece seu teste grátis de 7 dias hoje.",
-      "button": "Criar minha conta",
+      "title": "Comece a construir uma rotina mais inteligente",
+      "subtitle": "Teste o FityQ e veja como sua rotina pode virar clareza, contexto e constância.",
+      "button": "Começar teste grátis",
       "trial": "Sem compromisso."
     },
-    "cta_product": "Ver Demo",
-    "cta_trainers": "Escolher Mentor",
-    "chat_carousel": {
-      "title": "Experimente agora",
-      "subtitle": "Simule uma conversa com Sofia ou GymBro"
+    "demo": {
+      "title": "Veja como o FityQ trabalha no seu dia a dia",
+      "subtitle": "Sua rotina gera sinais. O FityQ organiza esse contexto e devolve orientação prática para manter constância sem complicar sua vida.",
+      "step_1_eyebrow": "Sua rotina",
+      "step_1_title": "Treino, refeição e peso entram no sistema",
+      "step_1_description": "Você registra o básico ou importa dados que já usa no dia a dia.",
+      "step_2_eyebrow": "O sistema entende",
+      "step_2_title": "Tendências e contexto ficam claros",
+      "step_2_description": "O FityQ cruza frequência, ingestão, peso e recuperação para enxergar o que mudou.",
+      "step_3_eyebrow": "Seu treinador orienta",
+      "step_3_title": "Você recebe o próximo passo com clareza",
+      "step_3_description": "Em vez de motivação genérica, você recebe uma orientação útil para aquele momento."
+    },
+    "demo_case": {
+      "label": "Exemplo realista",
+      "title": "Uma semana comum, tratada com mais inteligência",
+      "context_title": "Contexto detectado",
+      "context_points": [
+        "2 treinos a menos do que o planejado",
+        "3 dias acima da meta calórica",
+        "Peso oscilando sem tendência clara"
+      ],
+      "trainer_title": "Resposta do treinador",
+      "trainer_name": "Atlas Prime",
+      "trainer_reply": "Você não precisa compensar exagerando. Seu melhor movimento hoje é retomar consistência: treino curto, proteína alta e meta calórica simples de cumprir."
     },
     "conversations": {
       "sofia": {
@@ -719,7 +760,7 @@
         "trainer_2": "Fecha. Quinze minutos bem feitos já ajudam na recuperação e no déficit."
       }
     },
-    "sticky_cta": "Começar agora",
+    "sticky_cta": "Começar teste grátis",
     "subscription": {
       "payment_success_message": "Pagamento confirmado! Bem-vindo.",
       "payment_cancelled_message": "Pagamento cancelado."
@@ -730,7 +771,7 @@
       "contact": "Contato",
       "rights": "© {{year}} FitYQ. Todos os direitos reservados."
     },
-    "trust_badge_free": "Grátis por 7 dias",
+    "trust_badge_free": "Teste grátis",
     "trust_badge_card": "Sem cartão",
     "counters": {
       "trainers": "Treinadores",
@@ -739,11 +780,11 @@
       "memory": "Memória AI"
     },
     "integrations_section": {
-      "title": "Ecossistema Aberto",
-      "subtitle": "Conecte e importe seus dados reais",
-      "hevy_desc": "Conecte sua conta e sincronize seus treinos automaticamente.",
-      "mfp_desc": "Importe seu histórico nutricional do MyFitnessPal.",
-      "zepp_desc": "Importe dados de saúde, peso e sono do Zepp Life.",
+      "title": "Traga sua rotina para dentro do sistema",
+      "subtitle": "Quanto mais contexto entra, mais útil fica a orientação.",
+      "hevy_desc": "Importe ou sincronize seus treinos para transformar execução em contexto.",
+      "mfp_desc": "Traga seu histórico alimentar para conectar ingestão e progresso.",
+      "zepp_desc": "Use dados de peso e composição corporal para enriquecer a leitura do sistema.",
       "items": {
         "hevy": {
           "status": "Sincronização disponível"

@@ -16,12 +16,12 @@ vi.mock('react-router-dom', async (importOriginal) => {
 describe('FinalCTA Component', () => {
   it('should render final call to action', () => {
     render(<FinalCTA />);
-    expect(screen.getByText(/Pronto para evoluir/i)).toBeInTheDocument();
+    expect(screen.getByText(/Comece a construir uma rotina mais inteligente/i)).toBeInTheDocument();
   });
 
   it('should navigate to login when button clicked', () => {
     render(<FinalCTA />);
-    const btn = screen.getByRole('button', { name: /Criar minha conta/i });
+    const btn = screen.getByRole('button', { name: /Começar teste grátis/i });
     fireEvent.click(btn);
     expect(mockNavigate).toHaveBeenCalledWith('/login?mode=register');
   });

@@ -5,9 +5,10 @@ import { render, screen } from '../../../shared/utils/test-utils';
 import { Features } from './Features';
 
 describe('Features Component', () => {
-  it('should render features section', () => {
+  it('only shows real differentiators', () => {
     render(<Features />);
-    expect(screen.getByText(/Diferenciais/i)).toBeInTheDocument();
-    expect(screen.getByText(/Análise Metabólica/i)).toBeInTheDocument();
+
+    expect(screen.getByText(/Memória que aprende com sua rotina/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Vis[aã]o Computacional/i)).not.toBeInTheDocument();
   });
 });

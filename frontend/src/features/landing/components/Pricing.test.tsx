@@ -43,8 +43,8 @@ describe('Pricing Component', () => {
 
   it('should render pricing plans', () => {
     render(<Pricing />);
-    
-    expect(screen.getByText(/Escolha o nível da sua performance/i)).toBeInTheDocument();
+
+    expect(screen.getByText(/Comece simples. Evolua com contexto./i)).toBeInTheDocument();
     expect(screen.getByText('Free')).toBeInTheDocument();
     expect(screen.getByText('Pro')).toBeInTheDocument();
     expect(screen.queryByText('Premium')).not.toBeInTheDocument();

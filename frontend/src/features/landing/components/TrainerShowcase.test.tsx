@@ -5,19 +5,17 @@ import { render, screen } from '../../../shared/utils/test-utils';
 import { TrainerShowcase } from './TrainerShowcase';
 
 describe('TrainerShowcase Component', () => {
-  it('should render trainer profiles', () => {
+  it('presents mentors as coaching styles, not generic characters', () => {
     render(<TrainerShowcase />);
-    expect(screen.getByText(/Conheça seu Mentor/i)).toBeInTheDocument();
-    expect(screen.getByText('Atlas Prime')).toBeInTheDocument();
+
+    expect(screen.getByText(/Escolha o estilo de acompanhamento que combina com você/i)).toBeInTheDocument();
+    expect(screen.getAllByText('Atlas Prime').length).toBeGreaterThan(0);
     expect(screen.getByText('Luna Stardust')).toBeInTheDocument();
   });
 
-  it('should render trainer cards without fixed button height', () => {
+  it('renders mentor specific CTA', () => {
     render(<TrainerShowcase />);
 
-    const atlasCard = screen.getByRole('button', { name: /Atlas Prime/i });
-
-    expect(atlasCard).toHaveClass('h-auto');
-    expect(atlasCard).toHaveClass('min-h-44');
+    expect(screen.getByRole('button', { name: /Começar com este mentor/i })).toBeInTheDocument();
   });
 });

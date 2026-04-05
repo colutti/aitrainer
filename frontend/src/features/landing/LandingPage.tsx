@@ -3,8 +3,6 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { ChatCarousel } from './components/ChatCarousel';
-import { ComparisonTable } from './components/ComparisonTable';
-import { Counters } from './components/Counters';
 import { FAQ } from './components/FAQ';
 import { Features } from './components/Features';
 import { FinalCTA } from './components/FinalCTA';
@@ -39,14 +37,12 @@ const LandingPage = () => {
       
       <main>
         <Hero />
-        <Counters />
         <ChatCarousel />
-        <TrainerShowcase />
+        <HowItWorks />
         <ProductShowcase />
-        <ComparisonTable />
+        <TrainerShowcase />
         <Features />
         <IntegrationLogos />
-        <HowItWorks />
         <Pricing />
         <FAQ />
         <FinalCTA />

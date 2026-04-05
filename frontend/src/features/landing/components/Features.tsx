@@ -1,4 +1,4 @@
-import { Brain, Clock, LayoutGrid, MessageSquare, Users, Zap } from 'lucide-react';
+import { Brain, LayoutGrid, Link2, MessageSquare, Users, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export const Features = () => {
@@ -6,14 +6,19 @@ export const Features = () => {
 
   const features = [
     {
-      icon: Zap,
-      title: t('landing.diff.features.meta.title'),
-      description: t('landing.diff.features.meta.description'),
+      icon: Brain,
+      title: t('landing.diff.features.memory.title'),
+      description: t('landing.diff.features.memory.description'),
     },
     {
-      icon: Brain,
-      title: t('landing.diff.features.vision.title'),
-      description: t('landing.diff.features.vision.description'),
+      icon: Zap,
+      title: t('landing.diff.features.metabolism.title'),
+      description: t('landing.diff.features.metabolism.description'),
+    },
+    {
+      icon: LayoutGrid,
+      title: t('landing.diff.features.dashboard.title'),
+      description: t('landing.diff.features.dashboard.description'),
     },
     {
       icon: Users,
@@ -21,19 +26,14 @@ export const Features = () => {
       description: t('landing.diff.features.trainers.description'),
     },
     {
-      icon: LayoutGrid,
+      icon: Link2,
       title: t('landing.diff.features.integrations.title'),
       description: t('landing.diff.features.integrations.description'),
     },
     {
       icon: MessageSquare,
-      title: t('landing.diff.features.journey.title'),
-      description: t('landing.diff.features.journey.description'),
-    },
-    {
-      icon: Clock,
-      title: t('landing.diff.features.available.title'),
-      description: t('landing.diff.features.available.description'),
+      title: t('landing.diff.features.multichannel.title'),
+      description: t('landing.diff.features.multichannel.description'),
     },
   ];
 

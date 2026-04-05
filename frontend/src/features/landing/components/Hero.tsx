@@ -13,21 +13,18 @@ export const Hero = () => {
         <div className="max-w-3xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-primary/10 border border-primary/20 mb-6">
             <span className="text-xs font-semibold text-primary uppercase tracking-wider">
-              {t('landing.hero.badge')}
+              {t('landing.hero.eyebrow')}
             </span>
           </div>
-          
+
           <h1 className="font-display text-4xl sm:text-6xl font-bold text-text-primary mb-6 leading-tight tracking-tight">
-            {t('landing.hero.title')}{' '}
-            <span className="text-primary">
-              {t('landing.hero.title_gradient')}
-            </span>
+            {t('landing.hero.title')}
           </h1>
-          
+
           <p className="text-lg md:text-xl text-text-secondary mb-10 leading-relaxed max-w-2xl">
             {t('landing.hero.description')}
           </p>
-          
+
           <div className="flex flex-col sm:flex-row gap-4">
             <Button
               onClick={() => { void navigate('/login?mode=register'); }}
@@ -41,24 +38,28 @@ export const Hero = () => {
             
             <Button
               onClick={() => {
-                document.querySelector('#treinadores')?.scrollIntoView({ behavior: 'smooth' });
+                document.querySelector('#demo')?.scrollIntoView({ behavior: 'smooth' });
               }}
               variant="secondary"
               size="lg"
               className="rounded-lg border-border bg-dark-card h-14 px-8 text-lg"
             >
-              {t('landing.nav.trainers')}
+              {t('landing.hero.demo_cta')}
             </Button>
           </div>
-          
+
           <div className="mt-8 flex flex-wrap gap-6 text-sm text-text-muted">
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-              {t('landing.trust_badge_free')}
+              {t('landing.hero.proof_1')}
             </div>
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-              {t('landing.trust_badge_card')}
+              {t('landing.hero.proof_2')}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+              {t('landing.hero.proof_3')}
             </div>
           </div>
         </div>
