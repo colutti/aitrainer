@@ -16,7 +16,13 @@ services:
       QDRANT_PORT: "6333"
       QDRANT_COLLECTION_NAME: aitrainer_test
       RUNNING_IN_CONTAINER: "true"
-      STRIPE_API_BASE: http://stripe-mock:12111
+      STRIPE_API_BASE: ${STRIPE_API_BASE:-http://stripe-mock:12111}
+      STRIPE_API_KEY: ${STRIPE_API_KEY:-sk_test_mock}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_mock}
+      STRIPE_LIVE_TEST_ENABLED: ${STRIPE_LIVE_TEST_ENABLED:-false}
+      STRIPE_TEST_SECRET_KEY: ${STRIPE_TEST_SECRET_KEY:-}
+      STRIPE_TEST_WEBHOOK_SECRET: ${STRIPE_TEST_WEBHOOK_SECRET:-}
+      STRIPE_CLI_WEBHOOK_FORWARD_URL: ${STRIPE_CLI_WEBHOOK_FORWARD_URL:-}
     depends_on:
       mongo:
         condition: service_healthy

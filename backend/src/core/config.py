@@ -5,7 +5,7 @@ This module contains the configuration settings for the application.
 import logging
 import os
 
-from pydantic import ValidationError, field_validator, Field
+from pydantic import ValidationError, field_validator, Field, model_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -134,6 +134,31 @@ class Settings(BaseSettings):
     STRIPE_PRICE_ID_PRO_USD: str = ""
     STRIPE_PRICE_ID_PRO_BRL: str = ""
     STRIPE_PRICE_ID_PRO_EUR: str = ""
+    STRIPE_LIVE_TEST_ENABLED: bool = False
+    STRIPE_TEST_SECRET_KEY: str = ""
+    STRIPE_TEST_WEBHOOK_SECRET: str = ""
+    STRIPE_CLI_WEBHOOK_FORWARD_URL: str = ""
+
+    @model_validator(mode="after")
+    def validate_live_stripe_settings(self):
+        """Validate required Stripe live-test settings only when explicitly enabled."""
+        if not self.STRIPE_LIVE_TEST_ENABLED:
+            return self
+
+        missing: list[str] = []
+        if not self.STRIPE_TEST_SECRET_KEY:
+            missing.append("STRIPE_TEST_SECRET_KEY")
+        if not self.STRIPE_TEST_WEBHOOK_SECRET:
+            missing.append("STRIPE_TEST_WEBHOOK_SECRET")
+        if not self.STRIPE_CLI_WEBHOOK_FORWARD_URL:
+            missing.append("STRIPE_CLI_WEBHOOK_FORWARD_URL")
+
+        if missing:
+            raise ValueError(
+                "Missing required Stripe live test settings: " + ", ".join(missing)
+            )
+
+        return self
 
     def get_mem0_config(self) -> dict:
         """

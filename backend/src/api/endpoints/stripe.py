@@ -81,7 +81,14 @@ async def stripe_webhook(
     except stripe.error.SignatureVerificationError as exc:  # type: ignore
         raise HTTPException(status_code=400, detail="Invalid signature") from exc
 
-    logger.info("Stripe Webhook received: %s", event["type"])
+    event_object = event.get("data", {}).get("object", {})
+    logger.info(
+        "Stripe Webhook received: type=%s event_id=%s customer=%s subscription=%s",
+        event.get("type"),
+        event.get("id"),
+        event_object.get("customer"),
+        event_object.get("id"),
+    )
 
     if event["type"] == "checkout.session.completed":
         _handle_checkout_completed(event["data"]["object"], brain)
@@ -174,8 +181,32 @@ def _handle_subscription_updated(subscription, brain):
     cycle_start = datetime.fromtimestamp(c_ts, tz=timezone.utc)
     cycle_start_iso = cycle_start.isoformat()
 
+    previous_cycle = profile.current_billing_cycle_start
+    previous_cycle_dt = None
+    if previous_cycle:
+        if isinstance(previous_cycle, datetime):
+            previous_cycle_dt = (
+                previous_cycle.replace(tzinfo=timezone.utc)
+                if previous_cycle.tzinfo is None
+                else previous_cycle.astimezone(timezone.utc)
+            )
+        elif isinstance(previous_cycle, str):
+            normalized_cycle = previous_cycle.replace("Z", "+00:00")
+            previous_cycle_dt = datetime.fromisoformat(normalized_cycle)
+
+    if previous_cycle_dt and cycle_start < previous_cycle_dt:
+        logger.warning(
+            "Ignoring stale subscription cycle for customer %s. Incoming: %s, Existing: %s",
+            customer_id,
+            cycle_start_iso,
+            previous_cycle_dt.isoformat(),
+        )
+        cycle_start_iso = previous_cycle_dt.isoformat()
+        cycle_changed = False
+    else:
+        cycle_changed = previous_cycle != cycle_start_iso
+
     plan_changed = profile.subscription_plan != plan
-    cycle_changed = profile.current_billing_cycle_start != cycle_start_iso
 
     updates = {
         "stripe_subscription_id": subscription["id"],

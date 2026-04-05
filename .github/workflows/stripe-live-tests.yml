@@ -1,0 +1,51 @@
+name: Stripe Live Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_e2e:
+        description: Run Stripe live Playwright tests
+        required: false
+        default: "false"
+  schedule:
+    - cron: "0 4 * * 1"
+
+jobs:
+  stripe-live-backend:
+    runs-on: ubuntu-latest
+    env:
+      STRIPE_LIVE_TEST_ENABLED: "true"
+      STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+      STRIPE_API_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
+      STRIPE_TEST_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
+      STRIPE_CLI_WEBHOOK_FORWARD_URL: ${{ vars.STRIPE_CLI_WEBHOOK_FORWARD_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure Docker Compose is available
+        run: docker compose version
+
+      - name: Run Stripe live backend integration tests
+        run: docker compose -f docker-compose.test.yml run --rm backend-tests pytest tests/integration/stripe -v
+
+  stripe-live-e2e:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_e2e == 'true'
+    runs-on: ubuntu-latest
+    env:
+      STRIPE_LIVE_TEST_ENABLED: "true"
+      STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+      STRIPE_API_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
+      STRIPE_TEST_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
+      E2E_STRIPE_LIVE_TEST_ENABLED: "true"
+      E2E_STRIPE_TEST_WEBHOOK_SECRET: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
+      STRIPE_CLI_WEBHOOK_FORWARD_URL: ${{ vars.STRIPE_CLI_WEBHOOK_FORWARD_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure Docker Compose is available
+        run: docker compose version
+
+      - name: Run Stripe live Playwright subset
+        run: ./scripts/test/run-stripe-playwright.sh

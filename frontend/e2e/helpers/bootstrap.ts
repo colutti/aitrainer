@@ -17,7 +17,7 @@ export interface OnboardingProfile {
   height?: number;
   weight?: number;
   trainerType?: 'gymbro' | 'atlas' | 'luna' | 'sargento' | 'sofia';
-  subscriptionPlan?: 'Free' | 'Basic' | 'Pro' | 'Premium';
+  subscriptionPlan?: 'Free' | 'Pro';
 }
 
 export function buildE2EUserCredentials(testInfo: TestInfo, suffix = 'user'): E2EUserCredentials {

@@ -33,7 +33,13 @@ services:
       QDRANT_PORT: "6333"
       QDRANT_COLLECTION_NAME: aitrainer_test
       RUNNING_IN_CONTAINER: "true"
-      STRIPE_API_BASE: http://stripe-mock:12111
+      STRIPE_API_BASE: ${STRIPE_API_BASE:-http://stripe-mock:12111}
+      STRIPE_API_KEY: ${STRIPE_API_KEY:-sk_test_mock}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_mock}
+      STRIPE_LIVE_TEST_ENABLED: ${STRIPE_LIVE_TEST_ENABLED:-false}
+      STRIPE_TEST_SECRET_KEY: ${STRIPE_TEST_SECRET_KEY:-}
+      STRIPE_TEST_WEBHOOK_SECRET: ${STRIPE_TEST_WEBHOOK_SECRET:-}
+      STRIPE_CLI_WEBHOOK_FORWARD_URL: ${STRIPE_CLI_WEBHOOK_FORWARD_URL:-}
       FIREBASE_AUTH_EMULATOR_HOST: firebase-emulator:9099
       FIREBASE_PROJECT_ID: demo-fityq
     command: python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000
@@ -100,6 +106,9 @@ services:
       E2E_API_BASE_URL: http://backend:8000
       PLAYWRIGHT_SKIP_WEB_SERVER: "1"
       VITE_E2E_USER_EMAIL: bot-real@fityq.it
+      E2E_STRIPE_LIVE_TEST_ENABLED: ${STRIPE_LIVE_TEST_ENABLED:-false}
+      E2E_STRIPE_TEST_SECRET_KEY: ${STRIPE_TEST_SECRET_KEY:-}
+      E2E_STRIPE_TEST_WEBHOOK_SECRET: ${STRIPE_TEST_WEBHOOK_SECRET:-}
       E2E_FIREBASE_AUTH_EMULATOR_URL: http://firebase-emulator:9099
       E2E_FIREBASE_PROJECT_ID: demo-fityq
       E2E_FIREBASE_API_KEY: demo-api-key

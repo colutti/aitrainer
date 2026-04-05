@@ -23,13 +23,13 @@ test.describe('Subscription Feature', () => {
     await expect(authenticatedPage.getByText(t('settings.subscription.title')).first()).toBeVisible({
       timeout: 15000,
     });
-    await expect(authenticatedPage.getByTestId('subscription-plan-btn-basic')).toBeVisible();
+    await expect(authenticatedPage.getByTestId('subscription-plan-btn-pro')).toBeVisible();
 
-    await authenticatedPage.getByTestId('subscription-plan-btn-basic').click();
+    await authenticatedPage.getByTestId('subscription-plan-btn-pro').click();
     await expect(authenticatedPage).toHaveURL(/checkout\.stripe\.com\/c\/pay\/test-checkout/);
 
     expect(checkoutRequests).toHaveLength(1);
-    expect(checkoutRequests[0]?.price_id).toBe(STRIPE_PRICE_IDS.basic);
+    expect(checkoutRequests[0]?.price_id).toBe(STRIPE_PRICE_IDS.pro);
     expect(String(checkoutRequests[0]?.success_url)).toContain('/dashboard?payment=success');
     expect(String(checkoutRequests[0]?.cancel_url)).toContain('/dashboard/settings/subscription?payment=cancel');
   });

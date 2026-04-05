@@ -111,6 +111,31 @@ This runs:
 
 The container stack also starts MongoDB, Qdrant, and `stripe-mock` as internal dependencies.
 
+### Stripe Hybrid Testing (Mock + Live Test Mode)
+
+Default verification (`make verify`, `make verify-all`, `make test-once`) keeps Stripe on `stripe-mock`.
+
+For high-fidelity subscription lifecycle tests (real Stripe `test mode`):
+
+1. Set live test env vars:
+   - `STRIPE_LIVE_TEST_ENABLED=true`
+   - `STRIPE_TEST_SECRET_KEY=sk_test_...`
+   - `STRIPE_API_KEY=sk_test_...`
+   - `STRIPE_CLI_WEBHOOK_FORWARD_URL=http://localhost:8000/stripe/webhook`
+2. Start webhook forwarding and capture a signing secret:
+   - `STRIPE_LIVE_ENV_FILE=/tmp/stripe-live.env STRIPE_CLI_PRINT_ONLY=true ./scripts/test/stripe_cli_forward.sh`
+3. Export the captured secret:
+   - `export STRIPE_TEST_WEBHOOK_SECRET=whsec_...`
+   - `export STRIPE_WEBHOOK_SECRET=whsec_...`
+4. Run integration/e2e suites that target Stripe live.
+   - `./scripts/test/run-stripe-live.sh`
+   - `./scripts/test/run-stripe-playwright.sh` (optional subset for Stripe e2e)
+
+`scripts/test/stripe_cli_forward.sh` is deterministic by contract:
+- Prints `STRIPE_TEST_WEBHOOK_SECRET` and `STRIPE_CLI_WEBHOOK_FORWARD_URL` to stdout.
+- Optionally writes them to an env file (`STRIPE_LIVE_ENV_FILE`).
+- Runs `stripe listen` in foreground unless `STRIPE_CLI_PRINT_ONLY=true`.
+
 ### Verification vs Coverage
 
 Fast verification without per-suite coverage:
