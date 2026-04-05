@@ -123,9 +123,13 @@ Optional npm network hardening knobs (for unstable DNS/registry links):
 - `NPM_CONFIG_FETCH_RETRY_MINTIMEOUT` (default `2000`)
 - `NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT` (default `20000`)
 - `NPM_CONFIG_FETCH_TIMEOUT` (default `120000`)
-- `NPM_CONFIG_REGISTRY` (default `https://registry.npmjs.org/`)
+- `NPM_CONFIG_REGISTRY` (default `https://registry.npmmirror.com/`)
+- `NPM_CI_REGISTRY_FALLBACKS` (default `https://registry.npmmirror.com/,https://registry.npmjs.org/`)
 - `NPM_CI_TIMEOUT_SECONDS` (default `420`)
 - `NPM_CI_MAX_RETRIES` (default `3`)
+- `NPM_CI_FETCH_RETRIES_PER_ATTEMPT` (default `1`)
+- `NPM_CI_FETCH_RETRY_MINTIMEOUT_PER_ATTEMPT` (default `1000`)
+- `NPM_CI_FETCH_RETRY_MAXTIMEOUT_PER_ATTEMPT` (default `4000`)
 
 ### Stripe Hybrid Testing (Mock + Live Test Mode)
 

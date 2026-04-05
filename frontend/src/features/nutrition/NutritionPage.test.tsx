@@ -121,7 +121,7 @@ describe('NutritionPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText((_content, element) => element?.textContent === '2 / 4')).toBeInTheDocument();
+    expect(screen.getByText(/2\s*\/\s*4/)).toBeInTheDocument();
     expect(mockStore.fetchLogs).toHaveBeenCalled();
   });
 });

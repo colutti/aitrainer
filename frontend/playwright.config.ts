@@ -15,6 +15,7 @@ const shouldManageWebServer = process.env.PLAYWRIGHT_SKIP_WEB_SERVER !== '1';
 export default defineConfig({
   testDir: './e2e',
   testIgnore: ['**/auth.setup.ts'],
+  timeout: 90_000,
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

@@ -31,9 +31,10 @@ services:
       stripe-mock:
         condition: service_started
     command: >
-      sh -lc "/opt/venv/bin/ruff check src tests &&
+      sh -lc "/workspace/scripts/verify/with-resolved-services.sh sh -lc
+      '/opt/venv/bin/ruff check src tests &&
       /opt/venv/bin/pylint src &&
-      /opt/venv/bin/pytest tests/unit tests/api tests/services tests/test_services"
+      /opt/venv/bin/pytest tests/unit tests/api tests/services tests/test_services'"
     networks:
       - app-network
 
@@ -60,6 +61,9 @@ services:
   frontend-verify:
     image: docker.io/library/node:22-slim
     working_dir: /workspace/frontend
+    dns:
+      - ${TEST_DNS_PRIMARY:-1.1.1.1}
+      - ${TEST_DNS_SECONDARY:-8.8.8.8}
     volumes:
       - ../:/workspace
       - frontend_verify_node_modules:/workspace/frontend/node_modules
@@ -69,7 +73,8 @@ services:
       NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: ${NPM_CONFIG_FETCH_RETRY_MINTIMEOUT:-2000}
       NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: ${NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT:-20000}
       NPM_CONFIG_FETCH_TIMEOUT: ${NPM_CONFIG_FETCH_TIMEOUT:-120000}
-      NPM_CONFIG_REGISTRY: ${NPM_CONFIG_REGISTRY:-https://registry.npmjs.org/}
+      NPM_CONFIG_REGISTRY: ${NPM_CONFIG_REGISTRY:-https://registry.npmmirror.com/}
+      NPM_CI_REGISTRY_FALLBACKS: ${NPM_CI_REGISTRY_FALLBACKS:-https://registry.npmmirror.com/,https://registry.npmjs.org/}
       NPM_CI_TIMEOUT_SECONDS: ${NPM_CI_TIMEOUT_SECONDS:-420}
       NPM_CI_MAX_RETRIES: ${NPM_CI_MAX_RETRIES:-3}
     command: >
@@ -83,6 +88,9 @@ services:
   frontend-admin-verify:
     image: docker.io/library/node:22-slim
     working_dir: /workspace/frontend/admin
+    dns:
+      - ${TEST_DNS_PRIMARY:-1.1.1.1}
+      - ${TEST_DNS_SECONDARY:-8.8.8.8}
     volumes:
       - ../:/workspace
       - frontend_admin_verify_root_node_modules:/workspace/frontend/node_modules
@@ -93,7 +101,8 @@ services:
       NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: ${NPM_CONFIG_FETCH_RETRY_MINTIMEOUT:-2000}
       NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: ${NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT:-20000}
       NPM_CONFIG_FETCH_TIMEOUT: ${NPM_CONFIG_FETCH_TIMEOUT:-120000}
-      NPM_CONFIG_REGISTRY: ${NPM_CONFIG_REGISTRY:-https://registry.npmjs.org/}
+      NPM_CONFIG_REGISTRY: ${NPM_CONFIG_REGISTRY:-https://registry.npmmirror.com/}
+      NPM_CI_REGISTRY_FALLBACKS: ${NPM_CI_REGISTRY_FALLBACKS:-https://registry.npmmirror.com/,https://registry.npmjs.org/}
       NPM_CI_TIMEOUT_SECONDS: ${NPM_CI_TIMEOUT_SECONDS:-420}
       NPM_CI_MAX_RETRIES: ${NPM_CI_MAX_RETRIES:-3}
     command: >

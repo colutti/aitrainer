@@ -22,9 +22,12 @@ describe('ChatPage', () => {
   const defaultChatStore = {
     messages: [],
     isStreaming: false,
+    isLoading: false,
+    hasMore: false,
     error: null,
     fetchHistory: mockFetchHistory,
     sendMessage: mockSendMessage,
+    loadMore: vi.fn(),
   };
 
   const defaultSettingsStore = {
@@ -86,15 +89,13 @@ describe('ChatPage', () => {
       </MemoryRouter>
     );
     
-    const input = screen.getByPlaceholderText(/Fale com seu treinador/i);
+    const input = screen.getByTestId('chat-input');
     fireEvent.change(input, { target: { value: 'New Message' } });
-    
-    const form = input.closest('form');
-     
-    if (!form) throw new Error('Form not found');
+
+    const form = screen.getByTestId('chat-form');
     fireEvent.submit(form);
 
-    expect(mockSendMessage).toHaveBeenCalledWith('New Message');
+    expect(mockSendMessage).toHaveBeenCalledWith('New Message', []);
     expect(input).toHaveValue('');
   });
 
@@ -108,10 +109,7 @@ describe('ChatPage', () => {
         <ChatPage />
       </MemoryRouter>
     );
-    const button = screen.getByRole('button');
-    const form = button.closest('form');
-    if (!form) throw new Error('Form not found');
-    
+    const form = screen.getByTestId('chat-form');
     fireEvent.submit(form);
     expect(mockSendMessage).not.toHaveBeenCalled();
   });
@@ -137,7 +135,7 @@ describe('ChatPage', () => {
         <ChatPage />
       </MemoryRouter>
     );
-    const input = screen.getByPlaceholderText(/Fale com seu treinador/i);
+    const input = screen.getByTestId('chat-input');
 
     // Simulate typing 'Line1'
     fireEvent.change(input, { target: { value: 'Line1' } });
@@ -151,7 +149,7 @@ describe('ChatPage', () => {
     
     // Simulate Enter (should submit)
     fireEvent.keyDown(input, { key: 'Enter', shiftKey: false, code: 'Enter' });
-    expect(mockSendMessage).toHaveBeenCalledWith('Line1');
+    expect(mockSendMessage).toHaveBeenCalledWith('Line1', []);
     expect(input).toHaveValue('');
   });
 
@@ -185,4 +183,3 @@ describe('ChatPage', () => {
     expect(screen.getByText(/Limite Diário Atingido/i)).toBeInTheDocument();
   });
 });
-

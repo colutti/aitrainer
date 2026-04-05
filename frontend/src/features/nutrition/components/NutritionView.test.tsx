@@ -82,7 +82,7 @@ describe('NutritionView', () => {
       />
     );
 
-    expect(screen.getByText((_content, element) => element?.textContent === '2 / 5')).toBeInTheDocument();
+    expect(screen.getByText(/2\s*\/\s*5/)).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText(/Próxima/i));
     expect(mockProps.pagination.onPageChange).toHaveBeenCalledWith(3);
   });

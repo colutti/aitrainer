@@ -1,6 +1,6 @@
 services:
   mongo:
-    image: docker.io/library/mongo:latest
+    image: docker.io/library/mongo:7.0
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-aitrainer}

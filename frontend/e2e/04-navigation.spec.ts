@@ -28,9 +28,6 @@ test.describe('Navigation Flow', () => {
     // 4. Navigate back to Home
     await ui.navigateTo('home');
     await expect(authenticatedPage).toHaveURL(/.*dashboard/);
-  });
-
-  test('should show correct subscription badge in Navigation', async ({ authenticatedPage }) => {
     const freeBadges = authenticatedPage.getByText('Free', { exact: true });
     await expect(freeBadges.first()).toBeAttached();
   });
