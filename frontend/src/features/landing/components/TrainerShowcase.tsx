@@ -16,7 +16,7 @@ interface TrainerCard {
 export const TrainerShowcase = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [selectedId, setSelectedId] = useState<string>('atlas');
+  const [selectedId, setSelectedId] = useState<string>('gymbro');
 
   const trainers: TrainerCard[] = [
     {
