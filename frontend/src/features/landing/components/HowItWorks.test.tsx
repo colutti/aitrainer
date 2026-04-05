@@ -5,15 +5,11 @@ import { render, screen } from '../../../shared/utils/test-utils';
 import { HowItWorks } from './HowItWorks';
 
 describe('HowItWorks Component', () => {
-  it('should render step by step guide', () => {
-    render(<HowItWorks />);
-    expect(screen.getByText(/Como Funciona/i)).toBeInTheDocument();
-    expect(screen.getByText(/Conecte/i)).toBeInTheDocument();
-  });
-
-  it('renders translated step descriptions in how it works', () => {
+  it('renders the practical three-step flow', () => {
     render(<HowItWorks />);
 
-    expect(screen.getByText(/sincronize com hevy ou mfp/i)).toBeInTheDocument();
+    expect(screen.getByText(/Como funciona na prática/i)).toBeInTheDocument();
+    expect(screen.getByText(/Seus dados entram/i)).toBeInTheDocument();
+    expect(screen.getByText(/O sistema organiza sinais e tendências/i)).toBeInTheDocument();
   });
 });

@@ -20,9 +20,8 @@ export const Navbar = () => {
   }, []);
 
   const navLinks = [
+    { name: t('landing.nav.demo'), href: '#demo' },
     { name: t('landing.nav.differentiators'), href: '#diferenciais' },
-    { name: t('landing.nav.how_it_works'), href: '#como-funciona' },
-    { name: t('landing.nav.trainers'), href: '#treinadores' },
     { name: t('landing.nav.plans'), href: '#planos' },
   ];
 

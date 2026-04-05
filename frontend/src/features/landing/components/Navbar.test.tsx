@@ -18,6 +18,7 @@ describe('Navbar Component', () => {
     render(<Navbar />);
     expect(screen.getByAltText('FityQ')).toBeInTheDocument();
     expect(screen.getByText('FityQ')).toBeInTheDocument();
+    expect(screen.getByText(/Ver demo/i)).toBeInTheDocument();
   });
 
   it('should navigate to login when button clicked', () => {

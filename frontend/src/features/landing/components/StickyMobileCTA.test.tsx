@@ -24,7 +24,7 @@ describe('StickyMobileCTA Component', () => {
     // Trigger scroll event manually to update state
     fireEvent.scroll(window);
     
-    expect(screen.getByText(/Começar agora/i)).toBeInTheDocument();
+    expect(screen.getByText(/Começar teste grátis/i)).toBeInTheDocument();
   });
 
   it('should navigate to register when clicked', () => {
@@ -34,7 +34,7 @@ describe('StickyMobileCTA Component', () => {
     render(<StickyMobileCTA />);
     fireEvent.scroll(window);
     
-    const btn = screen.getByText(/Começar agora/i);
+    const btn = screen.getByText(/Começar teste grátis/i);
     fireEvent.click(btn);
     expect(mockNavigate).toHaveBeenCalledWith('/login?mode=register');
   });

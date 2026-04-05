@@ -12,10 +12,10 @@ export const Footer = () => {
         </div>
         
         <div className="flex items-center gap-8">
-          <a href="#" className="text-sm text-text-secondary hover:text-text-primary transition-colors">
+          <a href="/termos-de-uso" className="text-sm text-text-secondary hover:text-text-primary transition-colors">
             {t('landing.footer.terms')}
           </a>
-          <a href="#" className="text-sm text-text-secondary hover:text-text-primary transition-colors">
+          <a href="/politica-de-privacidade" className="text-sm text-text-secondary hover:text-text-primary transition-colors">
             {t('landing.footer.privacy')}
           </a>
           <a href="#" className="text-sm text-text-secondary hover:text-text-primary transition-colors">

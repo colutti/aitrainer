@@ -16,16 +16,15 @@ vi.mock('react-router-dom', async (importOriginal) => {
 describe('Hero Component', () => {
   it('should render hero content', () => {
     render(<Hero />);
-    
-    // We check for some translation keys that should be rendered by our real pt-BR.json in test-utils
-    expect(screen.getByText(/Seu Treinador IA Pessoal/i)).toBeInTheDocument();
-    expect(screen.getByText(/Inteligência que gera Performance/i)).toBeInTheDocument();
+
+    expect(screen.getByText(/Transforme sua rotina em evolu[cç][aã]o consistente/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Ver demo/i })).toBeInTheDocument();
   });
 
   it('should navigate to register when CTA clicked', () => {
     render(<Hero />);
-    
-    const ctaBtn = screen.getByText(/Começar agora/i);
+
+    const ctaBtn = screen.getByText(/Começar teste grátis/i);
     fireEvent.click(ctaBtn);
     expect(mockNavigate).toHaveBeenCalledWith('/login?mode=register');
   });

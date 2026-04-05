@@ -5,15 +5,10 @@ import { render, screen } from '../../../shared/utils/test-utils';
 import { IntegrationLogos } from './IntegrationLogos';
 
 describe('IntegrationLogos Component', () => {
-  it('should render integration logos', () => {
-    render(<IntegrationLogos />);
-    expect(screen.getByText(/Ecossistema Aberto/i)).toBeInTheDocument();
-  });
-
-  it('shows integrations as available instead of coming soon', () => {
+  it('positions integrations as context input, not generic logos', () => {
     render(<IntegrationLogos />);
 
-    expect(screen.queryByText(/em breve/i)).not.toBeInTheDocument();
-    expect(screen.getAllByText(/dispon[ií]vel/i)).toHaveLength(3);
+    expect(screen.getByText(/Traga sua rotina para dentro do sistema/i)).toBeInTheDocument();
+    expect(screen.getByText(/Quanto mais contexto entra, mais útil fica a orientação/i)).toBeInTheDocument();
   });
 });
