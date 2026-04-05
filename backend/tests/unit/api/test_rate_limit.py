@@ -9,7 +9,7 @@ client = TestClient(app)
 @pytest.fixture
 def mock_verify():
     with patch("src.api.endpoints.user.verify_id_token") as mock:
-        mock.return_value = {"email": "test@test.com"}
+        mock.return_value = {"email": "test@test.com", "email_verified": True}
         yield mock
 
 

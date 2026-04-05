@@ -4,11 +4,12 @@ import pytest
 from pydantic import ValidationError
 
 
-def test_settings_default_short_term_window_is_50():
+def test_settings_default_short_term_window_is_50(monkeypatch):
     """Default short-term prompt window should be 50 messages."""
     from src.core.config import Settings
 
-    settings = Settings()
+    monkeypatch.delenv("MAX_SHORT_TERM_MEMORY_MESSAGES", raising=False)
+    settings = Settings(_env_file=None)
     assert settings.MAX_SHORT_TERM_MEMORY_MESSAGES == 50
 
 

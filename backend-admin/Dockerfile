@@ -25,9 +25,11 @@ RUN pip install --no-cache-dir --upgrade pip && \
 FROM builder AS verify-builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    nodejs \
+    npm \
     libatomic1 \
     && rm -rf /var/lib/apt/lists/*
-RUN pip install --no-cache-dir pylint pyright
+RUN pip install --no-cache-dir pylint "pyright[nodejs]"
 
 # Runtime stage - imagem mínima
 FROM docker.io/library/python:3.12-slim
@@ -63,6 +65,8 @@ FROM docker.io/library/python:3.12-slim AS verify
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    nodejs \
+    npm \
     libatomic1 \
     && rm -rf /var/lib/apt/lists/*
 

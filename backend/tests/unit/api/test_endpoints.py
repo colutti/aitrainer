@@ -4,6 +4,7 @@ This module contains unit tests for the API endpoints.
 
 import unittest
 from unittest.mock import MagicMock, patch
+from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
 from fastapi.testclient import TestClient
@@ -405,6 +406,17 @@ class TestEndpoints(unittest.TestCase):
         # Arrange
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
         mock_brain = MagicMock()
+        mock_brain.get_or_create_user_profile.return_value = UserProfile(
+            email="test@test.com",
+            gender="Masculino",
+            age=25,
+            weight=70.0,
+            height=175,
+            goal_type="maintain",
+            subscription_plan="Pro",
+            trial_ends_at=datetime.now(timezone.utc) + timedelta(days=7),
+        )
+        mock_brain.check_message_limits.return_value = False
         # Return an iterator for streaming response
         mock_brain.send_message_ai.return_value = iter(["AI ", "response"])
         app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
@@ -441,6 +453,17 @@ class TestEndpoints(unittest.TestCase):
         # Arrange
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
         mock_brain = MagicMock()
+        mock_brain.get_or_create_user_profile.return_value = UserProfile(
+            email="test@test.com",
+            gender="Masculino",
+            age=25,
+            weight=70.0,
+            height=175,
+            goal_type="maintain",
+            subscription_plan="Pro",
+            trial_ends_at=datetime.now(timezone.utc) + timedelta(days=7),
+        )
+        mock_brain.check_message_limits.return_value = False
         mock_brain.send_message_ai.side_effect = ValueError(
             "User profile not found for email: test@test.com"
         )

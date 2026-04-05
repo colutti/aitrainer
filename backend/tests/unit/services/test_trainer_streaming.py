@@ -6,6 +6,7 @@ import pytest
 from unittest.mock import MagicMock, patch, AsyncMock
 from src.services.trainer import AITrainerBrain
 from langchain_core.messages import HumanMessage
+from datetime import datetime, timezone, timedelta
 
 
 @pytest.fixture
@@ -27,7 +28,8 @@ async def test_send_message_ai_streaming_error(mock_deps):
     db.get_user_profile.return_value = MagicMock(
         get_profile_summary=lambda: "User Summary",
         current_billing_cycle_start=None,
-        subscription_plan="Free",
+        subscription_plan="Pro",
+        trial_ends_at=datetime.now(timezone.utc) + timedelta(days=7),
         total_messages_sent=0,
         custom_message_limit=None
     )
@@ -112,13 +114,20 @@ async def test_send_message_ai_passes_image_payload_to_llm(mock_deps):
     db, llm, _ = mock_deps
     trainer = AITrainerBrain(db, llm)
 
-    profile = MagicMock(subscription_plan="Pro", get_profile_summary=lambda: "User")
+    profile = MagicMock(
+        subscription_plan="Pro",
+        trial_ends_at=datetime.now(timezone.utc) + timedelta(days=7),
+        current_billing_cycle_start=None,
+        photos_sent_this_month=0,
+        messages_sent_this_month=0,
+        custom_message_limit=None,
+        get_profile_summary=lambda: "User",
+    )
     trainer_profile = MagicMock(
         trainer_type="atlas", get_trainer_profile_summary=lambda: "Trainer"
     )
     trainer.get_or_create_user_profile = MagicMock(return_value=profile)
     trainer.get_or_create_trainer_profile = MagicMock(return_value=trainer_profile)
-    trainer.check_message_limits = MagicMock(return_value=False)
     trainer.finalize_ai_response = AsyncMock()
 
     mock_memory_obj = MagicMock()
@@ -160,13 +169,20 @@ async def test_send_message_ai_strips_internal_msg_tags_from_stream_and_history(
     db, llm, _ = mock_deps
     trainer = AITrainerBrain(db, llm)
 
-    profile = MagicMock(subscription_plan="Pro", get_profile_summary=lambda: "User")
+    profile = MagicMock(
+        subscription_plan="Pro",
+        trial_ends_at=datetime.now(timezone.utc) + timedelta(days=7),
+        current_billing_cycle_start=None,
+        photos_sent_this_month=0,
+        messages_sent_this_month=0,
+        custom_message_limit=None,
+        get_profile_summary=lambda: "User",
+    )
     trainer_profile = MagicMock(
         trainer_type="atlas", get_trainer_profile_summary=lambda: "Trainer"
     )
     trainer.get_or_create_user_profile = MagicMock(return_value=profile)
     trainer.get_or_create_trainer_profile = MagicMock(return_value=trainer_profile)
-    trainer.check_message_limits = MagicMock(return_value=False)
     trainer.finalize_ai_response = AsyncMock()
 
     mock_memory_obj = MagicMock()
