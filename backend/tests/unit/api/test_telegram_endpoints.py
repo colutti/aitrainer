@@ -64,13 +64,15 @@ def test_generate_code_unauthenticated():
     assert response.status_code == 401
 
 
-def test_generate_code_forbidden_for_basic_plan(mock_telegram_repo):
-    """Basic plan cannot use Telegram endpoints."""
+def test_generate_code_forbidden_for_free_post_trial(mock_telegram_repo):
+    """Free plan after trial cannot use Telegram endpoints."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     app.dependency_overrides[get_telegram_repository] = lambda: mock_telegram_repo
 
     mock_brain = Mock()
-    mock_brain.get_user_profile = Mock(return_value=Mock(subscription_plan="Basic"))
+    mock_brain.get_user_profile = Mock(
+        return_value=Mock(subscription_plan="Free", trial_ends_at=None)
+    )
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
     response = client.post("/telegram/generate-code")

@@ -12,13 +12,17 @@ def test_pro_user_limits():
         goal_type="maintain",
         email="rafacolucci@gmail.com",
         subscription_plan=SubscriptionPlan.PRO,
-        messages_sent_this_month=1,
+        messages_sent_this_month=10,
+        photos_sent_this_month=3,
     )
 
-    # It returns None for Pro because it only has a monthly limit.
+    assert profile.is_trial_active is False
     assert profile.current_daily_limit is None
-    assert profile.current_plan_limit == 300
-    assert profile.effective_remaining_messages == 299
+    assert profile.current_plan_limit == 500
+    assert profile.effective_remaining_messages == 490
+    assert profile.effective_remaining_photos == 12
+    assert profile.effective_chat_enabled is True
+    assert profile.effective_plan_name == "Pro"
 
 
 def test_pro_billing_cycle_reset():
@@ -32,14 +36,15 @@ def test_pro_billing_cycle_reset():
         email="rafacolucci@gmail.com",
         subscription_plan=SubscriptionPlan.PRO,
         messages_sent_this_month=500,
+        photos_sent_this_month=15,
         current_billing_cycle_start=old_start,
     )
 
-    # effective_remaining_messages should be 300 because cycle reset.
-    assert profile.effective_remaining_messages == 300
+    assert profile.effective_remaining_messages == 500
+    assert profile.effective_remaining_photos == 15
 
-def test_free_user_limits():
-    # User with Free plan.
+def test_free_user_with_active_trial_gets_pro_capabilities():
+    trial_end = datetime.now() + timedelta(days=2)
     profile = UserProfile(
         gender="Masculino",
         age=30,
@@ -47,21 +52,21 @@ def test_free_user_limits():
         goal_type="maintain",
         email="free@example.com",
         subscription_plan=SubscriptionPlan.FREE,
-        messages_sent_today=5,
-        last_message_date=datetime.now().strftime("%Y-%m-%d"),
+        trial_ends_at=trial_end,
+        messages_sent_this_month=20,
+        photos_sent_this_month=2,
     )
 
-    # Free daily limit is 20.
-    assert profile.current_daily_limit == 20
-    assert profile.current_plan_limit == 20
+    assert profile.is_trial_active is True
+    assert profile.effective_chat_enabled is True
+    assert profile.current_plan_limit == 500
+    assert profile.effective_remaining_messages == 480
+    assert profile.effective_remaining_photos == 13
+    assert profile.effective_plan_name == "Pro"
 
-    # 20 - 5 = 15
-    assert profile.effective_remaining_messages == 15
 
-
-def test_free_daily_reset():
-    # User with Free plan and last message yesterday.
-    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+def test_free_post_trial_limits_are_blocked():
+    trial_end = datetime.now() - timedelta(days=1)
     profile = UserProfile(
         gender="Masculino",
         age=30,
@@ -69,9 +74,12 @@ def test_free_daily_reset():
         goal_type="maintain",
         email="free@example.com",
         subscription_plan=SubscriptionPlan.FREE,
-        messages_sent_today=5,
-        last_message_date=yesterday,
+        trial_ends_at=trial_end,
     )
 
-    # effective_remaining_messages should be 20 because daily reset.
-    assert profile.effective_remaining_messages == 20
+    assert profile.is_trial_active is False
+    assert profile.effective_chat_enabled is False
+    assert profile.current_plan_limit is None
+    assert profile.effective_remaining_messages == 0
+    assert profile.effective_remaining_photos == 0
+    assert profile.effective_plan_name == "Free"

@@ -68,6 +68,7 @@ export const Pricing = () => {
                   name: plan.name,
                   subtitle: plan.subtitle,
                   priceLabel: plan.priceLabel,
+                  fullPriceLabel: plan.fullPriceLabel,
                   features: plan.features,
                   badge: plan.badge,
                   highlight: plan.highlight,

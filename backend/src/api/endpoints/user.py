@@ -177,6 +177,9 @@ def get_current_user(user_email: CurrentUser, brain: AITrainerBrainDep) -> dict:
         "current_daily_limit": user_profile.current_daily_limit,
         "current_plan_limit": user_profile.current_plan_limit,
         "effective_remaining_messages": user_profile.effective_remaining_messages,
+        "effective_remaining_photos": user_profile.effective_remaining_photos,
+        "effective_chat_enabled": user_profile.effective_chat_enabled,
+        "effective_plan_name": user_profile.effective_plan_name,
         "has_stripe_customer": bool(user_profile.stripe_customer_id),
     }
 

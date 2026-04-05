@@ -61,9 +61,9 @@ describe('OnboardingView', () => {
     
     expect(screen.getByText(/Plano de Jornada/i)).toBeInTheDocument();
     expect(screen.getByText('Free')).toBeInTheDocument();
-    expect(screen.getByText('Basic')).toBeInTheDocument();
     expect(screen.getByText('Pro')).toBeInTheDocument();
     expect(screen.queryByText('Premium')).not.toBeInTheDocument();
+    expect(screen.queryByText('Basic')).not.toBeInTheDocument();
     
     const nextBtn = screen.getByText(/Próximo/i);
     fireEvent.click(nextBtn);

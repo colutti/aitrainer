@@ -78,9 +78,9 @@ describe('SubscriptionPage', () => {
     expect(elements.length).toBeGreaterThan(0);
   });
 
-  it('keeps subscription features synced with landing copy for pro and basic', () => {
+  it('keeps subscription features synced with landing copy for pro and free', () => {
     expect(ptBR.landing.plans.items.pro.features.join(' ')).toMatch(/Telegram/i);
-    expect(ptBR.landing.plans.items.basic.features.join(' ')).toMatch(/100/i);
+    expect(ptBR.landing.plans.items.free.features.join(' ')).toMatch(/20/i);
   });
 
   it('opens stripe checkout for selected paid plan', async () => {
@@ -95,11 +95,11 @@ describe('SubscriptionPage', () => {
       expect(screen.queryByText('common.loading')).not.toBeInTheDocument();
     });
 
-    screen.getByTestId('subscription-plan-btn-basic').click();
+    screen.getByTestId('subscription-plan-btn-pro').click();
 
     await waitFor(() => {
       expect(stripeApi.createCheckoutSession).toHaveBeenCalledWith(
-        'price_1TAPTBPTisrIM5tN5Dz3P2en',
+        'price_1TAPTBPTisrIM5tNKY7Nxw3i',
         `${window.location.origin}/dashboard?payment=success`,
         `${window.location.origin}/dashboard/settings/subscription?payment=cancel`
       );

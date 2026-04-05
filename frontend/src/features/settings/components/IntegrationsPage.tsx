@@ -20,8 +20,8 @@ export default function IntegrationsPage() {
   const notify = useNotificationStore();
   const { isReadOnly: isDemoUser } = useDemoMode();
   const { userInfo } = useAuthStore();
-  const currentPlan = (userInfo?.subscription_plan ?? 'Free').toLowerCase();
-  const isPro = currentPlan === 'pro';
+  const effectivePlan = (userInfo?.effective_plan_name ?? userInfo?.subscription_plan ?? 'Free').toLowerCase();
+  const isPro = effectivePlan === 'pro';
   
   // Hevy State
   const [hevyStatus, setHevyStatus] = useState<HevyStatus | null>(null);

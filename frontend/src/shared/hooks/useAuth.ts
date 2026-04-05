@@ -52,6 +52,9 @@ export interface UserInfo {
   current_daily_limit?: number | null;
   current_plan_limit?: number | null;
   effective_remaining_messages?: number | null;
+  effective_remaining_photos?: number | null;
+  effective_chat_enabled?: boolean;
+  effective_plan_name?: string;
   has_stripe_customer: boolean;
 }
 
@@ -289,6 +292,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       current_daily_limit: number | null;
       current_plan_limit: number | null;
       effective_remaining_messages: number | null;
+      effective_remaining_photos?: number | null;
+      effective_chat_enabled?: boolean;
+      effective_plan_name?: string;
       has_stripe_customer: boolean;
       is_demo?: boolean;
     }>('/user/me');
@@ -312,6 +318,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       current_daily_limit: data.current_daily_limit,
       current_plan_limit: data.current_plan_limit,
       effective_remaining_messages: data.effective_remaining_messages,
+      effective_remaining_photos: data.effective_remaining_photos,
+      effective_chat_enabled: data.effective_chat_enabled,
+      effective_plan_name: data.effective_plan_name,
       has_stripe_customer: data.has_stripe_customer,
     };
 

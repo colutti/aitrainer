@@ -23,7 +23,10 @@ BrainDep = Annotated[AITrainerBrain, Depends(get_ai_trainer_brain)]
 
 
 def _ensure_integrations_allowed(profile) -> None:
-    if not can_use_integrations(getattr(profile, "subscription_plan", None)):
+    if not can_use_integrations(
+        getattr(profile, "subscription_plan", None),
+        getattr(profile, "trial_ends_at", None),
+    ):
         raise HTTPException(status_code=403, detail="INTEGRATION_NOT_ALLOWED_FOR_PLAN")
 
 

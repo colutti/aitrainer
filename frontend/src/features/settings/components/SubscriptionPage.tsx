@@ -37,7 +37,9 @@ export default function SubscriptionPage() {
   }, [loadUserInfo]);
   
   const isPt = i18n.language.startsWith('pt');
-  const currentPlan = (userInfo?.subscription_plan ?? 'Free').toLowerCase().trim();
+  const currentPlan = (userInfo?.effective_plan_name ?? userInfo?.subscription_plan ?? 'Free')
+    .toLowerCase()
+    .trim();
 
   const handleSubscribe = async (planId: string) => {
     if (isDemoUser) return;

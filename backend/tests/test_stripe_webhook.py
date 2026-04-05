@@ -62,7 +62,7 @@ def test_webhook_subscription_updated(mock_brain, mock_stripe_construct_event):
                 "current_period_start": now_ts,
                 "items": {
                     "data": [
-                        {"price": {"id": "price_basic"}}
+                        {"price": {"id": "price_pro"}}
                     ]
                 }
             }
@@ -75,7 +75,10 @@ def test_webhook_subscription_updated(mock_brain, mock_stripe_construct_event):
     
     with patch("src.api.endpoints.stripe.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
-        mock_settings.STRIPE_PRICE_ID_BASIC = "price_basic"
+        mock_settings.STRIPE_PRICE_ID_PRO = "price_pro"
+        mock_settings.STRIPE_PRICE_ID_PRO_USD = ""
+        mock_settings.STRIPE_PRICE_ID_PRO_BRL = ""
+        mock_settings.STRIPE_PRICE_ID_PRO_EUR = ""
         response = client.post(
             "/stripe/webhook",
             content=b"{}",
@@ -87,9 +90,10 @@ def test_webhook_subscription_updated(mock_brain, mock_stripe_construct_event):
     args = mock_brain.update_user_profile_fields.call_args[0]
     assert args[0] == "test@example.com"
     updates = args[1]
-    assert updates["subscription_plan"] == "Basic"
+    assert updates["subscription_plan"] == "Pro"
     assert updates["stripe_subscription_id"] == "sub_123"
     assert updates["custom_message_limit"] is None
+    assert updates["photos_sent_this_month"] == 0
 
 def test_webhook_invalid_signature(mock_stripe_construct_event):
     import stripe
@@ -137,6 +141,8 @@ def test_webhook_subscription_deleted(mock_brain, mock_stripe_construct_event):
             "stripe_subscription_status": "canceled",
             "subscription_plan": "Free",
             "stripe_subscription_id": None,
+            "photos_sent_this_month": 0,
+            "messages_sent_this_month": 0,
         }
     )
 
@@ -153,7 +159,7 @@ def test_webhook_subscription_updated_fallback(mock_brain, mock_stripe_construct
                 "current_period_start": now_ts,
                 "items": {
                     "data": [
-                        {"price": {"id": "price_basic"}}
+                        {"price": {"id": "price_pro_brl"}}
                     ]
                 },
                 "metadata": {
@@ -172,7 +178,10 @@ def test_webhook_subscription_updated_fallback(mock_brain, mock_stripe_construct
     
     with patch("src.api.endpoints.stripe.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
-        mock_settings.STRIPE_PRICE_ID_BASIC = "price_basic"
+        mock_settings.STRIPE_PRICE_ID_PRO = "price_pro"
+        mock_settings.STRIPE_PRICE_ID_PRO_USD = "price_pro_usd"
+        mock_settings.STRIPE_PRICE_ID_PRO_BRL = "price_pro_brl"
+        mock_settings.STRIPE_PRICE_ID_PRO_EUR = "price_pro_eur"
         response = client.post(
             "/stripe/webhook",
             content=b"{}",
@@ -194,7 +203,7 @@ def test_webhook_subscription_updated_fallback(mock_brain, mock_stripe_construct
     # Check plan update call
     plan_call = mock_brain.update_user_profile_fields.call_args_list[1]
     assert plan_call[0][0] == "fallback@example.com"
-    assert plan_call[0][1]["subscription_plan"] == "Basic"
+    assert plan_call[0][1]["subscription_plan"] == "Pro"
 
 
 def test_webhook_subscription_updated_unknown_price_falls_back_to_free(
@@ -215,14 +224,16 @@ def test_webhook_subscription_updated_unknown_price_falls_back_to_free(
     }
 
     mock_user = MagicMock(email="test@example.com")
-    mock_user.subscription_plan = "Basic"
+    mock_user.subscription_plan = "Pro"
     mock_user.current_billing_cycle_start = None
     mock_brain.database.users.find_by_stripe_customer_id.return_value = mock_user
 
     with patch("src.api.endpoints.stripe.settings") as mock_settings:
         mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
-        mock_settings.STRIPE_PRICE_ID_BASIC = "price_basic"
         mock_settings.STRIPE_PRICE_ID_PRO = "price_pro"
+        mock_settings.STRIPE_PRICE_ID_PRO_USD = "price_pro_usd"
+        mock_settings.STRIPE_PRICE_ID_PRO_BRL = "price_pro_brl"
+        mock_settings.STRIPE_PRICE_ID_PRO_EUR = "price_pro_eur"
         response = client.post(
             "/stripe/webhook",
             content=b"{}",
@@ -232,3 +243,44 @@ def test_webhook_subscription_updated_unknown_price_falls_back_to_free(
     assert response.status_code == 200
     updates = mock_brain.update_user_profile_fields.call_args[0][1]
     assert updates["subscription_plan"] == "Free"
+
+
+def test_webhook_subscription_updated_past_due_downgrades_to_free(
+    mock_brain, mock_stripe_construct_event
+):
+    now_ts = datetime.now().timestamp()
+    mock_stripe_construct_event.return_value = {
+        "type": "customer.subscription.updated",
+        "data": {
+            "object": {
+                "id": "sub_past_due",
+                "customer": "cus_999",
+                "status": "past_due",
+                "current_period_start": now_ts,
+                "items": {"data": [{"price": {"id": "price_pro"}}]},
+            }
+        },
+    }
+
+    mock_user = MagicMock(email="test@example.com")
+    mock_user.subscription_plan = "Pro"
+    mock_user.current_billing_cycle_start = None
+    mock_brain.database.users.find_by_stripe_customer_id.return_value = mock_user
+
+    with patch("src.api.endpoints.stripe.settings") as mock_settings:
+        mock_settings.STRIPE_WEBHOOK_SECRET = "whsec_test"
+        mock_settings.STRIPE_PRICE_ID_PRO = "price_pro"
+        mock_settings.STRIPE_PRICE_ID_PRO_USD = ""
+        mock_settings.STRIPE_PRICE_ID_PRO_BRL = ""
+        mock_settings.STRIPE_PRICE_ID_PRO_EUR = ""
+        response = client.post(
+            "/stripe/webhook",
+            content=b"{}",
+            headers={"stripe-signature": "test_sig"},
+        )
+
+    assert response.status_code == 200
+    updates = mock_brain.update_user_profile_fields.call_args[0][1]
+    assert updates["subscription_plan"] == "Free"
+    assert updates["photos_sent_this_month"] == 0
+    mock_brain.ensure_trainer_allowed.assert_called_with("test@example.com", "Free")

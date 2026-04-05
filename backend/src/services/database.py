@@ -103,10 +103,10 @@ class MongoDatabase:
         return self.users.is_demo_user(email)
 
     def increment_user_message_counts(
-        self, email: str, new_cycle_start: datetime | None = None
+        self, email: str, new_cycle_start: datetime | None = None, photo_count: int = 0
     ) -> None:
         """Atomically increments message counts for a user."""
-        return self.users.increment_message_counts(email, new_cycle_start)
+        return self.users.increment_message_counts(email, new_cycle_start, photo_count)
 
     def save_trainer_profile(self, trainer_profile: TrainerProfile) -> None:
         """Saves trainer profile."""

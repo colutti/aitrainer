@@ -12,8 +12,7 @@ vi.mock('react-i18next', () => ({
 
 const mockPlans: SubscriptionViewProps['plans'] = [
   { id: 'free', name: 'Free', subtitle: 'S', priceLabel: 'Grátis', buttonLabel: 'Start', features: ['F1'] },
-  { id: 'basic', name: 'Basic', subtitle: 'S', priceLabel: 'R$ 24,90/mês', buttonLabel: 'Subscribe', features: ['F1', 'F2'] },
-  { id: 'pro', name: 'Pro', subtitle: 'S', priceLabel: 'R$ 49,90/mês', buttonLabel: 'Subscribe', features: ['F1', 'F2'] },
+  { id: 'pro', name: 'Pro', subtitle: 'S', priceLabel: 'R$ 4,99/mês', fullPriceLabel: 'R$ 6,99/mês', buttonLabel: 'Subscribe', features: ['F1', 'F2'] },
 ];
 
 const mockProps: SubscriptionViewProps = {
@@ -31,9 +30,9 @@ describe('SubscriptionView', () => {
   it('renders all plans correctly', () => {
     render(<SubscriptionView {...mockProps} />);
     expect(screen.getByText('Free')).toBeInTheDocument();
-    expect(screen.getByText('Basic')).toBeInTheDocument();
     expect(screen.getByText('Pro')).toBeInTheDocument();
     expect(screen.queryByText('Premium')).not.toBeInTheDocument();
+    expect(screen.queryByText('Basic')).not.toBeInTheDocument();
   });
 
   it('marks current plan correctly', () => {
@@ -64,7 +63,6 @@ describe('SubscriptionView', () => {
 
   it('shows downgrade for lower plans and upgrade for higher plans based on current plan hierarchy', () => {
     render(<SubscriptionView {...mockProps} currentPlan="pro" hasStripeCustomer={false} />);
-    expect(screen.getByTestId('subscription-plan-btn-basic')).toHaveTextContent('settings.subscription.downgrade');
     expect(screen.getByTestId('subscription-plan-btn-free')).toHaveTextContent('settings.subscription.unavailable');
   });
 });

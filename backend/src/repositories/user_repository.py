@@ -74,7 +74,7 @@ class UserRepository(BaseRepository):
         return UserProfile(**user_data)
 
     def increment_message_counts(
-        self, email: str, new_cycle_start: datetime | None = None
+        self, email: str, new_cycle_start: datetime | None = None, photo_count: int = 0
     ) -> None:
         """
         Atomically increments message counts for a user.
@@ -111,7 +111,10 @@ class UserRepository(BaseRepository):
 
         if new_cycle_start:
             update_doc = {
-                "$inc": {"total_messages_sent": 1},
+                "$inc": {
+                    "total_messages_sent": 1,
+                    "photos_sent_this_month": photo_count,
+                },
                 "$set": {
                     "current_billing_cycle_start": new_cycle_start,
                     "messages_sent_this_month": 1,
@@ -120,7 +123,11 @@ class UserRepository(BaseRepository):
                 },
             }
         else:
-            inc_fields = {"total_messages_sent": 1, "messages_sent_this_month": 1}
+            inc_fields = {
+                "total_messages_sent": 1,
+                "messages_sent_this_month": 1,
+                "photos_sent_this_month": photo_count,
+            }
             set_fields: dict[str, Any] = {"last_message_date": today_str}
 
             if is_new_day:

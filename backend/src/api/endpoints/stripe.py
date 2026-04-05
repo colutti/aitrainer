@@ -117,9 +117,14 @@ def _get_subscription_plan(subscription):
         return "Free"
 
     price_id = items[0]["price"]["id"]
-    if price_id == settings.STRIPE_PRICE_ID_BASIC:
-        return "Basic"
-    if price_id == settings.STRIPE_PRICE_ID_PRO:
+    pro_price_ids = {
+        settings.STRIPE_PRICE_ID_PRO,
+        settings.STRIPE_PRICE_ID_PRO_USD,
+        settings.STRIPE_PRICE_ID_PRO_BRL,
+        settings.STRIPE_PRICE_ID_PRO_EUR,
+    }
+    pro_price_ids.discard("")
+    if price_id in pro_price_ids:
         return "Pro"
 
     logger.warning("Unknown Stripe price ID received: %s. Fallback to Free.", price_id)
@@ -179,15 +184,18 @@ def _handle_subscription_updated(subscription, brain):
         "current_billing_cycle_start": cycle_start_iso,
         "custom_message_limit": None,
     }
+    if plan == "Pro":
+        updates["trial_ends_at"] = None
 
     if plan_changed or cycle_changed:
         logger.info(
-            "Resetting counter for user %s. Plan: %s, Cycle: %s",
+            "Resetting counters for user %s. Plan changed: %s, Cycle changed: %s",
             profile.email,
             plan_changed,
             cycle_changed,
         )
         updates["messages_sent_this_month"] = 0
+        updates["photos_sent_this_month"] = 0
 
         # Ensure trainer is allowed for the new plan
         brain.ensure_trainer_allowed(profile.email, plan)
@@ -206,6 +214,8 @@ def _handle_subscription_deleted(subscription, brain):
                 "stripe_subscription_status": "canceled",
                 "subscription_plan": "Free",
                 "stripe_subscription_id": None,
+                "photos_sent_this_month": 0,
+                "messages_sent_this_month": 0,
             },
         )
         # Reset trainer to Breno if they were using someone else

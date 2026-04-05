@@ -79,7 +79,7 @@ class Settings(BaseSettings):
 
     # ====== GEMINI STUFF ========
     GEMINI_API_KEY: str = ""
-    GEMINI_LLM_MODEL: str = "gemini-1.5-flash"
+    GEMINI_LLM_MODEL: str = "gemini-2.5-flash-lite"
     GEMINI_EMBEDDER_MODEL: str = "gemini-embedding-001"
     LLM_TEMPERATURE: float = 0.4
     EMBEDDING_MODEL_DIMS: int = 768
@@ -130,9 +130,10 @@ class Settings(BaseSettings):
     STRIPE_API_KEY: str = ""
     STRIPE_API_BASE: str = "https://api.stripe.com"
     STRIPE_WEBHOOK_SECRET: str = ""
-    STRIPE_PRICE_ID_BASIC: str = ""
     STRIPE_PRICE_ID_PRO: str = ""
-    STRIPE_PRICE_ID_PREMIUM: str = ""
+    STRIPE_PRICE_ID_PRO_USD: str = ""
+    STRIPE_PRICE_ID_PRO_BRL: str = ""
+    STRIPE_PRICE_ID_PRO_EUR: str = ""
 
     def get_mem0_config(self) -> dict:
         """

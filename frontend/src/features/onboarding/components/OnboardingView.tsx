@@ -172,7 +172,7 @@ export function OnboardingView({
               <p className="text-zinc-500 text-sm font-medium">{t('onboarding.step_plan_subtitle')}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {plans.map((plan) => {
                 const normalizedPlanName = plan.id.charAt(0).toUpperCase() + plan.id.slice(1);
                 return (
@@ -183,6 +183,7 @@ export function OnboardingView({
                       name: plan.name,
                       subtitle: plan.subtitle,
                       priceLabel: plan.priceLabel,
+                      fullPriceLabel: plan.fullPriceLabel,
                       features: plan.features,
                       badge: plan.badge,
                       highlight: plan.highlight,

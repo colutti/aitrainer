@@ -194,8 +194,8 @@ class TestNutritionApi(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.json()["created"], 5)
 
-    def test_import_nutrition_forbidden_for_basic_plan(self):
-        """Basic plan cannot import MyFitnessPal CSV."""
+    def test_import_nutrition_forbidden_for_free_post_trial(self):
+        """Free plan after trial cannot import MyFitnessPal CSV."""
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
         mock_db = MagicMock()
         mock_db.get_user_profile.return_value = UserProfile(
@@ -206,7 +206,8 @@ class TestNutritionApi(unittest.TestCase):
             height=180,
             goal_type="maintain",
             weekly_rate=0.5,
-            subscription_plan="Basic",
+            subscription_plan="Free",
+            trial_ends_at=None,
         )
         app.dependency_overrides[get_mongo_database] = lambda: mock_db
 

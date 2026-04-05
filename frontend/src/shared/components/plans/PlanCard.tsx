@@ -8,6 +8,7 @@ export interface PlanCardData {
   name: string;
   subtitle: string;
   priceLabel: string;
+  fullPriceLabel?: string;
   features: string[];
   badge?: string;
   highlight?: boolean;
@@ -60,6 +61,9 @@ export function PlanCard({
       </div>
 
       <div className="mb-8">
+        {plan.fullPriceLabel ? (
+          <div className="text-sm text-text-secondary line-through">{plan.fullPriceLabel}</div>
+        ) : null}
         <span className="text-3xl font-bold text-text-primary">{plan.priceLabel}</span>
       </div>
 

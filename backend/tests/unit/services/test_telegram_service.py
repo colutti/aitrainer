@@ -218,7 +218,8 @@ class TestTelegramService(unittest.IsolatedAsyncioTestCase):
         mock_link.user_email = "user@test.com"
         self.mock_repo.get_link_by_chat_id.return_value = mock_link
         self.mock_brain.get_user_profile.return_value = MagicMock(
-            subscription_plan="Premium"
+            subscription_plan="Pro",
+            trial_ends_at=None,
         )
         self.mock_brain.send_message_sync.return_value = "AI Response"
 
@@ -260,7 +261,8 @@ class TestTelegramService(unittest.IsolatedAsyncioTestCase):
         mock_link.user_email = "user@test.com"
         self.mock_repo.get_link_by_chat_id.return_value = mock_link
         self.mock_brain.get_user_profile.return_value = MagicMock(
-            subscription_plan="Basic"
+            subscription_plan="Free",
+            trial_ends_at=None,
         )
 
         await service.handle_update({})
@@ -268,4 +270,4 @@ class TestTelegramService(unittest.IsolatedAsyncioTestCase):
         self.mock_brain.send_message_sync.assert_not_called()
         self.assertTrue(mock_bot_instance.send_message.called)
         _, kwargs = mock_bot_instance.send_message.call_args
-        self.assertIn("Pro e Premium", kwargs["text"])
+        self.assertIn("usuários Pro", kwargs["text"])

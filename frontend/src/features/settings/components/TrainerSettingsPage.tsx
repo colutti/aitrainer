@@ -48,7 +48,7 @@ export default function TrainerSettingsPage() {
 
   const handleSelect = (id: string) => {
     if (isDemoUser) return;
-    const isFreePlan = userInfo?.subscription_plan === 'Free' || userInfo?.subscription_plan === 'FREE';
+    const isFreePlan = (userInfo?.effective_plan_name ?? userInfo?.subscription_plan) === 'Free';
     const trainerId = id.toLowerCase();
     const isLocked = isFreePlan && trainerId !== 'gymbro';
     
@@ -80,7 +80,7 @@ export default function TrainerSettingsPage() {
       selectedTrainerId={selectedTrainerId}
       isSaving={isSaving}
       isLoading={isLoading}
-      isFreePlan={userInfo?.subscription_plan === 'Free' || userInfo?.subscription_plan === 'FREE'}
+      isFreePlan={(userInfo?.effective_plan_name ?? userInfo?.subscription_plan) === 'Free'}
       isReadOnly={isDemoUser}
       onSelect={handleSelect}
       onSave={onSave}

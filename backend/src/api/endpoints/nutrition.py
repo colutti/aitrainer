@@ -193,7 +193,10 @@ async def import_myfitnesspal(
     profile = db.get_user_profile(user_email)
     if not profile:
         raise HTTPException(status_code=404, detail="User profile not found")
-    if not can_use_imports(getattr(profile, "subscription_plan", None)):
+    if not can_use_imports(
+        getattr(profile, "subscription_plan", None),
+        getattr(profile, "trial_ends_at", None),
+    ):
         raise HTTPException(status_code=403, detail="IMPORT_NOT_ALLOWED_FOR_PLAN")
 
     csv_content = await read_csv_file(file)

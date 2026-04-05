@@ -62,15 +62,12 @@ describe('Pricing Component', () => {
     render(<Pricing />);
 
     expect(screen.getByRole('button', { name: /come[cç]ar gr[aá]tis/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /assinar basic/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /assinar pro/i })).toBeInTheDocument();
   });
 
   it('keeps the spanish pricing locale contract complete', () => {
     expect(esES.landing.plans.items.free.description).toBeTruthy();
     expect(esES.landing.plans.items.free.button).toBeTruthy();
-    expect(esES.landing.plans.items.basic.description).toBeTruthy();
-    expect(esES.landing.plans.items.basic.button).toBeTruthy();
     expect(esES.landing.plans.items.pro.description).toBeTruthy();
     expect(esES.landing.plans.items.pro.button).toBeTruthy();
     expect(esES.landing.plans.recommended).toBeTruthy();
@@ -112,5 +109,11 @@ describe('Pricing Component', () => {
         `${window.location.origin}/#planos`
       );
     });
+  });
+
+  it('shows discounted and full pro pricing', () => {
+    render(<Pricing />);
+    expect(screen.getByText('R$ 4,99/mês')).toBeInTheDocument();
+    expect(screen.getByText('R$ 6,99/mês')).toBeInTheDocument();
   });
 });

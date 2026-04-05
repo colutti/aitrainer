@@ -1,4 +1,4 @@
-export type PlanId = 'free' | 'basic' | 'pro';
+export type PlanId = 'free' | 'pro';
 
 export interface PlanCatalogEntry {
   id: PlanId;
@@ -8,7 +8,6 @@ export interface PlanCatalogEntry {
 
 export const PLAN_CATALOG: PlanCatalogEntry[] = [
   { id: 'free' },
-  { id: 'basic' },
   { id: 'pro', highlight: true, badgeKey: 'landing.plans.recommended' },
 ];
 
@@ -17,6 +16,7 @@ export interface PlanCardModel {
   name: string;
   subtitle: string;
   priceLabel: string;
+  fullPriceLabel?: string;
   features: string[];
   buttonLabel: string;
   highlight?: boolean;
@@ -27,10 +27,14 @@ export function getPlanPriceLabel(planId: PlanId, isPt: boolean): string {
   if (planId === 'free') {
     return isPt ? 'Grátis' : 'Free';
   }
-  if (planId === 'basic') {
-    return isPt ? 'R$ 24,90/mês' : '$4.99/mo';
+  return isPt ? 'R$ 4,99/mês' : '$4.99/mo';
+}
+
+export function getPlanFullPriceLabel(planId: PlanId, isPt: boolean): string | undefined {
+  if (planId !== 'pro') {
+    return undefined;
   }
-  return isPt ? 'R$ 49,90/mês' : '$9.99/mo';
+  return isPt ? 'R$ 6,99/mês' : '$6.99/mo';
 }
 
 export function buildPlanCardModel(
@@ -44,6 +48,7 @@ export function buildPlanCardModel(
     name: String(t(`${planKey}.name`)),
     subtitle: String(t(`${planKey}.description`)),
     priceLabel: getPlanPriceLabel(entry.id, isPt),
+    fullPriceLabel: getPlanFullPriceLabel(entry.id, isPt),
     features: t(`${planKey}.features`, { returnObjects: true }) as string[],
     buttonLabel: String(t(`${planKey}.button`)),
     highlight: entry.highlight,

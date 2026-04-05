@@ -30,7 +30,10 @@ def _assert_telegram_allowed(user_email: str, brain: BrainDep) -> None:
     profile = brain.get_user_profile(user_email)
     if not profile:
         raise HTTPException(status_code=404, detail="User profile not found")
-    if not can_use_telegram(getattr(profile, "subscription_plan", None)):
+    if not can_use_telegram(
+        getattr(profile, "subscription_plan", None),
+        getattr(profile, "trial_ends_at", None),
+    ):
         raise HTTPException(status_code=403, detail="TELEGRAM_NOT_ALLOWED_FOR_PLAN")
 
 

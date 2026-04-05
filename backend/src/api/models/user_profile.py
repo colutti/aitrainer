@@ -4,7 +4,12 @@ This module contains the models for user profiles and preferences.
 
 from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel, Field, model_validator, computed_field
-from src.core.subscription import SUBSCRIPTION_PLANS, SubscriptionPlan
+from src.core.subscription import (
+    SubscriptionPlan,
+    default_trial_ends_at,
+    get_effective_plan_details,
+    is_trial_active,
+)
 from src.utils.date_utils import parse_cycle_start
 
 
@@ -136,13 +141,18 @@ class UserProfile(UserProfileInput):
     )
     custom_message_limit: int | None = Field(
         default=None,
-        description="Custom limit override (daily for Free, monthly for paid)",
+        description="Custom monthly message limit override for effective paid capabilities",
     )
-    custom_trial_days: int | None = Field(
-        default=None, description="Custom validity days override"
+    custom_trial_days: int | None = Field(default=None, description="Deprecated field")
+    trial_ends_at: datetime | None = Field(
+        default_factory=default_trial_ends_at,
+        description="Trial end timestamp for Free users",
     )
     messages_sent_this_month: int = Field(
         default=0, description="Messages sent in current billing cycle"
+    )
+    photos_sent_this_month: int = Field(
+        default=0, description="Images sent in current billing cycle"
     )
     total_messages_sent: int = Field(
         default=0, description="Total messages sent by user ever"
@@ -183,123 +193,110 @@ class UserProfile(UserProfileInput):
         description="ISO Date string to start TDEE EMA calculation from (format: YYYY-MM-DD)",
     )
 
+    @model_validator(mode="after")
+    def normalize_trial_for_pro(self) -> "UserProfile":
+        """Paid users do not need a trial end timestamp."""
+        if self.subscription_plan == SubscriptionPlan.PRO:
+            self.trial_ends_at = None
+        return self
+
     @computed_field
     @property
     def trial_remaining_days(self) -> int | None:
         """Calculates remaining days in the trial period."""
-        try:
-            plan_name = SubscriptionPlan(self.subscription_plan)
-        except (ValueError, AttributeError):
-            plan_name = SubscriptionPlan.FREE
-        plan = SUBSCRIPTION_PLANS[plan_name]
-        # Admin Override for validity
-        v_days = (
-            self.custom_trial_days
-            if self.custom_trial_days is not None
-            else plan.validity_days
-        )
-        if v_days is None:
+        if self.subscription_plan == SubscriptionPlan.PRO:
             return None
-        if not self.current_billing_cycle_start:
-            return v_days
-
+        if not self.trial_ends_at:
+            return 0
         now = datetime.now(timezone.utc)
-        cycle_start = parse_cycle_start(self.current_billing_cycle_start, now)
-
-        elapsed = (now - cycle_start).days
-        remaining = v_days - elapsed
+        trial_end = (
+            self.trial_ends_at.replace(tzinfo=timezone.utc)
+            if self.trial_ends_at.tzinfo is None
+            else self.trial_ends_at
+        )
+        remaining = (trial_end - now).days
         return max(0, remaining)
 
     @computed_field
     @property
+    def is_trial_active(self) -> bool:
+        """Whether the user still has active trial capabilities."""
+        return is_trial_active(self.trial_ends_at)
+
+    @computed_field
+    @property
+    def effective_plan_name(self) -> str:
+        """Effective plan label after applying trial override."""
+        return get_effective_plan_details(
+            self.subscription_plan, self.trial_ends_at
+        ).name
+
+    @computed_field
+    @property
+    def effective_chat_enabled(self) -> bool:
+        """Whether chat is effectively enabled for the current user state."""
+        return get_effective_plan_details(
+            self.subscription_plan, self.trial_ends_at
+        ).chat_enabled
+
+    @computed_field
+    @property
     def current_daily_limit(self) -> int | None:
-        """Returns the daily message limit for the current plan."""
-        try:
-            plan_name = SubscriptionPlan(self.subscription_plan)
-        except (ValueError, AttributeError):
-            plan_name = SubscriptionPlan.FREE
-        plan = SUBSCRIPTION_PLANS[plan_name]
-        # If it's a daily plan (Free), the custom limit overrides the daily limit
-        if plan.daily_limit is not None:
-            c_lim = self.custom_message_limit
-            return c_lim if c_lim is not None else plan.daily_limit
+        """Deprecated field maintained for API compatibility."""
         return None
 
     @computed_field
     @property
     def current_plan_limit(self) -> int | None:
-        """Returns the message limit for the plan (daily for Free, monthly for others)."""
-        try:
-            plan_name = SubscriptionPlan(self.subscription_plan)
-        except (ValueError, AttributeError):
-            plan_name = SubscriptionPlan.FREE
-        plan = SUBSCRIPTION_PLANS[plan_name]
-
-        # Priority: Custom limit > Plan limit (Daily or Monthly)
+        """Current effective monthly message limit."""
+        details = get_effective_plan_details(self.subscription_plan, self.trial_ends_at)
+        if details.monthly_message_limit is None:
+            return None
         if self.custom_message_limit is not None:
             return self.custom_message_limit
-
-        if plan.daily_limit is not None:
-            return plan.daily_limit
-
-        if plan.monthly_limit is not None:
-            return plan.monthly_limit
-
-        return None
+        return details.monthly_message_limit
 
     @computed_field
     @property
     def effective_remaining_messages(self) -> int | None:
         """Calculates how many messages the user can still send."""
-        try:
-            plan_name = SubscriptionPlan(self.subscription_plan)
-        except (ValueError, AttributeError):
-            plan_name = SubscriptionPlan.FREE
-        plan = SUBSCRIPTION_PLANS[plan_name]
+        details = get_effective_plan_details(self.subscription_plan, self.trial_ends_at)
+        if not details.chat_enabled:
+            return 0
 
-        # Check for billing cycle reset (30 days)
         now = datetime.now(timezone.utc)
         is_cycle_reset = False
         if self.current_billing_cycle_start:
             cycle_start = parse_cycle_start(self.current_billing_cycle_start, now)
-
             if now - cycle_start >= timedelta(days=30):
                 is_cycle_reset = True
 
-        # Check Validity / Trial Expiration
-        v_days = (
-            self.custom_trial_days
-            if self.custom_trial_days is not None
-            else plan.validity_days
-        )
-        if v_days is not None:
-            if self.trial_remaining_days is not None and self.trial_remaining_days <= 0:
-                return 0
+        message_limit = self.current_plan_limit
+        if message_limit is None:
+            return None
+        sent_this_month = 0 if is_cycle_reset else self.messages_sent_this_month
+        return max(0, message_limit - sent_this_month)
 
-        # Daily Limit Logic (Overrides for Free)
-        if plan.daily_limit is not None:
-            d_lim = (
-                self.custom_message_limit
-                if self.custom_message_limit is not None
-                else plan.daily_limit
-            )
-            # Check for daily reset
-            today_str = now.strftime("%Y-%m-%d")
-            sent_today = (
-                self.messages_sent_today if self.last_message_date == today_str else 0
-            )
-            return max(0, d_lim - sent_today)
+    @computed_field
+    @property
+    def effective_remaining_photos(self) -> int | None:
+        """Calculates how many images can still be sent in this cycle."""
+        details = get_effective_plan_details(self.subscription_plan, self.trial_ends_at)
+        if not details.image_input_enabled:
+            return 0
 
-        # Monthly Limit Logic (Overrides for Paid)
-        if plan.monthly_limit is not None:
-            m_lim = (
-                self.custom_message_limit
-                if self.custom_message_limit is not None
-                else plan.monthly_limit
-            )
-            sent_this_month = 0 if is_cycle_reset else self.messages_sent_this_month
-            return max(0, m_lim - sent_this_month)
-        return None
+        now = datetime.now(timezone.utc)
+        is_cycle_reset = False
+        if self.current_billing_cycle_start:
+            cycle_start = parse_cycle_start(self.current_billing_cycle_start, now)
+            if now - cycle_start >= timedelta(days=30):
+                is_cycle_reset = True
+
+        limit = details.monthly_photo_limit
+        if limit is None:
+            return None
+        sent_this_month = 0 if is_cycle_reset else self.photos_sent_this_month
+        return max(0, limit - sent_this_month)
 
     def _goal_type_label(self) -> str:
         labels = {

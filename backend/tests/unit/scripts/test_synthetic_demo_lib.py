@@ -170,7 +170,7 @@ def test_load_synthetic_scenario_invalid_message_timestamp_raises_validation_err
             "goal_type": "lose",
             "weekly_rate": 0.25,
             "target_weight": 81.5,
-            "subscription_plan": "Premium",
+            "subscription_plan": "Pro",
             "occupation": "Designer",
             "notes": "Demo"
           },
@@ -237,7 +237,7 @@ def test_load_synthetic_scenario_out_of_order_message_timestamps_raise_validatio
             "goal_type": "lose",
             "weekly_rate": 0.25,
             "target_weight": 81.5,
-            "subscription_plan": "Premium",
+            "subscription_plan": "Pro",
             "occupation": "Designer",
             "notes": "Demo"
           },

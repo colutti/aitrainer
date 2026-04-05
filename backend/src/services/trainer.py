@@ -12,7 +12,9 @@ from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 from langchain_core.tools import BaseTool
 
 from src.core.config import settings
-from src.core.subscription import SUBSCRIPTION_PLANS, SubscriptionPlan
+from src.core.subscription import (
+    get_effective_plan_details,
+)
 from src.services.database import MongoDatabase
 from src.services.llm_client import LLMClient
 from src.services.prompt_builder import PromptBuilder
@@ -112,65 +114,56 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
     def calculate_effective_limits(
         self, profile: UserProfile, plan
     ) -> tuple[int | None, int | None]:
-        """Calculates effective limits applying overrides."""
-        daily = plan.daily_limit
-        monthly = plan.monthly_limit
-        if profile.custom_message_limit is not None:
-            if plan.daily_limit is not None:
-                daily = profile.custom_message_limit
-            elif plan.monthly_limit is not None:
-                monthly = profile.custom_message_limit
-        return daily, monthly
+        """Calculates effective message/photo limits applying overrides."""
+        monthly_messages = plan.monthly_message_limit
+        monthly_photos = plan.monthly_photo_limit
+        if profile.custom_message_limit is not None and monthly_messages is not None:
+            monthly_messages = profile.custom_message_limit
+        return monthly_messages, monthly_photos
 
     def check_message_limits(self, profile: UserProfile) -> bool:
         """
         Verifies if the user has reached their message limit.
         """
-        try:
-            plan_name = SubscriptionPlan(profile.subscription_plan)
-        except (ValueError, AttributeError):
-            plan_name = SubscriptionPlan.FREE
-
-        plan = SUBSCRIPTION_PLANS[plan_name]
-        now = datetime.now(timezone.utc)
-        today_str = now.strftime("%Y-%m-%d")
-
-        needs_reset, cycle_start = self.check_billing_cycle(profile, now)
-
-        # 1. Trial
-        validity = (
-            profile.custom_trial_days
-            if profile.custom_trial_days is not None
-            else plan.validity_days
+        plan = get_effective_plan_details(
+            profile.subscription_plan, getattr(profile, "trial_ends_at", None)
         )
-        if validity is not None and cycle_start:
-            # Ensure cycle_start is aware
-            if cycle_start.tzinfo is None:
-                cycle_start = cycle_start.replace(tzinfo=timezone.utc)
+        now = datetime.now(timezone.utc)
 
-            if now - cycle_start >= timedelta(days=validity):
-                raise HTTPException(status_code=403, detail="TRIAL_EXPIRED")
+        needs_reset, _ = self.check_billing_cycle(profile, now)
 
-        # 2. Limits
-        eff_daily, eff_monthly = self.calculate_effective_limits(profile, plan)
+        if not plan.chat_enabled:
+            raise HTTPException(status_code=403, detail="CHAT_NOT_ALLOWED_FOR_PLAN")
 
-        if eff_daily is not None:
-            count = (
-                profile.messages_sent_today
-                if profile.last_message_date == today_str
-                else 0
-            )
-            if count >= eff_daily:
-                raise HTTPException(status_code=403, detail="DAILY_LIMIT_REACHED")
+        eff_monthly_messages, _eff_monthly_photos = self.calculate_effective_limits(
+            profile, plan
+        )
 
-        if eff_monthly is not None:
+        if eff_monthly_messages is not None:
             count = (
                 0 if needs_reset else getattr(profile, "messages_sent_this_month", 0)
             )
-            if count >= eff_monthly:
+            if count >= eff_monthly_messages:
                 raise HTTPException(status_code=403, detail="LIMITE_MENSAGENS_MES")
 
         return needs_reset
+
+    def check_image_limit(self, profile: UserProfile, image_count: int) -> None:
+        """Verifies if user can send the given number of images in this cycle."""
+        if image_count <= 0:
+            return
+        plan = get_effective_plan_details(
+            profile.subscription_plan, getattr(profile, "trial_ends_at", None)
+        )
+        if not plan.image_input_enabled:
+            raise HTTPException(status_code=403, detail="IMAGE_NOT_ALLOWED_FOR_PLAN")
+        if plan.monthly_photo_limit is None:
+            return
+        now = datetime.now(timezone.utc)
+        needs_reset, _ = self.check_billing_cycle(profile, now)
+        current_count = 0 if needs_reset else getattr(profile, "photos_sent_this_month", 0)
+        if current_count + image_count > plan.monthly_photo_limit:
+            raise HTTPException(status_code=403, detail="PHOTO_LIMIT_REACHED")
 
     def check_billing_cycle(
         self, profile: UserProfile, now: datetime
@@ -184,12 +177,14 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         needs_reset = now - cycle_start >= timedelta(days=30)
         return needs_reset, cycle_start
 
-    def increment_counts(self, user_email: str, needs_cycle_reset: bool):
+    def increment_counts(self, user_email: str, needs_cycle_reset: bool, photo_count: int = 0):
         """
         Background task to increment message counts.
         """
         new_cycle_start = datetime.now(timezone.utc) if needs_cycle_reset else None
-        self._database.increment_user_message_counts(user_email, new_cycle_start)
+        self._database.increment_user_message_counts(
+            user_email, new_cycle_start, photo_count=photo_count
+        )
 
     @property
     def database(self) -> MongoDatabase:
@@ -331,12 +326,10 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         if not trainer_profile:
             return None
 
-        try:
-            plan = SubscriptionPlan(plan_name)
-        except (ValueError, AttributeError):
-            plan = SubscriptionPlan.FREE
-
-        plan_details = SUBSCRIPTION_PLANS[plan]
+        effective_details = get_effective_plan_details(
+            plan_name, getattr(self.get_user_profile(user_email), "trial_ends_at", None)
+        )
+        plan_details = effective_details
         allowed = plan_details.allowed_trainers
 
         if allowed and trainer_profile.trainer_type not in allowed:
@@ -363,6 +356,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         if not user_profile:
             user_profile = self.get_user_profile(user_email)
         plan_name = user_profile.subscription_plan if user_profile else "Free"
+        trial_ends_at = getattr(user_profile, "trial_ends_at", None) if user_profile else None
 
         # 2. Get trainer profile
         trainer_profile_obj = self._database.get_trainer_profile(user_email)
@@ -372,7 +366,8 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
                 "Trainer profile not found, creating default for user: %s", user_email
             )
             # Default for Free is gymbro, others is atlas
-            default_trainer = "gymbro" if plan_name == "Free" else "atlas"
+            effective_plan = get_effective_plan_details(plan_name, trial_ends_at)
+            default_trainer = "gymbro" if effective_plan.name == "Free" else "atlas"
             trainer_profile_obj = TrainerProfile(
                 user_email=user_email, trainer_type=default_trainer
             )
@@ -621,6 +616,48 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
 
         return tools
 
+    async def _build_llm_input_data(
+        self, user_email: str, user_input: str, image_payloads: list[dict[str, str]] | None
+    ) -> tuple[TrainerProfile, bool, dict]:
+        """Load profile/history and build prompt input payload for the LLM call."""
+        profile = await asyncio.wrap_future(
+            self._executor.submit(self.get_or_create_user_profile, user_email)
+        )
+        trainer_profile_obj = await asyncio.wrap_future(
+            self._executor.submit(
+                self.get_or_create_trainer_profile, user_email, profile
+            )
+        )
+
+        needs_cycle_reset = self.check_message_limits(profile)
+        self.check_image_limit(profile, len(image_payloads) if image_payloads else 0)
+
+        history_messages = (
+            await asyncio.to_thread(
+                self._database.get_window_memory(
+                    session_id=user_email,
+                    k=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
+                ).load_memory_variables,
+                {},
+            )
+        ).get("chat_history", [])
+
+        input_data = self.prompt_builder.build_input_data(
+            profile=profile,
+            trainer_profile_summary=trainer_profile_obj.get_trainer_profile_summary(),
+            user_profile_summary=profile.get_profile_summary(),
+            formatted_history_msgs=self.format_history_as_messages(history_messages),
+            user_input=user_input,
+            current_date=datetime.now().strftime("%Y-%m-%d"),
+            agenda_events=await asyncio.to_thread(
+                EventRepository(self._database.database).get_active_events, user_email
+            ),
+        )
+        if image_payloads:
+            input_data["user_images"] = image_payloads
+
+        return trainer_profile_obj, needs_cycle_reset, input_data
+
     async def send_message_ai(
         self,
         user_email: str,
@@ -640,56 +677,17 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             str: Individual chunks of the AI trainer's response.
         """
         logger.info("Generating workout stream for user: %s", user_email)
-        options = message_options or {}
-        is_telegram = bool(options.get("is_telegram", False))
-        image_payloads = options.get("image_payloads")
-
-        # 1. Retrieve profiles (sequentially to avoid redundant DB calls and plan mismatch)
-        profile = await asyncio.wrap_future(
-            self._executor.submit(self.get_or_create_user_profile, user_email)
+        image_payloads = (message_options or {}).get("image_payloads")
+        image_count = len(image_payloads) if image_payloads else 0
+        trainer_profile_obj, needs_cycle_reset, input_data = (
+            await self._build_llm_input_data(user_email, user_input, image_payloads)
         )
-        trainer_profile_obj = await asyncio.wrap_future(
-            self._executor.submit(
-                self.get_or_create_trainer_profile, user_email, profile
-            )
-        )
-
-        # 2. Check limits
-        needs_cycle_reset = self.check_message_limits(profile)
-
-        # 3. Memory & History
-        chat_history_messages = (
-            await asyncio.to_thread(
-                self._database.get_window_memory(
-                    session_id=user_email,
-                    k=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
-                ).load_memory_variables,
-                {},
-            )
-        ).get("chat_history", [])
-
-        # 4. Build input data
-        input_data = self.prompt_builder.build_input_data(
-            profile=profile,
-            trainer_profile_summary=trainer_profile_obj.get_trainer_profile_summary(),
-            user_profile_summary=profile.get_profile_summary(),
-            formatted_history_msgs=self.format_history_as_messages(
-                chat_history_messages
-            ),
-            user_input=user_input,
-            current_date=datetime.now().strftime("%Y-%m-%d"),
-            agenda_events=await asyncio.to_thread(
-                EventRepository(self._database.database).get_active_events, user_email
-            ),
-        )
-        if image_payloads:
-            input_data["user_images"] = image_payloads
 
         raw_response: list[str] = []
         stream_buffer = ""
         async for chunk in self._llm_client.stream_with_tools(
             prompt_template=self.prompt_builder.get_prompt_template(
-                input_data, is_telegram
+                input_data, bool((message_options or {}).get("is_telegram", False))
             ),
             input_data=input_data,
             tools=self.get_tools(user_email),
@@ -718,6 +716,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
                 "background_tasks": background_tasks,
                 "log_callback": self.get_log_callback(background_tasks),
                 "user_images": image_payloads,
+                "image_count": image_count,
             },
         )
 
@@ -749,9 +748,11 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         reset = metadata.get("needs_cycle_reset", False)
         user_images = metadata.get("user_images")
 
+        image_count = int(metadata.get("image_count", 0))
+
         if bg_tasks:
             # Async FastAPI environment
-            bg_tasks.add_task(self.increment_counts, user_email, reset)
+            bg_tasks.add_task(self.increment_counts, user_email, reset, image_count)
             bg_tasks.add_task(
                 self.add_to_mongo_history,
                 user_email,
@@ -762,7 +763,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             logger.info("Scheduled background tasks for user: %s", user_email)
         else:
             # Fallback for sync callers (like Telegram)
-            self.increment_counts(user_email, reset)
+            self.increment_counts(user_email, reset, image_count)
             self.add_to_mongo_history(
                 user_email,
                 user_input,

@@ -126,13 +126,13 @@ class TelegramBotService:
         image_payloads = None
         if photo:
             profile = self.brain.get_user_profile(link.user_email)
-            if not can_use_image_input(getattr(profile, "subscription_plan", None)):
+            if not can_use_image_input(
+                getattr(profile, "subscription_plan", None),
+                getattr(profile, "trial_ends_at", None),
+            ):
                 await self.bot.send_message(
                     chat_id=chat_id,
-                    text=(
-                        "📸 Análise de fotos está disponível apenas "
-                        "nos planos Pro e Premium."
-                    ),
+                    text="📸 Análise de fotos está disponível apenas para usuários Pro.",
                 )
                 return
 

@@ -11,7 +11,7 @@ from src.core.demo_access import WritableCurrentUser
 from src.services.auth import verify_token
 from src.core.deps import get_ai_trainer_brain
 from src.api.models.message import MessageRequest
-from src.core.subscription import can_use_image_input
+from src.core.subscription import can_use_image_input, can_use_chat
 from src.services.trainer import AITrainerBrain
 from src.core.logs import logger
 
@@ -62,8 +62,12 @@ async def message_ai(
     try:
         # Pre-flight limits check to avoid StreamingResponse generator crash
         profile = brain.get_or_create_user_profile(user_email)
+        if not can_use_chat(profile.subscription_plan, getattr(profile, "trial_ends_at", None)):
+            raise HTTPException(status_code=403, detail="CHAT_NOT_ALLOWED_FOR_PLAN")
         brain.check_message_limits(profile)
-        if message.images and not can_use_image_input(profile.subscription_plan):
+        if message.images and not can_use_image_input(
+            profile.subscription_plan, getattr(profile, "trial_ends_at", None)
+        ):
             raise HTTPException(status_code=403, detail="IMAGE_NOT_ALLOWED_FOR_PLAN")
 
         response_generator = brain.send_message_ai(

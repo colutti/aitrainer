@@ -11,8 +11,7 @@ import { cn } from '../../../shared/utils/cn';
 
 const PLAN_PRIORITY: Record<string, number> = {
   free: 0,
-  basic: 1,
-  pro: 2,
+  pro: 1,
 };
 
 export type Plan = PlanCardModel;
@@ -69,7 +68,7 @@ export function SubscriptionView({
            </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-           {[1, 2, 3].map(i => <Skeleton key={i} className="h-96 rounded-[32px] bg-white/5" />)}
+           {[1, 2].map(i => <Skeleton key={i} className="h-96 rounded-[32px] bg-white/5" />)}
         </div>
       </div>
     );
@@ -95,23 +94,24 @@ export function SubscriptionView({
       </div>
 
       {/* PLANS GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {plans.map((plan) => {
           const planIdLower = plan.id.toLowerCase().trim();
           const isCurrent = currentPlan === planIdLower;
 
           return (
-            <PlanCard
-              key={plan.id}
-              plan={{
-                id: plan.id,
-                name: plan.name,
-                subtitle: plan.subtitle,
-                priceLabel: plan.priceLabel,
-                features: plan.features,
-                badge: plan.badge,
-                highlight: isCurrent || plan.highlight,
-              }}
+                <PlanCard
+                  key={plan.id}
+                  plan={{
+                    id: plan.id,
+                    name: plan.name,
+                    subtitle: plan.subtitle,
+                    priceLabel: plan.priceLabel,
+                    fullPriceLabel: plan.fullPriceLabel,
+                    features: plan.features,
+                    badge: plan.badge,
+                    highlight: isCurrent || plan.highlight,
+                  }}
               context="management"
               current={isCurrent}
               actionLabel={getPlanActionLabel(planIdLower, isCurrent)}

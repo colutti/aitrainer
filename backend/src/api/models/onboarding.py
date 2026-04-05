@@ -30,7 +30,7 @@ class OnboardingCompleteRequest(BaseModel):
     )
     subscription_plan: str = Field(
         default="Free",
-        pattern="^(Free|Basic|Pro|Premium)$",
+        pattern="^(Free|Pro)$",
         description="Selected subscription plan",
     )
 
@@ -85,7 +85,7 @@ class PublicOnboardingRequest(BaseModel):
     )
     subscription_plan: str = Field(
         default="Free",
-        pattern="^(Free|Basic|Pro|Premium)$",
+        pattern="^(Free|Pro)$",
         description="Selected subscription plan",
     )
     name: str | None = Field(default=None, description="User's display name")

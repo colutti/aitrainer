@@ -101,9 +101,9 @@ describe('IntegrationsPage', () => {
     });
   });
 
-  it('shows pro-only controls disabled for basic users', async () => {
+  it('shows pro-only controls disabled for free users after trial', async () => {
     vi.mocked(useAuthStore).mockReturnValue({
-      userInfo: { subscription_plan: 'Basic' },
+      userInfo: { subscription_plan: 'Free', effective_plan_name: 'Free' },
     } as any);
 
     render(<IntegrationsPage />);

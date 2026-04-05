@@ -140,6 +140,17 @@ def test_message_ai_success():
         yield "this is "
         yield "your trainer!"
 
+    mock_brain.get_or_create_user_profile.return_value = UserProfile(
+        email="test@example.com",
+        gender="Masculino",
+        age=30,
+        weight=75.0,
+        height=180,
+        goal_type="maintain",
+        weekly_rate=0.5,
+        subscription_plan="Pro",
+    )
+    mock_brain.check_message_limits.return_value = False
     mock_brain.send_message_ai.return_value = mock_generator()
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
@@ -168,7 +179,7 @@ def test_message_ai_user_not_found():
     """Test message endpoint when user profile not found."""
     app.dependency_overrides[verify_token] = lambda: "nonexistent@example.com"
     mock_brain = MagicMock()
-    mock_brain.send_message_ai.side_effect = ValueError("User profile not found")
+    mock_brain.get_or_create_user_profile.side_effect = ValueError("User profile not found")
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
     payload = {
@@ -191,6 +202,17 @@ def test_message_ai_empty_message():
     """Test sending empty message."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_brain = MagicMock()
+    mock_brain.get_or_create_user_profile.return_value = UserProfile(
+        email="test@example.com",
+        gender="Masculino",
+        age=30,
+        weight=75.0,
+        height=180,
+        goal_type="maintain",
+        weekly_rate=0.5,
+        subscription_plan="Pro",
+    )
+    mock_brain.check_message_limits.return_value = False
     mock_brain.send_message_ai.return_value = (x for x in ["Response"])
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
@@ -227,6 +249,17 @@ def test_message_ai_long_message():
     """Test sending a very long message."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_brain = MagicMock()
+    mock_brain.get_or_create_user_profile.return_value = UserProfile(
+        email="test@example.com",
+        gender="Masculino",
+        age=30,
+        weight=75.0,
+        height=180,
+        goal_type="maintain",
+        weekly_rate=0.5,
+        subscription_plan="Pro",
+    )
+    mock_brain.check_message_limits.return_value = False
     mock_brain.send_message_ai.return_value = (x for x in ["Response"])
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
@@ -254,6 +287,17 @@ def test_message_ai_special_characters():
     """Test message containing special characters and Unicode."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_brain = MagicMock()
+    mock_brain.get_or_create_user_profile.return_value = UserProfile(
+        email="test@example.com",
+        gender="Masculino",
+        age=30,
+        weight=75.0,
+        height=180,
+        goal_type="maintain",
+        weekly_rate=0.5,
+        subscription_plan="Pro",
+    )
+    mock_brain.check_message_limits.return_value = False
     mock_brain.send_message_ai.return_value = (x for x in ["OK"])
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
@@ -305,19 +349,20 @@ def test_message_ai_rejects_demo_user():
     app.dependency_overrides = {}
 
 
-def test_message_ai_rejects_image_for_basic_plan():
-    """Test image payload is blocked for non-Pro/Premium plans."""
-    app.dependency_overrides[verify_token] = lambda: "basic@example.com"
+def test_message_ai_rejects_chat_for_free_without_trial():
+    """Test chat is blocked for Free users after trial (including image requests)."""
+    app.dependency_overrides[verify_token] = lambda: "free@example.com"
     mock_brain = MagicMock()
     mock_brain.get_or_create_user_profile.return_value = UserProfile(
-        email="basic@example.com",
+        email="free@example.com",
         gender="Masculino",
         age=30,
         weight=75.0,
         height=180,
         goal_type="maintain",
         weekly_rate=0.5,
-        subscription_plan="Basic",
+        subscription_plan="Free",
+        trial_ends_at=None,
     )
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
@@ -331,7 +376,7 @@ def test_message_ai_rejects_image_for_basic_plan():
     )
 
     assert response.status_code == 403
-    assert response.json()["detail"] == "IMAGE_NOT_ALLOWED_FOR_PLAN"
+    assert response.json()["detail"] == "CHAT_NOT_ALLOWED_FOR_PLAN"
     mock_brain.send_message_ai.assert_not_called()
 
     app.dependency_overrides = {}

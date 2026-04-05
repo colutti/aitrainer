@@ -9,7 +9,7 @@ from src.services.trainer import AITrainerBrain
 from src.core.deps import get_ai_trainer_brain
 from src.services.auth import verify_token
 from src.trainers.registry import TrainerRegistry
-from src.core.subscription import SubscriptionPlan, SUBSCRIPTION_PLANS
+from src.core.subscription import get_effective_plan_details
 
 router = APIRouter()
 
@@ -29,12 +29,9 @@ async def update_trainer_profile(
     if not user_profile:
         raise HTTPException(status_code=404, detail="User profile not found")
 
-    try:
-        plan = SubscriptionPlan(user_profile.subscription_plan)
-    except (ValueError, AttributeError):
-        plan = SubscriptionPlan.FREE
-
-    plan_details = SUBSCRIPTION_PLANS[plan]
+    plan_details = get_effective_plan_details(
+        user_profile.subscription_plan, getattr(user_profile, "trial_ends_at", None)
+    )
     allowed = plan_details.allowed_trainers
 
     if allowed and profile_input.trainer_type not in allowed:
@@ -42,7 +39,7 @@ async def update_trainer_profile(
             status_code=403,
             detail=(
                 f"Trainer '{profile_input.trainer_type}' is not available "
-                f"in the {plan.value} plan"
+                f"in the {plan_details.name} plan"
             ),
         )
 

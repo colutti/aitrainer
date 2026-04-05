@@ -112,12 +112,13 @@ class TestHevyConfig:
         assert data["lastSync"] is None
         app.dependency_overrides = {}
 
-    def test_save_config_forbidden_for_basic_plan(self, client, mock_brain):
+    def test_save_config_forbidden_for_free_post_trial(self, client, mock_brain):
         """Test Hevy config is blocked for plans without integration entitlement."""
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
 
         profile = MagicMock()
-        profile.subscription_plan = "Basic"
+        profile.subscription_plan = "Free"
+        profile.trial_ends_at = None
         profile.hevy_api_key = None
         profile.hevy_enabled = False
         mock_brain.get_user_profile.return_value = profile
