@@ -18,4 +18,10 @@ describe('TrainerShowcase Component', () => {
 
     expect(screen.getByRole('button', { name: /Começar com este mentor/i })).toBeInTheDocument();
   });
+
+  it('defaults to Breno as selected mentor', () => {
+    render(<TrainerShowcase />);
+
+    expect(screen.getByText(/Constância, confiança e rotina sem peso excessivo/i)).toBeInTheDocument();
+  });
 });
