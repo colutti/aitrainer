@@ -5,10 +5,12 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 . "$ROOT_DIR/scripts/lib/log.sh"
 . "$ROOT_DIR/scripts/lib/compose.sh"
 
+PROJECT_NAME="fityq-verify-backend-$(date +%s)-$$-$RANDOM"
+
 cleanup() {
-  COMPOSE_PROJECT_NAME=fityq-verify \
+  COMPOSE_PROJECT_NAME="$PROJECT_NAME" \
   compose_cmd \
-    -f "$ROOT_DIR/compose/base.yml" \
+    -f "$ROOT_DIR/compose/test-base.yml" \
     -f "$ROOT_DIR/compose/verify.yml" \
     down --volumes --remove-orphans >/dev/null 2>&1 || true
 }
@@ -16,8 +18,9 @@ cleanup() {
 trap cleanup EXIT
 
 log_section "Verify backend"
-COMPOSE_PROJECT_NAME=fityq-verify \
+log_info "Using disposable test project: $PROJECT_NAME"
+COMPOSE_PROJECT_NAME="$PROJECT_NAME" \
 compose_cmd \
-  -f "$ROOT_DIR/compose/base.yml" \
+  -f "$ROOT_DIR/compose/test-base.yml" \
   -f "$ROOT_DIR/compose/verify.yml" \
   run --rm backend-verify

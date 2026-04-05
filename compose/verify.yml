@@ -64,6 +64,14 @@ services:
       - ../:/workspace
       - frontend_verify_node_modules:/workspace/frontend/node_modules
       - frontend_verify_npm_cache:/root/.npm
+    environment:
+      NPM_CONFIG_FETCH_RETRIES: ${NPM_CONFIG_FETCH_RETRIES:-5}
+      NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: ${NPM_CONFIG_FETCH_RETRY_MINTIMEOUT:-2000}
+      NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: ${NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT:-20000}
+      NPM_CONFIG_FETCH_TIMEOUT: ${NPM_CONFIG_FETCH_TIMEOUT:-120000}
+      NPM_CONFIG_REGISTRY: ${NPM_CONFIG_REGISTRY:-https://registry.npmjs.org/}
+      NPM_CI_TIMEOUT_SECONDS: ${NPM_CI_TIMEOUT_SECONDS:-420}
+      NPM_CI_MAX_RETRIES: ${NPM_CI_MAX_RETRIES:-3}
     command: >
       sh -lc "/workspace/scripts/verify/npm-install-if-needed.sh /workspace/frontend &&
       npm run lint &&
@@ -80,6 +88,14 @@ services:
       - frontend_admin_verify_root_node_modules:/workspace/frontend/node_modules
       - frontend_admin_verify_node_modules:/workspace/frontend/admin/node_modules
       - frontend_admin_verify_npm_cache:/root/.npm
+    environment:
+      NPM_CONFIG_FETCH_RETRIES: ${NPM_CONFIG_FETCH_RETRIES:-5}
+      NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: ${NPM_CONFIG_FETCH_RETRY_MINTIMEOUT:-2000}
+      NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: ${NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT:-20000}
+      NPM_CONFIG_FETCH_TIMEOUT: ${NPM_CONFIG_FETCH_TIMEOUT:-120000}
+      NPM_CONFIG_REGISTRY: ${NPM_CONFIG_REGISTRY:-https://registry.npmjs.org/}
+      NPM_CI_TIMEOUT_SECONDS: ${NPM_CI_TIMEOUT_SECONDS:-420}
+      NPM_CI_MAX_RETRIES: ${NPM_CI_MAX_RETRIES:-3}
     command: >
       sh -lc "/workspace/scripts/verify/npm-install-if-needed.sh /workspace/frontend &&
       /workspace/scripts/verify/npm-install-if-needed.sh /workspace/frontend/admin &&

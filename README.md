@@ -102,6 +102,13 @@ Run the complete containerized system suite with:
 make test-once
 ```
 
+Test execution guarantees:
+- Every run uses a unique disposable Compose project name.
+- Test dependencies run without host port bindings (no collision with local dev/debug stacks).
+- All test containers/networks/volumes are destroyed at the end of each run.
+- If dependency bootstrap gets stuck (for example `npm ci`), the run fails fast by timeout instead of hanging indefinitely.
+- Post-feature policy: run `make test-once` before considering the task complete.
+
 This runs:
 - backend verification
 - backend-admin verification
@@ -110,6 +117,15 @@ This runs:
 - Playwright E2E against real backend and frontend services
 
 The container stack also starts MongoDB, Qdrant, and `stripe-mock` as internal dependencies.
+
+Optional npm network hardening knobs (for unstable DNS/registry links):
+- `NPM_CONFIG_FETCH_RETRIES` (default `5`)
+- `NPM_CONFIG_FETCH_RETRY_MINTIMEOUT` (default `2000`)
+- `NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT` (default `20000`)
+- `NPM_CONFIG_FETCH_TIMEOUT` (default `120000`)
+- `NPM_CONFIG_REGISTRY` (default `https://registry.npmjs.org/`)
+- `NPM_CI_TIMEOUT_SECONDS` (default `420`)
+- `NPM_CI_MAX_RETRIES` (default `3`)
 
 ### Stripe Hybrid Testing (Mock + Live Test Mode)
 

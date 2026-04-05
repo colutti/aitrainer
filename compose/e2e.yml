@@ -5,6 +5,12 @@ services:
     volumes:
       - ../:/workspace
       - firebase_emulator_npm_cache:/root/.npm
+    environment:
+      NPM_CONFIG_FETCH_RETRIES: ${NPM_CONFIG_FETCH_RETRIES:-5}
+      NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: ${NPM_CONFIG_FETCH_RETRY_MINTIMEOUT:-2000}
+      NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: ${NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT:-20000}
+      NPM_CONFIG_FETCH_TIMEOUT: ${NPM_CONFIG_FETCH_TIMEOUT:-120000}
+      NPM_CONFIG_REGISTRY: ${NPM_CONFIG_REGISTRY:-https://registry.npmjs.org/}
     command: >
       sh -lc "npm install -g firebase-tools@14.26.0 &&
       firebase emulators:start --project demo-fityq --only auth --config /workspace/firebase.emulator.json"
@@ -67,6 +73,13 @@ services:
       - frontend_e2e_node_modules:/workspace/frontend/node_modules
       - frontend_e2e_npm_cache:/root/.npm
     environment:
+      NPM_CONFIG_FETCH_RETRIES: ${NPM_CONFIG_FETCH_RETRIES:-5}
+      NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: ${NPM_CONFIG_FETCH_RETRY_MINTIMEOUT:-2000}
+      NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: ${NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT:-20000}
+      NPM_CONFIG_FETCH_TIMEOUT: ${NPM_CONFIG_FETCH_TIMEOUT:-120000}
+      NPM_CONFIG_REGISTRY: ${NPM_CONFIG_REGISTRY:-https://registry.npmjs.org/}
+      NPM_CI_TIMEOUT_SECONDS: ${NPM_CI_TIMEOUT_SECONDS:-420}
+      NPM_CI_MAX_RETRIES: ${NPM_CI_MAX_RETRIES:-3}
       VITE_API_PROXY_TARGET: http://backend:8000
       VITE_FIREBASE_API_KEY: demo-api-key
       VITE_FIREBASE_AUTH_DOMAIN: demo-fityq.firebaseapp.com
@@ -102,6 +115,13 @@ services:
       - frontend_playwright_node_modules:/workspace/frontend/node_modules
       - frontend_playwright_npm_cache:/root/.npm
     environment:
+      NPM_CONFIG_FETCH_RETRIES: ${NPM_CONFIG_FETCH_RETRIES:-5}
+      NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: ${NPM_CONFIG_FETCH_RETRY_MINTIMEOUT:-2000}
+      NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: ${NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT:-20000}
+      NPM_CONFIG_FETCH_TIMEOUT: ${NPM_CONFIG_FETCH_TIMEOUT:-120000}
+      NPM_CONFIG_REGISTRY: ${NPM_CONFIG_REGISTRY:-https://registry.npmjs.org/}
+      NPM_CI_TIMEOUT_SECONDS: ${NPM_CI_TIMEOUT_SECONDS:-420}
+      NPM_CI_MAX_RETRIES: ${NPM_CI_MAX_RETRIES:-3}
       PLAYWRIGHT_BASE_URL: http://frontend:3000
       E2E_API_BASE_URL: http://backend:8000
       PLAYWRIGHT_SKIP_WEB_SERVER: "1"
