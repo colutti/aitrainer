@@ -20,12 +20,14 @@ if TYPE_CHECKING:
 router = APIRouter()
 
 CurrentUser = Annotated[str, Depends(verify_token)]
-AITrainerBrainDep = Annotated["AITrainerBrain", Depends(get_ai_trainer_brain)]
 
 
 @router.get("/history")
 def get_history(
-    user_email: CurrentUser, brain: AITrainerBrainDep, limit: int = 20, offset: int = 0
+    user_email: CurrentUser,
+    brain: "AITrainerBrain" = Depends(get_ai_trainer_brain),
+    limit: int = 20,
+    offset: int = 0,
 ) -> list:
     """
     Returns the chat message history for the authenticated user,
@@ -46,8 +48,8 @@ async def message_ai(
     message: MessageRequest,
     request: Request,
     user_email: WritableCurrentUser,
-    brain: AITrainerBrainDep,
     background_tasks: BackgroundTasks,
+    brain: "AITrainerBrain" = Depends(get_ai_trainer_brain),
 ) -> StreamingResponse:
     """
     Handles an AI messaging request for an authenticated user.
