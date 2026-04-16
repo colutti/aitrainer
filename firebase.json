@@ -15,5 +15,14 @@
         }
       }
     ]
+  },
+  "auth": {
+    "providers": {
+      "emailPassword": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "FityQ",
+        "supportEmail": "rafacolucci@gmail.com"
+      }
+    }
   }
 }
