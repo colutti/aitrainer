@@ -1,4 +1,4 @@
-# FityQ Production Publication Plan
+# FityQ Production Publication And Operational Execution Plan
 
 > **Objetivo:** publicar a última versão do produto em produção com segurança, cobrindo autenticação Firebase, billing Stripe, mudanças de ambiente, fluxo de deploy e um feature toggle para manter cadastro e compra temporariamente desativados durante a validação.
 
@@ -159,11 +159,48 @@ Publicar a última versão em produção, mas manter temporariamente:
 
 ## 4. Estratégia de Publicação Recomendada
 
+Este plano foi estruturado para permitir execução operacional com o mínimo de intervenção humana.
+
+### O que eu consigo executar quase sozinho
+
+- inventário de produção em Firebase e Cloud Run;
+- validação do gap entre `main` e PROD;
+- implementação do toggle temporário;
+- ajuste de build/deploy no repositório;
+- validação local e containerizada;
+- build e deploy em Cloud Run;
+- smoke tests pós-publicação;
+- rollback técnico para revisão anterior.
+
+### O que ainda exige sua confirmação ou insumo
+
+- aprovação do SHA final do release candidate, se não for o `HEAD` do `main` no momento da execução;
+- confirmação da conta Stripe de produção correta e dos preços oficiais;
+- confirmação do comportamento desejado de comunicação aos usuários legados na migração Firebase;
+- qualquer segredo novo que não esteja já acessível no ambiente de execução.
+
+### Definição operacional de sucesso
+
+Uma publicação só será considerada concluída quando todos estes pontos forem verdadeiros:
+
+- os quatro serviços em Cloud Run estiverem na nova revisão pretendida;
+- a landing estiver publicada com o toggle desligado;
+- login de usuário existente estiver funcionando;
+- cadastro novo e compra nova estiverem bloqueados;
+- smoke tests críticos passarem;
+- houver plano de rollback validado antes de abrir cadastro e compra.
+
 ## Fase 0: Congelar o release candidate
 
 - Escolher um SHA exato para release, em vez de usar `main` mutável.
 - Recomendação: cortar o release candidate a partir do `main` atual e só então validar/deployar.
 - Registrar esse SHA no plano de execução e nos comandos de build.
+
+### Output operacional da fase
+
+- SHA de release definido;
+- branch ou tag de release registrada;
+- checklist desta execução instanciado com esse SHA.
 
 ## Fase 1: Entregar primeiro o kill switch de cadastro e compra
 
@@ -186,6 +223,12 @@ Resultado esperado:
 
 - a versão mais nova pode ser publicada em PROD com feature freeze comercial.
 
+### Gate para avançar
+
+- testes automatizados do toggle passando;
+- backend bloqueando fluxo novo mesmo com chamada direta;
+- frontend refletindo corretamente o bloqueio.
+
 ## Fase 2: Preparar build e deploy para suportar a versão atual
 
 Objetivo:
@@ -206,6 +249,12 @@ Passos:
 Resultado esperado:
 
 - existe um caminho repetível para subir a última versão completa.
+
+### Gate para avançar
+
+- build local do frontend principal usando Firebase config de produção concluído com sucesso;
+- processo de injeção de `VITE_FIREBASE_*` documentado e testado;
+- estratégia de tag imutável definida.
 
 ## Fase 3: Provisionar e revisar configuração de produção
 
@@ -240,6 +289,12 @@ Valores reais já existem no projeto Firebase e podem ser extraídos do app web 
 - configurar webhook para o endpoint público novo do backend;
 - confirmar billing portal habilitado.
 
+### Gate para avançar
+
+- todas as env vars obrigatórias mapeadas por serviço;
+- webhook do Stripe preparado;
+- nenhum valor crítico restante como `TBD`.
+
 ## Fase 4: Migração de usuários legados para Firebase
 
 Objetivo:
@@ -271,6 +326,11 @@ Risco operacional:
 
 - usuários antigos podem estranhar a mudança de auth se isso não for comunicado antes do deploy.
 
+### Gate para avançar
+
+- script validado em ambiente controlado ou amostra segura;
+- estratégia de suporte definida para usuários que não conseguirem acessar.
+
 ## Fase 5: Validação técnica antes do deploy
 
 Rodar no release candidate:
@@ -287,6 +347,11 @@ Além da suíte automatizada, executar smoke validation focada em:
 - onboarding público sem abertura de checkout;
 - admin continua operacional;
 - dashboard e navegação principal carregam normalmente.
+
+### Output operacional da fase
+
+- relatório curto de verificação;
+- lista explícita de riscos aceitos para deploy.
 
 ## Fase 6: Subir a última versão para produção
 
@@ -308,6 +373,24 @@ Observação:
 - esse é o ponto em que a “última versão” realmente sobe para PROD;
 - a recomendação é fazer isso **com o toggle desligado**.
 
+### Ordem operacional do deploy
+
+1. Publicar imagem do `backend` do SHA congelado.
+2. Deployar `aitrainer-backend`.
+3. Validar `/health` do backend novo.
+4. Publicar imagem do `frontend` com Firebase config de produção embutida.
+5. Deployar `aitrainer-frontend`.
+6. Validar carregamento da landing publicada.
+7. Publicar e deployar `backend-admin`.
+8. Publicar e deployar `frontend-admin`.
+9. Confirmar que Firebase Hosting continua apontando para `aitrainer-frontend`.
+
+### Gate para avançar
+
+- serviços em nova revisão;
+- health checks verdes;
+- nenhuma regressão crítica visível em smoke inicial.
+
 ## Fase 7: Smoke test em produção com toggle desligado
 
 Depois do deploy:
@@ -324,6 +407,11 @@ Resultado esperado:
 
 - a versão nova está em produção, mas sem abrir entrada comercial nova.
 
+### Critério de passagem da fase
+
+- todos os smoke tests críticos marcados como `PASS`;
+- nenhum bug bloqueador aberto para auth, landing, checkout ou painel admin.
+
 ## Fase 8: Abrir gradualmente cadastro e compra
 
 Quando a validação em PROD terminar:
@@ -337,6 +425,11 @@ Quando a validação em PROD terminar:
   - webhook de assinatura;
   - gestão de assinatura no portal.
 
+### Estratégia recomendada de abertura
+
+- primeiro abrir com observação curta e ativa;
+- só depois considerar o rollout comercial completo.
+
 ## Fase 9: Plano de rollback
 
 Se a publicação falhar:
@@ -346,6 +439,14 @@ Se a publicação falhar:
 - desabilitar webhook novo do Stripe se necessário;
 - comunicar internamente que o rollout foi interrompido;
 - reabrir somente após correção e nova validação.
+
+### Trigger imediato de rollback
+
+- login de usuário existente quebrado;
+- landing indisponível;
+- frontend publicado sem autenticação funcional;
+- checkout iniciando cobrança errada;
+- erro estrutural em webhook ou atualização de assinatura.
 
 ## 5. Riscos Mais Importantes
 
@@ -407,3 +508,185 @@ Mitigação:
 - se os IDs de preço hardcoded do frontend serão mantidos ou removidos antes do release;
 - se haverá comunicação formal aos usuários sobre a mudança para Firebase;
 - se a abertura comercial será total de uma vez ou gradual após algumas horas/dias de observação em PROD.
+
+## 8. Plano De Execução Operacional
+
+Esta seção transforma o plano em runbook.
+
+### Preparação única
+
+- confirmar acesso operacional a:
+  - projeto Firebase `fityq-488619`;
+  - Cloud Run em `europe-southwest1`;
+  - Stripe de produção;
+  - Artifact Registry do projeto;
+- congelar SHA de release;
+- registrar a janela de publicação.
+
+### Execução A: preparar o release candidate
+
+1. Atualizar o repositório local para o SHA congelado.
+2. Validar que o toggle temporário existe e está com default desligado.
+3. Rodar:
+   - `make verify`
+   - `make verify-all` ou `make test-once`
+4. Registrar evidência dos testes.
+
+### Execução B: preparar produção
+
+1. Mapear env vars novas por serviço.
+2. Confirmar Firebase Web App config.
+3. Confirmar `FIREBASE_CREDENTIALS`.
+4. Confirmar Stripe prices, webhook e portal.
+5. Confirmar que o build do frontend aceita `VITE_FIREBASE_*`.
+
+### Execução C: migrar usuários legados
+
+1. Fazer backup lógico do estado relevante.
+2. Rodar a migração de usuários para Firebase.
+3. Validar amostra de usuários migrados.
+4. Deixar pronto o fluxo de suporte para reset de senha.
+
+### Execução D: publicar
+
+1. Buildar imagens do SHA congelado.
+2. Publicar imagens com tag imutável.
+3. Deployar backend.
+4. Deployar frontend.
+5. Deployar backend-admin.
+6. Deployar frontend-admin.
+7. Confirmar revisões, health checks e URLs.
+
+### Execução E: validar em produção com toggle desligado
+
+1. Rodar a suíte de smoke tests abaixo.
+2. Se qualquer teste crítico falhar, executar rollback.
+3. Se todos passarem, manter a versão em observação.
+
+### Execução F: abrir cadastro e compra
+
+1. Ligar `ENABLE_NEW_USER_SIGNUPS=true`.
+2. Repetir smoke tests de abertura comercial.
+3. Monitorar logs e eventos de Stripe.
+
+## 9. Smoke Tests De Publicação
+
+Cada smoke test abaixo deve ser executado depois do deploy da última versão e antes da abertura pública.
+
+### ST-01: Health check dos 4 serviços
+
+- alvo:
+  - `aitrainer-backend`
+  - `aitrainer-frontend`
+  - `aitrainer-backend-admin`
+  - `aitrainer-frontend-admin`
+- passos:
+  - consultar URL de cada serviço no Cloud Run;
+  - acessar `/health` quando aplicável;
+  - validar resposta HTTP.
+- esperado:
+  - backend e backend-admin com health saudável;
+  - frontends respondendo sem erro 5xx.
+- criticidade: crítica
+
+### ST-02: Landing pública carrega com a revisão nova
+
+- passos:
+  - abrir a landing pública;
+  - verificar se hero, pricing e CTA final renderizam;
+  - verificar que a cópia nova foi publicada.
+- esperado:
+  - página carrega completa, sem erro visual ou tela branca.
+- criticidade: crítica
+
+### ST-03: Planos da landing ficam bloqueados com toggle desligado
+
+- passos:
+  - abrir a seção de pricing;
+  - tentar clicar nos planos;
+  - tentar iniciar fluxo por CTA da landing.
+- esperado:
+  - nenhum fluxo de compra ou cadastro novo é iniciado;
+  - a UI explica que a abertura pública está temporariamente indisponível.
+- criticidade: crítica
+
+### ST-04: Login de usuário existente continua funcionando
+
+- passos:
+  - usar um usuário legado já migrado para Firebase;
+  - efetuar login;
+  - acessar dashboard.
+- esperado:
+  - autenticação bem-sucedida;
+  - dashboard carregado normalmente.
+- criticidade: crítica
+
+### ST-05: Novo cadastro por e-mail fica bloqueado
+
+- passos:
+  - abrir a tela de login/registro;
+  - tentar criar conta nova.
+- esperado:
+  - fluxo bloqueado sem criar novo usuário utilizável.
+- criticidade: crítica
+
+### ST-06: Novo login social não cria usuário novo com toggle desligado
+
+- passos:
+  - tentar entrar com conta Google inexistente no banco de usuários.
+- esperado:
+  - login social não cria perfil novo.
+- criticidade: crítica
+
+### ST-07: Página de assinatura do usuário logado bloqueia contratação
+
+- passos:
+  - autenticar com usuário existente;
+  - abrir configurações > assinatura;
+  - tentar contratar ou mudar plano.
+- esperado:
+  - ações de contratação/upgrade bloqueadas;
+  - portal de gestão continua acessível apenas se fizer sentido para usuário já pagante.
+- criticidade: alta
+
+### ST-08: Checkout direto no backend é bloqueado com toggle desligado
+
+- passos:
+  - chamar `/stripe/create-checkout-session` com usuário autenticado.
+- esperado:
+  - backend retorna erro de bloqueio controlado;
+  - nenhuma sessão de checkout é criada.
+- criticidade: crítica
+
+### ST-09: Admin segue operacional
+
+- passos:
+  - abrir frontend admin;
+  - efetuar login admin;
+  - acessar usuários e analytics.
+- esperado:
+  - admin carrega e opera sem regressão estrutural.
+- criticidade: alta
+
+### ST-10: Toggle ligado reabre cadastro e compra
+
+- pré-condição:
+  - `ENABLE_NEW_USER_SIGNUPS=true`
+- passos:
+  - repetir cadastro novo;
+  - repetir onboarding novo;
+  - repetir contratação de `Basic` e `Pro`.
+- esperado:
+  - aquisição volta a funcionar ponta a ponta.
+- criticidade: crítica para abertura comercial
+
+## 10. Intervenção Humana Mínima Esperada
+
+Se o runbook for executado por mim depois, a intervenção humana ideal fica reduzida a:
+
+1. confirmar o SHA final do release;
+2. confirmar que a conta Stripe alvo é a correta;
+3. aprovar qualquer segredo ausente que eu não consiga recuperar do ambiente;
+4. aprovar a abertura final do toggle para liberar cadastro e compra.
+
+Todo o restante pode ser preparado e executado de forma operacional seguindo este plano.
