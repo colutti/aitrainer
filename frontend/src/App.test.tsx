@@ -1,4 +1,4 @@
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 interface MockAuthState {
@@ -20,7 +20,12 @@ vi.mock('./shared/hooks/useAuth', () => ({
 }));
 
 vi.mock('./AppRoutes', () => ({
-  AppRoutes: () => <div>App Routes</div>,
+  AppRoutes: () => (
+    <div>
+      <div data-testid="desktop-nav" />
+      <div>App Routes</div>
+    </div>
+  ),
 }));
 
 vi.mock('./shared/components/ui/GlobalErrorBoundary', () => ({
@@ -50,5 +55,11 @@ describe('App', () => {
     await waitFor(() => expect(mockAuthState.init).toHaveBeenCalledOnce());
     window.dispatchEvent(new Event('focus'));
     expect(mockAuthState.loadUserInfo).toHaveBeenCalledOnce();
+  });
+
+  it('renders authenticated route content inside the monochrome shell', async () => {
+    render(<App />);
+
+    expect(await screen.findByTestId('desktop-nav')).toBeInTheDocument();
   });
 });

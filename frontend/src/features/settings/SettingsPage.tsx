@@ -24,19 +24,20 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className={cn(PREMIUM_UI.animation.fadeIn, "flex flex-col space-y-8 pb-20")}>
+    <section className="mx-auto w-full max-w-[1600px]">
+      <div className={cn(PREMIUM_UI.animation.fadeIn, "flex flex-col space-y-8 pb-20")}>
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
         <div>
           <h1 className={cn(PREMIUM_UI.text.heading, "flex items-center")}>
-            <SettingsIcon className="mr-3 text-indigo-400 shrink-0" size={32} />
+            <SettingsIcon className="mr-3 text-white shrink-0" size={32} />
             <span className="leading-tight">{t('settings.title')}</span>
           </h1>
           <p className={PREMIUM_UI.text.label}>{t('settings.subtitle')}</p>
         </div>
 
         {/* PILL TABS */}
-        <nav className="grid grid-cols-5 gap-0.5 bg-white/5 backdrop-blur-md rounded-2xl p-1 border border-white/5 w-full lg:w-fit md:flex md:rounded-full md:overflow-x-auto hide-scrollbar max-w-full">
+        <nav className="grid grid-cols-5 gap-1 surface-card rounded-2xl p-1.5 border-white/10 w-full lg:w-fit md:flex md:rounded-full md:overflow-x-auto hide-scrollbar max-w-full">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -48,7 +49,7 @@ export default function SettingsPage() {
                   "flex items-center justify-center gap-1.5 md:gap-2 px-0.5 md:px-4 lg:px-6 py-2 rounded-xl md:rounded-full text-[10px] md:text-xs font-black transition-all uppercase tracking-wider lg:tracking-widest whitespace-nowrap",
                   isActive 
                     ? "bg-white text-black shadow-lg" 
-                    : "text-zinc-500 hover:text-zinc-300"
+                    : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
                 )}
               >
                 <Icon size={16} className="shrink-0" />
@@ -64,5 +65,6 @@ export default function SettingsPage() {
         <Outlet />
       </div>
     </div>
+    </section>
   );
 }
