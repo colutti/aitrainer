@@ -14,6 +14,7 @@ const PLAN_PRIORITY: Record<string, number> = {
   basic: 1,
   pro: 2,
 };
+const DEFAULT_READ_ONLY_MESSAGE = 'Demo Read-Only';
 
 export type Plan = PlanCardModel;
 
@@ -24,6 +25,7 @@ export interface SubscriptionViewProps {
   isInitialLoading: boolean;
   hasStripeCustomer: boolean;
   isReadOnly?: boolean;
+  readOnlyLabel?: string;
   onSubscribe: (planId: string) => void;
   onManage: (loadingKey?: string) => void;
 }
@@ -35,6 +37,7 @@ export function SubscriptionView({
   isInitialLoading,
   hasStripeCustomer,
   isReadOnly = false,
+  readOnlyLabel,
   onSubscribe,
   onManage,
 }: SubscriptionViewProps) {
@@ -79,7 +82,7 @@ export function SubscriptionView({
     <div className={cn(PREMIUM_UI.animation.fadeIn, "space-y-10")}>
       {isReadOnly && (
         <PremiumCard className="p-4 border-amber-500/20 bg-amber-500/5 text-amber-200 text-[10px] font-black uppercase tracking-[0.2em]">
-          Demo Read-Only
+          {readOnlyLabel ?? DEFAULT_READ_ONLY_MESSAGE}
         </PremiumCard>
       )}
       

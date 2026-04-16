@@ -12,6 +12,14 @@ vi.mock('../../../shared/hooks/useNotification', () => ({
   useNotificationStore: () => ({
     success: vi.fn(),
     error: vi.fn(),
+    info: vi.fn(),
+  }),
+}));
+vi.mock('../../../shared/hooks/usePublicConfig', () => ({
+  usePublicConfig: () => ({
+    enableNewUserSignups: true,
+    isLoading: false,
+    hasLoaded: true,
   }),
 }));
 vi.mock('../api/onboarding-api');

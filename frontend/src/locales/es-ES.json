@@ -43,6 +43,7 @@
     "provide_email_for_reset": "Ingresa tu correo para recibir el enlace de restablecimiento.",
     "reset_email_sent": "Te enviamos un enlace para restablecer tu contraseña.",
     "social_error": "Error en la autenticación social. Inténtelo de nuevo.",
+    "new_signups_disabled": "Los nuevos registros están temporalmente deshabilitados.",
     "google_sign_in": "Iniciar sesión con Google",
     "forgot_password": "Olvidé mi contraseña",
     "forgot_password_requires_email": "Ingresa tu correo electrónico para recuperar tu contraseña.",
@@ -117,6 +118,7 @@
       "manage_title": "Portal de Pagos",
       "manage_subtitle": "Redirigiendo a Stripe...",
       "unavailable": "Plan no disponible en este momento",
+      "new_sales_disabled": "Las nuevas suscripciones están temporalmente deshabilitadas.",
       "error": "Error al cargar planes",
       "portal_error": "Error al abrir el portal de pagos"
     },

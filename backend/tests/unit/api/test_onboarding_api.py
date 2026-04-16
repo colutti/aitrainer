@@ -194,10 +194,13 @@ def test_complete_onboarding_creates_weight_log(valid_invite):
         assert saved_log.user_email == "newuser@test.com"
 
 
-def test_complete_public_onboarding_success():
+def test_complete_public_onboarding_success(monkeypatch):
     """Test public onboarding (already authenticated user)."""
     user_email = "public@test.com"
     app.dependency_overrides[verify_token] = lambda: user_email
+    monkeypatch.setattr(
+        "src.api.endpoints.onboarding.are_new_user_signups_enabled", lambda: True
+    )
     
     with (
         patch("src.api.endpoints.onboarding.get_mongo_database") as mock_db,
@@ -247,5 +250,49 @@ def test_complete_public_onboarding_success():
         mock_db_instance.save_trainer_profile.assert_called_once()
         trainer = mock_db_instance.save_trainer_profile.call_args[0][0]
         assert trainer.trainer_type == "sofia"
+
+    app.dependency_overrides.clear()
+
+
+def test_complete_public_onboarding_blocked_when_signups_disabled(monkeypatch):
+    """Public onboarding must be blocked when new signups are disabled."""
+    user_email = "public@test.com"
+    app.dependency_overrides[verify_token] = lambda: user_email
+    monkeypatch.setattr(
+        "src.api.endpoints.onboarding.are_new_user_signups_enabled", lambda: False
+    )
+
+    with patch("src.api.endpoints.onboarding.get_mongo_database") as mock_db:
+        mock_db_instance = MagicMock()
+        mock_profile = UserProfile(
+            email=user_email,
+            gender="Male",
+            age=25,
+            weight=70.0,
+            height=170,
+            goal_type="maintain",
+            onboarding_completed=False,
+        )
+        mock_db_instance.get_user_profile.return_value = mock_profile
+        mock_db.return_value = mock_db_instance
+
+        request_data = {
+            "gender": "Feminino",
+            "age": 26,
+            "weight": 65.0,
+            "height": 165,
+            "goal_type": "lose",
+            "weekly_rate": 0.5,
+            "trainer_type": "sofia",
+            "subscription_plan": "Pro",
+            "name": "Public User",
+        }
+
+        response = client.post("/onboarding/profile", json=request_data)
+
+        assert response.status_code == 403
+        assert response.json()["detail"] == "new_signups_disabled"
+        mock_db_instance.save_user_profile.assert_not_called()
+        mock_db_instance.save_trainer_profile.assert_not_called()
 
     app.dependency_overrides.clear()

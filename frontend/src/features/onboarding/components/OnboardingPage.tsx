@@ -5,6 +5,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '../../../shared/components/ui/Button';
 import { useAuthStore } from '../../../shared/hooks/useAuth';
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
+import { usePublicConfig } from '../../../shared/hooks/usePublicConfig';
 import { integrationsApi } from '../../settings/api/integrations-api';
 import { onboardingApi, type OnboardingPayload } from '../api/onboarding-api';
 
@@ -21,6 +22,7 @@ export default function OnboardingPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { userInfo, loadUserInfo, isLoading: authLoading } = useAuthStore();
+  const { enableNewUserSignups } = usePublicConfig();
   const notify = useNotificationStore();
   
   const token = searchParams.get('token');
@@ -104,6 +106,13 @@ export default function OnboardingPage() {
         // Handle Plan Redirect
         const planId = formData.subscription_plan?.toLowerCase();
         if (planId && planId !== 'free') {
+          if (!enableNewUserSignups) {
+            notify.info(t('settings.subscription.new_sales_disabled'));
+            await loadUserInfo();
+            setStep(5);
+            return;
+          }
+
           const { stripeApi } = await import('../../../shared/api/stripe-api');
           const { STRIPE_PRICE_IDS } = await import('../../../shared/constants/stripe');
           const priceId = STRIPE_PRICE_IDS[planId as keyof typeof STRIPE_PRICE_IDS];

@@ -2,6 +2,8 @@ import { create } from 'zustand';
 
 import { httpClient } from '../api/http-client';
 
+import { usePublicConfigStore } from './usePublicConfig';
+
 const AUTH_TOKEN_KEY = 'auth_token';
 const DEMO_EMAIL = 'demo@fityq.it';
 const DEMO_DISPLAY_NAME = 'Ethan Parker';
@@ -162,6 +164,17 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true });
 
     try {
+      const publicConfig = usePublicConfigStore.getState();
+      if (!publicConfig.hasLoaded) {
+        await publicConfig.load();
+      }
+      if (!usePublicConfigStore.getState().enableNewUserSignups) {
+        throw createAuthError(
+          'auth/new-signups-disabled',
+          'New user signups are temporarily disabled',
+        );
+      }
+
       const normalizedEmail = email.trim().toLowerCase();
       if (UNSAFE_LOCAL_AUTH_BYPASS_ENABLED) {
         const response = await httpClient<{ token: string }>('/user/e2e-login', {

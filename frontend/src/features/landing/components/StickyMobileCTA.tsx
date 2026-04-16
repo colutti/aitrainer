@@ -1,4 +1,5 @@
 import { Button } from '@shared/components/ui/Button';
+import { usePublicConfig } from '@shared/hooks/usePublicConfig';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -6,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 export const StickyMobileCTA = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { enableNewUserSignups } = usePublicConfig();
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -24,9 +26,10 @@ export const StickyMobileCTA = () => {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-dark-bg border-t border-border flex md:hidden animate-fade-in">
       <Button
-        onClick={() => { void navigate('/login?mode=register'); }}
+        onClick={() => { void navigate(enableNewUserSignups ? '/login?mode=register' : '/login'); }}
         variant="primary"
         fullWidth
+        disabled={!enableNewUserSignups}
         className="h-12 bg-primary bg-none hover:bg-primary-hover shadow-none rounded-md"
       >
         {t('landing.hero.cta')}

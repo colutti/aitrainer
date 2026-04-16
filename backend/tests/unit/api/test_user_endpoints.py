@@ -88,8 +88,39 @@ def test_login_requires_verified_email():
 
         response = client.post("/user/login", json={"token": "valid_firebase_token"})
 
-        assert response.status_code == 403
-        assert response.json()["detail"] == "Please verify your email before logging in"
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Please verify your email before logging in"
+
+
+def test_login_blocks_new_user_when_signups_disabled(monkeypatch):
+    """New profiles must not be created when public signups are disabled."""
+    monkeypatch.setattr(
+        "src.api.endpoints.user.are_new_user_signups_enabled", lambda: False
+    )
+    mock_brain = MagicMock()
+    mock_brain.get_user_profile.return_value = None
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+    with patch("src.api.endpoints.user.verify_id_token") as mock_verify:
+        mock_verify.return_value = {"email": "new-user@example.com", "email_verified": True}
+
+        response = client.post("/user/login", json={"token": "valid_firebase_token"})
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "new_signups_disabled"
+    app.dependency_overrides = {}
+
+
+def test_public_config_exposes_signup_toggle(monkeypatch):
+    """Public config endpoint must expose current signup availability."""
+    monkeypatch.setattr(
+        "src.api.endpoints.user.are_new_user_signups_enabled", lambda: False
+    )
+
+    response = client.get("/user/public-config")
+
+    assert response.status_code == 200
+    assert response.json() == {"enable_new_user_signups": False}
 
 
 # Test: POST /login - Invalid Token
@@ -213,25 +244,26 @@ def test_get_current_user_unauthorized():
 
 def test_e2e_login_can_start_user_unonboarded():
     """Test E2E bootstrap can create a fresh user that still needs onboarding."""
-    mock_brain = MagicMock()
-    mock_brain.get_user_profile.return_value = None
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    with patch("src.api.endpoints.user.is_e2e_test_auth_enabled", return_value=True):
+        mock_brain = MagicMock()
+        mock_brain.get_user_profile.return_value = None
+        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
-    response = client.post(
-        "/user/e2e-login",
-        json={
-            "email": "fresh@example.com",
-            "display_name": "Fresh User",
-            "onboarding_completed": False,
-        },
-    )
+        response = client.post(
+            "/user/e2e-login",
+            json={
+                "email": "fresh@example.com",
+                "display_name": "Fresh User",
+                "onboarding_completed": False,
+            },
+        )
 
-    assert response.status_code == 200
-    mock_brain.save_user_profile.assert_called_once()
-    saved_profile = mock_brain.save_user_profile.call_args.args[0]
-    assert saved_profile.email == "fresh@example.com"
-    assert saved_profile.display_name == "Fresh User"
-    assert saved_profile.onboarding_completed is False
+        assert response.status_code == 200
+        mock_brain.save_user_profile.assert_called_once()
+        saved_profile = mock_brain.save_user_profile.call_args.args[0]
+        assert saved_profile.email == "fresh@example.com"
+        assert saved_profile.display_name == "Fresh User"
+        assert saved_profile.onboarding_completed is False
 
     app.dependency_overrides = {}
 
@@ -253,25 +285,26 @@ def test_e2e_login_recovers_malformed_existing_profile():
         ],
     )
 
-    mock_brain = MagicMock()
-    mock_brain.get_user_profile.side_effect = malformed_error
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    with patch("src.api.endpoints.user.is_e2e_test_auth_enabled", return_value=True):
+        mock_brain = MagicMock()
+        mock_brain.get_user_profile.side_effect = malformed_error
+        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
-    response = client.post(
-        "/user/e2e-login",
-        json={
-            "email": "fresh@example.com",
-            "display_name": "Fresh User",
-            "onboarding_completed": False,
-        },
-    )
+        response = client.post(
+            "/user/e2e-login",
+            json={
+                "email": "fresh@example.com",
+                "display_name": "Fresh User",
+                "onboarding_completed": False,
+            },
+        )
 
-    assert response.status_code == 200
-    mock_brain.save_user_profile.assert_called_once()
-    saved_profile = mock_brain.save_user_profile.call_args.args[0]
-    assert saved_profile.email == "fresh@example.com"
-    assert saved_profile.display_name == "Fresh User"
-    assert saved_profile.onboarding_completed is False
+        assert response.status_code == 200
+        mock_brain.save_user_profile.assert_called_once()
+        saved_profile = mock_brain.save_user_profile.call_args.args[0]
+        assert saved_profile.email == "fresh@example.com"
+        assert saved_profile.display_name == "Fresh User"
+        assert saved_profile.onboarding_completed is False
 
     app.dependency_overrides = {}
 
@@ -279,10 +312,10 @@ def test_e2e_login_recovers_malformed_existing_profile():
 # Test: POST /update_profile - Success Case
 def test_update_profile_success(sample_user_profile):
     """Test successful profile update."""
-    app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_brain = MagicMock()
     mock_brain.get_user_profile.return_value = sample_user_profile
     mock_brain.save_user_profile.return_value = None
+    app.dependency_overrides[verify_token] = lambda: "test@example.com"
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
     update_payload = {

@@ -7,6 +7,7 @@ import { STRIPE_PRICE_IDS } from '../../../shared/constants/stripe';
 import { useAuthStore } from '../../../shared/hooks/useAuth';
 import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { useNotificationStore } from '../../../shared/hooks/useNotification';
+import { usePublicConfig } from '../../../shared/hooks/usePublicConfig';
 
 import { SubscriptionView, type Plan } from './SubscriptionView';
 
@@ -20,6 +21,7 @@ export default function SubscriptionPage() {
   const { t, i18n } = useTranslation();
   const { userInfo, loadUserInfo } = useAuthStore();
   const { isReadOnly: isDemoUser } = useDemoMode();
+  const { enableNewUserSignups } = usePublicConfig();
   const notify = useNotificationStore();
   const [loading, setLoading] = useState<string | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -41,6 +43,10 @@ export default function SubscriptionPage() {
 
   const handleSubscribe = async (planId: string) => {
     if (isDemoUser) return;
+    if (!enableNewUserSignups) {
+      notify.info(t('settings.subscription.new_sales_disabled'));
+      return;
+    }
     const normalizedPlanId = planId.toLowerCase().trim();
     if (normalizedPlanId === 'free') return;
     
@@ -72,6 +78,10 @@ export default function SubscriptionPage() {
 
   const handleManage = async (loadingKey = 'manage') => {
     if (isDemoUser) return;
+    if (!enableNewUserSignups) {
+      notify.info(t('settings.subscription.new_sales_disabled'));
+      return;
+    }
     setLoading(loadingKey);
     try {
       const url = await stripeApi.createPortalSession(window.location.origin + '/dashboard/settings/subscription');
@@ -99,7 +109,12 @@ export default function SubscriptionPage() {
       loading={loading}
       isInitialLoading={isInitialLoading}
       hasStripeCustomer={userInfo?.has_stripe_customer ?? false}
-      isReadOnly={isDemoUser}
+      isReadOnly={isDemoUser || !enableNewUserSignups}
+      readOnlyLabel={
+        isDemoUser
+          ? t('settings.subscription.read_only', 'Somente leitura')
+          : t('settings.subscription.new_sales_disabled')
+      }
       onSubscribe={(id) => { void handleSubscribe(id); }}
       onManage={(key) => { void handleManage(key); }}
     />

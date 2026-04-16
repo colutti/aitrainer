@@ -1,4 +1,5 @@
 import { Button } from '@shared/components/ui/Button';
+import { usePublicConfig } from '@shared/hooks/usePublicConfig';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +17,7 @@ interface TrainerCard {
 export const TrainerShowcase = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { enableNewUserSignups } = usePublicConfig();
   const [selectedId, setSelectedId] = useState<string>('gymbro');
 
   const trainers: TrainerCard[] = [
@@ -122,9 +124,10 @@ export const TrainerShowcase = () => {
               <p className="mt-3 text-sm text-text-secondary">{selectedTrainer.bestFor}</p>
               <p className="mt-4 text-base italic text-text-secondary">"{selectedTrainer.example}"</p>
               <Button
-                onClick={() => { void navigate('/login?mode=register'); }}
+                onClick={() => { void navigate(enableNewUserSignups ? '/login?mode=register' : '/login'); }}
                 variant="primary"
                 size="sm"
+                disabled={!enableNewUserSignups}
                 className="rounded-md mt-6"
               >
                 {t('landing.trainers.cta')}

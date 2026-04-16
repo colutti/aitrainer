@@ -1,4 +1,5 @@
 import { Button } from '@shared/components/ui/Button';
+import { usePublicConfig } from '@shared/hooks/usePublicConfig';
 import { ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -6,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 export const Hero = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { enableNewUserSignups } = usePublicConfig();
 
   return (
     <section className="pt-32 pb-16 md:pt-48 md:pb-24 px-4 sm:px-6 lg:px-8">
@@ -27,9 +29,10 @@ export const Hero = () => {
 
           <div className="flex flex-col sm:flex-row gap-4">
             <Button
-              onClick={() => { void navigate('/login?mode=register'); }}
+              onClick={() => { void navigate(enableNewUserSignups ? '/login?mode=register' : '/login'); }}
               variant="primary"
               size="lg"
+              disabled={!enableNewUserSignups}
               className="bg-primary bg-none hover:bg-primary-hover shadow-none rounded-lg h-14 px-8 text-lg"
             >
               {t('landing.hero.cta')}

@@ -43,6 +43,7 @@
     "provide_email_for_reset": "Informe seu e-mail para receber o link de redefinição.",
     "reset_email_sent": "Enviamos um link para redefinir sua senha no seu e-mail.",
     "social_error": "Falha na autenticação social. Tente novamente.",
+    "new_signups_disabled": "Cadastros temporariamente indisponíveis.",
     "google_sign_in": "Entrar com Google",
     "forgot_password": "Esqueci a senha",
     "forgot_password_requires_email": "Informe seu e-mail para recuperar a senha.",
@@ -117,6 +118,7 @@
       "manage_title": "Portal de Pagamento",
       "manage_subtitle": "Redirecionando para o Stripe...",
       "unavailable": "Plano indisponível no momento",
+      "new_sales_disabled": "Novas assinaturas temporariamente indisponíveis.",
       "error": "Erro ao carregar planos",
       "portal_error": "Erro ao abrir portal de pagamento"
     },

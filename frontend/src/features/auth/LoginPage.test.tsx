@@ -5,6 +5,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { useAuthStore } from '../../shared/hooks/useAuth';
 import { useNotificationStore } from '../../shared/hooks/useNotification';
+import { usePublicConfig } from '../../shared/hooks/usePublicConfig';
 
 import LoginPage from './LoginPage';
 
@@ -15,6 +16,9 @@ vi.mock('../../shared/hooks/useAuth', () => ({
 
 vi.mock('../../shared/hooks/useNotification', () => ({
   useNotificationStore: vi.fn(),
+}));
+vi.mock('../../shared/hooks/usePublicConfig', () => ({
+  usePublicConfig: vi.fn(),
 }));
 
 describe('LoginPage', () => {
@@ -54,6 +58,12 @@ describe('LoginPage', () => {
       }
       return mockAuth;
     });
+
+    vi.mocked(usePublicConfig).mockReturnValue({
+      enableNewUserSignups: true,
+      isLoading: false,
+      hasLoaded: true,
+    });
   });
 
   it('should render login form', () => {
@@ -67,6 +77,23 @@ describe('LoginPage', () => {
     expect(screen.getByPlaceholderText(/••••••••/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Entrar$/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Entrar com Google/i })).toBeInTheDocument();
+  });
+
+  it('should hide register mode when signups are disabled', () => {
+    vi.mocked(usePublicConfig).mockReturnValue({
+      enableNewUserSignups: false,
+      isLoading: false,
+      hasLoaded: true,
+    });
+
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByRole('button', { name: /Registro/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/temporariamente/i)).toBeInTheDocument();
   });
 
   it('should not use white background in auth tab active indicator', () => {
