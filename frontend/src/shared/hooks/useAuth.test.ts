@@ -11,6 +11,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { httpClient } from '../api/http-client';
 
 import { shouldEnableUnsafeLocalAuthBypass, useAuthStore } from './useAuth';
+import { usePublicConfigStore } from './usePublicConfig';
 
 // Mock the http-client module
 vi.mock('../api/http-client');
@@ -121,6 +122,12 @@ describe('useAuth', () => {
       userInfo: null,
       isAdmin: false,
       isLoading: false,
+    });
+    usePublicConfigStore.setState({
+      enableNewUserSignups: true,
+      isLoading: false,
+      hasLoaded: true,
+      load: usePublicConfigStore.getState().load,
     });
   });
 
@@ -272,6 +279,24 @@ describe('useAuth', () => {
   });
 
   describe('register', () => {
+    it('should block registration when public signups are disabled', async () => {
+      usePublicConfigStore.setState({
+        enableNewUserSignups: false,
+        isLoading: false,
+        hasLoaded: true,
+        load: usePublicConfigStore.getState().load,
+      });
+      const { result } = renderHook(() => useAuthStore());
+
+      await expect(
+        act(async () => {
+          await result.current.register('New User', 'new@example.com', 'password123');
+        })
+      ).rejects.toMatchObject({ code: 'auth/new-signups-disabled' });
+
+      expect(createUserWithEmailAndPassword).not.toHaveBeenCalled();
+    });
+
     it('should register with firebase and send verification email without creating app session', async () => {
       const { result } = renderHook(() => useAuthStore());
 

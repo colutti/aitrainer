@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "fityq-488619"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

@@ -11,6 +11,7 @@ import { Button } from '../../shared/components/ui/Button';
 import { Input } from '../../shared/components/ui/Input';
 import { PremiumCard } from '../../shared/components/ui/premium/PremiumCard';
 import { useAuthStore } from '../../shared/hooks/useAuth';
+import { usePublicConfig } from '../../shared/hooks/usePublicConfig';
 
 const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -40,8 +41,9 @@ export default function LoginPage() {
   const register = useAuthStore((state) => state.register);
   const socialLogin = useAuthStore((state) => state.socialLogin);
   const requestPasswordReset = useAuthStore((state) => state.requestPasswordReset);
-  const initialMode = new URLSearchParams(location.search).get('mode') === 'register' ? 'register' : 'login';
-  const [isLogin, setIsLogin] = useState(initialMode === 'login');
+  const { enableNewUserSignups } = usePublicConfig();
+  const requestedRegisterMode = new URLSearchParams(location.search).get('mode') === 'register';
+  const [isLogin, setIsLogin] = useState(!(requestedRegisterMode && enableNewUserSignups));
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<AuthLoadingAction>(null);
@@ -73,6 +75,9 @@ export default function LoginPage() {
     if (authErrorMessage?.toLowerCase().includes('verify your email')) {
       return t('auth.email_not_verified_error');
     }
+    if (authErrorMessage?.toLowerCase().includes('new_signups_disabled')) {
+      return t('auth.new_signups_disabled');
+    }
     return t('auth.login_error');
   };
 
@@ -87,6 +92,9 @@ export default function LoginPage() {
       : undefined;
     if (authErrorCode === 'auth/email-already-in-use') {
       return t('auth.user_exists_error');
+    }
+    if (authErrorCode === 'auth/new-signups-disabled') {
+      return t('auth.new_signups_disabled');
     }
     return t('auth.login_error');
   };
@@ -106,6 +114,12 @@ export default function LoginPage() {
   };
 
   const onSubmitSignup = async (data: RegisterForm) => {
+    if (!enableNewUserSignups) {
+      setError(t('auth.new_signups_disabled'));
+      setNotice(null);
+      return;
+    }
+
     setLoadingAction('register');
     setError(null);
     setNotice(null);
@@ -162,8 +176,12 @@ export default function LoginPage() {
     try {
       await socialLogin('google');
       void navigate(from, { replace: true });
-    } catch {
-      setError(t('auth.social_error'));
+    } catch (err) {
+      if (err instanceof Error && err.message.toLowerCase().includes('new_signups_disabled')) {
+        setError(t('auth.new_signups_disabled'));
+      } else {
+        setError(t('auth.social_error'));
+      }
     } finally {
       setLoadingAction(null);
     }
@@ -197,7 +215,7 @@ export default function LoginPage() {
               data-testid="auth-tab-indicator"
               className="absolute h-[calc(100%-12px)] bg-zinc-800 rounded-xl shadow-[0_0_0_1px_rgba(45,212,191,0.35)] transition-all duration-500 ease-out"
               style={{ 
-                width: 'calc(50% - 6px)', 
+                width: enableNewUserSignups ? 'calc(50% - 6px)' : 'calc(100% - 12px)',
                 left: isLogin ? '6px' : 'calc(50%)',
                 transform: isLogin ? 'none' : 'translateX(0)'
               }}
@@ -210,15 +228,22 @@ export default function LoginPage() {
             >
               Login
             </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => { setIsLogin(false); }}
-              className={`flex-1 h-auto py-3 text-[10px] font-black uppercase tracking-widest relative z-10 transition-colors duration-300 rounded-xl ${!isLogin ? 'text-teal-300 hover:text-teal-200 hover:bg-transparent' : 'text-zinc-500 hover:text-zinc-300 hover:bg-transparent'}`}
-            >
-              Registro
-            </Button>
+            {enableNewUserSignups && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => { setIsLogin(false); }}
+                className={`flex-1 h-auto py-3 text-[10px] font-black uppercase tracking-widest relative z-10 transition-colors duration-300 rounded-xl ${!isLogin ? 'text-teal-300 hover:text-teal-200 hover:bg-transparent' : 'text-zinc-500 hover:text-zinc-300 hover:bg-transparent'}`}
+              >
+                Registro
+              </Button>
+            )}
           </div>
+          {!enableNewUserSignups && (
+            <p className="text-[10px] font-bold uppercase tracking-widest text-amber-300/80 mb-6 text-center">
+              {t('auth.new_signups_disabled')}
+            </p>
+          )}
 
           {error && (
             <motion.div

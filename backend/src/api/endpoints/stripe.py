@@ -5,7 +5,7 @@ Stripe payment and webhook endpoints.
 from datetime import datetime, timezone
 import stripe
 from fastapi import APIRouter, Header, Request, HTTPException
-from src.api.endpoints.user import AITrainerBrainDep
+from src.api.endpoints.user import AITrainerBrainDep, are_new_user_signups_enabled
 from src.core.config import settings
 from src.core.demo_access import WritableCurrentUser
 from src.services.stripe import create_checkout_session, create_customer_portal_session
@@ -22,6 +22,9 @@ async def checkout_session(
     brain: AITrainerBrainDep,
 ):
     """Create a Stripe checkout session for a user."""
+    if not are_new_user_signups_enabled():
+        raise HTTPException(status_code=403, detail="new_signups_disabled")
+
     profile = brain.get_user_profile(user_email)
     if not profile:
         raise HTTPException(status_code=404, detail="User not found")

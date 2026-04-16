@@ -4,6 +4,7 @@ import { PLAN_CATALOG, buildPlanCardModel } from '@shared/constants/plan-catalog
 import { STRIPE_PRICE_IDS } from '@shared/constants/stripe';
 import { useAuthStore } from '@shared/hooks/useAuth';
 import { useNotificationStore } from '@shared/hooks/useNotification';
+import { usePublicConfig } from '@shared/hooks/usePublicConfig';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -12,11 +13,17 @@ export const Pricing = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
+  const { enableNewUserSignups } = usePublicConfig();
   const notify = useNotificationStore();
   const [loading, setLoading] = useState<string | null>(null);
 
   const isPt = i18n.language.startsWith('pt');
   const handleSubscribe = async (planId: string) => {
+    if (!enableNewUserSignups) {
+      notify.info(t('auth.new_signups_disabled'));
+      return;
+    }
+
     if (planId === 'free') {
       void navigate('/login?mode=register&plan=free');
       return;
@@ -77,7 +84,7 @@ export const Pricing = () => {
                 onAction={() => {
                   void handleSubscribe(plan.id);
                 }}
-                disabled={loading !== null}
+                disabled={loading !== null || !enableNewUserSignups}
                 loading={loading === plan.id}
                 actionTestId={`plan-button-${plan.id}`}
               />

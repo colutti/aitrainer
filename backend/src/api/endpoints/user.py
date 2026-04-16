@@ -51,6 +51,16 @@ def verify_id_token(token: str) -> dict:
         raise e
 
 
+def are_new_user_signups_enabled() -> bool:
+    """Return whether public signups and new-user creation are enabled."""
+    return settings.ENABLE_NEW_USER_SIGNUPS
+
+
+def is_e2e_test_auth_enabled() -> bool:
+    """Return whether E2E auth bootstrap endpoint is enabled."""
+    return settings.ENABLE_E2E_TEST_AUTH
+
+
 @router.post("/login")
 @rate_limit_login
 def login(
@@ -96,6 +106,12 @@ def login(
 
             logger.info("User logged in (existing): %s", email)
         else:
+            if not are_new_user_signups_enabled():
+                logger.info(
+                    "Blocked new user creation while signups are disabled: %s", email
+                )
+                raise HTTPException(status_code=403, detail="new_signups_disabled")
+
             # Create a new user with default free plan settings
             db = get_mongo_database()
             user_profile = UserProfile(
@@ -128,6 +144,12 @@ def login(
     except Exception as exc:
         logger.error("Error during login: %s", exc)
         raise HTTPException(status_code=500, detail="Internal server error") from exc
+
+
+@router.get("/public-config")
+def public_config() -> dict:
+    """Return public feature toggles needed by unauthenticated frontend flows."""
+    return {"enable_new_user_signups": are_new_user_signups_enabled()}
 
 
 @router.post("/social-login")
@@ -288,7 +310,7 @@ def e2e_login(data: E2ETestLoginRequest, brain: AITrainerBrainDep) -> dict:
     Creates or refreshes a deterministic E2E user and returns a platform JWT.
     Enabled only in the containerized test environment.
     """
-    if not settings.ENABLE_E2E_TEST_AUTH:
+    if not is_e2e_test_auth_enabled():
         raise HTTPException(status_code=404, detail="Not found")
 
     existing_profile = None

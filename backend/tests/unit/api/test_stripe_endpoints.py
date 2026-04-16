@@ -30,7 +30,7 @@ def sample_user_profile():
         stripe_customer_id="cus_test123"
     )
 
-def test_create_checkout_session_success(mock_user_email, sample_user_profile):
+def test_create_checkout_session_success(mock_user_email, sample_user_profile, monkeypatch):
     """
     Test successful creation of a Stripe checkout session.
     Verifies that the backend correctly handles the JSON body.
@@ -39,6 +39,9 @@ def test_create_checkout_session_success(mock_user_email, sample_user_profile):
     mock_brain = MagicMock()
     mock_brain.get_user_profile.return_value = sample_user_profile
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    monkeypatch.setattr(
+        "src.api.endpoints.stripe.are_new_user_signups_enabled", lambda: True
+    )
 
     # Mock the stripe service function
     with pytest.MonkeyPatch.context() as mp:
@@ -108,4 +111,30 @@ def test_create_portal_session_success(mock_user_email, sample_user_profile):
         data = response.json()
         assert data["url"] == "https://stripe.com/portal/session"
 
+    app.dependency_overrides.clear()
+
+
+def test_create_checkout_session_blocked_when_signups_disabled(mock_user_email, sample_user_profile, monkeypatch):
+    """Checkout creation is blocked while public signups/sales are disabled."""
+    monkeypatch.setattr(
+        "src.api.endpoints.stripe.are_new_user_signups_enabled", lambda: False
+    )
+    app.dependency_overrides[verify_token] = lambda: mock_user_email
+    mock_brain = MagicMock()
+    mock_brain.get_user_profile.return_value = sample_user_profile
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+    payload = {
+        "price_id": "price_123",
+        "success_url": "http://localhost:3000/success",
+        "cancel_url": "http://localhost:3000/cancel"
+    }
+    response = client.post(
+        "/stripe/create-checkout-session",
+        json=payload,
+        headers={"Authorization": "Bearer test_token"}
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "new_signups_disabled"
     app.dependency_overrides.clear()

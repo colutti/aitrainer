@@ -43,6 +43,7 @@
     "provide_email_for_reset": "Enter your email to receive a password reset link.",
     "reset_email_sent": "We sent a password reset link to your email.",
     "social_error": "Social authentication failed. Please try again.",
+    "new_signups_disabled": "New signups are temporarily unavailable.",
     "google_sign_in": "Sign in with Google",
     "forgot_password": "Forgot password",
     "forgot_password_requires_email": "Enter your email to recover your password.",
@@ -117,6 +118,7 @@
       "manage_title": "Billing Portal",
       "manage_subtitle": "Redirecting to Stripe...",
       "unavailable": "Plan unavailable at the moment",
+      "new_sales_disabled": "New subscriptions are temporarily unavailable.",
       "error": "Error loading plans",
       "portal_error": "Error opening billing portal"
     },

@@ -6,6 +6,7 @@ import esES from '../../../locales/es-ES.json';
 import ptBR from '../../../locales/pt-BR.json';
 import { stripeApi } from '../../../shared/api/stripe-api';
 import { useAuthStore } from '../../../shared/hooks/useAuth';
+import { usePublicConfig } from '../../../shared/hooks/usePublicConfig';
 import { render, screen, fireEvent } from '../../../shared/utils/test-utils';
 
 import { Pricing } from './Pricing';
@@ -21,6 +22,9 @@ vi.mock('react-router-dom', async (importOriginal) => {
 });
 
 vi.mock('../../../shared/hooks/useAuth');
+vi.mock('../../../shared/hooks/usePublicConfig', () => ({
+  usePublicConfig: vi.fn(),
+}));
 vi.mock('../../../shared/api/stripe-api', () => ({
   stripeApi: {
     createCheckoutSession: vi.fn(),
@@ -39,6 +43,11 @@ describe('Pricing Component', () => {
     vi.mocked(useAuthStore).mockReturnValue({
       isAuthenticated: false,
     } as any);
+    vi.mocked(usePublicConfig).mockReturnValue({
+      enableNewUserSignups: true,
+      isLoading: false,
+      hasLoaded: true,
+    });
   });
 
   it('should render pricing plans', () => {
@@ -95,6 +104,18 @@ describe('Pricing Component', () => {
     const proBtn = screen.getByTestId('plan-button-pro');
     fireEvent.click(proBtn);
     expect(mockNavigate).toHaveBeenCalledWith('/login?mode=register&plan=pro');
+  });
+
+  it('disables plan actions when signups are off', () => {
+    vi.mocked(usePublicConfig).mockReturnValue({
+      enableNewUserSignups: false,
+      isLoading: false,
+      hasLoaded: true,
+    });
+    render(<Pricing />);
+
+    expect(screen.getByTestId('plan-button-pro')).toBeDisabled();
+    expect(screen.getByTestId('plan-button-free')).toBeDisabled();
   });
 
   it('creates checkout session for authenticated pro users', async () => {

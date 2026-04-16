@@ -14,6 +14,7 @@ from src.api.models.onboarding import (
 from src.api.models.user_profile import UserProfile
 from src.api.models.trainer_profile import TrainerProfile
 from src.api.models.weight_log import WeightLog
+from src.core.config import settings
 from src.core.demo_access import WritableCurrentUser
 from src.core.deps import get_mongo_database
 from src.core.logs import logger
@@ -22,6 +23,11 @@ from src.services.auth import create_token, verify_token
 router = APIRouter()
 
 CurrentUser = Annotated[str, Depends(verify_token)]
+
+
+def are_new_user_signups_enabled() -> bool:
+    """Return whether public signups/new-user onboarding are enabled."""
+    return settings.ENABLE_NEW_USER_SIGNUPS
 
 
 @router.get("/validate", response_model=OnboardingValidateResponse)
@@ -183,6 +189,12 @@ def complete_public_onboarding(
     if not profile:
         logger.error("User profile not found during public onboarding: %s", user_email)
         raise HTTPException(status_code=404, detail="User profile not found")
+    if not are_new_user_signups_enabled() and not profile.onboarding_completed:
+        logger.info(
+            "Blocked public onboarding while signups are disabled for user: %s",
+            user_email,
+        )
+        raise HTTPException(status_code=403, detail="new_signups_disabled")
 
     # Update profile fields
     profile.gender = request.gender

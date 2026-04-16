@@ -5,6 +5,7 @@ import ptBR from '../../../locales/pt-BR.json';
 import { stripeApi } from '../../../shared/api/stripe-api';
 import { useAuthStore } from '../../../shared/hooks/useAuth';
 import { useDemoMode } from '../../../shared/hooks/useDemoMode';
+import { usePublicConfig } from '../../../shared/hooks/usePublicConfig';
 
 import SubscriptionPage from './SubscriptionPage';
 
@@ -14,6 +15,9 @@ vi.mock('../../../shared/hooks/useAuth', () => ({
 }));
 vi.mock('../../../shared/hooks/useDemoMode', () => ({
   useDemoMode: vi.fn(),
+}));
+vi.mock('../../../shared/hooks/usePublicConfig', () => ({
+  usePublicConfig: vi.fn(),
 }));
 
 // Mock the notification store
@@ -55,6 +59,11 @@ describe('SubscriptionPage', () => {
     });
     (useDemoMode as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       isReadOnly: false,
+    });
+    (usePublicConfig as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      enableNewUserSignups: true,
+      isLoading: false,
+      hasLoaded: true,
     });
   });
 
@@ -121,5 +130,21 @@ describe('SubscriptionPage', () => {
         `${window.location.origin}/dashboard/settings/subscription`
       );
     });
+  });
+
+  it('blocks purchase actions when new sales are disabled', async () => {
+    (usePublicConfig as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      enableNewUserSignups: false,
+      isLoading: false,
+      hasLoaded: true,
+    });
+
+    render(<SubscriptionPage />);
+    await waitFor(() => {
+      expect(screen.queryByText('common.loading')).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByText('settings.subscription.new_sales_disabled')).toBeInTheDocument();
+    expect(screen.getByTestId('subscription-plan-btn-basic')).toBeDisabled();
   });
 });
