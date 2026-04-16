@@ -58,7 +58,10 @@ export const ProductShowcase = () => {
             <h3 className="text-lg font-bold text-text-primary mb-1">{t('landing.showcase.chat_title')}</h3>
             <p className="text-sm text-text-secondary mb-5">{t('landing.showcase.chat_subtitle')}</p>
             <div className="space-y-3">
-              <div className="rounded-lg bg-primary text-white text-sm px-4 py-3">
+              <div
+                data-testid="landing-chat-user-bubble"
+                className="rounded-lg border border-white/10 bg-[color:var(--color-app-surface-raised)] text-[color:var(--color-text-primary)] text-sm px-4 py-3"
+              >
                 {t('landing.showcase.chat_example_user')}
               </div>
               <div className="rounded-lg border border-border bg-dark-bg text-sm text-text-secondary px-4 py-3">

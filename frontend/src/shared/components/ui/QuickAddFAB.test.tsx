@@ -17,6 +17,8 @@ describe('QuickAddFAB', () => {
   it('opens actions and navigates to the weight flow', () => {
     render(<QuickAddFAB />);
 
+    expect(screen.getByTestId('quick-add-fab')).toHaveClass('bg-[color:var(--color-app-surface-raised)]');
+
     fireEvent.click(screen.getByTestId('quick-add-fab'));
     fireEvent.click(screen.getByRole('button', { name: /registrar peso/i }));
 

@@ -96,8 +96,8 @@ export function QuickAddFAB() {
         className={cn(
           "w-16 h-16 rounded-xl flex items-center justify-center shadow-lg pointer-events-auto transition-all duration-150 active:scale-90",
           isOpen 
-            ? "bg-zinc-800 text-text-primary rotate-45 border border-zinc-700" 
-            : "bg-primary text-white border border-white/20"
+            ? "bg-[color:var(--color-app-surface)] text-[color:var(--color-text-primary)] rotate-45 border border-white/20"
+            : "bg-[color:var(--color-app-surface-raised)] text-[color:var(--color-text-primary)] border border-white/20"
         )}
       >
         <Plus size={32} />
