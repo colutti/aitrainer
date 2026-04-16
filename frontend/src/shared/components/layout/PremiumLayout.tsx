@@ -10,6 +10,8 @@ import { Button } from '../ui/Button';
 import { LanguageSelector } from '../ui/LanguageSelector';
 import { QuickAddFAB } from '../ui/QuickAddFAB';
 
+import { getLayoutMode } from './layoutModes';
+
 /**
  * PremiumLayout component
  * 
@@ -27,6 +29,7 @@ export function PremiumLayout() {
 
   const isChatPage = location.pathname.includes('/chat');
   const isSubscriptionPage = location.pathname.includes('/settings/subscription');
+  const layoutMode = getLayoutMode(location.pathname);
   // Helper to check if a path is active (including sub-routes)
   const isPathActive = (path: string) => {
     if (path === '/dashboard') return location.pathname === '/dashboard';
@@ -34,14 +37,16 @@ export function PremiumLayout() {
   };
 
   return (
-    <div className="h-[100dvh] bg-[#09090b] text-zinc-50 font-sans selection:bg-white/20 relative overflow-hidden flex flex-col">
-      
-      {/* --- EFEITOS DE FUNDO (AMBIENT LIGHT) --- */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[400px] bg-indigo-500/5 blur-[150px] pointer-events-none rounded-full" />
-      <div className="absolute top-1/3 -left-40 w-[600px] h-[600px] bg-emerald-500/5 blur-[180px] pointer-events-none rounded-full" />
-      
+    <div className="h-[100dvh] bg-[color:var(--color-app-bg)] text-zinc-50 font-sans selection:bg-white/15 relative overflow-hidden flex flex-col">
       {/* --- DESKTOP TOP NAV (DOCK) --- */}
-      <nav data-testid="desktop-nav" id="desktop-nav" className="hidden md:flex fixed top-0 left-0 right-0 h-20 items-center px-8 z-50 bg-[#09090b]/60 backdrop-blur-xl border-b border-white/5">
+      <nav
+        data-testid="desktop-nav"
+        id="desktop-nav"
+        className={cn(
+          'hidden md:flex fixed top-0 left-0 right-0 h-20 items-center z-50 bg-[color:var(--color-app-bg)] border-b border-white/8',
+          layoutMode.navClassName
+        )}
+      >
         <div className="flex-1 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden p-1.5">
             <img src="/logo_icon.png" alt="FityQ Logo" className="w-full h-full object-contain" />
@@ -103,7 +108,7 @@ export function PremiumLayout() {
       </nav>
 
       {/* --- MOBILE HEADER --- */}
-      <header className="md:hidden sticky top-0 z-40 bg-gradient-to-b from-[#09090b] to-transparent backdrop-blur-sm px-4 py-3 pt-7 flex flex-col gap-2">
+      <header className="md:hidden sticky top-0 z-40 bg-[color:var(--color-app-bg)] px-4 py-3 pt-7 flex flex-col gap-2 border-b border-white/8">
         <div className="flex items-center justify-between gap-3">
           <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 p-1 flex items-center justify-center">
              <img src="/logo_icon.png" alt="Logo" className="w-full h-full object-contain opacity-80" />
@@ -122,7 +127,7 @@ export function PremiumLayout() {
         "pb-32 pt-2 md:pt-28 min-h-0 flex-1 overflow-x-hidden",
         isChatPage ? "overflow-hidden md:pb-0" : "overflow-y-auto"
       )}>
-        <div className="max-w-[1600px] mx-auto px-4 md:px-12 h-full min-h-0">
+        <div data-testid="app-shell-main" className={cn("mx-auto w-full h-full min-h-0", layoutMode.contentClassName)}>
           <Outlet />
         </div>
       </main>
