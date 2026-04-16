@@ -194,10 +194,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-4 selection:bg-white/20 overflow-hidden relative">
-      {/* BACKGROUND DECORATION */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-orange-500/10 rounded-full blur-[120px]" />
-
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -208,12 +204,12 @@ export default function LoginPage() {
           <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-[0.3em]">{t('nav.brand_tagline')}</p>
         </div>
 
-        <PremiumCard className="p-10 border-white/10 shadow-2xl backdrop-blur-3xl overflow-visible">
+        <PremiumCard withHover={false} className="p-10 border-white/10 bg-[color:var(--color-app-surface-raised)] shadow-2xl overflow-visible">
           {/* TABS */}
           <div className="flex bg-zinc-900/80 p-1.5 rounded-2xl mb-8 border border-zinc-700/60 relative">
             <div 
               data-testid="auth-tab-indicator"
-              className="absolute h-[calc(100%-12px)] bg-zinc-800 rounded-xl shadow-[0_0_0_1px_rgba(45,212,191,0.35)] transition-all duration-500 ease-out"
+              className="absolute h-[calc(100%-12px)] bg-[color:var(--color-app-surface-raised)] rounded-xl shadow-[0_0_0_1px_rgba(255,255,255,0.2)] transition-all duration-500 ease-out"
               style={{ 
                 width: enableNewUserSignups ? 'calc(50% - 6px)' : 'calc(100% - 12px)',
                 left: isLogin ? '6px' : 'calc(50%)',
@@ -224,7 +220,7 @@ export default function LoginPage() {
               type="button"
               variant="ghost"
               onClick={() => { setIsLogin(true); }}
-              className={`flex-1 h-auto py-3 text-[10px] font-black uppercase tracking-widest relative z-10 transition-colors duration-300 rounded-xl ${isLogin ? 'text-teal-300 hover:text-teal-200 hover:bg-transparent' : 'text-zinc-500 hover:text-zinc-300 hover:bg-transparent'}`}
+              className={`flex-1 h-auto py-3 text-[10px] font-black uppercase tracking-widest relative z-10 transition-colors duration-300 rounded-xl ${isLogin ? 'text-white hover:text-white hover:bg-transparent' : 'text-zinc-500 hover:text-zinc-300 hover:bg-transparent'}`}
             >
               Login
             </Button>
@@ -233,7 +229,7 @@ export default function LoginPage() {
                 type="button"
                 variant="ghost"
                 onClick={() => { setIsLogin(false); }}
-                className={`flex-1 h-auto py-3 text-[10px] font-black uppercase tracking-widest relative z-10 transition-colors duration-300 rounded-xl ${!isLogin ? 'text-teal-300 hover:text-teal-200 hover:bg-transparent' : 'text-zinc-500 hover:text-zinc-300 hover:bg-transparent'}`}
+                className={`flex-1 h-auto py-3 text-[10px] font-black uppercase tracking-widest relative z-10 transition-colors duration-300 rounded-xl ${!isLogin ? 'text-white hover:text-white hover:bg-transparent' : 'text-zinc-500 hover:text-zinc-300 hover:bg-transparent'}`}
               >
                 Registro
               </Button>
@@ -292,7 +288,7 @@ export default function LoginPage() {
                     disabled={isLoading}
                     size="sm"
                     onClick={() => { void handleForgotPassword(); }}
-                    className="h-auto p-0 text-[9px] font-black uppercase text-indigo-400 hover:text-indigo-300 transition-colors hover:bg-transparent"
+                    className="h-auto p-0 text-[9px] font-black uppercase text-zinc-300 hover:text-white transition-colors hover:bg-transparent"
                   >
                     {t('auth.forgot_password')}
                   </Button>
@@ -316,7 +312,7 @@ export default function LoginPage() {
                 size="lg" 
                 isLoading={isEmailLoginLoading}
                 disabled={isLoading && !isEmailLoginLoading}
-                className="h-14 rounded-2xl bg-[#14b8a6] text-black border border-[#2dd4bf]/30 shadow-none hover:bg-[#0d9488] hover:scale-[1.02] active:scale-[0.98] transition-all mt-4"
+                className="h-14 rounded-2xl bg-white text-black border border-white/20 shadow-none hover:bg-zinc-200 hover:scale-[1.02] active:scale-[0.98] transition-all mt-4"
               >
                 <LogIn className="mr-2 w-5 h-5" />
                 Entrar
@@ -393,7 +389,7 @@ export default function LoginPage() {
                 size="lg" 
                 isLoading={isRegisterLoading}
                 disabled={isLoading && !isRegisterLoading}
-                className="h-14 rounded-2xl bg-[#14b8a6] text-black border border-[#2dd4bf]/30 shadow-none hover:bg-[#0d9488] hover:scale-[1.02] active:scale-[0.98] transition-all mt-4"
+                className="h-14 rounded-2xl bg-white text-black border border-white/20 shadow-none hover:bg-zinc-200 hover:scale-[1.02] active:scale-[0.98] transition-all mt-4"
               >
                 Criar Conta
               </Button>

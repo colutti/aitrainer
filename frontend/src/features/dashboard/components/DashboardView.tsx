@@ -109,9 +109,7 @@ export function DashboardView({
       <DashboardWorkspaceSection>
         <section data-testid="dashboard-primary-zone" className="space-y-8">
       {/* --- HUB METABÓLICO PRINCIPAL --- */}
-      <PremiumCard data-testid="widget-metabolism" className="p-8 flex flex-col justify-between relative overflow-hidden group">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-500/10 to-transparent opacity-50 group-hover:opacity-70 transition-opacity" />
-        
+      <PremiumCard withHover={false} data-testid="widget-metabolism" className="p-8 flex flex-col justify-between relative overflow-hidden bg-[color:var(--color-app-surface-raised)] border-white/10">
         <div className="relative z-10 flex justify-between items-start mb-8">
           <div>
             <div className="flex items-center gap-2 text-indigo-400 mb-2">
@@ -191,8 +189,7 @@ export function DashboardView({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         {/* PESO */}
-        <PremiumCard className="p-6 md:p-8 h-auto md:min-h-[18rem] flex flex-col group overflow-hidden relative">
-           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-3xl pointer-events-none group-hover:bg-emerald-500/10 transition-colors" />
+        <PremiumCard withHover={false} className="p-6 md:p-8 h-auto md:min-h-[18rem] flex flex-col overflow-hidden relative bg-[color:var(--color-app-surface-raised)] border-white/10">
            <div className="relative z-10">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-2 text-zinc-400">
@@ -218,8 +215,7 @@ export function DashboardView({
         </PremiumCard>
 
         {/* GORDURA */}
-        <PremiumCard data-testid="widget-fat" className="p-6 md:p-8 h-auto md:min-h-[18rem] flex flex-col group overflow-hidden relative">
-           <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 blur-3xl pointer-events-none group-hover:bg-orange-500/10 transition-colors" />
+        <PremiumCard withHover={false} data-testid="widget-fat" className="p-6 md:p-8 h-auto md:min-h-[18rem] flex flex-col overflow-hidden relative bg-[color:var(--color-app-surface-raised)] border-white/10">
            <div className="relative z-10">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-2 text-zinc-400">
@@ -247,8 +243,7 @@ export function DashboardView({
         </PremiumCard>
 
         {/* MÚSCULO */}
-        <PremiumCard className="p-6 md:p-8 h-auto md:min-h-[18rem] flex flex-col group overflow-hidden relative">
-           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-3xl pointer-events-none group-hover:bg-blue-500/10 transition-colors" />
+        <PremiumCard withHover={false} className="p-6 md:p-8 h-auto md:min-h-[18rem] flex flex-col overflow-hidden relative bg-[color:var(--color-app-surface-raised)] border-white/10">
            <div className="relative z-10">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-2 text-zinc-400">
@@ -282,17 +277,17 @@ export function DashboardView({
       </div>
         </section>
         <aside data-testid="dashboard-tertiary-zone" className="space-y-6">
-          <PremiumCard className="p-6">
+          <PremiumCard withHover={false} className="p-6 bg-[color:var(--color-app-surface-raised)] border-white/10">
             <WidgetRecentPRs prs={recentPRs} />
           </PremiumCard>
-          <PremiumCard className="p-6">
+          <PremiumCard withHover={false} className="p-6 bg-[color:var(--color-app-surface-raised)] border-white/10">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{t('dashboard.streak')}</span>
               <span className="text-xl font-black text-white">{streak?.current_weeks ?? 0}</span>
             </div>
           </PremiumCard>
           {/* FOOTER INFO */}
-          <div className="flex items-center gap-2 p-4 bg-white/[0.02] border border-white/5 rounded-2xl justify-center">
+          <div className="flex items-center gap-2 p-4 bg-[color:var(--color-app-surface-raised)] border border-white/10 rounded-2xl justify-center">
             <AlertCircle size={14} className="text-zinc-600" />
             <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
               {t('body.metabolism.info_desc')}
@@ -305,8 +300,7 @@ export function DashboardView({
       <section data-testid="dashboard-secondary-zone" className="grid grid-cols-1 md:grid-cols-4 gap-6">
         
         {/* CALORIAS CONSUMIDAS */}
-        <PremiumCard className="md:col-span-2 p-8 flex flex-col justify-between group overflow-hidden">
-           <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 blur-3xl pointer-events-none" />
+        <PremiumCard withHover={false} className="md:col-span-2 p-8 flex flex-col justify-between overflow-hidden bg-[color:var(--color-app-surface-raised)] border-white/10">
            <div>
               <div className="flex items-center gap-2 text-orange-400 mb-4">
                 <Flame size={20} fill="currentColor" />
@@ -347,7 +341,7 @@ export function DashboardView({
 
         {/* ATIVIDADE RECENTE E FREQUÊNCIA */}
         <div className="md:col-span-2 flex flex-col gap-6">
-           <PremiumCard className="p-8 flex-1">
+           <PremiumCard withHover={false} className="p-8 flex-1 bg-[color:var(--color-app-surface-raised)] border-white/10">
               <div className="flex items-center gap-2 text-zinc-400 mb-8 pb-4 border-b border-white/5">
                  <Activity size={18} />
                  <span className="text-xs font-black uppercase tracking-widest">{t('dashboard.recent_activity')}</span>
@@ -369,17 +363,17 @@ export function DashboardView({
                  ))}
               </div>
            </PremiumCard>
-           <PremiumCard className="p-6">
+           <PremiumCard withHover={false} className="p-6 bg-[color:var(--color-app-surface-raised)] border-white/10">
               <WidgetWeeklyFrequency days={weeklyFrequency} />
            </PremiumCard>
         </div>
 
         {/* VOLUME, PRs E FORÇA */}
         <div className="md:col-span-2 flex flex-col gap-6">
-           <PremiumCard className="p-8 flex-1">
+           <PremiumCard withHover={false} className="p-8 flex-1 bg-[color:var(--color-app-surface-raised)] border-white/10">
               <WidgetVolumeTrend data={volumeTrend} />
            </PremiumCard>
-           <PremiumCard className="p-8 flex-1">
+           <PremiumCard withHover={false} className="p-8 flex-1 bg-[color:var(--color-app-surface-raised)] border-white/10">
               <WidgetStrengthRadar data={strengthRadar} />
            </PremiumCard>
         </div>

@@ -188,6 +188,22 @@ describe('DashboardPage', () => {
     expect(screen.getByTestId('dashboard-primary-zone')).toContainElement(screen.getByTestId('widget-metabolism'));
   });
 
+  it('renders primary dashboard widgets without hover glass effects', () => {
+    vi.mocked(useDashboardStore).mockReturnValue({
+      ...defaultHookValues,
+      data: defaultData as any,
+    });
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId('widget-metabolism')).not.toHaveClass('surface-card-hover');
+    expect(screen.getByTestId('widget-fat')).not.toHaveClass('surface-card-hover');
+  });
+
   it('should render the daily goal widget before the other dashboard widgets', () => {
     vi.mocked(useDashboardStore).mockReturnValue({
       ...defaultHookValues,
