@@ -39,3 +39,25 @@ def test_from_mongodb_chat_message_history_preserves_translations() -> None:
     assert chat_history[0].translations == {"pt-BR": "Olá"}
     assert chat_history[1].sender == Sender.TRAINER
     assert chat_history[1].translations == {"pt-BR": "Bora."}
+
+
+def test_from_mongodb_chat_message_history_handles_missing_additional_kwargs() -> None:
+    """Legacy imported messages without additional_kwargs should not crash conversion."""
+    history = SimpleNamespace(
+        messages=[
+            HumanMessage(content="Mensagem antiga", additional_kwargs={}),
+            AIMessage(content="Resposta antiga", additional_kwargs={}),
+        ]
+    )
+
+    history.messages[0].additional_kwargs = None
+    history.messages[1].additional_kwargs = None
+
+    chat_history = ChatHistory.from_mongodb_chat_message_history(history)
+
+    assert len(chat_history) == 2
+    assert chat_history[0].sender == Sender.STUDENT
+    assert chat_history[0].translations is None
+    assert chat_history[0].timestamp == "0001-01-01T00:00:00"
+    assert chat_history[1].sender == Sender.TRAINER
+    assert chat_history[1].translations is None
