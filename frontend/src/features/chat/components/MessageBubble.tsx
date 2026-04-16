@@ -67,7 +67,7 @@ export function MessageBubble({ message, resolveText, trainerId, userPhoto, user
 
       {/* BUBBLE */}
       <div className={cn(
-        "flex flex-col max-w-full lg:max-w-[80%] xl:max-w-[70%]",
+        "flex flex-col max-w-full lg:max-w-[88%] xl:max-w-[82%] 2xl:max-w-[88%]",
         isTrainer ? "items-start" : "items-end"
       )} data-testid="chat-message-bubble">
         <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600 mb-1.5 ml-1">

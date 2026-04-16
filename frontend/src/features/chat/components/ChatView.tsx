@@ -191,7 +191,7 @@ export function ChatView({
     >
       <section data-testid="chat-conversation-column" className="flex min-h-0 flex-col border-r border-white/8 2xl:col-span-2">
         <div className="flex-none h-16 md:h-20 border-b border-white/8 px-4 md:px-6 flex items-center justify-between">
-          <div className="flex items-center gap-3 mx-auto w-full max-w-6xl">
+          <div className="flex items-center gap-3 mx-auto w-full max-w-[88rem]">
             <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shrink-0 bg-zinc-800">
               {trainer ? (
                 <img
@@ -220,7 +220,7 @@ export function ChatView({
           onScroll={onScroll}
           className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pt-6"
         >
-          <div className="max-w-6xl mx-auto w-full p-4 md:p-6 pb-32 space-y-8">
+          <div className="max-w-[88rem] mx-auto w-full p-4 md:p-6 pb-32 space-y-8">
             {isLoading && hasMore && messages.length > 0 && (
               <div className="flex justify-center py-4">
                 <div className="w-6 h-6 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
@@ -253,7 +253,7 @@ export function ChatView({
         </div>
 
         <div className="flex-none p-4 md:p-6 w-full">
-          <div className="max-w-6xl mx-auto w-full">
+          <div className="max-w-[88rem] mx-auto w-full">
             {error !== null && !isLimitError && (
               <div className="bg-red-500/10 text-red-400 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full border border-red-500/20 text-center mb-4 animate-in slide-in-from-bottom-2">
                 <AlertCircle size={12} className="inline mr-2 -mt-0.5" />
