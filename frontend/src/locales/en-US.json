@@ -329,6 +329,12 @@
       "helper_tooltip": "Accepted formats: {{formats}}. Up to {{maxImages}} images per message, {{maxSizeMb}}MB per image.",
       "helper_aria": "Image upload help"
     },
+    "context": {
+      "trainer_label": "Trainer",
+      "responding_now": "Responding now",
+      "message_count": "{{count}} messages in this conversation",
+      "default_trainer_id": "default-trainer"
+    },
     "trial_ended": {
       "title": "Free Trial Ended",
       "description": "You've reached the free message limit."

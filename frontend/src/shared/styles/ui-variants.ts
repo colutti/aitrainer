@@ -4,13 +4,13 @@
  */
 
 export const PREMIUM_UI = {
-  // Base background with ambient light effects
-  pageWrapper: "min-h-screen bg-[#09090b] text-zinc-50 font-sans selection:bg-white/20 relative overflow-hidden",
+  // Base background for the monochrome workspace
+  pageWrapper: "min-h-screen bg-[color:var(--color-app-bg)] text-[color:var(--color-text-primary)] font-sans selection:bg-white/15 relative overflow-hidden",
   
-  // Card styles (Glassmorphism)
+  // Card styles (solid surface system)
   card: {
-    base: "glass-card",
-    hover: "glass-card-hover",
+    base: "surface-card",
+    hover: "surface-card-hover",
     padding: "p-6 md:p-8",
   },
 

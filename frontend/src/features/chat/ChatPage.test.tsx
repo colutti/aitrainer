@@ -76,7 +76,17 @@ describe('ChatPage', () => {
         <ChatPage />
       </MemoryRouter>
     );
-    expect(screen.getByText('Treinador AI')).toBeInTheDocument();
+    expect(screen.getAllByText('Treinador AI')).toHaveLength(2);
+  });
+
+  it('passes resolved trainer to the context panel', () => {
+    render(
+      <MemoryRouter>
+        <ChatPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId('chat-context-trainer-name')).toHaveTextContent('Marcus');
   });
 
   it('should handle message submission', () => {
@@ -94,7 +104,7 @@ describe('ChatPage', () => {
     if (!form) throw new Error('Form not found');
     fireEvent.submit(form);
 
-    expect(mockSendMessage).toHaveBeenCalledWith('New Message');
+    expect(mockSendMessage).toHaveBeenCalledWith('New Message', []);
     expect(input).toHaveValue('');
   });
 
@@ -108,8 +118,7 @@ describe('ChatPage', () => {
         <ChatPage />
       </MemoryRouter>
     );
-    const button = screen.getByRole('button');
-    const form = button.closest('form');
+    const form = screen.getByTestId('chat-form');
     if (!form) throw new Error('Form not found');
     
     fireEvent.submit(form);
@@ -151,7 +160,7 @@ describe('ChatPage', () => {
     
     // Simulate Enter (should submit)
     fireEvent.keyDown(input, { key: 'Enter', shiftKey: false, code: 'Enter' });
-    expect(mockSendMessage).toHaveBeenCalledWith('Line1');
+    expect(mockSendMessage).toHaveBeenCalledWith('Line1', []);
     expect(input).toHaveValue('');
   });
 
@@ -185,4 +194,3 @@ describe('ChatPage', () => {
     expect(screen.getByText(/Limite Diário Atingido/i)).toBeInTheDocument();
   });
 });
-

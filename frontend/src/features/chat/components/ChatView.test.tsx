@@ -45,6 +45,24 @@ const mockProps = {
 };
 
 describe('ChatView', () => {
+  it('renders workspace structure with conversation and context panel', () => {
+    render(<ChatView {...mockProps} />);
+    expect(screen.getByTestId('chat-workspace')).toBeInTheDocument();
+    expect(screen.getByTestId('chat-conversation-column')).toBeInTheDocument();
+    expect(screen.getByTestId('chat-context-panel')).toBeInTheDocument();
+  });
+
+  it('keeps chat form inside conversation column', () => {
+    render(<ChatView {...mockProps} />);
+    expect(screen.getByTestId('chat-conversation-column')).toContainElement(screen.getByTestId('chat-form'));
+  });
+
+  it('renders context panel container without breaking empty state', () => {
+    render(<ChatView {...mockProps} messages={[]} />);
+    expect(screen.getByTestId('chat-context-panel')).toBeInTheDocument();
+    expect(screen.getByText('chat.start_conversation')).toBeInTheDocument();
+  });
+
   it('renders messages correctly', () => {
     render(<ChatView {...mockProps} />);
     expect(screen.getByText('Hello')).toBeInTheDocument();

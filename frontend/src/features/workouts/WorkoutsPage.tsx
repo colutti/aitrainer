@@ -95,17 +95,19 @@ export default function WorkoutsPage() {
 
   return (
     <>
-      <WorkoutsView 
-        workouts={workoutList}
-        isLoading={isLoading}
-        currentPage={page}
-        totalPages={totalPages}
-        isReadOnly={isReadOnly}
-        onRegisterWorkout={handleRegisterWorkout}
-        onDeleteWorkout={handleDeleteWorkout}
-        onSelectWorkout={handleSelectWorkout}
-        onPageChange={handlePageChange}
-      />
+      <section className="mx-auto w-full max-w-[1600px]">
+        <WorkoutsView 
+          workouts={workoutList}
+          isLoading={isLoading}
+          currentPage={page}
+          totalPages={totalPages}
+          isReadOnly={isReadOnly}
+          onRegisterWorkout={handleRegisterWorkout}
+          onDeleteWorkout={handleDeleteWorkout}
+          onSelectWorkout={handleSelectWorkout}
+          onPageChange={handlePageChange}
+        />
+      </section>
 
       <WorkoutDrawer 
         workout={shouldAutoOpenDrawer ? null : selectedWorkout}

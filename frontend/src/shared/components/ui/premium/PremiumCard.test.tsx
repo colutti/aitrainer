@@ -9,19 +9,20 @@ describe('PremiumCard', () => {
     expect(screen.getByText('Test Content')).toBeInTheDocument();
   });
 
-  it('applies the glassmorphism utility classes', () => {
+  it('uses solid surface utility classes instead of glassmorphism', () => {
     render(<PremiumCard data-testid="premium-card">Content</PremiumCard>);
     const card = screen.getByTestId('premium-card');
-    
-    // Validamos as novas classes utilitárias semânticas
-    expect(card).toHaveClass('glass-card');
-    expect(card).toHaveClass('glass-card-hover');
+
+    expect(card).toHaveClass('surface-card');
+    expect(card).toHaveClass('surface-card-hover');
+    expect(card).not.toHaveClass('glass-card');
+    expect(card).not.toHaveClass('glass-card-hover');
   });
 
   it('merges custom className correctly', () => {
     render(<PremiumCard className="custom-class" data-testid="premium-card">Content</PremiumCard>);
     const card = screen.getByTestId('premium-card');
-    expect(card).toHaveClass('glass-card');
+    expect(card).toHaveClass('surface-card');
     expect(card).toHaveClass('custom-class');
   });
 });

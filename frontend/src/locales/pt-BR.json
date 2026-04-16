@@ -329,6 +329,12 @@
       "helper_tooltip": "Formatos aceitos: {{formats}}. Até {{maxImages}} imagens por mensagem, {{maxSizeMb}}MB por imagem.",
       "helper_aria": "Ajuda sobre envio de imagens"
     },
+    "context": {
+      "trainer_label": "Treinador",
+      "responding_now": "Respondendo agora",
+      "message_count": "{{count}} mensagens nesta conversa",
+      "default_trainer_id": "treinador-padrao"
+    },
     "trial_ended": {
       "title": "Teste Grátis Encerrado",
       "description": "Você atingiu o limite de mensagens do plano gratuito."

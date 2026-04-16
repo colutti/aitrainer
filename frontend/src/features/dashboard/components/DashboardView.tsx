@@ -24,6 +24,7 @@ import { cn } from '../../../shared/utils/cn';
 
 // Sub-widgets
 import { DashboardMiniChart } from './DashboardMiniChart';
+import { DashboardWorkspaceSection } from './DashboardWorkspaceSection';
 import { WidgetRecentPRs } from './WidgetRecentPRs';
 import { WidgetStrengthRadar } from './WidgetStrengthRadar';
 import { WidgetVolumeTrend } from './WidgetVolumeTrend';
@@ -60,6 +61,7 @@ export function DashboardView({
   strengthRadar,
   volumeTrend,
   weeklyFrequency,
+  streak,
   confidenceColor,
   confidenceLevel,
   calories,
@@ -104,6 +106,8 @@ export function DashboardView({
 
   return (
     <div className="space-y-8 pb-20 pr-1" data-testid="dashboard-bento">
+      <DashboardWorkspaceSection>
+        <section data-testid="dashboard-primary-zone" className="space-y-8">
       {/* --- HUB METABÓLICO PRINCIPAL --- */}
       <PremiumCard data-testid="widget-metabolism" className="p-8 flex flex-col justify-between relative overflow-hidden group">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-500/10 to-transparent opacity-50 group-hover:opacity-70 transition-opacity" />
@@ -276,9 +280,29 @@ export function DashboardView({
            <DashboardMiniChart data={mergedMuscleData} dataKey="value" color="#3b82f6" id="muscle" />
         </PremiumCard>
       </div>
+        </section>
+        <aside data-testid="dashboard-tertiary-zone" className="space-y-6">
+          <PremiumCard className="p-6">
+            <WidgetRecentPRs prs={recentPRs} />
+          </PremiumCard>
+          <PremiumCard className="p-6">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{t('dashboard.streak')}</span>
+              <span className="text-xl font-black text-white">{streak?.current_weeks ?? 0}</span>
+            </div>
+          </PremiumCard>
+          {/* FOOTER INFO */}
+          <div className="flex items-center gap-2 p-4 bg-white/[0.02] border border-white/5 rounded-2xl justify-center">
+            <AlertCircle size={14} className="text-zinc-600" />
+            <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
+              {t('body.metabolism.info_desc')}
+            </p>
+          </div>
+        </aside>
+      </DashboardWorkspaceSection>
 
       {/* --- GRID SECUNDÁRIO --- */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <section data-testid="dashboard-secondary-zone" className="grid grid-cols-1 md:grid-cols-4 gap-6">
         
         {/* CALORIAS CONSUMIDAS */}
         <PremiumCard className="md:col-span-2 p-8 flex flex-col justify-between group overflow-hidden">
@@ -355,23 +379,12 @@ export function DashboardView({
            <PremiumCard className="p-8 flex-1">
               <WidgetVolumeTrend data={volumeTrend} />
            </PremiumCard>
-           <PremiumCard className="p-0 bg-transparent border-0 flex-1">
-              <WidgetRecentPRs prs={recentPRs} />
-           </PremiumCard>
            <PremiumCard className="p-8 flex-1">
               <WidgetStrengthRadar data={strengthRadar} />
            </PremiumCard>
         </div>
 
-      </div>
-
-      {/* FOOTER INFO */}
-      <div className="flex items-center gap-2 p-4 bg-white/[0.02] border border-white/5 rounded-2xl justify-center">
-         <AlertCircle size={14} className="text-zinc-600" />
-         <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
-            {t('body.metabolism.info_desc')}
-         </p>
-      </div>
+      </section>
     </div>
   );
 }

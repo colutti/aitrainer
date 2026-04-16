@@ -12,6 +12,52 @@ vi.mock('../../hooks/useAuth', () => ({
 }));
 
 describe('PremiumLayout', () => {
+  it('applies the workspace width mode on dashboard route', () => {
+    (useAuthStore as any).mockReturnValue({
+      userInfo: { name: 'Atlas User', photo_base64: 'base64str', email: 'atlas@fityq.it' },
+      logout: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <PremiumLayout />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId('app-shell-main')).toHaveClass('max-w-[1920px]');
+  });
+
+  it('applies the conversation width mode on chat route', () => {
+    (useAuthStore as any).mockReturnValue({
+      userInfo: { name: 'Atlas User', photo_base64: 'base64str', email: 'atlas@fityq.it' },
+      logout: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/dashboard/chat']}>
+        <PremiumLayout />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId('app-shell-main')).toHaveClass('max-w-[2160px]');
+    expect(screen.getByTestId('desktop-nav')).not.toHaveClass('backdrop-blur-xl');
+  });
+
+  it('keeps mobile navigation rendered after shell redesign', () => {
+    (useAuthStore as any).mockReturnValue({
+      userInfo: { name: 'Atlas User', photo_base64: 'base64str', email: 'atlas@fityq.it' },
+      logout: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/dashboard/chat']}>
+        <PremiumLayout />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId('mobile-nav')).toBeInTheDocument();
+  });
+
   it('renders correctly with user info and displays top nav and mobile nav', () => {
     (useAuthStore as any).mockReturnValue({
       userInfo: { name: 'Colutti', photo_base64: 'base64str', email: 'colutti@fityq.it' },

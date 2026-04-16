@@ -23,9 +23,11 @@ export default function BodyPage() {
   };
   
   return (
-    <BodyView 
-      activeTab={activeTab} 
-      onTabChange={handleTabChange} 
-    />
+    <section className="mx-auto w-full max-w-[1600px]">
+      <BodyView 
+        activeTab={activeTab} 
+        onTabChange={handleTabChange} 
+      />
+    </section>
   );
 }

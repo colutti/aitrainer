@@ -329,6 +329,12 @@
       "helper_tooltip": "Formatos aceptados: {{formats}}. Hasta {{maxImages}} imágenes por mensaje, {{maxSizeMb}}MB por imagen.",
       "helper_aria": "Ayuda para subir imágenes"
     },
+    "context": {
+      "trainer_label": "Entrenador",
+      "responding_now": "Respondiendo ahora",
+      "message_count": "{{count}} mensajes en esta conversación",
+      "default_trainer_id": "entrenador-predeterminado"
+    },
     "trial_ended": {
       "title": "Prueba Gratuita Finalizada",
       "description": "Has alcanzado el límite de mensajes del plan gratuito."
