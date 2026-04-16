@@ -189,7 +189,7 @@ export function ChatView({
       data-testid="chat-workspace"
       className="grid h-full min-h-0 grid-cols-1 bg-[color:var(--color-app-bg)] xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(220px,0.18fr)_minmax(0,0.9fr)_360px]"
     >
-      <section data-testid="chat-conversation-column" className="flex min-h-0 flex-col border-r border-white/8">
+      <section data-testid="chat-conversation-column" className="flex min-h-0 flex-col border-r border-white/8 2xl:col-span-2">
         <div className="flex-none h-16 md:h-20 border-b border-white/8 px-4 md:px-6 flex items-center justify-between">
           <div className="flex items-center gap-3 mx-auto w-full max-w-6xl">
             <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shrink-0 bg-zinc-800">
