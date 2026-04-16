@@ -155,6 +155,39 @@ describe('DashboardPage', () => {
     expect(screen.getByTestId('frequency-widget')).toBeInTheDocument();
   });
 
+  it('renders dashboard workspace zones for desktop layout', () => {
+    vi.mocked(useDashboardStore).mockReturnValue({
+      ...defaultHookValues,
+      data: defaultData as any,
+    });
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId('dashboard-workspace')).toBeInTheDocument();
+    expect(screen.getByTestId('dashboard-primary-zone')).toBeInTheDocument();
+    expect(screen.getByTestId('dashboard-secondary-zone')).toBeInTheDocument();
+    expect(screen.getByTestId('dashboard-tertiary-zone')).toBeInTheDocument();
+  });
+
+  it('keeps metabolism widget inside the primary zone', () => {
+    vi.mocked(useDashboardStore).mockReturnValue({
+      ...defaultHookValues,
+      data: defaultData as any,
+    });
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId('dashboard-primary-zone')).toContainElement(screen.getByTestId('widget-metabolism'));
+  });
+
   it('should render the daily goal widget before the other dashboard widgets', () => {
     vi.mocked(useDashboardStore).mockReturnValue({
       ...defaultHookValues,
