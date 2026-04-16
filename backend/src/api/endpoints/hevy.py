@@ -1,9 +1,9 @@
-"""
-API endpoints for Hevy integration.
-"""
+"""API endpoints for Hevy integration."""
+
+from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, Optional
+from typing import Annotated, Optional, TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -13,13 +13,15 @@ from src.services.auth import verify_token
 from src.core.deps import get_hevy_service, get_ai_trainer_brain
 from src.core.subscription import can_use_integrations
 from src.services.hevy_service import HevyService
-from src.services.trainer import AITrainerBrain
+
+if TYPE_CHECKING:
+    from src.services.trainer import AITrainerBrain
 
 router = APIRouter()
 
 CurrentUser = Annotated[str, Depends(verify_token)]
 HevyServiceDep = Annotated[HevyService, Depends(get_hevy_service)]
-BrainDep = Annotated[AITrainerBrain, Depends(get_ai_trainer_brain)]
+BrainDep = Annotated["AITrainerBrain", Depends(get_ai_trainer_brain)]
 
 
 def _ensure_integrations_allowed(profile) -> None:

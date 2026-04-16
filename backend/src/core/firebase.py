@@ -1,10 +1,11 @@
-"""
-Firebase Admin initialization module.
-"""
+"""Firebase Admin initialization module."""
 
+import functools
 import json
 import os
-from firebase_admin import credentials, initialize_app  # type: ignore
+
+from firebase_admin import credentials, get_app, initialize_app  # type: ignore
+
 from src.core.config import settings
 from src.core.logs import logger
 
@@ -48,3 +49,13 @@ def init_firebase() -> None:
         logger.info("Firebase Admin initialized successfully.")
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("Failed to initialize Firebase Admin: %s", e)
+
+
+@functools.lru_cache(maxsize=1)
+def ensure_firebase_initialized() -> None:
+    """Initializes Firebase Admin once per process, lazily on demand."""
+    try:
+        get_app()
+        return
+    except ValueError:
+        init_firebase()

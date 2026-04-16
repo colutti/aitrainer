@@ -32,14 +32,10 @@ from src.core.config import settings
 from src.core.deps import get_mongo_database
 from src.core.logs import logger, set_log_level
 from src.core.limiter import limiter, RATE_LIMITING_ENABLED
-from src.core.firebase import init_firebase
 
 # Configure log level based on settings
 set_log_level(settings.LOG_LEVEL)
 logger.info("Log level set to: %s", settings.LOG_LEVEL)
-
-# Initialize external services
-init_firebase()
 
 # Suppress known deprecation warnings from libraries
 warnings.filterwarnings("ignore", message=".*migrating_memory.*")

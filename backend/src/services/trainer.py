@@ -621,6 +621,10 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
 
         return tools
 
+    def get_llm_stream_timeout_seconds(self) -> float:
+        """Returns the maximum streaming time allowed for one LLM response."""
+        return float(settings.LLM_STREAM_TIMEOUT_SECONDS)
+
     async def send_message_ai(
         self,
         user_email: str,
@@ -640,9 +644,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             str: Individual chunks of the AI trainer's response.
         """
         logger.info("Generating workout stream for user: %s", user_email)
-        options = message_options or {}
-        is_telegram = bool(options.get("is_telegram", False))
-        image_payloads = options.get("image_payloads")
+        image_payloads = (message_options or {}).get("image_payloads")
 
         # 1. Retrieve profiles (sequentially to avoid redundant DB calls and plan mismatch)
         profile = await asyncio.wrap_future(
@@ -658,23 +660,21 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         needs_cycle_reset = self.check_message_limits(profile)
 
         # 3. Memory & History
-        chat_history_messages = (
-            await asyncio.to_thread(
-                self._database.get_window_memory(
-                    session_id=user_email,
-                    k=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
-                ).load_memory_variables,
-                {},
-            )
-        ).get("chat_history", [])
-
         # 4. Build input data
         input_data = self.prompt_builder.build_input_data(
             profile=profile,
             trainer_profile_summary=trainer_profile_obj.get_trainer_profile_summary(),
             user_profile_summary=profile.get_profile_summary(),
             formatted_history_msgs=self.format_history_as_messages(
-                chat_history_messages
+                (
+                    await asyncio.to_thread(
+                        self._database.get_window_memory(
+                            session_id=user_email,
+                            k=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
+                        ).load_memory_variables,
+                        {},
+                    )
+                ).get("chat_history", [])
             ),
             user_input=user_input,
             current_date=datetime.now().strftime("%Y-%m-%d"),
@@ -687,26 +687,36 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
 
         raw_response: list[str] = []
         stream_buffer = ""
-        async for chunk in self._llm_client.stream_with_tools(
-            prompt_template=self.prompt_builder.get_prompt_template(
-                input_data, is_telegram
-            ),
-            input_data=input_data,
-            tools=self.get_tools(user_email),
-            user_email=user_email,
-            log_callback=self.get_log_callback(background_tasks),
-        ):
-            if isinstance(chunk, str):
-                raw_response.append(chunk)
-                stream_buffer += chunk
-                visible, stream_buffer = self.split_stream_visible_text(stream_buffer)
-                if visible:
-                    yield visible
+        try:
+            async with asyncio.timeout(self.get_llm_stream_timeout_seconds()):
+                async for chunk in self._llm_client.stream_with_tools(
+                    prompt_template=self.prompt_builder.get_prompt_template(
+                        input_data,
+                        bool((message_options or {}).get("is_telegram", False)),
+                    ),
+                    input_data=input_data,
+                    tools=self.get_tools(user_email),
+                    user_email=user_email,
+                    log_callback=self.get_log_callback(background_tasks),
+                ):
+                    if isinstance(chunk, str):
+                        raw_response.append(chunk)
+                        stream_buffer += chunk
+                        visible, stream_buffer = self.split_stream_visible_text(stream_buffer)
+                        if visible:
+                            yield visible
+        except TimeoutError:
+            logger.error(
+                "LLM stream timeout for user %s after %ss",
+                user_email,
+                self.get_llm_stream_timeout_seconds(),
+            )
+            yield "Error processing request: STREAM_TIMEOUT"
+            return
 
         if stream_buffer:
-            visible_tail = self.strip_internal_wrappers(stream_buffer)
-            if visible_tail:
-                yield visible_tail
+            if cleaned_tail := self.strip_internal_wrappers(stream_buffer):
+                yield cleaned_tail
 
         await self.finalize_ai_response(
             user_email=user_email,

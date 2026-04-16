@@ -1,15 +1,19 @@
-"""
-API endpoints for managing trainer profiles.
-"""
+"""API endpoints for managing trainer profiles."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException
 from src.api.models.trainer_profile import TrainerProfileInput, TrainerProfile
 from src.core.demo_access import WritableCurrentUser
-from src.services.trainer import AITrainerBrain
 from src.core.deps import get_ai_trainer_brain
 from src.services.auth import verify_token
 from src.trainers.registry import TrainerRegistry
 from src.core.subscription import SubscriptionPlan, SUBSCRIPTION_PLANS
+
+if TYPE_CHECKING:
+    from src.services.trainer import AITrainerBrain
 
 router = APIRouter()
 
@@ -18,7 +22,7 @@ router = APIRouter()
 async def update_trainer_profile(
     profile_input: TrainerProfileInput,
     user_email: WritableCurrentUser,
-    brain: AITrainerBrain = Depends(get_ai_trainer_brain),
+    brain: "AITrainerBrain" = Depends(get_ai_trainer_brain),
 ):
     """
     Updates the user's trainer profile preference.
@@ -54,7 +58,7 @@ async def update_trainer_profile(
 @router.get("/trainer_profile", response_model=TrainerProfile)
 async def get_trainer_profile(
     user_email: str = Depends(verify_token),
-    brain: AITrainerBrain = Depends(get_ai_trainer_brain),
+    brain: "AITrainerBrain" = Depends(get_ai_trainer_brain),
 ):
     """
     Retrieves the user's current trainer profile.

@@ -9,7 +9,7 @@ import pytest
 
 from src.api.main import app
 from src.services.auth import verify_token
-from src.core.deps import get_ai_trainer_brain, get_mongo_database
+from src.core.deps import get_mongo_database
 from src.api.models.user_profile import UserProfile
 
 
@@ -63,6 +63,16 @@ def sample_user_profile():
 # Test: POST /login - Success Case
 def test_login_success():
     """Test successful user login with valid Firebase token."""
+    existing_profile = MagicMock()
+    existing_profile.display_name = "Test User"
+    existing_profile.photo_base64 = ""
+    app.dependency_overrides[get_mongo_database] = lambda: MagicMock(
+        get_user_profile=MagicMock(return_value=existing_profile),
+        update_user_profile_fields=MagicMock(),
+        save_user_profile=MagicMock(),
+        is_demo_user=MagicMock(return_value=False),
+    )
+
     with patch("src.api.endpoints.user.verify_id_token") as mock_verify:
         mock_verify.return_value = {"email": "test@example.com", "email_verified": True}
 
@@ -99,7 +109,7 @@ def test_login_blocks_new_user_when_signups_disabled(monkeypatch):
     )
     mock_brain = MagicMock()
     mock_brain.get_user_profile.return_value = None
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_brain
 
     with patch("src.api.endpoints.user.verify_id_token") as mock_verify:
         mock_verify.return_value = {"email": "new-user@example.com", "email_verified": True}
@@ -158,7 +168,7 @@ def test_get_profile_success(sample_user_profile):
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_brain = MagicMock()
     mock_brain.get_user_profile.return_value = sample_user_profile
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_brain
 
     response = client.get(
         "/user/profile",
@@ -180,7 +190,7 @@ def test_get_profile_not_found():
     app.dependency_overrides[verify_token] = lambda: "nonexistent@example.com"
     mock_brain = MagicMock()
     mock_brain.get_user_profile.return_value = None
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_brain
 
     response = client.get(
         "/user/profile",
@@ -200,7 +210,7 @@ def test_get_current_user_success(sample_user_profile):
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_brain = MagicMock()
     mock_brain.get_user_profile.return_value = sample_user_profile
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_brain
 
     response = client.get(
         "/user/me",
@@ -221,7 +231,7 @@ def test_get_current_user_exposes_demo_flag(sample_user_profile):
     mock_brain = MagicMock()
     demo_profile = sample_user_profile.model_copy(update={"is_demo": True})
     mock_brain.get_user_profile.return_value = demo_profile
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_brain
 
     response = client.get(
         "/user/me",
@@ -247,7 +257,7 @@ def test_e2e_login_can_start_user_unonboarded():
     with patch("src.api.endpoints.user.is_e2e_test_auth_enabled", return_value=True):
         mock_brain = MagicMock()
         mock_brain.get_user_profile.return_value = None
-        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+        app.dependency_overrides[get_mongo_database] = lambda: mock_brain
 
         response = client.post(
             "/user/e2e-login",
@@ -288,7 +298,7 @@ def test_e2e_login_recovers_malformed_existing_profile():
     with patch("src.api.endpoints.user.is_e2e_test_auth_enabled", return_value=True):
         mock_brain = MagicMock()
         mock_brain.get_user_profile.side_effect = malformed_error
-        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+        app.dependency_overrides[get_mongo_database] = lambda: mock_brain
 
         response = client.post(
             "/user/e2e-login",
@@ -316,7 +326,7 @@ def test_update_profile_success(sample_user_profile):
     mock_brain.get_user_profile.return_value = sample_user_profile
     mock_brain.save_user_profile.return_value = None
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_brain
 
     update_payload = {
         "gender": "Masculino",
@@ -347,7 +357,7 @@ def test_update_profile_rejects_demo_user(sample_user_profile):
     app.dependency_overrides[verify_token] = lambda: "demo@example.com"
     mock_brain = MagicMock()
     mock_brain.get_user_profile.return_value = sample_user_profile
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_brain
     mock_db = MagicMock()
     mock_db.get_user_profile.return_value = sample_user_profile.model_copy(
         update={"email": "demo@example.com", "is_demo": True}
@@ -383,7 +393,7 @@ def test_update_profile_creates_new():
     mock_brain = MagicMock()
     mock_brain.get_user_profile.return_value = None  # No existing profile
     mock_brain.save_user_profile.return_value = None
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_brain
 
     update_payload = {
         "age": 25,
@@ -448,7 +458,7 @@ def test_get_profile_unauthorized():
 def test_update_profile_invalid_data():
     """Test profile update with invalid data structure."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: MagicMock()
+    app.dependency_overrides[get_mongo_database] = lambda: MagicMock()
 
     # Missing required fields in malformed request
     update_payload = {
@@ -474,7 +484,7 @@ def test_update_profile_without_weight_preserves_existing(sample_user_profile):
     mock_brain = MagicMock()
     mock_brain.get_user_profile.return_value = sample_user_profile
     mock_brain.save_user_profile.return_value = None
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_brain
 
     # Update payload sem o campo weight
     update_payload = {
@@ -507,7 +517,7 @@ def test_update_telegram_notifications_success(sample_user_profile):
     mock_brain = MagicMock()
     mock_brain.get_user_profile.return_value = sample_user_profile
     mock_brain.save_user_profile.return_value = None
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_brain
 
     update_payload = {
         "telegram_notify_on_workout": True,
@@ -536,7 +546,7 @@ def test_update_telegram_notifications_partial(sample_user_profile):
     mock_brain = MagicMock()
     mock_brain.get_user_profile.return_value = sample_user_profile
     mock_brain.save_user_profile.return_value = None
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_brain
 
     # Only update one field
     update_payload = {
@@ -565,7 +575,7 @@ def test_update_telegram_notifications_user_not_found():
     app.dependency_overrides[verify_token] = lambda: "nonexistent@example.com"
     mock_brain = MagicMock()
     mock_brain.get_user_profile.return_value = None  # No profile found
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_brain
 
     update_payload = {
         "telegram_notify_on_workout": True,
@@ -592,7 +602,7 @@ def test_update_telegram_notifications_all_fields(sample_user_profile):
     mock_brain = MagicMock()
     mock_brain.get_user_profile.return_value = sample_user_profile
     mock_brain.save_user_profile.return_value = None
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_brain
 
     update_payload = {
         "telegram_notify_on_workout": False,
@@ -669,7 +679,7 @@ def test_update_identity_uses_partial_update_not_full_write(
     that only touches identity fields (display_name, photo_base64).
     """
     app.dependency_overrides[verify_token] = lambda: mock_user_email
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_ai_trainer_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_ai_trainer_brain
     mock_ai_trainer_brain.get_user_profile.return_value = sample_user_profile
 
     response = client.post(
@@ -694,7 +704,7 @@ def test_update_identity_partial_update_photo_only(
 ):
     """update_identity with only photo_base64 must use partial update."""
     app.dependency_overrides[verify_token] = lambda: mock_user_email
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_ai_trainer_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_ai_trainer_brain
     mock_ai_trainer_brain.get_user_profile.return_value = sample_user_profile
 
     response = client.post(
@@ -715,7 +725,7 @@ def test_update_identity_partial_update_photo_only(
 def test_update_identity_user_not_found(mock_user_email, mock_ai_trainer_brain):
     """update_identity returns 404 when user profile does not exist."""
     app.dependency_overrides[verify_token] = lambda: mock_user_email
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_ai_trainer_brain
+    app.dependency_overrides[get_mongo_database] = lambda: mock_ai_trainer_brain
     mock_ai_trainer_brain.get_user_profile.return_value = None
 
     response = client.post(

@@ -1,17 +1,20 @@
-"""
-This module contains the dependency injection for the application.
-"""
+"""This module contains the dependency injection for the application."""
+
+from __future__ import annotations
 
 import functools
-from qdrant_client import QdrantClient
+from typing import TYPE_CHECKING
 
 from src.core.config import settings
-from src.services.database import MongoDatabase
-from src.services.llm_client import LLMClient
-from src.services.trainer import AITrainerBrain
-from src.services.hevy_service import HevyService
-from src.repositories.telegram_repository import TelegramRepository
-from src.services.telegram_service import TelegramBotService
+
+if TYPE_CHECKING:
+    from qdrant_client import QdrantClient  # pylint: disable=import-outside-toplevel
+    from src.repositories.telegram_repository import TelegramRepository
+    from src.services.database import MongoDatabase
+    from src.services.hevy_service import HevyService
+    from src.services.llm_client import LLMClient  # pylint: disable=import-outside-toplevel
+    from src.services.telegram_service import TelegramBotService
+    from src.services.trainer import AITrainerBrain
 
 
 @functools.lru_cache()
@@ -19,6 +22,8 @@ def get_qdrant_client() -> QdrantClient:
     """
     Returns a Qdrant client for direct memory access with pagination.
     """
+    from qdrant_client import QdrantClient  # pylint: disable=import-outside-toplevel
+
     # pylint: disable=no-member
     if settings.QDRANT_HOST.startswith("http"):
         # If host contains protocol, it's a URL (like Qdrant Cloud)
@@ -41,6 +46,8 @@ def get_llm_client() -> LLMClient:
     Returns the configured LLM client (Gemini or Ollama).
     Uses factory method that reads settings.AI_PROVIDER.
     """
+    from src.services.llm_client import LLMClient  # pylint: disable=import-outside-toplevel
+
     return LLMClient.from_config()
 
 
@@ -49,6 +56,8 @@ def get_mongo_database() -> MongoDatabase:
     """
     Returns a MongoDB database client.
     """
+    from src.services.database import MongoDatabase  # pylint: disable=import-outside-toplevel
+
     return MongoDatabase()
 
 
@@ -57,6 +66,8 @@ def get_ai_trainer_brain() -> AITrainerBrain:
     """
     Returns an AI trainer brain.
     """
+    from src.services.trainer import AITrainerBrain  # pylint: disable=import-outside-toplevel
+
     llm_client = get_llm_client()
     database = get_mongo_database()
     qdrant_client = get_qdrant_client()
@@ -70,6 +81,8 @@ def get_hevy_service() -> HevyService:
     """
     Returns a Hevy service instance.
     """
+    from src.services.hevy_service import HevyService  # pylint: disable=import-outside-toplevel
+
     database = get_mongo_database()
     return HevyService(workout_repository=database.workouts_repo)
 
@@ -78,6 +91,8 @@ def get_telegram_repository() -> TelegramRepository:
     """
     Returns a Telegram repository instance.
     """
+    from src.repositories.telegram_repository import TelegramRepository  # pylint: disable=import-outside-toplevel
+
     database = get_mongo_database()
     return TelegramRepository(database.database)
 
@@ -86,6 +101,8 @@ def get_telegram_service() -> TelegramBotService:
     """
     Returns a Telegram bot service instance.
     """
+    from src.services.telegram_service import TelegramBotService  # pylint: disable=import-outside-toplevel
+
     if not settings.TELEGRAM_BOT_TOKEN:
         raise ValueError("TELEGRAM_BOT_TOKEN not configured")
 
