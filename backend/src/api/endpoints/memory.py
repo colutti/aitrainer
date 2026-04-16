@@ -1,7 +1,9 @@
 """Endpoints for managing user memories and insights."""
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -10,13 +12,15 @@ from src.services.auth import verify_token
 from src.core.deps import get_ai_trainer_brain
 from src.core.logs import logger
 from src.api.models.memory_item import MemoryItem, MemoryListResponse
-from src.services.trainer import AITrainerBrain
 from src.utils.pagination import calculate_total_pages
+
+if TYPE_CHECKING:
+    from src.services.trainer import AITrainerBrain
 
 router = APIRouter()
 
 CurrentUser = Annotated[str, Depends(verify_token)]
-AITrainerBrainDep = Annotated[AITrainerBrain, Depends(get_ai_trainer_brain)]
+AITrainerBrainDep = Annotated["AITrainerBrain", Depends(get_ai_trainer_brain)]
 
 
 @router.post("", response_model=MemoryItem)

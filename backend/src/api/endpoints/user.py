@@ -4,7 +4,6 @@ This module contains the API endpoints for user management.
 
 import time
 from typing import Annotated
-import firebase_admin.auth  # type: ignore
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -14,17 +13,18 @@ from pydantic_core import ValidationError
 from src.api.models.auth import FirebaseLoginRequest
 from src.api.models.user_profile import UserProfile, UserProfileInput
 from src.core.config import settings
-from src.core.deps import get_ai_trainer_brain, get_mongo_database
+from src.core.deps import get_mongo_database
 from src.core.demo_access import WritableCurrentUser
+from src.core.firebase import ensure_firebase_initialized
 from src.core.limiter import limiter, RATE_LIMITING_ENABLED
 from src.core.logs import logger
 from src.services.auth import user_logout, oauth2_scheme, verify_token, create_token
-from src.services.trainer import AITrainerBrain
+from src.services.database import MongoDatabase
 
 router = APIRouter()
 
 CurrentUser = Annotated[str, Depends(verify_token)]
-AITrainerBrainDep = Annotated[AITrainerBrain, Depends(get_ai_trainer_brain)]
+DatabaseDep = Annotated[MongoDatabase, Depends(get_mongo_database)]
 
 
 # Conditional rate limit decorator
@@ -41,6 +41,10 @@ def verify_id_token(token: str) -> dict:
     Separated for easier testing.
     Includes a retry mechanism for 'Token used too early' (clock skew).
     """
+    import firebase_admin.auth  # type: ignore # pylint: disable=import-outside-toplevel
+
+    ensure_firebase_initialized()
+
     try:
         return firebase_admin.auth.verify_id_token(token)
     except ValueError as e:
@@ -66,7 +70,7 @@ def is_e2e_test_auth_enabled() -> bool:
 def login(
     request: Request,  # pylint: disable=unused-argument
     data: FirebaseLoginRequest,
-    brain: AITrainerBrainDep,
+    db: DatabaseDep,
 ) -> dict:
     """
     Authenticates a user with a Firebase ID token.
@@ -91,7 +95,7 @@ def login(
         photo_base64 = decoded_token.get("picture", "")
 
         # Check if user already exists
-        existing_profile = brain.get_user_profile(email)
+        existing_profile = db.get_user_profile(email)
 
         if existing_profile:
             # Update missing identity fields
@@ -102,7 +106,7 @@ def login(
                 updates["photo_base64"] = photo_base64
 
             if updates:
-                brain.update_user_profile_fields(email, updates)
+                db.update_user_profile_fields(email, updates)
 
             logger.info("User logged in (existing): %s", email)
         else:
@@ -113,7 +117,6 @@ def login(
                 raise HTTPException(status_code=403, detail="new_signups_disabled")
 
             # Create a new user with default free plan settings
-            db = get_mongo_database()
             user_profile = UserProfile(
                 email=email,
                 role="user",
@@ -138,10 +141,10 @@ def login(
 
     except HTTPException:
         raise
-    except (firebase_admin.auth.InvalidIdTokenError, ValueError) as exc:
-        logger.warning("Invalid Firebase authentication provided: %s", exc)
-        raise HTTPException(status_code=401, detail="Invalid token") from exc
-    except Exception as exc:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        if exc.__class__.__name__ == "InvalidIdTokenError" or isinstance(exc, ValueError):
+            logger.warning("Invalid Firebase authentication provided: %s", exc)
+            raise HTTPException(status_code=401, detail="Invalid token") from exc
         logger.error("Error during login: %s", exc)
         raise HTTPException(status_code=500, detail="Internal server error") from exc
 
@@ -155,18 +158,18 @@ def public_config() -> dict:
 @router.post("/social-login")
 @rate_limit_login
 def social_login(
-    request: Request, data: FirebaseLoginRequest, brain: AITrainerBrainDep
+    request: Request, data: FirebaseLoginRequest, db: DatabaseDep
 ) -> dict:
     """Legacy alias for /login using tokens."""
-    return login(request, data, brain)
+    return login(request, data, db)
 
 
 @router.get("/profile")
-def get_profile(user_email: CurrentUser, brain: AITrainerBrainDep) -> UserProfile:
+def get_profile(user_email: CurrentUser, db: DatabaseDep) -> UserProfile:
     """
     Retrieve the profile information for the authenticated user.
     """
-    user_profile = brain.get_user_profile(user_email)
+    user_profile = db.get_user_profile(user_email)
     if not user_profile:
         logger.warning(
             "Attempted to retrieve non-existent user profile for email: %s", user_email
@@ -176,11 +179,11 @@ def get_profile(user_email: CurrentUser, brain: AITrainerBrainDep) -> UserProfil
 
 
 @router.get("/me")
-def get_current_user(user_email: CurrentUser, brain: AITrainerBrainDep) -> dict:
+def get_current_user(user_email: CurrentUser, db: DatabaseDep) -> dict:
     """
     Returns basic information about the currently authenticated user.
     """
-    user_profile = brain.get_user_profile(user_email)
+    user_profile = db.get_user_profile(user_email)
     if not user_profile:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -207,14 +210,14 @@ def get_current_user(user_email: CurrentUser, brain: AITrainerBrainDep) -> dict:
 def update_profile(
     profile_data: UserProfileInput,
     user_email: WritableCurrentUser,
-    brain: AITrainerBrainDep,
+    db: DatabaseDep,
 ) -> JSONResponse:
     """
     Updates the user profile with the provided information.
     """
     try:
         # Fetch existing profile first to preserve system fields (Hevy, etc.)
-        existing_profile = brain.get_user_profile(user_email)
+        existing_profile = db.get_user_profile(user_email)
 
         if existing_profile:
             # Update existing profile with new data
@@ -230,9 +233,9 @@ def update_profile(
                 user_email,
                 updated_profile.onboarding_completed,
             )
-            brain.save_user_profile(updated_profile)
+            db.save_user_profile(updated_profile)
             if goal_changed:
-                brain.update_user_profile_fields(
+                db.update_user_profile_fields(
                     user_email,
                     {"tdee_last_check_in": None, "tdee_last_target": None},
                 )
@@ -244,7 +247,7 @@ def update_profile(
             profile = UserProfile(
                 **profile_data.model_dump(exclude_unset=True), email=user_email
             )
-            brain.save_user_profile(profile)
+            db.save_user_profile(profile)
 
         logger.info("User profile updated for email: %s", user_email)
         return JSONResponse(content={"message": "Profile updated successfully"})
@@ -276,7 +279,7 @@ class E2ETestLoginRequest(BaseModel):
 def update_identity(
     data: UpdateIdentityRequest,
     user_email: WritableCurrentUser,
-    brain: AITrainerBrainDep,
+    db: DatabaseDep,
 ) -> JSONResponse:
     """
     Updates the user's display name and/or profile photo.
@@ -286,7 +289,7 @@ def update_identity(
     read-modify-write which could overwrite concurrent changes to goal_type,
     weekly_rate, etc. when both endpoints were called in parallel.
     """
-    existing_profile = brain.get_user_profile(user_email)
+    existing_profile = db.get_user_profile(user_email)
 
     if not existing_profile:
         logger.warning(
@@ -298,14 +301,14 @@ def update_identity(
     # Only touch identity fields (display_name, photo_base64) — never profile fields.
     update_data = data.model_dump(exclude_unset=True)
     if update_data:
-        brain.update_user_profile_fields(user_email, update_data)
+        db.update_user_profile_fields(user_email, update_data)
 
     logger.info("User identity updated for email: %s", user_email)
     return JSONResponse(content={"message": "Identity updated successfully"})
 
 
 @router.post("/e2e-login")
-def e2e_login(data: E2ETestLoginRequest, brain: AITrainerBrainDep) -> dict:
+def e2e_login(data: E2ETestLoginRequest, db: DatabaseDep) -> dict:
     """
     Creates or refreshes a deterministic E2E user and returns a platform JWT.
     Enabled only in the containerized test environment.
@@ -315,7 +318,7 @@ def e2e_login(data: E2ETestLoginRequest, brain: AITrainerBrainDep) -> dict:
 
     existing_profile = None
     try:
-        existing_profile = brain.get_user_profile(data.email)
+        existing_profile = db.get_user_profile(data.email)
     except ValidationError as exc:
         logger.warning(
             "Recovered malformed E2E profile for %s: %s", data.email, exc
@@ -326,7 +329,7 @@ def e2e_login(data: E2ETestLoginRequest, brain: AITrainerBrainDep) -> dict:
         existing_profile.subscription_plan = "Free"
         existing_profile.onboarding_completed = data.onboarding_completed
         existing_profile.is_demo = data.is_demo
-        brain.save_user_profile(existing_profile)
+        db.save_user_profile(existing_profile)
     else:
         profile = UserProfile(
             email=data.email,
@@ -341,7 +344,7 @@ def e2e_login(data: E2ETestLoginRequest, brain: AITrainerBrainDep) -> dict:
             onboarding_completed=data.onboarding_completed,
             is_demo=data.is_demo,
         )
-        brain.save_user_profile(profile)
+        db.save_user_profile(profile)
 
     token = create_token(data.email)
     return {"token": token, "email": data.email}
@@ -359,12 +362,12 @@ class TelegramNotificationSettings(BaseModel):
 def update_telegram_notifications(
     settings_data: TelegramNotificationSettings,
     user_email: WritableCurrentUser,
-    brain: AITrainerBrainDep,
+    db: DatabaseDep,
 ) -> JSONResponse:
     """
     Updates the user's Telegram notification preferences.
     """
-    existing_profile = brain.get_user_profile(user_email)
+    existing_profile = db.get_user_profile(user_email)
 
     if not existing_profile:
         logger.warning(
@@ -375,7 +378,7 @@ def update_telegram_notifications(
     # Update only the fields that were provided (not None)
     update_data = settings_data.model_dump(exclude_unset=True)
     updated_profile = existing_profile.model_copy(update=update_data)
-    brain.save_user_profile(updated_profile)
+    db.save_user_profile(updated_profile)
 
     logger.info("Telegram notification settings updated for user: %s", user_email)
     return JSONResponse(

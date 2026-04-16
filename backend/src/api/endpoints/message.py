@@ -1,8 +1,8 @@
-"""
-This module contains the API endpoints for messaging.
-"""
+"""This module contains the API endpoints for messaging."""
 
-from typing import Annotated
+from __future__ import annotations
+
+from typing import Annotated, TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from fastapi.responses import StreamingResponse
@@ -12,13 +12,15 @@ from src.services.auth import verify_token
 from src.core.deps import get_ai_trainer_brain
 from src.api.models.message import MessageRequest
 from src.core.subscription import can_use_image_input
-from src.services.trainer import AITrainerBrain
 from src.core.logs import logger
+
+if TYPE_CHECKING:
+    from src.services.trainer import AITrainerBrain
 
 router = APIRouter()
 
 CurrentUser = Annotated[str, Depends(verify_token)]
-AITrainerBrainDep = Annotated[AITrainerBrain, Depends(get_ai_trainer_brain)]
+AITrainerBrainDep = Annotated["AITrainerBrain", Depends(get_ai_trainer_brain)]
 
 
 @router.get("/history")

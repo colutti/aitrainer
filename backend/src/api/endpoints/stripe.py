@@ -1,18 +1,26 @@
-"""
-Stripe payment and webhook endpoints.
-"""
+"""Stripe payment and webhook endpoints."""
+
+from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import Annotated, TYPE_CHECKING
+
 import stripe
-from fastapi import APIRouter, Header, Request, HTTPException
-from src.api.endpoints.user import AITrainerBrainDep, are_new_user_signups_enabled
+from fastapi import APIRouter, Header, Request, HTTPException, Depends
+
+from src.api.endpoints.user import are_new_user_signups_enabled
 from src.core.config import settings
+from src.core.deps import get_ai_trainer_brain
 from src.core.demo_access import WritableCurrentUser
 from src.services.stripe import create_checkout_session, create_customer_portal_session
 from src.api.models.stripe import CheckoutSessionRequest, PortalSessionRequest
 from src.core.logs import logger
 
+if TYPE_CHECKING:
+    from src.services.trainer import AITrainerBrain
+
 router = APIRouter()
+AITrainerBrainDep = Annotated["AITrainerBrain", Depends(get_ai_trainer_brain)]
 
 
 @router.post("/create-checkout-session")
