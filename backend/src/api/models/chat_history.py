@@ -79,6 +79,7 @@ class ChatHistory(BaseModel):
         """
         chat_history = []
         for msg in history.messages:
+            additional_kwargs = msg.additional_kwargs or {}
             if msg.type == "human":
                 # Retroactive fix: Some system messages were saved as HumanMessage
                 if msg.content.startswith("✅ Tool"):
@@ -93,13 +94,13 @@ class ChatHistory(BaseModel):
             chat_history.append(
                 ChatHistory(
                     text=msg.content,
-                    translations=msg.additional_kwargs.get("translations"),
-                    images=msg.additional_kwargs.get("images"),
+                    translations=additional_kwargs.get("translations"),
+                    images=additional_kwargs.get("images"),
                     sender=sender,
-                    timestamp=msg.additional_kwargs.get(
+                    timestamp=additional_kwargs.get(
                         "timestamp", datetime(MINYEAR, 1, 1).isoformat()
                     ),
-                    trainer_type=msg.additional_kwargs.get("trainer_type"),
+                    trainer_type=additional_kwargs.get("trainer_type"),
                 )
             )
         # order the results by timestamp
