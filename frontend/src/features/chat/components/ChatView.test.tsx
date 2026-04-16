@@ -57,6 +57,12 @@ describe('ChatView', () => {
     expect(screen.getByTestId('chat-conversation-column')).toContainElement(screen.getByTestId('chat-form'));
   });
 
+  it('renders context panel container without breaking empty state', () => {
+    render(<ChatView {...mockProps} messages={[]} />);
+    expect(screen.getByTestId('chat-context-panel')).toBeInTheDocument();
+    expect(screen.getByText('chat.start_conversation')).toBeInTheDocument();
+  });
+
   it('renders messages correctly', () => {
     render(<ChatView {...mockProps} />);
     expect(screen.getByText('Hello')).toBeInTheDocument();

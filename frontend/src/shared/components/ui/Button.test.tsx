@@ -34,7 +34,7 @@ describe('Button', () => {
     expect(screen.getByRole('button')).toHaveClass('h-9');
 
     rerender(<Button variant="secondary" size="lg">Secondary</Button>);
-    expect(screen.getByRole('button')).toHaveClass('bg-dark-card');
+    expect(screen.getByRole('button')).toHaveClass('bg-[color:var(--color-app-surface-raised)]');
     expect(screen.getByRole('button')).toHaveClass('h-12');
   });
 
