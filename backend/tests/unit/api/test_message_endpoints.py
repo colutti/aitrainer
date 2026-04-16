@@ -129,6 +129,23 @@ def test_get_history_only_system_messages():
     app.dependency_overrides = {}
 
 
+def test_get_history_route_does_not_require_brain_query_param():
+    """Regression: brain must be injected via Depends, never required in query."""
+    route = next(
+        (
+            r
+            for r in app.routes
+            if getattr(r, "path", None) == "/message/history"
+            and "GET" in getattr(r, "methods", set())
+        ),
+        None,
+    )
+
+    assert route is not None
+    query_param_names = [param.name for param in route.dependant.query_params]
+    assert "brain" not in query_param_names
+
+
 # Test: POST /message/message - Success Case
 def test_message_ai_success():
     """Test sending a message to AI trainer with streaming response."""
