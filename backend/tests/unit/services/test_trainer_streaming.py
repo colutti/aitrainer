@@ -2,6 +2,7 @@
 Tests for AI Trainer streaming and error handling in src/services/trainer.py
 """
 
+import asyncio
 import pytest
 from unittest.mock import MagicMock, patch, AsyncMock
 from src.services.trainer import AITrainerBrain
@@ -119,6 +120,7 @@ async def test_send_message_ai_passes_image_payload_to_llm(mock_deps):
     trainer.get_or_create_user_profile = MagicMock(return_value=profile)
     trainer.get_or_create_trainer_profile = MagicMock(return_value=trainer_profile)
     trainer.check_message_limits = MagicMock(return_value=False)
+    trainer.get_llm_stream_timeout_seconds = MagicMock(return_value=0.01)
     trainer.finalize_ai_response = AsyncMock()
 
     mock_memory_obj = MagicMock()
@@ -167,6 +169,7 @@ async def test_send_message_ai_strips_internal_msg_tags_from_stream_and_history(
     trainer.get_or_create_user_profile = MagicMock(return_value=profile)
     trainer.get_or_create_trainer_profile = MagicMock(return_value=trainer_profile)
     trainer.check_message_limits = MagicMock(return_value=False)
+    trainer.get_llm_stream_timeout_seconds = MagicMock(return_value=0.01)
     trainer.finalize_ai_response = AsyncMock()
 
     mock_memory_obj = MagicMock()
@@ -203,6 +206,50 @@ async def test_send_message_ai_strips_internal_msg_tags_from_stream_and_history(
         trainer.finalize_ai_response.await_args.kwargs["final_response"]
         == "Foco no treino hoje."
     )
+
+
+@pytest.mark.asyncio
+async def test_send_message_ai_yields_timeout_error_and_stops(mock_deps):
+    """When LLM stream hangs, generator must emit timeout error and finish."""
+    db, llm, _ = mock_deps
+    trainer = AITrainerBrain(db, llm)
+
+    profile = MagicMock(subscription_plan="Pro", get_profile_summary=lambda: "User")
+    trainer_profile = MagicMock(
+        trainer_type="atlas", get_trainer_profile_summary=lambda: "Trainer"
+    )
+    trainer.get_or_create_user_profile = MagicMock(return_value=profile)
+    trainer.get_or_create_trainer_profile = MagicMock(return_value=trainer_profile)
+    trainer.check_message_limits = MagicMock(return_value=False)
+    trainer.get_llm_stream_timeout_seconds = MagicMock(return_value=0.01)
+    trainer.finalize_ai_response = AsyncMock()
+
+    mock_memory_obj = MagicMock()
+    mock_memory_obj.load_memory_variables.return_value = {"chat_history": []}
+    db.get_window_memory.return_value = mock_memory_obj
+    db.database = MagicMock()
+
+    trainer.prompt_builder.build_input_data = MagicMock(return_value={"user_message": "Oi"})
+    prompt_template = MagicMock()
+    trainer.prompt_builder.get_prompt_template = MagicMock(return_value=prompt_template)
+
+    async def hanging_stream(**_kwargs):
+        yield "Primeiro chunk"
+        await asyncio.sleep(1)
+
+    llm.stream_with_tools.side_effect = hanging_stream
+
+    chunks = []
+    with patch("src.services.trainer.EventRepository") as mock_repo_cls:
+        mock_repo_cls.return_value.get_active_events.return_value = []
+        async for chunk in trainer.send_message_ai(
+            user_email="pro@example.com",
+            user_input="Oi",
+        ):
+            chunks.append(chunk)
+
+    assert chunks == ["Primeiro chunk", "Error processing request: STREAM_TIMEOUT"]
+    trainer.finalize_ai_response.assert_not_awaited()
 
 
 def test_strip_internal_wrappers_preserves_generic_tags(mock_deps):
