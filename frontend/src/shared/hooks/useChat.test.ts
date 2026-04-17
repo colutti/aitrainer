@@ -106,6 +106,18 @@ describe('useChatStore', () => {
     consoleSpy.mockRestore();
   });
 
+  it('should handle stream timeout abort error', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockFetch.mockRejectedValue(new DOMException('The operation was aborted.', 'AbortError'));
+
+    await useChatStore.getState().sendMessage('Hello');
+
+    const state = useChatStore.getState();
+    expect(state.isStreaming).toBe(false);
+    expect(state.error).toBe('A resposta demorou demais. Tente novamente.');
+    consoleSpy.mockRestore();
+  });
+
   it('should handle limit exceeded error', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     

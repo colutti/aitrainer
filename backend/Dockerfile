@@ -27,8 +27,22 @@ FROM builder AS verify-builder
 COPY requirements-dev.txt .
 RUN pip install --no-cache-dir -r requirements-dev.txt
 
+# Verify runtime - reuses the builder venv with dev tooling installed
+FROM docker.io/library/python:3.12-slim AS verify
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    PATH="/opt/venv/bin:$PATH"
+
+COPY --from=verify-builder /opt/venv /opt/venv
+
+CMD ["sh", "-lc", "/opt/venv/bin/ruff check src tests && /opt/venv/bin/pylint src && /opt/venv/bin/pytest tests/unit tests/api tests/services tests/test_services"]
+
 # Runtime stage - imagem mínima
-FROM docker.io/library/python:3.12-slim
+FROM docker.io/library/python:3.12-slim AS production
 
 WORKDIR /app
 
@@ -44,6 +58,7 @@ COPY --from=builder /opt/venv /opt/venv
 # Copy source code
 COPY src/ ./src/
 COPY scripts/ ./scripts/
+
 # Create a non-privileged user and group
 RUN groupadd -r app && useradd -r -g app -s /sbin/nologin app
 
@@ -59,17 +74,3 @@ USER app
 EXPOSE 8000
 
 CMD ["sh", "-c", "gunicorn src.api.main:app --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000}"]
-
-# Verify runtime - reuses the builder venv with dev tooling installed
-FROM docker.io/library/python:3.12-slim AS verify
-
-WORKDIR /app
-
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app \
-    PATH="/opt/venv/bin:$PATH"
-
-COPY --from=verify-builder /opt/venv /opt/venv
-
-CMD ["sh", "-lc", "/opt/venv/bin/ruff check src tests && /opt/venv/bin/pylint src && /opt/venv/bin/pytest tests/unit tests/api tests/services tests/test_services"]

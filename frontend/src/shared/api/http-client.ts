@@ -3,8 +3,14 @@
  * Automatically handles authentication, error responses, and JSON parsing
  */
 
-export const API_BASE_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) ?? '/api';
+import { getRuntimeConfigValue } from '../config/runtime-config';
+
+export const getApiBaseUrl = (): string =>
+  getRuntimeConfigValue('VITE_API_URL') ??
+  (import.meta.env.VITE_API_URL as string | undefined) ??
+  '/api';
+
+export const API_BASE_URL = getApiBaseUrl();
 const AUTH_TOKEN_KEY = 'auth_token';
 
 interface RequestConfig extends RequestInit {
@@ -48,7 +54,7 @@ export async function httpClient<T = unknown>(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  let url = `${API_BASE_URL}${endpoint}`;
+  let url = `${getApiBaseUrl()}${endpoint}`;
   
   // Cache busting for GET requests to prevent stale subscription data
   if (!config.method || config.method.toUpperCase() === 'GET') {
@@ -113,4 +119,3 @@ export async function httpClient<T = unknown>(
     throw new Error('Network error');
   }
 }
-

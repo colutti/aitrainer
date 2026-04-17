@@ -23,6 +23,7 @@ interface ChatActions {
 type ChatStore = ChatState & ChatActions;
 
 const AUTH_TOKEN_KEY = 'auth_token';
+const CHAT_STREAM_TIMEOUT_MS = 130_000;
 
 /**
  * Chat store using Zustand
@@ -111,10 +112,17 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
       error: null
     }));
 
+    let timeoutId: number | null = null;
     try {
       const token = localStorage.getItem(AUTH_TOKEN_KEY);
+      const controller = new AbortController();
+      timeoutId = window.setTimeout(() => {
+        controller.abort();
+      }, CHAT_STREAM_TIMEOUT_MS);
+
       const response = await fetch(`${API_BASE_URL}/message`, {
         method: 'POST',
+        signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': token ? `Bearer ${token}` : '',
@@ -224,6 +232,10 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
     } catch (error) {
       console.error('Error sending message:', error);
       let errorMessage = 'Ocorreu um problema ao enviar sua mensagem.';
+
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        errorMessage = 'A resposta demorou demais. Tente novamente.';
+      }
       
       if (error instanceof Error && error.message === 'LIMIT_EXCEEDED') {
         errorMessage = 'Você atingiu o limite de mensagens do seu plano. Atualize sua assinatura ou aguarde o próximo mês.';
@@ -243,6 +255,10 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
         isStreaming: false, 
         error: errorMessage 
       });
+    } finally {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
     }
   },
 

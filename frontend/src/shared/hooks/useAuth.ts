@@ -123,8 +123,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         return;
       }
 
-      const { auth } = await import('../../features/auth/firebase');
+      const { getFirebaseAuth } = await import('../../features/auth/firebase');
       const { signInWithEmailAndPassword, sendEmailVerification, signOut } = await import('firebase/auth');
+      const auth = getFirebaseAuth();
       
       const result = await signInWithEmailAndPassword(auth, email, password);
 
@@ -197,8 +198,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         return;
       }
 
-      const { auth } = await import('../../features/auth/firebase');
+      const { getFirebaseAuth } = await import('../../features/auth/firebase');
       const { createUserWithEmailAndPassword, sendEmailVerification, signOut } = await import('firebase/auth');
+      const auth = getFirebaseAuth();
 
       const result = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
       await sendEmailVerification(result.user);
@@ -218,8 +220,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true });
 
     try {
-      const { auth } = await import('../../features/auth/firebase');
+      const { getFirebaseAuth } = await import('../../features/auth/firebase');
       const { signInWithPopup, GoogleAuthProvider, OAuthProvider } = await import('firebase/auth');
+      const auth = getFirebaseAuth();
       
       const provider = providerName === 'google' 
         ? new GoogleAuthProvider() 
@@ -251,8 +254,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   requestPasswordReset: async (email: string, locale?: string) => {
     const normalizedEmail = email.trim().toLowerCase();
-    const { auth } = await import('../../features/auth/firebase');
+    const { getFirebaseAuth } = await import('../../features/auth/firebase');
     const { sendPasswordResetEmail } = await import('firebase/auth');
+    const auth = getFirebaseAuth();
     auth.languageCode = mapToFirebaseLanguageCode(locale);
     await sendPasswordResetEmail(auth, normalizedEmail, {
       handleCodeInApp: true,
@@ -265,7 +269,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
     // Also sign out from Firebase if we have it imported
     void import('../../features/auth/firebase')
-      .then(({ auth }) => {
+      .then(({ getFirebaseAuth }) => {
+        const auth = getFirebaseAuth();
         void import('firebase/auth')
           .then(({ signOut }) => {
             void signOut(auth).catch((err: unknown) => {
@@ -368,8 +373,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
 
     try {
-      const { API_BASE_URL } = await import('../api/http-client');
-      const response = await fetch(`${API_BASE_URL}/user/refresh`, {
+      const { getApiBaseUrl } = await import('../api/http-client');
+      const response = await fetch(`${getApiBaseUrl()}/user/refresh`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

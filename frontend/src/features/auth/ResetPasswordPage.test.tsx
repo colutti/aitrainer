@@ -9,8 +9,10 @@ import ResetPasswordPage from './ResetPasswordPage';
 const confirmPasswordResetMock = vi.fn();
 const verifyPasswordResetCodeMock = vi.fn();
 
+const getFirebaseAuthMock = vi.fn(() => ({}));
+
 vi.mock('./firebase', () => ({
-  auth: {},
+  getFirebaseAuth: () => getFirebaseAuthMock(),
 }));
 
 vi.mock('firebase/auth', () => ({
@@ -21,6 +23,7 @@ vi.mock('firebase/auth', () => ({
 describe('ResetPasswordPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getFirebaseAuthMock.mockReturnValue({});
     verifyPasswordResetCodeMock.mockResolvedValue('person@example.com');
     confirmPasswordResetMock.mockResolvedValue(undefined);
   });

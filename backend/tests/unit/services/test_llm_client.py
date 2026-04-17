@@ -1,4 +1,5 @@
 import unittest
+import asyncio
 from unittest.mock import MagicMock, patch
 from src.services.llm_client import LLMClient, GeminiClient, OllamaClient, OpenAIClient
 from langchain_core.messages import AIMessage
@@ -264,6 +265,39 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
             results.append(chunk)
 
         self.assertIn("Error processing request", results[0])
+
+    @patch("src.services.llm_client.create_agent")
+    @patch("src.core.config.settings")
+    async def test_stream_with_tools_inactivity_timeout(
+        self, mock_settings, mock_create_agent
+    ):
+        """Stream must fail fast when no events are produced for too long."""
+        client = LLMClient()
+        client._llm = MagicMock()
+
+        mock_settings.LLM_STREAM_INACTIVITY_TIMEOUT_SECONDS = 0.01
+
+        mock_agent = MagicMock()
+        mock_create_agent.return_value = mock_agent
+
+        async def hanging_astream(*args, **kwargs):
+            await asyncio.sleep(1)
+            if False:
+                yield None
+
+        mock_agent.astream = hanging_astream
+
+        prompt = MagicMock()
+        prompt.format_messages.return_value = []
+        prompt.format.return_value = "prompt"
+
+        results = []
+        async for chunk in client.stream_with_tools(prompt, {}, []):
+            results.append(chunk)
+
+        self.assertGreaterEqual(len(results), 1)
+        self.assertIn("Error processing request", results[0])
+        self.assertTrue(any(isinstance(item, dict) for item in results))
 
     def test_gemini_init(self):
         """Test Gemini client initialization."""

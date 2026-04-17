@@ -5,6 +5,7 @@ Provides a unified interface for different LLM providers (Gemini, Ollama, OpenAI
 
 import warnings
 import time
+import asyncio
 from typing import AsyncGenerator, Any
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import AIMessage, ToolMessage, HumanMessage
@@ -154,10 +155,9 @@ class LLMClient:
             prompt_str = prompt_template.format(**input_data)
             agent: Any = create_agent(self._llm, tools)
             config: RunnableConfig = {"recursion_limit": 50}
-            async for item in agent.astream(
-                {"messages": messages}, stream_mode="messages", config=config
+            async for event in self._iter_agent_events(
+                agent=agent, messages=messages, config=config
             ):
-                event = item[0] if isinstance(item, tuple) and len(item) == 2 else item
 
                 if not usage_metadata_captured and isinstance(event, AIMessage):
                     usage_metadata_captured, usage_metadata = self._capture_metadata(
@@ -214,6 +214,31 @@ class LLMClient:
 
             # Yield tools summary at the end to allow caller to make decisions
             yield {"type": "tools_summary", "tools_called": tools_called}
+
+    @staticmethod
+    async def _iter_agent_events(agent: Any, messages: list[Any], config: RunnableConfig):
+        """Iterates over agent events with inactivity timeout enforcement."""
+        from src.core.config import settings  # pylint: disable=import-outside-toplevel
+
+        inactivity_timeout = float(settings.LLM_STREAM_INACTIVITY_TIMEOUT_SECONDS)
+        events_iter = aiter(
+            agent.astream({"messages": messages}, stream_mode="messages", config=config)
+        )
+
+        while True:
+            try:
+                item = await asyncio.wait_for(
+                    anext(events_iter),
+                    timeout=inactivity_timeout,
+                )
+            except StopAsyncIteration:
+                return
+            except TimeoutError as timeout_err:
+                raise TimeoutError(
+                    f"STREAM_INACTIVITY_TIMEOUT after {inactivity_timeout}s"
+                ) from timeout_err
+
+            yield item[0] if isinstance(item, tuple) and len(item) == 2 else item
 
     async def stream_simple(
         self,

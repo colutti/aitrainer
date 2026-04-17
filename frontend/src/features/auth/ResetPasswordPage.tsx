@@ -8,7 +8,7 @@ import { Button } from '../../shared/components/ui/Button';
 import { Input } from '../../shared/components/ui/Input';
 import { PremiumCard } from '../../shared/components/ui/premium/PremiumCard';
 
-import { auth } from './firebase';
+import { getFirebaseAuth } from './firebase';
 import { validateStrongPassword } from './password-policy';
 
 const parseNestedQueryParam = (searchParams: URLSearchParams, key: string): string => {
@@ -57,6 +57,7 @@ export default function ResetPasswordPage() {
 
       try {
         const { verifyPasswordResetCode } = await import('firebase/auth');
+        const auth = getFirebaseAuth();
         await verifyPasswordResetCode(auth, oobCode);
       } catch {
         setErrorKey('auth.reset_link_invalid');
@@ -89,6 +90,7 @@ export default function ResetPasswordPage() {
     setErrorKey(null);
     try {
       const { confirmPasswordReset } = await import('firebase/auth');
+      const auth = getFirebaseAuth();
       await confirmPasswordReset(auth, oobCode, newPassword);
       setIsSuccess(true);
     } catch {

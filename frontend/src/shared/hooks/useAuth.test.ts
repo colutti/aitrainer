@@ -17,13 +17,15 @@ import { usePublicConfigStore } from './usePublicConfig';
 vi.mock('../api/http-client');
 
 // Mock Firebase
-vi.mock('../../features/auth/firebase', () => ({
-  auth: {
-    languageCode: null,
-    currentUser: {
-      getIdToken: vi.fn().mockResolvedValue('fake-id-token'),
-    },
+const mockFirebaseAuth = {
+  languageCode: null as string | null,
+  currentUser: {
+    getIdToken: vi.fn().mockResolvedValue('fake-id-token'),
   },
+};
+
+vi.mock('../../features/auth/firebase', () => ({
+  getFirebaseAuth: vi.fn(() => mockFirebaseAuth),
 }));
 
 vi.mock('firebase/auth', () => ({
@@ -113,6 +115,7 @@ describe('useAuth', () => {
     vi.stubGlobal('localStorage', mockLocalStorage);
     vi.clearAllMocks();
     mockStorage.clear();
+    mockFirebaseAuth.languageCode = null;
     mockLocalStorage.getItem.mockImplementation((key) => mockStorage.get(key) ?? null);
     mockLocalStorage.setItem.mockImplementation((key, value) => mockStorage.set(key, value));
     mockLocalStorage.removeItem.mockImplementation((key) => mockStorage.delete(key));
@@ -361,7 +364,7 @@ describe('useAuth', () => {
           url: expect.stringContaining('/login'),
         })
       );
-      expect((await import('../../features/auth/firebase')).auth.languageCode).toBe('es');
+      expect((await import('../../features/auth/firebase')).getFirebaseAuth().languageCode).toBe('es');
     });
   });
 

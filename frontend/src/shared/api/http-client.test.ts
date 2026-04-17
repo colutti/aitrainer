@@ -14,6 +14,7 @@ describe('httpClient', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn());
     vi.stubGlobal('localStorage', mockLocalStorage);
+    delete window.__APP_CONFIG__;
     vi.clearAllMocks();
   });
 
@@ -37,6 +38,25 @@ describe('httpClient', () => {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
       })
     }));
+  });
+
+  it('should use runtime API base URL when provided', async () => {
+    window.__APP_CONFIG__ = {
+      VITE_API_URL: 'https://runtime.example.com/api',
+    };
+
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ ok: true }),
+    } as Response);
+
+    await httpClient('/test');
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/^https:\/\/runtime\.example\.com\/api\/test\?_t=\d+$/),
+      expect.anything(),
+    );
   });
 
   it('should include Authorization header when token exists', async () => {
