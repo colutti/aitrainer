@@ -77,14 +77,14 @@ export function LanguageSelector() {
               onClick={() => { handleLanguageChange(lang.code); }}
               className={cn(
                 "h-auto w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors rounded-none hover:bg-white/5",
-                i18n.language === lang.code ? "text-gradient-start font-bold" : "text-text-secondary"
+                i18n.language === lang.code ? "text-text-primary font-bold" : "text-text-secondary"
               )}
             >
               <div className="flex items-center gap-3">
                 <span className="text-lg leading-none">{lang.flag}</span>
                 <span>{lang.label}</span>
               </div>
-              {i18n.language === lang.code && <Check size={16} className="text-gradient-start" />}
+              {i18n.language === lang.code && <Check size={16} className="text-text-primary" />}
             </Button>
           ))}
         </div>

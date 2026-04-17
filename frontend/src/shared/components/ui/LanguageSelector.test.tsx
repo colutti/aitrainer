@@ -76,4 +76,13 @@ describe('LanguageSelector', () => {
     expect(screen.getByText('Español').closest('button')).not.toHaveClass('bg-[#14b8a6]');
     expect(screen.getByText('English').closest('button')).not.toHaveClass('bg-[#14b8a6]');
   });
+
+  it('should keep active language option readable on dark dropdown background', () => {
+    render(<LanguageSelector />);
+    fireEvent.click(screen.getByRole('button'));
+
+    const activeLanguageButton = screen.getByText('Português').closest('button');
+    expect(activeLanguageButton).not.toHaveClass('text-gradient-start');
+    expect(activeLanguageButton).toHaveClass('text-text-primary');
+  });
 });

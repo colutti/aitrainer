@@ -20,6 +20,13 @@ describe('Input', () => {
     expect(screen.getByTestId('search-icon')).toBeInTheDocument();
   });
 
+  it('should use readable icon color utility for focused state', () => {
+    render(<Input leftIcon={<Search data-testid="search-icon" />} />);
+    const iconWrapper = screen.getByTestId('search-icon').parentElement;
+    expect(iconWrapper).toHaveClass('group-focus-within:text-text-primary');
+    expect(iconWrapper).not.toHaveClass('group-focus-within:text-gradient-start');
+  });
+
   it('should apply error classes to input', () => {
     render(<Input error="error" />);
     const input = screen.getByRole('textbox');

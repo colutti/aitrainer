@@ -25,7 +25,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
         <div className="relative group">
           {leftIcon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary transition-colors group-focus-within:text-gradient-start">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary transition-colors group-focus-within:text-text-primary">
               {leftIcon}
             </div>
           )}

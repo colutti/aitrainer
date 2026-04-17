@@ -54,6 +54,22 @@ describe('ConfirmationModal', () => {
       expect(screen.getByText('Custom Title')).toBeInTheDocument();
       expect(screen.getByText('Delete this item permanently?')).toBeInTheDocument();
     });
+
+    it('should use readable icon colors for primary confirmation variant', () => {
+      render(
+        <ConfirmationModal
+          isOpen={true}
+          options={defaultOptions}
+          onAccept={vi.fn()}
+          onCancel={vi.fn()}
+        />
+      );
+
+      const iconBadge = screen.getByTestId('confirmation-icon-badge');
+      expect(iconBadge).toHaveClass('bg-white/10');
+      expect(iconBadge).toHaveClass('text-text-primary');
+      expect(iconBadge).not.toHaveClass('text-gradient-start');
+    });
   });
 
   describe('Buttons', () => {

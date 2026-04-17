@@ -48,8 +48,10 @@ export function ConfirmationModal({
         <div className="flex flex-col items-center text-center mb-6">
           <div className={cn(
             "w-12 h-12 rounded-full flex items-center justify-center mb-4",
-            isDanger ? "bg-red-500/10 text-red-500" : "bg-gradient-start/10 text-gradient-start"
-          )}>
+            isDanger ? "bg-red-500/10 text-red-500" : "bg-white/10 text-text-primary"
+          )}
+            data-testid="confirmation-icon-badge"
+          >
             {isDanger ? <AlertTriangle size={24} /> : <Info size={24} />}
           </div>
           <h3 className="text-xl font-bold text-text-primary">
