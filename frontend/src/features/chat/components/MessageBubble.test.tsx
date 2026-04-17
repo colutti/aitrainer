@@ -184,4 +184,22 @@ describe('MessageBubble', () => {
     expect(container.querySelectorAll('th')).toHaveLength(5);
     expect(container.querySelectorAll('tr')).toHaveLength(3);
   });
+
+  it('should render table when payload uses escaped unicode pipes and html entities', () => {
+    const encodedTable = '\\u007c Dia \\u007c Calorias \\u007c \\u007c :--- \\u007c :--- \\u007c \\u007c 13/04 \\u007c 1995 \\u007c &#124; 14/04 &#124; 1988 &#124;';
+
+    const message = {
+      id: 'table-encoded-pipes-1',
+      sender: 'Trainer' as const,
+      text: encodedTable,
+      timestamp: new Date().toISOString(),
+    };
+
+    const { container } = render(<MessageBubble message={message} />);
+
+    const table = container.querySelector('table');
+    expect(table).toBeInTheDocument();
+    expect(container.querySelectorAll('th')).toHaveLength(2);
+    expect(container.querySelectorAll('tr')).toHaveLength(3);
+  });
 });

@@ -18,6 +18,16 @@ interface MessageBubbleProps {
 function normalizeMarkdownText(text: string): string {
   let normalized = text;
 
+  // Normalize common pipe/whitespace encodings seen in persisted historical payloads.
+  normalized = normalized
+    .replaceAll('\\u007c', '|')
+    .replaceAll('\\U007C', '|')
+    .replaceAll('&#124;', '|')
+    .replaceAll('&#x7C;', '|')
+    .replaceAll('｜', '|')
+    .replaceAll('│', '|')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '');
+
   if (normalized.includes('\\')) {
     // Some production responses can arrive with escaped markdown characters.
     // Normalize common escaped sequences so GFM tables/lists render properly.
