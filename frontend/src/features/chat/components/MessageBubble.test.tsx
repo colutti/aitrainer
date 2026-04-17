@@ -76,7 +76,7 @@ describe('MessageBubble', () => {
     expect(avatarWrapper).toHaveClass('flex', 'flex-none');
 
     const bubbleWrapper = container.querySelector('[data-testid="chat-message-bubble"]');
-    expect(bubbleWrapper).toHaveClass('max-w-full', 'lg:max-w-[80%]', 'xl:max-w-[70%]');
+    expect(bubbleWrapper).toHaveClass('max-w-full', 'lg:max-w-[88%]', 'xl:max-w-[82%]', '2xl:max-w-[88%]');
   });
 
   it('should render a markdown table correctly', () => {
