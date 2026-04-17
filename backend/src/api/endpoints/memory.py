@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, TYPE_CHECKING
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -14,15 +14,9 @@ from src.core.logs import logger
 from src.api.models.memory_item import MemoryItem, MemoryListResponse
 from src.utils.pagination import calculate_total_pages
 
-if TYPE_CHECKING:
-    from src.services.trainer import AITrainerBrain
-
 router = APIRouter()
 
 CurrentUser = Annotated[str, Depends(verify_token)]
-AITrainerBrainDep = Annotated["AITrainerBrain", Depends(get_ai_trainer_brain)]
-
-
 def _normalize_user_id(user_id: str) -> str:
     return user_id.strip().lower()
 
@@ -30,7 +24,7 @@ def _normalize_user_id(user_id: str) -> str:
 @router.post("", response_model=MemoryItem)
 async def create_memory(
     user_email: WritableCurrentUser,
-    brain: AITrainerBrainDep,
+    brain: Annotated[Any, Depends(get_ai_trainer_brain)],
     memory_data: dict,
 ) -> MemoryItem:
     """
@@ -55,7 +49,7 @@ async def create_memory(
 @router.get("/list", response_model=MemoryListResponse)
 async def list_memories(
     user_email: CurrentUser,
-    brain: AITrainerBrainDep,
+    brain: Annotated[Any, Depends(get_ai_trainer_brain)],
     page: int = Query(default=1, ge=1, description="Page number (1-indexed)"),
     page_size: int = Query(default=10, ge=1, le=50, description="Items per page"),
 ) -> MemoryListResponse:
@@ -119,7 +113,9 @@ async def list_memories(
 
 @router.delete("/{memory_id}")
 def delete_memory(
-    memory_id: str, user_email: WritableCurrentUser, brain: AITrainerBrainDep
+    memory_id: str,
+    user_email: WritableCurrentUser,
+    brain: Annotated[Any, Depends(get_ai_trainer_brain)],
 ) -> dict:
     """
     Deletes a specific memory for the authenticated user.
