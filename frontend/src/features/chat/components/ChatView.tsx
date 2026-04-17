@@ -12,7 +12,6 @@ import type { ChatMessage, MessageImagePayload } from '../../../shared/types/cha
 import type { TrainerCard } from '../../../shared/types/settings';
 import { cn } from '../../../shared/utils/cn';
 
-import { ChatContextPanel } from './ChatContextPanel';
 import { MessageBubble } from './MessageBubble';
 
 export interface ChatViewProps {
@@ -187,10 +186,10 @@ export function ChatView({
   return (
     <div
       data-testid="chat-workspace"
-      className="grid h-full min-h-0 grid-cols-1 bg-[color:var(--color-app-bg)] xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(220px,0.18fr)_minmax(0,0.9fr)_360px]"
+      className="h-full min-h-0 bg-[color:var(--color-app-bg)]"
     >
-      <section data-testid="chat-conversation-column" className="flex min-h-0 flex-col border-r border-white/8 2xl:col-span-2">
-        <div className="flex-none h-16 md:h-20 border-b border-white/8 px-4 md:px-6 flex items-center justify-between">
+      <section data-testid="chat-conversation-column" className="flex min-h-0 h-full flex-col border-r border-white/8">
+        <div data-testid="chat-header" className="flex-none h-14 md:h-16 border-b border-white/8 px-4 md:px-6 flex items-center justify-between">
           <div className="flex items-center gap-3 mx-auto w-full max-w-[88rem]">
             <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shrink-0 bg-zinc-800">
               {trainer ? (
@@ -419,18 +418,6 @@ export function ChatView({
           </div>
         </div>
       </section>
-
-      <aside
-        data-testid="chat-context-panel"
-        className="hidden xl:flex flex-col bg-[color:var(--color-app-surface)] border-l border-white/8 p-4 2xl:p-6 2xl:col-start-3"
-      >
-        <ChatContextPanel
-          trainerName={trainerName}
-          trainerId={trainer?.trainer_id ?? null}
-          isStreaming={isStreaming}
-          messageCount={messages.length}
-        />
-      </aside>
     </div>
   );
 }

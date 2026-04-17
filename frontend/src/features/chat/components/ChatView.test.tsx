@@ -45,11 +45,11 @@ const mockProps = {
 };
 
 describe('ChatView', () => {
-  it('renders workspace structure with conversation and context panel', () => {
+  it('renders workspace structure with conversation column only', () => {
     render(<ChatView {...mockProps} />);
     expect(screen.getByTestId('chat-workspace')).toBeInTheDocument();
     expect(screen.getByTestId('chat-conversation-column')).toBeInTheDocument();
-    expect(screen.getByTestId('chat-context-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('chat-context-panel')).not.toBeInTheDocument();
   });
 
   it('keeps chat form inside conversation column', () => {
@@ -57,14 +57,14 @@ describe('ChatView', () => {
     expect(screen.getByTestId('chat-conversation-column')).toContainElement(screen.getByTestId('chat-form'));
   });
 
-  it('spans conversation column across two tracks on 2xl to avoid empty middle area', () => {
+  it('uses compact chat header height', () => {
     render(<ChatView {...mockProps} />);
-    expect(screen.getByTestId('chat-conversation-column')).toHaveClass('2xl:col-span-2');
+    expect(screen.getByTestId('chat-header')).toHaveClass('h-14', 'md:h-16');
   });
 
-  it('renders context panel container without breaking empty state', () => {
+  it('keeps empty state rendering without context panel', () => {
     render(<ChatView {...mockProps} messages={[]} />);
-    expect(screen.getByTestId('chat-context-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('chat-context-panel')).not.toBeInTheDocument();
     expect(screen.getByText('chat.start_conversation')).toBeInTheDocument();
   });
 
