@@ -130,4 +130,22 @@ describe('MessageBubble', () => {
     expect(container.querySelectorAll('th')).toHaveLength(2);
     expect(container.querySelectorAll('td')).toHaveLength(2);
   });
+
+  it('should render markdown table when pipes are escaped', () => {
+    const tableMarkdown = '\\| Food \\| Calories \\|\n\\| :--- \\| :--- \\|\n\\| Chicken Breast \\| 165 \\|';
+
+    const message = {
+      id: 'table-escaped-pipes-1',
+      sender: 'Trainer' as const,
+      text: tableMarkdown,
+      timestamp: new Date().toISOString(),
+    };
+
+    const { container } = render(<MessageBubble message={message} />);
+
+    const table = container.querySelector('table');
+    expect(table).toBeInTheDocument();
+    expect(container.querySelectorAll('th')).toHaveLength(2);
+    expect(container.querySelectorAll('td')).toHaveLength(2);
+  });
 });

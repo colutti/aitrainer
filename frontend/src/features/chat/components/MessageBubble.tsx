@@ -16,14 +16,15 @@ interface MessageBubbleProps {
 }
 
 function normalizeMarkdownText(text: string): string {
-  if (!text.includes('\\n')) return text;
+  if (!text.includes('\\')) return text;
 
-  // Some production responses arrive with escaped newlines as literal "\n".
-  // Convert them back so markdown tables/lists render as structured elements.
+  // Some production responses can arrive with escaped markdown characters.
+  // Normalize common escaped sequences so GFM tables/lists render properly.
   return text
     .replaceAll('\\r\\n', '\n')
     .replaceAll('\\n', '\n')
-    .replaceAll('\\r', '\n');
+    .replaceAll('\\r', '\n')
+    .replaceAll('\\|', '|');
 }
 
 /**
