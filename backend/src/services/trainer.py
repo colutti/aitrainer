@@ -249,7 +249,12 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         messages = self._database.get_chat_history(session_id, limit, offset)
         for message in messages:
             if message.sender == Sender.TRAINER:
-                message.text = self.strip_internal_wrappers(message.text)
+                message.text = self.normalize_public_chat_text(message.text)
+                if message.translations:
+                    message.translations = {
+                        locale: self.normalize_public_chat_text(value)
+                        for locale, value in message.translations.items()
+                    }
         return messages
 
     def get_user_profile(self, email: str) -> UserProfile | None:
@@ -534,6 +539,35 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         cleaned = cls._TREINADOR_OPEN_PATTERN.sub("", cleaned)
         cleaned = cleaned.replace("</treinador>", "")
         return cleaned
+
+    @classmethod
+    def normalize_public_chat_text(cls, text: str) -> str:
+        """
+        Normalize persisted chat text before sending it to clients.
+        This covers older production payload variants that break markdown tables.
+        """
+        if not text:
+            return ""
+
+        normalized = cls.strip_internal_wrappers(text)
+        normalized = (
+            normalized.replace("\\u007c", "|")
+            .replace("\\U007C", "|")
+            .replace("&#124;", "|")
+            .replace("&#x7C;", "|")
+            .replace("｜", "|")
+            .replace("│", "|")
+            .replace("\\r\\n", "\n")
+            .replace("\\n", "\n")
+            .replace("\\r", "\n")
+            .replace("\\|", "|")
+        )
+        normalized = re.sub(r"[\u200B-\u200D\uFEFF]", "", normalized)
+
+        if re.search(r"\|\s*:?-{3,}\s*\|", normalized):
+            normalized = re.sub(r"\|\s*\|", "|\n|", normalized)
+
+        return normalized
 
     @classmethod
     def split_stream_visible_text(cls, buffer: str) -> tuple[str, str]:
