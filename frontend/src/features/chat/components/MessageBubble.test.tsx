@@ -112,4 +112,22 @@ describe('MessageBubble', () => {
     expect(cells[1]).toHaveTextContent('165');
     expect(cells[2]).toHaveTextContent('31g');
   });
+
+  it('should render markdown table when line breaks are escaped', () => {
+    const tableMarkdown = '| Food | Calories |\\n| :--- | :--- |\\n| Chicken Breast | 165 |';
+
+    const message = {
+      id: 'table-escaped-1',
+      sender: 'Trainer' as const,
+      text: tableMarkdown,
+      timestamp: new Date().toISOString(),
+    };
+
+    const { container } = render(<MessageBubble message={message} />);
+
+    const table = container.querySelector('table');
+    expect(table).toBeInTheDocument();
+    expect(container.querySelectorAll('th')).toHaveLength(2);
+    expect(container.querySelectorAll('td')).toHaveLength(2);
+  });
 });

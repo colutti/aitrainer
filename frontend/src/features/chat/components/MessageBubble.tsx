@@ -15,6 +15,17 @@ interface MessageBubbleProps {
   userName?: string;
 }
 
+function normalizeMarkdownText(text: string): string {
+  if (!text.includes('\\n')) return text;
+
+  // Some production responses arrive with escaped newlines as literal "\n".
+  // Convert them back so markdown tables/lists render as structured elements.
+  return text
+    .replaceAll('\\r\\n', '\n')
+    .replaceAll('\\n', '\n')
+    .replaceAll('\\r', '\n');
+}
+
 /**
  * MessageBubble component
  * 
@@ -26,7 +37,7 @@ export function MessageBubble({ message, resolveText, trainerId, userPhoto, user
   const isTrainer = message.sender === 'Trainer';
   const displayText = resolveText ? resolveText(message) : message.text;
   const hiddenFallback = displayText === 'Analyze these images and provide practical guidance.';
-  const textToRender = hiddenFallback ? '' : displayText;
+  const textToRender = hiddenFallback ? '' : normalizeMarkdownText(displayText);
   const isEmpty = !textToRender || textToRender.trim() === '';
 
   const containerVariants = {
