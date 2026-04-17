@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, Optional, TYPE_CHECKING
+from typing import Annotated, Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -14,14 +14,11 @@ from src.core.deps import get_hevy_service, get_ai_trainer_brain
 from src.core.subscription import can_use_integrations
 from src.services.hevy_service import HevyService
 
-if TYPE_CHECKING:
-    from src.services.trainer import AITrainerBrain
-
 router = APIRouter()
 
 CurrentUser = Annotated[str, Depends(verify_token)]
 HevyServiceDep = Annotated[HevyService, Depends(get_hevy_service)]
-BrainDep = Annotated["AITrainerBrain", Depends(get_ai_trainer_brain)]
+BrainDep = Annotated[Any, Depends(get_ai_trainer_brain)]
 
 
 def _ensure_integrations_allowed(profile) -> None:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, TYPE_CHECKING
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Header, Request
 from fastapi.responses import JSONResponse
@@ -20,14 +20,11 @@ from src.core.logs import logger
 from src.repositories.telegram_repository import TelegramRepository
 from src.api.models.telegram_link import TelegramStatus, LinkingCodeResponse
 
-if TYPE_CHECKING:
-    from src.services.trainer import AITrainerBrain
-
 router = APIRouter()
 
 CurrentUser = Annotated[str, Depends(verify_token)]
 TelegramRepoDep = Annotated[TelegramRepository, Depends(get_telegram_repository)]
-BrainDep = Annotated["AITrainerBrain", Depends(get_ai_trainer_brain)]
+BrainDep = Annotated[Any, Depends(get_ai_trainer_brain)]
 
 
 def _assert_telegram_allowed(user_email: str, brain: BrainDep) -> None:

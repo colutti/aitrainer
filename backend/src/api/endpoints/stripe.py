@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Annotated, TYPE_CHECKING
+from typing import Annotated, Any
 
 import stripe
 from fastapi import APIRouter, Header, Request, HTTPException, Depends
@@ -16,11 +16,8 @@ from src.services.stripe import create_checkout_session, create_customer_portal_
 from src.api.models.stripe import CheckoutSessionRequest, PortalSessionRequest
 from src.core.logs import logger
 
-if TYPE_CHECKING:
-    from src.services.trainer import AITrainerBrain
-
 router = APIRouter()
-AITrainerBrainDep = Annotated["AITrainerBrain", Depends(get_ai_trainer_brain)]
+AITrainerBrainDep = Annotated[Any, Depends(get_ai_trainer_brain)]
 
 
 @router.post("/create-checkout-session")

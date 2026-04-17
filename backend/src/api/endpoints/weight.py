@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Annotated, TYPE_CHECKING
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel
@@ -19,13 +19,10 @@ from src.services.database import MongoDatabase
 from src.services.import_utils import read_csv_file
 from src.services.zepp_life_import_service import import_zepp_life_data
 
-if TYPE_CHECKING:
-    from src.services.trainer import AITrainerBrain
-
 router = APIRouter()
 
 CurrentUser = Annotated[str, Depends(verify_token)]
-AITrainerBrainDep = Annotated["AITrainerBrain", Depends(get_ai_trainer_brain)]
+AITrainerBrainDep = Annotated[Any, Depends(get_ai_trainer_brain)]
 DatabaseDep = Annotated[MongoDatabase, Depends(get_mongo_database)]
 
 
