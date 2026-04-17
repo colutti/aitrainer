@@ -166,4 +166,22 @@ describe('MessageBubble', () => {
     expect(container.querySelectorAll('th')).toHaveLength(5);
     expect(container.querySelectorAll('tr')).toHaveLength(5);
   });
+
+  it('should render one-line pipe table even when payload has unrelated newlines', () => {
+    const oneLineTableWithTrailingNewline = '| Dia | Calorias | Proteína | Fibra | Visão do Bro | | :--- | :--- | :--- | :--- | :--- | | 13/04 | 1995 | 161g | 43g | Tanque cheio pra combater o vírus! 🛡️ | | 14/04 | 1988 | 174g | 21g | Consistência de mestre. 🎯 |\n';
+
+    const message = {
+      id: 'table-single-line-with-newline-1',
+      sender: 'Trainer' as const,
+      text: oneLineTableWithTrailingNewline,
+      timestamp: new Date().toISOString(),
+    };
+
+    const { container } = render(<MessageBubble message={message} />);
+
+    const table = container.querySelector('table');
+    expect(table).toBeInTheDocument();
+    expect(container.querySelectorAll('th')).toHaveLength(5);
+    expect(container.querySelectorAll('tr')).toHaveLength(3);
+  });
 });

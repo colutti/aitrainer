@@ -28,14 +28,12 @@ function normalizeMarkdownText(text: string): string {
     .replaceAll('\\|', '|');
   }
 
-  const looksLikeSingleLineTable =
-    !normalized.includes('\n')
-    && /\|\s*:?-{3,}\s*\|/.test(normalized);
+  const looksLikeSingleLineTable = /\|\s*:?-{3,}\s*\|/.test(normalized);
 
   if (looksLikeSingleLineTable) {
     // Some model responses flatten all table rows into one line using "| |" row separators.
     // Rebuild line breaks so remark-gfm can parse it as an actual table.
-    normalized = normalized.replace(/\|\s+\|/g, '|\n|');
+    normalized = normalized.replace(/\|\s*\|/g, '|\n|');
   }
 
   return normalized;
