@@ -9,6 +9,11 @@ from src.utils.qdrant_utils import scroll_all_user_points, point_to_dict
 from src.services.memory_tools import _embed_text, _ensure_collection
 
 
+def _normalize_user_id(user_id: str) -> str:
+    """Normalize user identifiers used in memory storage/retrieval."""
+    return user_id.strip().lower()
+
+
 def get_memories_paginated(
     user_id: str,
     page: int,
@@ -25,11 +30,13 @@ def get_memories_paginated(
     )
 
     try:
+        normalized_user_id = _normalize_user_id(user_id)
         _ensure_collection(qdrant_client, collection_name)
         user_filter = qdrant_models.Filter(
             must=[
                 qdrant_models.FieldCondition(
-                    key="user_id", match=qdrant_models.MatchValue(value=user_id)
+                    key="user_id",
+                    match=qdrant_models.MatchValue(value=normalized_user_id),
                 )
             ]
         )
@@ -72,6 +79,7 @@ def add_memory(
     logger.info("Adding memory for user: %s (category: %s)", user_id, category)
 
     try:
+        normalized_user_id = _normalize_user_id(user_id)
         _ensure_collection(qdrant_client, collection_name)
         text = str(memory_data.get("text", ""))
         translations = memory_data.get("translations")
@@ -89,7 +97,7 @@ def add_memory(
                 "memory": text,
                 "translations": translations,
                 "category": category,
-                "user_id": user_id,
+                "user_id": normalized_user_id,
                 "created_at": now,
                 "updated_at": now,
             },

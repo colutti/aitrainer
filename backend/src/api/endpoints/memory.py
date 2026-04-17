@@ -23,6 +23,10 @@ CurrentUser = Annotated[str, Depends(verify_token)]
 AITrainerBrainDep = Annotated["AITrainerBrain", Depends(get_ai_trainer_brain)]
 
 
+def _normalize_user_id(user_id: str) -> str:
+    return user_id.strip().lower()
+
+
 @router.post("", response_model=MemoryItem)
 async def create_memory(
     user_email: WritableCurrentUser,
@@ -141,7 +145,9 @@ def delete_memory(
             logger.warning("Memory not found: %s", memory_id)
             raise HTTPException(status_code=404, detail="Memory not found")
 
-        if memory.get("user_id") != user_email:
+        memory_owner = _normalize_user_id(str(memory.get("user_id", "")))
+        requester = _normalize_user_id(user_email)
+        if memory_owner != requester:
             logger.warning(
                 "Unauthorized delete attempt by %s for memory %s (owner: %s)",
                 user_email,
