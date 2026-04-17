@@ -145,8 +145,10 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
             if (messages.includes('IMAGE_TOO_LARGE')) throw new Error('IMAGE_TOO_LARGE');
             if (messages.includes('TOO_MANY_IMAGES')) throw new Error('TOO_MANY_IMAGES');
             if (messages.includes('EMPTY_MESSAGE')) throw new Error('EMPTY_MESSAGE');
+            if (messages.includes('MESSAGE_TOO_LONG')) throw new Error('MESSAGE_TOO_LONG');
+            throw new Error('VALIDATION_ERROR');
           } catch (e: unknown) {
-            if (e instanceof Error && ['IMAGE_TOO_LARGE', 'TOO_MANY_IMAGES', 'EMPTY_MESSAGE'].includes(e.message)) {
+            if (e instanceof Error && ['IMAGE_TOO_LARGE', 'TOO_MANY_IMAGES', 'EMPTY_MESSAGE', 'MESSAGE_TOO_LONG', 'VALIDATION_ERROR'].includes(e.message)) {
               throw e;
             }
           }
@@ -249,6 +251,10 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
         errorMessage = 'TOO_MANY_IMAGES';
       } else if (error instanceof Error && error.message === 'EMPTY_MESSAGE') {
         errorMessage = 'EMPTY_MESSAGE';
+      } else if (error instanceof Error && error.message === 'MESSAGE_TOO_LONG') {
+        errorMessage = 'MESSAGE_TOO_LONG';
+      } else if (error instanceof Error && error.message === 'VALIDATION_ERROR') {
+        errorMessage = 'VALIDATION_ERROR';
       }
       
       set({ 

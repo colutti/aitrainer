@@ -220,6 +220,36 @@ describe('useChatStore', () => {
     consoleSpy.mockRestore();
   });
 
+  it('should handle message too long validation error', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 422,
+      json: async () => ({ detail: [{ msg: 'Value error, MESSAGE_TOO_LONG' }] }),
+    });
+
+    await useChatStore.getState().sendMessage('x'.repeat(21000));
+
+    const state = useChatStore.getState();
+    expect(state.error).toBe('MESSAGE_TOO_LONG');
+    consoleSpy.mockRestore();
+  });
+
+  it('should handle generic validation error with friendly code', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 422,
+      json: async () => ({ detail: [{ msg: 'String should have at least 1 character' }] }),
+    });
+
+    await useChatStore.getState().sendMessage('Hello');
+
+    const state = useChatStore.getState();
+    expect(state.error).toBe('VALIDATION_ERROR');
+    consoleSpy.mockRestore();
+  });
+
   it('should clear history successfully', () => {
     // Setup state
     useChatStore.setState({ messages: [{ text: 'Hi', sender: 'Student', timestamp: 'now' }] });

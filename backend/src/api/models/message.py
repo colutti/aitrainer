@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024
 MAX_IMAGES_PER_MESSAGE = 4
 ALLOWED_IMAGE_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
+MAX_USER_MESSAGE_CHARS = 20_000
 
 
 class MessageImageInput(BaseModel):
@@ -46,7 +47,7 @@ class MessageRequest(BaseModel):
         user_message (str): The message provided by the user (max 5000 chars).
     """
 
-    user_message: str = Field("", max_length=5000)
+    user_message: str = Field("")
     images: list[MessageImageInput] | None = Field(default=None)
     # Backward compatibility for older frontend payload
     image_base64: str | None = Field(default=None, max_length=8_000_000)
@@ -69,3 +70,11 @@ class MessageRequest(BaseModel):
             raise ValueError("EMPTY_MESSAGE")
         self.images = normalized or None
         return self
+
+    @field_validator("user_message")
+    @classmethod
+    def validate_user_message_length(cls, value: str) -> str:
+        """Enforce a higher but bounded limit for long text messages."""
+        if len(value) > MAX_USER_MESSAGE_CHARS:
+            raise ValueError("MESSAGE_TOO_LONG")
+        return value

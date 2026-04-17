@@ -342,6 +342,13 @@
     "daily_limit": {
       "title": "Daily Limit Reached",
       "description": "You've reached your message limit for today."
+    },
+    "errors": {
+      "image_too_large": "Image is too large. Use up to 3MB per image.",
+      "too_many_images": "You can upload up to 4 images per message.",
+      "image_not_allowed_for_plan": "Image analysis is available only on Pro and Premium plans.",
+      "message_too_long": "Your message is too long. Please summarize it or split it into smaller parts.",
+      "validation_error": "We couldn't validate your message. Please review it and try again."
     }
   },
   "onboarding": {

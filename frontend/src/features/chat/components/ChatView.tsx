@@ -86,9 +86,11 @@ export function ChatView({
   const canSubmit = (!!inputValue.trim() || selectedImages.length > 0) && !isStreaming && !isDemoUser;
   const resolveErrorLabel = (errorCode: string | null) => {
     if (!errorCode) return null;
-    if (errorCode === 'IMAGE_TOO_LARGE') return 'Imagem muito grande. Use até 3MB por imagem.';
-    if (errorCode === 'TOO_MANY_IMAGES') return 'Você pode enviar até 4 imagens por mensagem.';
-    if (errorCode === 'IMAGE_NOT_ALLOWED_FOR_PLAN') return 'Análise de imagem disponível apenas para Pro e Premium.';
+    if (errorCode === 'IMAGE_TOO_LARGE') return t('chat.errors.image_too_large');
+    if (errorCode === 'TOO_MANY_IMAGES') return t('chat.errors.too_many_images');
+    if (errorCode === 'IMAGE_NOT_ALLOWED_FOR_PLAN') return t('chat.errors.image_not_allowed_for_plan');
+    if (errorCode === 'MESSAGE_TOO_LONG') return t('chat.errors.message_too_long');
+    if (errorCode === 'VALIDATION_ERROR') return t('chat.errors.validation_error');
     return t(`errors.${errorCode}`, errorCode);
   };
 

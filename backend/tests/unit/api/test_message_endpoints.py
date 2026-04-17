@@ -266,6 +266,30 @@ def test_message_ai_long_message():
     app.dependency_overrides = {}
 
 
+def test_message_ai_rejects_very_long_message_with_validation_code():
+    """Long messages above cap must return MESSAGE_TOO_LONG validation code."""
+    app.dependency_overrides[verify_token] = lambda: "test@example.com"
+    mock_brain = MagicMock()
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+    payload = {
+        "user_message": "a" * 20001
+    }
+
+    response = client.post(
+        "/message",
+        json=payload,
+        headers={"Authorization": "Bearer test_token"}
+    )
+
+    assert response.status_code == 422
+    details = response.json().get("detail", [])
+    assert any("MESSAGE_TOO_LONG" in item.get("msg", "") for item in details)
+    mock_brain.send_message_ai.assert_not_called()
+
+    app.dependency_overrides = {}
+
+
 # Test: POST /message/message - Message with Special Characters
 def test_message_ai_special_characters():
     """Test message containing special characters and Unicode."""
