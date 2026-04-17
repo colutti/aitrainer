@@ -16,15 +16,29 @@ interface MessageBubbleProps {
 }
 
 function normalizeMarkdownText(text: string): string {
-  if (!text.includes('\\')) return text;
+  let normalized = text;
 
-  // Some production responses can arrive with escaped markdown characters.
-  // Normalize common escaped sequences so GFM tables/lists render properly.
-  return text
+  if (normalized.includes('\\')) {
+    // Some production responses can arrive with escaped markdown characters.
+    // Normalize common escaped sequences so GFM tables/lists render properly.
+    normalized = normalized
     .replaceAll('\\r\\n', '\n')
     .replaceAll('\\n', '\n')
     .replaceAll('\\r', '\n')
     .replaceAll('\\|', '|');
+  }
+
+  const looksLikeSingleLineTable =
+    !normalized.includes('\n')
+    && /\|\s*:?-{3,}\s*\|/.test(normalized);
+
+  if (looksLikeSingleLineTable) {
+    // Some model responses flatten all table rows into one line using "| |" row separators.
+    // Rebuild line breaks so remark-gfm can parse it as an actual table.
+    normalized = normalized.replace(/\|\s+\|/g, '|\n|');
+  }
+
+  return normalized;
 }
 
 /**

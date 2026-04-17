@@ -148,4 +148,22 @@ describe('MessageBubble', () => {
     expect(container.querySelectorAll('th')).toHaveLength(2);
     expect(container.querySelectorAll('td')).toHaveLength(2);
   });
+
+  it('should render markdown table when backend returns single-line pipe table', () => {
+    const oneLineTable = '| Dia | Calorias | Proteína | Fibra | Visão do Bro | | :--- | :--- | :--- | :--- | :--- | | 13/04 | 1995 | 161g | 43g | Tanque cheio pra combater o vírus! 🛡️ | | 14/04 | 1988 | 174g | 21g | Consistência de mestre. 🎯 | | 15/04 | 1857 | 197g | 40g | Pico de Proteína! Músculo blindado. 🥩 | | 16/04 | 1799 | 171g | 32g | Ajuste fino no déficit mesmo doente. 📉 |';
+
+    const message = {
+      id: 'table-single-line-1',
+      sender: 'Trainer' as const,
+      text: oneLineTable,
+      timestamp: new Date().toISOString(),
+    };
+
+    const { container } = render(<MessageBubble message={message} />);
+
+    const table = container.querySelector('table');
+    expect(table).toBeInTheDocument();
+    expect(container.querySelectorAll('th')).toHaveLength(5);
+    expect(container.querySelectorAll('tr')).toHaveLength(5);
+  });
 });
