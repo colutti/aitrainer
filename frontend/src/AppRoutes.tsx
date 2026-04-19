@@ -13,6 +13,7 @@ import PrivacyPage from './features/legal/PrivacyPage';
 import TermsPage from './features/legal/TermsPage';
 import MemoriesPage from './features/memories/MemoriesPage';
 import OnboardingPage from './features/onboarding/components/OnboardingPage';
+import PlanPage from './features/plan/PlanPage';
 import IntegrationsPage from './features/settings/components/IntegrationsPage';
 import SubscriptionPage from './features/settings/components/SubscriptionPage';
 import TrainerSettingsPage from './features/settings/components/TrainerSettingsPage';
@@ -73,6 +74,7 @@ export function AppRoutes() {
           }
         >
           <Route index element={<DashboardPage />} />
+          <Route path="plan" element={<PlanPage />} />
           <Route path="workouts" element={<WorkoutsPage />} />
           <Route path="body/*" element={<BodyPage />} />
           <Route path="chat" element={<ChatPage />} />

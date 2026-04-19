@@ -16,6 +16,9 @@ vi.mock('./features/chat/ChatPage', () => ({
 vi.mock('./features/dashboard/DashboardPage', () => ({
   default: () => <div>Dashboard Page</div>,
 }));
+vi.mock('./features/plan/PlanPage', () => ({
+  default: () => <div>Plan Page</div>,
+}));
 vi.mock('./features/landing/LandingPage', () => ({
   default: () => <div>FityQ Landing</div>,
 }));
@@ -49,9 +52,18 @@ vi.mock('./shared/components/auth/AuthGuard', () => ({
 vi.mock('./shared/components/auth/ProtectedRoute', () => ({
   ProtectedRoute: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
-vi.mock('./shared/components/layout/PremiumLayout', () => ({
-  PremiumLayout: () => <div>Premium Layout</div>,
-}));
+vi.mock('./shared/components/layout/PremiumLayout', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+  const { Outlet } = actual;
+  return {
+    PremiumLayout: () => (
+      <div>
+        Premium Layout
+        <Outlet />
+      </div>
+    ),
+  };
+});
 vi.mock('./shared/components/ui/Skeleton', () => ({
   Skeleton: () => <div>Skeleton</div>,
 }));
@@ -59,5 +71,12 @@ describe('AppRoutes', () => {
   it('redirects unknown routes to the landing page', async () => {
     render(<AppRoutes />, { route: '/totally-unknown' });
     expect(await screen.findByText(/fityq/i)).toBeInTheDocument();
+  });
+
+  it('renders plan route inside dashboard shell', async () => {
+    render(<AppRoutes />, { route: '/dashboard/plan' });
+
+    expect(await screen.findByText('Premium Layout')).toBeInTheDocument();
+    expect(await screen.findByText('Plan Page')).toBeInTheDocument();
   });
 });

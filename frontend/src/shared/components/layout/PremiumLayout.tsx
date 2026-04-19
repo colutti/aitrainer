@@ -1,4 +1,5 @@
-import { Home, Scale, Dumbbell, Settings, MessageCircle, LogOut } from 'lucide-react';
+import { ClipboardList, Home, Scale, Dumbbell, Settings, MessageCircle, LogOut } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 
 import { useAuthStore } from '../../hooks/useAuth';
@@ -20,6 +21,7 @@ import { getLayoutMode } from './layoutModes';
  */
 export function PremiumLayout() {
   const { userInfo, logout } = useAuthStore();
+  const { t } = useTranslation();
   const { isReadOnly: isDemoUser } = useDemoMode();
   const location = useLocation();
   
@@ -62,16 +64,19 @@ export function PremiumLayout() {
         <div className="flex-1 flex justify-center">
           <div className="flex bg-white/5 backdrop-blur-md rounded-full p-1 border border-white/5">
             <NavLink to="/dashboard" end data-testid="desktop-nav-home" className={({ isActive }) => cn("px-6 py-2 rounded-full text-sm font-semibold transition-all", isActive ? "bg-white/10 text-white shadow-lg" : "text-zinc-400 hover:text-zinc-200")}>
-              Dashboard
+              {t('nav.home')}
+            </NavLink>
+            <NavLink to="/dashboard/plan" data-testid="desktop-nav-plan" className={() => cn("px-6 py-2 rounded-full text-sm font-semibold transition-all", isPathActive('/dashboard/plan') ? "bg-white/10 text-white shadow-lg" : "text-zinc-400 hover:text-zinc-200")}>
+              {t('nav.plan')}
             </NavLink>
             <NavLink to="/dashboard/workouts" data-testid="desktop-nav-workouts" className={() => cn("px-6 py-2 rounded-full text-sm font-semibold transition-all", isPathActive('/dashboard/workouts') ? "bg-white/10 text-white shadow-lg" : "text-zinc-400 hover:text-zinc-200")}>
-              Treinos
+              {t('nav.workouts')}
             </NavLink>
             <NavLink to="/dashboard/body" data-testid="desktop-nav-body" className={() => cn("px-6 py-2 rounded-full text-sm font-semibold transition-all", isPathActive('/dashboard/body') ? "bg-white/10 text-white shadow-lg" : "text-zinc-400 hover:text-zinc-200")}>
-              Corpo
+              {t('nav.body')}
             </NavLink>
             <NavLink to="/dashboard/chat" data-testid="desktop-nav-chat" className={() => cn("px-6 py-2 rounded-full text-sm font-semibold transition-all", isPathActive('/dashboard/chat') ? "bg-white/10 text-white shadow-lg" : "text-zinc-400 hover:text-zinc-200")}>
-              Chat
+              {t('nav.chat')}
             </NavLink>
           </div>
         </div>
@@ -136,6 +141,9 @@ export function PremiumLayout() {
       <nav data-testid="mobile-nav" className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-sm rounded-[2.5rem] bg-zinc-900/80 backdrop-blur-2xl border border-white/10 shadow-2xl z-50 flex items-center justify-between px-3 py-3">
         <NavLink to="/dashboard" end data-testid="nav-home" className={({ isActive }) => cn("p-3 rounded-full transition-all duration-300 flex-1 flex justify-center", isActive ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300")}>
           <Home size={22} />
+        </NavLink>
+        <NavLink to="/dashboard/plan" data-testid="nav-plan" className={() => cn("p-3 rounded-full transition-all duration-300 flex-1 flex justify-center", isPathActive('/dashboard/plan') ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300")}>
+          <ClipboardList size={22} />
         </NavLink>
         <NavLink to="/dashboard/workouts" data-testid="nav-workouts" className={() => cn("p-3 rounded-full transition-all duration-300 flex-1 flex justify-center", isPathActive('/dashboard/workouts') ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300")}>
           <Dumbbell size={22} />

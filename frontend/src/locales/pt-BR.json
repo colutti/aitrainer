@@ -65,6 +65,7 @@
   },
   "nav": {
     "home": "Início",
+    "plan": "Plano",
     "trainer": "Treinador",
     "workouts": "Meus Treinos",
     "body": "Peso e Corpo",
@@ -317,6 +318,52 @@
       "medium": "Média",
       "low": "Baixa",
       "unknown": "Desconhecido"
+    },
+    "plan_entry": {
+      "eyebrow": "Plano Central",
+      "title": "Acompanhe seu plano completo",
+      "description": "Veja missao de hoje, proximos dias e checkpoints em um unico hub.",
+      "cta": "Abrir"
+    }
+  },
+  "plan": {
+    "title": "Plano Central",
+    "subtitle": "Seu plano ativo com execucao diaria e acompanhamento da IA.",
+    "sections": {
+      "overview": "Visao geral do plano",
+      "mission_today": "Missao de hoje",
+      "upcoming_days": "Proximos dias",
+      "latest_checkpoint": "Ultimo checkpoint",
+      "status": "Estado do plano"
+    },
+    "cards": {
+      "training": "Treino",
+      "nutrition": "Nutricao",
+      "ai_followup": "Acompanhamento IA"
+    },
+    "actions": {
+      "open_chat": "Conversar com a IA",
+      "request_adjustment": "Solicitar ajuste"
+    },
+    "labels": {
+      "window": "Janela",
+      "active_focus": "Foco atual"
+    },
+    "status": {
+      "draft": "Rascunho",
+      "awaiting_approval": "Aguardando aprovacao",
+      "active": "Ativo",
+      "adjustment_pending_approval": "Ajuste aguardando aprovacao",
+      "completed": "Concluido",
+      "archived": "Arquivado"
+    },
+    "empty": {
+      "title": "Nenhum plano ativo encontrado",
+      "description": "Converse com a IA para montar seu plano completo de treino e nutricao.",
+      "cta": "Criar plano no chat"
+    },
+    "checkpoint": {
+      "empty": "Ainda nao ha checkpoint registrado para este plano."
     }
   },
   "chat": {

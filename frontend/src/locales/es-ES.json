@@ -65,6 +65,7 @@
   },
   "nav": {
     "home": "Inicio",
+    "plan": "Plan",
     "trainer": "Entrenador",
     "workouts": "Mis Entrenamientos",
     "body": "Cuerpo y Peso",
@@ -317,6 +318,52 @@
       "medium": "Media",
       "low": "Baja",
       "unknown": "Desconocido"
+    },
+    "plan_entry": {
+      "eyebrow": "Plan Central",
+      "title": "Sigue tu plan completo",
+      "description": "Consulta la mision de hoy, proximos dias y checkpoints en un solo hub.",
+      "cta": "Abrir"
+    }
+  },
+  "plan": {
+    "title": "Plan Central",
+    "subtitle": "Tu plan activo con ejecucion diaria y seguimiento de la IA.",
+    "sections": {
+      "overview": "Vision general del plan",
+      "mission_today": "Mision de hoy",
+      "upcoming_days": "Proximos dias",
+      "latest_checkpoint": "Ultimo checkpoint",
+      "status": "Estado del plan"
+    },
+    "cards": {
+      "training": "Entrenamiento",
+      "nutrition": "Nutricion",
+      "ai_followup": "Seguimiento IA"
+    },
+    "actions": {
+      "open_chat": "Hablar con IA",
+      "request_adjustment": "Solicitar ajuste"
+    },
+    "labels": {
+      "window": "Ventana",
+      "active_focus": "Foco actual"
+    },
+    "status": {
+      "draft": "Borrador",
+      "awaiting_approval": "En espera de aprobacion",
+      "active": "Activo",
+      "adjustment_pending_approval": "Ajuste en espera de aprobacion",
+      "completed": "Completado",
+      "archived": "Archivado"
+    },
+    "empty": {
+      "title": "No se encontro un plan activo",
+      "description": "Habla con la IA para crear tu plan completo de entrenamiento y nutricion.",
+      "cta": "Crear plan en el chat"
+    },
+    "checkpoint": {
+      "empty": "Aun no hay checkpoint registrado para este plan."
     }
   },
   "chat": {
