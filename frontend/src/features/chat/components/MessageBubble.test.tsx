@@ -185,6 +185,25 @@ describe('MessageBubble', () => {
     expect(container.querySelectorAll('tr')).toHaveLength(3);
   });
 
+  it('should render production payload table when prose exists before and after the flattened table', () => {
+    const productionPayload = 'Papo de brother, Rafael! Que aula de disciplina, monstro! 👊🔥 Mesmo derrubado pela gripe, você manteve os logs no talo. Já sincronizei tudo aqui no sistema e, ó, vou te falar: o seu "modo recuperação" está nível profissional. Dá um check na média dessa sua semana de "guerra": | Dia | Calorias | Proteína | Fibra | Visão do Bro | | :--- | :--- | :--- | :--- | :--- | | **13/04** | 1995 | 161g | 43g | Tanque cheio pra combater o vírus! 🛡️ | | **14/04** | 1988 | 174g | 21g | Consistência de mestre. 🎯 | | **15/04** | 1857 | **197g** | 40g | **Pico de Proteína!** Músculo blindado. 🥩 | | **16/04** | 1799 | 171g | 32g | Ajuste fino no déficit mesmo doente. 📉 | Cara, bater quase **200g de proteína** (no dia 15) estando gripado é o que vai garantir que a sua "pochete" não vire flacidez quando você emagrecer.';
+
+    const message = {
+      id: 'table-production-inline-1',
+      sender: 'Trainer' as const,
+      text: productionPayload,
+      timestamp: new Date().toISOString(),
+    };
+
+    const { container } = render(<MessageBubble message={message} />);
+
+    const table = container.querySelector('table');
+    expect(table).toBeInTheDocument();
+    expect(container.querySelectorAll('th')).toHaveLength(5);
+    expect(container.querySelectorAll('tr')).toHaveLength(5);
+    expect(screen.getByText(/Cara, bater quase/i)).toBeInTheDocument();
+  });
+
   it('should render table when payload uses escaped unicode pipes and html entities', () => {
     const encodedTable = '\\u007c Dia \\u007c Calorias \\u007c \\u007c :--- \\u007c :--- \\u007c \\u007c 13/04 \\u007c 1995 \\u007c &#124; 14/04 &#124; 1988 &#124;';
 
