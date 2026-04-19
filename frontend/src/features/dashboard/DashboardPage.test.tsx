@@ -204,6 +204,21 @@ describe('DashboardPage', () => {
     expect(screen.getByTestId('widget-fat')).not.toHaveClass('surface-card-hover');
   });
 
+  it('renders discrete entrypoint to central plan', () => {
+    vi.mocked(useDashboardStore).mockReturnValue({
+      ...defaultHookValues,
+      data: defaultData as any,
+    });
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId('dashboard-plan-entry')).toHaveAttribute('href', '/dashboard/plan');
+  });
+
   it('should render the daily goal widget before the other dashboard widgets', () => {
     vi.mocked(useDashboardStore).mockReturnValue({
       ...defaultHookValues,

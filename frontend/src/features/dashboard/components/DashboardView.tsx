@@ -10,6 +10,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 
 import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
 import { Skeleton } from '../../../shared/components/ui/Skeleton';
@@ -295,6 +296,23 @@ export function DashboardView({
           </div>
         </aside>
       </DashboardWorkspaceSection>
+
+      <PremiumCard withHover={false} className="p-5 bg-[color:var(--color-app-surface-raised)] border-white/10">
+        <Link
+          to="/dashboard/plan"
+          data-testid="dashboard-plan-entry"
+          className="group flex items-center justify-between gap-4"
+        >
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">{t('dashboard.plan_entry.eyebrow')}</p>
+            <p className="mt-1 text-sm font-black text-white">{t('dashboard.plan_entry.title')}</p>
+            <p className="mt-1 text-xs font-medium text-zinc-400">{t('dashboard.plan_entry.description')}</p>
+          </div>
+          <span className="rounded-full border border-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-300 transition-colors group-hover:text-white group-hover:border-white/25">
+            {t('dashboard.plan_entry.cta')}
+          </span>
+        </Link>
+      </PremiumCard>
 
       {/* --- GRID SECUNDÁRIO --- */}
       <section data-testid="dashboard-secondary-zone" className="grid grid-cols-1 md:grid-cols-4 gap-6">

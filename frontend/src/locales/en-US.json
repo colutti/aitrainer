@@ -65,6 +65,7 @@
   },
   "nav": {
     "home": "Home",
+    "plan": "Plan",
     "trainer": "Trainer",
     "workouts": "My Workouts",
     "body": "Body & Weight",
@@ -317,6 +318,52 @@
       "medium": "Medium",
       "low": "Low",
       "unknown": "Unknown"
+    },
+    "plan_entry": {
+      "eyebrow": "Central Plan",
+      "title": "Track your full plan",
+      "description": "View today's mission, upcoming days, and checkpoints in one hub.",
+      "cta": "Open"
+    }
+  },
+  "plan": {
+    "title": "Central Plan",
+    "subtitle": "Your active plan with daily execution and AI follow-up.",
+    "sections": {
+      "overview": "Plan overview",
+      "mission_today": "Today's mission",
+      "upcoming_days": "Upcoming days",
+      "latest_checkpoint": "Latest checkpoint",
+      "status": "Plan status"
+    },
+    "cards": {
+      "training": "Training",
+      "nutrition": "Nutrition",
+      "ai_followup": "AI follow-up"
+    },
+    "actions": {
+      "open_chat": "Talk to AI",
+      "request_adjustment": "Request adjustment"
+    },
+    "labels": {
+      "window": "Window",
+      "active_focus": "Active focus"
+    },
+    "status": {
+      "draft": "Draft",
+      "awaiting_approval": "Awaiting approval",
+      "active": "Active",
+      "adjustment_pending_approval": "Adjustment awaiting approval",
+      "completed": "Completed",
+      "archived": "Archived"
+    },
+    "empty": {
+      "title": "No active plan found",
+      "description": "Talk to AI to create your complete training and nutrition plan.",
+      "cta": "Create plan in chat"
+    },
+    "checkpoint": {
+      "empty": "No checkpoint has been recorded for this plan yet."
     }
   },
   "chat": {
