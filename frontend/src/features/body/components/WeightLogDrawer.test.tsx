@@ -35,9 +35,15 @@ describe('WeightLogDrawer', () => {
     
     const weightInput = screen.getByTestId('weight-kg');
     const fatInput = screen.getByTestId('body-fat-pct');
+    const dateInput = screen.getByLabelText(/Data/i);
+    const musclePctInput = screen.getByLabelText(/Massa Muscular \(%\)/i);
+    const neckInput = screen.getByLabelText(/Pescoço/i);
     
+    fireEvent.change(dateInput, { target: { value: '2026-04-01' } });
     fireEvent.change(weightInput, { target: { value: '82.5' } });
     fireEvent.change(fatInput, { target: { value: '16.2' } });
+    fireEvent.change(musclePctInput, { target: { value: '42.1' } });
+    fireEvent.change(neckInput, { target: { value: '37' } });
     
     const saveBtn = screen.getByText(/Salvar/i);
     fireEvent.click(saveBtn);
@@ -45,9 +51,30 @@ describe('WeightLogDrawer', () => {
     await waitFor(() => {
       expect(mockProps.onSubmit).toHaveBeenCalled();
       const submittedData = mockProps.onSubmit.mock.calls[0]![0];
+      expect(submittedData.date).toBe('2026-04-01');
       expect(submittedData.weight_kg).toBe(82.5);
       expect(submittedData.body_fat_pct).toBe(16.2);
+      expect(submittedData.muscle_mass_pct).toBe(42.1);
+      expect(submittedData.neck_cm).toBe(37);
     });
+  });
+
+  it('should preload new fields when editing an existing log', () => {
+    const existingLog = {
+      id: '1',
+      user_email: 'user@example.com',
+      date: '2026-04-10',
+      weight_kg: 80,
+      body_fat_pct: 15,
+      muscle_mass_pct: 40,
+      neck_cm: 36,
+    };
+
+    render(<WeightLogDrawer {...mockProps} log={existingLog} />);
+
+    expect(screen.getByLabelText(/Data/i)).toHaveValue('2026-04-10');
+    expect(screen.getByLabelText(/Massa Muscular \(%\)/i)).toHaveValue(40);
+    expect(screen.getByLabelText(/Pescoço/i)).toHaveValue(36);
   });
 
   it('should disable form controls in read-only mode', () => {

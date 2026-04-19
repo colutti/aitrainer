@@ -66,4 +66,6 @@ export interface NutritionFormData {
   protein_grams?: number | null;
   carbs_grams?: number | null;
   fat_grams?: number | null;
+  fiber_grams?: number | null;
+  sodium_mg?: number | null;
 }

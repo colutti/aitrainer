@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Activity, Clock3, Copy, Dumbbell, Plus, Save, Trash2 } from 'lucide-react';
+import { Activity, Calendar, Clock3, Copy, Dumbbell, Plus, Save, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -203,6 +203,21 @@ export function WorkoutDrawer({ workout, isOpen, isReadOnly = false, onClose }: 
       )}
       <form onSubmit={(event) => { void handleSubmit(onSubmit)(event); }} className="space-y-8 pb-24">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField
+            label={t('body.nutrition.date')}
+            id="workout-date"
+            icon={<Calendar size={14} />}
+            error={errors.date?.message ? t(errors.date.message) : undefined}
+          >
+            <Input
+              id="workout-date"
+              type="date"
+              disabled={isReadOnly}
+              {...register('date')}
+              className="h-14 rounded-2xl font-bold"
+            />
+          </FormField>
+
           <FormField
             label={t('workouts.workout_type')}
             id="workout-type"

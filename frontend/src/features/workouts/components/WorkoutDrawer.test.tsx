@@ -90,14 +90,17 @@ describe('WorkoutDrawer', () => {
       duration_minutes: 45,
       exercises: [],
       source: 'manual',
-      external_id: null,
-      notes: null,
+      external_id: undefined,
+      notes: undefined,
     });
 
     render(<WorkoutDrawer {...defaultProps} />);
 
     fireEvent.change(screen.getByLabelText(/Tipo de Treino/i), {
       target: { value: 'Push' },
+    });
+    fireEvent.change(screen.getByLabelText(/Data/i), {
+      target: { value: '2026-04-02' },
     });
     fireEvent.change(screen.getByLabelText(/Duração/i), {
       target: { value: '45' },
@@ -114,7 +117,7 @@ describe('WorkoutDrawer', () => {
 
     await waitFor(() => {
       expect(mockCreateWorkout).toHaveBeenCalledWith({
-        date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+        date: '2026-04-02',
         workout_type: 'Push',
         duration_minutes: 45,
         source: 'manual',
@@ -130,6 +133,31 @@ describe('WorkoutDrawer', () => {
         ],
       });
       expect(defaultProps.onClose).toHaveBeenCalled();
+    });
+  });
+
+  it('preloads date when editing an existing workout', async () => {
+    const existingWorkout = {
+      id: 'workout-2',
+      date: '2026-04-15T10:00:00Z',
+      workout_type: 'Pull',
+      duration_minutes: 50,
+      exercises: [
+        {
+          exercise_title: 'Barbell Row',
+          sets: [{ set_index: 1, reps: 8, weight_kg: 80 }],
+        },
+      ],
+      notes: undefined,
+      source: 'manual',
+      external_id: undefined,
+      user_email: 'test@test.com',
+    };
+
+    render(<WorkoutDrawer {...defaultProps} workout={existingWorkout} />);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Data/i)).toHaveValue('2026-04-15');
     });
   });
 

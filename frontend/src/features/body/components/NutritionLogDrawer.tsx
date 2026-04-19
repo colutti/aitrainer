@@ -19,6 +19,8 @@ const nutritionSchema = z.object({
   protein_grams: z.coerce.number().min(0).max(1000).optional().nullable(),
   carbs_grams: z.coerce.number().min(0).max(2000).optional().nullable(),
   fat_grams: z.coerce.number().min(0).max(500).optional().nullable(),
+  fiber_grams: z.coerce.number().min(0).max(200).optional().nullable(),
+  sodium_mg: z.coerce.number().min(0).max(20000).optional().nullable(),
 });
 
 interface NutritionLogDrawerProps {
@@ -62,6 +64,8 @@ export function NutritionLogDrawer({
         protein_grams: log.protein_grams,
         carbs_grams: log.carbs_grams,
         fat_grams: log.fat_grams,
+        fiber_grams: log.fiber_grams,
+        sodium_mg: log.sodium_mg,
       });
     } else {
       reset({
@@ -71,6 +75,8 @@ export function NutritionLogDrawer({
         protein_grams: 0,
         carbs_grams: 0,
         fat_grams: 0,
+        fiber_grams: 0,
+        sodium_mg: 0,
       });
     }
   }, [log, reset, isOpen]);
@@ -153,6 +159,27 @@ export function NutritionLogDrawer({
                 disabled={isReadOnly}
                 error={errors.fat_grams?.message}
                 {...register('fat_grams')}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                id="fiber_grams"
+                label={t('body.nutrition.fiber')}
+                type="number"
+                step="any"
+                disabled={isReadOnly}
+                error={errors.fiber_grams?.message}
+                {...register('fiber_grams')}
+              />
+              <Input
+                id="sodium_mg"
+                label={t('body.nutrition.sodium')}
+                type="number"
+                step="any"
+                disabled={isReadOnly}
+                error={errors.sodium_mg?.message}
+                {...register('sodium_mg')}
               />
             </div>
           </div>

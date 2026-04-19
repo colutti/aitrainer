@@ -72,6 +72,8 @@ export function NutritionTab() {
         protein_grams: data.protein_grams ?? 0,
         carbs_grams: data.carbs_grams ?? 0,
         fat_grams: data.fat_grams ?? 0,
+        fiber_grams: data.fiber_grams ?? 0,
+        sodium_mg: data.sodium_mg ?? 0,
       });
       handleCloseDrawer();
     } catch {
