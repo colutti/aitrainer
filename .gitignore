@@ -87,6 +87,7 @@ artifacts/superpowers/
 .superpowers/
 
 # Git Worktrees
+.worktrees/
 .worktrees/tmp/
 
 # Security scan reports
