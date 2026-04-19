@@ -27,6 +27,7 @@ from src.api.endpoints import (
     telegram,
     dashboard,
     stripe,
+    plan,
 )
 from src.core.config import settings
 from src.core.deps import get_mongo_database
@@ -103,6 +104,7 @@ app.include_router(hevy.router, prefix="/integrations/hevy", tags=["integrations
 app.include_router(onboarding.router, prefix="/onboarding", tags=["onboarding"])
 app.include_router(telegram.router, prefix="/telegram", tags=["telegram"])
 app.include_router(stripe.router, prefix="/stripe", tags=["stripe"])
+app.include_router(plan.router, prefix="/plan", tags=["plan"])
 
 # Admin routers moved to separate backend-admin service
 

@@ -12,6 +12,7 @@ from typing import Any
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from src.core.logs import logger
 from src.core.config import settings
+from src.services.plan_service import format_plan_snapshot
 
 
 class PromptBuilder:
@@ -53,6 +54,7 @@ class PromptBuilder:
         user_input: str,
         current_date: str | None = None,
         agenda_events: list | None = None,
+        plan_snapshot=None,
     ) -> dict:
         """
         Constructs the input data dictionary for prompt template injection.
@@ -92,6 +94,7 @@ class PromptBuilder:
 
         # Format agenda section
         agenda_section = PromptBuilder._format_agenda_section(agenda_events or [])
+        plan_section = format_plan_snapshot(plan_snapshot)
 
         return {
             "trainer_profile": trainer_profile_summary,
@@ -105,6 +108,7 @@ class PromptBuilder:
             "chat_history": formatted_history_msgs,  # For MessagesPlaceholder
             "user_message": user_message_with_tag,
             "agenda_section": agenda_section,  # Agenda section for dynamic context
+            "plan_section": plan_section,
             "current_date": current_date,
             "day_of_week": dias_pt[now.weekday()],
             "current_time": now.strftime("%H:%M"),
@@ -159,6 +163,10 @@ class PromptBuilder:
                 "## Agenda do aluno\n{agenda_section}\n\n", ""
             )
             input_data.setdefault("agenda_section", "")
+        if input_data.get("plan_section"):
+            system_content += "\n\n## Plano ativo do aluno\n{plan_section}\n"
+        else:
+            input_data.setdefault("plan_section", "")
 
         # 3. Add Telegram format if needed
         if is_telegram:

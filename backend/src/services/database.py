@@ -27,6 +27,7 @@ from src.repositories.weight_repository import WeightRepository
 from src.repositories.invite_repository import InviteRepository
 from src.repositories.prompt_repository import PromptRepository
 from src.repositories.telegram_repository import TelegramRepository
+from src.repositories.plan_repository import PlanRepository
 from src.services.adaptive_tdee import AdaptiveTDEEService
 
 
@@ -54,6 +55,7 @@ class MongoDatabase:
             self.invites = InviteRepository(self.database)
             self.prompts = PromptRepository(self.database)
             self.telegram = TelegramRepository(self.database)
+            self.plans = PlanRepository(self.database)
 
             logger.info("Successfully connected to MongoDB.")
         except pymongo.errors.ConnectionFailure as e:  # type: ignore
@@ -278,6 +280,27 @@ class MongoDatabase:
     def get_weight_logs(self, user_email: str, limit: int = 30) -> list[WeightLog]:
         """Delegates to weight repository."""
         return self.weight.get_logs(user_email, limit)
+
+    # ====== PLAN REPOSITORY DELEGATION ======
+    def save_plan(self, plan):
+        """Delegates to plan repository."""
+        return self.plans.save_plan(plan)
+
+    def get_active_plan(self, user_email: str):
+        """Delegates to plan repository."""
+        return self.plans.get_active_plan(user_email)
+
+    def get_latest_plan(self, user_email: str):
+        """Delegates to plan repository."""
+        return self.plans.get_latest_plan(user_email)
+
+    def list_plan_versions(self, user_email: str):
+        """Delegates to plan repository."""
+        return self.plans.list_plan_versions(user_email)
+
+    def approve_plan(self, user_email: str, version: int) -> bool:
+        """Delegates to plan repository."""
+        return self.plans.approve_plan(user_email, version)
 
     def get_weight_logs_by_date_range(
         self, user_email: str, start_date: date, end_date: date

@@ -141,6 +141,31 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
     "update_event": ToolMetadata(
         "update_event", ToolMemoryType.MEMORABLE, "Update scheduled event"
     ),
+    # Central plan tools
+    "get_active_plan": ToolMetadata(
+        "get_active_plan", ToolMemoryType.EPHEMERAL, "Fetch active central plan"
+    ),
+    "get_plan_prompt_snapshot": ToolMetadata(
+        "get_plan_prompt_snapshot",
+        ToolMemoryType.EPHEMERAL,
+        "Fetch compact plan snapshot",
+    ),
+    "create_plan_proposal": ToolMetadata(
+        "create_plan_proposal", ToolMemoryType.MEMORABLE, "Create plan proposal"
+    ),
+    "propose_plan_adjustment": ToolMetadata(
+        "propose_plan_adjustment",
+        ToolMemoryType.MEMORABLE,
+        "Propose plan adjustment",
+    ),
+    "approve_plan_change": ToolMetadata(
+        "approve_plan_change", ToolMemoryType.MEMORABLE, "Approve plan change"
+    ),
+    "get_today_plan_brief": ToolMetadata(
+        "get_today_plan_brief",
+        ToolMemoryType.EPHEMERAL,
+        "Fetch today's plan mission",
+    ),
 }
 
 

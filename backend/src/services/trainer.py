@@ -1,6 +1,7 @@
 """
 This module contains the AI trainer brain, which is responsible for interacting with the LLM.
 """
+# pylint: disable=too-many-lines
 
 import asyncio
 import re
@@ -73,11 +74,20 @@ from src.services.raw_data_tools import (
     create_get_events_raw_tool,
     create_get_memories_raw_tool,
 )
+from src.services.plan_tools import (
+    create_get_active_plan_tool,
+    create_get_plan_prompt_snapshot_tool,
+    create_create_plan_proposal_tool,
+    create_propose_plan_adjustment_tool,
+    create_approve_plan_change_tool,
+    create_get_today_plan_brief_tool,
+)
 from src.repositories.event_repository import EventRepository
 from src.services.memory_service import (
     get_memories_paginated as paginate_memories,
     add_memory as service_add_memory,
 )
+from src.services.plan_service import build_plan_prompt_snapshot
 from src.core.logs import logger
 from src.api.models.chat_history import ChatHistory
 from src.api.models.user_profile import UserProfile
@@ -627,6 +637,13 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             create_get_metabolism_tool(self._database, user_email),
             create_update_tdee_params_tool(self._database, user_email),
             create_reset_tdee_tracking_tool(self._database, user_email),
+            # Plan
+            create_get_active_plan_tool(self._database, user_email),
+            create_get_plan_prompt_snapshot_tool(self._database, user_email),
+            create_create_plan_proposal_tool(self._database, user_email),
+            create_propose_plan_adjustment_tool(self._database, user_email),
+            create_approve_plan_change_tool(self._database, user_email),
+            create_get_today_plan_brief_tool(self._database, user_email),
         ]
 
         if self._qdrant_client is not None:
@@ -714,6 +731,9 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             current_date=datetime.now().strftime("%Y-%m-%d"),
             agenda_events=await asyncio.to_thread(
                 EventRepository(self._database.database).get_active_events, user_email
+            ),
+            plan_snapshot=build_plan_prompt_snapshot(
+                await asyncio.to_thread(self._database.get_active_plan, user_email)
             ),
         )
         if image_payloads:
