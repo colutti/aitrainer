@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from src.api.models.plan import (
     ActivePlan,
@@ -65,6 +65,28 @@ def test_build_plan_prompt_snapshot_compacts_active_plan():
     assert snapshot.critical_constraints == ["viagem quinta"]
 
 
+def test_build_plan_prompt_snapshot_prefers_today_training_from_upcoming_days():
+    plan = make_plan()
+    plan.execution.today_training = {"title": "Push A (ontem)"}
+    plan.execution.upcoming_days = [
+        {
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "label": "Hoje",
+            "status": "planned",
+            "training": {
+                "title": "Pull B (hoje)",
+                "session": {"exercises": [{"name": "Remada", "sets": 3, "reps": "8-10"}]},
+            },
+            "nutrition": "2600 kcal",
+        }
+    ]
+
+    snapshot = build_plan_prompt_snapshot(plan)
+
+    assert snapshot is not None
+    assert snapshot.today_training == "Pull B (hoje)"
+
+
 def test_format_plan_snapshot_creates_prompt_ready_block():
     snapshot = build_plan_prompt_snapshot(make_plan())
     content = format_plan_snapshot(snapshot)
@@ -73,6 +95,24 @@ def test_format_plan_snapshot_creates_prompt_ready_block():
     assert "Periodo do plano: 2026-04-19 a 2026-06-19" in content
     assert "Push A" in content
     assert "Pull" in content
+
+
+def test_build_plan_prompt_snapshot_filters_non_future_upcoming_days():
+    plan = make_plan()
+    today_iso = datetime.now().strftime("%Y-%m-%d")
+    yesterday_iso = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    tomorrow_iso = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+    plan.execution.upcoming_days = [
+        {"date": yesterday_iso, "label": "Ontem", "training": "Push", "status": "planned"},
+        {"date": today_iso, "label": "Hoje", "training": "Pull", "status": "planned"},
+        {"date": tomorrow_iso, "label": "Amanha", "training": "Legs", "status": "planned"},
+    ]
+
+    snapshot = build_plan_prompt_snapshot(plan)
+
+    assert snapshot is not None
+    assert len(snapshot.upcoming_days) == 1
+    assert tomorrow_iso in snapshot.upcoming_days[0]
 
 
 def test_build_plan_prompt_snapshot_accepts_prebuilt_context():

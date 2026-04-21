@@ -1,6 +1,6 @@
 """Plan domain service helpers for prompt context and orchestration."""
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from src.api.models.plan import (
     ActivePlan,
@@ -167,10 +167,78 @@ def build_next_plan_version(
 
 
 def _extract_today_training(execution: dict) -> str:
-    training = execution.get("today_training", {})
+    training = _resolve_today_training_payload(execution)
     if isinstance(training, dict):
         return str(training.get("title") or training.get("summary") or "Nao definido")
     return str(training) if training else "Nao definido"
+
+
+def _parse_iso_date(value: object) -> date | None:
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00")).date()
+        except ValueError:
+            return None
+    return None
+
+
+def _is_training_like(payload: object) -> bool:
+    if isinstance(payload, str):
+        return bool(payload.strip())
+    if not isinstance(payload, dict):
+        return False
+
+    has_title = isinstance(payload.get("title"), str) and payload.get("title").strip()
+    has_summary = isinstance(payload.get("summary"), str) and payload.get("summary").strip()
+    has_session_exercises = False
+    session = payload.get("session")
+    if isinstance(session, dict) and isinstance(session.get("exercises"), list):
+        has_session_exercises = len(session["exercises"]) > 0
+    has_direct_exercises = isinstance(payload.get("exercises"), list) and len(
+        payload["exercises"]
+    ) > 0
+    return bool(
+        has_title or has_summary or has_session_exercises or has_direct_exercises
+    )
+
+
+def _resolve_today_training_payload(
+    execution: dict, reference_date: date | None = None
+) -> object:
+    today = reference_date or datetime.now().date()
+    upcoming_days = execution.get("upcoming_days")
+    if isinstance(upcoming_days, list):
+        for item in upcoming_days:
+            if not isinstance(item, dict):
+                continue
+            if item.get("status") == "rest":
+                continue
+            if _parse_iso_date(item.get("date")) != today:
+                continue
+            candidate = item.get("training")
+            if _is_training_like(candidate):
+                return candidate
+    return execution.get("today_training", {})
+
+
+def _extract_upcoming_days(execution: dict, reference_date: date | None = None) -> list[str]:
+    today = reference_date or datetime.now().date()
+    upcoming_days = execution.get("upcoming_days")
+    if not isinstance(upcoming_days, list):
+        return []
+
+    normalized: list[str] = []
+    for item in upcoming_days:
+        if isinstance(item, dict):
+            item_date = _parse_iso_date(item.get("date"))
+            if item_date is not None and item_date <= today:
+                continue
+        normalized.append(str(item))
+    return normalized
 
 
 def _extract_today_nutrition(execution: dict) -> str:
@@ -200,6 +268,8 @@ def build_plan_prompt_snapshot(
     if plan.governance.approval_request is not None:
         pending_adjustment = plan.governance.approval_request.summary
 
+    execution_payload = plan.execution.model_dump()
+
     return PlanSnapshot(
         title=plan.title,
         objective_summary=plan.objective_summary,
@@ -209,9 +279,9 @@ def build_plan_prompt_snapshot(
         ),
         status=plan.status.value,
         active_focus=plan.execution.active_focus,
-        today_training=_extract_today_training(plan.execution.model_dump()),
-        today_nutrition=_extract_today_nutrition(plan.execution.model_dump()),
-        upcoming_days=[str(item) for item in plan.execution.upcoming_days],
+        today_training=_extract_today_training(execution_payload),
+        today_nutrition=_extract_today_nutrition(execution_payload),
+        upcoming_days=_extract_upcoming_days(execution_payload),
         today_training_context=today_training_context or [],
         adherence_7d=adherence_7d,
         weight_trend_weekly=weight_trend_weekly,
@@ -250,7 +320,8 @@ def format_plan_snapshot(snapshot: PlanSnapshot | None) -> str:
                 )
             else:
                 training_context_lines.append(
-                    f"- {item.exercise_name}: {prescription} | ultima carga registrada: indisponivel"
+                    f"- {item.exercise_name}: {prescription} | "
+                    "ultima carga registrada: indisponivel"
                 )
 
     adherence_line = ""
