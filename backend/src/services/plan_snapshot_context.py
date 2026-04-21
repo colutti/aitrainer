@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 import re
 from typing import Any
+import unicodedata
 
 from src.api.models.plan import (
     ActivePlan,
@@ -38,30 +39,100 @@ def _to_date(value: Any) -> date | None:
 
 
 def _normalize_exercise_name(name: str) -> str:
-    collapsed = re.sub(r"\s+", " ", name.strip().lower())
+    no_accents = "".join(
+        ch
+        for ch in unicodedata.normalize("NFKD", name)
+        if not unicodedata.combining(ch)
+    )
+    alnum_spaced = re.sub(r"[^a-zA-Z0-9\s]", " ", no_accents.lower())
+    collapsed = re.sub(r"\s+", " ", alnum_spaced.strip())
     return collapsed
 
 
-def _extract_today_exercises(plan: ActivePlan) -> list[dict[str, Any]]:
-    training = plan.execution.today_training
-    if not isinstance(training, dict):
+def _exercise_names_match(target: str, candidate: str) -> bool:
+    normalized_target = _normalize_exercise_name(target)
+    normalized_candidate = _normalize_exercise_name(candidate)
+    if normalized_target == normalized_candidate:
+        return True
+
+    target_tokens = {token for token in normalized_target.split(" ") if token}
+    candidate_tokens = {token for token in normalized_candidate.split(" ") if token}
+    if not target_tokens or not candidate_tokens:
+        return False
+
+    shared_tokens = target_tokens.intersection(candidate_tokens)
+    if len(shared_tokens) < 2:
+        return False
+
+    return target_tokens.issubset(candidate_tokens) or candidate_tokens.issubset(
+        target_tokens
+    )
+
+
+def _training_title(payload: object) -> str | None:
+    if isinstance(payload, str):
+        return payload.strip() or None
+    if isinstance(payload, dict):
+        title = payload.get("title")
+        if isinstance(title, str) and title.strip():
+            return title.strip()
+    return None
+
+
+def _resolve_today_training_payload(
+    plan: ActivePlan, reference_date: date | None = None
+) -> tuple[object, bool]:
+    today = reference_date or datetime.now().date()
+    for day in plan.execution.upcoming_days:
+        if not isinstance(day, dict):
+            continue
+        if day.get("status") == "rest":
+            continue
+        if _to_date(day.get("date")) != today:
+            continue
+        training = day.get("training")
+        if isinstance(training, dict):
+            return training, True
+        if isinstance(training, str) and training.strip():
+            return {"title": training.strip()}, True
+    return plan.execution.today_training, False
+
+
+def _extract_today_exercises(plan: ActivePlan, now: datetime) -> list[dict[str, Any]]:
+    def _extract_exercises(training_payload: object) -> list[dict[str, Any]]:
+        if not isinstance(training_payload, dict):
+            return []
+        session = training_payload.get("session")
+        if isinstance(session, dict) and isinstance(session.get("exercises"), list):
+            return [
+                item
+                for item in session["exercises"]
+                if isinstance(item, dict) and isinstance(item.get("name"), str)
+            ]
+        direct = training_payload.get("exercises")
+        if isinstance(direct, list):
+            return [
+                item
+                for item in direct
+                if isinstance(item, dict) and isinstance(item.get("name"), str)
+            ]
         return []
 
-    session = training.get("session")
-    if isinstance(session, dict) and isinstance(session.get("exercises"), list):
-        return [
-            item
-            for item in session["exercises"]
-            if isinstance(item, dict) and isinstance(item.get("name"), str)
-        ]
-    direct = training.get("exercises")
-    if isinstance(direct, list):
-        return [
-            item
-            for item in direct
-            if isinstance(item, dict) and isinstance(item.get("name"), str)
-        ]
-    return []
+    training, from_upcoming_today = _resolve_today_training_payload(
+        plan, reference_date=now.date()
+    )
+    resolved_exercises = _extract_exercises(training)
+    if resolved_exercises:
+        return resolved_exercises
+
+    if from_upcoming_today:
+        # Keep title/exercise blocks coherent. If today's block came from upcoming_days
+        # but has no exercise list, avoid showing stale exercises from legacy today_training.
+        resolved_title = _training_title(training)
+        fallback_title = _training_title(plan.execution.today_training)
+        if resolved_title and fallback_title and resolved_title != fallback_title:
+            return []
+    return _extract_exercises(plan.execution.today_training)
 
 
 def _extract_max_positive_weight(exercise: dict[str, Any]) -> float | None:
@@ -101,7 +172,6 @@ def _build_exercise_context(
     result: list[PlanSnapshotExerciseContext] = []
     for exercise in today_exercises:
         name = str(exercise.get("name"))
-        normalized_name = _normalize_exercise_name(name)
         last_load_kg: float | None = None
         last_performed_at: str | None = None
 
@@ -116,7 +186,7 @@ def _build_exercise_context(
                 logged_name = logged_exercise.get("name")
                 if not isinstance(logged_name, str):
                     continue
-                if _normalize_exercise_name(logged_name) != normalized_name:
+                if not _exercise_names_match(name, logged_name):
                     continue
                 maybe_weight = _extract_max_positive_weight(logged_exercise)
                 if maybe_weight is not None:
@@ -276,7 +346,7 @@ def build_plan_snapshot_context(
         else []
     )
 
-    today_exercises = _extract_today_exercises(plan)
+    today_exercises = _extract_today_exercises(plan, current)
     training_context = _build_exercise_context(today_exercises, workout_logs, current)
 
     adherence = PlanSnapshotAdherence7D(

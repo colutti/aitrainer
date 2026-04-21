@@ -35,7 +35,7 @@ def make_plan() -> ActivePlan:
             "upcoming_days": [
                 {"date": "2026-04-17", "status": "planned", "training": {"title": "Push"}},
                 {"date": "2026-04-18", "status": "rest"},
-                {"date": "2026-04-19", "status": "planned", "training": {"title": "Pull"}},
+                {"date": "2026-04-19", "status": "planned", "training": {"title": "Push"}},
             ],
             "active_focus": "consistencia",
             "current_risks": [],
@@ -95,6 +95,38 @@ def test_build_plan_snapshot_context_uses_latest_session_not_historic_pr():
     supino = next(item for item in context.today_training_context if item.exercise_name == "Supino Reto")
     assert supino.last_load_kg == 80.0
     assert supino.last_performed_at == "2026-04-18"
+
+
+def test_build_plan_snapshot_context_matches_name_variation_with_suffix():
+    db = MagicMock()
+    plan = make_plan()
+    plan.execution.today_training = {
+        "title": "Push",
+        "session": {
+            "exercises": [
+                {"name": "Supino Reto Barra", "sets": 3, "reps": "8-10", "load_guidance": "RPE 8"},
+            ]
+        },
+    }
+    db.get_workout_logs.return_value = [
+        {
+            "date": datetime(2026, 4, 18, 8, 0, 0),
+            "exercises": [{"name": "Supino Reto", "reps_per_set": [8], "weights_per_set": [90.0]}],
+        }
+    ]
+    db.get_nutrition_logs_by_date_range.return_value = []
+
+    context = build_plan_snapshot_context(
+        database=db,
+        user_email="user@test.com",
+        plan=plan,
+        metabolism_data={"weight_change_per_week": -0.2},
+        now=datetime(2026, 4, 19, 10, 0, 0),
+    )
+
+    assert len(context.today_training_context) == 1
+    assert context.today_training_context[0].exercise_name == "Supino Reto Barra"
+    assert context.today_training_context[0].last_load_kg == 90.0
 
 
 def test_build_plan_snapshot_context_does_not_cross_match_similar_exercises():
@@ -190,6 +222,38 @@ def test_build_plan_snapshot_context_supports_loose_name_normalization():
     assert supino.last_load_kg == 82.0
 
 
+def test_build_plan_snapshot_context_matches_accented_name_variation():
+    db = MagicMock()
+    plan = make_plan()
+    plan.execution.today_training = {
+        "title": "Pull",
+        "session": {
+            "exercises": [
+                {"name": "Remada Curvada", "sets": 4, "reps": "8-10", "load_guidance": "RPE 8"},
+            ]
+        },
+    }
+    plan.execution.upcoming_days = []
+    db.get_workout_logs.return_value = [
+        {
+            "date": datetime(2026, 4, 18, 8, 0, 0),
+            "exercises": [{"name": "Remáda Curvada", "reps_per_set": [10], "weights_per_set": [70.0]}],
+        }
+    ]
+    db.get_nutrition_logs_by_date_range.return_value = []
+
+    context = build_plan_snapshot_context(
+        database=db,
+        user_email="user@test.com",
+        plan=plan,
+        metabolism_data={"weight_change_per_week": -0.2},
+        now=datetime(2026, 4, 19, 10, 0, 0),
+    )
+
+    assert len(context.today_training_context) == 1
+    assert context.today_training_context[0].last_load_kg == 70.0
+
+
 def test_build_plan_snapshot_context_returns_none_when_training_window_has_no_planned_days():
     db = MagicMock()
     plan = make_plan()
@@ -206,3 +270,45 @@ def test_build_plan_snapshot_context_returns_none_when_training_window_has_no_pl
     )
     assert context.adherence_7d is not None
     assert context.adherence_7d.training_percent is None
+
+
+def test_build_plan_snapshot_context_uses_today_training_exercises_from_upcoming_days():
+    db = MagicMock()
+    plan = make_plan()
+    plan.execution.today_training = {
+        "title": "Push",
+        "session": {
+            "exercises": [
+                {"name": "Supino Reto", "sets": 3, "reps": "8-10", "load_guidance": "RPE 8"},
+            ]
+        },
+    }
+    plan.execution.upcoming_days = [
+        {
+            "date": "2026-04-19",
+            "label": "Hoje",
+            "status": "planned",
+            "training": {
+                "title": "Pull",
+                "session": {
+                    "exercises": [
+                        {"name": "Remada Curvada", "sets": 4, "reps": "8-10", "load_guidance": "RPE 8"},
+                    ]
+                },
+            },
+            "nutrition": "2400 kcal",
+        }
+    ]
+    db.get_workout_logs.return_value = []
+    db.get_nutrition_logs_by_date_range.return_value = []
+
+    context = build_plan_snapshot_context(
+        database=db,
+        user_email="user@test.com",
+        plan=plan,
+        metabolism_data={"weight_change_per_week": -0.1},
+        now=datetime(2026, 4, 19, 10, 0, 0),
+    )
+
+    assert len(context.today_training_context) == 1
+    assert context.today_training_context[0].exercise_name == "Remada Curvada"
