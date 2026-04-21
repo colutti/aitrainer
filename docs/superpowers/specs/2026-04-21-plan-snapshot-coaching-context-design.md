@@ -294,11 +294,60 @@ Ajuste pendente: nenhum
 - snapshot sem plano continua retornando `None`
 - snapshot com plano agora inclui `adherence_7d`, `weight_trend_weekly` e contexto de treino
 - `last_load` usa ultima sessao relevante e ignora pesos zerados
+- `last_load` nao usa PR historico antigo quando existe sessao mais recente do mesmo exercicio
+- `last_load` escolhe a ultima sessao correta quando o exercicio aparece em multiplos treinos no historico
+- `last_load` ignora sessoes fora da janela configurada de busca
+- `last_load` ignora exercicios sem nome ou com nome vazio no historico
+- `last_load` nao quebra quando `reps_per_set` e `weights_per_set` possuem tamanhos diferentes
+- `last_load` trata exercicios com pesos parcialmente preenchidos sem estourar indice
+- `last_load` retorna ausencia de contexto quando so existem pesos `0`, `None` ou lista vazia
+- `last_load` nao contamina um exercicio com carga de outro exercicio na mesma sessao
+- comparacao de exercicios por nome normalizado funciona para variacoes triviais de espaco e caixa
+- comparacao de exercicios nao mistura exercicios diferentes com nomes parecidos demais
+- quando dois exercicios do treino de hoje compartilham prefixos semelhantes, cada um recebe apenas seu proprio historico
+- contexto do treino de hoje preserva a ordem dos exercicios prescritos no plano
+- contexto do treino de hoje continua sendo gerado mesmo quando apenas parte dos exercicios possui historico
 - aderencia de treino nao pune dias de descanso
 - aderencia de treino fica indisponivel quando nao ha treino planejado na janela
+- aderencia de treino fica indisponivel quando nao existe `upcoming_days` suficiente para inferir planejamento na janela
+- aderencia de treino retorna `100%` quando todos os dias planejados tiveram execucao
+- aderencia de treino retorna percentual parcial correto quando apenas parte dos dias planejados teve execucao
+- aderencia de treino nao contabiliza treino extra em dia nao planejado como cumprimento de outro dia
+- aderencia de treino nao considera treino duplicado no mesmo dia como aderencia maior que `100%`
+- aderencia de treino lida corretamente com janela cruzando virada de semana e virada de mes
+- aderencia de treino lida com usuario novo que tem plano ativo, mas nenhum workout log
+- aderencia de treino lida com usuario sem plano operacional detalhado sem explodir o snapshot
 - aderencia de nutricao conta percentual simples sobre 7 dias
+- aderencia de nutricao retorna `0%` para usuario sem logs nutricionais na janela
+- aderencia de nutricao retorna percentual correto para usuario com apenas `1`, `3`, `5` ou `7` dias logados
+- aderencia de nutricao ignora logs fora da janela movel de 7 dias
+- aderencia de nutricao nao duplica contagem quando houver mais de um registro no mesmo dia por legado ou dado inconsistente
+- aderencia de nutricao lida com usuario novo sem qualquer historico
 - tendencia semanal de peso reutiliza a fonte do metabolismo
+- tendencia semanal de peso usa fallback oficial do metabolismo quando nao ha dados suficientes
+- tendencia semanal de peso nao recalcula localmente quando a fonte oficial retorna valor valido
+- tendencia semanal de peso lida com valor `0.0` como dado valido, nao como ausencia
+- tendencia semanal de peso preserva sinal positivo, negativo e neutro na formatacao
+- snapshot continua valido para usuario sem peso, sem nutricao e sem treino historico
+- snapshot continua valido quando apenas um dos tres sinais novos esta disponivel
+- snapshot continua valido quando todos os sinais novos estao indisponiveis
+- formatter omite linhas opcionais sem gerar texto quebrado, duplicado ou ambiguidade
 - formatter textual inclui novos blocos sem quebrar o formato atual
+- formatter textual nao gera dump verboso de lista ou dicionario bruto no prompt
+- formatter textual mantem saida compacta mesmo com varios exercicios no treino de hoje
+- formatter textual nao inventa datas, cargas ou percentuais ausentes
+- formatter textual usa separacao consistente entre plano base e sinais enriquecidos
+
+### Casos de uso prioritarios a automatizar
+
+- usuario avancado com historico rico: recebe `last_load` em todos os exercicios principais, aderencia parcial e tendencia negativa de peso
+- usuario iniciante com plano ativo recem-criado: recebe snapshot sem `last_load`, com aderencias baixas ou indisponiveis e sem quebra no prompt
+- usuario com nutricao consistente e treino inconsistente: snapshot mostra assimetria real entre `nutrition_percent` e `training_percent`
+- usuario com treino consistente e sem logs nutricionais: snapshot mostra `training_percent` valido e `nutrition_percent` em `0%`
+- usuario em manutencao com `weight_change_per_week = 0.0`: snapshot mostra estabilidade sem tratar o valor como ausente
+- usuario com nomes de exercicio variando levemente entre plano e log: matching simples funciona sem fuzzy matching agressivo
+- usuario com exercicios distintos mas semanticamente proximos: snapshot nao cruza historico indevido entre exercicios diferentes
+- usuario sem qualquer dado historico: IA ainda recebe o plano base com enriquecimento ausente de forma segura
 
 ### Integracao
 
