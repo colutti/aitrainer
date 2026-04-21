@@ -81,13 +81,23 @@ def _parse_exercises(exercises: list[dict]) -> list[ExerciseLog]:
         reps_per_set = ex.get("reps_per_set")
         if reps_per_set is None:
             reps = ex.get("reps", 1)
-            reps_per_set = [reps] * sets
+            if isinstance(reps, list):
+                reps_per_set = reps
+                sets = len(reps_per_set)
+            else:
+                reps_per_set = [reps] * sets
 
-        # Suporta novo formato (weights_per_set) e formato antigo (weight_kg)
+        # Suporta novo formato (weights_per_set) e formatos legados (weights/weight_kg)
         weights_per_set = ex.get("weights_per_set")
         if weights_per_set is None:
-            weight_kg = ex.get("weight_kg")
-            weights_per_set = [weight_kg] * sets if weight_kg is not None else []
+            weights = ex.get("weights")
+            if isinstance(weights, list):
+                weights_per_set = weights
+                if len(weights_per_set) and len(reps_per_set) != len(weights_per_set):
+                    sets = max(sets, len(weights_per_set), len(reps_per_set))
+            else:
+                weight_kg = ex.get("weight_kg")
+                weights_per_set = [weight_kg] * sets if weight_kg is not None else []
 
         # Novos campos de cardio
         distance_meters_per_set = ex.get("distance_meters_per_set", [])

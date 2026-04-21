@@ -145,6 +145,50 @@ class TestSaveWorkoutTool(unittest.TestCase):
         self.assertEqual(saved_workout.exercises[0].reps_per_set, [10, 10, 10])
         self.assertEqual(saved_workout.exercises[0].weights_per_set, [80, 80, 80])
 
+    def test_save_workout_tool_supports_weights_alias_list(self):
+        """Test that legacy `weights` list is mapped to `weights_per_set`."""
+        tool = create_save_workout_tool(self.mock_db, "user@test.com")
+
+        result = tool.invoke(
+            {
+                "workout_type": "Push",
+                "exercises": [
+                    {
+                        "name": "Supino Reto",
+                        "sets": 3,
+                        "reps_per_set": [10, 8, 6],
+                        "weights": [80, 82, 84],
+                    }
+                ],
+            }
+        )
+
+        self.assertIn("sucesso", result.lower())
+        saved_workout = self.mock_db.save_workout_log.call_args[0][0]
+        self.assertEqual(saved_workout.exercises[0].weights_per_set, [80, 82, 84])
+
+    def test_save_workout_tool_supports_reps_list_alias(self):
+        """Test that legacy `reps` list is mapped to `reps_per_set`."""
+        tool = create_save_workout_tool(self.mock_db, "user@test.com")
+
+        result = tool.invoke(
+            {
+                "workout_type": "Pull",
+                "exercises": [
+                    {
+                        "name": "Puxada Alta",
+                        "sets": 3,
+                        "reps": [12, 10, 8],
+                        "weights_per_set": [50, 55, 60],
+                    }
+                ],
+            }
+        )
+
+        self.assertIn("sucesso", result.lower())
+        saved_workout = self.mock_db.save_workout_log.call_args[0][0]
+        self.assertEqual(saved_workout.exercises[0].reps_per_set, [12, 10, 8])
+
     def test_save_workout_tool_with_custom_date(self):
         """Test that workout is saved with custom date."""
         tool = create_save_workout_tool(self.mock_db, "user@test.com")
