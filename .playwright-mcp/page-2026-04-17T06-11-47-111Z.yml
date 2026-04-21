@@ -1,0 +1,109 @@
+- generic [ref=e3]:
+  - generic [ref=e5]:
+    - img "Google" [ref=e7]
+    - generic [ref=e8]:
+      - heading "Couldn’t sign you in" [level=1] [ref=e11]
+      - generic [ref=e12]:
+        - generic [ref=e16]:
+          - paragraph [ref=e17]:
+            - text: This browser or app may not be secure.
+            - link "Learn more" [ref=e18] [cursor=pointer]:
+              - /url: https://support.google.com/accounts/answer/7675428?hl=en-US
+          - paragraph [ref=e19]: Try using a different browser. If you’re already using a supported browser, you can try again to sign in.
+        - link "Try again" [ref=e23] [cursor=pointer]:
+          - /url: /restart?app_domain=https://fityq-488619.firebaseapp.com&client_id=359890746855-ma09tomd2vi31usnjeitcqg4p2772759.apps.googleusercontent.com&continue=https://accounts.google.com/signin/oauth/legacy/consent?authuser%3Dunknown%26part%3DAJi8hAOWUCgKsajBAITpEiUVZpmaB6TTz4S9Lngb1JlEyKVZ5-ABgGDBNTxzmPN6lz9WdV9AXmY6b34EHBY7IGIm7u4iXyvnb4TxaIIEM0O3K8J6Fjoop3Rg72F9JIqyPZfL8juu-ULM3OUPr475XrKMJ7kSktva6tcn6-SV99btKrhhkYBFlyG7FR4xM5--SDkfrpfJ2pBfCmLtjGmPCTsx7vBuqLsK4lQXCQ3i4wrkkSNZgfqAYpk7a-3G_Ndbhu7e0p1jjlTBnM_x7eDQI5zZeuG818mtxDxaMQNZBJFp0Z_W8-6l-YtVMM7sWgRT7WhEQjDNY08WxhCOaBZocgIsaCDCFIG41IkHgWFmyLZePIHxoxYmpOdZWomOb1Y3vyjhUwlRrJNYxfT0Yb9NbxFy_SNb042pR1HT_lWq-AAPN6iNaAEn-82ukguNuQMPK-IFU7x039n5oI97_39Jq4wX7RD6f1QbrXAfvd78RFSAVdKBHjH7IvjDtZ36_zw94VtgQ1tanlhQPwi9HvzLxfXM2HPn0Au_OI0sz00fZujNh7B2v44h-18EgGi6CpYFeAcjK11cFB6KnSNcDKz-eO-gYIWLDBRq2Ldxr1KsA78hxlhBCiok6vtJ7quY1vTxh7sW7jDMkdeGYHmfVbB_wiN26m1FsMaZnw%26flowName%3DGeneralOAuthFlow%26as%3DS958479303%253A1776406286879244%26client_id%3D359890746855-ma09tomd2vi31usnjeitcqg4p2772759.apps.googleusercontent.com%23&dsh=S958479303:1776406286879244&flowName=GeneralOAuthLite&o2v=1&opparams=%253Fcontext_uri%253Dhttps%25253A%25252F%25252Ffityq.com&rart=ANgoxceT56EULdPPhzDxyORFUFAjMEu2F_0qvAc3f2VOkuNoIlrNBqOj8He9lHrJ8b6lg-rigeZrRdIQsss0KUF8k_o1tp0VPsS76Q_4b5Ybvje4pD5brao&redirect_uri=https://fityq-488619.firebaseapp.com/__/auth/handler&response_type=code&scope=openid+https://www.googleapis.com/auth/userinfo.email+profile&service=lso&state=AMbdmDk3RHUEGZFaPKRyOoDvoLYrAqd7Bp68a-TIGD0GKlCQOjU475tNt6aWhyicLdv3K-nYsVYLa1m_M2dn1xumXZw8vlg9jSOUtoG57LlDEtNviFVZdN_b49JQK9qYlJmN1Fo_32fPQUqEK1dFOuMKDJ8m7n8KrGPoct3V-JCGYu-0K3stCS5COGWqm0Nnz5rpKBc6xBjLB-lnepiuhcH1p5Tgun_uEHclgTMliDyV0JcltQ0Kq3Fb1fH6k5WsM_yy-NYNaGTW4Uv5EANJEUZG-L5uvGFijHF1iHw60Xu2A78mELTjAASe02G-EKvL3yQ252Iuzw
+  - contentinfo [ref=e25]:
+    - combobox [ref=e28] [cursor=pointer]:
+      - option "Afrikaans"
+      - option "azərbaycan"
+      - option "bosanski"
+      - option "català"
+      - option "Čeština"
+      - option "Cymraeg"
+      - option "Dansk"
+      - option "Deutsch"
+      - option "eesti"
+      - option "English (United Kingdom)"
+      - option "English (United States)" [selected]
+      - option "Español (España)"
+      - option "Español (Latinoamérica)"
+      - option "euskara"
+      - option "Filipino"
+      - option "Français (Canada)"
+      - option "Français (France)"
+      - option "Gaeilge"
+      - option "galego"
+      - option "Hrvatski"
+      - option "Indonesia"
+      - option "isiZulu"
+      - option "íslenska"
+      - option "Italiano"
+      - option "Kiswahili"
+      - option "latviešu"
+      - option "lietuvių"
+      - option "magyar"
+      - option "Melayu"
+      - option "Nederlands"
+      - option "norsk"
+      - option "o‘zbek"
+      - option "polski"
+      - option "Português (Brasil)"
+      - option "Português (Portugal)"
+      - option "română"
+      - option "shqip"
+      - option "Slovenčina"
+      - option "slovenščina"
+      - option "srpski (latinica)"
+      - option "Suomi"
+      - option "Svenska"
+      - option "Tiếng Việt"
+      - option "Türkçe"
+      - option "Ελληνικά"
+      - option "беларуская"
+      - option "български"
+      - option "кыргызча"
+      - option "қазақ тілі"
+      - option "македонски"
+      - option "монгол"
+      - option "Русский"
+      - option "српски (ћирилица)"
+      - option "Українська"
+      - option "ქართული"
+      - option "հայերեն"
+      - option "‫עברית‬‎"
+      - option "‫اردو‬‎"
+      - option "‫العربية‬‎"
+      - option "‫فارسی‬‎"
+      - option "አማርኛ"
+      - option "नेपाली"
+      - option "मराठी"
+      - option "हिन्दी"
+      - option "অসমীয়া"
+      - option "বাংলা"
+      - option "ਪੰਜਾਬੀ"
+      - option "ગુજરાતી"
+      - option "ଓଡ଼ିଆ"
+      - option "தமிழ்"
+      - option "తెలుగు"
+      - option "ಕನ್ನಡ"
+      - option "മലയാളം"
+      - option "සිංහල"
+      - option "ไทย"
+      - option "ລາວ"
+      - option "မြန်မာ"
+      - option "ខ្មែរ"
+      - option "한국어"
+      - option "中文（香港）"
+      - option "日本語"
+      - option "简体中文"
+      - option "繁體中文"
+    - list [ref=e29]:
+      - listitem [ref=e30]:
+        - link "Help" [ref=e31] [cursor=pointer]:
+          - /url: https://support.google.com/accounts?hl=en-US&p=account_iph
+      - listitem [ref=e32]:
+        - link "Privacy" [ref=e33] [cursor=pointer]:
+          - /url: https://accounts.google.com/TOS?loc=ES&hl=en-US&privacy=true
+      - listitem [ref=e34]:
+        - link "Terms" [ref=e35] [cursor=pointer]:
+          - /url: https://accounts.google.com/TOS?loc=ES&hl=en-US

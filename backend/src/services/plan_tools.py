@@ -10,7 +10,11 @@ from src.services.plan_service import (
     build_next_plan_version,
     build_plan_prompt_snapshot,
     format_plan_snapshot,
+    missing_intake_fields,
+    missing_execution_fields,
 )
+from src.services.adaptive_tdee import AdaptiveTDEEService
+from src.services.plan_snapshot_context import build_plan_snapshot_context
 
 
 class ApprovePlanInput(BaseModel):
@@ -24,6 +28,57 @@ class ProposeAdjustmentInput(BaseModel):
 
     change_reason: str = Field(..., min_length=1)
     proposal_summary: str = Field(..., min_length=1)
+
+
+def create_plan_help_tool(_database, _user_email: str):
+    """Provides operational contract for plan creation tools."""
+
+    @tool
+    def plan_help() -> str:
+        """Retorna guia de como montar e ajustar plano com as tools de plano."""
+        return (
+            "# Plan Tools Help\n\n"
+            "## Fluxo obrigatorio\n"
+            "discovery -> criacao/edicao direta -> acompanhamento continuo\n\n"
+            "## Regras\n"
+            "- Nao chamar create_plan_proposal com intake incompleto.\n"
+            "- Fazer perguntas de discovery ate preencher todos os campos obrigatorios.\n"
+            "- Nao criar plano sem prescricao operacional de treino/nutricao.\n"
+            "- Nao pedir aprovacao nem proposta para criar/editar plano.\n"
+            "- O plano e unico por usuario: editar sempre sobrescreve o plano atual.\n\n"
+            "## Campos obrigatorios em strategy\n"
+            "- dias_disponiveis_treino\n"
+            "- frequencia_treino_semana\n"
+            "- nivel_treinamento\n"
+            "- restricoes_lesoes\n"
+            "- tempo_por_sessao_min\n"
+            "- preferencia_ambiente\n\n"
+            "## Campos obrigatorios em execution\n"
+            "- today_training (com session.exercises detalhado)\n"
+            "- today_nutrition (metas objetivas)\n"
+            "- upcoming_days (com proximos dias reais)\n\n"
+            "- cada dia planned/adjusted em upcoming_days deve incluir\n"
+            "  training.session.exercises\n\n"
+            "## Exemplo minimo de execution\n"
+            "```json\n"
+            "{\n"
+            '  "today_training": {"title": "Lower A", "session": {"exercises": ['
+            '{"name":"Agachamento","sets":4,"reps":"6-8","load_guidance":"RPE 8"}]}},\n'
+            '  "today_nutrition": {"calories": 2400, "protein_target": 140, '
+            '"carbs_target": 260, "fat_target": 70},\n'
+            '  "upcoming_days": [{"date":"2026-04-20","label":"Amanha",'
+            '"training":"Upper A","nutrition":"2400 kcal","status":"planned"}]\n'
+            "}\n"
+            "```\n\n"
+            "## Ferramentas recomendadas\n"
+            "- get_active_plan\n"
+            "- get_plan_prompt_snapshot\n"
+            "- create_plan_proposal\n"
+            "- propose_plan_adjustment\n"
+            "- get_today_plan_brief\n"
+        )
+
+    return plan_help
 
 
 def create_get_active_plan_tool(database, user_email: str):
@@ -47,16 +102,28 @@ def create_get_plan_prompt_snapshot_tool(database, user_email: str):
     def get_plan_prompt_snapshot() -> str:
         """Retorna o snapshot compacto de plano usado no contexto do prompt."""
         plan = database.get_active_plan(user_email)
-        snapshot = build_plan_prompt_snapshot(plan)
-        if snapshot is None:
+        if plan is None:
             return "Nenhum plano ativo encontrado."
+        metabolism_data = AdaptiveTDEEService(database).calculate_tdee(user_email)
+        context = build_plan_snapshot_context(
+            database=database,
+            user_email=user_email,
+            plan=plan,
+            metabolism_data=metabolism_data,
+        )
+        snapshot = build_plan_prompt_snapshot(
+            plan,
+            today_training_context=context.today_training_context,
+            adherence_7d=context.adherence_7d,
+            weight_trend_weekly=context.weight_trend_weekly,
+        )
         return format_plan_snapshot(snapshot)
 
     return get_plan_prompt_snapshot
 
 
 def create_create_plan_proposal_tool(database, user_email: str):
-    """Creates a new plan proposal version awaiting user approval."""
+    """Creates a new active plan version immediately."""
 
     @tool(args_schema=PlanProposalInput)
     # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -68,8 +135,23 @@ def create_create_plan_proposal_tool(database, user_email: str):
         execution: dict,
         tracking: dict,
     ) -> str:
-        """Cria uma nova proposta de plano aguardando aprovacao do usuario."""
+        """Cria uma nova versao ativa de plano com dados completos."""
         latest = database.get_latest_plan(user_email)
+        merged_strategy = (
+            {**latest.strategy.model_dump(), **strategy} if latest else strategy
+        )
+        merged_execution = (
+            {**latest.execution.model_dump(), **execution} if latest else execution
+        )
+        missing_strategy_fields = missing_intake_fields(merged_strategy)
+        missing_exec_fields = missing_execution_fields(merged_execution)
+        if missing_strategy_fields or missing_exec_fields:
+            missing_list = ", ".join(missing_strategy_fields + missing_exec_fields)
+            return (
+                "Plano incompleto. Antes de criar proposta, colete estes campos: "
+                f"{missing_list}."
+            )
+
         proposal = PlanProposalInput(
             title=title,
             objective_summary=objective_summary,
@@ -80,7 +162,10 @@ def create_create_plan_proposal_tool(database, user_email: str):
         )
         plan = build_next_plan_version(user_email, latest, proposal)
         plan_id = database.save_plan(plan)
-        return f"Proposta de plano criada com sucesso (ID: {plan_id}, versao {plan.version})."
+        return (
+            "Plano criado/atualizado com sucesso (sem aprovacao necessaria). "
+            f"ID: {plan_id}."
+        )
 
     return create_plan_proposal
 
@@ -90,36 +175,15 @@ def create_propose_plan_adjustment_tool(database, user_email: str):
 
     @tool(args_schema=ProposeAdjustmentInput)
     def propose_plan_adjustment(change_reason: str, proposal_summary: str) -> str:
-        """Propõe ajuste com base no plano mais recente e pede aprovacao."""
+        """Propõe ajuste com base no plano mais recente e aplica nova versao ativa."""
         latest = database.get_latest_plan(user_email)
         if latest is None:
-            return "Nao existe plano para ajustar. Crie uma proposta inicial primeiro."
-
-        proposal = PlanProposalInput(
-            title=latest.title,
-            objective_summary=latest.objective_summary,
-            change_reason=change_reason,
-            strategy={},
-            execution={
-                "pending_changes": [
-                    {
-                        "reason": change_reason,
-                        "summary": proposal_summary,
-                    }
-                ]
-            },
-            tracking={},
-        )
-        new_plan = build_next_plan_version(
-            user_email=user_email,
-            latest_plan=latest,
-            payload=proposal,
-            approval_summary=proposal_summary,
-        )
-        plan_id = database.save_plan(new_plan)
+            return "Nao existe plano para ajustar. Crie um plano inicial primeiro."
+        _ = (change_reason, proposal_summary)
         return (
-            "Ajuste proposto. Aguardando aprovacao do usuario "
-            f"(ID: {plan_id}, versao {new_plan.version})."
+            "Para ajustar o plano, use create_plan_proposal com payload estruturado "
+            "(strategy/execution/tracking) contendo as alteracoes completas. "
+            "Nao existe fluxo de aprovacao."
         )
 
     return propose_plan_adjustment

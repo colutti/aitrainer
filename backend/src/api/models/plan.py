@@ -74,16 +74,50 @@ class PlanGovernance(BaseModel):
     approval_request: PlanApprovalRequest | None = None
 
 
+class PlanSnapshotExerciseContext(BaseModel):
+    """Exercise-level context to enrich coaching instructions."""
+
+    exercise_name: str = Field(..., min_length=1)
+    prescribed_sets: str | None = None
+    prescribed_reps: str | None = None
+    load_guidance: str | None = None
+    last_load_kg: float | None = None
+    last_load_text: str | None = None
+    last_performed_at: str | None = None
+
+
+class PlanSnapshotAdherence7D(BaseModel):
+    """Compact 7-day adherence block for training and nutrition."""
+
+    training_percent: int | None = Field(default=None, ge=0, le=100)
+    nutrition_percent: int | None = Field(default=None, ge=0, le=100)
+    window_start: str = Field(..., min_length=1)
+    window_end: str = Field(..., min_length=1)
+
+
+class PlanSnapshotWeightTrend(BaseModel):
+    """Weekly weight trend context attached to plan snapshot."""
+
+    value_kg_per_week: float
+    source: str = Field(..., min_length=1)
+
+
 class PlanSnapshot(BaseModel):
     """Compact and prompt-safe active plan context."""
 
     title: str = Field(..., min_length=1)
     objective_summary: str = Field(..., min_length=1)
+    plan_period: str = Field(..., min_length=1)
     status: str = Field(..., min_length=1)
     active_focus: str = Field(..., min_length=1)
     today_training: str = Field(..., min_length=1)
     today_nutrition: str = Field(..., min_length=1)
     upcoming_days: list[str] = Field(default_factory=list)
+    today_training_context: list[PlanSnapshotExerciseContext] = Field(
+        default_factory=list,
+    )
+    adherence_7d: PlanSnapshotAdherence7D | None = None
+    weight_trend_weekly: PlanSnapshotWeightTrend | None = None
     last_checkpoint_summary: str | None = None
     critical_constraints: list[str] = Field(default_factory=list)
     pending_adjustment: str | None = None

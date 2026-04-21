@@ -24,6 +24,7 @@ def test_prompt_builder_injects_plan_section_when_snapshot_exists():
     snapshot = PlanSnapshot(
         title="Plano Atual",
         objective_summary="Ganhar massa",
+        plan_period="2026-04-19 a 2026-06-19",
         status="active",
         active_focus="consistencia",
         today_training="Push",
@@ -45,4 +46,5 @@ def test_prompt_builder_removes_plan_section_when_snapshot_missing():
     input_data = _base_input(None)
     rendered = PromptBuilder.get_prompt_template(input_data).format(**input_data)
 
-    assert "## Plano ativo do aluno" not in rendered
+    assert "## Plano ativo do aluno" in rendered
+    assert "Nenhum plano ativo registrado." in rendered

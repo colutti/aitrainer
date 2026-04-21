@@ -328,8 +328,9 @@
   },
   "plan": {
     "title": "Plano Central",
-    "subtitle": "Seu plano ativo com execucao diaria e acompanhamento da IA.",
+    "subtitle": "Seu plano ativo com execucao diaria.",
     "sections": {
+      "time_window": "Periodo do plano",
       "overview": "Visao geral do plano",
       "mission_today": "Missao de hoje",
       "upcoming_days": "Proximos dias",
@@ -364,6 +365,9 @@
     },
     "checkpoint": {
       "empty": "Ainda nao ha checkpoint registrado para este plano."
+    },
+    "upcoming": {
+      "empty": "Sem atividades planejadas para os proximos dias."
     }
   },
   "chat": {

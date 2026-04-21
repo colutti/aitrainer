@@ -52,12 +52,23 @@ COPY --from=build /app/dist /usr/share/nginx/html
 # Copy nginx configuration as a template for envsubst
 COPY nginx.conf /etc/nginx/templates/default.conf.template
 
-# Expose port 80
-EXPOSE 80
+# Default Cloud Run-compatible port and runtime-config variables for nginx template rendering.
+ENV PORT=8080 \
+    VITE_FIREBASE_API_KEY= \
+    VITE_FIREBASE_AUTH_DOMAIN= \
+    VITE_FIREBASE_PROJECT_ID= \
+    VITE_FIREBASE_STORAGE_BUCKET= \
+    VITE_FIREBASE_MESSAGING_SENDER_ID= \
+    VITE_FIREBASE_APP_ID= \
+    VITE_USE_FIREBASE_AUTH_EMULATOR=false \
+    BACKEND_URL=http://localhost:8000
+
+# Expose Cloud Run port
+EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
+  CMD wget --quiet --tries=1 --spider http://localhost:${PORT}/ || exit 1
 
 # Start nginx
 # nosemgrep: dockerfile.security.missing-user.missing-user

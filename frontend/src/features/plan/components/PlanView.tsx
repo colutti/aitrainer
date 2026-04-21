@@ -1,11 +1,10 @@
-import { ArrowRight, Calendar, ClipboardCheck, Sparkles, Target } from 'lucide-react';
+import { ArrowRight, Calendar, ClipboardCheck, Target } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '../../../shared/components/ui/Button';
 import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
 import { Skeleton } from '../../../shared/components/ui/Skeleton';
 import type { Plan } from '../../../shared/types/plan';
-import { cn } from '../../../shared/utils/cn';
 
 interface PlanViewProps {
   plan: Plan | null;
@@ -13,20 +12,15 @@ interface PlanViewProps {
   onOpenChat: () => void;
 }
 
-function PlanStatusPill({ tone, message }: { tone: Plan['status_banner']['tone']; message: string }) {
-  const toneClassName = {
-    on_track: 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10',
-    attention: 'text-amber-300 border-amber-500/30 bg-amber-500/10',
-    pending_review: 'text-indigo-300 border-indigo-500/30 bg-indigo-500/10',
-    awaiting_approval: 'text-sky-300 border-sky-500/30 bg-sky-500/10',
-  }[tone];
-
-  return (
-    <div className={cn('inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em]', toneClassName)}>
-      <Sparkles size={12} />
-      <span>{message}</span>
-    </div>
-  );
+function formatDateByLocale(value: string, locale: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return value;
+  const year = Number(match[1]);
+  const month = Number(match[2]) - 1;
+  const day = Number(match[3]);
+  const date = new Date(year, month, day);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(locale).format(date);
 }
 
 function MissionList({ title, items }: { title: string; items: string[] }) {
@@ -55,7 +49,7 @@ function PlanSkeleton() {
 }
 
 export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   if (isLoading) {
     return <PlanSkeleton />;
@@ -77,21 +71,24 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
 
   return (
     <div className="space-y-6 pb-20" data-testid="plan-view">
+      <PremiumCard className="p-6 md:p-8 space-y-4 bg-[color:var(--color-app-surface-raised)] border-white/10">
+        <div className="flex items-center gap-2 text-white">
+          <Calendar size={18} className="text-blue-300" />
+          <h3 className="text-lg font-black uppercase tracking-wide">{t('plan.sections.time_window')}</h3>
+        </div>
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-black uppercase tracking-[0.15em] text-zinc-200">
+          <span>
+            {formatDateByLocale(plan.overview.start_date, i18n.language)} - {formatDateByLocale(plan.overview.end_date, i18n.language)}
+          </span>
+        </div>
+      </PremiumCard>
+
       <PremiumCard className="p-6 md:p-8 bg-[color:var(--color-app-surface-raised)] border-white/10">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="flex flex-col gap-4">
           <div className="space-y-2">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">{t('plan.sections.overview')}</p>
             <h2 className="text-2xl md:text-3xl font-black tracking-tight text-white">{plan.overview.title}</h2>
             <p className="max-w-2xl text-sm font-medium text-zinc-300">{plan.overview.objective_summary}</p>
-            <p className="text-xs font-semibold text-zinc-500">
-              {t('plan.labels.window')}: {plan.overview.start_date} - {plan.overview.end_date}
-            </p>
-          </div>
-          <div className="space-y-3">
-            <PlanStatusPill tone={plan.status_banner.tone} message={plan.status_banner.message} />
-            <Button type="button" variant="secondary" onClick={onOpenChat} className="rounded-full border-white/10 bg-white/5 text-white hover:bg-white/10">
-              {t('plan.actions.open_chat')}
-            </Button>
           </div>
         </div>
       </PremiumCard>
@@ -101,15 +98,9 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
           <Target size={18} className="text-indigo-300" />
           <h3 className="text-lg font-black uppercase tracking-wide">{t('plan.sections.mission_today')}</h3>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <MissionList title={t('plan.cards.training')} items={plan.mission_today.training} />
           <MissionList title={t('plan.cards.nutrition')} items={plan.mission_today.nutrition} />
-          <div className="space-y-3">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">{t('plan.cards.ai_followup')}</p>
-            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-sm font-semibold text-zinc-200">
-              {plan.mission_today.coaching}
-            </div>
-          </div>
         </div>
       </PremiumCard>
 
@@ -120,16 +111,29 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
             <h3 className="text-lg font-black uppercase tracking-wide">{t('plan.sections.upcoming_days')}</h3>
           </div>
           <div className="space-y-3">
-            {plan.upcoming_days.map((day) => (
-              <div key={`${day.date}-${day.label}`} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-black text-white">{day.label}</p>
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">{day.status}</span>
+            {plan.upcoming_days.length > 0 ? (
+              plan.upcoming_days.map((day) => (
+                <div key={`${day.date}-${day.label}`} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-black text-white">{day.label}</p>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">{day.status}</span>
+                  </div>
+                  <p className="mt-2 text-xs font-semibold text-zinc-300">{day.training}</p>
+                  {day.training_details.length > 0 ? (
+                    <ul className="mt-2 space-y-1">
+                      {day.training_details.map((detail) => (
+                        <li key={`${day.date}-${detail}`} className="text-xs font-semibold text-zinc-400">
+                          {detail}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  <p className="mt-1 text-xs font-semibold text-zinc-400">{day.nutrition}</p>
                 </div>
-                <p className="mt-2 text-xs font-semibold text-zinc-300">{day.training}</p>
-                <p className="mt-1 text-xs font-semibold text-zinc-400">{day.nutrition}</p>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-xs font-semibold text-zinc-400">{t('plan.upcoming.empty')}</p>
+            )}
           </div>
         </PremiumCard>
 
@@ -150,17 +154,10 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
             )}
           </PremiumCard>
 
-          <PremiumCard className="p-6 space-y-3 bg-[color:var(--color-app-surface-raised)] border-white/10">
-            <h3 className="text-sm font-black uppercase tracking-wide text-white">{t('plan.sections.status')}</h3>
-            <p className="text-xs font-semibold text-zinc-400">{t(`plan.status.${plan.overview.status}`)}</p>
-            <p className="text-xs font-semibold text-zinc-500">
-              {t('plan.labels.active_focus')}: {plan.overview.active_focus}
-            </p>
-            <Button type="button" variant="ghost" onClick={onOpenChat} className="w-full justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-black uppercase tracking-[0.15em] text-white hover:bg-white/10">
-              {t('plan.actions.request_adjustment')}
-              <ArrowRight size={14} />
-            </Button>
-          </PremiumCard>
+          <Button type="button" variant="ghost" onClick={onOpenChat} className="w-full justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-black uppercase tracking-[0.15em] text-white hover:bg-white/10">
+            {t('plan.actions.request_adjustment')}
+            <ArrowRight size={14} />
+          </Button>
         </div>
       </div>
     </div>

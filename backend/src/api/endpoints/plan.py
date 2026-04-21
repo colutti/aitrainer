@@ -10,7 +10,11 @@ from src.core.demo_access import WritableCurrentUser
 from src.core.deps import get_mongo_database
 from src.services.auth import verify_token
 from src.services.database import MongoDatabase
-from src.services.plan_service import build_next_plan_version
+from src.services.plan_service import (
+    build_next_plan_version,
+    missing_intake_fields,
+    missing_execution_fields,
+)
 
 router = APIRouter()
 
@@ -41,7 +45,7 @@ class ApprovePlanResponse(BaseModel):
 
 @router.get("/active", response_model=ActivePlan)
 def get_active_plan(user_email: CurrentUser, db: DatabaseDep) -> ActivePlan:
-    """Get active plan for authenticated user."""
+    """Get current active plan for authenticated user."""
     plan = db.get_active_plan(user_email)
     if plan is None:
         raise HTTPException(status_code=404, detail="Active plan not found")
@@ -60,8 +64,28 @@ def create_plan_proposal(
     db: DatabaseDep,
     payload: PlanProposalInput,
 ) -> CreatePlanProposalResponse:
-    """Create a new proposed plan version awaiting approval."""
+    """Create a new plan version and activate it immediately."""
     latest = db.get_latest_plan(user_email)
+    merged_strategy = (
+        {**latest.strategy.model_dump(), **payload.strategy}
+        if latest is not None
+        else payload.strategy
+    )
+    merged_execution = (
+        {**latest.execution.model_dump(), **payload.execution}
+        if latest is not None
+        else payload.execution
+    )
+    missing_fields = missing_intake_fields(merged_strategy) + missing_execution_fields(
+        merged_execution
+    )
+    if missing_fields:
+        missing_list = ", ".join(missing_fields)
+        raise HTTPException(
+            status_code=422,
+            detail=f"Plano incompleto. Campos obrigatorios ausentes: {missing_list}",
+        )
+
     plan = build_next_plan_version(user_email, latest, payload)
     version = plan.version
 
@@ -69,7 +93,7 @@ def create_plan_proposal(
     return CreatePlanProposalResponse(
         id=plan_id,
         version=version,
-        status=PlanStatus.AWAITING_APPROVAL,
+        status=PlanStatus.ACTIVE,
     )
 
 
@@ -79,8 +103,9 @@ def approve_plan(
     db: DatabaseDep,
     payload: ApprovePlanRequest,
 ) -> ApprovePlanResponse:
-    """Approve a pending plan version and make it active."""
-    approved = db.approve_plan(user_email, payload.version)
-    if not approved:
-        raise HTTPException(status_code=404, detail="Plan version not found")
-    return ApprovePlanResponse(approved=True, version=payload.version)
+    """Deprecated endpoint kept for backward compatibility."""
+    _ = (user_email, db, payload)
+    raise HTTPException(
+        status_code=410,
+        detail="Fluxo de aprovacao foi removido. O plano e criado/editado diretamente.",
+    )

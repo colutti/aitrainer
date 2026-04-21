@@ -163,10 +163,7 @@ class PromptBuilder:
                 "## Agenda do aluno\n{agenda_section}\n\n", ""
             )
             input_data.setdefault("agenda_section", "")
-        if input_data.get("plan_section"):
-            system_content += "\n\n## Plano ativo do aluno\n{plan_section}\n"
-        else:
-            input_data.setdefault("plan_section", "")
+        input_data.setdefault("plan_section", "")
 
         # 3. Add Telegram format if needed
         if is_telegram:

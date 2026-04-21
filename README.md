@@ -21,11 +21,13 @@
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **Framework**: React 19 + Vite 7 + TypeScript 5.7+
+- **Framework**: React 19 + Vite 7.2.4 + TypeScript 5.9.3
 - **Styling**: TailwindCSS v4
 - **State**: Zustand 5 + React Hook Form 7
 - **Charts**: Recharts 2.15+
-- **Testing**: Vitest 3 + Testing Library + Playwright 1.50+
+- **Routing**: React Router 7.6
+- **i18n**: i18next 25.8 + react-i18next 16.5
+- **Testing**: Vitest 3.0.5 + Testing Library + Playwright 1.50.2
 
 ### Backend
 - **Framework**: FastAPI (Python 3.12+)
@@ -103,11 +105,19 @@ make test-once
 ```
 
 This runs:
-- backend verification
-- backend-admin verification
-- frontend verification
-- admin frontend verification
-- Playwright E2E against real backend and frontend services
+- `quick.sh`: backend, backend-admin, frontend, admin-frontend verification
+- `e2e.sh`: Playwright E2E against real backend and frontend services
+
+For complete verification including security checks:
+
+```bash
+make verify-all
+```
+
+This runs:
+- `quick.sh`: all service verification
+- `e2e.sh`: Playwright E2E tests
+- `security.sh`: security verification
 
 The container stack also starts MongoDB, Qdrant, and `stripe-mock` as internal dependencies.
 
@@ -179,6 +189,21 @@ When coverage or E2E runs complete, the generated reports are written to:
 2. **Standardized CRUD**: Shared repositories and components for consistent data handling.
 3. **Mock First**: Frontend tests always mock the backend for speed and isolation.
 4. **Zero Tolerance**: 0 warnings or hints allowed in container logs, frontend, or backend.
+
+---
+
+## 🤖 Agent Workflows
+
+Project-specific workflows live in [`.agent/workflows`](/.agent/workflows):
+- `brainstorming.md`
+- `writing-plans.md`
+- `executing-plans.md`
+- `report-bug.md`
+- `run-all-tests.md`
+- `cleancode.md`
+
+Project-specific design skill:
+- [`.agent/skills/ui-ux-pro-max/SKILL.md`](/.agent/skills/ui-ux-pro-max/SKILL.md)
 
 ---
 

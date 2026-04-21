@@ -1,7 +1,18 @@
 from datetime import datetime
 
-from src.api.models.plan import ActivePlan, PlanStatus
-from src.services.plan_service import build_plan_prompt_snapshot, format_plan_snapshot
+from src.api.models.plan import (
+    ActivePlan,
+    PlanProposalInput,
+    PlanSnapshotAdherence7D,
+    PlanSnapshotExerciseContext,
+    PlanSnapshotWeightTrend,
+    PlanStatus,
+)
+from src.services.plan_service import (
+    build_next_plan_version,
+    build_plan_prompt_snapshot,
+    format_plan_snapshot,
+)
 
 
 def make_plan() -> ActivePlan:
@@ -47,6 +58,7 @@ def test_build_plan_prompt_snapshot_compacts_active_plan():
     snapshot = build_plan_prompt_snapshot(make_plan())
 
     assert snapshot is not None
+    assert snapshot.plan_period == "2026-04-19 a 2026-06-19"
     assert snapshot.status == "active"
     assert snapshot.today_training == "Push A"
     assert "3000" in snapshot.today_nutrition
@@ -58,5 +70,119 @@ def test_format_plan_snapshot_creates_prompt_ready_block():
     content = format_plan_snapshot(snapshot)
 
     assert "Plano ativo" in content
+    assert "Periodo do plano: 2026-04-19 a 2026-06-19" in content
     assert "Push A" in content
     assert "Pull" in content
+
+
+def test_build_plan_prompt_snapshot_accepts_prebuilt_context():
+    snapshot = build_plan_prompt_snapshot(
+        make_plan(),
+        today_training_context=[
+            PlanSnapshotExerciseContext(
+                exercise_name="Supino Reto",
+                prescribed_sets="4",
+                prescribed_reps="6-8",
+                load_guidance="RPE 8",
+                last_load_kg=80.0,
+                last_performed_at="2026-04-18",
+            )
+        ],
+        adherence_7d=PlanSnapshotAdherence7D(
+            training_percent=100,
+            nutrition_percent=86,
+            window_start="2026-04-13",
+            window_end="2026-04-19",
+        ),
+        weight_trend_weekly=PlanSnapshotWeightTrend(
+            value_kg_per_week=-0.2,
+            source="adaptive_tdee",
+        ),
+    )
+
+    assert snapshot is not None
+    assert snapshot.today_training_context[0].last_load_kg == 80.0
+    assert snapshot.adherence_7d is not None
+    assert snapshot.adherence_7d.nutrition_percent == 86
+    assert snapshot.weight_trend_weekly is not None
+    assert snapshot.weight_trend_weekly.value_kg_per_week == -0.2
+
+
+def test_format_plan_snapshot_includes_enriched_sections_when_available():
+    snapshot = build_plan_prompt_snapshot(
+        make_plan(),
+        today_training_context=[
+            PlanSnapshotExerciseContext(
+                exercise_name="Supino Reto",
+                prescribed_sets="4",
+                prescribed_reps="6-8",
+                load_guidance="RPE 8",
+                last_load_kg=80.0,
+                last_performed_at="2026-04-18",
+            )
+        ],
+        adherence_7d=PlanSnapshotAdherence7D(
+            training_percent=100,
+            nutrition_percent=86,
+            window_start="2026-04-13",
+            window_end="2026-04-19",
+        ),
+        weight_trend_weekly=PlanSnapshotWeightTrend(
+            value_kg_per_week=-0.2,
+            source="adaptive_tdee",
+        ),
+    )
+    content = format_plan_snapshot(snapshot)
+
+    assert "Contexto do treino de hoje:" in content
+    assert "Supino Reto: 4x6-8" in content
+    assert "Aderencia 7d: treino 100% | nutricao 86%" in content
+    assert "Tendencia de peso: -0.20 kg/semana" in content
+
+
+def test_build_next_plan_version_creates_valid_default_date_window():
+    payload = PlanProposalInput(
+        title="Plano Inicial",
+        objective_summary="Recomposicao corporal",
+        change_reason="inicio",
+        strategy={
+            "dias_disponiveis_treino": ["seg", "ter", "qui", "sex"],
+            "frequencia_treino_semana": 4,
+            "nivel_treinamento": "intermediario",
+            "restricoes_lesoes": [],
+            "tempo_por_sessao_min": 60,
+            "preferencia_ambiente": "academia",
+        },
+        execution={
+            "today_training": {
+                "title": "Full Body A",
+                "session": {
+                    "exercises": [
+                        {
+                            "name": "Agachamento",
+                            "sets": 4,
+                            "reps": "6-8",
+                            "load_guidance": "RPE 8",
+                        }
+                    ]
+                },
+            },
+            "today_nutrition": {"calories": 2400, "protein_target": 140},
+            "upcoming_days": [
+                {
+                    "date": "2026-04-20",
+                    "label": "Amanha",
+                    "training": "Upper A",
+                    "nutrition": "2400 kcal",
+                    "status": "planned",
+                }
+            ],
+            "active_focus": "consistencia",
+        },
+        tracking={},
+    )
+
+    plan = build_next_plan_version("user@test.com", None, payload)
+
+    assert plan.end_date > plan.start_date
+    assert (plan.end_date - plan.start_date).days >= 6

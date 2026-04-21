@@ -75,11 +75,11 @@ from src.services.raw_data_tools import (
     create_get_memories_raw_tool,
 )
 from src.services.plan_tools import (
+    create_plan_help_tool,
     create_get_active_plan_tool,
     create_get_plan_prompt_snapshot_tool,
     create_create_plan_proposal_tool,
     create_propose_plan_adjustment_tool,
-    create_approve_plan_change_tool,
     create_get_today_plan_brief_tool,
 )
 from src.repositories.event_repository import EventRepository
@@ -88,6 +88,8 @@ from src.services.memory_service import (
     add_memory as service_add_memory,
 )
 from src.services.plan_service import build_plan_prompt_snapshot
+from src.services.plan_snapshot_context import build_plan_snapshot_context
+from src.services.adaptive_tdee import AdaptiveTDEEService
 from src.core.logs import logger
 from src.api.models.chat_history import ChatHistory
 from src.api.models.user_profile import UserProfile
@@ -642,8 +644,8 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             create_get_plan_prompt_snapshot_tool(self._database, user_email),
             create_create_plan_proposal_tool(self._database, user_email),
             create_propose_plan_adjustment_tool(self._database, user_email),
-            create_approve_plan_change_tool(self._database, user_email),
             create_get_today_plan_brief_tool(self._database, user_email),
+            create_plan_help_tool(self._database, user_email),
         ]
 
         if self._qdrant_client is not None:
@@ -676,6 +678,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         """Returns the maximum streaming time allowed for one LLM response."""
         return float(settings.LLM_STREAM_TIMEOUT_SECONDS)
 
+    # pylint: disable=too-many-locals
     async def send_message_ai(
         self,
         user_email: str,
@@ -711,6 +714,26 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         needs_cycle_reset = self.check_message_limits(profile)
 
         # 3. Memory & History
+        active_plan = await asyncio.to_thread(self._database.get_active_plan, user_email)
+        enriched_plan_snapshot = None
+        if active_plan is not None:
+            metabolism_data = await asyncio.to_thread(
+                AdaptiveTDEEService(self._database).calculate_tdee,
+                user_email,
+            )
+            snapshot_context = build_plan_snapshot_context(
+                database=self._database,
+                user_email=user_email,
+                plan=active_plan,
+                metabolism_data=metabolism_data,
+            )
+            enriched_plan_snapshot = build_plan_prompt_snapshot(
+                active_plan,
+                today_training_context=snapshot_context.today_training_context,
+                adherence_7d=snapshot_context.adherence_7d,
+                weight_trend_weekly=snapshot_context.weight_trend_weekly,
+            )
+
         # 4. Build input data
         input_data = self.prompt_builder.build_input_data(
             profile=profile,
@@ -732,9 +755,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             agenda_events=await asyncio.to_thread(
                 EventRepository(self._database.database).get_active_events, user_email
             ),
-            plan_snapshot=build_plan_prompt_snapshot(
-                await asyncio.to_thread(self._database.get_active_plan, user_email)
-            ),
+            plan_snapshot=enriched_plan_snapshot,
         )
         if image_payloads:
             input_data["user_images"] = image_payloads

@@ -328,8 +328,9 @@
   },
   "plan": {
     "title": "Central Plan",
-    "subtitle": "Your active plan with daily execution and AI follow-up.",
+    "subtitle": "Your active plan with daily execution.",
     "sections": {
+      "time_window": "Plan period",
       "overview": "Plan overview",
       "mission_today": "Today's mission",
       "upcoming_days": "Upcoming days",
@@ -364,6 +365,9 @@
     },
     "checkpoint": {
       "empty": "No checkpoint has been recorded for this plan yet."
+    },
+    "upcoming": {
+      "empty": "No activities planned for the next days."
     }
   },
   "chat": {

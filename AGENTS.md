@@ -17,15 +17,15 @@ Source of truth for project operations is the codebase, especially:
 ## Current Stack
 
 - Backend: FastAPI, Python 3.12, MongoDB, Qdrant
-- Main frontend: React 19, TypeScript, Vite 7, TailwindCSS v4, Zustand, React Router 7, React Query
-- Admin frontend: React 19, TypeScript, Vite 7, TailwindCSS v4
+- Main frontend: React 19, TypeScript 5.9.3, Vite 7.2.4, TailwindCSS v4, Zustand 5, React Router 7.6, React Query, i18next 25.8, react-i18next 16.5
+- Admin frontend: React 19, TypeScript 5.9.3, Vite 7.2.4, TailwindCSS v4
 - AI: LangChain, LangGraph, Mem0
 - AI providers: Gemini, OpenAI, Ollama
 - Auth: Firebase
 - Payments: Stripe
 - Containers: Podman + `podman-compose`
 - Containerized test dependencies: MongoDB, Qdrant, Stripe mock
-- Testing: Pytest, Vitest, Playwright
+- Testing: Pytest, Vitest 3.0.5, Playwright 1.50.2
 
 ## Development Rules
 
@@ -141,6 +141,8 @@ Current routed areas include:
 - `/weight`
 - `/metabolism`
 - `/dashboard`
+- `/plan`
+- `/stats`
 - `/integrations/hevy`
 - `/onboarding`
 - `/telegram`
@@ -170,6 +172,17 @@ Important backend settings currently defined in code:
 - `DB_NAME=aitrainer`
 - `API_SERVER_PORT=8000`
 - `QDRANT_PORT=6333`
+- `MONGO_URI=mongodb://localhost:27017`
+- `SECRET_KEY` (required)
+- `LLM_TEMPERATURE=0.4`
+- `LOG_LEVEL=INFO`
+- `RATE_LIMIT_LOGIN=5/minute`
+- `GEMINI_LLM_MODEL=gemini-1.5-flash`
+- `GEMINI_EMBEDDER_MODEL=gemini-embedding-001`
+- `OLLAMA_BASE_URL=http://localhost:11434`
+- `OLLAMA_LLM_MODEL=llama3-groq-tool-use:8b`
+- `OLLAMA_EMBEDDER_MODEL=nomic-embed-text:latest`
+- `OPENAI_API_KEY` (required for OpenAI provider)
 
 Do not hardcode environment assumptions that are not present in [backend/src/core/config.py](/home/colutti/projects/personal/backend/src/core/config.py) or the local env files.
 

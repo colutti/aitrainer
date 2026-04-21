@@ -32,6 +32,7 @@ export interface PlanUpcomingDay {
   date: string;
   label: string;
   training: string;
+  training_details: string[];
   nutrition: string;
   status: PlanUpcomingStatus;
 }

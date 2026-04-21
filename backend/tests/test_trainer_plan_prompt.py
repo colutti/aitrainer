@@ -2,7 +2,12 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.api.models.plan import ActivePlan, PlanStatus, PlanSnapshot
+from src.api.models.plan import (
+    ActivePlan,
+    PlanSnapshot,
+    PlanSnapshotWeightTrend,
+    PlanStatus,
+)
 from src.api.models.trainer_profile import TrainerProfile
 from src.api.models.user_profile import UserProfile
 from src.services.trainer import AITrainerBrain
@@ -87,6 +92,27 @@ async def test_send_message_ai_injects_plan_snapshot_into_prompt_builder(monkeyp
         "src.services.trainer.EventRepository",
         MagicMock(return_value=MagicMock(get_active_events=MagicMock(return_value=[]))),
     )
+    monkeypatch.setattr(
+        "src.services.trainer.AdaptiveTDEEService",
+        MagicMock(
+            return_value=MagicMock(
+                calculate_tdee=MagicMock(return_value={"weight_change_per_week": -0.2})
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        "src.services.trainer.build_plan_snapshot_context",
+        MagicMock(
+            return_value=MagicMock(
+                today_training_context=[],
+                adherence_7d=None,
+                weight_trend_weekly=PlanSnapshotWeightTrend(
+                    value_kg_per_week=-0.2,
+                    source="adaptive_tdee",
+                ),
+            )
+        ),
+    )
 
     chunks = []
     async for chunk in brain.send_message_ai("test@test.com", "oi"):
@@ -97,3 +123,5 @@ async def test_send_message_ai_injects_plan_snapshot_into_prompt_builder(monkeyp
     plan_snapshot = build_input_data_spy.call_args.kwargs.get("plan_snapshot")
     assert isinstance(plan_snapshot, PlanSnapshot)
     assert plan_snapshot.title == "Plano Atual"
+    assert plan_snapshot.weight_trend_weekly is not None
+    assert plan_snapshot.weight_trend_weekly.value_kg_per_week == -0.2

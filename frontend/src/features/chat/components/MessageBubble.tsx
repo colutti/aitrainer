@@ -44,6 +44,41 @@ function normalizeMarkdownText(text: string): string {
     // Some model responses flatten all table rows into one line using "| |" row separators.
     // Rebuild line breaks so remark-gfm can parse it as an actual table.
     normalized = normalized.replace(/\|\s*\|/g, '|\n|');
+
+    const rebuiltLines = normalized.split('\n').flatMap((line) => {
+      const segments: string[] = [];
+      let currentLine = line;
+
+      const firstPipeIndex = currentLine.indexOf('|');
+      if (firstPipeIndex > 0) {
+        const prefix = currentLine.slice(0, firstPipeIndex).trimEnd();
+        const candidateTableLine = currentLine.slice(firstPipeIndex).trimStart();
+
+        if (prefix && candidateTableLine.startsWith('|')) {
+          segments.push(prefix, '', candidateTableLine);
+          currentLine = candidateTableLine;
+        }
+      }
+
+      if (segments.length === 0) {
+        segments.push(currentLine);
+      }
+
+      const lastSegment = segments[segments.length - 1] ?? '';
+      const lastPipeIndex = lastSegment.lastIndexOf('|');
+      if (lastSegment.startsWith('|') && lastPipeIndex >= 0 && lastPipeIndex < lastSegment.length - 1) {
+        const tableLine = lastSegment.slice(0, lastPipeIndex + 1).trimEnd();
+        const suffix = lastSegment.slice(lastPipeIndex + 1).trimStart();
+
+        if (suffix) {
+          segments.splice(segments.length - 1, 1, tableLine, '', suffix);
+        }
+      }
+
+      return segments;
+    });
+
+    normalized = rebuiltLines.join('\n').replace(/\n{3,}/g, '\n\n');
   }
 
   return normalized;

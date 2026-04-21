@@ -53,7 +53,10 @@ def test_save_active_plan_upserts_current_version():
     repo, collection = _build_repo_with_collection()
     plan = make_plan()
 
-    collection.update_one.return_value.upserted_id = "mongo_plan_1"
+    collection.find_one_and_update.return_value = {
+        "_id": "mongo_plan_1",
+        **plan.model_dump(),
+    }
     collection.find_one.return_value = {
         "_id": "mongo_plan_1",
         **plan.model_dump(),
@@ -62,41 +65,27 @@ def test_save_active_plan_upserts_current_version():
     plan_id = repo.save_plan(plan)
 
     assert plan_id == "mongo_plan_1"
+    collection.find_one_and_update.assert_called_once()
+    collection.delete_many.assert_called_once()
     loaded = repo.get_active_plan("user@test.com")
     assert loaded is not None
     assert loaded.version == 1
 
 
-def test_approve_plan_replaces_previous_active_version():
-    repo, collection = _build_repo_with_collection()
-
-    collection.update_many.return_value.modified_count = 1
-    collection.update_one.return_value.matched_count = 1
-    collection.find_one.return_value = {
-        "_id": "mongo_plan_2",
-        **make_plan(version=2, status=PlanStatus.ACTIVE).model_dump(),
-    }
-
-    approved = repo.approve_plan("user@test.com", version=2)
-
-    assert approved is True
-    active = repo.get_active_plan("user@test.com")
-    assert active is not None
-    assert active.version == 2
+def test_approve_plan_is_disabled_in_singleton_flow():
+    repo, _ = _build_repo_with_collection()
+    assert repo.approve_plan("user@test.com", version=2) is False
 
 
 def test_list_plan_versions_returns_latest_first():
     repo, collection = _build_repo_with_collection()
 
-    collection.find.return_value.sort.return_value = [
-        {"_id": "p2", **make_plan(version=2, status=PlanStatus.AWAITING_APPROVAL).model_dump()},
-        {"_id": "p1", **make_plan(version=1).model_dump()},
-    ]
+    collection.find_one.return_value = {"_id": "p1", **make_plan(version=1).model_dump()}
 
     versions = repo.list_plan_versions("user@test.com")
 
-    assert versions[0].version == 2
-    assert versions[1].version == 1
+    assert len(versions) == 1
+    assert versions[0].version == 1
 
 
 def test_database_delegates_plan_operations():

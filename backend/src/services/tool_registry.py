@@ -156,15 +156,17 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
     "propose_plan_adjustment": ToolMetadata(
         "propose_plan_adjustment",
         ToolMemoryType.MEMORABLE,
-        "Propose plan adjustment",
-    ),
-    "approve_plan_change": ToolMetadata(
-        "approve_plan_change", ToolMemoryType.MEMORABLE, "Approve plan change"
+        "Request structured plan adjustment",
     ),
     "get_today_plan_brief": ToolMetadata(
         "get_today_plan_brief",
         ToolMemoryType.EPHEMERAL,
         "Fetch today's plan mission",
+    ),
+    "plan_help": ToolMetadata(
+        "plan_help",
+        ToolMemoryType.EPHEMERAL,
+        "Return operational instructions for plan tools",
     ),
 }
 

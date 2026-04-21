@@ -1,0 +1,285 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e47]:
+    - navigation [ref=e48]:
+      - generic [ref=e49]:
+        - img "FityQ Logo" [ref=e51]
+        - generic [ref=e52]: FityQ
+      - generic [ref=e54]:
+        - link "Dashboard" [ref=e55] [cursor=pointer]:
+          - /url: /dashboard
+        - link "Treinos" [ref=e56] [cursor=pointer]:
+          - /url: /dashboard/workouts
+        - link "Corpo" [ref=e57] [cursor=pointer]:
+          - /url: /dashboard/body
+        - link "Chat" [ref=e58] [cursor=pointer]:
+          - /url: /dashboard/chat
+      - generic [ref=e59]:
+        - button "EN" [ref=e62]:
+          - img [ref=e63]
+          - generic [ref=e66]: EN
+        - link [ref=e67] [cursor=pointer]:
+          - /url: /dashboard/settings
+          - img [ref=e68]
+        - button "Logout" [ref=e71]
+        - img "Profile" [ref=e73]
+    - main [ref=e74]:
+      - generic [ref=e76]:
+        - generic [ref=e77]:
+          - generic [ref=e78]:
+            - generic [ref=e79]:
+              - generic [ref=e80]:
+                - generic [ref=e81]:
+                  - generic [ref=e82]:
+                    - img [ref=e83]
+                    - generic [ref=e87]: Daily Target
+                  - generic [ref=e88]:
+                    - generic [ref=e89]: "1986"
+                    - generic [ref=e90]: kcal
+                - generic [ref=e91]:
+                  - generic [ref=e92]: Objetivo
+                  - text: Weight Loss
+              - generic [ref=e94]:
+                - img [ref=e95]
+                - generic [ref=e97]:
+                  - generic [ref=e98]: AI Confidence
+                  - generic [ref=e99]: High
+              - generic [ref=e100]:
+                - generic [ref=e101]:
+                  - paragraph [ref=e102]: Daily Burn
+                  - paragraph [ref=e103]: "1755"
+                - generic [ref=e104]:
+                  - paragraph [ref=e105]: Avg Balance
+                  - paragraph [ref=e106]: "+242.1"
+                - generic [ref=e107]:
+                  - paragraph [ref=e108]: Weight Rate
+                  - paragraph [ref=e109]: "+0.29"
+              - generic [ref=e110]:
+                - generic [ref=e112]:
+                  - generic [ref=e113]: General Consistency
+                  - generic [ref=e114]: 89%
+                - generic [ref=e118]:
+                  - generic [ref=e119]: Caloric Stability
+                  - generic [ref=e120]: 86%
+            - generic [ref=e123]:
+              - generic [ref=e124]:
+                - generic [ref=e125]:
+                  - generic [ref=e126]:
+                    - generic [ref=e127]:
+                      - img [ref=e128]
+                      - generic [ref=e132]: Weight Evolution
+                    - generic [ref=e133]:
+                      - img [ref=e134]
+                      - text: 0.1kg
+                  - generic [ref=e137]:
+                    - generic [ref=e138]: "73.1"
+                    - generic [ref=e139]: kg
+                  - generic [ref=e140]:
+                    - generic [ref=e141]:
+                      - img [ref=e142]
+                      - text: +0.1kg
+                      - generic [ref=e145]: (7d)
+                    - generic [ref=e146]:
+                      - img [ref=e147]
+                      - text: 0.4kg
+                      - generic [ref=e150]: (15d)
+                    - generic [ref=e151]:
+                      - img [ref=e152]
+                      - text: +0.1kg
+                      - generic [ref=e155]: (30d)
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+              - generic [ref=e156]:
+                - generic [ref=e157]:
+                  - generic [ref=e158]:
+                    - generic [ref=e159]:
+                      - img [ref=e160]
+                      - generic [ref=e162]: Body Fat Index
+                    - generic [ref=e163]:
+                      - img [ref=e164]
+                      - text: 0.3%
+                  - generic [ref=e167]:
+                    - generic [ref=e168]: "22.1"
+                    - generic [ref=e169]: "%"
+                  - generic [ref=e170]:
+                    - generic [ref=e171]:
+                      - img [ref=e172]
+                      - text: +0.3%
+                      - generic [ref=e175]: (7d)
+                    - generic [ref=e176]:
+                      - img [ref=e177]
+                      - text: 0.1%
+                      - generic [ref=e180]: (15d)
+                    - generic [ref=e181]:
+                      - img [ref=e182]
+                      - text: +0.1%
+                      - generic [ref=e185]: (30d)
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+              - generic [ref=e186]:
+                - generic [ref=e187]:
+                  - generic [ref=e188]:
+                    - generic [ref=e189]:
+                      - img [ref=e190]
+                      - generic [ref=e192]: Muscle Mass
+                    - generic [ref=e193]:
+                      - img [ref=e194]
+                      - text: 0.2kg
+                  - generic [ref=e197]:
+                    - generic [ref=e198]: "54.0"
+                    - generic [ref=e199]: kg
+                  - generic [ref=e200]:
+                    - generic [ref=e201]:
+                      - img [ref=e202]
+                      - text: 0.1kg
+                      - generic [ref=e205]: (7d)
+                    - generic [ref=e206]:
+                      - img [ref=e207]
+                      - text: 0.2kg
+                      - generic [ref=e210]: (15d)
+                    - generic [ref=e211]:
+                      - img [ref=e212]
+                      - text: 0.0kg
+                      - generic [ref=e215]: (30d)
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+          - complementary [ref=e216]:
+            - generic [ref=e218]:
+              - generic [ref=e219]:
+                - img [ref=e221]
+                - generic [ref=e227]:
+                  - heading "Personal Records" [level=4] [ref=e228]
+                  - paragraph [ref=e229]: Your strength evolution
+              - generic [ref=e231]:
+                - generic [ref=e232]:
+                  - generic [ref=e233]:
+                    - generic [ref=e234]: PR
+                    - generic [ref=e235]:
+                      - heading "Rosca Scott (Barra)" [level=4] [ref=e236]
+                      - paragraph [ref=e237]: Apr 08 • reps
+                  - generic [ref=e240]: 17.5kg
+                - generic [ref=e241]:
+                  - generic [ref=e242]:
+                    - generic [ref=e243]: PR
+                    - generic [ref=e244]:
+                      - heading "Shoulder Press (Barra)" [level=4] [ref=e245]
+                      - paragraph [ref=e246]: Apr 08 • reps
+                  - generic [ref=e249]: 25kg
+                - generic [ref=e250]:
+                  - generic [ref=e251]:
+                    - generic [ref=e252]: PR
+                    - generic [ref=e253]:
+                      - heading "Agachamento Goblet" [level=4] [ref=e254]
+                      - paragraph [ref=e255]: Apr 08 • reps
+                  - generic [ref=e258]: 25kg
+            - generic [ref=e260]:
+              - generic [ref=e261]: Streak
+              - generic [ref=e262]: "0"
+            - generic [ref=e263]:
+              - img [ref=e264]
+              - paragraph [ref=e266]: Analysis based on data from the last 3 weeks.
+        - generic [ref=e267]:
+          - generic [ref=e268]:
+            - generic [ref=e269]:
+              - generic [ref=e270]:
+                - img [ref=e271]
+                - generic [ref=e273]: Calories
+              - generic [ref=e274]:
+                - paragraph [ref=e275]: "0"
+                - paragraph [ref=e276]: / 1986 kcal
+              - generic [ref=e279]: 0%
+            - generic [ref=e280]:
+              - generic [ref=e281]:
+                - paragraph [ref=e282]: 132g
+                - paragraph [ref=e283]: Prot
+              - generic [ref=e284]:
+                - paragraph [ref=e285]: 230g
+                - paragraph [ref=e286]: Carb
+              - generic [ref=e287]:
+                - paragraph [ref=e288]: 60g
+                - paragraph [ref=e289]: Gord
+          - generic [ref=e290]:
+            - generic [ref=e291]:
+              - generic [ref=e292]:
+                - img [ref=e293]
+                - generic [ref=e295]: Recent Activity
+              - generic [ref=e296]:
+                - generic [ref=e297]:
+                  - img [ref=e299]
+                  - generic [ref=e303]:
+                    - paragraph [ref=e304]: Pesagem
+                    - paragraph [ref=e305]: 73.1 kg
+                  - generic [ref=e306]: 13/04/2026
+                - generic [ref=e307]:
+                  - img [ref=e309]
+                  - generic [ref=e311]:
+                    - paragraph [ref=e312]: Refeição Registrada
+                    - paragraph [ref=e313]: 1881 kcal • 160.0g proteína
+                  - generic [ref=e314]: 12/04/2026
+                - generic [ref=e315]:
+                  - img [ref=e317]
+                  - generic [ref=e319]:
+                    - paragraph [ref=e320]: Refeição Registrada
+                    - paragraph [ref=e321]: 1833 kcal • 150.0g proteína
+                  - generic [ref=e322]: 11/04/2026
+                - generic [ref=e323]:
+                  - img [ref=e325]
+                  - generic [ref=e327]:
+                    - paragraph [ref=e328]: Refeição Registrada
+                    - paragraph [ref=e329]: 1717 kcal • 178.0g proteína
+                  - generic [ref=e330]: 10/04/2026
+            - generic [ref=e332]:
+              - generic [ref=e333]:
+                - img [ref=e335]
+                - generic [ref=e337]:
+                  - heading "Frequency" [level=4] [ref=e338]
+                  - paragraph [ref=e339]: Workouts in last 7 days
+              - generic [ref=e340]:
+                - generic [ref=e342]: M
+                - generic [ref=e344]: T
+                - generic [ref=e346]: W
+                - generic [ref=e348]: T
+                - generic [ref=e350]: F
+                - generic [ref=e352]: S
+                - generic [ref=e354]: S
+          - generic [ref=e355]:
+            - generic [ref=e357]:
+              - generic [ref=e358]:
+                - img [ref=e360]
+                - generic [ref=e363]:
+                  - heading "Weekly Volume" [level=4] [ref=e364]
+                  - paragraph [ref=e365]: Total weight lifted
+              - img [ref=e369]:
+                - generic [ref=e386]:
+                  - generic [ref=e388]: Wk
+                  - generic [ref=e390]: Wk
+                  - generic [ref=e392]: Wk
+                  - generic [ref=e394]: Wk
+                  - generic [ref=e396]: Wk
+                  - generic [ref=e398]: Wk
+                - generic [ref=e400]:
+                  - generic [ref=e402]: "0"
+                  - generic [ref=e404]: 5k
+                  - generic [ref=e406]: 10k
+                  - generic [ref=e408]: 15k
+                  - generic [ref=e410]: 20k
+            - generic [ref=e412]:
+              - generic [ref=e413]:
+                - img [ref=e415]
+                - generic [ref=e417]:
+                  - heading "Strength Balance" [level=4] [ref=e418]
+                  - paragraph [ref=e419]: Distribution by group
+              - img [ref=e423]:
+                - generic [ref=e433]:
+                  - generic [ref=e435]: Push
+                  - generic [ref=e437]: Pull
+                  - generic [ref=e439]: Legs
+                  - generic [ref=e441]: Core
+    - button [ref=e445]:
+      - img [ref=e446]
+  - generic [ref=e447]: "0"

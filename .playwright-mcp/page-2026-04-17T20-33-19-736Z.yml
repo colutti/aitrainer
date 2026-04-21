@@ -1,0 +1,33 @@
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - heading "FITYQ" [level=1] [ref=e6]
+    - paragraph [ref=e7]: Inteligência x Performance
+  - generic [ref=e8]:
+    - button "Login" [active] [ref=e11]
+    - paragraph [ref=e12]: Cadastros temporariamente indisponíveis.
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - text: E-mail
+        - generic [ref=e15]:
+          - img [ref=e16]
+          - textbox "exemplo@email.com" [ref=e21]
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - generic [ref=e24]: Senha
+          - button "Esqueci a senha" [ref=e25]
+        - generic [ref=e26]:
+          - img [ref=e27]
+          - textbox "••••••••" [ref=e32]
+      - button "Entrar" [ref=e33]:
+        - img [ref=e34]
+        - text: Entrar
+      - button "Entrar com Google" [ref=e38]:
+        - img [ref=e39]
+        - text: Entrar com Google
+  - paragraph [ref=e44]:
+    - text: Ao continuar, você aceita nossos
+    - link "Termos de Uso" [ref=e45] [cursor=pointer]:
+      - /url: /termos-de-uso
+    - text: e
+    - link "Política de Privacidade" [ref=e46] [cursor=pointer]:
+      - /url: /politica-de-privacidade
