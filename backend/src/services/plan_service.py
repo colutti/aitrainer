@@ -249,7 +249,9 @@ def format_plan_snapshot(snapshot: PlanSnapshot | None) -> str:
                     f"{item.last_load_kg:.0f} kg em {item.last_performed_at}"
                 )
             else:
-                training_context_lines.append(f"- {item.exercise_name}: {prescription}")
+                training_context_lines.append(
+                    f"- {item.exercise_name}: {prescription} | ultima carga registrada: indisponivel"
+                )
 
     adherence_line = ""
     if snapshot.adherence_7d is not None:

@@ -140,6 +140,25 @@ def test_format_plan_snapshot_includes_enriched_sections_when_available():
     assert "Tendencia de peso: -0.20 kg/semana" in content
 
 
+def test_format_plan_snapshot_keeps_last_load_field_when_history_missing():
+    snapshot = build_plan_prompt_snapshot(
+        make_plan(),
+        today_training_context=[
+            PlanSnapshotExerciseContext(
+                exercise_name="Supino Reto",
+                prescribed_sets="3",
+                prescribed_reps="8-10",
+                load_guidance="RPE 8",
+                last_load_kg=None,
+                last_performed_at=None,
+            )
+        ],
+    )
+    content = format_plan_snapshot(snapshot)
+
+    assert "Supino Reto: 3x8-10 | ultima carga registrada: indisponivel" in content
+
+
 def test_build_next_plan_version_creates_valid_default_date_window():
     payload = PlanProposalInput(
         title="Plano Inicial",
