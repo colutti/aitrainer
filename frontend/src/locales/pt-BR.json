@@ -327,61 +327,44 @@
     }
   },
   "plan": {
-    "title": "Plano Central",
-    "subtitle": "Seu plano com execução diária.",
+    "title": "Plano Mestre",
+    "subtitle": "Seu plano global de treino e nutricao.",
     "sections": {
-      "time_window": "Período do plano",
-      "overview": "Visão geral do plano",
-      "mission_today": "Missão de hoje",
-      "upcoming_days": "Próximos dias",
-      "latest_checkpoint": "Último checkpoint",
-      "status": "Estado do plano"
-    },
-    "cards": {
-      "training": "Treino",
-      "nutrition": "Nutrição",
-      "ai_followup": "Acompanhamento IA"
-    },
-    "actions": {
-      "open_chat": "Conversar com a IA",
-      "request_adjustment": "Solicitar ajuste"
+      "overview": "Visao geral do plano",
+      "strategy": "Estrategia",
+      "nutrition_targets": "Metas nutricionais",
+      "training_program": "Programa de treino",
+      "weekly_schedule": "Agenda semanal",
+      "routines": "Rotinas",
+      "latest_checkpoint": "Ultima revisao"
     },
     "labels": {
-      "window": "Janela",
+      "review_cadence": "Cadencia de revisao",
       "active_focus": "Foco atual",
-      "progress": "Progresso"
-    },
-    "status": {
-      "draft": "Rascunho",
-      "awaiting_approval": "Aguardando aprovação",
-      "active": "Ativo",
-      "adjustment_pending_approval": "Ajuste aguardando aprovação",
-      "completed": "Concluído",
-      "archived": "Arquivado"
+      "adaptation_policy": "Politica de adaptacao",
+      "constraints": "Restricoes",
+      "preferences": "Preferencias",
+      "current_risks": "Riscos atuais",
+      "none": "Nenhum",
+      "calories": "Calorias",
+      "protein": "Proteina",
+      "carbs": "Carboidratos",
+      "fat": "Gorduras",
+      "fiber": "Fibras",
+      "split": "Split",
+      "frequency": "Frequencia/semana",
+      "session_duration": "Duracao da sessao"
     },
     "empty": {
       "title": "Nenhum plano encontrado",
-      "description": "Converse com a IA para montar seu plano completo de treino e nutrição.",
+      "description": "Converse com a IA para criar seu plano mestre completo.",
       "cta": "Criar plano no chat",
-      "prefill_message": "Crie meu plano completo de treino e nutrição."
+      "prefill_message": "Crie meu plano mestre de treino e nutricao."
     },
     "checkpoint": {
-      "empty": "Ainda não há checkpoint registrado para este plano.",
-      "summary": "Resumo",
-      "ai_assessment": "Avaliação IA",
-      "decision": "Decisão"
-    },
-    "mission": {
-      "empty_training": "Treino não definido",
-      "empty_nutrition": "Nutrição não definida"
-    },
-    "upcoming": {
-      "empty": "Sem atividades planejadas para os próximos dias.",
-      "status": {
-        "planned": "Planejado",
-        "adjusted": "Ajustado",
-        "rest": "Descanso"
-      }
+      "empty": "Ainda nao ha revisao registrada para este plano.",
+      "decision": "Decisao",
+      "next_focus": "Proximo foco"
     }
   },
   "chat": {
@@ -495,7 +478,13 @@
     "save_workout": "Salvar Treino",
     "workout_type_required": "Tipo de treino obrigatório",
     "exercise_name_required": "Nome do exercício obrigatório",
-    "add_at_least_one_exercise": "Adicione pelo menos um exercício"
+    "add_at_least_one_exercise": "Adicione pelo menos um exercício",
+    "plan_entry": {
+      "eyebrow": "Plano Mestre",
+      "title": "Acompanhe seu plano mestre",
+      "description": "Objetivo, estrategia, metas nutricionais e programa semanal em um unico hub.",
+      "cta": "Abrir"
+    }
   },
   "nutrition": {
     "title": "Nutrição",
@@ -568,10 +557,10 @@
         "integrations": "Integrações"
       },
       "values": {
+        "247": "24/7 Instantâneo",
         "free": "Grátis",
         "personal_price": "R$ 400+/mês",
         "generic_price": "R$ 50+/mês",
-        "247": "24/7 Instantâneo",
         "scheduled": "Agendado",
         "adaptive_ai": "IA Adaptativa",
         "high": "Alta",

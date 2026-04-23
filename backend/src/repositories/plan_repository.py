@@ -53,8 +53,3 @@ class PlanRepository(BaseRepository):
     def get_latest_plan(self, user_email: str) -> UserPlan | None:
         """Returns singleton plan (same document)."""
         return self.get_plan(user_email)
-
-    def delete_plan(self, user_email: str) -> bool:
-        """Deletes singleton plan for user."""
-        result = self.collection.delete_one({"user_email": user_email})
-        return result.deleted_count > 0

@@ -327,61 +327,44 @@
     }
   },
   "plan": {
-    "title": "Plan Central",
-    "subtitle": "Tu plan con ejecución diaria.",
+    "title": "Plan Maestro",
+    "subtitle": "Tu plan global de entrenamiento y nutricion.",
     "sections": {
-      "time_window": "Período del plan",
-      "overview": "Visión general del plan",
-      "mission_today": "Misión de hoy",
-      "upcoming_days": "Próximos días",
-      "latest_checkpoint": "Último checkpoint",
-      "status": "Estado del plan"
-    },
-    "cards": {
-      "training": "Entrenamiento",
-      "nutrition": "Nutrición",
-      "ai_followup": "Seguimiento IA"
-    },
-    "actions": {
-      "open_chat": "Hablar con IA",
-      "request_adjustment": "Solicitar ajuste"
+      "overview": "Resumen del plan",
+      "strategy": "Estrategia",
+      "nutrition_targets": "Metas nutricionales",
+      "training_program": "Programa de entrenamiento",
+      "weekly_schedule": "Agenda semanal",
+      "routines": "Rutinas",
+      "latest_checkpoint": "Ultima revision"
     },
     "labels": {
-      "window": "Ventana",
+      "review_cadence": "Cadencia de revision",
       "active_focus": "Foco actual",
-      "progress": "Progreso"
-    },
-    "status": {
-      "draft": "Borrador",
-      "awaiting_approval": "En espera de aprobación",
-      "active": "Activo",
-      "adjustment_pending_approval": "Ajuste en espera de aprobación",
-      "completed": "Completado",
-      "archived": "Archivado"
+      "adaptation_policy": "Politica de adaptacion",
+      "constraints": "Restricciones",
+      "preferences": "Preferencias",
+      "current_risks": "Riesgos actuales",
+      "none": "Ninguno",
+      "calories": "Calorias",
+      "protein": "Proteina",
+      "carbs": "Carbohidratos",
+      "fat": "Grasas",
+      "fiber": "Fibra",
+      "split": "Split",
+      "frequency": "Frecuencia/semana",
+      "session_duration": "Duracion de sesion"
     },
     "empty": {
-      "title": "No se encontró un plan",
-      "description": "Habla con la IA para crear tu plan completo de entrenamiento y nutrición.",
+      "title": "No se encontro un plan",
+      "description": "Habla con la IA para crear tu plan maestro completo.",
       "cta": "Crear plan en el chat",
-      "prefill_message": "Crea mi plan completo de entrenamiento y nutrición."
+      "prefill_message": "Crea mi plan maestro de entrenamiento y nutricion."
     },
     "checkpoint": {
-      "empty": "Aún no hay checkpoint registrado para este plan.",
-      "summary": "Resumen",
-      "ai_assessment": "Evaluación IA",
-      "decision": "Decisión"
-    },
-    "mission": {
-      "empty_training": "Entrenamiento no definido",
-      "empty_nutrition": "Nutrición no definida"
-    },
-    "upcoming": {
-      "empty": "No hay actividades planificadas para los próximos días.",
-      "status": {
-        "planned": "Planificado",
-        "adjusted": "Ajustado",
-        "rest": "Descanso"
-      }
+      "empty": "Aun no hay revision registrada para este plan.",
+      "decision": "Decision",
+      "next_focus": "Proximo foco"
     }
   },
   "chat": {
@@ -495,7 +478,13 @@
     "save_workout": "Guardar Entreno",
     "workout_type_required": "El tipo de entreno es obligatorio",
     "exercise_name_required": "El nombre del ejercicio es obligatorio",
-    "add_at_least_one_exercise": "Agrega al menos un ejercicio"
+    "add_at_least_one_exercise": "Agrega al menos un ejercicio",
+    "plan_entry": {
+      "eyebrow": "Plan Maestro",
+      "title": "Sigue tu plan maestro",
+      "description": "Objetivo, estrategia, metas nutricionales y programa semanal en un solo hub.",
+      "cta": "Abrir"
+    }
   },
   "nutrition": {
     "title": "Nutrición",
@@ -568,10 +557,10 @@
         "integrations": "Integraciones"
       },
       "values": {
+        "247": "24/7 Instante",
         "free": "Gratis",
         "personal_price": "€ 400+/mes",
         "generic_price": "€ 10+/mes",
-        "247": "24/7 Instante",
         "scheduled": "Programado",
         "adaptive_ai": "IA Adaptativa",
         "high": "Alta",

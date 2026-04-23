@@ -1,82 +1,156 @@
-"""Plan domain service helpers for prompt context and orchestration."""
+"""Plan domain service helpers for master plan orchestration and prompt context."""
 
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
-from src.api.models.plan import (
-    UserPlan,
-    PlanUpsertInput,
-    PlanPromptContext,
-    PlanContextAdherence7D,
-    PlanContextExerciseContext,
-    PlanContextWeightTrend,
-)
+from src.api.models.plan import PlanPromptContext, PlanUpsertInput, UserPlan
 
-REQUIRED_INTAKE_FIELDS = (
-    "dias_disponiveis_treino",
-    "frequencia_treino_semana",
-    "nivel_treinamento",
-    "restricoes_lesoes",
-    "tempo_por_sessao_min",
-    "preferencia_ambiente",
+REQUIRED_GOAL_FIELDS = ("primary", "objective_summary")
+REQUIRED_TIMELINE_FIELDS = ("target_date", "review_cadence")
+REQUIRED_STRATEGY_FIELDS = ("rationale", "adaptation_policy")
+REQUIRED_SUMMARY_FIELDS = ("active_focus", "rationale")
+REQUIRED_NUTRITION_TARGET_FIELDS = ("calories", "protein_g")
+REQUIRED_PROGRAM_FIELDS = (
+    "split_name",
+    "frequency_per_week",
+    "session_duration_min",
+    "routines",
+    "weekly_schedule",
 )
 
 
-def missing_intake_fields(strategy: dict) -> list[str]:
-    """Return missing mandatory discovery fields required for plan creation."""
-    return [field for field in REQUIRED_INTAKE_FIELDS if field not in strategy]
-
-
-def missing_execution_fields(execution: dict) -> list[str]:
-    """Return missing mandatory execution blocks required for an actionable plan."""
-    def has_exercises(training_payload: object) -> bool:
-        if not isinstance(training_payload, dict):
-            return False
-        session = training_payload.get("session")
-        if isinstance(session, dict) and isinstance(session.get("exercises"), list):
-            return len(session["exercises"]) > 0
-        if isinstance(training_payload.get("exercises"), list):
-            return len(training_payload["exercises"]) > 0
-        return False
-
+def _missing_required_fields(payload: dict, required_fields: tuple[str, ...]) -> list[str]:
     missing: list[str] = []
-    if not execution.get("today_training"):
-        missing.append("today_training")
-    if not execution.get("today_nutrition"):
-        missing.append("today_nutrition")
-    upcoming_days = execution.get("upcoming_days")
-    if not upcoming_days:
-        missing.append("upcoming_days")
-    today_training = execution.get("today_training")
-    if not has_exercises(today_training):
-        missing.append("training_exercises")
-    planned_days_missing_details = False
-    if isinstance(upcoming_days, list):
-        for day in upcoming_days:
-            if not isinstance(day, dict):
-                planned_days_missing_details = True
-                break
-            status = day.get("status")
-            if status == "rest":
-                continue
-            if not has_exercises(day.get("training")):
-                planned_days_missing_details = True
-                break
-    if planned_days_missing_details:
-        missing.append("upcoming_training_exercises")
+    for field in required_fields:
+        value = payload.get(field)
+        if value is None:
+            missing.append(field)
+            continue
+        if isinstance(value, str) and not value.strip():
+            missing.append(field)
+            continue
+        if isinstance(value, list) and len(value) == 0:
+            missing.append(field)
     return missing
 
 
-def _merge_plan_sections(
-    latest_plan: UserPlan | None,
-    payload: PlanUpsertInput,
-) -> tuple[dict, dict, list]:
-    base_strategy = latest_plan.strategy.model_dump() if latest_plan else {}
-    base_execution = latest_plan.execution.model_dump() if latest_plan else {}
-    base_checkpoints = latest_plan.checkpoints if latest_plan else []
-    strategy_data = {**base_strategy, **payload.strategy}
-    execution_data = {**base_execution, **payload.execution}
-    checkpoints = payload.checkpoints if payload.checkpoints else base_checkpoints
-    return strategy_data, execution_data, checkpoints
+def missing_master_plan_fields(payload: PlanUpsertInput) -> list[str]:
+    """Validate required minimal fields for creation/update payload."""
+
+    missing: list[str] = []
+    missing.extend(
+        [
+            f"goal.{field}"
+            for field in _missing_required_fields(payload.goal, REQUIRED_GOAL_FIELDS)
+        ]
+    )
+    missing.extend(
+        [
+            f"timeline.{field}"
+            for field in _missing_required_fields(
+                payload.timeline, REQUIRED_TIMELINE_FIELDS
+            )
+        ]
+    )
+    missing.extend(
+        [
+            f"strategy.{field}"
+            for field in _missing_required_fields(
+                payload.strategy, REQUIRED_STRATEGY_FIELDS
+            )
+        ]
+    )
+
+    nutrition_targets = payload.nutrition_strategy.get("daily_targets", {})
+    if not isinstance(nutrition_targets, dict):
+        missing.append("nutrition_strategy.daily_targets")
+    else:
+        missing.extend(
+            [
+                f"nutrition_strategy.daily_targets.{field}"
+                for field in _missing_required_fields(
+                    nutrition_targets,
+                    REQUIRED_NUTRITION_TARGET_FIELDS,
+                )
+            ]
+        )
+
+    missing.extend(
+        [
+            f"training_program.{field}"
+            for field in _missing_required_fields(payload.training_program, REQUIRED_PROGRAM_FIELDS)
+        ]
+    )
+
+    if isinstance(payload.training_program.get("routines"), list):
+        for index, routine in enumerate(payload.training_program["routines"]):
+            if not isinstance(routine, dict):
+                missing.append(f"training_program.routines[{index}]")
+                continue
+            missing.extend(
+                [
+                    f"training_program.routines[{index}].{field}"
+                    for field in _missing_required_fields(routine, ("id", "name", "exercises"))
+                ]
+            )
+            exercises = routine.get("exercises", [])
+            if isinstance(exercises, list):
+                for ex_index, exercise in enumerate(exercises):
+                    if not isinstance(exercise, dict):
+                        missing.append(
+                            f"training_program.routines[{index}].exercises[{ex_index}]"
+                        )
+                        continue
+                    missing.extend(
+                        [
+                            f"training_program.routines[{index}].exercises[{ex_index}].{field}"
+                            for field in _missing_required_fields(
+                                exercise,
+                                ("name", "sets", "reps", "load_guidance"),
+                            )
+                        ]
+                    )
+
+    missing.extend(
+        [
+            f"current_summary.{field}"
+            for field in _missing_required_fields(payload.current_summary, REQUIRED_SUMMARY_FIELDS)
+        ]
+    )
+
+    return sorted(set(missing))
+
+
+def _merge_plan_sections(latest_plan: UserPlan | None, payload: PlanUpsertInput) -> dict:
+    if latest_plan is None:
+        return {
+            "goal": payload.goal,
+            "timeline": payload.timeline,
+            "strategy": payload.strategy,
+            "nutrition_strategy": payload.nutrition_strategy,
+            "training_program": payload.training_program,
+            "current_summary": payload.current_summary,
+            "checkpoints": payload.checkpoints,
+        }
+
+    merged = {
+        "goal": {**latest_plan.goal.model_dump(), **payload.goal},
+        "timeline": {**latest_plan.timeline.model_dump(), **payload.timeline},
+        "strategy": {**latest_plan.strategy.model_dump(), **payload.strategy},
+        "nutrition_strategy": {
+            **latest_plan.nutrition_strategy.model_dump(),
+            **payload.nutrition_strategy,
+        },
+        "training_program": {
+            **latest_plan.training_program.model_dump(),
+            **payload.training_program,
+        },
+        "current_summary": {
+            **latest_plan.current_summary.model_dump(),
+            **payload.current_summary,
+        },
+        "checkpoints": payload.checkpoints if payload.checkpoints else latest_plan.checkpoints,
+    }
+    return merged
 
 
 def build_plan_singleton(
@@ -84,238 +158,98 @@ def build_plan_singleton(
     latest_plan: UserPlan | None,
     payload: PlanUpsertInput,
 ) -> UserPlan:
-    """Builds the singleton plan payload."""
-    now = datetime.now()
-    strategy_data, execution_data, checkpoints = _merge_plan_sections(
-        latest_plan, payload
-    )
+    """Build singleton master plan payload."""
 
-    start_date = latest_plan.start_date if latest_plan else now
-    if latest_plan and latest_plan.end_date > latest_plan.start_date:
-        end_date = latest_plan.end_date
-    else:
-        end_date = start_date + timedelta(days=27)
+    now = datetime.now()
+    merged = _merge_plan_sections(latest_plan, payload)
+
+    timeline_data = dict(merged["timeline"])
+    start_date = latest_plan.timeline.start_date if latest_plan else now
+    timeline_data["start_date"] = timeline_data.get("start_date", start_date)
+    timeline_data.setdefault(
+        "target_date",
+        timeline_data["start_date"] + timedelta(days=84),
+    )
 
     return UserPlan(
         user_email=user_email,
         title=payload.title,
-        objective_summary=payload.objective_summary,
-        start_date=start_date,
-        end_date=end_date,
-        strategy={
-            "primary_goal": strategy_data.get("primary_goal", "unspecified"),
-            "success_criteria": strategy_data.get("success_criteria", []),
-            "constraints": strategy_data.get("constraints", []),
-            "coaching_rationale": strategy_data.get(
-                "coaching_rationale", "generated by ai"
-            ),
-            "adaptation_policy": strategy_data.get(
-                "adaptation_policy", "ai_managed_continuous"
-            ),
-        },
-        execution={
-            "today_training": execution_data.get("today_training", {}),
-            "today_nutrition": execution_data.get("today_nutrition", {}),
-            "upcoming_days": execution_data.get("upcoming_days", []),
-            "active_focus": execution_data.get("active_focus", "consistencia"),
-            "current_risks": execution_data.get("current_risks", []),
-            "pending_changes": execution_data.get("pending_changes", []),
-        },
-        checkpoints=checkpoints,
+        goal=merged["goal"],
+        timeline=timeline_data,
+        strategy=merged["strategy"],
+        nutrition_strategy=merged["nutrition_strategy"],
+        training_program=merged["training_program"],
+        checkpoints=merged["checkpoints"],
+        current_summary=merged["current_summary"],
         change_reason=payload.change_reason,
     )
 
 
-def _extract_today_training(execution: dict) -> str:
-    training = _resolve_today_training_payload(execution)
-    if isinstance(training, dict):
-        return str(training.get("title") or training.get("summary") or "Nao definido")
-    return str(training) if training else "Nao definido"
-
-
-def _parse_iso_date(value: object) -> date | None:
-    if isinstance(value, datetime):
-        return value.date()
-    if isinstance(value, date):
-        return value
-    if isinstance(value, str):
-        try:
-            return datetime.fromisoformat(value.replace("Z", "+00:00")).date()
-        except ValueError:
-            return None
-    return None
-
-
-def _is_training_like(payload: object) -> bool:
-    if isinstance(payload, str):
-        return bool(payload.strip())
-    if not isinstance(payload, dict):
-        return False
-
-    has_title = isinstance(payload.get("title"), str) and payload.get("title").strip()
-    has_summary = isinstance(payload.get("summary"), str) and payload.get("summary").strip()
-    has_session_exercises = False
-    session = payload.get("session")
-    if isinstance(session, dict) and isinstance(session.get("exercises"), list):
-        has_session_exercises = len(session["exercises"]) > 0
-    has_direct_exercises = isinstance(payload.get("exercises"), list) and len(
-        payload["exercises"]
-    ) > 0
-    return bool(
-        has_title or has_summary or has_session_exercises or has_direct_exercises
-    )
-
-
-def _resolve_today_training_payload(
-    execution: dict, reference_date: date | None = None
-) -> object:
-    today = reference_date or datetime.now().date()
-    upcoming_days = execution.get("upcoming_days")
-    if isinstance(upcoming_days, list):
-        for item in upcoming_days:
-            if not isinstance(item, dict):
-                continue
-            if item.get("status") == "rest":
-                continue
-            if _parse_iso_date(item.get("date")) != today:
-                continue
-            candidate = item.get("training")
-            if _is_training_like(candidate):
-                return candidate
-    return execution.get("today_training", {})
-
-
-def _extract_upcoming_days(execution: dict, reference_date: date | None = None) -> list[str]:
-    today = reference_date or datetime.now().date()
-    upcoming_days = execution.get("upcoming_days")
-    if not isinstance(upcoming_days, list):
-        return []
-
-    normalized: list[str] = []
-    for item in upcoming_days:
-        if isinstance(item, dict):
-            item_date = _parse_iso_date(item.get("date"))
-            if item_date is not None and item_date <= today:
-                continue
-        normalized.append(str(item))
-    return normalized
-
-
-def _extract_today_nutrition(execution: dict) -> str:
-    nutrition = execution.get("today_nutrition", {})
-    if isinstance(nutrition, dict):
-        calories = nutrition.get("calories")
-        protein = nutrition.get("protein_target")
-        if calories is not None or protein is not None:
-            return f"{calories or '-'} kcal / {protein or '-'}g proteina"
-    return str(nutrition) if nutrition else "Nao definido"
-
-
-def build_plan_prompt_snapshot(
-    plan: UserPlan | None,
-    *,
-    today_training_context: list[PlanContextExerciseContext] | None = None,
-    adherence_7d: PlanContextAdherence7D | None = None,
-    weight_trend_weekly: PlanContextWeightTrend | None = None,
-) -> PlanPromptContext | None:
-    """Builds a compact snapshot from active plan payload."""
+def build_plan_prompt_snapshot(plan: UserPlan | None) -> PlanPromptContext | None:
+    """Build structured full snapshot from active plan payload."""
     if plan is None:
         return None
 
-    checkpoints = plan.checkpoints
-    last_checkpoint = checkpoints[-1].summary if checkpoints else None
-
-    execution_payload = plan.execution.model_dump()
+    latest_checkpoint = plan.checkpoints[-1].model_dump() if plan.checkpoints else None
 
     return PlanPromptContext(
         title=plan.title,
-        objective_summary=plan.objective_summary,
-        plan_period=(
-            f"{plan.start_date.strftime('%Y-%m-%d')} a "
-            f"{plan.end_date.strftime('%Y-%m-%d')}"
+        goal_primary=plan.goal.primary,
+        objective_summary=plan.goal.objective_summary,
+        timeline_window=(
+            f"{plan.timeline.start_date.strftime('%Y-%m-%d')} a "
+            f"{plan.timeline.target_date.strftime('%Y-%m-%d')}"
         ),
-        active_focus=plan.execution.active_focus,
-        today_training=_extract_today_training(execution_payload),
-        today_nutrition=_extract_today_nutrition(execution_payload),
-        upcoming_days=_extract_upcoming_days(execution_payload),
-        today_training_context=today_training_context or [],
-        adherence_7d=adherence_7d,
-        weight_trend_weekly=weight_trend_weekly,
-        last_checkpoint_summary=last_checkpoint,
-        critical_constraints=plan.strategy.constraints,
+        review_cadence=plan.timeline.review_cadence,
+        strategy_rationale=plan.strategy.rationale,
+        constraints=plan.strategy.constraints,
+        preferences=plan.strategy.preferences,
+        nutrition_targets=plan.nutrition_strategy.daily_targets.model_dump(
+            exclude_none=True
+        ),
+        training_split=plan.training_program.split_name,
+        weekly_schedule=[item.model_dump() for item in plan.training_program.weekly_schedule],
+        routines=[item.model_dump() for item in plan.training_program.routines],
+        current_summary=plan.current_summary.model_dump(exclude_none=True),
+        latest_checkpoint=latest_checkpoint,
     )
 
 
 def format_plan_snapshot(snapshot: PlanPromptContext | None) -> str:
-    """Formats plan snapshot as a readable prompt block."""
+    """Format structured snapshot as readable prompt block."""
     if snapshot is None:
         return (
-            "Nenhum plano registrado.\n"
-            "Acao obrigatoria: conduza discovery com o aluno e insista na coleta dos "
-            "dados faltantes ate conseguir criar um plano completo de treino e nutricao."
+            "Nenhum plano mestre registrado.\n"
+            "Acao obrigatoria imediata: inicie discovery e insista na criacao do plano "
+            "mestre (objetivo, prazo, estrategia, nutricao e programa semanal)."
         )
 
-    upcoming = ", ".join(snapshot.upcoming_days) if snapshot.upcoming_days else "sem previsao"
     constraints = (
-        ", ".join(snapshot.critical_constraints)
-        if snapshot.critical_constraints
-        else "sem restricoes criticas"
+        ", ".join(snapshot.constraints) if snapshot.constraints else "sem restricoes"
     )
-    checkpoint = snapshot.last_checkpoint_summary or "sem checkpoint recente"
-    training_context_lines: list[str] = []
-    if snapshot.today_training_context:
-        training_context_lines.append("Contexto do treino de hoje:")
-        for item in snapshot.today_training_context:
-            prescription = f"{item.prescribed_sets or '-'}x{item.prescribed_reps or '-'}"
-            if item.last_load_kg is not None and item.last_performed_at:
-                training_context_lines.append(
-                    f"- {item.exercise_name}: {prescription} | ultima carga registrada "
-                    f"{item.last_load_kg:.0f} kg em {item.last_performed_at}"
-                )
-            else:
-                training_context_lines.append(
-                    f"- {item.exercise_name}: {prescription} | "
-                    "ultima carga registrada: indisponivel"
-                )
-
-    adherence_line = ""
-    if snapshot.adherence_7d is not None:
-        training_pct = (
-            "indisponivel"
-            if snapshot.adherence_7d.training_percent is None
-            else f"{snapshot.adherence_7d.training_percent}%"
-        )
-        nutrition_pct = (
-            "indisponivel"
-            if snapshot.adherence_7d.nutrition_percent is None
-            else f"{snapshot.adherence_7d.nutrition_percent}%"
-        )
-        adherence_line = f"Aderencia 7d: treino {training_pct} | nutricao {nutrition_pct}"
-
-    trend_line = ""
-    if snapshot.weight_trend_weekly is not None:
-        trend_line = (
-            "Tendencia de peso: "
-            f"{snapshot.weight_trend_weekly.value_kg_per_week:+.2f} kg/semana"
-        )
-
-    enriched_sections = ""
-    if training_context_lines:
-        enriched_sections += "\\n".join(training_context_lines)
-    if adherence_line:
-        enriched_sections += f"\\n{adherence_line}"
-    if trend_line:
-        enriched_sections += f"\\n{trend_line}"
+    preferences = (
+        ", ".join(snapshot.preferences)
+        if snapshot.preferences
+        else "sem preferencias declaradas"
+    )
+    routines_count = len(snapshot.routines)
+    schedule_count = len(snapshot.weekly_schedule)
+    latest_checkpoint = snapshot.latest_checkpoint or {}
 
     return (
-        f"Plano: {snapshot.title}\\n"
-        f"Objetivo: {snapshot.objective_summary}\\n"
-        f"Periodo do plano: {snapshot.plan_period}\\n"
-        f"Foco atual: {snapshot.active_focus}\\n"
-        f"Treino de hoje: {snapshot.today_training}\\n"
-        f"{f'{enriched_sections}\\n' if enriched_sections else ''}"
-        f"Nutricao de hoje: {snapshot.today_nutrition}\\n"
-        f"Proximos dias: {upcoming}\\n"
-        f"Ultimo checkpoint: {checkpoint}\\n"
-        f"Restricoes criticas: {constraints}"
+        "Plano mestre ativo (fonte primaria):\n"
+        f"- Titulo: {snapshot.title}\n"
+        f"- Objetivo principal: {snapshot.goal_primary}\n"
+        f"- Objetivo resumido: {snapshot.objective_summary}\n"
+        f"- Janela do plano: {snapshot.timeline_window}\n"
+        f"- Cadencia de revisao: {snapshot.review_cadence}\n"
+        f"- Racional estrategico: {snapshot.strategy_rationale}\n"
+        f"- Restricoes: {constraints}\n"
+        f"- Preferencias: {preferences}\n"
+        f"- Metas nutricionais diarias: {snapshot.nutrition_targets}\n"
+        f"- Split de treino: {snapshot.training_split}\n"
+        f"- Rotinas no programa: {routines_count}\n"
+        f"- Itens na agenda semanal: {schedule_count}\n"
+        f"- Resumo atual: {snapshot.current_summary}\n"
+        f"- Ultimo checkpoint: {latest_checkpoint}"
     )

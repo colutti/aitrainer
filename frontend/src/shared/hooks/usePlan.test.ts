@@ -12,36 +12,34 @@ vi.mock('../api/http-client', () => ({
 const mockPlan: Plan = {
   overview: {
     id: 'plan-1',
-    title: 'Plano de Recomposicao',
+    title: 'Plano Mestre',
     objective_summary: 'Ganhar massa magra mantendo gordura sob controle',
     start_date: '2026-04-01',
-    end_date: '2026-06-01',
-    active_focus: 'Consistencia semanal de treinos',
+    target_date: '2026-06-01',
+    review_cadence: 'quinzenal',
+    active_focus: 'consistencia semanal de treinos',
     last_updated_at: '2026-04-19T10:00:00Z',
   },
-  mission_today: {
-    training: ['Treino A - peitoral e triceps'],
-    nutrition: ['2100 kcal', 'Proteina >= 160g'],
-    coaching: 'Durma 7h30 para melhorar recuperacao.',
+  strategy: {
+    rationale: 'Progressao de carga com deficit leve',
+    adaptation_policy: 'ajustes por evidencia',
+    constraints: [],
+    preferences: [],
+    current_risks: [],
   },
-  upcoming_days: [
-    {
-      date: '2026-04-20',
-      label: 'Amanha',
-      training: 'Treino B - costas e biceps',
-      training_details: ['Remada Curvada - 4x8 (RPE 8)'],
-      nutrition: '2200 kcal com foco em carbo pre-treino',
-      status: 'planned',
-    },
-  ],
-  latest_checkpoint: {
-    id: 'checkpoint-1',
-    occurred_at: '2026-04-17T08:00:00Z',
-    summary: 'Boa aderencia na semana.',
-    ai_assessment: 'A progressao de carga esta adequada.',
-    decision: 'Manter estrategia atual com ajuste leve de calorias.',
-    next_step: 'Reavaliar em 4 dias.',
+  nutrition_targets: {
+    calories: 2200,
+    protein_g: 180,
   },
+  adherence_notes: [],
+  training_program: {
+    split_name: 'upper_lower',
+    frequency_per_week: 4,
+    session_duration_min: 55,
+    weekly_schedule: [{ day: 'monday', routine_id: 'upper_a', focus: 'upper', type: 'training' }],
+    routines: [{ id: 'upper_a', name: 'Upper A', exercises: [{ name: 'Supino', sets: 4, reps: '6-8', load_guidance: 'RPE 8' }] }],
+  },
+  latest_checkpoint: null,
 };
 
 describe('usePlanStore', () => {
@@ -69,71 +67,51 @@ describe('usePlanStore', () => {
     expect(state.error).toBeNull();
   });
 
-  it('normalizes backend plan payload into PlanView shape', async () => {
+  it('normalizes backend plan payload into master-plan view model', async () => {
     vi.mocked(httpClient).mockResolvedValue({
       id: 'plan-backend-1',
-      user_email: 'rafacolucci@gmail.com',
       title: 'Plano Atual',
-      objective_summary: 'Perder gordura mantendo desempenho',
-      start_date: '2026-04-01T00:00:00Z',
-      end_date: '2026-06-01T00:00:00Z',
+      goal: {
+        primary: 'lose_fat',
+        objective_summary: 'Perder gordura mantendo desempenho',
+      },
+      timeline: {
+        start_date: '2026-04-01T00:00:00Z',
+        target_date: '2026-06-01T00:00:00Z',
+        review_cadence: 'semanal',
+      },
       strategy: {
-        primary_goal: 'lose_fat',
-        success_criteria: ['consistencia semanal'],
-        constraints: ['viagem quinta'],
-        coaching_rationale: 'deficit moderado',
+        rationale: 'deficit moderado',
         adaptation_policy: 'approval_required',
       },
-      execution: {
-        today_training: {
-          title: 'Lower A',
-          session: {
-            exercises: [
-              { name: 'Agachamento', sets: 4, reps: '6-8', load_guidance: 'RPE 8' },
-            ],
-          },
-        },
-        today_nutrition: { calories: 2200, protein_target: 170 },
-        upcoming_days: [
+      nutrition_strategy: {
+        daily_targets: { calories: 2200, protein_g: 170 },
+      },
+      training_program: {
+        split_name: 'upper_lower',
+        frequency_per_week: 4,
+        session_duration_min: 50,
+        weekly_schedule: [{ day: 'monday', routine_id: 'upper_a', focus: 'upper', type: 'training' }],
+        routines: [
           {
-            date: '2026-04-20',
-            label: 'Amanha',
-            training: {
-              title: 'Upper B',
-              session: {
-                exercises: [
-                  { name: 'Supino Reto', sets: 4, reps: '6-8', load_guidance: 'RPE 8' },
-                ],
-              },
-            },
-            nutrition: '2300 kcal',
-            status: 'planned',
+            id: 'upper_a',
+            name: 'Upper A',
+            exercises: [{ name: 'Supino Reto', sets: 4, reps: '6-8', load_guidance: 'RPE 8' }],
           },
         ],
+      },
+      current_summary: {
         active_focus: 'consistencia',
-        current_risks: ['sono ruim'],
-        pending_changes: [],
       },
-      tracking: {
-        checkpoints: [
-          {
-            checkpoint_at: '2026-04-19T10:00:00Z',
-            summary: 'Aderencia boa',
-            ai_assessment: 'mantem rota',
-            decision: 'continuar',
-            next_step: 'revisar em 4 dias',
-          },
-        ],
-        adherence_snapshot: { training: 'good', nutrition: 'mixed' },
-        progress_snapshot: { status: 'on_track' },
-        last_ai_assessment: 'boa semana',
-        last_user_acknowledgement: null,
-      },
-      governance: {
-        change_reason: null,
-        approval_request: null,
-      },
-      created_at: '2026-04-01T00:00:00Z',
+      checkpoints: [
+        {
+          checkpoint_at: '2026-04-19T10:00:00Z',
+          summary: 'Aderencia boa',
+          decision: 'continuar',
+          next_focus: 'recuperacao',
+          evidence: ['treino completo'],
+        },
+      ],
       updated_at: '2026-04-19T10:00:00Z',
     });
 
@@ -141,62 +119,10 @@ describe('usePlanStore', () => {
 
     const state = usePlanStore.getState();
     expect(state.plan?.overview.title).toBe('Plano Atual');
-    expect(state.plan?.overview.id).toBe('plan-backend-1');
     expect(state.plan?.overview.start_date).toBe('2026-04-01');
-    expect(state.plan?.overview.end_date).toBe('2026-06-01');
-    expect(state.plan?.mission_today.training[0]).toContain('Lower A');
-    expect(state.plan?.mission_today.training[1]).toContain(
-      'Agachamento - 4x6-8 (RPE 8)'
-    );
-    expect(state.plan?.upcoming_days[0]?.training_details[0]).toContain(
-      'Supino Reto - 4x6-8 (RPE 8)'
-    );
-    expect(state.plan?.mission_today.nutrition[0]).toContain('2200');
-  });
-
-  it('adds fallback upcoming days when backend payload has none', async () => {
-    vi.mocked(httpClient).mockResolvedValue({
-      id: 'plan-backend-2',
-      title: 'Plano sem dias',
-      objective_summary: 'Ajustar rotina',
-      start_date: '2026-04-01T00:00:00Z',
-      end_date: '2026-06-01T00:00:00Z',
-      execution: {
-        today_training: {},
-        today_nutrition: {},
-        upcoming_days: [],
-        active_focus: 'consistencia',
-      },
-      tracking: { checkpoints: [] },
-    });
-
-    await usePlanStore.getState().fetchPlan();
-    const state = usePlanStore.getState();
-
-    expect(state.plan?.upcoming_days).toEqual([]);
-  });
-
-  it('normalizes today nutrition when protein comes as alternative fields', async () => {
-    vi.mocked(httpClient).mockResolvedValue({
-      id: 'plan-backend-3',
-      title: 'Plano com nutricao alternativa',
-      objective_summary: 'Ajustar macros',
-      start_date: '2026-04-01T00:00:00Z',
-      end_date: '2026-06-01T00:00:00Z',
-      execution: {
-        today_training: {},
-        today_nutrition: { calories: '2400', protein_g: '180' },
-        upcoming_days: [],
-        active_focus: 'consistencia',
-      },
-      checkpoints: [],
-    });
-
-    await usePlanStore.getState().fetchPlan();
-
-    expect(usePlanStore.getState().plan?.mission_today.nutrition[0]).toBe(
-      '2400 kcal / 180g proteina'
-    );
+    expect(state.plan?.nutrition_targets.calories).toBe(2200);
+    expect(state.plan?.training_program.routines[0]?.name).toBe('Upper A');
+    expect(state.plan?.latest_checkpoint?.decision).toBe('continuar');
   });
 
   it('handles empty plan response', async () => {

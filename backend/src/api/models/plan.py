@@ -1,4 +1,4 @@
-"""Pydantic models for singleton central plan domain."""
+"""Pydantic models for the singleton master plan domain."""
 
 from datetime import datetime
 from typing import Any
@@ -6,93 +6,129 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
-class CheckpointRecord(BaseModel):
-    """Checkpoint summary for premium follow-up cadence."""
+class PlanGoal(BaseModel):
+    """Goal contract for the active master plan."""
 
-    checkpoint_at: datetime = Field(default_factory=datetime.now)
-    summary: str = Field(..., min_length=1)
-    ai_assessment: str | None = None
-    decision: str | None = None
-    next_step: str | None = None
+    primary: str = Field(..., min_length=1)
+    objective_summary: str = Field(..., min_length=1)
+    success_criteria: list[str] = Field(default_factory=list)
+
+
+class PlanTimeline(BaseModel):
+    """Explicit timeline for plan execution."""
+
+    start_date: datetime
+    target_date: datetime
+    review_cadence: str = Field(..., min_length=1)
+
+    @field_validator("target_date")
+    @classmethod
+    def validate_dates(cls, target_date: datetime, info):
+        """Ensure timeline target date is not before start date."""
+        start_date = info.data.get("start_date")
+        if start_date and target_date < start_date:
+            raise ValueError("target_date must be greater than or equal to start_date")
+        return target_date
 
 
 class PlanStrategy(BaseModel):
-    """Strategic intent and boundaries for the active plan."""
+    """Strategic rationale and constraints."""
 
-    primary_goal: str = Field(..., min_length=1)
-    success_criteria: list[str] = Field(default_factory=list)
-    constraints: list[str] = Field(default_factory=list)
-    coaching_rationale: str = Field(..., min_length=1)
+    rationale: str = Field(..., min_length=1)
     adaptation_policy: str = Field(..., min_length=1)
-
-
-class PlanExecution(BaseModel):
-    """Operational, day-to-day plan structure."""
-
-    today_training: dict[str, Any] = Field(default_factory=dict)
-    today_nutrition: dict[str, Any] = Field(default_factory=dict)
-    upcoming_days: list[Any] = Field(default_factory=list)
-    active_focus: str = Field(..., min_length=1)
+    constraints: list[str] = Field(default_factory=list)
+    preferences: list[str] = Field(default_factory=list)
     current_risks: list[str] = Field(default_factory=list)
-    pending_changes: list[dict[str, Any]] = Field(default_factory=list)
 
 
-class PlanContextExerciseContext(BaseModel):
-    """Exercise-level context to enrich coaching instructions."""
+class NutritionDailyTargets(BaseModel):
+    """Daily nutrition targets used by the plan."""
 
-    exercise_name: str = Field(..., min_length=1)
-    prescribed_sets: str | None = None
-    prescribed_reps: str | None = None
-    load_guidance: str | None = None
-    last_load_kg: float | None = None
-    last_load_text: str | None = None
-    last_performed_at: str | None = None
+    calories: int = Field(..., gt=0)
+    protein_g: int = Field(..., gt=0)
+    carbs_g: int | None = Field(default=None, gt=0)
+    fat_g: int | None = Field(default=None, gt=0)
+    fiber_g: int | None = Field(default=None, gt=0)
 
 
-class PlanContextAdherence7D(BaseModel):
-    """Compact 7-day adherence block for training and nutrition."""
+class NutritionStrategy(BaseModel):
+    """Nutrition strategy block."""
 
-    training_percent: int | None = Field(default=None, ge=0, le=100)
-    nutrition_percent: int | None = Field(default=None, ge=0, le=100)
-    window_start: str = Field(..., min_length=1)
-    window_end: str = Field(..., min_length=1)
+    daily_targets: NutritionDailyTargets
+    adherence_notes: list[str] = Field(default_factory=list)
 
 
-class PlanContextWeightTrend(BaseModel):
-    """Weekly weight trend context attached to plan snapshot."""
+class TrainingExercise(BaseModel):
+    """Exercise prescription for one routine."""
 
-    value_kg_per_week: float
-    source: str = Field(..., min_length=1)
+    name: str = Field(..., min_length=1)
+    sets: int = Field(..., gt=0)
+    reps: str = Field(..., min_length=1)
+    load_guidance: str = Field(..., min_length=1)
+    rest_seconds: int | None = Field(default=None, gt=0)
+    notes: str | None = None
 
 
-class PlanPromptContext(BaseModel):
-    """Compact and prompt-safe active plan context."""
+class TrainingRoutine(BaseModel):
+    """Reusable routine definition."""
 
-    title: str = Field(..., min_length=1)
-    objective_summary: str = Field(..., min_length=1)
-    plan_period: str = Field(..., min_length=1)
+    id: str = Field(..., min_length=1)
+    name: str = Field(..., min_length=1)
+    objective: str | None = None
+    exercises: list[TrainingExercise] = Field(default_factory=list)
+
+
+class WeeklyScheduleItem(BaseModel):
+    """Weekly schedule assignment that references routines."""
+
+    day: str = Field(..., min_length=1)
+    routine_id: str | None = None
+    focus: str = Field(..., min_length=1)
+    type: str = Field(default="training", min_length=1)
+
+
+class TrainingProgram(BaseModel):
+    """Master training program with reusable routines and weekly schedule."""
+
+    split_name: str = Field(..., min_length=1)
+    frequency_per_week: int = Field(..., gt=0)
+    session_duration_min: int = Field(..., gt=0)
+    routines: list[TrainingRoutine] = Field(default_factory=list)
+    weekly_schedule: list[WeeklyScheduleItem] = Field(default_factory=list)
+
+
+class PlanCheckpoint(BaseModel):
+    """Structured checkpoint record for review history."""
+
+    checkpoint_at: datetime = Field(default_factory=datetime.now)
+    summary: str = Field(..., min_length=1)
+    evidence: list[str] = Field(default_factory=list)
+    decision: str = Field(..., min_length=1)
+    next_focus: str = Field(..., min_length=1)
+
+
+class PlanCurrentSummary(BaseModel):
+    """Current operating summary for quick prompt/UI consumption."""
+
     active_focus: str = Field(..., min_length=1)
-    today_training: str = Field(..., min_length=1)
-    today_nutrition: str = Field(..., min_length=1)
-    upcoming_days: list[str] = Field(default_factory=list)
-    today_training_context: list[PlanContextExerciseContext] = Field(
-        default_factory=list,
-    )
-    adherence_7d: PlanContextAdherence7D | None = None
-    weight_trend_weekly: PlanContextWeightTrend | None = None
-    last_checkpoint_summary: str | None = None
-    critical_constraints: list[str] = Field(default_factory=list)
+    rationale: str = Field(..., min_length=1)
+    key_risks: list[str] = Field(default_factory=list)
+    last_review: str | None = None
+    next_review: str | None = None
 
 
 class PlanUpsertInput(BaseModel):
-    """Payload generated by AI to create or update singleton plan."""
+    """Payload generated by AI to create or update singleton master plan."""
 
     title: str = Field(..., min_length=1)
-    objective_summary: str = Field(..., min_length=1)
-    change_reason: str = Field(..., min_length=1)
+    change_reason: str = Field(default="initial_plan", min_length=1)
+    goal: dict[str, Any]
+    timeline: dict[str, Any]
     strategy: dict[str, Any]
-    execution: dict[str, Any]
-    checkpoints: list[CheckpointRecord] = Field(default_factory=list)
+    nutrition_strategy: dict[str, Any]
+    training_program: dict[str, Any]
+    current_summary: dict[str, Any]
+    checkpoints: list[PlanCheckpoint] = Field(default_factory=list)
 
 
 class UserPlan(BaseModel):
@@ -101,24 +137,35 @@ class UserPlan(BaseModel):
     id: str | None = Field(default=None)
     user_email: str = Field(..., min_length=3)
     title: str = Field(..., min_length=1)
-    objective_summary: str = Field(..., min_length=1)
-    start_date: datetime
-    end_date: datetime
+    goal: PlanGoal
+    timeline: PlanTimeline
     strategy: PlanStrategy
-    execution: PlanExecution
-    checkpoints: list[CheckpointRecord] = Field(default_factory=list)
+    nutrition_strategy: NutritionStrategy
+    training_program: TrainingProgram
+    checkpoints: list[PlanCheckpoint] = Field(default_factory=list)
+    current_summary: PlanCurrentSummary
     change_reason: str | None = None
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
-    @field_validator("end_date")
-    @classmethod
-    def validate_dates(cls, end_date: datetime, info):
-        """Ensure range is valid and explicit."""
-        start_date = info.data.get("start_date")
-        if start_date and end_date < start_date:
-            raise ValueError("end_date must be greater than or equal to start_date")
-        return end_date
+
+class PlanPromptContext(BaseModel):
+    """Prompt-safe full snapshot always injected in context."""
+
+    title: str = Field(..., min_length=1)
+    goal_primary: str = Field(..., min_length=1)
+    objective_summary: str = Field(..., min_length=1)
+    timeline_window: str = Field(..., min_length=1)
+    review_cadence: str = Field(..., min_length=1)
+    strategy_rationale: str = Field(..., min_length=1)
+    constraints: list[str] = Field(default_factory=list)
+    preferences: list[str] = Field(default_factory=list)
+    nutrition_targets: dict[str, Any] = Field(default_factory=dict)
+    training_split: str = Field(..., min_length=1)
+    weekly_schedule: list[dict[str, Any]] = Field(default_factory=list)
+    routines: list[dict[str, Any]] = Field(default_factory=list)
+    current_summary: dict[str, Any] = Field(default_factory=dict)
+    latest_checkpoint: dict[str, Any] | None = None
 
 
 class UserPlanWithId(UserPlan):

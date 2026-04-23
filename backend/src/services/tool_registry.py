@@ -145,18 +145,8 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
     "get_plan": ToolMetadata(
         "get_plan", ToolMemoryType.EPHEMERAL, "Fetch singleton plan"
     ),
-    "get_plan_context": ToolMetadata(
-        "get_plan_context",
-        ToolMemoryType.EPHEMERAL,
-        "Fetch compact plan context",
-    ),
     "upsert_plan": ToolMetadata(
         "upsert_plan", ToolMemoryType.MEMORABLE, "Create or update singleton plan"
-    ),
-    "get_today_plan_brief": ToolMetadata(
-        "get_today_plan_brief",
-        ToolMemoryType.EPHEMERAL,
-        "Fetch today's plan mission",
     ),
     "plan_help": ToolMetadata(
         "plan_help",
