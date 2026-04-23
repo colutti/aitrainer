@@ -67,7 +67,7 @@ def test_save_active_plan_upserts_current_version():
     assert plan_id == "mongo_plan_1"
     collection.find_one_and_update.assert_called_once()
     collection.delete_many.assert_called_once()
-    loaded = repo.get_active_plan("user@test.com")
+    loaded = repo.get_plan("user@test.com")
     assert loaded is not None
     assert loaded.version == 1
 
@@ -94,13 +94,13 @@ def test_database_delegates_plan_operations():
 
     plan = make_plan(version=3)
     db.save_plan(plan)
-    db.get_active_plan("user@test.com")
+    db.get_plan("user@test.com")
     db.get_latest_plan("user@test.com")
     db.list_plan_versions("user@test.com")
     db.approve_plan("user@test.com", 3)
 
     db.plans.save_plan.assert_called_once_with(plan)
-    db.plans.get_active_plan.assert_called_once_with("user@test.com")
+    db.plans.get_plan.assert_called_once_with("user@test.com")
     db.plans.get_latest_plan.assert_called_once_with("user@test.com")
     db.plans.list_plan_versions.assert_called_once_with("user@test.com")
     db.plans.approve_plan.assert_called_once_with("user@test.com", 3)

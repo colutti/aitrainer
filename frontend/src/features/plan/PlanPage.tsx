@@ -9,11 +9,11 @@ import { PlanView } from './components/PlanView';
 export default function PlanPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { activePlan, isLoading, fetchActivePlan } = usePlanStore();
+  const { plan, isLoading, fetchPlan } = usePlanStore();
 
   useEffect(() => {
-    void fetchActivePlan();
-  }, [fetchActivePlan]);
+    void fetchPlan();
+  }, [fetchPlan]);
 
   return (
     <section className="mx-auto w-full max-w-[1600px] space-y-6">
@@ -23,10 +23,14 @@ export default function PlanPage() {
       </div>
 
       <PlanView
-        plan={activePlan}
+        plan={plan}
         isLoading={isLoading}
         onOpenChat={() => {
-          void navigate('/dashboard/chat');
+          void navigate('/dashboard/chat', {
+            state: {
+              draftMessage: t('plan.empty.prefill_message'),
+            },
+          });
         }}
       />
     </section>

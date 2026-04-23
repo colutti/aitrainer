@@ -328,7 +328,7 @@
   },
   "plan": {
     "title": "Central Plan",
-    "subtitle": "Your active plan with daily execution.",
+    "subtitle": "Your plan with daily execution.",
     "sections": {
       "time_window": "Plan period",
       "overview": "Plan overview",
@@ -348,7 +348,8 @@
     },
     "labels": {
       "window": "Window",
-      "active_focus": "Active focus"
+      "active_focus": "Active focus",
+      "progress": "Progress"
     },
     "status": {
       "draft": "Draft",
@@ -359,15 +360,28 @@
       "archived": "Archived"
     },
     "empty": {
-      "title": "No active plan found",
+      "title": "No plan found",
       "description": "Talk to AI to create your complete training and nutrition plan.",
-      "cta": "Create plan in chat"
+      "cta": "Create plan in chat",
+      "prefill_message": "Create my full training and nutrition plan."
     },
     "checkpoint": {
-      "empty": "No checkpoint has been recorded for this plan yet."
+      "empty": "No checkpoint has been recorded for this plan yet.",
+      "summary": "Summary",
+      "ai_assessment": "AI assessment",
+      "decision": "Decision"
+    },
+    "mission": {
+      "empty_training": "Training not defined",
+      "empty_nutrition": "Nutrition not defined"
     },
     "upcoming": {
-      "empty": "No activities planned for the next days."
+      "empty": "No activities planned for the next days.",
+      "status": {
+        "planned": "Planned",
+        "adjusted": "Adjusted",
+        "rest": "Rest"
+      }
     }
   },
   "chat": {

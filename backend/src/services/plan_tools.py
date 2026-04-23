@@ -1,109 +1,67 @@
-"""LangChain tools for central plan management."""
+"""LangChain tools for singleton central plan management."""
 
 from langchain_core.tools import tool
-from pydantic import BaseModel, Field
 
-from src.api.models.plan import (
-    PlanProposalInput,
-)
-from src.services.plan_service import (
-    build_next_plan_version,
-    build_plan_prompt_snapshot,
-    format_plan_snapshot,
-    missing_intake_fields,
-    missing_execution_fields,
-)
+from src.api.models.plan import PlanUpsertInput
+from src.core.logs import logger
 from src.services.adaptive_tdee import AdaptiveTDEEService
+from src.services.plan_service import (
+    build_plan_prompt_snapshot,
+    build_plan_singleton,
+    format_plan_snapshot,
+    missing_execution_fields,
+    missing_intake_fields,
+)
 from src.services.plan_snapshot_context import build_plan_snapshot_context
 
 
-class ApprovePlanInput(BaseModel):
-    """Input schema for plan approval tool."""
-
-    version: int = Field(..., ge=1)
-
-
-class ProposeAdjustmentInput(BaseModel):
-    """Input schema for quick adjustment proposals."""
-
-    change_reason: str = Field(..., min_length=1)
-    proposal_summary: str = Field(..., min_length=1)
-
-
 def create_plan_help_tool(_database, _user_email: str):
-    """Provides operational contract for plan creation tools."""
+    """Provides operational contract for singleton plan tools."""
 
     @tool
     def plan_help() -> str:
-        """Retorna guia de como montar e ajustar plano com as tools de plano."""
+        """Retorna guia de como montar e ajustar plano singleton."""
         return (
             "# Plan Tools Help\n\n"
             "## Fluxo obrigatorio\n"
-            "discovery -> criacao/edicao direta -> acompanhamento continuo\n\n"
+            "discovery -> criar plano -> atualizar continuamente\n\n"
             "## Regras\n"
-            "- Nao chamar create_plan_proposal com intake incompleto.\n"
-            "- Fazer perguntas de discovery ate preencher todos os campos obrigatorios.\n"
-            "- Nao criar plano sem prescricao operacional de treino/nutricao.\n"
-            "- Nao pedir aprovacao nem proposta para criar/editar plano.\n"
-            "- O plano e unico por usuario: editar sempre sobrescreve o plano atual.\n\n"
-            "## Campos obrigatorios em strategy\n"
-            "- dias_disponiveis_treino\n"
-            "- frequencia_treino_semana\n"
-            "- nivel_treinamento\n"
-            "- restricoes_lesoes\n"
-            "- tempo_por_sessao_min\n"
-            "- preferencia_ambiente\n\n"
-            "## Campos obrigatorios em execution\n"
-            "- today_training (com session.exercises detalhado)\n"
-            "- today_nutrition (metas objetivas)\n"
-            "- upcoming_days (com proximos dias reais)\n\n"
-            "- cada dia planned/adjusted em upcoming_days deve incluir\n"
-            "  training.session.exercises\n\n"
-            "## Exemplo minimo de execution\n"
-            "```json\n"
-            "{\n"
-            '  "today_training": {"title": "Lower A", "session": {"exercises": ['
-            '{"name":"Agachamento","sets":4,"reps":"6-8","load_guidance":"RPE 8"}]}},\n'
-            '  "today_nutrition": {"calories": 2400, "protein_target": 140, '
-            '"carbs_target": 260, "fat_target": 70},\n'
-            '  "upcoming_days": [{"date":"2026-04-20","label":"Amanha",'
-            '"training":"Upper A","nutrition":"2400 kcal","status":"planned"}]\n'
-            "}\n"
-            "```\n\n"
-            "## Ferramentas recomendadas\n"
-            "- get_active_plan\n"
-            "- get_plan_prompt_snapshot\n"
-            "- create_plan_proposal\n"
-            "- propose_plan_adjustment\n"
+            "- Em criacao inicial, upsert_plan exige plano operacional completo.\n"
+            "- Sempre atualizar o singleton existente quando houver novos dados.\n"
+            "- O plano e singleton: sempre atualizar o mesmo plano do usuario.\n\n"
+            "## Ferramentas\n"
+            "- get_plan\n"
+            "- get_plan_context\n"
+            "- upsert_plan\n"
             "- get_today_plan_brief\n"
         )
 
     return plan_help
 
 
-def create_get_active_plan_tool(database, user_email: str):
-    """Returns the full active plan payload."""
+def create_get_plan_tool(database, user_email: str):
+    """Returns the full singleton plan payload."""
 
     @tool
-    def get_active_plan() -> str:
-        """Retorna o plano ativo atual do usuario em formato serializado."""
-        plan = database.get_active_plan(user_email)
+    def get_plan() -> str:
+        """Retorna o plano atual do usuario em formato serializado."""
+        plan = database.get_plan(user_email)
         if plan is None:
-            return "Nenhum plano ativo encontrado."
+            return "Nenhum plano registrado."
         return str(plan.model_dump())
 
-    return get_active_plan
+    return get_plan
 
 
-def create_get_plan_prompt_snapshot_tool(database, user_email: str):
-    """Returns the compact prompt snapshot generated from active plan."""
+def create_get_plan_context_tool(database, user_email: str):
+    """Returns the compact context generated from singleton plan."""
 
     @tool
-    def get_plan_prompt_snapshot() -> str:
-        """Retorna o snapshot compacto de plano usado no contexto do prompt."""
-        plan = database.get_active_plan(user_email)
+    def get_plan_context() -> str:
+        """Retorna o contexto compacto de plano usado no prompt."""
+        plan = database.get_plan(user_email)
         if plan is None:
-            return "Nenhum plano ativo encontrado."
+            return "Nenhum plano registrado."
         metabolism_data = AdaptiveTDEEService(database).calculate_tdee(user_email)
         context = build_plan_snapshot_context(
             database=database,
@@ -119,99 +77,65 @@ def create_get_plan_prompt_snapshot_tool(database, user_email: str):
         )
         return format_plan_snapshot(snapshot)
 
-    return get_plan_prompt_snapshot
+    return get_plan_context
 
 
-def create_create_plan_proposal_tool(database, user_email: str):
-    """Creates a new active plan version immediately."""
+def create_upsert_plan_tool(database, user_email: str):
+    """Creates or updates singleton plan."""
 
-    @tool(args_schema=PlanProposalInput)
+    @tool(args_schema=PlanUpsertInput)
     # pylint: disable=too-many-arguments,too-many-positional-arguments
-    def create_plan_proposal(
+    def upsert_plan(
         title: str,
         objective_summary: str,
         change_reason: str,
         strategy: dict,
         execution: dict,
-        tracking: dict,
+        checkpoints: list[dict] | None = None,
     ) -> str:
-        """Cria uma nova versao ativa de plano com dados completos."""
+        """Cria ou atualiza o plano singleton com dados completos."""
+        logger.info("upsert_plan called for user: %s", user_email)
         latest = database.get_latest_plan(user_email)
-        merged_strategy = (
-            {**latest.strategy.model_dump(), **strategy} if latest else strategy
-        )
-        merged_execution = (
-            {**latest.execution.model_dump(), **execution} if latest else execution
-        )
-        missing_strategy_fields = missing_intake_fields(merged_strategy)
-        missing_exec_fields = missing_execution_fields(merged_execution)
-        if missing_strategy_fields or missing_exec_fields:
-            missing_list = ", ".join(missing_strategy_fields + missing_exec_fields)
-            return (
-                "Plano incompleto. Antes de criar proposta, colete estes campos: "
-                f"{missing_list}."
-            )
+        is_creation = latest is None
 
-        proposal = PlanProposalInput(
+        if is_creation:
+            missing_fields = missing_intake_fields(strategy) + missing_execution_fields(
+                execution
+            )
+            if missing_fields:
+                missing_list = ", ".join(missing_fields)
+                return (
+                    "Plano incompleto para criacao inicial. "
+                    "Colete e envie estes campos antes de salvar: "
+                    f"{missing_list}."
+                )
+
+        payload = PlanUpsertInput(
             title=title,
             objective_summary=objective_summary,
             change_reason=change_reason,
             strategy=strategy,
             execution=execution,
-            tracking=tracking,
+            checkpoints=checkpoints or [],
         )
-        plan = build_next_plan_version(user_email, latest, proposal)
+        plan = build_plan_singleton(user_email, latest, payload)
         plan_id = database.save_plan(plan)
-        return (
-            "Plano criado/atualizado com sucesso (sem aprovacao necessaria). "
-            f"ID: {plan_id}."
-        )
+        logger.info("upsert_plan saved for user: %s (plan_id=%s)", user_email, plan_id)
+        return f"Plano salvo com sucesso. ID: {plan_id}."
 
-    return create_plan_proposal
-
-
-def create_propose_plan_adjustment_tool(database, user_email: str):
-    """Creates an adjustment proposal using current plan as baseline."""
-
-    @tool(args_schema=ProposeAdjustmentInput)
-    def propose_plan_adjustment(change_reason: str, proposal_summary: str) -> str:
-        """Propõe ajuste com base no plano mais recente e aplica nova versao ativa."""
-        latest = database.get_latest_plan(user_email)
-        if latest is None:
-            return "Nao existe plano para ajustar. Crie um plano inicial primeiro."
-        _ = (change_reason, proposal_summary)
-        return (
-            "Para ajustar o plano, use create_plan_proposal com payload estruturado "
-            "(strategy/execution/tracking) contendo as alteracoes completas. "
-            "Nao existe fluxo de aprovacao."
-        )
-
-    return propose_plan_adjustment
-
-
-def create_approve_plan_change_tool(database, user_email: str):
-    """Approves a previously proposed version."""
-
-    @tool(args_schema=ApprovePlanInput)
-    def approve_plan_change(version: int) -> str:
-        approved = database.approve_plan(user_email, version)
-        if not approved:
-            return "Nao foi possivel aprovar a versao informada."
-        return f"Plano aprovado com sucesso. Versao {version} agora esta ativa."
-
-    return approve_plan_change
+    return upsert_plan
 
 
 def create_get_today_plan_brief_tool(database, user_email: str):
-    """Returns a concise mission-of-the-day briefing from active plan."""
+    """Returns a concise mission-of-the-day briefing from singleton plan."""
 
     @tool
     def get_today_plan_brief() -> str:
-        """Retorna o resumo operacional do dia do plano ativo."""
-        plan = database.get_active_plan(user_email)
+        """Retorna o resumo operacional do dia do plano."""
+        plan = database.get_plan(user_email)
         snapshot = build_plan_prompt_snapshot(plan)
         if snapshot is None:
-            return "Nenhum plano ativo encontrado."
+            return "Nenhum plano registrado."
         return (
             f"Missao de hoje - Treino: {snapshot.today_training}. "
             f"Nutricao: {snapshot.today_nutrition}. "

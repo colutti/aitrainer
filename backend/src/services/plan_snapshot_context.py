@@ -9,10 +9,10 @@ from typing import Any
 import unicodedata
 
 from src.api.models.plan import (
-    ActivePlan,
-    PlanSnapshotAdherence7D,
-    PlanSnapshotExerciseContext,
-    PlanSnapshotWeightTrend,
+    UserPlan,
+    PlanContextAdherence7D,
+    PlanContextExerciseContext,
+    PlanContextWeightTrend,
 )
 
 
@@ -80,7 +80,7 @@ def _training_title(payload: object) -> str | None:
 
 
 def _resolve_today_training_payload(
-    plan: ActivePlan, reference_date: date | None = None
+    plan: UserPlan, reference_date: date | None = None
 ) -> tuple[object, bool]:
     today = reference_date or datetime.now().date()
     for day in plan.execution.upcoming_days:
@@ -98,7 +98,7 @@ def _resolve_today_training_payload(
     return plan.execution.today_training, False
 
 
-def _extract_today_exercises(plan: ActivePlan, now: datetime) -> list[dict[str, Any]]:
+def _extract_today_exercises(plan: UserPlan, now: datetime) -> list[dict[str, Any]]:
     def _extract_exercises(training_payload: object) -> list[dict[str, Any]]:
         if not isinstance(training_payload, dict):
             return []
@@ -153,7 +153,7 @@ def _build_exercise_context(
     today_exercises: list[dict[str, Any]],
     workout_logs: list[Any],
     now: datetime,
-) -> list[PlanSnapshotExerciseContext]:
+) -> list[PlanContextExerciseContext]:
     # pylint: disable=too-many-locals
     earliest = now - timedelta(days=90)
     normalized_logs: list[dict[str, Any]] = []
@@ -169,7 +169,7 @@ def _build_exercise_context(
 
     normalized_logs.sort(key=lambda item: item["date"], reverse=True)
 
-    result: list[PlanSnapshotExerciseContext] = []
+    result: list[PlanContextExerciseContext] = []
     for exercise in today_exercises:
         name = str(exercise.get("name"))
         last_load_kg: float | None = None
@@ -197,7 +197,7 @@ def _build_exercise_context(
                 break
 
         result.append(
-            PlanSnapshotExerciseContext(
+            PlanContextExerciseContext(
                 exercise_name=name,
                 prescribed_sets=(
                     str(exercise.get("sets")) if exercise.get("sets") is not None else None
@@ -289,13 +289,13 @@ def _calculate_training_adherence(
     return round((len(executed_days) / len(planned_days)) * 100)
 
 
-def _extract_weight_trend(metabolism_data: dict[str, Any]) -> PlanSnapshotWeightTrend | None:
+def _extract_weight_trend(metabolism_data: dict[str, Any]) -> PlanContextWeightTrend | None:
     if "weight_change_per_week" not in metabolism_data:
         return None
     value = metabolism_data.get("weight_change_per_week")
     if not isinstance(value, (int, float)):
         return None
-    return PlanSnapshotWeightTrend(
+    return PlanContextWeightTrend(
         value_kg_per_week=float(value),
         source="adaptive_tdee",
     )
@@ -303,18 +303,18 @@ def _extract_weight_trend(metabolism_data: dict[str, Any]) -> PlanSnapshotWeight
 
 @dataclass
 class PlanSnapshotContext:
-    """Structured context merged into PlanSnapshot before prompt formatting."""
+    """Structured context merged into PlanPromptContext before prompt formatting."""
 
-    today_training_context: list[PlanSnapshotExerciseContext]
-    adherence_7d: PlanSnapshotAdherence7D | None
-    weight_trend_weekly: PlanSnapshotWeightTrend | None
+    today_training_context: list[PlanContextExerciseContext]
+    adherence_7d: PlanContextAdherence7D | None
+    weight_trend_weekly: PlanContextWeightTrend | None
 
 
 def build_plan_snapshot_context(
     *,
     database,
     user_email: str,
-    plan: ActivePlan,
+    plan: UserPlan,
     metabolism_data: dict[str, Any],
     now: datetime | None = None,
 ) -> PlanSnapshotContext:
@@ -349,7 +349,7 @@ def build_plan_snapshot_context(
     today_exercises = _extract_today_exercises(plan, current)
     training_context = _build_exercise_context(today_exercises, workout_logs, current)
 
-    adherence = PlanSnapshotAdherence7D(
+    adherence = PlanContextAdherence7D(
         training_percent=_calculate_training_adherence(
             plan.execution.upcoming_days,
             workout_logs,

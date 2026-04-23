@@ -4,12 +4,12 @@ import { httpClient } from '../api/http-client';
 import type { Plan } from '../types/plan';
 
 interface PlanState {
-  activePlan: Plan | null;
+  plan: Plan | null;
   isLoading: boolean;
   error: string | null;
-  fetchActivePlan: () => Promise<void>;
-  setActivePlan: (plan: Plan | null) => void;
-  clearActivePlan: () => void;
+  fetchPlan: () => Promise<void>;
+  setPlan: (plan: Plan | null) => void;
+  clearPlan: () => void;
   reset: () => void;
 }
 
@@ -21,9 +21,8 @@ interface BackendCheckpoint {
   next_step?: string;
 }
 
-interface BackendActivePlan {
+interface BackendPlanPayload {
   id?: string;
-  status?: string;
   title?: string;
   objective_summary?: string;
   start_date?: string;
@@ -34,6 +33,7 @@ interface BackendActivePlan {
     upcoming_days?: unknown[];
     active_focus?: string;
   };
+  checkpoints?: BackendCheckpoint[];
   tracking?: {
     checkpoints?: BackendCheckpoint[];
   };
@@ -115,11 +115,24 @@ function normalizeTodayNutrition(value: unknown): string[] {
   }
   if (value && typeof value === 'object') {
     const record = value as Record<string, unknown>;
-    const calories = record.calories;
-    const protein = record.protein_target;
-    const caloriesText = typeof calories === 'number' ? String(calories) : '-';
-    const proteinText = typeof protein === 'number' ? String(protein) : '-';
-    if (typeof calories === 'number' || typeof protein === 'number') {
+    const parseMetric = (metric: unknown): number | null => {
+      if (typeof metric === 'number' && Number.isFinite(metric)) return metric;
+      if (typeof metric === 'string') {
+        const normalized = metric.trim().replace(',', '.');
+        if (!normalized) return null;
+        const parsed = Number(normalized);
+        return Number.isFinite(parsed) ? parsed : null;
+      }
+      return null;
+    };
+
+    const calories = parseMetric(record.calories);
+    const protein = parseMetric(
+      record.protein_target ?? record.protein ?? record.protein_g
+    );
+    const caloriesText = calories !== null ? String(calories) : '-';
+    const proteinText = protein !== null ? String(protein) : '-';
+    if (calories !== null || protein !== null) {
       return [`${caloriesText} kcal / ${proteinText}g proteina`];
     }
   }
@@ -177,15 +190,8 @@ function normalizeUpcomingDays(value: unknown[]): Plan['upcoming_days'] {
   });
 }
 
-function mapStatusTone(status: string | undefined): Plan['status_banner']['tone'] {
-  if (status === 'active') return 'on_track';
-  if (status === 'awaiting_approval') return 'awaiting_approval';
-  if (status === 'adjustment_pending_approval') return 'pending_review';
-  return 'attention';
-}
-
-function mapBackendToPlan(payload: BackendActivePlan): Plan {
-  const checkpoints = payload.tracking?.checkpoints ?? [];
+function mapBackendToPlan(payload: BackendPlanPayload): Plan {
+  const checkpoints = payload.checkpoints ?? payload.tracking?.checkpoints ?? [];
   const latestCheckpoint = checkpoints.length > 0 ? checkpoints[checkpoints.length - 1] : undefined;
 
   return {
@@ -193,18 +199,8 @@ function mapBackendToPlan(payload: BackendActivePlan): Plan {
       id: payload.id ?? 'plan',
       title: payload.title ?? 'Plano',
       objective_summary: payload.objective_summary ?? 'Objetivo nao definido',
-      status:
-        payload.status === 'draft' ||
-        payload.status === 'awaiting_approval' ||
-        payload.status === 'active' ||
-        payload.status === 'adjustment_pending_approval' ||
-        payload.status === 'completed' ||
-        payload.status === 'archived'
-          ? payload.status
-          : 'draft',
       start_date: formatPlanDate(payload.start_date),
       end_date: formatPlanDate(payload.end_date),
-      progress_percent: 0,
       active_focus: payload.execution?.active_focus ?? 'Sem foco definido',
       last_updated_at: payload.updated_at ?? new Date().toISOString(),
     },
@@ -224,10 +220,6 @@ function mapBackendToPlan(payload: BackendActivePlan): Plan {
           next_step: latestCheckpoint.next_step ?? '',
         }
       : null,
-    status_banner: {
-      tone: mapStatusTone(payload.status),
-      message: payload.status === 'awaiting_approval' ? 'Aguardando aprovacao' : 'Plano carregado',
-    },
   };
 }
 
@@ -240,37 +232,37 @@ function normalizePlanPayload(payload: unknown): Plan | null {
     return payload as Plan;
   }
 
-  return mapBackendToPlan(payload as BackendActivePlan);
+  return mapBackendToPlan(payload as BackendPlanPayload);
 }
 
 export const usePlanStore = create<PlanState>((set) => ({
-  activePlan: null,
+  plan: null,
   isLoading: false,
   error: null,
 
-  fetchActivePlan: async () => {
+  fetchPlan: async () => {
     set({ isLoading: true, error: null });
     try {
-      const data = await httpClient('/plan/active');
-      set({ activePlan: normalizePlanPayload(data), isLoading: false, error: null });
+      const data = await httpClient('/plan');
+      set({ plan: normalizePlanPayload(data), isLoading: false, error: null });
     } catch (error) {
       set({
         isLoading: false,
-        activePlan: null,
-        error: error instanceof Error ? error.message : 'Error fetching active plan',
+        plan: null,
+        error: error instanceof Error ? error.message : 'Error fetching plan',
       });
     }
   },
 
-  setActivePlan: (plan) => {
-    set({ activePlan: plan });
+  setPlan: (plan) => {
+    set({ plan });
   },
 
-  clearActivePlan: () => {
-    set({ activePlan: null });
+  clearPlan: () => {
+    set({ plan: null });
   },
 
   reset: () => {
-    set({ activePlan: null, isLoading: false, error: null });
+    set({ plan: null, isLoading: false, error: null });
   },
 }));

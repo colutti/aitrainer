@@ -4,8 +4,8 @@ from unittest.mock import MagicMock
 from src.api.models.plan import ActivePlan, PlanStatus
 from src.services.plan_tools import (
     create_plan_help_tool,
-    create_get_active_plan_tool,
-    create_get_plan_prompt_snapshot_tool,
+    create_get_plan_tool,
+    create_get_plan_context_tool,
     create_create_plan_proposal_tool,
     create_propose_plan_adjustment_tool,
     create_approve_plan_change_tool,
@@ -89,15 +89,15 @@ def make_active_plan(version=1, status=PlanStatus.ACTIVE) -> ActivePlan:
     )
 
 
-def test_get_active_plan_tool_returns_serialized_plan():
+def test_get_plan_tool_returns_serialized_plan():
     db = MagicMock()
-    db.get_active_plan.return_value = make_active_plan()
+    db.get_plan.return_value = make_active_plan()
 
-    tool = create_get_active_plan_tool(db, "user@test.com")
+    tool = create_get_plan_tool(db, "user@test.com")
     result = tool.invoke({})
 
     assert "Plano Atual" in result
-    db.get_active_plan.assert_called_once_with("user@test.com")
+    db.get_plan.assert_called_once_with("user@test.com")
 
 
 def test_plan_help_tool_returns_markdown_with_required_flow():
@@ -114,9 +114,9 @@ def test_plan_help_tool_returns_markdown_with_required_flow():
     assert "upcoming_days" in result
 
 
-def test_get_plan_prompt_snapshot_tool_returns_compact_snapshot(monkeypatch):
+def test_get_plan_context_tool_returns_compact_snapshot(monkeypatch):
     db = MagicMock()
-    db.get_active_plan.return_value = make_active_plan()
+    db.get_plan.return_value = make_active_plan()
     db.get_workout_logs.return_value = []
     db.get_nutrition_logs_by_date_range.return_value = []
     monkeypatch.setattr(
@@ -128,7 +128,7 @@ def test_get_plan_prompt_snapshot_tool_returns_compact_snapshot(monkeypatch):
         ),
     )
 
-    tool = create_get_plan_prompt_snapshot_tool(db, "user@test.com")
+    tool = create_get_plan_context_tool(db, "user@test.com")
     result = tool.invoke({})
 
     assert "Treino de hoje" in result
@@ -345,7 +345,7 @@ def test_approve_plan_change_tool_delegates_approval():
 
 def test_get_today_plan_brief_tool_returns_training_and_nutrition():
     db = MagicMock()
-    db.get_active_plan.return_value = make_active_plan()
+    db.get_plan.return_value = make_active_plan()
 
     tool = create_get_today_plan_brief_tool(db, "user@test.com")
     result = tool.invoke({})

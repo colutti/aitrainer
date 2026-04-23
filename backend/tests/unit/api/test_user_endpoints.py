@@ -3,11 +3,14 @@ Comprehensive tests for user authentication and profile management endpoints.
 Tests cover login, logout, profile retrieval, and profile updates.
 """
 
+import sys
+import types
 from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
 import pytest
 
 from src.api.main import app
+from src.api.endpoints import user as user_endpoint
 from src.services.auth import verify_token
 from src.core.deps import get_mongo_database
 from src.api.models.user_profile import UserProfile
@@ -160,6 +163,27 @@ def test_login_missing_email():
     response = client.post("/user/login", json=payload)
 
     assert response.status_code == 422  # Validation error
+
+
+def test_verify_id_token_uses_configured_clock_skew(monkeypatch):
+    """Firebase token verification must pass configured clock skew tolerance."""
+    firebase_admin_module = types.ModuleType("firebase_admin")
+    firebase_admin_auth_module = types.ModuleType("firebase_admin.auth")
+    verify_token_mock = MagicMock(return_value={"email": "test@example.com"})
+    firebase_admin_auth_module.verify_id_token = verify_token_mock
+    firebase_admin_module.auth = firebase_admin_auth_module
+
+    monkeypatch.setitem(sys.modules, "firebase_admin", firebase_admin_module)
+    monkeypatch.setitem(sys.modules, "firebase_admin.auth", firebase_admin_auth_module)
+    monkeypatch.setattr(user_endpoint, "ensure_firebase_initialized", lambda: None)
+
+    payload = user_endpoint.verify_id_token("firebase_token")
+
+    assert payload == {"email": "test@example.com"}
+    verify_token_mock.assert_called_once_with(
+        "firebase_token",
+        clock_skew_seconds=user_endpoint.settings.FIREBASE_CLOCK_SKEW_SECONDS,
+    )
 
 
 # Test: GET /profile - Success Case

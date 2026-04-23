@@ -322,24 +322,24 @@
     "plan_entry": {
       "eyebrow": "Plan Central",
       "title": "Sigue tu plan completo",
-      "description": "Consulta la mision de hoy, proximos dias y checkpoints en un solo hub.",
+      "description": "Consulta la misión de hoy, próximos días y checkpoints en un solo hub.",
       "cta": "Abrir"
     }
   },
   "plan": {
     "title": "Plan Central",
-    "subtitle": "Tu plan activo con ejecucion diaria.",
+    "subtitle": "Tu plan con ejecución diaria.",
     "sections": {
-      "time_window": "Periodo del plan",
-      "overview": "Vision general del plan",
-      "mission_today": "Mision de hoy",
-      "upcoming_days": "Proximos dias",
-      "latest_checkpoint": "Ultimo checkpoint",
+      "time_window": "Período del plan",
+      "overview": "Visión general del plan",
+      "mission_today": "Misión de hoy",
+      "upcoming_days": "Próximos días",
+      "latest_checkpoint": "Último checkpoint",
       "status": "Estado del plan"
     },
     "cards": {
       "training": "Entrenamiento",
-      "nutrition": "Nutricion",
+      "nutrition": "Nutrición",
       "ai_followup": "Seguimiento IA"
     },
     "actions": {
@@ -348,26 +348,40 @@
     },
     "labels": {
       "window": "Ventana",
-      "active_focus": "Foco actual"
+      "active_focus": "Foco actual",
+      "progress": "Progreso"
     },
     "status": {
       "draft": "Borrador",
-      "awaiting_approval": "En espera de aprobacion",
+      "awaiting_approval": "En espera de aprobación",
       "active": "Activo",
-      "adjustment_pending_approval": "Ajuste en espera de aprobacion",
+      "adjustment_pending_approval": "Ajuste en espera de aprobación",
       "completed": "Completado",
       "archived": "Archivado"
     },
     "empty": {
-      "title": "No se encontro un plan activo",
-      "description": "Habla con la IA para crear tu plan completo de entrenamiento y nutricion.",
-      "cta": "Crear plan en el chat"
+      "title": "No se encontró un plan",
+      "description": "Habla con la IA para crear tu plan completo de entrenamiento y nutrición.",
+      "cta": "Crear plan en el chat",
+      "prefill_message": "Crea mi plan completo de entrenamiento y nutrición."
     },
     "checkpoint": {
-      "empty": "Aun no hay checkpoint registrado para este plan."
+      "empty": "Aún no hay checkpoint registrado para este plan.",
+      "summary": "Resumen",
+      "ai_assessment": "Evaluación IA",
+      "decision": "Decisión"
+    },
+    "mission": {
+      "empty_training": "Entrenamiento no definido",
+      "empty_nutrition": "Nutrición no definida"
     },
     "upcoming": {
-      "empty": "No hay actividades planificadas para los proximos dias."
+      "empty": "No hay actividades planificadas para los próximos días.",
+      "status": {
+        "planned": "Planificado",
+        "adjusted": "Ajustado",
+        "rest": "Descanso"
+      }
     }
   },
   "chat": {

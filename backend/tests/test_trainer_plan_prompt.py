@@ -36,7 +36,7 @@ async def test_send_message_ai_injects_plan_snapshot_into_prompt_builder(monkeyp
     mock_db.get_window_memory.return_value.load_memory_variables.return_value = {
         "chat_history": []
     }
-    mock_db.get_active_plan.return_value = ActivePlan(
+    mock_db.get_plan.return_value = ActivePlan(
         user_email="test@test.com",
         status=PlanStatus.ACTIVE,
         title="Plano Atual",

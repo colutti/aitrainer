@@ -45,13 +45,19 @@ def verify_id_token(token: str) -> dict:
 
     ensure_firebase_initialized()
 
+    clock_skew = max(0, settings.FIREBASE_CLOCK_SKEW_SECONDS)
+
     try:
-        return firebase_admin.auth.verify_id_token(token)
+        return firebase_admin.auth.verify_id_token(
+            token, clock_skew_seconds=clock_skew
+        )
     except ValueError as e:
         if "Token used too early" in str(e):
             logger.info("Token used too early (clock skew). Retrying in 3s...")
             time.sleep(3.1)
-            return firebase_admin.auth.verify_id_token(token)
+            return firebase_admin.auth.verify_id_token(
+                token, clock_skew_seconds=clock_skew
+            )
         raise e
 
 

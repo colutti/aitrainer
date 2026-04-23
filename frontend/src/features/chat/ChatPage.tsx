@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useMemo, useLayoutEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthStore } from '../../shared/hooks/useAuth';
 import { useChatStore } from '../../shared/hooks/useChat';
@@ -18,7 +19,13 @@ export default function ChatPage() {
   const { trainer, availableTrainers, fetchTrainer, fetchAvailableTrainers } = useSettingsStore();
   const { userInfo } = useAuthStore();
   
-  const [inputValue, setInputValue] = useState('');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const initialDraftMessage = useMemo(() => {
+    const state = location.state as { draftMessage?: string } | null;
+    return state?.draftMessage?.trim() ?? '';
+  }, [location.state]);
+  const [inputValue, setInputValue] = useState(initialDraftMessage);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -34,6 +41,11 @@ export default function ChatPage() {
     void fetchTrainer();
     void fetchAvailableTrainers();
   }, [fetchHistory, fetchTrainer, fetchAvailableTrainers]);
+
+  useEffect(() => {
+    if (!initialDraftMessage) return;
+    void navigate(location.pathname, { replace: true, state: null });
+  }, [initialDraftMessage, location.pathname, navigate]);
 
   // Find current trainer details
   const currentTrainer = useMemo(() => {

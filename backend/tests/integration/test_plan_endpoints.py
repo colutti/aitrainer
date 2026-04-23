@@ -67,32 +67,32 @@ def make_plan(version=1, status=PlanStatus.ACTIVE):
     )
 
 
-def test_get_active_plan_returns_plan_payload():
+def test_get_plan_returns_plan_payload():
     mock_db = MagicMock()
-    mock_db.get_active_plan.return_value = make_plan()
+    mock_db.get_plan.return_value = make_plan()
     mock_db.get_latest_plan.return_value = make_plan()
 
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     try:
-        response = client.get("/plan/active")
+        response = client.get("/plan")
         assert response.status_code == 200
         assert response.json()["title"] == "Plano Atual"
     finally:
         app.dependency_overrides.clear()
 
 
-def test_get_active_plan_returns_404_when_missing():
+def test_get_plan_returns_404_when_missing():
     mock_db = MagicMock()
-    mock_db.get_active_plan.return_value = None
+    mock_db.get_plan.return_value = None
     mock_db.get_latest_plan.return_value = None
 
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     try:
-        response = client.get("/plan/active")
+        response = client.get("/plan")
         assert response.status_code == 404
     finally:
         app.dependency_overrides.clear()
@@ -199,16 +199,16 @@ def test_approve_plan_version():
         app.dependency_overrides.clear()
 
 
-def test_get_active_plan_returns_current_active_version():
+def test_get_plan_returns_current_active_version():
     mock_db = MagicMock()
-    mock_db.get_active_plan.return_value = make_plan(version=1, status=PlanStatus.ACTIVE)
+    mock_db.get_plan.return_value = make_plan(version=1, status=PlanStatus.ACTIVE)
     mock_db.get_latest_plan.return_value = make_plan(version=2, status=PlanStatus.ARCHIVED)
 
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     try:
-        response = client.get("/plan/active")
+        response = client.get("/plan")
         assert response.status_code == 200
         assert response.json()["version"] == 1
         assert response.json()["status"] == "active"

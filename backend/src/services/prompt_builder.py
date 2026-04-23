@@ -45,7 +45,32 @@ class PromptBuilder:
         return "\n".join(lines)
 
     @staticmethod
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    def _format_metabolism_section(metabolism_data: dict | None) -> str:
+        """Format official metabolism and daily-target context for prompt grounding."""
+        if not metabolism_data:
+            return ""
+
+        macro_targets = metabolism_data.get("macro_targets") or {}
+
+        def _field(block: dict, key: str) -> str:
+            value = block.get(key)
+            return str(value) if value is not None else "indisponivel"
+
+        return (
+            "Fonte oficial (algoritmo adaptativo):\n"
+            f"- TDEE atual: {_field(metabolism_data, 'tdee')} kcal\n"
+            f"- Meta diaria atual: {_field(metabolism_data, 'daily_target')} kcal\n"
+            f"- Objetivo: {_field(metabolism_data, 'goal_type')} "
+            f"({_field(metabolism_data, 'goal_weekly_rate')} kg/semana)\n"
+            f"- Confianca do algoritmo: {_field(metabolism_data, 'confidence')}\n"
+            "- Macros de referencia do algoritmo:\n"
+            f"  - Proteina: {_field(macro_targets, 'protein_g')} g\n"
+            f"  - Carboidratos: {_field(macro_targets, 'carbs_g')} g\n"
+            f"  - Gorduras: {_field(macro_targets, 'fat_g')} g"
+        )
+
+    @staticmethod
+    # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
     def build_input_data(
         profile,
         trainer_profile_summary: str,
@@ -55,6 +80,7 @@ class PromptBuilder:
         current_date: str | None = None,
         agenda_events: list | None = None,
         plan_snapshot=None,
+        metabolism_data: dict | None = None,
     ) -> dict:
         """
         Constructs the input data dictionary for prompt template injection.
@@ -95,6 +121,7 @@ class PromptBuilder:
         # Format agenda section
         agenda_section = PromptBuilder._format_agenda_section(agenda_events or [])
         plan_section = format_plan_snapshot(plan_snapshot)
+        metabolism_section = PromptBuilder._format_metabolism_section(metabolism_data)
 
         return {
             "trainer_profile": trainer_profile_summary,
@@ -109,6 +136,7 @@ class PromptBuilder:
             "user_message": user_message_with_tag,
             "agenda_section": agenda_section,  # Agenda section for dynamic context
             "plan_section": plan_section,
+            "metabolism_section": metabolism_section,
             "current_date": current_date,
             "day_of_week": dias_pt[now.weekday()],
             "current_time": now.strftime("%H:%M"),
@@ -164,6 +192,12 @@ class PromptBuilder:
             )
             input_data.setdefault("agenda_section", "")
         input_data.setdefault("plan_section", "")
+        if not input_data.get("metabolism_section"):
+            system_content = system_content.replace(
+                "## Metabolismo oficial do sistema\n{metabolism_section}\n\n",
+                "",
+            )
+            input_data.setdefault("metabolism_section", "")
 
         # 3. Add Telegram format if needed
         if is_telegram:

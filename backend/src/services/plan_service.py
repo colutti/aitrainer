@@ -3,13 +3,12 @@
 from datetime import date, datetime, timedelta
 
 from src.api.models.plan import (
-    ActivePlan,
-    PlanProposalInput,
-    PlanSnapshot,
-    PlanSnapshotAdherence7D,
-    PlanSnapshotExerciseContext,
-    PlanSnapshotWeightTrend,
-    PlanStatus,
+    UserPlan,
+    PlanUpsertInput,
+    PlanPromptContext,
+    PlanContextAdherence7D,
+    PlanContextExerciseContext,
+    PlanContextWeightTrend,
 )
 
 REQUIRED_INTAKE_FIELDS = (
@@ -67,49 +66,27 @@ def missing_execution_fields(execution: dict) -> list[str]:
     return missing
 
 
-def _normalize_execution_defaults(execution_data: dict) -> tuple[dict, dict, list]:
-    """Guarantee minimum operational payload for mission-first UI."""
-    today_training = execution_data.get("today_training")
-    if not today_training:
-        today_training = {"title": "Definir treino de hoje no chat"}
-
-    today_nutrition = execution_data.get("today_nutrition")
-    if not today_nutrition:
-        today_nutrition = {"summary": "Definir metas de nutricao de hoje no chat"}
-
-    upcoming_days = execution_data.get("upcoming_days")
-    if not upcoming_days:
-        upcoming_days = [
-            "Amanha: revisar missao com a IA",
-            "Dia 2: manter consistencia de treino e proteina",
-            "Dia 3: novo check-in rapido no chat",
-        ]
-
-    return today_training, today_nutrition, upcoming_days
-
-
 def _merge_plan_sections(
-    latest_plan: ActivePlan | None,
-    payload: PlanProposalInput,
-) -> tuple[dict, dict, dict]:
+    latest_plan: UserPlan | None,
+    payload: PlanUpsertInput,
+) -> tuple[dict, dict, list]:
     base_strategy = latest_plan.strategy.model_dump() if latest_plan else {}
     base_execution = latest_plan.execution.model_dump() if latest_plan else {}
-    base_tracking = latest_plan.tracking.model_dump() if latest_plan else {}
+    base_checkpoints = latest_plan.checkpoints if latest_plan else []
     strategy_data = {**base_strategy, **payload.strategy}
     execution_data = {**base_execution, **payload.execution}
-    tracking_data = {**base_tracking, **payload.tracking}
-    return strategy_data, execution_data, tracking_data
+    checkpoints = payload.checkpoints if payload.checkpoints else base_checkpoints
+    return strategy_data, execution_data, checkpoints
 
 
-def build_next_plan_version(
+def build_plan_singleton(
     user_email: str,
-    latest_plan: ActivePlan | None,
-    payload: PlanProposalInput,
-) -> ActivePlan:
-    """Builds the next active plan version payload."""
+    latest_plan: UserPlan | None,
+    payload: PlanUpsertInput,
+) -> UserPlan:
+    """Builds the singleton plan payload."""
     now = datetime.now()
-    version = 1
-    strategy_data, execution_data, tracking_data = _merge_plan_sections(
+    strategy_data, execution_data, checkpoints = _merge_plan_sections(
         latest_plan, payload
     )
 
@@ -119,18 +96,12 @@ def build_next_plan_version(
     else:
         end_date = start_date + timedelta(days=27)
 
-    today_training, today_nutrition, upcoming_days = _normalize_execution_defaults(
-        execution_data
-    )
-
-    return ActivePlan(
+    return UserPlan(
         user_email=user_email,
-        status=PlanStatus.ACTIVE,
         title=payload.title,
         objective_summary=payload.objective_summary,
         start_date=start_date,
         end_date=end_date,
-        version=version,
         strategy={
             "primary_goal": strategy_data.get("primary_goal", "unspecified"),
             "success_criteria": strategy_data.get("success_criteria", []),
@@ -143,26 +114,15 @@ def build_next_plan_version(
             ),
         },
         execution={
-            "today_training": today_training,
-            "today_nutrition": today_nutrition,
-            "upcoming_days": upcoming_days,
+            "today_training": execution_data.get("today_training", {}),
+            "today_nutrition": execution_data.get("today_nutrition", {}),
+            "upcoming_days": execution_data.get("upcoming_days", []),
             "active_focus": execution_data.get("active_focus", "consistencia"),
             "current_risks": execution_data.get("current_risks", []),
             "pending_changes": execution_data.get("pending_changes", []),
         },
-        tracking={
-            "checkpoints": tracking_data.get("checkpoints", []),
-            "adherence_snapshot": tracking_data.get("adherence_snapshot", {}),
-            "progress_snapshot": tracking_data.get("progress_snapshot", {}),
-            "last_ai_assessment": tracking_data.get("last_ai_assessment"),
-            "last_user_acknowledgement": tracking_data.get(
-                "last_user_acknowledgement"
-            ),
-        },
-        governance={
-            "change_reason": payload.change_reason,
-            "approval_request": None,
-        },
+        checkpoints=checkpoints,
+        change_reason=payload.change_reason,
     )
 
 
@@ -252,32 +212,28 @@ def _extract_today_nutrition(execution: dict) -> str:
 
 
 def build_plan_prompt_snapshot(
-    plan: ActivePlan | None,
+    plan: UserPlan | None,
     *,
-    today_training_context: list[PlanSnapshotExerciseContext] | None = None,
-    adherence_7d: PlanSnapshotAdherence7D | None = None,
-    weight_trend_weekly: PlanSnapshotWeightTrend | None = None,
-) -> PlanSnapshot | None:
+    today_training_context: list[PlanContextExerciseContext] | None = None,
+    adherence_7d: PlanContextAdherence7D | None = None,
+    weight_trend_weekly: PlanContextWeightTrend | None = None,
+) -> PlanPromptContext | None:
     """Builds a compact snapshot from active plan payload."""
     if plan is None:
         return None
 
-    checkpoints = plan.tracking.checkpoints
+    checkpoints = plan.checkpoints
     last_checkpoint = checkpoints[-1].summary if checkpoints else None
-    pending_adjustment = None
-    if plan.governance.approval_request is not None:
-        pending_adjustment = plan.governance.approval_request.summary
 
     execution_payload = plan.execution.model_dump()
 
-    return PlanSnapshot(
+    return PlanPromptContext(
         title=plan.title,
         objective_summary=plan.objective_summary,
         plan_period=(
             f"{plan.start_date.strftime('%Y-%m-%d')} a "
             f"{plan.end_date.strftime('%Y-%m-%d')}"
         ),
-        status=plan.status.value,
         active_focus=plan.execution.active_focus,
         today_training=_extract_today_training(execution_payload),
         today_nutrition=_extract_today_nutrition(execution_payload),
@@ -287,15 +243,14 @@ def build_plan_prompt_snapshot(
         weight_trend_weekly=weight_trend_weekly,
         last_checkpoint_summary=last_checkpoint,
         critical_constraints=plan.strategy.constraints,
-        pending_adjustment=pending_adjustment,
     )
 
 
-def format_plan_snapshot(snapshot: PlanSnapshot | None) -> str:
+def format_plan_snapshot(snapshot: PlanPromptContext | None) -> str:
     """Formats plan snapshot as a readable prompt block."""
     if snapshot is None:
         return (
-            "Nenhum plano ativo registrado.\n"
+            "Nenhum plano registrado.\n"
             "Acao obrigatoria: conduza discovery com o aluno e insista na coleta dos "
             "dados faltantes ate conseguir criar um plano completo de treino e nutricao."
         )
@@ -307,7 +262,6 @@ def format_plan_snapshot(snapshot: PlanSnapshot | None) -> str:
         else "sem restricoes criticas"
     )
     checkpoint = snapshot.last_checkpoint_summary or "sem checkpoint recente"
-    pending = snapshot.pending_adjustment or "nenhum"
     training_context_lines: list[str] = []
     if snapshot.today_training_context:
         training_context_lines.append("Contexto do treino de hoje:")
@@ -354,16 +308,14 @@ def format_plan_snapshot(snapshot: PlanSnapshot | None) -> str:
         enriched_sections += f"\\n{trend_line}"
 
     return (
-        f"Plano ativo: {snapshot.title}\\n"
+        f"Plano: {snapshot.title}\\n"
         f"Objetivo: {snapshot.objective_summary}\\n"
         f"Periodo do plano: {snapshot.plan_period}\\n"
-        f"Status: {snapshot.status}\\n"
         f"Foco atual: {snapshot.active_focus}\\n"
         f"Treino de hoje: {snapshot.today_training}\\n"
         f"{f'{enriched_sections}\\n' if enriched_sections else ''}"
         f"Nutricao de hoje: {snapshot.today_nutrition}\\n"
         f"Proximos dias: {upcoming}\\n"
         f"Ultimo checkpoint: {checkpoint}\\n"
-        f"Restricoes criticas: {constraints}\\n"
-        f"Ajuste pendente: {pending}"
+        f"Restricoes criticas: {constraints}"
     )

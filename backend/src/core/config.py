@@ -64,6 +64,7 @@ class Settings(BaseSettings):
 
     # ====== FIREBASE INTEGRATION ======
     FIREBASE_CREDENTIALS: str | None = None
+    FIREBASE_CLOCK_SKEW_SECONDS: int = 60
     ENABLE_E2E_TEST_AUTH: bool = False
     ENABLE_NEW_USER_SIGNUPS: bool = False
 

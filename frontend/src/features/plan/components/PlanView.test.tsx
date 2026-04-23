@@ -17,10 +17,8 @@ const mockPlan: Plan = {
     id: 'plan-1',
     title: 'Plano Central',
     objective_summary: 'Perder gordura mantendo performance',
-    status: 'active',
     start_date: '2026-04-01',
     end_date: '2026-06-01',
-    progress_percent: 35,
     active_focus: 'Treino de forca com deficit leve',
     last_updated_at: '2026-04-19T10:00:00Z',
   },
@@ -55,10 +53,6 @@ const mockPlan: Plan = {
     decision: 'Manter estrategia e revisar em 5 dias.',
     next_step: 'Revisao no dia 22.',
   },
-  status_banner: {
-    tone: 'on_track',
-    message: 'Plano em execucao consistente.',
-  },
 };
 
 describe('PlanView', () => {
@@ -68,7 +62,7 @@ describe('PlanView', () => {
     expect(screen.getByTestId('plan-skeleton')).toBeInTheDocument();
   });
 
-  it('renders empty state when there is no active plan', () => {
+  it('renders empty state when there is no plan', () => {
     const onOpenChat = vi.fn();
     render(<PlanView plan={null} isLoading={false} onOpenChat={onOpenChat} />);
 
@@ -77,20 +71,25 @@ describe('PlanView', () => {
     expect(onOpenChat).toHaveBeenCalledTimes(1);
   });
 
-  it('renders plan sections for active plan', () => {
+  it('renders plan sections for plan', () => {
     render(<PlanView plan={mockPlan} isLoading={false} onOpenChat={vi.fn()} />);
 
-    expect(screen.getByText('plan.sections.time_window')).toBeInTheDocument();
     expect(screen.getByText('01/04/2026 - 01/06/2026')).toBeInTheDocument();
     expect(screen.getByText('Plano Central')).toBeInTheDocument();
+    expect(screen.getByText('Perder gordura mantendo performance')).toBeInTheDocument();
     expect(screen.getByText('plan.sections.mission_today')).toBeInTheDocument();
     expect(screen.getByText('Treino A - 50min')).toBeInTheDocument();
+    expect(screen.getByText('Proteina >= 160g')).toBeInTheDocument();
     expect(screen.queryByText('plan.cards.ai_followup')).not.toBeInTheDocument();
     expect(screen.getByText('plan.sections.upcoming_days')).toBeInTheDocument();
     expect(screen.getByText('Ter')).toBeInTheDocument();
+    expect(screen.getByText('plan.upcoming.status.planned')).toBeInTheDocument();
+    expect(screen.getByText('plan.upcoming.status.adjusted')).toBeInTheDocument();
     expect(screen.getByText('Supino Reto - 4x6-8 (RPE 8)')).toBeInTheDocument();
     expect(screen.getByText('plan.sections.latest_checkpoint')).toBeInTheDocument();
-    expect(screen.queryByText('plan.sections.status')).not.toBeInTheDocument();
+    expect(screen.getByText('plan.checkpoint.summary')).toBeInTheDocument();
+    expect(screen.getByText('plan.checkpoint.ai_assessment')).toBeInTheDocument();
+    expect(screen.getByText('plan.checkpoint.decision')).toBeInTheDocument();
     expect(screen.getByText('Agachamento - 4x6-8 (RPE 8)')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'plan.actions.open_chat' })).not.toBeInTheDocument();
   });

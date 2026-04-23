@@ -14,10 +14,8 @@ const mockPlan: Plan = {
     id: 'plan-1',
     title: 'Plano de Recomposicao',
     objective_summary: 'Ganhar massa magra mantendo gordura sob controle',
-    status: 'active',
     start_date: '2026-04-01',
     end_date: '2026-06-01',
-    progress_percent: 42,
     active_focus: 'Consistencia semanal de treinos',
     last_updated_at: '2026-04-19T10:00:00Z',
   },
@@ -44,10 +42,6 @@ const mockPlan: Plan = {
     decision: 'Manter estrategia atual com ajuste leve de calorias.',
     next_step: 'Reavaliar em 4 dias.',
   },
-  status_banner: {
-    tone: 'on_track',
-    message: 'Plano no ritmo certo.',
-  },
 };
 
 describe('usePlanStore', () => {
@@ -58,33 +52,31 @@ describe('usePlanStore', () => {
 
   it('starts with empty state', () => {
     const state = usePlanStore.getState();
-    expect(state.activePlan).toBeNull();
+    expect(state.plan).toBeNull();
     expect(state.isLoading).toBe(false);
     expect(state.error).toBeNull();
   });
 
-  it('fetches active plan successfully', async () => {
+  it('fetches plan successfully', async () => {
     vi.mocked(httpClient).mockResolvedValue(mockPlan);
 
-    await usePlanStore.getState().fetchActivePlan();
+    await usePlanStore.getState().fetchPlan();
 
     const state = usePlanStore.getState();
-    expect(httpClient).toHaveBeenCalledWith('/plan/active');
-    expect(state.activePlan).toEqual(mockPlan);
+    expect(httpClient).toHaveBeenCalledWith('/plan');
+    expect(state.plan).toEqual(mockPlan);
     expect(state.isLoading).toBe(false);
     expect(state.error).toBeNull();
   });
 
-  it('normalizes backend ActivePlan payload into PlanView shape', async () => {
+  it('normalizes backend plan payload into PlanView shape', async () => {
     vi.mocked(httpClient).mockResolvedValue({
       id: 'plan-backend-1',
       user_email: 'rafacolucci@gmail.com',
-      status: 'active',
       title: 'Plano Atual',
       objective_summary: 'Perder gordura mantendo desempenho',
       start_date: '2026-04-01T00:00:00Z',
       end_date: '2026-06-01T00:00:00Z',
-      version: 2,
       strategy: {
         primary_goal: 'lose_fat',
         success_criteria: ['consistencia semanal'],
@@ -145,28 +137,26 @@ describe('usePlanStore', () => {
       updated_at: '2026-04-19T10:00:00Z',
     });
 
-    await usePlanStore.getState().fetchActivePlan();
+    await usePlanStore.getState().fetchPlan();
 
     const state = usePlanStore.getState();
-    expect(state.activePlan?.overview.title).toBe('Plano Atual');
-    expect(state.activePlan?.overview.id).toBe('plan-backend-1');
-    expect(state.activePlan?.overview.start_date).toBe('2026-04-01');
-    expect(state.activePlan?.overview.end_date).toBe('2026-06-01');
-    expect(state.activePlan?.mission_today.training[0]).toContain('Lower A');
-    expect(state.activePlan?.mission_today.training[1]).toContain(
+    expect(state.plan?.overview.title).toBe('Plano Atual');
+    expect(state.plan?.overview.id).toBe('plan-backend-1');
+    expect(state.plan?.overview.start_date).toBe('2026-04-01');
+    expect(state.plan?.overview.end_date).toBe('2026-06-01');
+    expect(state.plan?.mission_today.training[0]).toContain('Lower A');
+    expect(state.plan?.mission_today.training[1]).toContain(
       'Agachamento - 4x6-8 (RPE 8)'
     );
-    expect(state.activePlan?.upcoming_days[0]?.training_details[0]).toContain(
+    expect(state.plan?.upcoming_days[0]?.training_details[0]).toContain(
       'Supino Reto - 4x6-8 (RPE 8)'
     );
-    expect(state.activePlan?.mission_today.nutrition[0]).toContain('2200');
-    expect(state.activePlan?.status_banner.tone).toBe('on_track');
+    expect(state.plan?.mission_today.nutrition[0]).toContain('2200');
   });
 
   it('adds fallback upcoming days when backend payload has none', async () => {
     vi.mocked(httpClient).mockResolvedValue({
       id: 'plan-backend-2',
-      status: 'active',
       title: 'Plano sem dias',
       objective_summary: 'Ajustar rotina',
       start_date: '2026-04-01T00:00:00Z',
@@ -180,19 +170,42 @@ describe('usePlanStore', () => {
       tracking: { checkpoints: [] },
     });
 
-    await usePlanStore.getState().fetchActivePlan();
+    await usePlanStore.getState().fetchPlan();
     const state = usePlanStore.getState();
 
-    expect(state.activePlan?.upcoming_days).toEqual([]);
+    expect(state.plan?.upcoming_days).toEqual([]);
   });
 
-  it('handles empty active plan response', async () => {
+  it('normalizes today nutrition when protein comes as alternative fields', async () => {
+    vi.mocked(httpClient).mockResolvedValue({
+      id: 'plan-backend-3',
+      title: 'Plano com nutricao alternativa',
+      objective_summary: 'Ajustar macros',
+      start_date: '2026-04-01T00:00:00Z',
+      end_date: '2026-06-01T00:00:00Z',
+      execution: {
+        today_training: {},
+        today_nutrition: { calories: '2400', protein_g: '180' },
+        upcoming_days: [],
+        active_focus: 'consistencia',
+      },
+      checkpoints: [],
+    });
+
+    await usePlanStore.getState().fetchPlan();
+
+    expect(usePlanStore.getState().plan?.mission_today.nutrition[0]).toBe(
+      '2400 kcal / 180g proteina'
+    );
+  });
+
+  it('handles empty plan response', async () => {
     vi.mocked(httpClient).mockResolvedValue(undefined);
 
-    await usePlanStore.getState().fetchActivePlan();
+    await usePlanStore.getState().fetchPlan();
 
     const state = usePlanStore.getState();
-    expect(state.activePlan).toBeNull();
+    expect(state.plan).toBeNull();
     expect(state.isLoading).toBe(false);
     expect(state.error).toBeNull();
   });
@@ -200,19 +213,19 @@ describe('usePlanStore', () => {
   it('stores error when fetch fails', async () => {
     vi.mocked(httpClient).mockRejectedValue(new Error('plan unavailable'));
 
-    await usePlanStore.getState().fetchActivePlan();
+    await usePlanStore.getState().fetchPlan();
 
     const state = usePlanStore.getState();
-    expect(state.activePlan).toBeNull();
+    expect(state.plan).toBeNull();
     expect(state.isLoading).toBe(false);
     expect(state.error).toBe('plan unavailable');
   });
 
-  it('updates active plan locally', () => {
-    usePlanStore.getState().setActivePlan(mockPlan);
-    expect(usePlanStore.getState().activePlan).toEqual(mockPlan);
+  it('updates plan locally', () => {
+    usePlanStore.getState().setPlan(mockPlan);
+    expect(usePlanStore.getState().plan).toEqual(mockPlan);
 
-    usePlanStore.getState().clearActivePlan();
-    expect(usePlanStore.getState().activePlan).toBeNull();
+    usePlanStore.getState().clearPlan();
+    expect(usePlanStore.getState().plan).toBeNull();
   });
 });

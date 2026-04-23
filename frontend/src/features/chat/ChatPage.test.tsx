@@ -76,17 +76,17 @@ describe('ChatPage', () => {
         <ChatPage />
       </MemoryRouter>
     );
-    expect(screen.getAllByText('Treinador AI')).toHaveLength(2);
+    expect(screen.getByText('Treinador AI')).toBeInTheDocument();
   });
 
-  it('passes resolved trainer to the context panel', () => {
+  it('renders resolved trainer name in chat header', () => {
     render(
       <MemoryRouter>
         <ChatPage />
       </MemoryRouter>
     );
 
-    expect(screen.getByTestId('chat-context-trainer-name')).toHaveTextContent('Marcus');
+    expect(screen.getByRole('heading', { name: 'Marcus' })).toBeInTheDocument();
   });
 
   it('should handle message submission', () => {
@@ -106,6 +106,25 @@ describe('ChatPage', () => {
 
     expect(mockSendMessage).toHaveBeenCalledWith('New Message', []);
     expect(input).toHaveValue('');
+  });
+
+  it('prefills chat input from navigation state without auto sending', () => {
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: '/',
+            state: { draftMessage: 'Crie meu plano completo de treino e nutricao.' },
+          },
+        ]}
+      >
+        <ChatPage />
+      </MemoryRouter>
+    );
+
+    const input = screen.getByTestId('chat-input');
+    expect(input).toHaveValue('Crie meu plano completo de treino e nutricao.');
+    expect(mockSendMessage).not.toHaveBeenCalled();
   });
 
   it('should prevent sending when empty or streaming', () => {

@@ -286,21 +286,13 @@ class MongoDatabase:
         """Delegates to plan repository."""
         return self.plans.save_plan(plan)
 
-    def get_active_plan(self, user_email: str):
+    def get_plan(self, user_email: str):
         """Delegates to plan repository."""
-        return self.plans.get_active_plan(user_email)
+        return self.plans.get_plan(user_email)
 
     def get_latest_plan(self, user_email: str):
         """Delegates to plan repository."""
         return self.plans.get_latest_plan(user_email)
-
-    def list_plan_versions(self, user_email: str):
-        """Delegates to plan repository."""
-        return self.plans.list_plan_versions(user_email)
-
-    def approve_plan(self, user_email: str, version: int) -> bool:
-        """Delegates to plan repository."""
-        return self.plans.approve_plan(user_email, version)
 
     def get_weight_logs_by_date_range(
         self, user_email: str, start_date: date, end_date: date
