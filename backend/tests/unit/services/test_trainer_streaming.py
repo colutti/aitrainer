@@ -14,6 +14,11 @@ def mock_deps():
     db = MagicMock()
     llm = MagicMock()
     memory = MagicMock()
+    db.get_weight_logs_by_date_range.return_value = []
+    db.get_nutrition_logs_by_date_range.return_value = []
+    db.get_weight_logs.return_value = []
+    db.get_nutrition_logs.return_value = []
+    db.get_plan.return_value = None
     return db, llm, memory
 
 
@@ -265,3 +270,67 @@ def test_strip_internal_wrappers_preserves_generic_tags(mock_deps):
     )
     cleaned = trainer.strip_internal_wrappers(text)
     assert cleaned == 'Conteúdo <xml><item id="1">ok</item></xml>'
+
+
+@pytest.mark.asyncio
+async def test_send_message_ai_appends_plan_status_correction_after_upsert_error(mock_deps):
+    """When upsert_plan fails, stream must append an explicit correction about plan status."""
+    db, llm, _ = mock_deps
+    trainer = AITrainerBrain(db, llm)
+
+    profile = MagicMock(subscription_plan="Pro", get_profile_summary=lambda: "User")
+    trainer_profile = MagicMock(
+        trainer_type="atlas", get_trainer_profile_summary=lambda: "Trainer"
+    )
+    trainer.get_or_create_user_profile = MagicMock(return_value=profile)
+    trainer.get_or_create_trainer_profile = MagicMock(return_value=trainer_profile)
+    trainer.check_message_limits = MagicMock(return_value=False)
+    trainer.get_llm_stream_timeout_seconds = MagicMock(return_value=0.01)
+    trainer.finalize_ai_response = AsyncMock()
+
+    mock_memory_obj = MagicMock()
+    mock_memory_obj.load_memory_variables.return_value = {"chat_history": []}
+    db.get_window_memory.return_value = mock_memory_obj
+    db.database = MagicMock()
+    db.get_plan.return_value = None
+
+    trainer.prompt_builder.build_input_data = MagicMock(return_value={"user_message": "Oi"})
+    prompt_template = MagicMock()
+    trainer.prompt_builder.get_prompt_template = MagicMock(return_value=prompt_template)
+
+    async def stream_with_plan_error(**_kwargs):
+        yield "Plano salvo com sucesso."
+        yield {
+            "type": "tool_result",
+            "tool_name": "upsert_plan",
+            "content": (
+                "ERRO_UPSERT_PLAN_INCOMPLETO: Plano incompleto para criacao inicial. "
+                "Colete e envie estes campos antes de salvar: today_nutrition."
+            ),
+        }
+        yield {
+            "type": "tool_result",
+            "tool_name": "save_memory",
+            "content": "✅ Memoria salva",
+        }
+        yield {"type": "tools_summary", "tools_called": ["upsert_plan", "save_memory"]}
+
+    llm.stream_with_tools.side_effect = stream_with_plan_error
+
+    chunks = []
+    with patch("src.services.trainer.EventRepository") as mock_repo_cls:
+        mock_repo_cls.return_value.get_active_events.return_value = []
+        async for chunk in trainer.send_message_ai(
+            user_email="pro@example.com",
+            user_input="Oi",
+        ):
+            chunks.append(chunk)
+
+    full_text = "".join(chunks)
+    assert "Plano salvo com sucesso." in full_text
+    assert "Status real do plano: nao foi salvo ainda." in full_text
+    assert "Memoria pode ter sido atualizada" in full_text
+
+    trainer.finalize_ai_response.assert_awaited_once()
+    persisted_response = trainer.finalize_ai_response.await_args.kwargs["final_response"]
+    assert "Status real do plano: nao foi salvo ainda." in persisted_response

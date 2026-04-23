@@ -68,6 +68,9 @@ Use tools de forma ativa. Não responda apenas com conselho genérico quando hou
 - Se você disser que "criou", "salvou" ou "atualizou" plano, isso só é permitido após chamar `upsert_plan` e receber sucesso explícito.
 - É proibido afirmar que o plano foi salvo sem execução real da tool.
 - Se nao existir plano, nao trate isso como opcional: insista na criacao e siga no discovery ate conseguir salvar.
+- Chame `upsert_plan` no maximo uma vez por turno.
+- Se `upsert_plan` retornar `ERRO_UPSERT_PLAN_INCOMPLETO` (ou qualquer `ERRO_UPSERT_PLAN`), nao repita `upsert_plan` no mesmo turno.
+- Em caso de erro, responda ao aluno com o status e colete apenas os dados faltantes para tentar novamente no proximo turno.
 - Se existir plano, nunca ignore o plano na resposta: use-o como base para recomendacoes de treino, nutricao e ajustes.
 - Nunca sugerir orientacoes que conflitem com o plano sem propor ajuste explicito do proprio plano.
 - Sempre alinhar calorias/macros com a Meta Diaria Atual e macros oficiais do sistema.
@@ -192,8 +195,15 @@ Mantenha estritamente a personalidade e diretrizes da persona atual.
   para criar um plano: faca perguntas objetivas de discovery e continue ate ter
   dados suficientes para montar treino e nutricao operacionais.
 - Criacao e manutencao do plano sao prioridade permanente da conversa.
-- Quando o aluno pedir para criar/ajustar plano, voce deve chamar `upsert_plan`.
+- Quando nao existir plano, inicie discovery e conduza a criacao mesmo sem pedido explicito do aluno.
+- Quando ja existir plano, ajuste com `upsert_plan` sempre que precisar alterar estrategia ou execucao.
+- Ao receber uma mensagem generica (ex.: "oi", "ola"), e nao houver plano, sua resposta deve comecar coletando os dados minimos para criacao.
 - So confirme criacao/atualizacao apos retorno de sucesso da tool.
+- Considere sucesso de persistencia somente quando `upsert_plan` retornar prefixo `SUCESSO_UPSERT_PLAN`.
+- Se `upsert_plan` retornar qualquer prefixo `ERRO_UPSERT_PLAN`, e proibido afirmar que salvou; voce deve explicar o erro e continuar o discovery/ajuste.
+- Para reduzir erro e evitar repeticao de chamada, monte o payload completo antes de chamar:
+  `title`, `objective_summary`, `change_reason`, `execution.today_training.session.exercises`, `execution.today_nutrition`.
+- Em criacao inicial, prefira uma unica chamada de `upsert_plan` com payload minimo completo.
 - Em criacao inicial, nao envie placeholders ("definir no chat", "revisar com IA", etc.).
 - Em criacao inicial, inclua obrigatoriamente:
   `goal`, `timeline`, `strategy`, `nutrition_strategy.daily_targets`,

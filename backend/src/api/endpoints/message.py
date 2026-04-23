@@ -6,6 +6,7 @@ from typing import Annotated, TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from src.core.demo_access import WritableCurrentUser
 from src.services.auth import verify_token
@@ -20,6 +21,17 @@ if TYPE_CHECKING:
 router = APIRouter()
 
 CurrentUser = Annotated[str, Depends(verify_token)]
+
+class ClientMessageErrorPayload(BaseModel):
+    """Payload reported by frontend when chat streaming fails on client side."""
+
+    request_id: str | None = None
+    error_name: str | None = None
+    error_message: str | None = None
+    error_stack: str | None = None
+    phase: str | None = None
+    response_status: int | None = None
+    response_body: str | None = None
 
 
 @router.get("/history")
@@ -54,7 +66,13 @@ async def message_ai(
     """
     Handles an AI messaging request for an authenticated user.
     """
-    logger.info("Received message from user %s: %s", user_email, message.user_message)
+    request_id = request.headers.get("X-Request-Id")
+    logger.info(
+        "Received message from user %s (request_id=%s): %s",
+        user_email,
+        request_id,
+        message.user_message,
+    )
 
     # Detect and save timezone from header
     tz = request.headers.get("X-User-Timezone")
@@ -96,8 +114,30 @@ async def message_ai(
                 "X-Accel-Buffering": "no",
                 "Cache-Control": "no-cache",
                 "Connection": "keep-alive",
+                **({"X-Request-Id": request_id} if request_id else {}),
             },
         )
     except ValueError as e:
         logger.error("Error processing message for user %s: %s", user_email, e)
         raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@router.post("/client-error")
+def message_client_error(
+    payload: ClientMessageErrorPayload,
+    user_email: CurrentUser,
+) -> dict:
+    """Receives frontend-side chat stream failures for incident correlation."""
+    logger.error(
+        "Client chat error reported by %s: request_id=%s phase=%s name=%s "
+        "message=%s status=%s body=%s stack=%s",
+        user_email,
+        payload.request_id,
+        payload.phase,
+        payload.error_name,
+        payload.error_message,
+        payload.response_status,
+        payload.response_body,
+        payload.error_stack,
+    )
+    return {"ok": True}

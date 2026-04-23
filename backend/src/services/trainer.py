@@ -104,6 +104,12 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
     """
     _MSG_OPEN_PATTERN = re.compile(r'<msg(?:\s+data="[^"]*")?(?:\s+hora="[^"]*")?>')
     _TREINADOR_OPEN_PATTERN = re.compile(r'<treinador(?:\s+name="[^"]*")?>')
+    _MEMORY_WRITE_TOOL_NAMES = {
+        "save_memory",
+        "update_memory",
+        "delete_memory",
+        "delete_memories_batch",
+    }
 
     def __init__(
         self,
@@ -594,6 +600,43 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         pending = buffer[last_lt:] if has_partial_tag else ""
         return cls.strip_internal_wrappers(stable), pending
 
+    @classmethod
+    def _build_plan_status_correction(
+        cls,
+        *,
+        had_plan_at_start: bool,
+        upsert_results: list[str],
+        memory_write_tools: list[str],
+    ) -> str | None:
+        """Builds a deterministic plan status correction from tool outcomes."""
+        if not upsert_results:
+            return None
+
+        last_upsert = upsert_results[-1]
+        if last_upsert.startswith("SUCESSO_UPSERT_PLAN:"):
+            return None
+        if not last_upsert.startswith("ERRO_UPSERT_PLAN"):
+            return None
+
+        reason = last_upsert.split(":", 1)[1].strip() if ":" in last_upsert else last_upsert
+        reason = reason[:320]
+
+        plan_context = (
+            "Ainda nao existe plano ativo salvo."
+            if not had_plan_at_start
+            else "O plano ativo anterior continua valendo ate novo salvamento."
+        )
+        memory_note = (
+            " Memoria pode ter sido atualizada, mas memoria nao cria nem atualiza plano."
+            if memory_write_tools
+            else ""
+        )
+        return (
+            "Status real do plano: nao foi salvo ainda. "
+            f"{plan_context} "
+            f"Motivo tecnico: {reason}.{memory_note}"
+        )
+
     def get_tools(self, user_email: str) -> list[BaseTool]:
         """
         Creates and returns a list of tools available to the AI.
@@ -745,6 +788,8 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
 
         raw_response: list[str] = []
         stream_buffer = ""
+        upsert_results: list[str] = []
+        memory_write_tools: list[str] = []
         try:
             async with asyncio.timeout(self.get_llm_stream_timeout_seconds()):
                 async for chunk in self._llm_client.stream_with_tools(
@@ -763,6 +808,14 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
                         visible, stream_buffer = self.split_stream_visible_text(stream_buffer)
                         if visible:
                             yield visible
+                    elif isinstance(chunk, dict):
+                        if chunk.get("type") == "tool_result":
+                            tool_name = str(chunk.get("tool_name") or "")
+                            tool_content = str(chunk.get("content") or "")
+                            if tool_name == "upsert_plan":
+                                upsert_results.append(tool_content)
+                            elif tool_name in self._MEMORY_WRITE_TOOL_NAMES:
+                                memory_write_tools.append(tool_name)
         except TimeoutError:
             logger.error(
                 "LLM stream timeout for user %s after %ss",
@@ -776,10 +829,24 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             if cleaned_tail := self.strip_internal_wrappers(stream_buffer):
                 yield cleaned_tail
 
+        public_response = self.strip_internal_wrappers("".join(raw_response))
+        plan_status_correction = self._build_plan_status_correction(
+            had_plan_at_start=plan is not None,
+            upsert_results=upsert_results,
+            memory_write_tools=memory_write_tools,
+        )
+        if plan_status_correction:
+            yield plan_status_correction
+            public_response = (
+                f"{public_response}\n\n{plan_status_correction}".strip()
+                if public_response
+                else plan_status_correction
+            )
+
         await self.finalize_ai_response(
             user_email=user_email,
             user_input=user_input,
-            final_response=self.strip_internal_wrappers("".join(raw_response)),
+            final_response=public_response,
             metadata={
                 "trainer_type": trainer_profile_obj.trainer_type or "atlas",
                 "needs_cycle_reset": needs_cycle_reset,

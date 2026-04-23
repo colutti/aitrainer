@@ -53,6 +53,7 @@ class Settings(BaseSettings):
     MAX_LONG_TERM_MEMORY_MESSAGES: int = Field(default=50)
     LLM_STREAM_TIMEOUT_SECONDS: int = Field(default=120)
     LLM_STREAM_INACTIVITY_TIMEOUT_SECONDS: int = Field(default=45)
+    LLM_AGENT_RECURSION_LIMIT: int = Field(default=20)
     ALLOWED_ORIGINS: str | list[str] = Field(default="*")
     LOG_LEVEL: str = "INFO"
     RATE_LIMIT_LOGIN: str = "5/minute"
