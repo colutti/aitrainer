@@ -77,9 +77,7 @@ from src.services.raw_data_tools import (
 from src.services.plan_tools import (
     create_plan_help_tool,
     create_get_plan_tool,
-    create_get_plan_context_tool,
     create_upsert_plan_tool,
-    create_get_today_plan_brief_tool,
 )
 from src.repositories.event_repository import EventRepository
 from src.services.memory_service import (
@@ -87,7 +85,6 @@ from src.services.memory_service import (
     add_memory as service_add_memory,
 )
 from src.services.plan_service import build_plan_prompt_snapshot
-from src.services.plan_snapshot_context import build_plan_snapshot_context
 from src.services.adaptive_tdee import AdaptiveTDEEService
 from src.core.logs import logger
 from src.api.models.chat_history import ChatHistory
@@ -640,9 +637,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             create_reset_tdee_tracking_tool(self._database, user_email),
             # Plan
             create_get_plan_tool(self._database, user_email),
-            create_get_plan_context_tool(self._database, user_email),
             create_upsert_plan_tool(self._database, user_email),
-            create_get_today_plan_brief_tool(self._database, user_email),
             create_plan_help_tool(self._database, user_email),
         ]
 
@@ -719,18 +714,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         plan = await asyncio.to_thread(self._database.get_plan, user_email)
         enriched_plan_snapshot = None
         if plan is not None:
-            snapshot_context = build_plan_snapshot_context(
-                database=self._database,
-                user_email=user_email,
-                plan=plan,
-                metabolism_data=metabolism_data,
-            )
-            enriched_plan_snapshot = build_plan_prompt_snapshot(
-                plan,
-                today_training_context=snapshot_context.today_training_context,
-                adherence_7d=snapshot_context.adherence_7d,
-                weight_trend_weekly=snapshot_context.weight_trend_weekly,
-            )
+            enriched_plan_snapshot = build_plan_prompt_snapshot(plan)
 
         # 4. Build input data
         input_data = self.prompt_builder.build_input_data(

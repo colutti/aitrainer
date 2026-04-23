@@ -12,8 +12,7 @@ from src.services.auth import verify_token
 from src.services.database import MongoDatabase
 from src.services.plan_service import (
     build_plan_singleton,
-    missing_execution_fields,
-    missing_intake_fields,
+    missing_master_plan_fields,
 )
 
 router = APIRouter()
@@ -45,19 +44,7 @@ def upsert_plan(
 ) -> UpsertPlanResponse:
     """Create or update singleton plan."""
     latest = db.get_latest_plan(user_email)
-    merged_strategy = (
-        {**latest.strategy.model_dump(), **payload.strategy}
-        if latest is not None
-        else payload.strategy
-    )
-    merged_execution = (
-        {**latest.execution.model_dump(), **payload.execution}
-        if latest is not None
-        else payload.execution
-    )
-    missing_fields = missing_intake_fields(merged_strategy) + missing_execution_fields(
-        merged_execution
-    )
+    missing_fields = missing_master_plan_fields(payload)
     if missing_fields:
         missing_list = ", ".join(missing_fields)
         raise HTTPException(

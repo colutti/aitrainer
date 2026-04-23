@@ -15,43 +15,49 @@ vi.mock('react-i18next', () => ({
 const mockPlan: Plan = {
   overview: {
     id: 'plan-1',
-    title: 'Plano Central',
+    title: 'Plano Mestre',
     objective_summary: 'Perder gordura mantendo performance',
     start_date: '2026-04-01',
-    end_date: '2026-06-01',
-    active_focus: 'Treino de forca com deficit leve',
+    target_date: '2026-06-01',
+    review_cadence: 'quinzenal',
+    active_focus: 'consistencia',
     last_updated_at: '2026-04-19T10:00:00Z',
   },
-  mission_today: {
-    training: ['Treino A - 50min', 'Agachamento - 4x6-8 (RPE 8)'],
-    nutrition: ['Meta 2100 kcal', 'Proteina >= 160g'],
-    coaching: 'Priorizar hidratacao no periodo da tarde.',
+  strategy: {
+    rationale: 'Deficit moderado com foco em forca',
+    adaptation_policy: 'ajustes por evidencia',
+    constraints: ['viagens'],
+    preferences: ['treino de manha'],
+    current_risks: ['sono ruim'],
   },
-  upcoming_days: [
-    {
-      date: '2026-04-20',
-      label: 'Amanha',
-      training: 'Treino B',
-      training_details: ['Supino Reto - 4x6-8 (RPE 8)'],
-      nutrition: '2200 kcal',
-      status: 'planned',
-    },
-    {
-      date: '2026-04-21',
-      label: 'Ter',
-      training: 'Mobilidade e caminhada',
-      training_details: [],
-      nutrition: '2000 kcal',
-      status: 'adjusted',
-    },
-  ],
+  nutrition_targets: {
+    calories: 2200,
+    protein_g: 180,
+    carbs_g: 220,
+    fat_g: 70,
+  },
+  adherence_notes: ['manter hidratacao'],
+  training_program: {
+    split_name: 'push_pull_legs',
+    frequency_per_week: 5,
+    session_duration_min: 60,
+    weekly_schedule: [{ day: 'monday', routine_id: 'push_a', focus: 'push', type: 'training' }],
+    routines: [
+      {
+        id: 'push_a',
+        name: 'Push A',
+        objective: 'forca',
+        exercises: [{ name: 'Supino Reto', sets: 4, reps: '6-8', load_guidance: 'RPE 8' }],
+      },
+    ],
+  },
   latest_checkpoint: {
     id: 'checkpoint-1',
     occurred_at: '2026-04-17T08:00:00Z',
-    summary: 'Aderencia acima da meta.',
-    ai_assessment: 'Recuperacao melhorou apos ajuste de sono.',
-    decision: 'Manter estrategia e revisar em 5 dias.',
-    next_step: 'Revisao no dia 22.',
+    summary: 'Aderencia acima da meta',
+    decision: 'manter estrategia',
+    next_focus: 'qualidade do sono',
+    evidence: ['peso em queda'],
   },
 };
 
@@ -71,38 +77,16 @@ describe('PlanView', () => {
     expect(onOpenChat).toHaveBeenCalledTimes(1);
   });
 
-  it('renders plan sections for plan', () => {
+  it('renders master plan sections', () => {
     render(<PlanView plan={mockPlan} isLoading={false} onOpenChat={vi.fn()} />);
 
-    expect(screen.getByText('01/04/2026 - 01/06/2026')).toBeInTheDocument();
-    expect(screen.getByText('Plano Central')).toBeInTheDocument();
-    expect(screen.getByText('Perder gordura mantendo performance')).toBeInTheDocument();
-    expect(screen.getByText('plan.sections.mission_today')).toBeInTheDocument();
-    expect(screen.getByText('Treino A - 50min')).toBeInTheDocument();
-    expect(screen.getByText('Proteina >= 160g')).toBeInTheDocument();
-    expect(screen.queryByText('plan.cards.ai_followup')).not.toBeInTheDocument();
-    expect(screen.getByText('plan.sections.upcoming_days')).toBeInTheDocument();
-    expect(screen.getByText('Ter')).toBeInTheDocument();
-    expect(screen.getByText('plan.upcoming.status.planned')).toBeInTheDocument();
-    expect(screen.getByText('plan.upcoming.status.adjusted')).toBeInTheDocument();
+    expect(screen.getByText('Plano Mestre')).toBeInTheDocument();
+    expect(screen.getByText('plan.sections.strategy')).toBeInTheDocument();
+    expect(screen.getByText('plan.sections.nutrition_targets')).toBeInTheDocument();
+    expect(screen.getByText('plan.sections.training_program')).toBeInTheDocument();
+    expect(screen.getByText('plan.sections.weekly_schedule')).toBeInTheDocument();
+    expect(screen.getByText('plan.sections.routines')).toBeInTheDocument();
     expect(screen.getByText('Supino Reto - 4x6-8 (RPE 8)')).toBeInTheDocument();
     expect(screen.getByText('plan.sections.latest_checkpoint')).toBeInTheDocument();
-    expect(screen.getByText('plan.checkpoint.summary')).toBeInTheDocument();
-    expect(screen.getByText('plan.checkpoint.ai_assessment')).toBeInTheDocument();
-    expect(screen.getByText('plan.checkpoint.decision')).toBeInTheDocument();
-    expect(screen.getByText('Agachamento - 4x6-8 (RPE 8)')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'plan.actions.open_chat' })).not.toBeInTheDocument();
-  });
-
-  it('shows empty upcoming message when there are no upcoming days', () => {
-    render(
-      <PlanView
-        plan={{ ...mockPlan, upcoming_days: [] }}
-        isLoading={false}
-        onOpenChat={vi.fn()}
-      />
-    );
-
-    expect(screen.getByText('plan.upcoming.empty')).toBeInTheDocument();
   });
 });

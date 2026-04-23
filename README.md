@@ -6,6 +6,7 @@
 
 ## 🚀 Key Features
 
+- **Master Plan Engine**: Each user has one AI-managed master plan combining a clear goal, timeline, nutrition targets, weekly training program, and checkpoint-based revisions.
 - **Real Long-Term Memory**: The AI remembers your history, injuries, preferences, and goals through a 3-layer memory system (short, medium, and long-term with semantic search).
 - **Adaptive TDEE**: Calculates your actual metabolism from weight and nutrition data using linear regression with outlier filtering, not just static formulas.
 - **Deep Integrations**:

@@ -327,61 +327,44 @@
     }
   },
   "plan": {
-    "title": "Central Plan",
-    "subtitle": "Your plan with daily execution.",
+    "title": "Master Plan",
+    "subtitle": "Your global training and nutrition plan.",
     "sections": {
-      "time_window": "Plan period",
       "overview": "Plan overview",
-      "mission_today": "Today's mission",
-      "upcoming_days": "Upcoming days",
-      "latest_checkpoint": "Latest checkpoint",
-      "status": "Plan status"
-    },
-    "cards": {
-      "training": "Training",
-      "nutrition": "Nutrition",
-      "ai_followup": "AI follow-up"
-    },
-    "actions": {
-      "open_chat": "Talk to AI",
-      "request_adjustment": "Request adjustment"
+      "strategy": "Strategy",
+      "nutrition_targets": "Nutrition targets",
+      "training_program": "Training program",
+      "weekly_schedule": "Weekly schedule",
+      "routines": "Routines",
+      "latest_checkpoint": "Latest review"
     },
     "labels": {
-      "window": "Window",
+      "review_cadence": "Review cadence",
       "active_focus": "Active focus",
-      "progress": "Progress"
-    },
-    "status": {
-      "draft": "Draft",
-      "awaiting_approval": "Awaiting approval",
-      "active": "Active",
-      "adjustment_pending_approval": "Adjustment awaiting approval",
-      "completed": "Completed",
-      "archived": "Archived"
+      "adaptation_policy": "Adaptation policy",
+      "constraints": "Constraints",
+      "preferences": "Preferences",
+      "current_risks": "Current risks",
+      "none": "None",
+      "calories": "Calories",
+      "protein": "Protein",
+      "carbs": "Carbs",
+      "fat": "Fat",
+      "fiber": "Fiber",
+      "split": "Split",
+      "frequency": "Frequency/week",
+      "session_duration": "Session duration"
     },
     "empty": {
       "title": "No plan found",
-      "description": "Talk to AI to create your complete training and nutrition plan.",
+      "description": "Talk to AI to create your complete master plan.",
       "cta": "Create plan in chat",
-      "prefill_message": "Create my full training and nutrition plan."
+      "prefill_message": "Create my master training and nutrition plan."
     },
     "checkpoint": {
-      "empty": "No checkpoint has been recorded for this plan yet.",
-      "summary": "Summary",
-      "ai_assessment": "AI assessment",
-      "decision": "Decision"
-    },
-    "mission": {
-      "empty_training": "Training not defined",
-      "empty_nutrition": "Nutrition not defined"
-    },
-    "upcoming": {
-      "empty": "No activities planned for the next days.",
-      "status": {
-        "planned": "Planned",
-        "adjusted": "Adjusted",
-        "rest": "Rest"
-      }
+      "empty": "No review has been recorded for this plan yet.",
+      "decision": "Decision",
+      "next_focus": "Next focus"
     }
   },
   "chat": {
@@ -495,7 +478,13 @@
     "save_workout": "Save Workout",
     "workout_type_required": "Workout type is required",
     "exercise_name_required": "Exercise name is required",
-    "add_at_least_one_exercise": "Add at least one exercise"
+    "add_at_least_one_exercise": "Add at least one exercise",
+    "plan_entry": {
+      "eyebrow": "Master Plan",
+      "title": "Track your master plan",
+      "description": "Goal, strategy, nutrition targets, and weekly training program in one hub.",
+      "cta": "Open"
+    }
   },
   "nutrition": {
     "title": "Nutrition",
@@ -568,10 +557,10 @@
         "integrations": "Integrations"
       },
       "values": {
+        "247": "24/7 Instant",
         "free": "Free",
         "personal_price": "$400+/mo",
         "generic_price": "$10+/mo",
-        "247": "24/7 Instant",
         "scheduled": "Scheduled",
         "adaptive_ai": "Adaptive AI",
         "high": "High",
