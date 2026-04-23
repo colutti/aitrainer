@@ -1,5 +1,5 @@
 import { Bot, Send, Sparkles, AlertCircle, Paperclip, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '../../../shared/components/ui/Button';
@@ -66,7 +66,7 @@ export function ChatView({
   const { isReadOnly: isDemoUser } = useDemoMode(userInfo);
   const normalizedLocale = i18n.language.toLowerCase();
 
-  const resolveMessageText = (message: ChatMessage) => {
+  const resolveMessageText = useCallback((message: ChatMessage) => {
     if (normalizedLocale.startsWith('pt')) {
       const translated = message.translations?.['pt-BR'] ?? message.translations?.pt;
       if (translated?.trim()) return translated;
@@ -80,7 +80,7 @@ export function ChatView({
     }
 
     return message.text;
-  };
+  }, [normalizedLocale]);
 
   const isLimitError = error === 'TRIAL_EXPIRED' || error === 'DAILY_LIMIT_REACHED';
   const canSubmit = (!!inputValue.trim() || selectedImages.length > 0) && !isStreaming && !isDemoUser;
@@ -185,6 +185,21 @@ export function ChatView({
     setSelectedImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const renderedMessages = useMemo(
+    () =>
+      messages.map((msg, i) => (
+        <MessageBubble
+          key={`${msg.timestamp}-${i.toString()}`}
+          message={msg}
+          resolveText={resolveMessageText}
+          trainerId={trainer?.trainer_id}
+          userPhoto={userInfo?.photo_base64}
+          userName={userInfo?.name}
+        />
+      )),
+    [messages, resolveMessageText, trainer?.trainer_id, userInfo?.photo_base64, userInfo?.name],
+  );
+
   return (
     <div
       data-testid="chat-workspace"
@@ -237,16 +252,7 @@ export function ChatView({
               </div>
             ) : (
               <>
-                {messages.map((msg, i) => (
-                  <MessageBubble
-                    key={`${msg.timestamp}-${i.toString()}`}
-                    message={msg}
-                    resolveText={resolveMessageText}
-                    trainerId={trainer?.trainer_id}
-                    userPhoto={userInfo?.photo_base64}
-                    userName={userInfo?.name}
-                  />
-                ))}
+                {renderedMessages}
                 <div ref={messagesEndRef} className="h-4" />
               </>
             )}

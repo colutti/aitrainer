@@ -47,4 +47,6 @@ def test_prompt_builder_removes_plan_section_when_snapshot_missing():
     rendered = PromptBuilder.get_prompt_template(input_data).format(**input_data)
 
     assert "## Plano ativo do aluno" in rendered
-    assert "Nenhum plano ativo registrado." in rendered
+    assert "Nenhum plano registrado." in rendered
+    assert "Acao obrigatoria imediata" in rendered
+    assert "mesmo que a mensagem do aluno seja apenas cumprimento" in rendered

@@ -23,7 +23,14 @@ interface ChatActions {
 type ChatStore = ChatState & ChatActions;
 
 const AUTH_TOKEN_KEY = 'auth_token';
-const CHAT_STREAM_TIMEOUT_MS = 130_000;
+const CHAT_STREAM_TIMEOUT_MS = 240_000;
+
+const generateRequestId = (): string => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `req_${Date.now().toString()}_${Math.random().toString(36).slice(2, 10)}`;
+};
 
 /**
  * Chat store using Zustand
@@ -99,6 +106,7 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
   },
 
   sendMessage: async (text: string, images?: MessageImagePayload[]) => {
+    const requestId = generateRequestId();
     const userMessage: ChatMessage = {
       text,
       images,
@@ -113,6 +121,8 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
     }));
 
     let timeoutId: number | null = null;
+    let lastResponseStatus: number | null = null;
+    let lastResponseBody = '';
     try {
       const token = localStorage.getItem(AUTH_TOKEN_KEY);
       const controller = new AbortController();
@@ -127,6 +137,7 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
           'Content-Type': 'application/json',
           'Authorization': token ? `Bearer ${token}` : '',
           'X-User-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
+          'X-Request-Id': requestId,
         },
         body: JSON.stringify({
           user_message: text,
@@ -136,8 +147,14 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
           })),
         }),
       });
+      lastResponseStatus = response.status;
 
       if (!response.ok) {
+        try {
+          lastResponseBody = await response.clone().text();
+        } catch {
+          lastResponseBody = '';
+        }
         if (response.status === 422) {
           try {
             const errorData = await response.json() as { detail?: { msg?: string }[] };
@@ -255,6 +272,29 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
         errorMessage = 'MESSAGE_TOO_LONG';
       } else if (error instanceof Error && error.message === 'VALIDATION_ERROR') {
         errorMessage = 'VALIDATION_ERROR';
+      }
+
+      try {
+        const token = localStorage.getItem(AUTH_TOKEN_KEY);
+        await fetch(`${API_BASE_URL}/message/client-error`, {
+          method: 'POST',
+          keepalive: true,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : '',
+          },
+          body: JSON.stringify({
+            request_id: requestId,
+            phase: 'sendMessage',
+            error_name: error instanceof Error ? error.name : 'UnknownError',
+            error_message: error instanceof Error ? error.message : String(error),
+            error_stack: error instanceof Error ? (error.stack ?? null) : null,
+            response_status: lastResponseStatus,
+            response_body: lastResponseBody ? lastResponseBody.slice(0, 500) : null,
+          }),
+        });
+      } catch (reportError) {
+        console.error('Failed to report client chat error:', reportError);
       }
       
       set({ 

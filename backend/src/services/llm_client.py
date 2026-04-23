@@ -36,6 +36,7 @@ except ImportError:
 warnings.filterwarnings("ignore", message=".*Core Pydantic V1 functionality.*")
 
 from src.core.logs import logger  # noqa: E402  pylint: disable=wrong-import-position
+from src.core.config import settings  # noqa: E402  pylint: disable=wrong-import-position
 
 
 class LLMClient:
@@ -55,8 +56,6 @@ class LLMClient:
         Factory method that returns the correct LLM client based on settings.AI_PROVIDER.
         Priority: ollama > openai > gemini (default)
         """
-        from src.core.config import settings  # pylint: disable=import-outside-toplevel
-
         if settings.AI_PROVIDER == "ollama":
             if not cls._initialized:
                 logger.info(
@@ -154,7 +153,9 @@ class LLMClient:
                 )
             prompt_str = prompt_template.format(**input_data)
             agent: Any = create_agent(self._llm, tools)
-            config: RunnableConfig = {"recursion_limit": 50}
+            config: RunnableConfig = {
+                "recursion_limit": max(5, int(settings.LLM_AGENT_RECURSION_LIMIT))
+            }
             async for event in self._iter_agent_events(
                 agent=agent, messages=messages, config=config
             ):
@@ -218,8 +219,6 @@ class LLMClient:
     @staticmethod
     async def _iter_agent_events(agent: Any, messages: list[Any], config: RunnableConfig):
         """Iterates over agent events with inactivity timeout enforcement."""
-        from src.core.config import settings  # pylint: disable=import-outside-toplevel
-
         inactivity_timeout = float(settings.LLM_STREAM_INACTIVITY_TIMEOUT_SECONDS)
         events_iter = aiter(
             agent.astream({"messages": messages}, stream_mode="messages", config=config)

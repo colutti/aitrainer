@@ -43,26 +43,9 @@ def missing_execution_fields(execution: dict) -> list[str]:
         missing.append("today_training")
     if not execution.get("today_nutrition"):
         missing.append("today_nutrition")
-    upcoming_days = execution.get("upcoming_days")
-    if not upcoming_days:
-        missing.append("upcoming_days")
     today_training = execution.get("today_training")
     if not has_exercises(today_training):
         missing.append("training_exercises")
-    planned_days_missing_details = False
-    if isinstance(upcoming_days, list):
-        for day in upcoming_days:
-            if not isinstance(day, dict):
-                planned_days_missing_details = True
-                break
-            status = day.get("status")
-            if status == "rest":
-                continue
-            if not has_exercises(day.get("training")):
-                planned_days_missing_details = True
-                break
-    if planned_days_missing_details:
-        missing.append("upcoming_training_exercises")
     return missing
 
 
@@ -251,8 +234,10 @@ def format_plan_snapshot(snapshot: PlanPromptContext | None) -> str:
     if snapshot is None:
         return (
             "Nenhum plano registrado.\n"
-            "Acao obrigatoria: conduza discovery com o aluno e insista na coleta dos "
-            "dados faltantes ate conseguir criar um plano completo de treino e nutricao."
+            "Acao obrigatoria imediata: nao responda de forma generica.\n"
+            "Inicie discovery na proxima resposta, mesmo que a mensagem do aluno seja "
+            "apenas cumprimento, e colete os dados faltantes ate conseguir criar um "
+            "plano completo de treino e nutricao com `upsert_plan`."
         )
 
     upcoming = ", ".join(snapshot.upcoming_days) if snapshot.upcoming_days else "sem previsao"
