@@ -16,6 +16,7 @@ Element.prototype.scrollIntoView = vi.fn();
 describe('ChatPage', () => {
   const mockSendMessage = vi.fn();
   const mockFetchHistory = vi.fn();
+  const mockLoadMore = vi.fn();
   const mockFetchTrainer = vi.fn();
   const mockFetchAvailable = vi.fn();
 
@@ -25,6 +26,9 @@ describe('ChatPage', () => {
     error: null,
     fetchHistory: mockFetchHistory,
     sendMessage: mockSendMessage,
+    loadMore: mockLoadMore,
+    hasMore: false,
+    isLoading: false,
   };
 
   const defaultSettingsStore = {

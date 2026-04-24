@@ -30,6 +30,22 @@ class ChatRepository(BaseRepository):
         super().__init__(database, "message_store")
         self.db = database
 
+    _HISTORY_BATCH_SIZE_FACTOR = 3
+    _MAX_HISTORY_BATCHES = 6
+
+    @staticmethod
+    def _decode_raw_messages(cursor) -> list:
+        """Decodes raw Mongo docs into LangChain message objects."""
+        messages = []
+        for doc in cursor:
+            try:
+                msg_dict = json.loads(doc["History"])
+                msg_obj = messages_from_dict([msg_dict])[0]
+                messages.append(msg_obj)
+            except (json.JSONDecodeError, KeyError, IndexError):
+                continue
+        return messages
+
     def get_history(
         self, user_id: str, limit: int = 20, offset: int = 0
     ) -> list[ChatHistory]:
@@ -43,32 +59,51 @@ class ChatRepository(BaseRepository):
             offset,
         )
 
-        # 1. Query raw messages from MongoDB message_store
-        # We fetch ALL and filter/sort in memory because message_store format is complex
-        # and total number of messages per user is usually manageable (< 1000)
-        cursor = self.collection.find({"SessionId": user_id})
-
+        # Query recent records in batches from the end of the collection
+        # to avoid scanning the full conversation on every request.
+        target_public = limit + max(offset, 0)
+        batch_size = max(limit * self._HISTORY_BATCH_SIZE_FACTOR, limit)
         messages = []
-        for doc in cursor:
-            try:
-                msg_dict = json.loads(doc["History"])
-                msg_obj = messages_from_dict([msg_dict])[0]
-                messages.append(msg_obj)
-            except (json.JSONDecodeError, KeyError, IndexError):
-                continue
 
-        # 2. Convert to ChatHistory model (this also sorts them chronologically)
+        for batch_index in range(self._MAX_HISTORY_BATCHES):
+            skip = batch_index * batch_size
+            cursor = (
+                self.collection.find({"SessionId": user_id})
+                .sort("_id", -1)
+                .skip(skip)
+                .limit(batch_size)
+            )
+            batch_messages = self._decode_raw_messages(cursor)
+            if not batch_messages:
+                break
+            messages.extend(batch_messages)
+            if len(messages) >= target_public * self._HISTORY_BATCH_SIZE_FACTOR:
+                break
+
+        # Convert to ChatHistory model (this also sorts them chronologically)
         _DummyHistory = namedtuple("_DummyHistory", ["messages"])
         all_chat_history = ChatHistory.from_mongodb_chat_message_history(
             _DummyHistory(messages)
         )
 
-        # 3. Filter out SYSTEM messages before pagination
+        # Filter out SYSTEM messages before pagination
         public_messages = [
             msg for msg in all_chat_history if msg.sender != Sender.SYSTEM
         ]
 
-        # 4. Apply pagination relative to the END (most recent messages)
+        # If windowed batches did not produce enough public messages
+        # for requested pagination, fallback to full scan once.
+        if len(public_messages) < target_public:
+            cursor = self.collection.find({"SessionId": user_id})
+            all_messages = self._decode_raw_messages(cursor)
+            all_chat_history = ChatHistory.from_mongodb_chat_message_history(
+                _DummyHistory(all_messages)
+            )
+            public_messages = [
+                msg for msg in all_chat_history if msg.sender != Sender.SYSTEM
+            ]
+
+        # Apply pagination relative to the END (most recent messages)
         # Offset 0 means the last `limit` messages.
         # Offset 20 means the 21st to 40th most recent messages.
         if offset > 0:

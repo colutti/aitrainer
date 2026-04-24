@@ -16,6 +16,7 @@ const AUTH_TOKEN_KEY = 'auth_token';
 interface RequestConfig extends RequestInit {
   headers?: Record<string, string>;
   _isRetry?: boolean;
+  cacheBust?: boolean;
 }
 
 interface ErrorResponse {
@@ -56,8 +57,8 @@ export async function httpClient<T = unknown>(
 
   let url = `${getApiBaseUrl()}${endpoint}`;
   
-  // Cache busting for GET requests to prevent stale subscription data
-  if (!config.method || config.method.toUpperCase() === 'GET') {
+  // Optional cache busting for selected GET requests.
+  if (config.cacheBust && (!config.method || config.method.toUpperCase() === 'GET')) {
     const separator = url.includes('?') ? '&' : '?';
     url = `${url}${separator}_t=${Date.now().toString()}`;
   }

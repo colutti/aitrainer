@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo, useLayoutEffect } from 'react';
+import { useEffect, useRef, useMemo, useLayoutEffect, useCallback, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuthStore } from '../../shared/hooks/useAuth';
@@ -25,18 +25,20 @@ export default function ChatPage() {
     const state = location.state as { draftMessage?: string } | null;
     return state?.draftMessage?.trim() ?? '';
   }, [location.state]);
-  const [inputValue, setInputValue] = useState(initialDraftMessage);
+  const [draftSeed] = useState(initialDraftMessage);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   const prevScrollHeightRef = useRef<number>(0);
   const prevMessagesLength = useRef(0);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(false);
   const isFirstRenderRef = useRef(true);
+  const bootstrappedRef = useRef(false);
 
   // Initial data fetch on mount
   useEffect(() => {
+    if (bootstrappedRef.current) return;
+    bootstrappedRef.current = true;
     void fetchHistory();
     void fetchTrainer();
     void fetchAvailableTrainers();
@@ -95,23 +97,11 @@ export default function ChatPage() {
     prevMessagesLength.current = newLength;
   }, [messages, shouldAutoScroll, isLoading]);
 
-  useEffect(() => {
-    if (textareaRef.current) {
-      const target = textareaRef.current;
-      target.style.height = 'auto';
-      target.style.height = `${target.scrollHeight.toString()}px`;
-    }
-  }, [inputValue]);
-
-  const handleSend = (params?: { event?: React.BaseSyntheticEvent; images?: MessageImagePayload[] }) => {
-    params?.event?.preventDefault();
+  const handleSend = useCallback((text: string, images?: MessageImagePayload[]) => {
     if (isStreaming) return;
-
-    const text = inputValue.trim() || (params?.images?.length ? 'Analyze these images and provide practical guidance.' : '');
     if (!text) return;
-    setInputValue('');
-    void sendMessage(text, params?.images);
-  };
+    void sendMessage(text, images);
+  }, [isStreaming, sendMessage]);
 
   return (
     <ChatView 
@@ -122,13 +112,11 @@ export default function ChatPage() {
       error={error}
       trainer={currentTrainer}
       userInfo={userInfo}
-      inputValue={inputValue}
-      setInputValue={setInputValue}
+      initialInputValue={draftSeed}
       onSend={handleSend}
       onScroll={handleScroll}
       scrollContainerRef={scrollContainerRef}
       messagesEndRef={messagesEndRef}
-      textareaRef={textareaRef}
     />
   );
 }

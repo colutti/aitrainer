@@ -26,6 +26,8 @@ interface SettingsActions {
 }
 
 type SettingsStore = SettingsState & SettingsActions;
+let fetchTrainerInFlight: Promise<void> | null = null;
+let fetchAvailableTrainersInFlight: Promise<void> | null = null;
 
 /**
  * Settings store using Zustand
@@ -67,21 +69,33 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   },
 
   fetchTrainer: async () => {
-    try {
+    if (fetchTrainerInFlight) return fetchTrainerInFlight;
+    fetchTrainerInFlight = (async () => {
+      try {
       const trainer = await httpClient<TrainerProfile>('/trainer/trainer_profile');
       set({ trainer: trainer ?? null });
-    } catch (error) {
+      } catch (error) {
       console.error('Error fetching trainer:', error);
-    }
+      } finally {
+        fetchTrainerInFlight = null;
+      }
+    })();
+    return fetchTrainerInFlight;
   },
 
   fetchAvailableTrainers: async () => {
-    try {
+    if (fetchAvailableTrainersInFlight) return fetchAvailableTrainersInFlight;
+    fetchAvailableTrainersInFlight = (async () => {
+      try {
       const trainers = await httpClient<TrainerCard[]>('/trainer/available_trainers');
       set({ availableTrainers: trainers ?? [] });
-    } catch (error) {
+      } catch (error) {
       console.error('Error fetching available trainers:', error);
-    }
+      } finally {
+        fetchAvailableTrainersInFlight = null;
+      }
+    })();
+    return fetchAvailableTrainersInFlight;
   },
 
   updateTrainer: async (trainerType: string) => {
@@ -100,6 +114,8 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   },
 
   reset: () => {
+    fetchTrainerInFlight = null;
+    fetchAvailableTrainersInFlight = null;
     set({
       profile: null,
       trainer: null,

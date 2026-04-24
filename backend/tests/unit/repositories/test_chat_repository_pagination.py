@@ -23,7 +23,11 @@ def test_get_history_pagination(mock_from_mongo, mock_messages_from_dict, chat_r
     # Mock collection.find
     mock_cursor = MagicMock()
     mock_cursor.__iter__.return_value = []
-    chat_repository.collection.find.return_value = mock_cursor
+    mock_find_cursor = MagicMock()
+    mock_find_cursor.sort.return_value = mock_find_cursor
+    mock_find_cursor.skip.return_value = mock_find_cursor
+    mock_find_cursor.limit.return_value = mock_cursor
+    chat_repository.collection.find.return_value = mock_find_cursor
 
     # Call the method
     result = chat_repository.get_history(session_id, limit=limit, offset=offset)
@@ -32,3 +36,20 @@ def test_get_history_pagination(mock_from_mongo, mock_messages_from_dict, chat_r
     # With 15 messages total, offset 5 from end: 15..11 are skipped. 10..6 are taken.
     assert len(result) == 5
 
+
+def test_get_history_uses_desc_cursor_window(chat_repository):
+    """Should query newest entries first with skip/limit windowing."""
+    mock_cursor = MagicMock()
+    mock_cursor.__iter__.return_value = []
+    mock_find_cursor = MagicMock()
+    mock_find_cursor.sort.return_value = mock_find_cursor
+    mock_find_cursor.skip.return_value = mock_find_cursor
+    mock_find_cursor.limit.return_value = mock_cursor
+    chat_repository.collection.find.return_value = mock_find_cursor
+
+    with patch("src.repositories.chat_repository.ChatHistory.from_mongodb_chat_message_history", return_value=[]):
+        chat_repository.get_history("abc", limit=20, offset=40)
+
+    mock_find_cursor.sort.assert_called_with("_id", -1)
+    mock_find_cursor.skip.assert_called()
+    mock_find_cursor.limit.assert_called()

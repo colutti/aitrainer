@@ -35,13 +35,11 @@ const mockProps = {
   error: null,
   trainer: { trainer_id: 'atlas', name: 'Atlas' } as any,
   userInfo: { name: 'Student', photo_base64: 'base64' } as any,
-  inputValue: '',
-  setInputValue: vi.fn(),
+  initialInputValue: '',
   onSend: vi.fn(),
   onScroll: vi.fn(),
   scrollContainerRef: { current: null } as any,
   messagesEndRef: { current: null } as any,
-  textareaRef: { current: null } as any,
 };
 
 describe('ChatView', () => {
@@ -97,7 +95,7 @@ describe('ChatView', () => {
 
   it('calls onSend when form is submitted', () => {
     const onSend = vi.fn();
-    render(<ChatView {...mockProps} onSend={onSend} inputValue="Hello" />);
+    render(<ChatView {...mockProps} onSend={onSend} initialInputValue="Hello" />);
     const form = screen.getByTestId('chat-form');
     fireEvent.submit(form);
     expect(onSend).toHaveBeenCalled();
@@ -129,10 +127,10 @@ describe('ChatView', () => {
     fireEvent.submit(form);
 
     expect(onSend).toHaveBeenCalled();
-    const callArg = onSend.mock.calls[0]?.[0];
-    expect(callArg?.images?.length).toBe(1);
-    expect(callArg?.images?.[0]?.mimeType).toBe('image/jpeg');
-    expect(typeof callArg?.images?.[0]?.base64).toBe('string');
+    const imagesArg = onSend.mock.calls[0]?.[1];
+    expect(imagesArg?.length).toBe(1);
+    expect(imagesArg?.[0]?.mimeType).toBe('image/jpeg');
+    expect(typeof imagesArg?.[0]?.base64).toBe('string');
 
     vi.unstubAllGlobals();
   });
@@ -161,12 +159,12 @@ describe('ChatView', () => {
 
   it('renders chat as read-only for demo users', () => {
     render(
-      <ChatView
-        {...mockProps}
-        userInfo={{ ...mockProps.userInfo, is_demo: true }}
-        inputValue="Should stay blocked"
-      />
-    );
+        <ChatView
+          {...mockProps}
+          userInfo={{ ...mockProps.userInfo, is_demo: true }}
+          initialInputValue="Should stay blocked"
+        />
+      );
 
     expect(screen.getByText('Demo read-only')).toBeInTheDocument();
     expect(screen.getByTestId('chat-input')).toBeDisabled();

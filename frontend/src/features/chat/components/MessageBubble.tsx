@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Bot, User } from 'lucide-react';
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -90,7 +91,7 @@ function normalizeMarkdownText(text: string): string {
  * Renders an individual chat message with premium glassmorphism aesthetic,
  * Markdown support, and smooth Framer Motion animations.
  */
-export function MessageBubble({ message, resolveText, trainerId, userPhoto, userName }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message, resolveText, trainerId, userPhoto, userName }: MessageBubbleProps) {
   const { t } = useTranslation();
   const isTrainer = message.sender === 'Trainer';
   const displayText = resolveText ? resolveText(message) : message.text;
@@ -184,4 +185,4 @@ export function MessageBubble({ message, resolveText, trainerId, userPhoto, user
       </div>
     </motion.div>
   );
-}
+});

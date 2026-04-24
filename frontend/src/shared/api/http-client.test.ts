@@ -32,7 +32,7 @@ describe('httpClient', () => {
 
     const result = await httpClient('/test');
     expect(result).toEqual(mockData);
-    expect(fetch).toHaveBeenCalledWith(expect.stringMatching(/^\/api\/test\?_t=\d+$/), expect.objectContaining({
+    expect(fetch).toHaveBeenCalledWith('/api/test', expect.objectContaining({
       headers: expect.objectContaining({
         'Content-Type': 'application/json',
         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -53,10 +53,7 @@ describe('httpClient', () => {
 
     await httpClient('/test');
 
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringMatching(/^https:\/\/runtime\.example\.com\/api\/test\?_t=\d+$/),
-      expect.anything(),
-    );
+    expect(fetch).toHaveBeenCalledWith('https://runtime.example.com/api/test', expect.anything());
   });
 
   it('should include Authorization header when token exists', async () => {
@@ -68,13 +65,28 @@ describe('httpClient', () => {
     } as Response);
 
     await httpClient('/test');
-    expect(fetch).toHaveBeenCalledWith(expect.stringMatching(/^\/api\/test\?_t=\d+$/), expect.objectContaining({
+    expect(fetch).toHaveBeenCalledWith('/api/test', expect.objectContaining({
       headers: expect.objectContaining({
         'Content-Type': 'application/json',
         'Authorization': 'Bearer test-token',
         'Cache-Control': 'no-cache, no-store, must-revalidate',
       })
     }));
+  });
+
+  it('should add cache busting param only when explicitly enabled', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ ok: true }),
+    } as Response);
+
+    await httpClient('/test', { cacheBust: true });
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/^\/api\/test\?_t=\d+$/),
+      expect.anything(),
+    );
   });
 
   it('should handle 401 Unauthorized and clear token', async () => {

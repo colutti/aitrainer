@@ -1,5 +1,5 @@
 import { Bot, Send, Sparkles, AlertCircle, Paperclip, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '../../../shared/components/ui/Button';
@@ -22,14 +22,46 @@ export interface ChatViewProps {
   error: string | null;
   trainer: TrainerCard | null;
   userInfo: UserInfo | null;
-  inputValue: string;
-  setInputValue: (val: string) => void;
-  onSend: (params?: { event?: React.BaseSyntheticEvent; images?: MessageImagePayload[] }) => void | Promise<void>;
+  initialInputValue?: string;
+  onSend: (text: string, images?: MessageImagePayload[]) => void | Promise<void>;
   onScroll: (e: React.UIEvent<HTMLDivElement>) => void;
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
-  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 }
+
+interface MessageListProps {
+  messages: ChatMessage[];
+  messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  trainerId?: string;
+  userPhoto?: string;
+  userName?: string;
+  resolveText: (message: ChatMessage) => string;
+}
+
+const MessageList = memo(function MessageList({
+  messages,
+  messagesEndRef,
+  trainerId,
+  userPhoto,
+  userName,
+  resolveText,
+}: MessageListProps) {
+  return (
+    <>
+      {messages.map((msg, i) => (
+        <MessageBubble
+          key={`${msg.timestamp}-${i.toString()}`}
+          message={msg}
+          resolveText={resolveText}
+          trainerId={trainerId}
+          userPhoto={userPhoto}
+          userName={userName}
+        />
+      ))}
+      <div ref={messagesEndRef} className="h-4" />
+    </>
+  );
+});
 
 export function ChatView({
   messages,
@@ -39,19 +71,19 @@ export function ChatView({
   error,
   trainer,
   userInfo,
-  inputValue,
-  setInputValue,
+  initialInputValue = '',
   onSend,
   onScroll,
   scrollContainerRef,
   messagesEndRef,
-  textareaRef,
 }: ChatViewProps) {
   const { t, i18n } = useTranslation();
+  const [inputValue, setInputValue] = useState(initialInputValue);
   const [selectedImages, setSelectedImages] = useState<MessageImagePayload[]>([]);
   const [selectedImagePreviews, setSelectedImagePreviews] = useState<string[]>([]);
   const [localUploadError, setLocalUploadError] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const MAX_IMAGES_PER_MESSAGE = 4;
   const MAX_IMAGE_SIZE_BYTES = 3 * 1024 * 1024;
   const maxImageSizeMb = (MAX_IMAGE_SIZE_BYTES / (1024 * 1024)).toString();
@@ -66,7 +98,18 @@ export function ChatView({
   const { isReadOnly: isDemoUser } = useDemoMode(userInfo);
   const normalizedLocale = i18n.language.toLowerCase();
 
-  const resolveMessageText = (message: ChatMessage) => {
+  useEffect(() => {
+    setInputValue(initialInputValue);
+  }, [initialInputValue]);
+
+  useEffect(() => {
+    if (!textareaRef.current) return;
+    const target = textareaRef.current;
+    target.style.height = 'auto';
+    target.style.height = `${target.scrollHeight.toString()}px`;
+  }, [inputValue]);
+
+  const resolveMessageText = useCallback((message: ChatMessage) => {
     if (normalizedLocale.startsWith('pt')) {
       const translated = message.translations?.['pt-BR'] ?? message.translations?.pt;
       if (translated?.trim()) return translated;
@@ -80,7 +123,7 @@ export function ChatView({
     }
 
     return message.text;
-  };
+  }, [normalizedLocale]);
 
   const isLimitError = error === 'TRIAL_EXPIRED' || error === 'DAILY_LIMIT_REACHED';
   const canSubmit = (!!inputValue.trim() || selectedImages.length > 0) && !isStreaming && !isDemoUser;
@@ -237,17 +280,14 @@ export function ChatView({
               </div>
             ) : (
               <>
-                {messages.map((msg, i) => (
-                  <MessageBubble
-                    key={`${msg.timestamp}-${i.toString()}`}
-                    message={msg}
-                    resolveText={resolveMessageText}
-                    trainerId={trainer?.trainer_id}
-                    userPhoto={userInfo?.photo_base64}
-                    userName={userInfo?.name}
-                  />
-                ))}
-                <div ref={messagesEndRef} className="h-4" />
+                <MessageList
+                  messages={messages}
+                  messagesEndRef={messagesEndRef}
+                  trainerId={trainer?.trainer_id}
+                  userPhoto={userInfo?.photo_base64}
+                  userName={userInfo?.name}
+                  resolveText={resolveMessageText}
+                />
               </>
             )}
           </div>
@@ -286,7 +326,11 @@ export function ChatView({
                 <form
                   data-testid="chat-form"
                   onSubmit={(e) => {
-                    const result = onSend({ event: e, images: selectedImages });
+                    e.preventDefault();
+                    const text = inputValue.trim() || (selectedImages.length ? 'Analyze these images and provide practical guidance.' : '');
+                    if (!text || isStreaming) return;
+                    const result = onSend(text, selectedImages);
+                    setInputValue('');
                     clearSelectedImages();
                     if (result instanceof Promise) void result;
                   }}
@@ -335,7 +379,10 @@ export function ChatView({
                     onKeyDown={(e) => {
                       if (!isDemoUser && e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
-                        const result = onSend({ images: selectedImages });
+                        const text = inputValue.trim() || (selectedImages.length ? 'Analyze these images and provide practical guidance.' : '');
+                        if (!text || isStreaming) return;
+                        const result = onSend(text, selectedImages);
+                        setInputValue('');
                         clearSelectedImages();
                         if (result instanceof Promise) void result;
                       }

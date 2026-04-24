@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 
 import { AppRoutes } from './AppRoutes';
@@ -17,6 +17,7 @@ function App() {
   const init = useAuthStore((state) => state.init);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const loadUserInfo = useAuthStore((state) => state.loadUserInfo);
+  const lastFocusRefreshRef = useRef(0);
 
   useEffect(() => {
     // Load user info from token if it exists in localStorage
@@ -27,6 +28,9 @@ function App() {
     // Add window focus listener to refresh user info when user returns to app
     const handleFocus = () => {
       if (isAuthenticated) {
+        const now = Date.now();
+        if (now - lastFocusRefreshRef.current < 60_000) return;
+        lastFocusRefreshRef.current = now;
         void loadUserInfo();
       }
     };

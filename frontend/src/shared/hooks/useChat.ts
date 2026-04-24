@@ -24,6 +24,8 @@ type ChatStore = ChatState & ChatActions;
 
 const AUTH_TOKEN_KEY = 'auth_token';
 const CHAT_STREAM_TIMEOUT_MS = 130_000;
+let historyInFlight: Promise<void> | null = null;
+let loadMoreInFlight: Promise<void> | null = null;
 
 /**
  * Chat store using Zustand
@@ -38,6 +40,8 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
   hasMore: true,
 
   fetchHistory: async () => {
+    if (historyInFlight) return historyInFlight;
+    historyInFlight = (async () => {
     set({ isLoading: true, error: null, hasMore: true });
     try {
       // Initial fetch: limit 20, offset 0
@@ -66,15 +70,20 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
         error: 'Falha ao carregar histórico de mensagens.',
         hasMore: false
       });
+    } finally {
+      historyInFlight = null;
     }
+    })();
+    return historyInFlight;
   },
 
   loadMore: async () => {
+    if (loadMoreInFlight) return loadMoreInFlight;
     const state = _get();
     if (state.isLoading || !state.hasMore) return;
-
-    set({ isLoading: true });
-    try {
+    loadMoreInFlight = (async () => {
+      set({ isLoading: true });
+      try {
       const currentCount = state.messages.length;
       const limit = 20;
       
@@ -92,10 +101,14 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
       } else {
         set({ isLoading: false, hasMore: false });
       }
-    } catch (error) {
+      } catch (error) {
       console.error('Error loading more history:', error);
       set({ isLoading: false, hasMore: false }); // Don't block UI with error, just stop trying
-    }
+      } finally {
+        loadMoreInFlight = null;
+      }
+    })();
+    return loadMoreInFlight;
   },
 
   sendMessage: async (text: string, images?: MessageImagePayload[]) => {
@@ -273,6 +286,8 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
   },
 
   reset: () => {
+    historyInFlight = null;
+    loadMoreInFlight = null;
     set({
       messages: [],
       isLoading: false,
