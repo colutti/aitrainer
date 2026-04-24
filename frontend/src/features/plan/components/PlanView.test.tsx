@@ -1,21 +1,27 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { NutritionLog } from '../../../shared/types/nutrition';
 import type { Plan } from '../../../shared/types/plan';
 
 import { PlanView } from './PlanView';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
-    i18n: { language: 'pt-BR' },
+    t: (key: string, params?: Record<string, number>) => {
+      if (key === 'plan.labels.week_of' && params) {
+        return `week ${String(params.week)}/${String(params.total)}`;
+      }
+      return key;
+    },
+    i18n: { language: 'en-US' },
   }),
 }));
 
 const mockPlan: Plan = {
   overview: {
     id: 'plan-1',
-    title: 'Plano Mestre',
+    title: 'Plano Recomp Rafael - V19',
     objective_summary: 'Perder gordura mantendo performance',
     start_date: '2026-04-01',
     target_date: '2026-06-01',
@@ -24,7 +30,7 @@ const mockPlan: Plan = {
     last_updated_at: '2026-04-19T10:00:00Z',
   },
   strategy: {
-    rationale: 'Deficit moderado com foco em forca',
+    rationale: 'Maintain / Recomposition',
     adaptation_policy: 'ajustes por evidencia',
     constraints: ['viagens'],
     preferences: ['treino de manha'],
@@ -35,19 +41,29 @@ const mockPlan: Plan = {
     protein_g: 180,
     carbs_g: 220,
     fat_g: 70,
+    fiber_g: 35,
   },
-  adherence_notes: ['manter hidratacao'],
+  adherence_notes: ['Consistent tracking', 'Progressive overload'],
   training_program: {
     split_name: 'push_pull_legs',
     frequency_per_week: 5,
     session_duration_min: 60,
-    weekly_schedule: [{ day: 'monday', routine_id: 'push_a', focus: 'push', type: 'training' }],
+    weekly_schedule: [
+      { day: 'monday', routine_id: 'push_a', focus: 'push', type: 'training' },
+      { day: 'tuesday', routine_id: 'pull_a', focus: 'pull', type: 'training' },
+    ],
     routines: [
       {
         id: 'push_a',
         name: 'Push A',
         objective: 'forca',
         exercises: [{ name: 'Supino Reto', sets: 4, reps: '6-8', load_guidance: 'RPE 8' }],
+      },
+      {
+        id: 'pull_a',
+        name: 'Pull A',
+        objective: 'hipertrofia',
+        exercises: [{ name: 'Remada', sets: 4, reps: '8-10', load_guidance: 'RPE 8.5' }],
       },
     ],
   },
@@ -61,32 +77,50 @@ const mockPlan: Plan = {
   },
 };
 
+const nutritionToday: NutritionLog = {
+  id: 'log-1',
+  user_email: 'rafael@example.com',
+  date: '2026-04-24',
+  calories: 2000,
+  protein_grams: 160,
+  carbs_grams: 210,
+  fat_grams: 60,
+  fiber_grams: 30,
+  source: 'manual',
+};
+
 describe('PlanView', () => {
   it('shows loading skeleton', () => {
-    render(<PlanView plan={null} isLoading onOpenChat={vi.fn()} />);
+    render(<PlanView plan={null} isLoading nutritionToday={null} onOpenChat={vi.fn()} />);
 
     expect(screen.getByTestId('plan-skeleton')).toBeInTheDocument();
   });
 
   it('renders empty state when there is no plan', () => {
     const onOpenChat = vi.fn();
-    render(<PlanView plan={null} isLoading={false} onOpenChat={onOpenChat} />);
+    render(<PlanView plan={null} isLoading={false} nutritionToday={null} onOpenChat={onOpenChat} />);
 
     expect(screen.getByText('plan.empty.title')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'plan.empty.cta' }));
     expect(onOpenChat).toHaveBeenCalledTimes(1);
   });
 
-  it('renders master plan sections', () => {
-    render(<PlanView plan={mockPlan} isLoading={false} onOpenChat={vi.fn()} />);
+  it('renders redesigned plan view with nutrition values', () => {
+    render(<PlanView plan={mockPlan} isLoading={false} nutritionToday={nutritionToday} onOpenChat={vi.fn()} />);
 
-    expect(screen.getByText('Plano Mestre')).toBeInTheDocument();
-    expect(screen.getByText('plan.sections.strategy')).toBeInTheDocument();
-    expect(screen.getByText('plan.sections.nutrition_targets')).toBeInTheDocument();
-    expect(screen.getByText('plan.sections.training_program')).toBeInTheDocument();
-    expect(screen.getByText('plan.sections.weekly_schedule')).toBeInTheDocument();
-    expect(screen.getByText('plan.sections.routines')).toBeInTheDocument();
-    expect(screen.getByText('Supino Reto - 4x6-8 (RPE 8)')).toBeInTheDocument();
+    expect(screen.getByText('Plano Recomp Rafael - V19')).toBeInTheDocument();
+    expect(screen.getByText('plan.sections.nutrition_strategy')).toBeInTheDocument();
+    expect(screen.getByText('2000 / 2200 kcal')).toBeInTheDocument();
+    expect(screen.getByText('plan.sections.daily_routine')).toBeInTheDocument();
     expect(screen.getByText('plan.sections.latest_checkpoint')).toBeInTheDocument();
+  });
+
+  it('switches weekly exercises when changing selected day', () => {
+    render(<PlanView plan={mockPlan} isLoading={false} nutritionToday={nutritionToday} onOpenChat={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /tue/i }));
+
+    const weeklyArea = screen.getByTestId('plan-weekly-exercises');
+    expect(within(weeklyArea).getByText('Remada')).toBeInTheDocument();
   });
 });

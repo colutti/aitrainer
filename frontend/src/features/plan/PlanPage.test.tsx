@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
+import { useNutritionStore } from '../../shared/hooks/useNutrition';
 import { usePlanStore } from '../../shared/hooks/usePlan';
 
 import PlanPage from './PlanPage';
@@ -9,6 +10,10 @@ const mockNavigate = vi.fn();
 
 vi.mock('../../shared/hooks/usePlan', () => ({
   usePlanStore: vi.fn(),
+}));
+
+vi.mock('../../shared/hooks/useNutrition', () => ({
+  useNutritionStore: vi.fn(),
 }));
 
 vi.mock('react-i18next', () => ({
@@ -27,6 +32,7 @@ vi.mock('react-router-dom', async () => {
 
 describe('PlanPage', () => {
   const fetchPlan = vi.fn();
+  const fetchStats = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -40,13 +46,18 @@ describe('PlanPage', () => {
       clearPlan: vi.fn(),
       reset: vi.fn(),
     } as any);
+    vi.mocked(useNutritionStore).mockReturnValue({
+      stats: null,
+      fetchStats,
+    } as any);
   });
 
-  it('loads plan on mount', async () => {
+  it('loads plan and nutrition stats on mount', async () => {
     render(<PlanPage />);
 
     await waitFor(() => {
       expect(fetchPlan).toHaveBeenCalledTimes(1);
+      expect(fetchStats).toHaveBeenCalledTimes(1);
     });
   });
 
