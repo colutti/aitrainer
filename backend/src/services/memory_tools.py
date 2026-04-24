@@ -4,8 +4,7 @@ LangChain tools for AI-driven memory management.
 The AI agent can explicitly save, search, update, and delete memories,
 replacing the automatic Mem0 extraction with agent-controlled memory curation.
 
-Uses Gemini embeddings with dimensionality reduction to ensure 768-dim
-compatibility with existing Qdrant vectors.
+Uses OpenRouter embeddings through OpenAI-compatible API.
 """
 
 from datetime import datetime
@@ -13,7 +12,8 @@ import hashlib
 from uuid import uuid4
 import numpy as np
 from langchain_core.tools import tool
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
+from pydantic import SecretStr
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance, PointStruct
 
@@ -25,36 +25,34 @@ from src.core.logs import logger
 # precisamos evitar que erros de conexão/API quebrem as interações da IA.
 
 
-def _get_embedder() -> GoogleGenerativeAIEmbeddings:
-    """Returns a Gemini embedder for generating 768-dim vectors."""
-    return GoogleGenerativeAIEmbeddings(
-        model=settings.GEMINI_EMBEDDER_MODEL,
-        google_api_key=settings.GEMINI_API_KEY,  # type: ignore
+def _get_embedder() -> OpenAIEmbeddings:
+    """Returns an OpenRouter embedder with fixed output dimensions."""
+    return OpenAIEmbeddings(
+        model=settings.OPENROUTER_EMBED_MODEL,
+        openai_api_key=SecretStr(settings.OPENROUTER_API_KEY),
+        openai_api_base=settings.OPENROUTER_BASE_URL,
+        dimensions=settings.OPENROUTER_EMBED_DIMENSIONS,
     )
 
 
 def _embed_text(text: str) -> list:
     """
-    Generate 768-dim embedding from text using Gemini with dimensionality reduction.
-
-    Gemini returns 3072-dim vectors which we reduce to 768-dim via average pooling.
+    Generate fixed-size embedding from text using OpenRouter.
     """
     try:
         embedder = _get_embedder()
         embedding = embedder.embed_query(text)
-
-        # Reduce 3072 → 768 via average pooling
-        embedding_array = np.array(embedding)
-        reduced = embedding_array.reshape(-1, 4).mean(axis=1)
-
-        # Normalize
-        reduced = reduced / np.linalg.norm(reduced)
-        return reduced.tolist()
+        embedding_array = np.array(embedding, dtype=np.float32)
+        norm = np.linalg.norm(embedding_array)
+        if norm > 0:
+            embedding_array = embedding_array / norm
+        return embedding_array.tolist()
     except Exception as error:  # pylint: disable=broad-exception-caught
         # Test/runtime fallback when provider credentials/network are unavailable.
         logger.warning("Embedding provider unavailable, using deterministic fallback: %s", error)
         digest = hashlib.sha256(text.encode("utf-8")).digest()
-        raw = (digest * ((768 // len(digest)) + 1))[:768]
+        dims = int(settings.OPENROUTER_EMBED_DIMENSIONS)
+        raw = (digest * ((dims // len(digest)) + 1))[:dims]
         vec = np.frombuffer(raw, dtype=np.uint8).astype(np.float32)
         vec = (vec / 255.0) - 0.5
         norm = np.linalg.norm(vec)
@@ -78,7 +76,10 @@ def _ensure_collection(qdrant_client: QdrantClient, collection_name: str):
         try:
             qdrant_client.create_collection(
                 collection_name=collection_name,
-                vectors_config=VectorParams(size=768, distance=Distance.COSINE),
+                vectors_config=VectorParams(
+                    size=settings.OPENROUTER_EMBED_DIMENSIONS,
+                    distance=Distance.COSINE,
+                ),
             )
         except (ValueError, TypeError, AttributeError, Exception) as create_error:
             # Handle race condition
@@ -137,7 +138,7 @@ def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str):
             collection_name = _get_collection_name(user_email)
             _ensure_collection(qdrant_client, collection_name)
 
-            # Generate 768-dim embedding using Gemini with dimensionality reduction
+            # Generate embedding with OpenRouter-compatible model
             embedding = _embed_text(content)
 
             similar_results = qdrant_client.query_points(

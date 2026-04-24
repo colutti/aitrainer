@@ -1,47 +1,22 @@
 import unittest
 import asyncio
 from unittest.mock import MagicMock, patch
-from src.services.llm_client import LLMClient, GeminiClient, OllamaClient, OpenAIClient
+from src.services.llm_client import LLMClient, OpenRouterClient
 from langchain_core.messages import AIMessage
 
 
 class TestLLMClient(unittest.IsolatedAsyncioTestCase):
     @patch("src.core.config.settings")
-    def test_factory_gemini(self, mock_settings):
-        """Test creating Gemini client via factory."""
-        mock_settings.AI_PROVIDER = "gemini"
-        mock_settings.GEMINI_LLM_MODEL = "gemini-1.5-flash"
-        mock_settings.GEMINI_API_KEY = "test_key"
-        mock_settings.LLM_TEMPERATURE = 0.7
+    def test_factory_openrouter(self, mock_settings):
+        """Test creating OpenRouter client via factory."""
+        mock_settings.OPENROUTER_CHAT_MODEL = "@preset/fityq-chat"
+        mock_settings.OPENROUTER_API_KEY = "or-test"
+        mock_settings.OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
-        with patch("src.services.llm_client.GeminiClient") as MockGemini:
+        with patch("src.services.llm_client.OpenRouterClient") as MockOpenRouter:
             client = LLMClient.from_config()
-            self.assertIsInstance(client, MagicMock)  # MockGemini return
-            MockGemini.assert_called_once()
-
-    @patch("src.core.config.settings")
-    def test_factory_ollama(self, mock_settings):
-        """Test creating Ollama client via factory."""
-        mock_settings.AI_PROVIDER = "ollama"
-        mock_settings.OLLAMA_LLM_MODEL = "llama3"
-        mock_settings.OLLAMA_BASE_URL = "http://localhost:11434"
-        mock_settings.LLM_TEMPERATURE = 0.7
-
-        with patch("src.services.llm_client.OllamaClient") as MockOllama:
-            LLMClient.from_config()
-            MockOllama.assert_called_once()
-
-    @patch("src.core.config.settings")
-    def test_factory_openai(self, mock_settings):
-        """Test creating OpenAI client via factory."""
-        mock_settings.AI_PROVIDER = "openai"
-        mock_settings.OPENAI_LLM_MODEL = "gpt-4"
-        mock_settings.OPENAI_API_KEY = "sk-test"
-        mock_settings.LLM_TEMPERATURE = 0.7
-
-        with patch("src.services.llm_client.OpenAIClient") as MockOpenAI:
-            LLMClient.from_config()
-            MockOpenAI.assert_called_once()
+            self.assertIsInstance(client, MagicMock)  # MockOpenRouter return
+            MockOpenRouter.assert_called_once()
 
     async def test_stream_simple_success(self):
         """Test simple streaming success."""
@@ -299,22 +274,14 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Error processing request", results[0])
         self.assertTrue(any(isinstance(item, dict) for item in results))
 
-    def test_gemini_init(self):
-        """Test Gemini client initialization."""
-        with patch("langchain_google_genai.ChatGoogleGenerativeAI") as mock_cls:
-            GeminiClient("key", "model", 0.5)
-            mock_cls.assert_called_once()
-
-    def test_ollama_init(self):
-        """Test Ollama client initialization."""
-        with patch("langchain_ollama.ChatOllama") as mock_cls:
-            OllamaClient("url", "model", 0.5)
-            mock_cls.assert_called_once()
-
-    def test_openai_init(self):
-        """Test OpenAI client initialization."""
+    def test_openrouter_init(self):
+        """Test OpenRouter client initialization."""
         with patch("langchain_openai.ChatOpenAI") as mock_cls:
-            OpenAIClient("key", "model", 0.5)
+            OpenRouterClient(
+                api_key="or-key",
+                model="@preset/fityq-chat",
+                base_url="https://openrouter.ai/api/v1",
+            )
             mock_cls.assert_called_once()
 
 

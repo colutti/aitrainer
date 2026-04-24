@@ -43,8 +43,7 @@ def get_qdrant_client() -> QdrantClient:
 @functools.lru_cache()
 def get_llm_client() -> LLMClient:
     """
-    Returns the configured LLM client (Gemini or Ollama).
-    Uses factory method that reads settings.AI_PROVIDER.
+    Returns the configured LLM client (OpenRouter).
     """
     from src.services.llm_client import LLMClient  # pylint: disable=import-outside-toplevel
 

@@ -182,7 +182,7 @@ def sync_qdrant(
         dest_client.create_collection(
             collection_name=dest_collection,
             vectors_config=models.VectorParams(
-                size=settings.EMBEDDING_MODEL_DIMS,
+                size=settings.OPENROUTER_EMBED_DIMENSIONS,
                 distance=models.Distance.COSINE,
             ),
         )

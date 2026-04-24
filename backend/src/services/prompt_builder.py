@@ -1,13 +1,14 @@
 """
 Prompt building and injection service.
 
-Extracts prompt template construction from AITrainerBrain for better modularity:
+In the OpenRouter preset architecture, this builder is responsible for:
 - Building input_data dictionary
-- Constructing ChatPromptTemplate with defensive injection
-- Handling long_term_summary and memory placement
+- Building runtime context payload (PROMPT_CONTEXT_V1)
+- Constructing ChatPromptTemplate with a minimal local system message
 """
 
 from datetime import datetime
+import json
 from typing import Any
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from src.core.logs import logger
@@ -16,7 +17,12 @@ from src.services.plan_service import format_plan_snapshot
 
 
 class PromptBuilder:
-    """Builds and constructs chat prompt templates with defensive injection."""
+    """Builds and constructs chat prompt templates with runtime context injection."""
+
+    RUNTIME_CONTEXT_PROMPT = (
+        "RUNTIME_CONTEXT_JSON (PROMPT_CONTEXT_V1):\n"
+        "{runtime_context_json}"
+    )
 
     @staticmethod
     def _format_agenda_section(agenda_events: list) -> str:
@@ -121,17 +127,52 @@ class PromptBuilder:
         # Format agenda section
         agenda_section = PromptBuilder._format_agenda_section(agenda_events or [])
         plan_section = format_plan_snapshot(plan_snapshot)
+        has_active_plan = plan_snapshot is not None
         metabolism_section = PromptBuilder._format_metabolism_section(metabolism_data)
+        raw_timezone = getattr(profile, "timezone", None)
+        user_timezone = (
+            raw_timezone
+            if isinstance(raw_timezone, str) and raw_timezone
+            else "Europe/Madrid"
+        )
+        raw_user_name = getattr(profile, "display_name", None)
+        user_name = raw_user_name if isinstance(raw_user_name, str) and raw_user_name else "Aluno"
+        runtime_context = {
+            "contract_version": settings.PROMPT_CONTEXT_CONTRACT_VERSION,
+            "session": {
+                "current_date": current_date,
+                "current_time": now.strftime("%H:%M"),
+                "day_of_week": dias_pt[now.weekday()],
+                "user_timezone": user_timezone,
+                "channel": "app",
+            },
+            "trainer": {
+                "name": PromptBuilder._extract_trainer_name(trainer_profile_summary),
+                "profile": trainer_profile_summary,
+            },
+            "user": {
+                "name": user_name,
+                "profile": user_profile_summary,
+            },
+            "agenda": {
+                "events_summary": agenda_section,
+            },
+            "metabolism": {
+                "summary": metabolism_section,
+            },
+            "plan": {
+                "summary": plan_section,
+                "has_active_plan": has_active_plan,
+            },
+        }
 
         return {
             "trainer_profile": trainer_profile_summary,
-            "trainer_name": PromptBuilder._extract_trainer_name(
-                trainer_profile_summary
-            ),
+            "trainer_name": runtime_context["trainer"]["name"],
             "user_profile": user_profile_summary,
             "user_profile_obj": profile,  # Passed for extraction
-            "user_name": profile.display_name or "Aluno",
-            "user_timezone": getattr(profile, "timezone", None) or "Europe/Madrid",
+            "user_name": user_name,
+            "user_timezone": user_timezone,
             "chat_history": formatted_history_msgs,  # For MessagesPlaceholder
             "user_message": user_message_with_tag,
             "agenda_section": agenda_section,  # Agenda section for dynamic context
@@ -140,6 +181,10 @@ class PromptBuilder:
             "current_date": current_date,
             "day_of_week": dias_pt[now.weekday()],
             "current_time": now.strftime("%H:%M"),
+            "runtime_context": runtime_context,
+            "runtime_context_json": json.dumps(
+                runtime_context, ensure_ascii=True, sort_keys=True
+            ),
         }
 
     @staticmethod
@@ -172,44 +217,23 @@ class PromptBuilder:
         Returns:
             ChatPromptTemplate: Ready-to-use prompt template
         """
-        logger.debug("Constructing chat prompt template (is_telegram=%s).", is_telegram)
+        logger.debug(
+            "Constructing chat prompt template with runtime context (is_telegram=%s).",
+            is_telegram,
+        )
 
-        # Get base template
-        system_content = settings.PROMPT_TEMPLATE
-
-        # 1. Ensure current_date exists
-        if "current_date" not in input_data:
-            input_data["current_date"] = datetime.now().strftime("%Y-%m-%d")
-
-        # 2. Handle empty agenda block
-        # Avoids injecting <agenda>\n\n</agenda> for users with no planned events
-
-        # 2b. Remove empty agenda block when no events exist
-        # Avoids injecting <agenda>\n\n</agenda> for users with no planned events
-        if not input_data.get("agenda_section"):
-            system_content = system_content.replace(
-                "## Agenda do aluno\n{agenda_section}\n\n", ""
-            )
-            input_data.setdefault("agenda_section", "")
-        input_data.setdefault("plan_section", "")
-        if not input_data.get("metabolism_section"):
-            system_content = system_content.replace(
-                "## Metabolismo oficial do sistema\n{metabolism_section}\n\n",
-                "",
-            )
-            input_data.setdefault("metabolism_section", "")
-
-        # 3. Add Telegram format if needed
-        if is_telegram:
-            system_content += (
-                "\n\n--- \n"
-                "⚠️ **FORMATO TELEGRAM (MOBILE)**: "
-                "Responda de forma direta e concisa. Use Markdown simples. "
-                "Evite tabelas e blocos de código extensos."
-            )
+        input_data.setdefault("runtime_context", {})
+        runtime_context = dict(input_data["runtime_context"])
+        session = dict(runtime_context.get("session") or {})
+        session["channel"] = "telegram" if is_telegram else "app"
+        runtime_context["session"] = session
+        input_data["runtime_context"] = runtime_context
+        input_data["runtime_context_json"] = json.dumps(
+            runtime_context, ensure_ascii=True, sort_keys=True
+        )
 
         # 4. Build messages with MessagesPlaceholder for history
-        messages: list[Any] = [("system", system_content)]
+        messages: list[Any] = [("system", PromptBuilder.RUNTIME_CONTEXT_PROMPT)]
         messages.append(MessagesPlaceholder(variable_name="chat_history"))
         messages.append(("human", "{user_message}"))
 
@@ -218,11 +242,8 @@ class PromptBuilder:
         # 5. Verify formatting and log
         try:
             rendered_prompt = prompt_template.format(**input_data)
-            has_security = "## Regras de segurança e escopo" in rendered_prompt
-            critical_check = "✅ Presente" if has_security else "⚠️ Ausente"
             logger.debug(
-                "🛡️ PROMPT BUILT: Critical Section: %s | Chars: %d",
-                critical_check,
+                "Prompt built with runtime context | Chars: %d",
                 len(rendered_prompt),
             )
         except KeyError as e:

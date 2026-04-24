@@ -13,8 +13,6 @@ from pydantic_settings import (
 )
 
 from src.core.logs import logger
-from src.prompts.prompt_template import PROMPT_TEMPLATE
-from src.prompts.mem0_prompt import MEM0_FACT_EXTRACTION_PROMPT
 
 
 class Settings(BaseSettings):
@@ -78,26 +76,23 @@ class Settings(BaseSettings):
             return [i.strip() for i in v.split(",")]
         return v  # type: ignore
 
-    # ====== AI PROVIDER SELECTION ======
-    AI_PROVIDER: str = "gemini"
+    # ====== OPENROUTER ======
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    OPENROUTER_CHAT_MODEL: str = "@preset/fityq-chat"
+    OPENROUTER_EMBED_MODEL: str = "openai/text-embedding-3-small"
+    OPENROUTER_EMBED_DIMENSIONS: int = 768
+    PROMPT_CONTEXT_CONTRACT_VERSION: str = "prompt_context_v1"
 
-    # ====== GEMINI STUFF ========
-    GEMINI_API_KEY: str = ""
-    GEMINI_LLM_MODEL: str = "gemini-1.5-flash"
-    GEMINI_EMBEDDER_MODEL: str = "gemini-embedding-001"
-    LLM_TEMPERATURE: float = 0.4
-    EMBEDDING_MODEL_DIMS: int = 768
-    PROMPT_TEMPLATE: str = PROMPT_TEMPLATE
-
-    # ====== OLLAMA STUFF ======
-    OLLAMA_BASE_URL: str = "http://localhost:11434"
-    OLLAMA_LLM_MODEL: str = "llama3-groq-tool-use:8b"
-    OLLAMA_EMBEDDER_MODEL: str = "nomic-embed-text:latest"
-
-    # ====== OPENAI STUFF ======
-    OPENAI_API_KEY: str = ""
-    OPENAI_LLM_MODEL: str = "gpt-4o"
-    OPENAI_EMBEDDER_MODEL: str = "text-embedding-3-small"
+    @field_validator("OPENROUTER_CHAT_MODEL", mode="before")
+    @classmethod
+    def validate_openrouter_chat_model(cls, v: str) -> str:
+        """Enforce preset-only chat model usage for production safety."""
+        if isinstance(v, str) and v.startswith("@preset/"):
+            return v
+        raise ValueError(
+            "OPENROUTER_CHAT_MODEL must use an OpenRouter preset (e.g. @preset/fityq-chat)"
+        )
 
     # ====== MONGO STUFF ======
     DB_NAME: str = Field(default="aitrainer")
@@ -137,90 +132,6 @@ class Settings(BaseSettings):
     STRIPE_PRICE_ID_BASIC: str = ""
     STRIPE_PRICE_ID_PRO: str = ""
     STRIPE_PRICE_ID_PREMIUM: str = ""
-
-    def get_mem0_config(self) -> dict:
-        """
-        Generates the configuration dictionary for Mem0.
-        """
-        llm_config = {
-            "provider": self.AI_PROVIDER,
-            "config": {
-                "temperature": self.LLM_TEMPERATURE,
-                "max_tokens": 2000,
-            },
-        }
-
-        embedder_config = {"provider": self.AI_PROVIDER, "config": {}}
-        embedding_dims = self.EMBEDDING_MODEL_DIMS
-
-        if self.AI_PROVIDER == "gemini":
-            llm_config["config"].update(
-                {
-                    "model": self.GEMINI_LLM_MODEL,
-                    "api_key": self.GEMINI_API_KEY,
-                }
-            )
-            embedder_config["config"].update(
-                {
-                    "model": self.GEMINI_EMBEDDER_MODEL,
-                    "api_key": self.GEMINI_API_KEY,
-                }
-            )
-        elif self.AI_PROVIDER == "ollama":
-            llm_config["config"].update(
-                {
-                    "model": self.OLLAMA_LLM_MODEL,
-                    "ollama_base_url": self.OLLAMA_BASE_URL,
-                }
-            )
-            embedder_config["config"].update(
-                {
-                    "model": self.OLLAMA_EMBEDDER_MODEL,
-                    "embedding_dims": embedding_dims,
-                    "ollama_base_url": self.OLLAMA_BASE_URL,
-                }
-            )
-        elif self.AI_PROVIDER == "openai":
-            llm_config["config"].update(
-                {
-                    "model": self.OPENAI_LLM_MODEL,
-                    "api_key": self.OPENAI_API_KEY,
-                }
-            )
-            embedder_config["config"].update(
-                {
-                    "model": self.OPENAI_EMBEDDER_MODEL,
-                    "api_key": self.OPENAI_API_KEY,
-                    "embedding_dims": embedding_dims,
-                }
-            )
-
-        qdrant_config = {
-            "collection_name": self.QDRANT_COLLECTION_NAME,
-            "embedding_model_dims": embedding_dims,
-            "api_key": self.QDRANT_API_KEY if self.QDRANT_API_KEY else None,
-        }
-
-        if self.QDRANT_HOST.startswith("http"):
-            if str(self.QDRANT_PORT) not in self.QDRANT_HOST:
-                qdrant_config["url"] = f"{self.QDRANT_HOST}:{self.QDRANT_PORT}"
-            else:
-                qdrant_config["url"] = self.QDRANT_HOST
-        else:
-            qdrant_config["host"] = self.QDRANT_HOST
-            qdrant_config["port"] = self.QDRANT_PORT
-
-        return {
-            "vector_store": {
-                "provider": "qdrant",
-                "config": qdrant_config,
-            },
-            "llm": llm_config,
-            "embedder": embedder_config,
-            "custom_prompt": MEM0_FACT_EXTRACTION_PROMPT,
-            "version": "v1.1",
-        }
-
 
 # Instanciação segura
 try:

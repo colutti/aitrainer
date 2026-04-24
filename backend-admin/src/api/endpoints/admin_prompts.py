@@ -57,6 +57,10 @@ def list_prompts(
 
         # Campos basicos para o frontend
         p["model"] = p.get("model", "unknown")
+        p["requested_model"] = p.get("requested_model", p["model"])
+        p["resolved_model"] = p.get("resolved_model", p["model"])
+        p["resolved_provider"] = p.get("resolved_provider")
+        p["usage_cost"] = p.get("usage_cost")
         p["tokens_input"] = p.get("tokens_input", 0)
         p["tokens_output"] = p.get("tokens_output", 0)
         p["duration_ms"] = p.get("duration_ms", 0)

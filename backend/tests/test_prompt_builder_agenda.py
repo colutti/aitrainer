@@ -101,10 +101,10 @@ class TestInputDataWithAgenda:
 
 
 class TestEmptyAgendaTemplateRendering:
-    """Tests that empty agenda doesn't inject empty agenda section."""
+    """Tests that runtime context reflects agenda presence correctly."""
 
     def test_empty_agenda_removes_agenda_block_from_template(self):
-        """Test that empty agenda removes the agenda section from prompt."""
+        """Test that empty agenda is represented as empty summary in context."""
         profile = MagicMock()
         profile.long_term_summary = None
 
@@ -121,11 +121,10 @@ class TestEmptyAgendaTemplateRendering:
         prompt_template = PromptBuilder.get_prompt_template(input_data)
         rendered = prompt_template.format(**input_data)
 
-        # Empty agenda markdown block should not appear
-        assert "## Agenda do aluno" not in rendered
+        assert '"events_summary": ""' in rendered
 
     def test_agenda_with_events_renders_correctly(self, sample_events):
-        """Test that agenda with events is rendered in the prompt."""
+        """Test that agenda with events is rendered in runtime context."""
         profile = MagicMock()
         profile.long_term_summary = None
 
@@ -141,5 +140,5 @@ class TestEmptyAgendaTemplateRendering:
         prompt_template = PromptBuilder.get_prompt_template(input_data)
         rendered = prompt_template.format(**input_data)
 
-        assert "## Agenda do aluno" in rendered
-        assert "Emagrecer para o verão" in rendered
+        assert "RUNTIME_CONTEXT_JSON" in rendered
+        assert '"events_summary": "Eventos/planos ativos:' in rendered

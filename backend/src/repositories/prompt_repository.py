@@ -42,6 +42,15 @@ class PromptRepository(BaseRepository):
             "tokens_output": prompt_data.get("tokens_output", 0),
             "duration_ms": prompt_data.get("duration_ms", 0),
             "model": prompt_data.get("model", "unknown"),
+            "requested_model": prompt_data.get(
+                "requested_model", prompt_data.get("model", "unknown")
+            ),
+            "resolved_model": prompt_data.get(
+                "resolved_model", prompt_data.get("model", "unknown")
+            ),
+            "resolved_provider": prompt_data.get("resolved_provider"),
+            "usage_cost": prompt_data.get("usage_cost"),
+            "service_tier": prompt_data.get("service_tier"),
             "status": prompt_data.get("status", "success"),
         }
 
@@ -94,7 +103,10 @@ class PromptRepository(BaseRepository):
                     "total_output": {"$sum": "$tokens_output"},
                     "message_count": {"$sum": 1},
                     "last_activity": {"$max": "$timestamp"},
-                    "model": {"$last": "$model"},
+                    "requested_model": {"$last": "$requested_model"},
+                    "resolved_model": {"$last": "$resolved_model"},
+                    "resolved_provider": {"$last": "$resolved_provider"},
+                    "total_cost": {"$sum": {"$ifNull": ["$usage_cost", 0]}},
                 }
             },
             {"$sort": {"total_input": -1}},

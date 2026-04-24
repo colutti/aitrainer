@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
 from src.services.prompt_builder import PromptBuilder
-from src.api.models.plan import PlanSnapshot
+from src.api.models.plan import PlanPromptContext
 
 
 def _base_input(plan_snapshot=None):
@@ -21,24 +21,27 @@ def _base_input(plan_snapshot=None):
 
 
 def test_prompt_builder_injects_plan_section_when_snapshot_exists():
-    snapshot = PlanSnapshot(
+    snapshot = PlanPromptContext(
         title="Plano Atual",
+        goal_primary="ganhar massa",
         objective_summary="Ganhar massa",
-        plan_period="2026-04-19 a 2026-06-19",
-        status="active",
-        active_focus="consistencia",
-        today_training="Push",
-        today_nutrition="3000 kcal / 180g",
-        upcoming_days=["Pull"],
-        last_checkpoint_summary="aderencia boa",
-        critical_constraints=["viagem quinta"],
-        pending_adjustment=None,
+        timeline_window="2026-04-19 a 2026-06-19",
+        review_cadence="semanal",
+        strategy_rationale="progressao",
+        constraints=["viagem quinta"],
+        preferences=[],
+        nutrition_targets={"calories": 3000, "protein_g": 180},
+        training_split="Push/Pull/Legs",
+        weekly_schedule=[{"day": "segunda", "routine_id": "push", "focus": "peito"}],
+        routines=[{"id": "push", "name": "Push", "exercises": []}],
+        current_summary={"active_focus": "consistencia", "next_review": "2026-04-26"},
+        latest_checkpoint={"summary": "aderencia boa"},
     )
 
     input_data = _base_input(snapshot)
     rendered = PromptBuilder.get_prompt_template(input_data).format(**input_data)
 
-    assert "## Plano ativo do aluno" in rendered
+    assert '"plan"' in rendered
     assert "Push" in rendered
 
 
@@ -46,5 +49,5 @@ def test_prompt_builder_removes_plan_section_when_snapshot_missing():
     input_data = _base_input(None)
     rendered = PromptBuilder.get_prompt_template(input_data).format(**input_data)
 
-    assert "## Plano ativo do aluno" in rendered
-    assert "Nenhum plano ativo registrado." in rendered
+    assert '"plan"' in rendered
+    assert "Nenhum plano mestre registrado." in rendered

@@ -1,6 +1,6 @@
 """
 LLM Client abstraction layer for AI trainer.
-Provides a unified interface for different LLM providers (Gemini, Ollama, OpenAI).
+Provides a unified interface for OpenRouter.
 """
 
 import warnings
@@ -52,47 +52,20 @@ class LLMClient:
     @classmethod
     def from_config(cls) -> "LLMClient":
         """
-        Factory method that returns the correct LLM client based on settings.AI_PROVIDER.
-        Priority: ollama > openai > gemini (default)
+        Factory method that returns the OpenRouter LLM client.
         """
         from src.core.config import settings  # pylint: disable=import-outside-toplevel
 
-        if settings.AI_PROVIDER == "ollama":
-            if not cls._initialized:
-                logger.info(
-                    "Creating OllamaClient with model: %s at %s",
-                    settings.OLLAMA_LLM_MODEL,
-                    settings.OLLAMA_BASE_URL,
-                )
-                cls._initialized = True
-            return OllamaClient(
-                base_url=settings.OLLAMA_BASE_URL,
-                model=settings.OLLAMA_LLM_MODEL,
-                temperature=settings.LLM_TEMPERATURE,
-            )
-
-        if settings.AI_PROVIDER == "openai":
-            if not cls._initialized:
-                logger.info(
-                    "Creating OpenAIClient with model: %s", settings.OPENAI_LLM_MODEL
-                )
-                cls._initialized = True
-            return OpenAIClient(
-                api_key=settings.OPENAI_API_KEY,
-                model=settings.OPENAI_LLM_MODEL,
-                temperature=settings.LLM_TEMPERATURE,
-            )
-
-        # Default: Gemini
         if not cls._initialized:
             logger.info(
-                "Creating GeminiClient with model: %s", settings.GEMINI_LLM_MODEL
+                "Creating OpenRouterClient with model preset: %s",
+                settings.OPENROUTER_CHAT_MODEL,
             )
             cls._initialized = True
-        return GeminiClient(
-            api_key=settings.GEMINI_API_KEY,
-            model=settings.GEMINI_LLM_MODEL,
-            temperature=settings.LLM_TEMPERATURE,
+        return OpenRouterClient(
+            api_key=settings.OPENROUTER_API_KEY,
+            model=settings.OPENROUTER_CHAT_MODEL,
+            base_url=settings.OPENROUTER_BASE_URL,
         )
 
     async def stream_with_tools(
@@ -123,6 +96,7 @@ class LLMClient:
         tools_called: list[str] = []
         start_time = time.time()
         usage_metadata: dict = {"input_tokens": 0, "output_tokens": 0}
+        runtime_metadata: dict[str, Any] = {}
         prompt_str = ""
         usage_metadata_captured = False  # Track if we already captured
 
@@ -163,6 +137,7 @@ class LLMClient:
                     usage_metadata_captured, usage_metadata = self._capture_metadata(
                         event
                     )
+                    runtime_metadata = self._extract_runtime_metadata(event)
 
                 if isinstance(event, ToolMessage):
                     tools_called.append(str(event.name or "unknown"))
@@ -204,6 +179,15 @@ class LLMClient:
                             "tokens_output": tokens_out,
                             "duration_ms": duration_ms,
                             "model": self.model_name,
+                            "requested_model": self.model_name,
+                            "resolved_model": runtime_metadata.get(
+                                "resolved_model", self.model_name
+                            ),
+                            "resolved_provider": runtime_metadata.get(
+                                "resolved_provider"
+                            ),
+                            "usage_cost": runtime_metadata.get("usage_cost"),
+                            "service_tier": runtime_metadata.get("service_tier"),
                             "status": "success",
                         },
                     )
@@ -269,6 +253,7 @@ class LLMClient:
         start_time = time.time()
         prompt_str = ""
         usage_metadata: dict = {"input_tokens": 0, "output_tokens": 0}
+        runtime_metadata: dict[str, Any] = {}
         usage_metadata_captured = False  # Flag to ensure we capture only once
 
         try:
@@ -289,6 +274,7 @@ class LLMClient:
                             usage_metadata_captured, usage_metadata = (
                                 self._capture_metadata(chunk, "stream_simple")
                             )
+                            runtime_metadata = self._extract_runtime_metadata(chunk)
                         # Always yield the text content
                         if chunk.content:
                             if isinstance(chunk.content, str):
@@ -324,6 +310,15 @@ class LLMClient:
                             "tokens_output": usage_metadata.get("output_tokens", 0),
                             "duration_ms": duration_ms,
                             "model": self.model_name,
+                            "requested_model": self.model_name,
+                            "resolved_model": runtime_metadata.get(
+                                "resolved_model", self.model_name
+                            ),
+                            "resolved_provider": runtime_metadata.get(
+                                "resolved_provider"
+                            ),
+                            "usage_cost": runtime_metadata.get("usage_cost"),
+                            "service_tier": runtime_metadata.get("service_tier"),
                             "status": "success",
                         },
                     )
@@ -358,59 +353,54 @@ class LLMClient:
                 elif isinstance(block, dict) and "text" in block:
                     yield block["text"]
 
+    def _extract_runtime_metadata(self, event: AIMessage) -> dict[str, Any]:
+        """Extracts model/provider/cost metadata from runtime response."""
+        response_metadata = getattr(event, "response_metadata", {}) or {}
+        usage_metadata = getattr(event, "usage_metadata", {}) or {}
+        if not isinstance(response_metadata, dict):
+            response_metadata = {}
+        if not isinstance(usage_metadata, dict):
+            usage_metadata = {}
+
+        resolved_model = (
+            response_metadata.get("model_name")
+            or response_metadata.get("model")
+            or usage_metadata.get("model_name")
+            or usage_metadata.get("model")
+        )
+        resolved_provider = (
+            response_metadata.get("provider")
+            or response_metadata.get("provider_name")
+            or usage_metadata.get("provider")
+        )
+        usage_cost = response_metadata.get("cost") or usage_metadata.get("cost")
+        service_tier = (
+            response_metadata.get("service_tier")
+            or usage_metadata.get("service_tier")
+        )
+
+        return {
+            "resolved_model": resolved_model,
+            "resolved_provider": resolved_provider,
+            "usage_cost": usage_cost,
+            "service_tier": service_tier,
+        }
+
 
 # Manual agent loop methods removed (refactoring to LangGraph)
 
 
-class GeminiClient(LLMClient):
-    """LLM Client for Google Gemini."""
+class OpenRouterClient(LLMClient):
+    """LLM Client for OpenRouter models."""
 
-    def __init__(self, api_key: str, model: str, temperature: float):
-        """
-        Initialize Gemini client.
-
-        Args:
-            api_key: Google API key for Gemini.
-            model: Model name (e.g., 'gemini-1.5-flash').
-            temperature: Sampling temperature.
-        """
-        from langchain_google_genai import ChatGoogleGenerativeAI  # pylint: disable=import-outside-toplevel
-
-        self.model_name = model
-        self._llm = ChatGoogleGenerativeAI(
-            model=model,
-            google_api_key=api_key or "",
-            temperature=temperature,
-        )
-
-
-class OllamaClient(LLMClient):
-    """LLM Client for Ollama (local models)."""
-
-    def __init__(self, base_url: str, model: str, temperature: float):
-        """Initialize Ollama client."""
-        from langchain_ollama import ChatOllama  # pylint: disable=import-outside-toplevel
-
-        self.model_name = model
-        self.supports_multimodal = False
-        self._llm = ChatOllama(
-            model=model,
-            base_url=base_url,
-            temperature=temperature,
-        )
-
-
-class OpenAIClient(LLMClient):
-    """LLM Client for OpenAI models."""
-
-    def __init__(self, api_key: str, model: str, temperature: float):
-        """Initialize OpenAI client."""
+    def __init__(self, api_key: str, model: str, base_url: str):
+        """Initialize OpenRouter client through OpenAI-compatible API."""
         from langchain_openai import ChatOpenAI  # pylint: disable=import-outside-toplevel
         from pydantic import SecretStr  # pylint: disable=import-outside-toplevel
 
         self.model_name = model
         self._llm = ChatOpenAI(
             model=model,
+            base_url=base_url,
             api_key=SecretStr(api_key) if api_key else SecretStr(""),
-            temperature=temperature,
         )

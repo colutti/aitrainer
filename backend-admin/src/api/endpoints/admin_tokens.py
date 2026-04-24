@@ -7,26 +7,15 @@ from src.core.deps import CURRENT_ADMIN_DEP, MAIN_DB_DEP
 
 router = APIRouter(prefix="/admin/tokens", tags=["admin"])
 
-# Quick cost calculation helper
-PRICING = {
-    "gpt-4o": {"input": 0.005, "output": 0.015},
-    "gpt-4o-mini": {"input": 0.00015, "output": 0.0006},
-    "claude-3-5-sonnet-20240620": {"input": 0.003, "output": 0.015},
-    "gemini-1.5-pro": {"input": 0.0035, "output": 0.0105},
-}
-
-def get_cost_usd(model: str, input_tokens: int, output_tokens: int) -> float:
-    """Calculate estimated cost in USD based on model and token counts."""
-    rates = PRICING.get(model, PRICING["gpt-4o-mini"])
-    return (input_tokens / 1000 * rates["input"]) + (output_tokens / 1000 * rates["output"])
-
 def _format_token_item(item: Any) -> dict[str, Any]:
     """Helper to format a single token usage item for the summary response."""
     user_email = str(item.get("_id", "unknown"))
-    model = str(item.get("model", ""))
+    requested_model = str(item.get("requested_model", ""))
+    resolved_model = str(item.get("resolved_model", ""))
+    resolved_provider = item.get("resolved_provider")
     total_input = int(item.get("total_input", 0))
     total_output = int(item.get("total_output", 0))
-    cost_usd = get_cost_usd(model, total_input, total_output)
+    cost_usd = float(item.get("total_cost", 0.0))
     last_activity_val = item.get("last_activity")
     last_activity_str = ""
     if isinstance(last_activity_val, datetime):
@@ -37,7 +26,9 @@ def _format_token_item(item: Any) -> dict[str, Any]:
         "total_input": total_input,
         "total_output": total_output,
         "message_count": int(item.get("message_count", 0)),
-        "model": model,
+        "requested_model": requested_model,
+        "resolved_model": resolved_model,
+        "resolved_provider": resolved_provider,
         "cost_usd": cost_usd,
         "last_activity": last_activity_str
     }
@@ -58,7 +49,10 @@ def get_token_summary(
             "total_input": {"$sum": "$tokens_input"},
             "total_output": {"$sum": "$tokens_output"},
             "message_count": {"$sum": 1},
-            "model": {"$first": "$model"},
+            "requested_model": {"$last": "$requested_model"},
+            "resolved_model": {"$last": "$resolved_model"},
+            "resolved_provider": {"$last": "$resolved_provider"},
+            "total_cost": {"$sum": {"$ifNull": ["$usage_cost", 0]}},
             "last_activity": {"$max": "$timestamp"}
         }},
         {"$sort": {"total_input": -1}}
