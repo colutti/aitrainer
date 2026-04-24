@@ -328,29 +328,29 @@
   },
   "plan": {
     "title": "Plan Semanal",
-    "subtitle": "Una vista clara de metas y ejecucion de tu ciclo actual.",
+    "subtitle": "Una vista clara de metas y ejecución de tu ciclo actual.",
     "sections": {
       "overview": "Resumen del plan",
-      "daily_routine": "Rutina del Dia",
+      "daily_routine": "Rutina del Día",
       "nutrition_strategy": "Estrategia Nutricional",
       "strategy": "Estrategia",
       "nutrition_targets": "Metas nutricionales",
       "training_program": "Programa de entrenamiento",
       "weekly_schedule": "Agenda semanal",
       "routines": "Rutinas",
-      "latest_checkpoint": "Ultima revision"
+      "latest_checkpoint": "Última revisión"
     },
     "labels": {
-      "review_cadence": "Cadencia de revision",
+      "review_cadence": "Cadencia de revisión",
       "active_focus": "Foco actual",
-      "adaptation_policy": "Politica de adaptacion",
+      "adaptation_policy": "Política de adaptación",
       "constraints": "Restricciones",
       "preferences": "Preferencias",
       "current_risks": "Riesgos actuales",
       "none": "Ninguno",
-      "calories": "Calorias",
+      "calories": "Calorías",
       "calories_short": "Cal",
-      "protein": "Proteina",
+      "protein": "Proteína",
       "protein_short": "Prot",
       "carbs": "Carbohidratos",
       "carbs_short": "Carb",
@@ -360,7 +360,7 @@
       "fiber_short": "Fib",
       "split": "Split",
       "frequency": "Frecuencia/semana",
-      "session_duration": "Duracion de sesion",
+      "session_duration": "Duración de sesión",
       "start": "Inicio",
       "target": "Meta",
       "week_of": "Semana {{week}}/{{total}}",
@@ -368,20 +368,20 @@
       "reps": "reps",
       "sets_reps": "Series x Reps",
       "rpe": "RPE",
-      "rest_day": "No hay entrenamiento planificado para este dia.",
+      "rest_day": "No hay entrenamiento planificado para este día.",
       "primary_goal": "Objetivo Principal",
-      "success_criteria": "Criterios de Exito"
+      "success_criteria": "Criterios de Éxito"
     },
     "empty": {
-      "title": "No se encontro un plan",
+    "title": "No se encontró un plan",
       "description": "Habla con la IA para crear tu plan maestro completo.",
       "cta": "Crear plan en el chat",
-      "prefill_message": "Crea mi plan maestro de entrenamiento y nutricion."
+    "prefill_message": "Crea mi plan maestro de entrenamiento y nutrición."
     },
     "checkpoint": {
-      "empty": "Aun no hay revision registrada para este plan.",
-      "decision": "Decision",
-      "next_focus": "Proximo foco"
+      "empty": "Aún no hay revisión registrada para este plan.",
+      "decision": "Decisión",
+      "next_focus": "Próximo foco"
     }
   },
   "chat": {

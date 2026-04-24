@@ -328,29 +328,29 @@
   },
   "plan": {
     "title": "Plano da Semana",
-    "subtitle": "Visao clara das metas e da execucao do seu ciclo atual.",
+    "subtitle": "Visão clara das metas e da execução do seu ciclo atual.",
     "sections": {
-      "overview": "Visao geral do plano",
+      "overview": "Visão geral do plano",
       "daily_routine": "Rotina do Dia",
-      "nutrition_strategy": "Estrategia Nutricional",
-      "strategy": "Estrategia",
+      "nutrition_strategy": "Estratégia Nutricional",
+      "strategy": "Estratégia",
       "nutrition_targets": "Metas nutricionais",
       "training_program": "Programa de treino",
       "weekly_schedule": "Agenda semanal",
       "routines": "Rotinas",
-      "latest_checkpoint": "Ultima revisao"
+      "latest_checkpoint": "Última revisão"
     },
     "labels": {
-      "review_cadence": "Cadencia de revisao",
+      "review_cadence": "Cadência de revisão",
       "active_focus": "Foco atual",
-      "adaptation_policy": "Politica de adaptacao",
-      "constraints": "Restricoes",
-      "preferences": "Preferencias",
+      "adaptation_policy": "Política de adaptação",
+      "constraints": "Restrições",
+      "preferences": "Preferências",
       "current_risks": "Riscos atuais",
       "none": "Nenhum",
       "calories": "Calorias",
       "calories_short": "Cal",
-      "protein": "Proteina",
+      "protein": "Proteína",
       "protein_short": "Prot",
       "carbs": "Carboidratos",
       "carbs_short": "Carb",
@@ -359,29 +359,29 @@
       "fiber": "Fibras",
       "fiber_short": "Fib",
       "split": "Split",
-      "frequency": "Frequencia/semana",
-      "session_duration": "Duracao da sessao",
-      "start": "Inicio",
+      "frequency": "Frequência/semana",
+      "session_duration": "Duração da sessão",
+      "start": "Início",
       "target": "Meta",
       "week_of": "Semana {{week}}/{{total}}",
-      "sets": "series",
+      "sets": "séries",
       "reps": "reps",
-      "sets_reps": "Series x Reps",
+      "sets_reps": "Séries x Reps",
       "rpe": "RPE",
       "rest_day": "Nenhum treino planejado para este dia.",
       "primary_goal": "Objetivo Principal",
-      "success_criteria": "Criterios de Sucesso"
+      "success_criteria": "Critérios de Sucesso"
     },
     "empty": {
       "title": "Nenhum plano encontrado",
       "description": "Converse com a IA para criar seu plano mestre completo.",
       "cta": "Criar plano no chat",
-      "prefill_message": "Crie meu plano mestre de treino e nutricao."
+    "prefill_message": "Crie meu plano mestre de treino e nutrição."
     },
     "checkpoint": {
-      "empty": "Ainda nao ha revisao registrada para este plano.",
-      "decision": "Decisao",
-      "next_focus": "Proximo foco"
+      "empty": "Ainda não há revisão registrada para este plano.",
+      "decision": "Decisão",
+      "next_focus": "Próximo foco"
     }
   },
   "chat": {
