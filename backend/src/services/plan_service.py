@@ -7,7 +7,7 @@ from src.api.models.plan import PlanPromptContext, PlanUpsertInput, UserPlan
 REQUIRED_GOAL_FIELDS = ("primary", "objective_summary")
 REQUIRED_TIMELINE_FIELDS = ("target_date", "review_cadence")
 REQUIRED_STRATEGY_FIELDS = ("rationale", "adaptation_policy")
-REQUIRED_SUMMARY_FIELDS = ("active_focus", "rationale")
+REQUIRED_SUMMARY_FIELDS = ("active_focus", "rationale", "next_review")
 REQUIRED_NUTRITION_TARGET_FIELDS = ("calories", "protein_g")
 REQUIRED_PROGRAM_FIELDS = (
     "split_name",

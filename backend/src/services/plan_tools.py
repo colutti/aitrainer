@@ -5,6 +5,7 @@ import json
 from textwrap import dedent
 
 from langchain_core.tools import tool
+from pydantic import ValidationError
 
 from src.api.models.plan import PlanUpsertInput
 from src.core.logs import logger
@@ -74,7 +75,7 @@ def _minimum_upsert_payload_template() -> str:
             "rationale": "executar bloco base por 2 semanas",
             "key_risks": [],
             "last_review": null,
-            "next_review": null
+            "next_review": "2026-09-15"
           },
           "checkpoints": []
         }"""
@@ -136,11 +137,13 @@ def create_upsert_plan_tool(database, user_email: str):
         if call_count > 3:
             return (
                 "ERRO_UPSERT_PLAN_LOOP_GUARD: upsert_plan foi chamado muitas vezes no "
-                "mesmo turno. Nao tente novamente agora."
+                "mesmo turno. PLANO_NAO_SALVO. Nao afirme que salvou/ativou o plano. "
+                "Nao tente novamente agora; retome no proximo turno com 1 unica chamada."
             )
         if last_payload_hash == payload_hash:
             return (
                 "ERRO_UPSERT_PLAN_REPETIDO: payload duplicado no mesmo turno. "
+                "PLANO_NAO_SALVO. Nao afirme que salvou/ativou o plano. "
                 "Nao repetir a chamada agora."
             )
         last_payload_hash = payload_hash
@@ -193,6 +196,7 @@ def create_upsert_plan_tool(database, user_email: str):
             return (
                 "ERRO_UPSERT_PLAN_INCOMPLETO: faltam campos obrigatorios: "
                 f"{', '.join(missing_fields)}. "
+                "PLANO_NAO_SALVO. Nao afirme que salvou/ativou o plano. "
                 "Use o payload minimo e tente novamente no proximo turno.\n"
                 f"{_minimum_upsert_payload_template()}"
             )
@@ -207,8 +211,26 @@ def create_upsert_plan_tool(database, user_email: str):
                 f"SUCESSO_UPSERT_PLAN: Plano salvo com sucesso. ID: {plan_id}.\n"
                 f"{format_plan_snapshot(snapshot)}"
             )
+        except ValidationError as exc:
+            logger.warning(
+                "upsert_plan invalid structure for user %s: %s",
+                user_email,
+                exc,
+            )
+            validation_issues = ", ".join(
+                ".".join(str(part) for part in err["loc"]) for err in exc.errors()
+            )
+            return (
+                "ERRO_UPSERT_PLAN_ESTRUTURA_INVALIDA: "
+                "estrutura do plano invalida para persistencia. "
+                "PLANO_NAO_SALVO. Campos/locais invalidos: "
+                f"{validation_issues}"
+            )
         except Exception as exc:  # pylint: disable=broad-exception-caught
             logger.error("upsert_plan failed for user %s: %s", user_email, exc, exc_info=True)
-            return "ERRO_UPSERT_PLAN_PERSISTENCIA: falha ao salvar no banco."
+            return (
+                "ERRO_UPSERT_PLAN_PERSISTENCIA: falha ao salvar no banco. "
+                "PLANO_NAO_SALVO. Nao afirme que salvou/ativou o plano."
+            )
 
     return upsert_plan

@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class PlanGoal(BaseModel):
@@ -75,7 +75,7 @@ class TrainingRoutine(BaseModel):
     id: str = Field(..., min_length=1)
     name: str = Field(..., min_length=1)
     objective: str | None = None
-    exercises: list[TrainingExercise] = Field(default_factory=list)
+    exercises: list[TrainingExercise] = Field(..., min_length=1)
 
 
 class WeeklyScheduleItem(BaseModel):
@@ -86,6 +86,13 @@ class WeeklyScheduleItem(BaseModel):
     focus: str = Field(..., min_length=1)
     type: str = Field(default="training", min_length=1)
 
+    @model_validator(mode="after")
+    def validate_training_assignment(self):
+        """Training days must point to a concrete routine."""
+        if self.type == "training" and not self.routine_id:
+            raise ValueError("routine_id is required when type is 'training'")
+        return self
+
 
 class TrainingProgram(BaseModel):
     """Master training program with reusable routines and weekly schedule."""
@@ -93,8 +100,19 @@ class TrainingProgram(BaseModel):
     split_name: str = Field(..., min_length=1)
     frequency_per_week: int = Field(..., gt=0)
     session_duration_min: int = Field(..., gt=0)
-    routines: list[TrainingRoutine] = Field(default_factory=list)
-    weekly_schedule: list[WeeklyScheduleItem] = Field(default_factory=list)
+    routines: list[TrainingRoutine] = Field(..., min_length=1)
+    weekly_schedule: list[WeeklyScheduleItem] = Field(..., min_length=1)
+
+    @model_validator(mode="after")
+    def validate_schedule_references(self):
+        """Every training day must reference an existing routine id."""
+        routine_ids = {routine.id for routine in self.routines}
+        for item in self.weekly_schedule:
+            if item.type == "training" and item.routine_id not in routine_ids:
+                raise ValueError(
+                    f"weekly_schedule references unknown routine_id '{item.routine_id}'"
+                )
+        return self
 
 
 class PlanCheckpoint(BaseModel):
@@ -114,7 +132,7 @@ class PlanCurrentSummary(BaseModel):
     rationale: str = Field(..., min_length=1)
     key_risks: list[str] = Field(default_factory=list)
     last_review: str | None = None
-    next_review: str | None = None
+    next_review: str = Field(..., min_length=1)
 
 
 class PlanUpsertInput(BaseModel):

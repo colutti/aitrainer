@@ -41,7 +41,11 @@ def valid_payload() -> dict:
                 {'day': 'monday', 'routine_id': 'upper_a', 'focus': 'upper', 'type': 'training'}
             ],
         },
-        'current_summary': {'active_focus': 'consistencia', 'rationale': 'base de 2 semanas'},
+        'current_summary': {
+            'active_focus': 'consistencia',
+            'rationale': 'base de 2 semanas',
+            'next_review': '2026-09-15',
+        },
         'checkpoints': [],
     }
 
@@ -58,6 +62,22 @@ def test_upsert_plan_rejects_missing_required_fields():
     result = tool.invoke(payload)
 
     assert 'ERRO_UPSERT_PLAN_INCOMPLETO' in result
+    assert 'PLANO_NAO_SALVO' in result
+    db.save_plan.assert_not_called()
+
+
+def test_upsert_plan_rejects_missing_next_review():
+    db = MagicMock()
+    db.get_latest_plan.return_value = None
+    tool = create_upsert_plan_tool(db, 'user@test.com')
+
+    payload = valid_payload()
+    payload['current_summary'].pop('next_review')
+
+    result = tool.invoke(payload)
+
+    assert 'ERRO_UPSERT_PLAN_INCOMPLETO' in result
+    assert 'current_summary.next_review' in result
     db.save_plan.assert_not_called()
 
 
@@ -72,3 +92,42 @@ def test_upsert_plan_saves_master_plan_with_single_call():
 
     assert 'SUCESSO_UPSERT_PLAN' in result
     db.save_plan.assert_called_once()
+
+
+def test_upsert_plan_loop_guard_marks_not_saved_state():
+    db = MagicMock()
+    db.get_latest_plan.return_value = None
+    db.save_plan.return_value = 'plan_123'
+    tool = create_upsert_plan_tool(db, 'user@test.com')
+
+    payload = valid_payload()
+    tool.invoke(payload)
+    payload2 = valid_payload()
+    payload2['title'] = 'Plano Mestre v2'
+    tool.invoke(payload2)
+    payload3 = valid_payload()
+    payload3['title'] = 'Plano Mestre v3'
+    tool.invoke(payload3)
+    payload4 = valid_payload()
+    payload4['title'] = 'Plano Mestre v4'
+    result = tool.invoke(payload4)
+
+    assert 'ERRO_UPSERT_PLAN_LOOP_GUARD' in result
+    assert 'PLANO_NAO_SALVO' in result
+
+
+def test_upsert_plan_rejects_schedule_with_unknown_routine_reference():
+    db = MagicMock()
+    db.get_latest_plan.return_value = None
+    tool = create_upsert_plan_tool(db, 'user@test.com')
+
+    payload = valid_payload()
+    payload['training_program']['weekly_schedule'] = [
+        {'day': 'monday', 'routine_id': 'inexistente', 'focus': 'upper', 'type': 'training'}
+    ]
+
+    result = tool.invoke(payload)
+
+    assert 'ERRO_UPSERT_PLAN_ESTRUTURA_INVALIDA' in result
+    assert 'PLANO_NAO_SALVO' in result
+    db.save_plan.assert_not_called()

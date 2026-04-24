@@ -69,6 +69,7 @@ def make_payload() -> PlanUpsertInput:
             'active_focus': 'consistencia',
             'rationale': 'executar bloco base por 2 semanas',
             'key_risks': ['baixa adesao'],
+            'next_review': '2026-09-15',
         },
         checkpoints=[],
     )
