@@ -1,7 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { NutritionLog } from '../../../shared/types/nutrition';
 import type { Plan } from '../../../shared/types/plan';
 
 import { PlanView } from './PlanView';
@@ -77,28 +76,16 @@ const mockPlan: Plan = {
   },
 };
 
-const nutritionToday: NutritionLog = {
-  id: 'log-1',
-  user_email: 'rafael@example.com',
-  date: '2026-04-24',
-  calories: 2000,
-  protein_grams: 160,
-  carbs_grams: 210,
-  fat_grams: 60,
-  fiber_grams: 30,
-  source: 'manual',
-};
-
 describe('PlanView', () => {
   it('shows loading skeleton', () => {
-    render(<PlanView plan={null} isLoading nutritionToday={null} onOpenChat={vi.fn()} />);
+    render(<PlanView plan={null} isLoading onOpenChat={vi.fn()} />);
 
     expect(screen.getByTestId('plan-skeleton')).toBeInTheDocument();
   });
 
   it('renders empty state when there is no plan', () => {
     const onOpenChat = vi.fn();
-    render(<PlanView plan={null} isLoading={false} nutritionToday={null} onOpenChat={onOpenChat} />);
+    render(<PlanView plan={null} isLoading={false} onOpenChat={onOpenChat} />);
 
     expect(screen.getByText('plan.empty.title')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'plan.empty.cta' }));
@@ -106,17 +93,17 @@ describe('PlanView', () => {
   });
 
   it('renders redesigned plan view with nutrition values', () => {
-    render(<PlanView plan={mockPlan} isLoading={false} nutritionToday={nutritionToday} onOpenChat={vi.fn()} />);
+    render(<PlanView plan={mockPlan} isLoading={false} onOpenChat={vi.fn()} />);
 
     expect(screen.getByText('Plano Recomp Rafael - V19')).toBeInTheDocument();
     expect(screen.getByText('plan.sections.nutrition_strategy')).toBeInTheDocument();
-    expect(screen.getByText('2000 / 2200 kcal')).toBeInTheDocument();
+    expect(screen.getByText('2200')).toBeInTheDocument();
     expect(screen.getByText('plan.sections.daily_routine')).toBeInTheDocument();
     expect(screen.getByText('plan.sections.latest_checkpoint')).toBeInTheDocument();
   });
 
   it('switches weekly exercises when changing selected day', () => {
-    render(<PlanView plan={mockPlan} isLoading={false} nutritionToday={nutritionToday} onOpenChat={vi.fn()} />);
+    render(<PlanView plan={mockPlan} isLoading={false} onOpenChat={vi.fn()} />);
 
     fireEvent.click(screen.getByRole('button', { name: /tue/i }));
 

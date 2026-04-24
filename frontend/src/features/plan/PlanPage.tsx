@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-import { useNutritionStore } from '../../shared/hooks/useNutrition';
 import { usePlanStore } from '../../shared/hooks/usePlan';
 
 import { PlanView } from './components/PlanView';
@@ -11,24 +10,21 @@ export default function PlanPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { plan, isLoading, fetchPlan } = usePlanStore();
-  const { stats, fetchStats } = useNutritionStore();
 
   useEffect(() => {
     void fetchPlan();
-    void fetchStats();
-  }, [fetchPlan, fetchStats]);
+  }, [fetchPlan]);
 
   return (
     <section className="mx-auto w-full max-w-[1600px] space-y-6">
-      <div className="space-y-2 px-1">
-        <h1 className="text-3xl font-black tracking-tight text-white md:text-4xl">{t('plan.title')}</h1>
-        <p className="text-sm font-medium text-zinc-400">{t('plan.subtitle')}</p>
+      <div className="space-y-1.5 px-1">
+        <h1 className="text-2xl font-bold tracking-tight text-white md:text-3xl">{t('plan.title')}</h1>
+        <p className="text-sm text-zinc-400">{t('plan.subtitle')}</p>
       </div>
 
       <PlanView
         plan={plan}
         isLoading={isLoading}
-        nutritionToday={stats?.today ?? null}
         onOpenChat={() => {
           void navigate('/dashboard/chat', {
             state: {

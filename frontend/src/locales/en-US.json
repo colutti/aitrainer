@@ -327,8 +327,8 @@
     }
   },
   "plan": {
-    "title": "Master Plan",
-    "subtitle": "Your global training and nutrition plan.",
+    "title": "Weekly Plan",
+    "subtitle": "A clear view of targets and execution for your current cycle.",
     "sections": {
       "overview": "Plan overview",
       "daily_routine": "Daily Routine",

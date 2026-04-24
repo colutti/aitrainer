@@ -327,8 +327,8 @@
     }
   },
   "plan": {
-    "title": "Plan Maestro",
-    "subtitle": "Tu plan global de entrenamiento y nutricion.",
+    "title": "Plan Semanal",
+    "subtitle": "Una vista clara de metas y ejecucion de tu ciclo actual.",
     "sections": {
       "overview": "Resumen del plan",
       "daily_routine": "Rutina del Dia",
