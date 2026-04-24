@@ -25,22 +25,24 @@ from src.core.logs import logger
 # precisamos evitar que erros de conexão/API quebrem as interações da IA.
 
 
-def _get_embedder() -> OpenAIEmbeddings:
+def _get_embedder(user_email: str | None = None) -> OpenAIEmbeddings:
     """Returns an OpenRouter embedder with fixed output dimensions."""
+    model_kwargs = {"user": user_email} if user_email else {}
     return OpenAIEmbeddings(
         model=settings.OPENROUTER_EMBED_MODEL,
         openai_api_key=SecretStr(settings.OPENROUTER_API_KEY),
         openai_api_base=settings.OPENROUTER_BASE_URL,
         dimensions=settings.OPENROUTER_EMBED_DIMENSIONS,
+        model_kwargs=model_kwargs,
     )
 
 
-def _embed_text(text: str) -> list:
+def _embed_text(text: str, user_email: str | None = None) -> list:
     """
     Generate fixed-size embedding from text using OpenRouter.
     """
     try:
-        embedder = _get_embedder()
+        embedder = _get_embedder(user_email)
         embedding = embedder.embed_query(text)
         embedding_array = np.array(embedding, dtype=np.float32)
         norm = np.linalg.norm(embedding_array)
@@ -139,7 +141,7 @@ def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str):
             _ensure_collection(qdrant_client, collection_name)
 
             # Generate embedding with OpenRouter-compatible model
-            embedding = _embed_text(content)
+            embedding = _embed_text(content, user_email=user_email)
 
             similar_results = qdrant_client.query_points(
                 collection_name=collection_name,
@@ -249,7 +251,7 @@ def create_search_memory_tool(qdrant_client: QdrantClient, user_email: str):
                 return "Nenhuma memória encontrada (coleção vazia)."
 
             # Generate query embedding with Gemini + dimensionality reduction
-            query_embedding = _embed_text(query)
+            query_embedding = _embed_text(query, user_email=user_email)
 
             # Filter by user_id to ensure data isolation
             user_filter = qdrant_models.Filter(
@@ -345,7 +347,7 @@ def create_update_memory_tool(qdrant_client: QdrantClient, user_email: str):
                 return "❌ Você não tem permissão para atualizar esta memória."
 
             # Generate new embedding with Gemini + dimensionality reduction
-            new_embedding = _embed_text(new_content)
+            new_embedding = _embed_text(new_content, user_email=user_email)
 
             # Update payload
             now = datetime.utcnow().isoformat()

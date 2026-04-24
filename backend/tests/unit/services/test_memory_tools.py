@@ -6,7 +6,7 @@ when integrated with the rest of the system. Full mocking of LangChain tools
 is complex due to the @tool decorator behavior.
 """
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from src.services.memory_tools import _get_collection_name
 
@@ -142,3 +142,30 @@ class TestMemoryToolsIntegration:
 
         assert tool is not None
         assert hasattr(tool, 'name')
+
+
+class TestEmbeddingUserPropagation:
+    """Tests for OpenRouter `user` propagation in embeddings calls."""
+
+    @patch("src.services.memory_tools.OpenAIEmbeddings")
+    def test_get_embedder_sets_user_in_model_kwargs(self, mock_embeddings):
+        """_get_embedder should forward user for per-user usage accounting."""
+        from src.services.memory_tools import _get_embedder
+
+        _get_embedder("user@test.com")
+
+        call_kwargs = mock_embeddings.call_args.kwargs
+        assert call_kwargs["model_kwargs"]["user"] == "user@test.com"
+
+    @patch("src.services.memory_tools._get_embedder")
+    def test_embed_text_passes_user_email_to_embedder(self, mock_get_embedder):
+        """_embed_text should pass user_email to _get_embedder."""
+        from src.services.memory_tools import _embed_text
+
+        mock_embedder = MagicMock()
+        mock_embedder.embed_query.return_value = [0.1] * 768
+        mock_get_embedder.return_value = mock_embedder
+
+        _embed_text("some text", user_email="user@test.com")
+
+        mock_get_embedder.assert_called_once_with("user@test.com")

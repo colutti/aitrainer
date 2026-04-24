@@ -49,6 +49,12 @@ class LLMClient:
     model_name: str = ""
     supports_multimodal: bool = True
 
+    def _llm_for_request(self, user_email: str | None):
+        """Returns an LLM runnable bound to OpenRouter user when available."""
+        if user_email:
+            return self._llm.bind(user=user_email)
+        return self._llm
+
     @classmethod
     def from_config(cls) -> "LLMClient":
         """
@@ -127,7 +133,8 @@ class LLMClient:
                     )
                 )
             prompt_str = prompt_template.format(**input_data)
-            agent: Any = create_agent(self._llm, tools)
+            request_llm = self._llm_for_request(user_email)
+            agent: Any = create_agent(request_llm, tools)
             config: RunnableConfig = {"recursion_limit": 50}
             async for event in self._iter_agent_events(
                 agent=agent, messages=messages, config=config
@@ -261,7 +268,8 @@ class LLMClient:
 
             # Try to stream from LLM directly first (to capture usage_metadata)
             try:
-                chain_before_parser = prompt_template | self._llm
+                request_llm = self._llm_for_request(user_email)
+                chain_before_parser = prompt_template | request_llm
                 async for chunk in chain_before_parser.astream(input_data):
                     # Capture usage_metadata from AIMessage (only once - first chunk with tokens)
                     if isinstance(chunk, AIMessage):

@@ -193,6 +193,22 @@ When coverage or E2E runs complete, the generated reports are written to:
 
 ---
 
+## 💰 OpenRouter Cost Tracking by User
+
+The backend sends each authenticated user's email in OpenRouter requests using the `user` field.
+
+How to monitor directly in OpenRouter (without local persistence):
+
+1. Open OpenRouter dashboard `Activity`.
+2. Filter by `user` (email).
+3. Export activity for a period and aggregate costs by `user`.
+
+Notes:
+- Tracking is **forward-only**: only requests made after this integration/deploy include the user identifier.
+- Cost attribution includes chat requests and embedding requests triggered in the user flow.
+
+---
+
 ## 🤖 Agent Workflows
 
 Project-specific workflows live in [`.agent/workflows`](/.agent/workflows):

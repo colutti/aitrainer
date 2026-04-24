@@ -197,6 +197,84 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(logged_data["tokens_output"], 2452,
                         "Should capture tokens from FIRST chunk with valid tokens, not last chunk")
 
+    async def test_stream_simple_binds_openrouter_user(self):
+        """stream_simple should bind `user` so OpenRouter can track per-user costs."""
+        client = LLMClient()
+        client._llm = MagicMock()
+
+        bound_llm = MagicMock()
+        bound_llm.astream = MagicMock()
+
+        async def mock_bound_stream(*args, **kwargs):
+            yield "ok"
+
+        bound_llm.astream = mock_bound_stream
+        client._llm.bind.return_value = bound_llm
+
+        prompt = MagicMock()
+        prompt.format.return_value = "formatted prompt"
+        prompt.__or__.return_value = bound_llm
+
+        results = []
+        async for chunk in client.stream_simple(
+            prompt, {}, user_email="user@test.com"
+        ):
+            results.append(chunk)
+
+        client._llm.bind.assert_called_once_with(user="user@test.com")
+        self.assertEqual(results, ["ok"])
+
+    @patch("src.services.llm_client.create_agent")
+    async def test_stream_with_tools_binds_openrouter_user(self, mock_create_agent):
+        """stream_with_tools should bind `user` before building the agent."""
+        client = LLMClient()
+        client._llm = MagicMock()
+
+        bound_llm = MagicMock()
+        client._llm.bind.return_value = bound_llm
+
+        mock_agent = MagicMock()
+        mock_create_agent.return_value = mock_agent
+
+        async def mock_astream(*args, **kwargs):
+            yield (AIMessage(content="Hello"), "meta")
+
+        mock_agent.astream = mock_astream
+
+        prompt = MagicMock()
+        prompt.format_messages.return_value = []
+        prompt.format.return_value = "prompt"
+
+        results = []
+        async for chunk in client.stream_with_tools(
+            prompt, {}, [], user_email="user@test.com"
+        ):
+            results.append(chunk)
+
+        client._llm.bind.assert_called_once_with(user="user@test.com")
+        self.assertEqual(results[0], "Hello")
+
+    async def test_stream_simple_without_user_does_not_bind(self):
+        """stream_simple should preserve legacy behavior when no user email is provided."""
+        client = LLMClient()
+        client._llm = MagicMock()
+
+        async def mock_stream(*args, **kwargs):
+            yield "res"
+
+        mock_llm_chain = MagicMock()
+        mock_llm_chain.astream = mock_stream
+        prompt = MagicMock()
+        prompt.format.return_value = "test prompt"
+        prompt.__or__.return_value = mock_llm_chain
+
+        results = []
+        async for chunk in client.stream_simple(prompt, {}):
+            results.append(chunk)
+
+        client._llm.bind.assert_not_called()
+        self.assertEqual(results, ["res"])
+
     @patch("src.services.llm_client.create_agent")
     async def test_stream_with_tools_success(self, mock_create_agent):
         """Test streaming with tool support."""
