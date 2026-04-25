@@ -130,13 +130,14 @@ class TestTokenRepositoryIndexes:
     """Test token repository index management."""
 
     def test_ensure_indexes_creates_ttl_index(self, mock_db):
-        """Test that TTL index is created on initialization."""
+        """Test that token and TTL indexes are created."""
         repo = TokenRepository(mock_db)
         repo.ensure_indexes()
 
-        # Verify create_index was called with TTL
         collection = mock_db.__getitem__.return_value
-        collection.create_index.assert_called_once_with("expires_at", expireAfterSeconds=0)
+        assert collection.create_index.call_count == 2
+        collection.create_index.assert_any_call("token", name="token_blocklist_token_idx")
+        collection.create_index.assert_any_call("expires_at", expireAfterSeconds=0)
 
     def test_ensure_indexes_idempotent(self, mock_db):
         """Test that calling ensure_indexes multiple times is safe."""
@@ -147,8 +148,8 @@ class TestTokenRepositoryIndexes:
         repo.ensure_indexes()
 
         collection = mock_db.__getitem__.return_value
-        # Should be called twice (no checks for idempotency in implementation)
-        assert collection.create_index.call_count == 2
+        # Each ensure call creates both token + TTL indexes.
+        assert collection.create_index.call_count == 4
 
     def test_collection_name_is_token_blocklist(self, token_repo):
         """Test that correct collection name is used."""

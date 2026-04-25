@@ -17,12 +17,16 @@ class TestNutritionRepository(unittest.TestCase):
         self.repo.collection = self.mock_collection
 
     def test_ensure_indexes(self):
+        self.mock_collection.create_index.reset_mock()
         self.repo.ensure_indexes()
         self.mock_collection.create_index.assert_called_with(
             [("user_email", pymongo.ASCENDING), ("date", pymongo.ASCENDING)],
             unique=True,
             name="unique_daily_log"
         )
+
+    def test_ensure_query_indexes_called_on_init(self):
+        self.mock_collection.create_index.assert_called()
 
     def test_save_log_new(self):
         log = NutritionLog(
@@ -242,4 +246,3 @@ class TestNutritionRepository(unittest.TestCase):
         # Required fields SHOULD be in $set
         self.assertEqual(set_data.get("calories"), 2000)
         self.assertEqual(set_data.get("protein_grams"), 150)
-

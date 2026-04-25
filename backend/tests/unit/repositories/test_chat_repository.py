@@ -59,7 +59,9 @@ class TestChatRepositoryGetHistory:
         _ = chat_repo.get_history("user_123")
 
         assert chat_repo.collection.find.call_count >= 1
-        chat_repo.collection.find.assert_any_call({"SessionId": "user_123"})
+        chat_repo.collection.find.assert_any_call(
+            {"SessionId": "user_123"}, {"History": 1}
+        )
         assert mock_chat_history_class.from_mongodb_chat_message_history.call_count >= 1
 
     @patch('src.repositories.chat_repository.ChatHistory')
@@ -79,7 +81,9 @@ class TestChatRepositoryGetHistory:
         # In the new implementation, limit is applied after filtering and sorting
         # We don't verify 'limit' in find() anymore
         assert chat_repo.collection.find.call_count >= 1
-        chat_repo.collection.find.assert_any_call({"SessionId": "user_123"})
+        chat_repo.collection.find.assert_any_call(
+            {"SessionId": "user_123"}, {"History": 1}
+        )
 
     @patch('src.repositories.chat_repository.ChatHistory')
     def test_get_history_returns_chat_history_list(self, mock_chat_history_class, chat_repo):
@@ -273,6 +277,12 @@ class TestChatRepositoryInitialization:
         """Test ChatRepository initialization with mock database."""
         repo = ChatRepository(mock_db)
         assert repo is not None
+
+    def test_chat_repository_ensures_indexes_on_init(self, mock_db):
+        """Initialization should create query index for chat history."""
+        _ = ChatRepository(mock_db)
+        collection = mock_db.__getitem__.return_value
+        collection.create_index.assert_called_once()
 
 
 class TestChatRepositoryEdgeCases:

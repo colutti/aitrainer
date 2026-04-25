@@ -79,8 +79,11 @@ def _get_workout_analytics(
         completed=summary["count"], target=4, lastWorkoutDate=summary["last_date"]
     )
 
-    workout_repo = WorkoutRepository(db.database)
-    analytics = workout_repo.get_stats(user_email)
+    if isinstance(db, MongoDatabase):
+        analytics = db.workouts_repo.get_stats(user_email)
+    else:
+        # Test fallback for mocked DB objects that don't expose repository delegation.
+        analytics = WorkoutRepository(db.database).get_stats(user_email)
 
     last_workout = getattr(analytics, "last_workout", None)
     streak = StreakStats(
@@ -203,6 +206,7 @@ def _get_composition_trends(
 def get_dashboard_data(user_email: CurrentUser, db: DatabaseDep) -> DashboardData:
     """Aggregates data for the user's dashboard."""
     today = _get_today()
+    tdee_service = AdaptiveTDEEService(db)
     weight_logs = db.get_weight_logs(user_email, limit=30)
     body_stats = _calculate_body_stats(today, weight_logs)
 
@@ -211,7 +215,7 @@ def get_dashboard_data(user_email: CurrentUser, db: DatabaseDep) -> DashboardDat
 
     recent_w = db.get_workout_logs(user_email, limit=30)
     w_data = _get_workout_analytics(db, user_email, today, recent_w)
-    c_data = _get_composition_trends(AdaptiveTDEEService(db), weight_logs)
+    c_data = _get_composition_trends(tdee_service, weight_logs)
 
     activities = _assemble_recent_activities(
         recent_w, db.get_nutrition_logs(user_email, limit=10), weight_logs
@@ -411,28 +415,34 @@ def _assemble_recent_activities(
     workouts, nutrition, weight_logs
 ) -> List[RecentActivity]:
     """Helper to assemble and sort recent activities."""
-    activities: List[RecentActivity] = []
+    activities_with_dates: list[tuple[datetime, RecentActivity]] = []
 
     # Workouts
     seen_ids = set()
     for w in workouts[:5]:
         if w.id not in seen_ids:
             seen_ids.add(w.id)
-            activities.append(
-                RecentActivity(
-                    id=w.id,
-                    type="workout",
-                    title=f"Treino de {w.workout_type or 'Força'}",
-                    subtitle=f"{w.duration_minutes or 0} min • {len(w.exercises)} exercícios",
-                    date=_format_activity_date(w.date),
-                    icon="dumbbell",
+            activity = RecentActivity(
+                id=w.id,
+                type="workout",
+                title=f"Treino de {w.workout_type or 'Força'}",
+                subtitle=f"{w.duration_minutes or 0} min • {len(w.exercises)} exercícios",
+                date=_format_activity_date(w.date),
+                icon="dumbbell",
+            )
+            activities_with_dates.append(
+                (
+                    datetime.combine(
+                        w.date.date() if isinstance(w.date, datetime) else w.date,
+                        datetime.min.time(),
+                    ),
+                    activity,
                 )
             )
 
     # Nutrition
     for n in nutrition[:5]:
-        activities.append(
-            RecentActivity(
+        activity = RecentActivity(
                 id=str(getattr(n, "id", n.date)),
                 type="nutrition",
                 title="Refeição Registrada",
@@ -440,12 +450,19 @@ def _assemble_recent_activities(
                 date=_format_activity_date(n.date),
                 icon="utensils",
             )
+        activities_with_dates.append(
+            (
+                datetime.combine(
+                    n.date.date() if isinstance(n.date, datetime) else n.date,
+                    datetime.min.time(),
+                ),
+                activity,
+            )
         )
 
     # Weight
     for weight in weight_logs[:2]:
-        activities.append(
-            RecentActivity(
+        activity = RecentActivity(
                 id=str(weight.date),
                 type="body",
                 title="Pesagem",
@@ -453,7 +470,15 @@ def _assemble_recent_activities(
                 date=_format_activity_date(weight.date),
                 icon="scale",
             )
+        activities_with_dates.append(
+            (
+                datetime.combine(
+                    weight.date.date() if isinstance(weight.date, datetime) else weight.date,
+                    datetime.min.time(),
+                ),
+                activity,
+            )
         )
 
-    activities.sort(key=lambda x: datetime.strptime(x.date, "%d/%m/%Y"), reverse=True)
-    return activities
+    activities_with_dates.sort(key=lambda item: item[0], reverse=True)
+    return [item[1] for item in activities_with_dates]

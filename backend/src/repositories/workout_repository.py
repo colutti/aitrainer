@@ -22,6 +22,19 @@ class WorkoutRepository(BaseRepository):
 
     def __init__(self, database: Database):
         super().__init__(database, "workout_logs")
+        self.ensure_indexes()
+
+    def ensure_indexes(self) -> None:
+        """Ensures indexes used by workout listing and filtering."""
+        self.collection.create_index(
+            [("user_email", pymongo.ASCENDING), ("date", pymongo.DESCENDING)],
+            name="workout_user_date_idx",
+        )
+        self.collection.create_index(
+            [("user_email", pymongo.ASCENDING), ("workout_type", pymongo.ASCENDING)],
+            name="workout_user_type_idx",
+        )
+        self.logger.info("Workout indexes ensured.")
 
     def save_log(self, workout: WorkoutLog) -> str:
         """

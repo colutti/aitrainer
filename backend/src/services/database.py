@@ -48,6 +48,7 @@ class MongoDatabase:
             self.users = UserRepository(self.database)
             self.trainers = TrainerRepository(self.database)
             self.tokens = TokenRepository(self.database)
+            self.tokens.ensure_indexes()
             self.chat = ChatRepository(self.database)
             self.workouts_repo = WorkoutRepository(self.database)
             self.nutrition = NutritionRepository(self.database)

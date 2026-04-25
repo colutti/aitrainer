@@ -20,6 +20,15 @@ class NutritionRepository(BaseRepository):
 
     def __init__(self, database: Database):
         super().__init__(database, "nutrition_logs")
+        self.ensure_query_indexes()
+
+    def ensure_query_indexes(self) -> None:
+        """Ensures indexes used by frequent nutrition reads."""
+        self.collection.create_index(
+            [("user_email", pymongo.ASCENDING), ("date", pymongo.DESCENDING)],
+            name="nutrition_user_date_idx",
+        )
+        self.logger.info("Nutrition query indexes ensured.")
 
     def ensure_indexes(self) -> None:
         """

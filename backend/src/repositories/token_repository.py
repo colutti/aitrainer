@@ -35,7 +35,8 @@ class TokenRepository(BaseRepository):
 
     def ensure_indexes(self) -> None:
         """
-        Ensures a TTL index on the expires_at field.
+        Ensures indexes used by token blocklist checks and cleanup.
         """
+        self.collection.create_index("token", name="token_blocklist_token_idx")
         self.collection.create_index("expires_at", expireAfterSeconds=0)
-        self.logger.info("Blocklist TTL index ensured.")
+        self.logger.info("Blocklist indexes ensured.")

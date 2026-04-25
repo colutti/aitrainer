@@ -6,6 +6,7 @@ import json
 from datetime import datetime
 from collections import namedtuple
 
+import pymongo
 from langchain_mongodb.chat_message_histories import MongoDBChatMessageHistory
 from langchain_core.messages import (
     AIMessage,
@@ -29,9 +30,18 @@ class ChatRepository(BaseRepository):
     def __init__(self, database):
         super().__init__(database, "message_store")
         self.db = database
+        self.ensure_indexes()
 
     _HISTORY_BATCH_SIZE_FACTOR = 3
-    _MAX_HISTORY_BATCHES = 6
+    _MAX_HISTORY_BATCHES = 30
+
+    def ensure_indexes(self) -> None:
+        """Ensures indexes used by history pagination."""
+        self.collection.create_index(
+            [("SessionId", pymongo.ASCENDING), ("_id", pymongo.DESCENDING)],
+            name="session_recent_history_idx",
+        )
+        self.logger.info("Chat history indexes ensured.")
 
     @staticmethod
     def _decode_raw_messages(cursor) -> list:
@@ -64,18 +74,24 @@ class ChatRepository(BaseRepository):
         target_public = limit + max(offset, 0)
         batch_size = max(limit * self._HISTORY_BATCH_SIZE_FACTOR, limit)
         messages = []
+        oldest_seen_id = None
 
-        for batch_index in range(self._MAX_HISTORY_BATCHES):
-            skip = batch_index * batch_size
+        for _ in range(self._MAX_HISTORY_BATCHES):
+            query = {"SessionId": user_id}
+            if oldest_seen_id is not None:
+                query["_id"] = {"$lt": oldest_seen_id}
             cursor = (
-                self.collection.find({"SessionId": user_id})
+                self.collection.find(query, {"History": 1})
                 .sort("_id", -1)
-                .skip(skip)
                 .limit(batch_size)
             )
-            batch_messages = self._decode_raw_messages(cursor)
-            if not batch_messages:
+            batch_docs = list(cursor)
+            if not batch_docs:
                 break
+            oldest_seen_id = batch_docs[-1].get("_id")
+            batch_messages = self._decode_raw_messages(batch_docs)
+            if not batch_messages:
+                continue
             messages.extend(batch_messages)
             if len(messages) >= target_public * self._HISTORY_BATCH_SIZE_FACTOR:
                 break
@@ -90,18 +106,6 @@ class ChatRepository(BaseRepository):
         public_messages = [
             msg for msg in all_chat_history if msg.sender != Sender.SYSTEM
         ]
-
-        # If windowed batches did not produce enough public messages
-        # for requested pagination, fallback to full scan once.
-        if len(public_messages) < target_public:
-            cursor = self.collection.find({"SessionId": user_id})
-            all_messages = self._decode_raw_messages(cursor)
-            all_chat_history = ChatHistory.from_mongodb_chat_message_history(
-                _DummyHistory(all_messages)
-            )
-            public_messages = [
-                msg for msg in all_chat_history if msg.sender != Sender.SYSTEM
-            ]
 
         # Apply pagination relative to the END (most recent messages)
         # Offset 0 means the last `limit` messages.

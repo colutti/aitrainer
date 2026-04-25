@@ -5,6 +5,7 @@ This module provides the UserRepository for managing user persistence.
 
 from datetime import datetime
 from typing import Any
+import pymongo
 from pymongo.database import Database
 from src.api.models.user_profile import UserProfile
 from src.repositories.base import BaseRepository
@@ -17,6 +18,21 @@ class UserRepository(BaseRepository):
 
     def __init__(self, database: Database):
         super().__init__(database, "users")
+        self.ensure_indexes()
+
+    def ensure_indexes(self) -> None:
+        """Ensures indexes used by login/profile paths."""
+        self.collection.create_index(
+            [("email", pymongo.ASCENDING)],
+            unique=True,
+            name="users_email_unique_idx",
+        )
+        self.collection.create_index(
+            [("stripe_customer_id", pymongo.ASCENDING)],
+            sparse=True,
+            name="users_stripe_customer_idx",
+        )
+        self.logger.info("User indexes ensured.")
 
     def save_profile(self, profile: UserProfile) -> None:
         """

@@ -39,6 +39,7 @@ class TestWeightRepositoryEnsureIndexes:
 
     def test_ensure_indexes_creates_unique_index(self, weight_repo, mock_db):
         """Test that unique index is created."""
+        mock_db.__getitem__.return_value.create_index.reset_mock()
         weight_repo.ensure_indexes()
 
         collection = mock_db.__getitem__.return_value
@@ -54,6 +55,7 @@ class TestWeightRepositoryEnsureIndexes:
 
     def test_ensure_indexes_unique_constraint(self, weight_repo, mock_db):
         """Test that unique constraint is applied."""
+        mock_db.__getitem__.return_value.create_index.reset_mock()
         weight_repo.ensure_indexes()
 
         collection = mock_db.__getitem__.return_value
@@ -63,12 +65,19 @@ class TestWeightRepositoryEnsureIndexes:
 
     def test_ensure_indexes_idempotent(self, weight_repo, mock_db):
         """Test that calling ensure_indexes multiple times is safe."""
+        mock_db.__getitem__.return_value.create_index.reset_mock()
         weight_repo.ensure_indexes()
         weight_repo.ensure_indexes()
 
         collection = mock_db.__getitem__.return_value
         # Should be called twice (MongoDB handles idempotency)
         assert collection.create_index.call_count == 2
+
+    def test_ensure_query_indexes_called_on_init(self, mock_db):
+        """Repository should create query index at initialization."""
+        _ = WeightRepository(mock_db)
+        collection = mock_db.__getitem__.return_value
+        collection.create_index.assert_called()
 
 
 class TestWeightRepositorySaveLog:

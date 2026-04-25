@@ -552,6 +552,16 @@ class TestWorkoutRepositoryEdgeCases:
 
         assert "DB Error" in str(exc_info.value)
 
+
+class TestWorkoutRepositoryIndexes:
+    """Test index management for workout repository."""
+
+    def test_ensure_indexes_called_on_init(self, mock_db):
+        """Repository should create required indexes during initialization."""
+        _ = WorkoutRepository(mock_db)
+        collection = mock_db.__getitem__.return_value
+        assert collection.create_index.call_count == 2
+
     def test_database_error_on_get_stats(self, workout_repo, mock_db):
         """Test handling database error on get_stats."""
         mock_db.__getitem__.return_value.find.side_effect = Exception("DB Error")
