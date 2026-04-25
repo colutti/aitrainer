@@ -4,6 +4,7 @@ This module contains the main FastAPI application.
 
 import os
 import warnings
+from time import perf_counter
 from typing import Any
 
 import uvicorn
@@ -30,7 +31,7 @@ from src.api.endpoints import (
     plan,
 )
 from src.core.config import settings
-from src.core.deps import get_mongo_database
+from src.core.deps import get_ai_trainer_brain, get_mongo_database
 from src.core.logs import logger, set_log_level
 from src.core.limiter import limiter, RATE_LIMITING_ENABLED
 
@@ -107,6 +108,18 @@ app.include_router(stripe.router, prefix="/stripe", tags=["stripe"])
 app.include_router(plan.router, prefix="/plan", tags=["plan"])
 
 # Admin routers moved to separate backend-admin service
+
+
+@app.on_event("startup")
+def warmup_dependencies() -> None:
+    """
+    Warm expensive shared dependencies at process startup to avoid
+    first-request latency spikes on chat-related endpoints.
+    """
+    started = perf_counter()
+    get_ai_trainer_brain()
+    elapsed_ms = (perf_counter() - started) * 1000
+    logger.info("Dependency warmup completed in %.1fms", elapsed_ms)
 
 
 @app.get("/health")
