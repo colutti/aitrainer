@@ -43,9 +43,8 @@ def mock_llm():
 class TestChatRepositoryGetHistory:
     """Test get_history method."""
 
-    @patch('src.repositories.chat_repository.messages_from_dict')
     @patch('src.repositories.chat_repository.ChatHistory')
-    def test_get_history_default_limit(self, mock_chat_history_class, mock_messages_from_dict, chat_repo):
+    def test_get_history_default_limit(self, _mock_chat_history_class, chat_repo):
         """Test retrieving chat history with default limit."""
         mock_cursor = MagicMock()
         mock_cursor.__iter__.return_value = []
@@ -54,7 +53,6 @@ class TestChatRepositoryGetHistory:
         mock_find_cursor.skip.return_value = mock_find_cursor
         mock_find_cursor.limit.return_value = mock_cursor
         chat_repo.collection.find.return_value = mock_find_cursor
-        mock_chat_history_class.from_mongodb_chat_message_history.return_value = []
 
         _ = chat_repo.get_history("user_123")
 
@@ -62,7 +60,6 @@ class TestChatRepositoryGetHistory:
         chat_repo.collection.find.assert_any_call(
             {"SessionId": "user_123"}, {"History": 1}
         )
-        assert mock_chat_history_class.from_mongodb_chat_message_history.call_count >= 1
 
     @patch('src.repositories.chat_repository.ChatHistory')
     def test_get_history_custom_limit(self, mock_chat_history_class, chat_repo):

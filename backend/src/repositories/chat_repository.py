@@ -4,7 +4,6 @@ This module contains the repository for chat history management using MongoDB.
 
 import json
 from datetime import datetime
-from collections import namedtuple
 
 import pymongo
 from langchain_mongodb.chat_message_histories import MongoDBChatMessageHistory
@@ -12,7 +11,6 @@ from langchain_core.messages import (
     AIMessage,
     HumanMessage,
     SystemMessage,
-    messages_from_dict,
 )
 from langchain_classic.memory import ConversationBufferWindowMemory
 
@@ -44,17 +42,41 @@ class ChatRepository(BaseRepository):
         self.logger.info("Chat history indexes ensured.")
 
     @staticmethod
-    def _decode_raw_messages(cursor) -> list:
-        """Decodes raw Mongo docs into LangChain message objects."""
-        messages = []
-        for doc in cursor:
-            try:
-                msg_dict = json.loads(doc["History"])
-                msg_obj = messages_from_dict([msg_dict])[0]
-                messages.append(msg_obj)
-            except (json.JSONDecodeError, KeyError, IndexError):
-                continue
-        return messages
+    def _decode_public_chat_message(doc) -> ChatHistory | None:
+        """
+        Decodes a raw Mongo doc into ChatHistory and filters out system messages.
+        """
+        try:
+            msg_dict = json.loads(doc["History"])
+            msg_type = msg_dict.get("type")
+            data = msg_dict.get("data", {})
+            content = data.get("content", "")
+            additional_kwargs = data.get("additional_kwargs", {}) or {}
+        except (json.JSONDecodeError, KeyError, AttributeError, TypeError):
+            return None
+
+        if msg_type == "human":
+            # Retroactive fix: some system messages were stored as human.
+            if isinstance(content, str) and content.startswith("✅ Tool"):
+                sender = Sender.SYSTEM
+            else:
+                sender = Sender.STUDENT
+        elif msg_type == "system":
+            sender = Sender.SYSTEM
+        else:
+            sender = Sender.TRAINER
+
+        if sender == Sender.SYSTEM:
+            return None
+
+        return ChatHistory(
+            text=content,
+            translations=additional_kwargs.get("translations"),
+            images=additional_kwargs.get("images"),
+            sender=sender,
+            timestamp=additional_kwargs.get("timestamp", datetime.min.isoformat()),
+            trainer_type=additional_kwargs.get("trainer_type"),
+        )
 
     def get_history(
         self, user_id: str, limit: int = 20, offset: int = 0
@@ -73,7 +95,7 @@ class ChatRepository(BaseRepository):
         # to avoid scanning the full conversation on every request.
         target_public = limit + max(offset, 0)
         batch_size = max(limit * self._HISTORY_BATCH_SIZE_FACTOR, limit)
-        messages = []
+        public_messages_desc = []
         oldest_seen_id = None
 
         for _ in range(self._MAX_HISTORY_BATCHES):
@@ -89,34 +111,25 @@ class ChatRepository(BaseRepository):
             if not batch_docs:
                 break
             oldest_seen_id = batch_docs[-1].get("_id")
-            batch_messages = self._decode_raw_messages(batch_docs)
-            if not batch_messages:
-                continue
-            messages.extend(batch_messages)
-            if len(messages) >= target_public * self._HISTORY_BATCH_SIZE_FACTOR:
+            for doc in batch_docs:
+                parsed = self._decode_public_chat_message(doc)
+                if parsed is None:
+                    continue
+                public_messages_desc.append(parsed)
+                if len(public_messages_desc) >= target_public:
+                    break
+            if len(public_messages_desc) >= target_public:
                 break
 
-        # Convert to ChatHistory model (this also sorts them chronologically)
-        _DummyHistory = namedtuple("_DummyHistory", ["messages"])
-        all_chat_history = ChatHistory.from_mongodb_chat_message_history(
-            _DummyHistory(messages)
-        )
-
-        # Filter out SYSTEM messages before pagination
-        public_messages = [
-            msg for msg in all_chat_history if msg.sender != Sender.SYSTEM
-        ]
-
-        # Apply pagination relative to the END (most recent messages)
-        # Offset 0 means the last `limit` messages.
-        # Offset 20 means the 21st to 40th most recent messages.
+        # Messages are collected as newest->oldest.
+        # Apply offset/limit relative to the newest end, then reverse for UI chronology.
         if offset > 0:
-            public_messages = public_messages[:-offset]
+            public_messages_desc = public_messages_desc[offset:]
+        if limit > 0:
+            public_messages_desc = public_messages_desc[:limit]
 
-        if public_messages:
-            public_messages = public_messages[-limit:]
-
-        return public_messages
+        public_messages_desc.reverse()
+        return public_messages_desc
 
     def add_message(
         self,

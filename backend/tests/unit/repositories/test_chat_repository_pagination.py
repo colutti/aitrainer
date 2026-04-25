@@ -6,9 +6,7 @@ from src.repositories.chat_repository import ChatRepository
 def chat_repository():
     return ChatRepository(database=MagicMock())
 
-@patch("src.repositories.chat_repository.messages_from_dict")
-@patch("src.api.models.chat_history.ChatHistory.from_mongodb_chat_message_history")
-def test_get_history_pagination(mock_from_mongo, mock_messages_from_dict, chat_repository):
+def test_get_history_pagination(chat_repository):
     """
     Test getting history with limit and offset (skip).
     """
@@ -16,17 +14,14 @@ def test_get_history_pagination(mock_from_mongo, mock_messages_from_dict, chat_r
     limit = 5
     offset = 5
     
-    # Create mock messages
-    mock_messages = [MagicMock(sender="Student") for _ in range(limit + offset + 5)]
-    mock_from_mongo.return_value = mock_messages
-    
-    # Mock collection.find
-    mock_cursor = MagicMock()
-    mock_cursor.__iter__.return_value = []
+    # Mock collection.find (15 public human messages, newest->oldest)
+    docs = [
+        {"_id": 100 - i, "History": '{"type":"human","data":{"content":"m","additional_kwargs":{"timestamp":"2026-01-01T00:00:00"}}}'}
+        for i in range(limit + offset + 5)
+    ]
     mock_find_cursor = MagicMock()
     mock_find_cursor.sort.return_value = mock_find_cursor
-    mock_find_cursor.skip.return_value = mock_find_cursor
-    mock_find_cursor.limit.return_value = mock_cursor
+    mock_find_cursor.limit.return_value = docs
     chat_repository.collection.find.return_value = mock_find_cursor
 
     # Call the method
@@ -46,7 +41,7 @@ def test_get_history_uses_desc_cursor_window(chat_repository):
     mock_find_cursor.limit.side_effect = [mock_cursor_first, mock_cursor_second]
     chat_repository.collection.find.return_value = mock_find_cursor
 
-    with patch("src.repositories.chat_repository.ChatHistory.from_mongodb_chat_message_history", return_value=[]), patch("src.repositories.chat_repository.messages_from_dict", return_value=[MagicMock()]):
+    with patch("src.repositories.chat_repository.ChatHistory.from_mongodb_chat_message_history", return_value=[]):
         chat_repository.get_history("abc", limit=20, offset=40)
 
     mock_find_cursor.sort.assert_called_with("_id", -1)
