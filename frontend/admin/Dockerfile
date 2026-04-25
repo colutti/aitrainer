@@ -3,21 +3,12 @@ FROM docker.io/library/node:22-slim AS build
 
 WORKDIR /app
 
-# Copy root package files and install (needed for shared components)
-COPY package*.json ./
+# Copy admin package files and install only admin dependencies.
+COPY admin/package*.json ./
 RUN npm ci
 
-# Copy admin package files and install
-COPY admin/package*.json ./admin/
-WORKDIR /app/admin
-RUN npm ci
-
-# Go back to /app to copy everything
-WORKDIR /app
-COPY . .
-
-# Build from admin directory
-WORKDIR /app/admin
+# Copy admin source and build.
+COPY admin/ ./
 ARG VITE_ADMIN_API_URL=/api
 ENV VITE_ADMIN_API_URL=$VITE_ADMIN_API_URL
 
@@ -29,8 +20,8 @@ RUN npm run build
 # Production stage
 FROM docker.io/library/nginx:alpine AS production
 
-COPY --from=build /app/admin/dist /usr/share/nginx/html
-COPY admin/nginx.conf /etc/nginx/templates/default.conf.template
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=build /app/nginx.conf /etc/nginx/templates/default.conf.template
 
 EXPOSE 80
 

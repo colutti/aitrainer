@@ -93,6 +93,7 @@ services:
   backend-tests:
     build:
       context: ./backend
+      target: verify
     working_dir: /workspace/backend
     volumes:
       - .:/workspace

@@ -1,0 +1,12 @@
+# Keep Cloud Build upload context minimal for frontend/admin image builds.
+.gcloudignore
+.git
+.gitignore
+node_modules
+dist
+coverage
+playwright-report
+test-results
+.env
+.env.*
+*.log

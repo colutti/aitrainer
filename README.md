@@ -93,6 +93,30 @@ make debug-rebuild
 
 ---
 
+## 🚢 Production Deploy (One-Shot)
+
+Use o fluxo oficial abaixo para publicar em produção com cache de imagens e smoke tests:
+
+```bash
+make deploy-prod
+```
+
+Esse comando executa preflight, build com cache remoto no Artifact Registry, deploy no Cloud Run sem limpar variáveis existentes e validações finais de saúde/runtime config.
+
+Comandos auxiliares:
+
+```bash
+make deploy-prod-fast  # deploy incremental por serviços alterados
+make deploy-preflight   # valida serviços e variáveis críticas
+make deploy-build       # build-only (Cloud Build + Kaniko cache)
+make deploy-smoke       # smoke-only após deploy
+make deploy-prod-env    # sincroniza env vars a partir de *.env.prod
+```
+
+Documentação detalhada: `scripts/deploy/README.md` e `GCP_DEPLOYMENT_GUIDE.md`.
+
+---
+
 ## 🧪 Testing & Quality
 
 We maintain high quality standards with **TDD (Test Driven Development)** and strict linting. The supported local workflow is containerized for system validation and script-backed for verification.

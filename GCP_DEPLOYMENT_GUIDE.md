@@ -36,25 +36,31 @@ A aplicação foi migrada do Render para o Google Cloud para maior controle, per
 
 ## 🚀 Como Realizar um Novo Deployment
 
-O processo foi integrado e organizado no **Makefile** da raiz do projeto. Ele utiliza o arquivo `backend/.env.prod` para injetar segredos de forma segura (sem expô-los em scripts ou no Makefile).
+O fluxo oficial de produção agora é **one-shot** e orientado a cache remoto para reduzir tempo de build/deploy.
 
-### Comandos de Deployment:
+### Comandos oficiais
 
-| Comando           | Descrição                                                                 |
-| :---------------- | :------------------------------------------------------------------------ |
-| `make gcp-full`   | **Executa o fluxo completo**: Build + Push + Deploy de todos os serviços. |
-| `make gcp-build`  | Apenas compila as imagens locais usando Podman.                           |
-| `make gcp-push`   | Envia as imagens para o Artifact Registry no GCP.                         |
-| `make gcp-deploy` | Atualiza os serviços no Cloud Run injetando o `.env.prod`.                |
-| `make gcp-list`   | Lista o status e as URLs dos serviços ativos no Cloud Run.                |
+| Comando             | Descrição |
+| :------------------ | :-------- |
+| `make deploy-prod`  | Fluxo completo: preflight + build com cache + deploy + smoke |
+| `make deploy-prod-fast` | Fluxo incremental: só build/deploy de serviços alterados |
+| `make deploy-build` | Build-only via Cloud Build/Kaniko com cache remoto |
+| `make deploy-smoke` | Smoke-only após deploy |
+| `make deploy-prod-env` | Sincroniza env vars de produção a partir de arquivos `*.env.prod` |
 
-**Exemplo de uso:**
+**Exemplo de uso (recomendado):**
 ```bash
-make gcp-full
+make deploy-prod
 ```
 
+### Garantia contra perda de env vars
+
+- O deploy principal usa `gcloud run services update --image`, que atualiza somente a imagem e preserva variáveis existentes.
+- O preflight valida chaves críticas para social auth e backend antes do deploy.
+- O smoke valida `/health`, proxy frontend `/api/health` e `runtime-config.js` com chaves Firebase não vazias.
+
 > [!IMPORTANT]
-> Nunca adicione chaves ou senhas diretamente no `Makefile`. Sempre edite o arquivo [backend/.env.prod](file:///home/colutti/projects/personal/backend/.env.prod) caso precise mudar alguma configuração de produção.
+> Não colocar segredos diretamente no `Makefile`. Quando necessário, atualizar `backend/.env.prod` e executar `make deploy-prod-env`.
 
 ---
 
@@ -67,7 +73,7 @@ Os modelos de IA configurados e testados são:
 *   **OPENAI_LLM_MODEL:** `gpt-5-mini`
 *   **OPENAI_EMBEDDER_MODEL:** `text-embedding-3-small`
 
-As variáveis são injetadas durante o deploy. Se precisar alterar alguma, edite o arquivo `scripts/deploy-cloudrun.sh`.
+As variáveis são geridas pelos scripts em `scripts/deploy/`. Para atualização explícita a partir de arquivo, use `make deploy-prod-env`.
 
 ---
 
@@ -82,4 +88,3 @@ podman-compose up --build
 *   **Frontend Local:** [http://localhost:3000](http://localhost:3000)
 *   **Backend Local:** [http://localhost:8000](http://localhost:8000)
 *   **Banco de Dados:** MongoDB e Qdrant rodam em containers locais.
-

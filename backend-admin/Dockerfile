@@ -15,19 +15,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy only requirements first (Docker layer caching)
 COPY requirements.txt .
 
-# Create virtual environment and install dependencies
+# Build a wheelhouse once and reuse it for deterministic + faster installs.
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip wheel --wheel-dir /tmp/wheels -r requirements.txt
+
+# Create virtual environment and install dependencies from local wheelhouse
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-index --find-links=/tmp/wheels -r requirements.txt
 
 # Verify stage - admin service needs pyright and libatomic at runtime
 FROM builder AS verify-builder
 
+COPY requirements-dev.txt .
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libatomic1 \
     && rm -rf /var/lib/apt/lists/*
-RUN pip install --no-cache-dir pylint pyright
+RUN pip install --no-cache-dir -r requirements-dev.txt
 
 # Runtime stage - imagem mínima
 FROM docker.io/library/python:3.12-slim

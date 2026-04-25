@@ -1,0 +1,16 @@
+# Keep Cloud Build upload context minimal for backend image builds.
+.gcloudignore
+.git
+.gitignore
+.venv
+__pycache__
+.pytest_cache
+.ruff_cache
+htmlcov
+.coverage
+api.log*
+.env
+.env.*
+tests
+artifacts
+*.md

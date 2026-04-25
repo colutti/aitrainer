@@ -1,0 +1,17 @@
+steps:
+  - name: gcr.io/kaniko-project/executor:latest
+    args:
+      - --context=dir://.
+      - --dockerfile=${_DOCKERFILE}
+      - --destination=${_IMAGE_URI}
+      - --cache=true
+      - --cache-ttl=168h
+      - --cache-repo=${_CACHE_REPO}
+      - --snapshot-mode=redo
+substitutions:
+  _DOCKERFILE: Dockerfile
+  _IMAGE_URI: ""
+  _CACHE_REPO: ""
+timeout: 1800s
+options:
+  machineType: E2_HIGHCPU_8

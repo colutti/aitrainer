@@ -1,15 +1,11 @@
 -r requirements.txt
 
-# Linting & Formatting
-black==25.11.0
-isort==7.0.0
+# Lint/Type
 pylint==4.0.4
 pyright==1.1.407
-ruff==0.14.9
 
 # Testing
 pytest==8.2.1
 pytest-asyncio==0.23.6
 pytest-cov==5.0.0
 pytest-mock==3.14.0
-pytest-benchmark==5.2.3

@@ -1,0 +1,57 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_tag:
+        description: "Optional image tag (default: timestamp-sha)"
+        required: false
+        type: string
+      enable_admin_deploy:
+        description: "Deploy admin services too"
+        required: false
+        default: false
+        type: boolean
+      sync_env:
+        description: "Sync env vars from *.env.prod before deploy"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GCP_PROJECT_ID: fityq-488619
+      GCP_REGION: europe-southwest1
+      AR_REPOSITORY: aitrainer
+      ENABLE_ADMIN_DEPLOY: ${{ inputs.enable_admin_deploy }}
+      DEPLOY_TAG: ${{ inputs.deploy_tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Verify gcloud
+        run: gcloud info
+
+      - name: Optional env sync
+        if: ${{ inputs.sync_env }}
+        run: make deploy-prod-env
+
+      - name: Deploy production (one-shot)
+        run: make deploy-prod

@@ -15,11 +15,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy only requirements first (Docker layer caching)
 COPY requirements.txt .
 
-# Create virtual environment and install dependencies
+# Build a wheelhouse once and reuse it for deterministic + faster installs.
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip wheel --wheel-dir /tmp/wheels -r requirements.txt
+
+# Create virtual environment and install dependencies from local wheelhouse
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-index --find-links=/tmp/wheels -r requirements.txt
 
 # Verify stage - includes dev tooling for lint/typecheck/tests
 FROM builder AS verify-builder
