@@ -254,6 +254,24 @@ describe('DashboardPage', () => {
     expect(dashboard.className).not.toContain('h-full');
   });
 
+  it('renders utility consistency metrics with streak and workout ratio', () => {
+    vi.mocked(useDashboardStore).mockReturnValue({
+      ...defaultHookValues,
+      data: defaultData as any,
+    });
+
+    render(
+      <MemoryRouter>
+        <DashboardPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getAllByText('dashboard.streak').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('dashboard.streak_w')).toBeInTheDocument();
+    expect(screen.getByText('dashboard.streak_d')).toBeInTheDocument();
+    expect(screen.getByText('3/5')).toBeInTheDocument();
+  });
+
   it('should handle different metabolism confidence levels', () => {
     const confidenceLevels = ['high', 'medium', 'low', null];
     confidenceLevels.forEach(level => {
