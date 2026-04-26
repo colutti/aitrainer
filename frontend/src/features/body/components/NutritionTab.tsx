@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 
 import { Button } from '../../../shared/components/ui/Button';
 import { DataList } from '../../../shared/components/ui/DataList';
+import { useConfirmation } from '../../../shared/hooks/useConfirmation';
 import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { useNutritionStore } from '../../../shared/hooks/useNutrition';
 import { PREMIUM_UI } from '../../../shared/styles/ui-variants';
@@ -33,6 +34,7 @@ export function NutritionTab() {
   
   const { t } = useTranslation();
   const { isReadOnly, blockIfReadOnly } = useDemoMode();
+  const { confirm } = useConfirmation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -81,11 +83,19 @@ export function NutritionTab() {
     }
   };
 
-  const onDelete = (id: string) => {
+  const onDelete = async (id: string) => {
     if (blockIfReadOnly()) {
       return;
     }
-    void deleteLog(id);
+    const isConfirmed = await confirm({
+      title: t('nutrition.delete_confirm_title'),
+      message: t('nutrition.delete_confirm_message'),
+      confirmText: t('nutrition.delete_confirm_btn'),
+      type: 'danger',
+    });
+    if (isConfirmed) {
+      void deleteLog(id);
+    }
   };
 
   const onPageChange = (p: number) => {
@@ -97,7 +107,7 @@ export function NutritionTab() {
       {/* DATA ORCHESTRATION LAYER */}
       <DataList
         data={logs}
-        actions={(
+        actions={logs.length > 0 ? (
           <div className="w-full">
               <Button
                 type="button"
@@ -109,23 +119,33 @@ export function NutritionTab() {
                 {t('nutrition.register_meal')}
               </Button>
           </div>
-        )}
+        ) : undefined}
         renderItem={(log) => (
           <NutritionLogCard
             log={log}
             isReadOnly={isReadOnly}
-            onDelete={onDelete}
+            onDelete={(id) => { void onDelete(id); }}
             onEdit={(l) => { handleOpenDrawer(l, 'edit'); }}
             onClick={(l) => { handleOpenDrawer(l, 'view'); }}
           />
         )}
         keyExtractor={(log) => log.id}
         isLoading={isLoading}
-        layout="grid"
+        layout="list"
         emptyState={{
           title: t('nutrition.empty_history_title'),
           description: '',
-          icon: <History size={40} className="text-zinc-500" />
+          icon: <History size={40} className="text-zinc-500" />,
+          action: (
+            <Button
+              type="button"
+              onClick={() => { handleOpenDrawer(null, 'edit'); }}
+              disabled={isReadOnly}
+              className={cn(PREMIUM_UI.button.premium, 'w-full px-5')}
+            >
+              {t('nutrition.register_meal')}
+            </Button>
+          ),
         }}
         pagination={{
           currentPage: page,
@@ -133,7 +153,7 @@ export function NutritionTab() {
           onPageChange,
         }}
         className="space-y-8"
-        gridClassName="grid-cols-1 md:grid-cols-2"
+        gridClassName="grid-cols-1"
       />
 
       <NutritionLogDrawer

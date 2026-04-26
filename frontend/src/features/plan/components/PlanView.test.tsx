@@ -98,7 +98,7 @@ describe('PlanView', () => {
     expect(screen.getByText('Plano Recomp Rafael - V19')).toBeInTheDocument();
     expect(screen.getByText('plan.sections.nutrition_strategy')).toBeInTheDocument();
     expect(screen.getByText('2200')).toBeInTheDocument();
-    expect(screen.getByText('plan.sections.daily_routine')).toBeInTheDocument();
+    expect(screen.getAllByText('plan.sections.daily_routine').length).toBeGreaterThan(0);
     expect(screen.getByText('plan.sections.latest_checkpoint')).toBeInTheDocument();
   });
 
@@ -109,5 +109,16 @@ describe('PlanView', () => {
 
     const weeklyArea = screen.getByTestId('plan-weekly-exercises');
     expect(within(weeklyArea).getByText('Remada')).toBeInTheDocument();
+  });
+
+  it('shows recovery cta when selected day has no routine', () => {
+    const onOpenChat = vi.fn();
+    render(<PlanView plan={mockPlan} isLoading={false} onOpenChat={onOpenChat} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /wed/i }));
+
+    expect(screen.getByText('plan.labels.rest_day')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'plan.empty.cta' }));
+    expect(onOpenChat).toHaveBeenCalledTimes(1);
   });
 });

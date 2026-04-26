@@ -1,4 +1,4 @@
-import { ClipboardList, Home, Scale, Dumbbell, Settings, MessageCircle, LogOut } from 'lucide-react';
+import { ClipboardList, Home, Scale, Dumbbell, Settings, MessageCircle, LogOut, Flame } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 
@@ -74,6 +74,9 @@ export function PremiumLayout() {
             </NavLink>
             <NavLink to="/dashboard/body" data-testid="desktop-nav-body" className={() => cn("px-6 py-2 rounded-full text-sm font-semibold transition-all", isPathActive('/dashboard/body') ? "bg-white/10 text-white shadow-lg" : "text-zinc-400 hover:text-zinc-200")}>
               {t('nav.body')}
+            </NavLink>
+            <NavLink to="/dashboard/nutrition" data-testid="desktop-nav-nutrition" className={() => cn("px-6 py-2 rounded-full text-sm font-semibold transition-all", isPathActive('/dashboard/nutrition') ? "bg-white/10 text-white shadow-lg" : "text-zinc-400 hover:text-zinc-200")}>
+              {t('nav.nutrition')}
             </NavLink>
             <NavLink to="/dashboard/chat" data-testid="desktop-nav-chat" className={() => cn("px-6 py-2 rounded-full text-sm font-semibold transition-all", isPathActive('/dashboard/chat') ? "bg-white/10 text-white shadow-lg" : "text-zinc-400 hover:text-zinc-200")}>
               {t('nav.chat')}
@@ -151,6 +154,9 @@ export function PremiumLayout() {
         
         <NavLink to="/dashboard/body" data-testid="nav-body" className={() => cn("p-3 rounded-full transition-all duration-300 flex-1 flex justify-center", isPathActive('/dashboard/body') ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300")}>
           <Scale size={22} />
+        </NavLink>
+        <NavLink to="/dashboard/nutrition" data-testid="nav-nutrition" className={() => cn("p-3 rounded-full transition-all duration-300 flex-1 flex justify-center", isPathActive('/dashboard/nutrition') ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300")}>
+          <Flame size={22} />
         </NavLink>
         <NavLink to="/dashboard/chat" data-testid="nav-chat" className={() => cn("p-3 rounded-full transition-all duration-300 relative flex-1 flex justify-center", isPathActive('/dashboard/chat') ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300")}>
           <MessageCircle size={22} />

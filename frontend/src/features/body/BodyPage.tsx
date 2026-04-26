@@ -1,33 +1,21 @@
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
-import { BodyView, type BodyTab } from './components/BodyView';
+import { ViewHeader } from '../../shared/components/ui/premium/ViewHeader';
+
+import { WeightTab } from './components/WeightTab';
 
 /**
- * BodyPage component (Container)
- * 
- * Tracks weight, body composition and nutrition.
- * Metabolism data is now consolidated in the main Dashboard.
+ * BodyPage component
+ *
+ * Tracks weight and body composition in a dedicated view.
  */
 export default function BodyPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { t } = useTranslation();
 
-  // Determine active tab based on URL
-  const activeTab: BodyTab = 
-    location.pathname.includes('nutrition') 
-      ? 'nutrition' 
-      : 'weight';
-
-  const handleTabChange = (tab: BodyTab) => {
-    void navigate(`/dashboard/body/${tab}`);
-  };
-  
   return (
-    <section className="mx-auto w-full max-w-[1600px]">
-      <BodyView 
-        activeTab={activeTab} 
-        onTabChange={handleTabChange} 
-      />
+    <section className="mx-auto w-full max-w-[1600px] space-y-8 pb-20">
+      <ViewHeader title={t('body.weight_title')} subtitle={t('body.weight_subtitle')} />
+      <WeightTab />
     </section>
   );
 }

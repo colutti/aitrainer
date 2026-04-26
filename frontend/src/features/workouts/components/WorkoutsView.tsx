@@ -17,6 +17,7 @@ interface WorkoutsViewProps {
   isReadOnly?: boolean;
   onRegisterWorkout: () => void;
   onDeleteWorkout: (id: string) => void;
+  onEditWorkout: (workout: Workout) => void;
   onSelectWorkout: (workout: Workout) => void;
   onPageChange: (page: number) => void;
 }
@@ -34,6 +35,7 @@ export function WorkoutsView({
   isReadOnly = false,
   onRegisterWorkout, 
   onDeleteWorkout,
+  onEditWorkout,
   onSelectWorkout,
   onPageChange,
 }: WorkoutsViewProps) {
@@ -61,16 +63,31 @@ export function WorkoutsView({
             workout={workout}
             isReadOnly={isReadOnly}
             onDelete={onDeleteWorkout}
+            onEdit={onEditWorkout}
             onClick={onSelectWorkout}
           />
         )}
         keyExtractor={(workout) => workout.id}
         isLoading={isLoading}
-        layout="grid"
+        layout="list"
         emptyState={{
           title: t('workouts.empty_title'),
           description: t('workouts.empty_desc'),
-          icon: <Dumbbell size={40} className="text-zinc-500" />
+          icon: <Dumbbell size={40} className="text-zinc-500" />,
+          action: (
+            <button
+              type="button"
+              onClick={onRegisterWorkout}
+              disabled={isReadOnly}
+              className={cn(
+                PREMIUM_UI.button.premium,
+                'inline-flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed'
+              )}
+            >
+              <Plus size={16} />
+              {t('workouts.register_workout')}
+            </button>
+          ),
         }}
         pagination={{
           currentPage,
@@ -78,7 +95,7 @@ export function WorkoutsView({
           onPageChange,
         }}
         className="space-y-8"
-        gridClassName="grid-cols-1 md:grid-cols-2"
+        gridClassName="grid-cols-1"
       />
     </div>
   );

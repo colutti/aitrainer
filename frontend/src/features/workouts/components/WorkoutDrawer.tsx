@@ -369,7 +369,7 @@ function ExerciseCard({
 
       <div className="space-y-3">
         {setArray.fields.map((setField, setIndex) => (
-          <div key={setField.id} className="rounded-2xl border border-white/5 bg-black/20 p-4 space-y-3">
+          <div key={setField.id} className="rounded-2xl border border-white/5 bg-[#111114]/70 p-4 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-black uppercase tracking-widest text-zinc-400">
                 {t('workouts.set')} {setIndex + 1}

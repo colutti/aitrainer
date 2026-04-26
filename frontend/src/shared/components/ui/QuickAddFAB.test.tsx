@@ -23,7 +23,7 @@ describe('QuickAddFAB', () => {
     fireEvent.click(screen.getByRole('button', { name: /registrar peso/i }));
 
     expect(mockNavigate).toHaveBeenCalledWith(
-      '/dashboard/body/weight?action=log-weight'
+      '/dashboard/body?action=log-weight'
     );
   });
 });

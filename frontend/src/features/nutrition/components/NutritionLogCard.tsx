@@ -1,4 +1,5 @@
 import { Trash2, Utensils, Flame, Edit2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '../../../shared/components/ui/Button';
 import { HistoryLogCard } from '../../../shared/components/ui/premium/HistoryLogCard';
@@ -19,6 +20,8 @@ interface NutritionLogCardProps {
  * Displays a summary of a nutrition log entry with premium Glassmorphism aesthetic.
  */
 export function NutritionLogCard({ log, isReadOnly = false, onDelete, onEdit, onClick }: NutritionLogCardProps) {
+  const { t } = useTranslation();
+
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onDelete) {
@@ -46,20 +49,20 @@ export function NutritionLogCard({ log, isReadOnly = false, onDelete, onEdit, on
       )}
       metrics={[
         {
-          label: 'Prot',
+          label: t('nutrition.proteins'),
           value: <p className="text-sm font-black text-emerald-400 tabular-nums">{Math.round(log.protein_grams)}g</p>,
         },
         {
-          label: 'Carb',
+          label: t('nutrition.carbs'),
           value: <p className="text-sm font-black text-blue-400 tabular-nums">{Math.round(log.carbs_grams)}g</p>,
         },
         {
-          label: 'Gord',
+          label: t('nutrition.fats'),
           value: <p className="text-sm font-black text-orange-400 tabular-nums">{Math.round(log.fat_grams)}g</p>,
         },
       ]}
       notes={log.notes ? `"${log.notes}"` : undefined}
-      onClick={() => { if (!isReadOnly) onClick?.(log); }}
+      onClick={() => { onClick?.(log); }}
       actions={(
         <>
           {!isReadOnly && onEdit && (
@@ -68,8 +71,9 @@ export function NutritionLogCard({ log, isReadOnly = false, onDelete, onEdit, on
               variant="ghost"
               size="icon"
               onClick={handleEdit}
-              className="h-10 w-10 rounded-full bg-white/5 text-zinc-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-white/10 hover:text-white"
-              title="Editar registro"
+              className="h-9 w-9 rounded-full text-zinc-400 hover:bg-white/10 hover:text-white"
+              title={t('shared.edit')}
+              aria-label={t('shared.edit')}
             >
               <Edit2 size={16} />
             </Button>
@@ -81,9 +85,9 @@ export function NutritionLogCard({ log, isReadOnly = false, onDelete, onEdit, on
               size="icon"
               onClick={handleDelete}
               data-testid="btn-delete-nutrition"
-              className="h-10 w-10 rounded-full bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/20"
-              title="Excluir registro"
-              aria-label="Delete"
+              className="h-9 w-9 rounded-full text-red-300 hover:bg-red-500/15 hover:text-red-100"
+              title={t('shared.delete')}
+              aria-label={t('shared.delete')}
             >
               <Trash2 size={16} />
             </Button>

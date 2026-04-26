@@ -6,8 +6,17 @@ import { WorkoutCard } from './WorkoutCard';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => {
-      if (key === 'workouts.general_training') return 'Treino Geral';
-      return key;
+      const translations: Record<string, string> = {
+        'workouts.general_training': 'Treino geral',
+        'workouts.synced_label': 'Sincronizado',
+        'workouts.total_volume': 'Volume total',
+        'workouts.unit_ton': 't',
+        'workouts.unit_kg': 'kg',
+        'workouts.delete_confirm_btn': 'Excluir',
+        'workouts.exercises': 'Exercícios',
+        'shared.edit': 'Editar',
+      };
+      return translations[key] ?? key;
     },
   }),
 }));
@@ -54,7 +63,7 @@ describe('WorkoutCard', () => {
     const onDelete = vi.fn();
     render(<WorkoutCard workout={mockWorkout} onDelete={onDelete} />);
     
-    const deleteBtn = screen.getByLabelText(/Delete/i);
+    const deleteBtn = screen.getByLabelText(/Excluir/i);
     fireEvent.click(deleteBtn);
     
     expect(onDelete).toHaveBeenCalledWith('1');
@@ -68,9 +77,19 @@ describe('WorkoutCard', () => {
     expect(onClick).toHaveBeenCalledWith(mockWorkout);
   });
 
+  it('should call onEdit when edit button is clicked', () => {
+    const onEdit = vi.fn();
+    render(<WorkoutCard workout={mockWorkout} onEdit={onEdit} />);
+
+    const editBtn = screen.getByLabelText(/Editar/i);
+    fireEvent.click(editBtn);
+
+    expect(onEdit).toHaveBeenCalledWith(mockWorkout);
+  });
+
   it('should keep delete action visible and accessible', () => {
     render(<WorkoutCard workout={mockWorkout} onDelete={vi.fn()} />);
 
-    expect(screen.getByLabelText(/Delete/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Excluir/i)).toBeInTheDocument();
   });
 });

@@ -31,11 +31,18 @@ describe('WeightLogDrawer', () => {
   });
 
   it('should call onSubmit with numeric values', async () => {
-    render(<WeightLogDrawer {...mockProps} />);
+    const { container } = render(<WeightLogDrawer {...mockProps} />);
     
     const weightInput = screen.getByTestId('weight-kg');
-    const fatInput = screen.getByTestId('body-fat-pct');
     const dateInput = screen.getByLabelText(/Data/i);
+    const compositionSummary = container.querySelector('details summary');
+    if (!compositionSummary) throw new Error('Composition summary not found');
+    fireEvent.click(compositionSummary);
+    const fatInput = screen.getByTestId('body-fat-pct');
+    const measurementSummary = container.querySelectorAll('details summary')[1];
+    if (!measurementSummary) throw new Error('Measurements summary not found');
+    fireEvent.click(measurementSummary);
+
     const musclePctInput = screen.getByLabelText(/Massa Muscular \(%\)/i);
     const neckInput = screen.getByLabelText(/Pescoço/i);
     
@@ -77,10 +84,19 @@ describe('WeightLogDrawer', () => {
     expect(screen.getByLabelText(/Pescoço/i)).toHaveValue(36);
   });
 
+  it('should keep advanced sections closed for new logs', () => {
+    const { container } = render(<WeightLogDrawer {...mockProps} />);
+    const expanded = container.querySelectorAll('details[open]');
+    expect(expanded).toHaveLength(0);
+  });
+
   it('should disable form controls in read-only mode', () => {
-    render(<WeightLogDrawer {...mockProps} isReadOnly />);
+    const { container } = render(<WeightLogDrawer {...mockProps} isReadOnly />);
 
     expect(screen.getByTestId('weight-kg')).toBeDisabled();
+    const compositionSummary = container.querySelector('details summary');
+    if (!compositionSummary) throw new Error('Composition summary not found');
+    fireEvent.click(compositionSummary);
     expect(screen.getByTestId('body-fat-pct')).toBeDisabled();
     expect(screen.getByRole('button', { name: /Salvar/i })).toBeDisabled();
     expect(screen.getByText('Demo Read-Only')).toBeInTheDocument();

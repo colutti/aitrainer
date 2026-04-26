@@ -38,7 +38,7 @@ describe('NutritionLogCard', () => {
     const onDelete = vi.fn();
     render(<NutritionLogCard log={mockLog} onDelete={onDelete} />);
     
-    const deleteBtn = screen.getByLabelText(/Delete/i);
+    const deleteBtn = screen.getByLabelText(/shared\.delete|Excluir|Delete/i);
     fireEvent.click(deleteBtn);
     
     expect(onDelete).toHaveBeenCalledWith('1');
@@ -48,6 +48,14 @@ describe('NutritionLogCard', () => {
     const onClick = vi.fn();
     render(<NutritionLogCard log={mockLog} onClick={onClick} />);
     
+    fireEvent.click(screen.getByTestId('nutrition-log-card'));
+    expect(onClick).toHaveBeenCalledWith(mockLog);
+  });
+
+  it('should allow opening card in read-only mode', () => {
+    const onClick = vi.fn();
+    render(<NutritionLogCard log={mockLog} onClick={onClick} isReadOnly />);
+
     fireEvent.click(screen.getByTestId('nutrition-log-card'));
     expect(onClick).toHaveBeenCalledWith(mockLog);
   });

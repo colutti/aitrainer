@@ -1,7 +1,8 @@
-import { Dumbbell, Trash2, ChevronRight, Calendar, Clock } from 'lucide-react';
+import { Calendar, Clock, Dumbbell, Edit2, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '../../../shared/components/ui/Button';
-import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
+import { HistoryLogCard } from '../../../shared/components/ui/premium/HistoryLogCard';
 import { type Workout } from '../../../shared/types/workout';
 import { formatDate } from '../../../shared/utils/format-date';
 
@@ -9,15 +10,18 @@ interface WorkoutCardProps {
   workout: Workout;
   isReadOnly?: boolean;
   onDelete?: (id: string) => void;
+  onEdit?: (workout: Workout) => void;
   onClick?: (workout: Workout) => void;
 }
 
 /**
  * WorkoutCard component
  * 
- * Displays a summary of a workout session with premium Glassmorphism aesthetic.
+ * Displays a compact workout row for quick scanning.
  */
-export function WorkoutCard({ workout, isReadOnly = false, onDelete, onClick }: WorkoutCardProps) {
+export function WorkoutCard({ workout, isReadOnly = false, onDelete, onEdit, onClick }: WorkoutCardProps) {
+  const { t } = useTranslation();
+
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onDelete) {
@@ -29,31 +33,60 @@ export function WorkoutCard({ workout, isReadOnly = false, onDelete, onClick }: 
     return acc + ex.sets.reduce((sum, set) => sum + ((set.reps ?? 0) * (set.weight_kg ?? 0)), 0);
   }, 0);
 
-  const workoutType = workout.workout_type ?? (workout.source === 'hevy' ? 'Sincronizado' : 'Treino Geral');
+  const workoutType = workout.workout_type
+    ?? (workout.source === 'hevy' ? t('workouts.synced_label') : t('workouts.general_training'));
+  const formattedTotalVolume = totalVolume >= 1000 ? (totalVolume / 1000).toFixed(1) : totalVolume.toLocaleString();
+  const volumeUnit = totalVolume >= 1000 ? t('workouts.unit_ton') : t('workouts.unit_kg');
 
   return (
-    <PremiumCard 
+    <HistoryLogCard
       onClick={() => { onClick?.(workout); }}
-      data-testid="workout-card"
-      className="p-6 md:p-8 cursor-pointer group flex flex-col justify-between min-h-[180px]"
-    >
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-white/5 flex items-center justify-center text-indigo-400 group-hover:text-emerald-400 transition-colors shadow-inner">
-            <Dumbbell size={24} />
-          </div>
-          <div>
-            <h3 className="text-xl font-black text-white group-hover:translate-x-1 transition-transform">
-              {workoutType}
-            </h3>
-            <div className="flex items-center gap-3 mt-1 text-zinc-500 font-bold text-[10px] uppercase tracking-widest">
-               <span className="flex items-center gap-1"><Calendar size={12}/> {formatDate(workout.date)}</span>
-               <span className="flex items-center gap-1"><Clock size={12}/> {workout.duration_minutes ?? '--'} min</span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
+      dataTestId="workout-card"
+      icon={<Dumbbell size={22} />}
+      title={workoutType}
+      subtitle={(
+        <span className="inline-flex items-center gap-1 text-xs text-zinc-400">
+          <Calendar size={12} />
+          {formatDate(workout.date)}
+        </span>
+      )}
+      leadingMeta={(
+        <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-cyan-300 bg-cyan-400/10">
+          <Clock size={12} />
+          {workout.duration_minutes ?? '--'} min
+        </span>
+      )}
+      metrics={[
+        {
+          label: t('workouts.exercises'),
+          value: <span className="text-sm font-black text-emerald-400 tabular-nums">{workout.exercises.length}</span>,
+        },
+        {
+          label: t('workouts.total_volume'),
+          value: (
+            <span className="text-sm font-black text-orange-400 tabular-nums">
+              {formattedTotalVolume}
+              <span className="ml-1 text-[10px] opacity-80">{volumeUnit}</span>
+            </span>
+          ),
+        },
+      ]}
+      notes={workout.notes ? `"${workout.notes}"` : undefined}
+      actions={(
+        <>
+          {!isReadOnly && onEdit && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={(e) => { e.stopPropagation(); onEdit(workout); }}
+              className="h-9 w-9 rounded-full text-zinc-400 hover:bg-white/10 hover:text-white"
+              title={t('shared.edit')}
+              aria-label={t('shared.edit')}
+            >
+              <Edit2 size={16} />
+            </Button>
+          )}
           {!isReadOnly && onDelete && (
             <Button
               type="button"
@@ -61,43 +94,15 @@ export function WorkoutCard({ workout, isReadOnly = false, onDelete, onClick }: 
               size="icon"
               onClick={handleDelete}
               data-testid="btn-delete-workout"
-              className="h-9 w-9 rounded-full bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/20"
-              title="Excluir treino"
-              aria-label="Delete"
+              className="h-9 w-9 rounded-full text-red-300 hover:bg-red-500/15 hover:text-red-100"
+              title={t('workouts.delete_confirm_btn')}
+              aria-label={t('workouts.delete_confirm_btn')}
             >
-              <Trash2 size={18} />
+              <Trash2 size={16} />
             </Button>
           )}
-          <div className="p-2 rounded-full bg-white/5 text-zinc-500 group-hover:text-white group-hover:bg-white/10 transition-all">
-             <ChevronRight size={20} />
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div className="flex flex-wrap gap-2">
-           {workout.exercises.slice(0, 3).map((ex, idx) => (
-             <span key={idx} className="px-3 py-1 rounded-full bg-white/5 border border-white/5 text-[10px] font-bold text-zinc-400">
-                {ex.exercise_title}
-             </span>
-           ))}
-           {workout.exercises.length > 3 && (
-             <span className="px-3 py-1 rounded-full bg-white/5 text-[10px] font-bold text-zinc-500">
-                +{workout.exercises.length - 3}
-             </span>
-           )}
-        </div>
-
-        <div className="text-left md:text-right md:self-end">
-           <p className="mb-1 text-[9px] font-black uppercase tracking-[0.22em] text-zinc-500">
-             Volume Total
-           </p>
-           <p className="text-lg font-black leading-none text-orange-400 tabular-nums">
-              {totalVolume >= 1000 ? (totalVolume / 1000).toFixed(1) : totalVolume.toLocaleString()}
-              <span className="ml-1 text-[10px] font-bold opacity-60">{totalVolume >= 1000 ? 't' : 'kg'}</span>
-           </p>
-        </div>
-      </div>
-    </PremiumCard>
+        </>
+      )}
+    />
   );
 }

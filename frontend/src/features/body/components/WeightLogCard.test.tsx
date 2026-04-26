@@ -41,7 +41,7 @@ describe('WeightLogCard', () => {
     const onDelete = vi.fn();
     render(<WeightLogCard log={mockLog} onDelete={onDelete} />);
     
-    const deleteBtn = screen.getByLabelText(/Delete/i);
+    const deleteBtn = screen.getByLabelText(/Excluir registro|shared\.delete|Delete/i);
     fireEvent.click(deleteBtn);
     
     expect(onDelete).toHaveBeenCalledWith(mockLog.date);

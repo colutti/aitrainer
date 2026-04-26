@@ -104,6 +104,7 @@ export default function WorkoutsPage() {
           isReadOnly={isReadOnly}
           onRegisterWorkout={handleRegisterWorkout}
           onDeleteWorkout={handleDeleteWorkout}
+          onEditWorkout={handleSelectWorkout}
           onSelectWorkout={handleSelectWorkout}
           onPageChange={handlePageChange}
         />

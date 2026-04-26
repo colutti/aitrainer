@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import { useConfirmation } from '../../../shared/hooks/useConfirmation';
 import { useNutritionStore } from '../../../shared/hooks/useNutrition';
 import { render, screen, fireEvent } from '../../../shared/utils/test-utils';
 
@@ -7,6 +8,7 @@ import { NutritionTab } from './NutritionTab';
 
 // Mocks
 vi.mock('../../../shared/hooks/useNutrition');
+vi.mock('../../../shared/hooks/useConfirmation');
 
 describe('NutritionTab', () => {
   const mockLogs = [
@@ -29,11 +31,15 @@ describe('NutritionTab', () => {
     fetchLogs: vi.fn(),
     fetchStats: vi.fn(),
     deleteLog: vi.fn(),
+    createLog: vi.fn(),
   };
+  const mockConfirm = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useNutritionStore).mockReturnValue(defaultStore as any);
+    vi.mocked(useConfirmation).mockReturnValue({ confirm: mockConfirm } as any);
+    mockConfirm.mockResolvedValue(true);
   });
 
   it('should call fetchLogs and fetchStats on mount', () => {
@@ -97,9 +103,7 @@ describe('NutritionTab', () => {
 
     render(<NutritionTab />);
     
-    // Find edit button (Edit2 icon is usually rendered as a button with title or aria-label)
-    // In NutritionLogCard it has title="Editar registro"
-    const editBtn = screen.getByTitle(/Editar registro/i);
+    const editBtn = screen.getByTitle(/Editar|shared\.edit/i);
     fireEvent.click(editBtn);
     
     expect(screen.getByText(/Editar Refeição/i)).toBeInTheDocument();
@@ -120,5 +124,19 @@ describe('NutritionTab', () => {
     
     expect(screen.getByText(/Detalhes/i)).toBeInTheDocument();
     expect(screen.getByText('2000')).toBeInTheDocument();
+  });
+
+  it('should ask confirmation before deleting a nutrition log', () => {
+    vi.mocked(useNutritionStore).mockReturnValue({
+      ...defaultStore,
+      logs: mockLogs,
+      stats: mockStats,
+    } as any);
+
+    render(<NutritionTab />);
+
+    fireEvent.click(screen.getByTestId('btn-delete-nutrition'));
+
+    expect(mockConfirm).toHaveBeenCalled();
   });
 });

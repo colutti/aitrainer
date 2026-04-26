@@ -79,8 +79,10 @@ describe('PremiumLayout', () => {
     // Testa alguns sub-itens do E2E
     expect(screen.getByTestId('desktop-nav-home')).toBeInTheDocument();
     expect(screen.getByTestId('desktop-nav-plan')).toBeInTheDocument();
+    expect(screen.getByTestId('desktop-nav-nutrition')).toBeInTheDocument();
     expect(screen.getByTestId('nav-home')).toBeInTheDocument();
     expect(screen.getByTestId('nav-plan')).toBeInTheDocument();
+    expect(screen.getByTestId('nav-nutrition')).toBeInTheDocument();
   });
 
   it('renders gracefully without user photo', () => {

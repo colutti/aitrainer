@@ -80,8 +80,9 @@ export function WeightLogCard({ log, isReadOnly = false, onDelete, onEdit, onCli
               variant="ghost"
               size="icon"
               onClick={(e) => { e.stopPropagation(); onEdit(log); }}
-              className="h-10 w-10 rounded-full bg-white/5 text-zinc-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-white/10 hover:text-white"
+              className="h-9 w-9 rounded-full text-zinc-400 hover:bg-white/10 hover:text-white"
               title={t('shared.edit')}
+              aria-label={t('shared.edit')}
             >
               <Edit2 size={16} />
             </Button>
@@ -93,9 +94,9 @@ export function WeightLogCard({ log, isReadOnly = false, onDelete, onEdit, onCli
               size="icon"
               onClick={handleDelete}
               data-testid="btn-delete-weight"
-              className="h-10 w-10 rounded-full bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/20"
+              className="h-9 w-9 rounded-full text-red-300 hover:bg-red-500/15 hover:text-red-100"
               title={t('shared.delete')}
-              aria-label="Delete"
+              aria-label={t('shared.delete')}
             >
               <Trash2 size={16} />
             </Button>

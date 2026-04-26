@@ -6,6 +6,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Button } from '../../../shared/components/ui/Button';
 import { DataList } from '../../../shared/components/ui/DataList';
 import { useBodyStore } from '../../../shared/hooks/useBody';
+import { useConfirmation } from '../../../shared/hooks/useConfirmation';
 import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { PREMIUM_UI } from '../../../shared/styles/ui-variants';
 import type { WeightLog, WeightLogFormData } from '../../../shared/types/body';
@@ -33,6 +34,7 @@ export function WeightTab() {
   
   const { t } = useTranslation();
   const { isReadOnly, blockIfReadOnly } = useDemoMode();
+  const { confirm } = useConfirmation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedLog, setSelectedLog] = useState<WeightLog | null>(null);
@@ -87,11 +89,19 @@ export function WeightTab() {
     void fetchLogs(newPage);
   };
 
-  const onDelete = (date: string) => {
+  const onDelete = async (date: string) => {
     if (blockIfReadOnly()) {
       return;
     }
-    void deleteLog(date);
+    const isConfirmed = await confirm({
+      title: t('body.weight.delete_confirm_title'),
+      message: t('body.weight.delete_confirm_message'),
+      confirmText: t('body.weight.delete_confirm_btn'),
+      type: 'danger',
+    });
+    if (isConfirmed) {
+      void deleteLog(date);
+    }
   };
 
   return (
@@ -99,7 +109,7 @@ export function WeightTab() {
       {/* DATA ORCHESTRATION LAYER */}
       <DataList
         data={logs}
-        actions={(
+        actions={logs.length > 0 ? (
           <Button
             type="button"
             fullWidth
@@ -109,23 +119,33 @@ export function WeightTab() {
           >
             {t('body.weight.register_weight')}
           </Button>
-        )}
+        ) : undefined}
         renderItem={(log) => (
           <WeightLogCard
             log={log}
             isReadOnly={isReadOnly}
-            onDelete={onDelete}
+            onDelete={(date) => { void onDelete(date); }}
             onEdit={handleEditWeight}
             onClick={handleViewDrawer}
           />
         )}
         keyExtractor={(log) => log.id ?? log.date}
         isLoading={isLoading}
-        layout="grid"
+        layout="list"
         emptyState={{
           title: t('body.weight.empty_history'),
           description: t('body.weight.empty_history_desc', ''),
-          icon: <History size={40} className="text-zinc-500" />
+          icon: <History size={40} className="text-zinc-500" />,
+          action: (
+            <Button
+              type="button"
+              onClick={handleRegisterWeight}
+              disabled={isReadOnly}
+              className={cn(PREMIUM_UI.button.premium, "w-full px-5")}
+            >
+              {t('body.weight.register_weight')}
+            </Button>
+          ),
         }}
         pagination={{
           currentPage: page,
@@ -133,7 +153,7 @@ export function WeightTab() {
           onPageChange,
         }}
         className="space-y-8"
-        gridClassName="grid-cols-1 md:grid-cols-2"
+        gridClassName="grid-cols-1"
       />
 
       <WeightLogDrawer 

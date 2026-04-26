@@ -2,12 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { useAuthStore } from '../../../shared/hooks/useAuth';
 import { useBodyStore } from '../../../shared/hooks/useBody';
+import { useConfirmation } from '../../../shared/hooks/useConfirmation';
 import { render, screen, fireEvent } from '../../../shared/utils/test-utils';
 
 import { WeightTab } from './WeightTab';
 
 // Mocks
 vi.mock('../../../shared/hooks/useBody');
+vi.mock('../../../shared/hooks/useConfirmation');
 vi.mock('../../../shared/hooks/useAuth', () => ({
   useAuthStore: vi.fn(),
 }));
@@ -29,11 +31,14 @@ describe('WeightTab', () => {
     deleteLog: vi.fn(),
     logWeight: vi.fn(),
   };
+  const mockConfirm = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useBodyStore).mockReturnValue(defaultStore as any);
     vi.mocked(useAuthStore).mockReturnValue({ userInfo: { is_demo: false } } as any);
+    vi.mocked(useConfirmation).mockReturnValue({ confirm: mockConfirm } as any);
+    mockConfirm.mockResolvedValue(true);
   });
 
   it('should call fetchLogs on mount', () => {
@@ -107,5 +112,18 @@ describe('WeightTab', () => {
 
     expect(screen.getByText(/2\s*\/\s*3/)).toBeInTheDocument();
     expect(screen.getAllByRole('button').length).toBeGreaterThan(3);
+  });
+
+  it('should ask confirmation before deleting a weight log', async () => {
+    vi.mocked(useBodyStore).mockReturnValue({
+      ...defaultStore,
+      logs: mockLogs,
+    } as any);
+
+    render(<WeightTab />);
+
+    fireEvent.click(screen.getAllByTestId('btn-delete-weight')[0]!);
+
+    expect(mockConfirm).toHaveBeenCalled();
   });
 });

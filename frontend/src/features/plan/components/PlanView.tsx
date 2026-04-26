@@ -144,7 +144,7 @@ function TimelineHeader({
         </div>
 
         <div className="space-y-3">
-          <div className="h-3 w-full rounded-full bg-black/30">
+          <div className="h-3 w-full rounded-full bg-[color:var(--color-app-bg)]">
             <div
               className="relative h-3 rounded-full"
               style={{
@@ -217,10 +217,9 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
   const sortedWeekly = [...plan.training_program.weekly_schedule].sort((a, b) => toWeekdayIndex(a.day) - toWeekdayIndex(b.day));
   const weeklyWithMissingDays = WEEKDAY_ORDER.map((day) => sortedWeekly.find((item) => normalizeDay(item.day) === day) ?? null);
   const todayIsoDay = fromJsDayToIsoWeekday(new Date().getDay());
-  const todaySchedule = weeklyWithMissingDays.find((item) => item && normalizeDay(item.day) === todayIsoDay) ?? null;
-  const todayRoutine = resolveRoutineForSchedule(todaySchedule ?? undefined, plan.training_program.routines);
   const selectedSchedule = weeklyWithMissingDays.find((item) => item && normalizeDay(item.day) === selectedDay) ?? null;
   const selectedRoutine = resolveRoutineForSchedule(selectedSchedule ?? undefined, plan.training_program.routines);
+  const isViewingToday = selectedDay === todayIsoDay;
 
   const metrics = [
     {
@@ -264,124 +263,137 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
         locale={i18n.language}
       />
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.9fr)_minmax(0,1fr)]">
-        <PremiumCard className="space-y-4 border-white/10 bg-[color:var(--color-app-surface-raised)] p-5 xl:order-2">
-          <h3 className="text-sm font-bold uppercase tracking-wide text-white">{t('plan.sections.overview')}</h3>
-          <div className="space-y-3 rounded-xl border border-white/10 bg-black/20 p-4">
-            <p className="text-xs font-bold uppercase tracking-[0.12em] text-zinc-400">{t('plan.labels.primary_goal')}</p>
-            <p className="text-lg font-bold text-zinc-100 md:text-xl">{plan.strategy.rationale}</p>
-            <p className="text-sm font-medium text-zinc-200 md:text-base">{plan.overview.objective_summary}</p>
-          </div>
-          <div className="space-y-3 rounded-xl border border-white/10 bg-black/20 p-4">
-            <p className="text-xs font-bold uppercase tracking-[0.12em] text-zinc-400">{t('plan.labels.success_criteria')}</p>
-            <div className="space-y-2">
-              {successCriteria.map((criterion) => (
-                <div key={criterion} className="flex items-start gap-2 text-zinc-200">
-                  <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-white/20 bg-white/5 text-zinc-200">
-                    <Check size={12} />
-                  </span>
-                  <p className="text-xs font-medium md:text-sm">{criterion}</p>
-                </div>
-              ))}
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <PremiumCard className="space-y-4 border-white/10 bg-[color:var(--color-app-surface-raised)] p-5">
+          <h3 className="text-sm font-bold uppercase tracking-wide text-white">{t('plan.sections.daily_routine')}</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedDay(todayIsoDay);
+              }}
+              className={cn(
+                'rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide transition-all',
+                isViewingToday
+                  ? 'border-cyan-400 bg-cyan-400/20 text-cyan-100'
+                  : 'border-white/10 bg-[color:var(--color-app-bg)] text-zinc-300 hover:border-cyan-500/40 hover:text-zinc-100'
+              )}
+            >
+              {t('plan.sections.daily_routine')}
+            </button>
+            <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1">
+              {WEEKDAY_ORDER.map((day) => {
+                const isActive = selectedDay === day;
+                const label = formatWeekdayShort(day, i18n.language);
+                const isToday = day === todayIsoDay;
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => {
+                      setSelectedDay(day);
+                    }}
+                    className={cn(
+                      'shrink-0 rounded-xl border px-3 py-2 text-center text-[11px] md:text-xs font-bold uppercase transition-all',
+                      isActive
+                        ? 'border-cyan-400 bg-cyan-400/20 text-cyan-100'
+                        : 'border-white/10 bg-[color:var(--color-app-bg)] text-zinc-300 hover:border-cyan-500/40 hover:text-zinc-100',
+                    )}
+                    aria-pressed={isActive}
+                  >
+                    <span>{label}</span>
+                    {isToday ? <span className="ml-1 text-cyan-300">{t('dashboard.week_short')}</span> : null}
+                  </button>
+                );
+              })}
             </div>
           </div>
-        </PremiumCard>
-
-        <PremiumCard className="space-y-4 border-white/10 bg-[color:var(--color-app-surface-raised)] p-5 xl:order-1">
-          <h3 className="text-sm font-bold uppercase tracking-wide text-white">{t('plan.sections.daily_routine')}</h3>
-          {todayRoutine?.exercises.length ? (
-            todayRoutine.exercises.map((exercise) => (
-              <div key={`${todayRoutine.id}-${exercise.name}`} className="rounded-xl border border-white/10 bg-black/20 p-4">
-                <p className="text-base font-semibold text-zinc-100 md:text-lg">{exercise.name}</p>
-                <p className="text-xs font-medium text-zinc-300 md:text-sm">
-                  {exercise.sets} {t('plan.labels.sets')} / {exercise.reps} {t('plan.labels.reps')} / {exercise.load_guidance}
-                </p>
-              </div>
-            ))
-          ) : (
-            <p className="rounded-xl border border-white/10 bg-black/20 p-4 text-sm font-semibold text-zinc-400">{t('plan.labels.rest_day')}</p>
-          )}
-        </PremiumCard>
-
-        <PremiumCard className="space-y-5 border-white/10 bg-[color:var(--color-app-surface-raised)] p-5 xl:order-3">
-          <h3 className="text-sm font-bold uppercase tracking-wide text-white">{t('plan.sections.nutrition_strategy')}</h3>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {metrics.map((metric) => (
-              <NutritionTargetCard key={metric.id} metric={metric} />
-            ))}
-          </div>
-        </PremiumCard>
-      </div>
-
-      <PremiumCard className="space-y-4 border-white/10 bg-[color:var(--color-app-surface-raised)] p-5">
-        <div className="grid grid-cols-7 gap-2">
-          {WEEKDAY_ORDER.map((day) => {
-            const isActive = selectedDay === day;
-            const label = formatWeekdayShort(day, i18n.language);
-            return (
-              <button
-                key={day}
-                type="button"
-                onClick={() => {
-                  setSelectedDay(day);
-                }}
-                className={cn(
-                  'rounded-xl border px-2 py-2 text-center text-[11px] md:text-xs font-bold uppercase transition-all',
-                  isActive
-                    ? 'border-cyan-400 bg-cyan-400/20 text-cyan-100'
-                    : 'border-white/10 bg-black/20 text-zinc-300 hover:border-cyan-500/40 hover:text-zinc-100',
-                )}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-3" data-testid="plan-weekly-exercises">
-          {selectedRoutine?.exercises.length ? (
-            selectedRoutine.exercises.map((exercise) => (
-              <div key={`${selectedDay}-${exercise.name}`} className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/20 p-4">
-                <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-zinc-200">
-                  <Dumbbell size={22} />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-base font-semibold text-zinc-100 md:text-lg">{exercise.name}</p>
-                  <div className="flex flex-wrap gap-4 text-xs font-medium text-zinc-300 md:text-sm">
-                    <span>
-                      {t('plan.labels.sets_reps')}: {exercise.sets} x {exercise.reps}
-                    </span>
-                    <span>
-                      {t('plan.labels.rpe')}: {exercise.load_guidance}
-                    </span>
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2" data-testid="plan-weekly-exercises">
+            {selectedRoutine?.exercises.length ? (
+              selectedRoutine.exercises.map((exercise) => (
+                <div key={`${selectedDay}-${exercise.name}`} className="flex items-center gap-4 rounded-2xl border border-white/10 bg-[color:var(--color-app-bg)] p-4">
+                  <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-zinc-200">
+                    <Dumbbell size={22} />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-base font-semibold text-zinc-100 md:text-lg">{exercise.name}</p>
+                    <div className="flex flex-wrap gap-4 text-xs font-medium text-zinc-300 md:text-sm">
+                      <span>
+                        {t('plan.labels.sets_reps')}: {exercise.sets} x {exercise.reps}
+                      </span>
+                      <span>
+                        {t('plan.labels.rpe')}: {exercise.load_guidance}
+                      </span>
+                    </div>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="space-y-3 rounded-2xl border border-white/10 bg-[color:var(--color-app-bg)] p-5 text-sm font-semibold text-zinc-400 xl:col-span-2">
+                <p>{t('plan.labels.rest_day')}</p>
+                <Button type="button" variant="secondary" onClick={onOpenChat} className="h-10 rounded-lg px-4 text-xs md:text-sm">
+                  {t('plan.empty.cta')}
+                </Button>
               </div>
-            ))
-          ) : (
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-5 text-sm font-semibold text-zinc-400 xl:col-span-3">
-              {t('plan.labels.rest_day')}
-            </div>
-          )}
-        </div>
-      </PremiumCard>
-
-      <PremiumCard className="space-y-3 border-white/10 bg-[color:var(--color-app-surface-raised)] p-5">
-        <h3 className="text-xs font-bold uppercase tracking-wide text-white">{t('plan.sections.latest_checkpoint')}</h3>
-        {plan.latest_checkpoint ? (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-zinc-200">{plan.latest_checkpoint.summary}</p>
-            <p className="text-xs font-medium text-zinc-400">
-              {t('plan.checkpoint.decision')}: {plan.latest_checkpoint.decision}
-            </p>
-            <p className="text-xs font-medium text-zinc-400">
-              {t('plan.checkpoint.next_focus')}: {plan.latest_checkpoint.next_focus}
-            </p>
+            )}
           </div>
-        ) : (
-          <p className="text-xs font-semibold text-zinc-400">{t('plan.checkpoint.empty')}</p>
-        )}
-      </PremiumCard>
+        </PremiumCard>
+
+        <div className="space-y-5">
+          <PremiumCard className="space-y-4 border-white/10 bg-[color:var(--color-app-surface-raised)] p-5">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-white">{t('plan.sections.overview')}</h3>
+            <div className="space-y-3 rounded-xl border border-white/10 bg-[color:var(--color-app-bg)] p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-zinc-400">{t('plan.labels.primary_goal')}</p>
+              <p className="text-lg font-bold text-zinc-100 md:text-xl">{plan.strategy.rationale}</p>
+              <p className="text-sm font-medium text-zinc-200 md:text-base">{plan.overview.objective_summary}</p>
+            </div>
+            <div className="space-y-3 rounded-xl border border-white/10 bg-[color:var(--color-app-bg)] p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-zinc-400">{t('plan.labels.success_criteria')}</p>
+              <div className="space-y-2">
+                {successCriteria.map((criterion) => (
+                  <div key={criterion} className="flex items-start gap-2 text-zinc-200">
+                    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-white/20 bg-white/5 text-zinc-200">
+                      <Check size={12} />
+                    </span>
+                    <p className="text-xs font-medium md:text-sm">{criterion}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </PremiumCard>
+
+          <PremiumCard className="space-y-5 border-white/10 bg-[color:var(--color-app-surface-raised)] p-5">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-white">{t('plan.sections.nutrition_strategy')}</h3>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {metrics.map((metric) => (
+                <NutritionTargetCard key={metric.id} metric={metric} />
+              ))}
+            </div>
+          </PremiumCard>
+
+          <PremiumCard className="space-y-3 border-white/10 bg-[color:var(--color-app-surface-raised)] p-5">
+            <h3 className="text-xs font-bold uppercase tracking-wide text-white">{t('plan.sections.latest_checkpoint')}</h3>
+            {plan.latest_checkpoint ? (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-zinc-200">{plan.latest_checkpoint.summary}</p>
+                <p className="text-xs font-medium text-zinc-300 md:text-sm">
+                  {t('plan.checkpoint.decision')}: {plan.latest_checkpoint.decision}
+                </p>
+                <p className="text-xs font-medium text-zinc-300 md:text-sm">
+                  {t('plan.checkpoint.next_focus')}: {plan.latest_checkpoint.next_focus}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-zinc-400">{t('plan.checkpoint.empty')}</p>
+                <Button type="button" variant="secondary" onClick={onOpenChat} className="h-10 rounded-lg px-4 text-xs md:text-sm">
+                  {t('plan.empty.cta')}
+                </Button>
+              </div>
+            )}
+          </PremiumCard>
+        </div>
+      </div>
     </div>
   );
 }

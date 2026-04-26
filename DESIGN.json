@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-04-26T09:51:24+02:00",
+  "title": "Design System: FityQ",
+  "extensions": {
+    "colorMeta": {
+      "app-bg": {
+        "role": "neutral",
+        "displayName": "Midnight Base",
+        "canonical": "#050505",
+        "tonalRamp": ["#050505", "#141414", "#232323", "#373737", "#525252", "#7a7a7a", "#b5b5b5", "#fafafa"]
+      },
+      "app-surface": {
+        "role": "neutral",
+        "displayName": "Graphite Surface",
+        "canonical": "#0d0d0d",
+        "tonalRamp": ["#0d0d0d", "#1a1a1a", "#292929", "#3b3b3b", "#555555", "#7a7a7a", "#b5b5b5", "#f1f1f1"]
+      },
+      "accent-action": {
+        "role": "primary",
+        "displayName": "Teal Command",
+        "canonical": "#14b8a6",
+        "tonalRamp": ["#042320", "#064238", "#08604f", "#0b7f67", "#14b8a6", "#2dd4bf", "#5eead4", "#99f6e4"]
+      },
+      "state-error": {
+        "role": "tertiary",
+        "displayName": "Error Red",
+        "canonical": "#ef4444",
+        "tonalRamp": ["#2a0b0b", "#4a1414", "#6b1d1d", "#8b2727", "#ef4444", "#f87171", "#fca5a5", "#fee2e2"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Large KPI values and high-priority headline moments."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Screen and section titles in the dashboard shell."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card-level and module-level headers."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Supportive explanatory text and operational hints."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Uppercase micro-labels and compact metadata markers."
+      }
+    },
+    "shadows": [
+      {
+        "name": "soft-lift",
+        "value": "0 10px 30px rgba(0, 0, 0, 0.35)",
+        "purpose": "Floating mobile nav and high-level shell separation."
+      },
+      {
+        "name": "micro-emphasis",
+        "value": "0 1px 2px rgba(0, 0, 0, 0.25)",
+        "purpose": "Badge and active-pill reinforcement."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-standard",
+        "value": "cubic-bezier(0.25, 1, 0.5, 1)",
+        "purpose": "Primary state transitions for button and nav controls."
+      },
+      {
+        "name": "duration-fast",
+        "value": "200ms",
+        "purpose": "Hover and pressed-state feedback."
+      },
+      {
+        "name": "duration-enter",
+        "value": "300ms",
+        "purpose": "Entrance transitions such as slide-in-fade."
+      }
+    ],
+    "breakpoints": [
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Default action control for submit, confirm, and proceed flows.",
+      "html": "<button class=\"ds-btn-primary\">Continue</button>",
+      "css": ".ds-btn-primary { background: #14b8a6; color: #050505; border: 1px solid rgba(45, 212, 191, 0.3); border-radius: 8px; height: 44px; padding: 0 24px; font: 500 14px/1 Inter, system-ui, sans-serif; transition: background 200ms cubic-bezier(0.25, 1, 0.5, 1), transform 200ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-btn-primary:hover { background: #0d9488; } .ds-btn-primary:active { transform: scale(0.98); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Secondary action with low visual weight inside dark surfaces.",
+      "html": "<button class=\"ds-btn-secondary\">Back</button>",
+      "css": ".ds-btn-secondary { background: #141414; color: #fafafa; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; height: 44px; padding: 0 24px; font: 500 14px/1 Inter, system-ui, sans-serif; transition: background 200ms cubic-bezier(0.25, 1, 0.5, 1), color 200ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-btn-secondary:hover { background: #1a1a1a; } .ds-btn-secondary:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3); }"
+    },
+    {
+      "name": "Ghost Icon Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Low-emphasis icon action for contextual controls.",
+      "html": "<button class=\"ds-btn-ghost\" aria-label=\"Settings\"><svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7Z\"/><path d=\"M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 0 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06A2 2 0 1 1 4.28 16.8l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06A2 2 0 1 1 7.07 4.1l.06.06a1.7 1.7 0 0 0 1.87.34h.01a1.7 1.7 0 0 0 1-1.55V3a2 2 0 0 1 4 0v.09a1.7 1.7 0 0 0 1 1.55h.01a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1Z\"/></svg></button>",
+      "css": ".ds-btn-ghost { background: transparent; color: #b5b5b5; border: none; border-radius: 8px; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; transition: background 200ms cubic-bezier(0.25, 1, 0.5, 1), color 200ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-btn-ghost:hover { background: rgba(255, 255, 255, 0.05); color: #fafafa; } .ds-btn-ghost:active { background: rgba(255, 255, 255, 0.1); } .ds-btn-ghost:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-default",
+      "description": "Primary text field with dark raised surface and strong focus signal.",
+      "html": "<label class=\"ds-input-wrap\"><span class=\"ds-input-label\">Email</span><input class=\"ds-input\" type=\"email\" placeholder=\"you@example.com\" /></label>",
+      "css": ".ds-input-wrap { display: inline-flex; flex-direction: column; gap: 6px; width: 100%; max-width: 320px; } .ds-input-label { color: #b5b5b5; font: 500 14px/1.2 Inter, system-ui, sans-serif; } .ds-input { height: 44px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); background: #141414; color: #fafafa; padding: 0 12px; font: 400 14px/1.4 Inter, system-ui, sans-serif; transition: border-color 200ms cubic-bezier(0.25, 1, 0.5, 1), box-shadow 200ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-input::placeholder { color: #7a7a7a; } .ds-input:hover { border-color: rgba(255, 255, 255, 0.2); } .ds-input:focus-visible { outline: none; border-color: rgba(255, 255, 255, 0.3); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1); }"
+    },
+    {
+      "name": "Surface Card",
+      "kind": "card",
+      "refersTo": "card-surface",
+      "description": "Core container module for plan and dashboard sections.",
+      "html": "<article class=\"ds-card\"><h3 class=\"ds-card-title\">Weekly Plan</h3><p class=\"ds-card-copy\">Review sessions and recovery targets for the current cycle.</p></article>",
+      "css": ".ds-card { background: #0d0d0d; color: #fafafa; border: 1px solid #232323; border-radius: 24px; padding: 24px; transition: background 200ms cubic-bezier(0.25, 1, 0.5, 1), border-color 200ms cubic-bezier(0.25, 1, 0.5, 1); max-width: 420px; } .ds-card:hover { background: #141414; border-color: rgba(255, 255, 255, 0.15); } .ds-card-title { margin: 0 0 8px 0; font: 700 20px/1.25 Inter, system-ui, sans-serif; } .ds-card-copy { margin: 0; color: #b5b5b5; font: 400 14px/1.5 Inter, system-ui, sans-serif; max-width: 65ch; }"
+    },
+    {
+      "name": "Desktop Nav Pill",
+      "kind": "nav",
+      "refersTo": "nav-pill-active",
+      "description": "Pill-driven route selector in the top dock navigation.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item ds-nav-item-active\" href=\"#\">Home</a><a class=\"ds-nav-item\" href=\"#\">Plan</a><a class=\"ds-nav-item\" href=\"#\">Chat</a></nav>",
+      "css": ".ds-nav { display: inline-flex; align-items: center; gap: 4px; padding: 4px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.05); background: rgba(255, 255, 255, 0.05); } .ds-nav-item { color: #b5b5b5; text-decoration: none; font: 600 14px/1 Inter, system-ui, sans-serif; border-radius: 999px; padding: 8px 24px; transition: background 200ms cubic-bezier(0.25, 1, 0.5, 1), color 200ms cubic-bezier(0.25, 1, 0.5, 1), box-shadow 200ms cubic-bezier(0.25, 1, 0.5, 1); } .ds-nav-item:hover { color: #e5e5e5; } .ds-nav-item-active { background: rgba(255, 255, 255, 0.1); color: #fafafa; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); } .ds-nav-item:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Night Shift Coaching Console",
+    "overview": "This system is built for users checking plans, workouts, and recovery in short, high-focus sessions, often early morning or late evening. The interface behaves like an instrument panel, low glare, high contrast, and explicit next actions.\n\nThe visual personality follows PRODUCT.md directly: practical, intelligent, and accountable. Surfaces stay quiet and monochrome so recommendation moments and critical actions carry visual authority. The system explicitly rejects noisy motivational aesthetics, sterile medical bureaucracy, badge-first gamification, and over-designed \"AI\" styling.",
+    "keyCharacteristics": [
+      "Monochrome-first workspace with one action accent.",
+      "Dense but readable hierarchy tuned for decision speed.",
+      "Tactile controls with clear state feedback.",
+      "Flat-by-default depth model with restrained lift cues.",
+      "Utility copy and labels that prioritize action clarity."
+    ],
+    "rules": [
+      {
+        "name": "The Single Accent Rule",
+        "body": "The primary accent is reserved for explicit actions and selected state confirmation, never for decorative fills.",
+        "section": "colors"
+      },
+      {
+        "name": "The Operator Density Rule",
+        "body": "Use short, high-contrast text blocks and avoid paragraph-heavy sections in decision-critical screens.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "Resting surfaces stay flat, lift appears only when state needs to be acknowledged.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep neutral surfaces dominant (#050505, #0d0d0d, #141414) and reserve teal for explicit action intent.",
+      "Do use clear state feedback on controls: hover, focus-visible, and active must all be visually distinct.",
+      "Do preserve compact hierarchy for operational scanning, especially in dashboard and plan flows.",
+      "Do keep cards and modules function-led, with borders and tonal layering instead of decorative effects."
+    ],
+    "donts": [
+      "Don't mimic generic motivational fitness apps that over-index on hype and streak pressure.",
+      "Don't drift into clinical health dashboards that feel cold, bureaucratic, or hard to act on.",
+      "Don't ship gamified interfaces that prioritize badges and novelty over training quality and adherence.",
+      "Don't introduce over-designed \"AI\" aesthetics that reduce trust in recommendation quality.",
+      "Don't use border-left or border-right accents greater than 1px as visual decoration.",
+      "Don't use gradient text, decorative glassmorphism defaults, or repetitive identical card grids."
+    ]
+  }
+}

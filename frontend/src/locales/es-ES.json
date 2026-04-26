@@ -195,6 +195,8 @@
       "weight": "Peso",
       "chart_title": "Evolución de Peso",
       "record_details": "Detalles del Registro",
+      "composition_toggle": "Agregar detalles de composición corporal",
+      "measurements_toggle": "Agregar medidas corporales",
       "composition_title": "Composición Corporal",
       "measurements_title": "Medidas Corporales",
       "body_fat": "Grasa",
@@ -216,6 +218,9 @@
       "thigh_l": "Muslo I (cm)",
       "calf_r": "Pantorrilla D (cm)",
       "calf_l": "Pantorrilla I (cm)",
+      "delete_confirm_title": "Eliminar Registro de Peso",
+      "delete_confirm_message": "¿Deseas eliminar este registro de peso?",
+      "delete_confirm_btn": "Eliminar",
       "notifications": {
         "load_error": "Error al cargar pesos",
         "save_success": "¡Registro de peso guardado!",
@@ -373,10 +378,10 @@
       "success_criteria": "Criterios de Éxito"
     },
     "empty": {
-    "title": "No se encontró un plan",
+      "title": "No se encontró un plan",
       "description": "Habla con la IA para crear tu plan maestro completo.",
       "cta": "Crear plan en el chat",
-    "prefill_message": "Crea mi plan maestro de entrenamiento y nutrición."
+      "prefill_message": "Crea mi plan maestro de entrenamiento y nutrición."
     },
     "checkpoint": {
       "empty": "Aún no hay revisión registrada para este plan.",
@@ -501,7 +506,12 @@
       "title": "Sigue tu plan maestro",
       "description": "Objetivo, estrategia, metas nutricionales y programa semanal en un solo hub.",
       "cta": "Abrir"
-    }
+    },
+    "general_training": "Entreno general",
+    "synced_label": "Sincronizado",
+    "total_volume": "Volumen total",
+    "unit_ton": "t",
+    "unit_kg": "kg"
   },
   "nutrition": {
     "title": "Nutrición",

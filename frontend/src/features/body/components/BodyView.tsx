@@ -57,7 +57,7 @@ export function BodyView({ activeTab, onTabChange }: BodyViewProps) {
                 )}
               >
                 <Icon size={16} />
-                <span className={cn(isActive ? "block" : "hidden md:block")}>{tab.label}</span>
+                <span>{tab.label}</span>
               </Button>
             );
           })}

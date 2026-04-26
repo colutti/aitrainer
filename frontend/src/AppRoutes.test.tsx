@@ -10,6 +10,9 @@ vi.mock('./features/auth/ResetPasswordPage', () => ({
 vi.mock('./features/body/BodyPage', () => ({
   default: () => <div>Body Page</div>,
 }));
+vi.mock('./features/body/NutritionPage', () => ({
+  default: () => <div>Nutrition Page</div>,
+}));
 vi.mock('./features/chat/ChatPage', () => ({
   default: () => <div>Chat Page</div>,
 }));
@@ -67,6 +70,7 @@ vi.mock('./shared/components/layout/PremiumLayout', async () => {
 vi.mock('./shared/components/ui/Skeleton', () => ({
   Skeleton: () => <div>Skeleton</div>,
 }));
+
 describe('AppRoutes', () => {
   it('redirects unknown routes to the landing page', async () => {
     render(<AppRoutes />, { route: '/totally-unknown' });
@@ -78,5 +82,12 @@ describe('AppRoutes', () => {
 
     expect(await screen.findByText('Premium Layout')).toBeInTheDocument();
     expect(await screen.findByText('Plan Page')).toBeInTheDocument();
+  });
+
+  it('renders nutrition route inside dashboard shell', async () => {
+    render(<AppRoutes />, { route: '/dashboard/nutrition' });
+
+    expect(await screen.findByText('Premium Layout')).toBeInTheDocument();
+    expect(await screen.findByText('Nutrition Page')).toBeInTheDocument();
   });
 });

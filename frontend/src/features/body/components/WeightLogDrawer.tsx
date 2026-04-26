@@ -139,83 +139,99 @@ export function WeightLogDrawer({ isOpen, onClose, onSubmit, isReadOnly = false,
         </div>
 
         {/* COMPOSITION GRID */}
-        <div className="space-y-6">
-          <div className="flex items-center gap-2 pb-2 border-b border-white/5">
-            <Target size={18} className="text-indigo-400" />
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('body.weight.composition_title')}</h3>
+        <details className="space-y-4 group" open={Boolean(log)}>
+          <summary className="list-none cursor-pointer rounded-2xl border border-border bg-dark-card px-4 py-3 text-sm font-semibold text-zinc-200">
+            <span className="inline-flex items-center gap-2">
+              <Target size={16} />
+              {t('body.weight.composition_toggle')}
+            </span>
+          </summary>
+          <div className="space-y-6 pt-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-white/5">
+                <Target size={18} className="text-zinc-300" />
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('body.weight.composition_title')}</h3>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-6">
+                <FormField label={t('body.weight.body_fat')} id="body-fat-pct" icon={<Flame size={14} className="text-zinc-400" />} error={errors.body_fat_pct?.message}>
+                  <Input id="body-fat-pct" data-testid="body-fat-pct" type="number" step="any" disabled={isReadOnly} {...register('body_fat_pct')} placeholder="%" className="h-14 rounded-2xl font-bold" />
+                </FormField>
+
+                <FormField label={`${t('body.weight.muscle_mass')} (%)`} id="muscle-mass-pct" icon={<Target size={14} className="text-zinc-400" />} error={errors.muscle_mass_pct?.message}>
+                  <Input id="muscle-mass-pct" type="number" step="any" disabled={isReadOnly} {...register('muscle_mass_pct')} placeholder="%" className="h-14 rounded-2xl font-bold" />
+                </FormField>
+                
+                <FormField label={t('body.weight.muscle_mass')} id="muscle-mass-kg" icon={<Bone size={14} className="text-zinc-400" />} error={errors.muscle_mass_kg?.message}>
+                  <Input id="muscle-mass-kg" type="number" step="any" disabled={isReadOnly} {...register('muscle_mass_kg')} placeholder="kg" className="h-14 rounded-2xl font-bold" />
+                </FormField>
+
+                <FormField label={t('body.weight.visceral_fat')} id="visceral-fat" icon={<Ruler size={14} className="text-zinc-400" />} error={errors.visceral_fat?.message}>
+                  <Input id="visceral-fat" type="number" step="any" disabled={isReadOnly} {...register('visceral_fat')} placeholder="1-20" className="h-14 rounded-2xl font-bold" />
+                </FormField>
+
+                <FormField label={t('body.weight.body_water')} id="body-water-pct" icon={<Droplets size={14} className="text-zinc-400" />} error={errors.body_water_pct?.message}>
+                  <Input id="body-water-pct" type="number" step="any" disabled={isReadOnly} {...register('body_water_pct')} placeholder="%" className="h-14 rounded-2xl font-bold" />
+                </FormField>
+
+                <FormField label={t('body.weight.bone_mass')} id="bone-mass-kg" icon={<Bone size={14} className="text-zinc-400" />} error={errors.bone_mass_kg?.message}>
+                  <Input id="bone-mass-kg" type="number" step="any" disabled={isReadOnly} {...register('bone_mass_kg')} placeholder="kg" className="h-14 rounded-2xl font-bold" />
+                </FormField>
+
+                <FormField label={t('body.weight.bmr')} id="bmr" icon={<Flame size={14} className="text-zinc-400" />} error={errors.bmr?.message}>
+                  <Input id="bmr" type="number" step="1" disabled={isReadOnly} {...register('bmr')} placeholder="kcal" className="h-14 rounded-2xl font-bold" />
+                </FormField>
+              </div>
           </div>
-          
-          <div className="grid grid-cols-2 gap-6">
-            <FormField label={t('body.weight.body_fat')} id="body-fat-pct" icon={<Flame size={14} className="text-orange-400" />} error={errors.body_fat_pct?.message}>
-              <Input id="body-fat-pct" data-testid="body-fat-pct" type="number" step="any" disabled={isReadOnly} {...register('body_fat_pct')} placeholder="%" className="h-14 rounded-2xl font-bold" />
-            </FormField>
-
-            <FormField label={`${t('body.weight.muscle_mass')} (%)`} id="muscle-mass-pct" icon={<Target size={14} className="text-violet-400" />} error={errors.muscle_mass_pct?.message}>
-              <Input id="muscle-mass-pct" type="number" step="any" disabled={isReadOnly} {...register('muscle_mass_pct')} placeholder="%" className="h-14 rounded-2xl font-bold" />
-            </FormField>
-            
-            <FormField label={t('body.weight.muscle_mass')} id="muscle-mass-kg" icon={<Bone size={14} className="text-emerald-400" />} error={errors.muscle_mass_kg?.message}>
-              <Input id="muscle-mass-kg" type="number" step="any" disabled={isReadOnly} {...register('muscle_mass_kg')} placeholder="kg" className="h-14 rounded-2xl font-bold" />
-            </FormField>
-
-            <FormField label={t('body.weight.visceral_fat')} id="visceral-fat" icon={<Ruler size={14} className="text-blue-400" />} error={errors.visceral_fat?.message}>
-              <Input id="visceral-fat" type="number" step="any" disabled={isReadOnly} {...register('visceral_fat')} placeholder="1-20" className="h-14 rounded-2xl font-bold" />
-            </FormField>
-
-            <FormField label={t('body.weight.body_water')} id="body-water-pct" icon={<Droplets size={14} className="text-cyan-400" />} error={errors.body_water_pct?.message}>
-              <Input id="body-water-pct" type="number" step="any" disabled={isReadOnly} {...register('body_water_pct')} placeholder="%" className="h-14 rounded-2xl font-bold" />
-            </FormField>
-
-            <FormField label={t('body.weight.bone_mass')} id="bone-mass-kg" icon={<Bone size={14} className="text-slate-400" />} error={errors.bone_mass_kg?.message}>
-              <Input id="bone-mass-kg" type="number" step="any" disabled={isReadOnly} {...register('bone_mass_kg')} placeholder="kg" className="h-14 rounded-2xl font-bold" />
-            </FormField>
-
-            <FormField label={t('body.weight.bmr')} id="bmr" icon={<Flame size={14} className="text-rose-400" />} error={errors.bmr?.message}>
-              <Input id="bmr" type="number" step="1" disabled={isReadOnly} {...register('bmr')} placeholder="kcal" className="h-14 rounded-2xl font-bold" />
-            </FormField>
-          </div>
-        </div>
+        </details>
 
         {/* BODY MEASUREMENTS */}
-        <div className="space-y-6">
-          <div className="flex items-center gap-2 pb-2 border-b border-white/5">
-            <Ruler size={18} className="text-indigo-400" />
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('body.weight.measurements_title')}</h3>
-          </div>
+        <details className="space-y-4 group" open={Boolean(log)}>
+          <summary className="list-none cursor-pointer rounded-2xl border border-border bg-dark-card px-4 py-3 text-sm font-semibold text-zinc-200">
+            <span className="inline-flex items-center gap-2">
+              <Ruler size={16} />
+              {t('body.weight.measurements_toggle')}
+            </span>
+          </summary>
+          <div className="space-y-6 pt-4">
+              <div className="flex items-center gap-2 pb-2 border-b border-white/5">
+                <Ruler size={18} className="text-zinc-300" />
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('body.weight.measurements_title')}</h3>
+              </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField label={t('body.weight.neck')} id="neck-cm" error={errors.neck_cm?.message}>
-              <Input id="neck-cm" type="number" step="any" disabled={isReadOnly} {...register('neck_cm')} className="h-12 rounded-2xl font-bold" />
-            </FormField>
-            <FormField label={t('body.weight.chest')} id="chest-cm" error={errors.chest_cm?.message}>
-              <Input id="chest-cm" type="number" step="any" disabled={isReadOnly} {...register('chest_cm')} className="h-12 rounded-2xl font-bold" />
-            </FormField>
-            <FormField label={t('body.weight.waist')} id="waist-cm" error={errors.waist_cm?.message}>
-              <Input id="waist-cm" type="number" step="any" disabled={isReadOnly} {...register('waist_cm')} className="h-12 rounded-2xl font-bold" />
-            </FormField>
-            <FormField label={t('body.weight.hips')} id="hips-cm" error={errors.hips_cm?.message}>
-              <Input id="hips-cm" type="number" step="any" disabled={isReadOnly} {...register('hips_cm')} className="h-12 rounded-2xl font-bold" />
-            </FormField>
-            <FormField label={t('body.weight.bicep_r')} id="bicep-r-cm" error={errors.bicep_r_cm?.message}>
-              <Input id="bicep-r-cm" type="number" step="any" disabled={isReadOnly} {...register('bicep_r_cm')} className="h-12 rounded-2xl font-bold" />
-            </FormField>
-            <FormField label={t('body.weight.bicep_l')} id="bicep-l-cm" error={errors.bicep_l_cm?.message}>
-              <Input id="bicep-l-cm" type="number" step="any" disabled={isReadOnly} {...register('bicep_l_cm')} className="h-12 rounded-2xl font-bold" />
-            </FormField>
-            <FormField label={t('body.weight.thigh_r')} id="thigh-r-cm" error={errors.thigh_r_cm?.message}>
-              <Input id="thigh-r-cm" type="number" step="any" disabled={isReadOnly} {...register('thigh_r_cm')} className="h-12 rounded-2xl font-bold" />
-            </FormField>
-            <FormField label={t('body.weight.thigh_l')} id="thigh-l-cm" error={errors.thigh_l_cm?.message}>
-              <Input id="thigh-l-cm" type="number" step="any" disabled={isReadOnly} {...register('thigh_l_cm')} className="h-12 rounded-2xl font-bold" />
-            </FormField>
-            <FormField label={t('body.weight.calf_r')} id="calf-r-cm" error={errors.calf_r_cm?.message}>
-              <Input id="calf-r-cm" type="number" step="any" disabled={isReadOnly} {...register('calf_r_cm')} className="h-12 rounded-2xl font-bold" />
-            </FormField>
-            <FormField label={t('body.weight.calf_l')} id="calf-l-cm" error={errors.calf_l_cm?.message}>
-              <Input id="calf-l-cm" type="number" step="any" disabled={isReadOnly} {...register('calf_l_cm')} className="h-12 rounded-2xl font-bold" />
-            </FormField>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label={t('body.weight.neck')} id="neck-cm" error={errors.neck_cm?.message}>
+                  <Input id="neck-cm" type="number" step="any" disabled={isReadOnly} {...register('neck_cm')} className="h-12 rounded-2xl font-bold" />
+                </FormField>
+                <FormField label={t('body.weight.chest')} id="chest-cm" error={errors.chest_cm?.message}>
+                  <Input id="chest-cm" type="number" step="any" disabled={isReadOnly} {...register('chest_cm')} className="h-12 rounded-2xl font-bold" />
+                </FormField>
+                <FormField label={t('body.weight.waist')} id="waist-cm" error={errors.waist_cm?.message}>
+                  <Input id="waist-cm" type="number" step="any" disabled={isReadOnly} {...register('waist_cm')} className="h-12 rounded-2xl font-bold" />
+                </FormField>
+                <FormField label={t('body.weight.hips')} id="hips-cm" error={errors.hips_cm?.message}>
+                  <Input id="hips-cm" type="number" step="any" disabled={isReadOnly} {...register('hips_cm')} className="h-12 rounded-2xl font-bold" />
+                </FormField>
+                <FormField label={t('body.weight.bicep_r')} id="bicep-r-cm" error={errors.bicep_r_cm?.message}>
+                  <Input id="bicep-r-cm" type="number" step="any" disabled={isReadOnly} {...register('bicep_r_cm')} className="h-12 rounded-2xl font-bold" />
+                </FormField>
+                <FormField label={t('body.weight.bicep_l')} id="bicep-l-cm" error={errors.bicep_l_cm?.message}>
+                  <Input id="bicep-l-cm" type="number" step="any" disabled={isReadOnly} {...register('bicep_l_cm')} className="h-12 rounded-2xl font-bold" />
+                </FormField>
+                <FormField label={t('body.weight.thigh_r')} id="thigh-r-cm" error={errors.thigh_r_cm?.message}>
+                  <Input id="thigh-r-cm" type="number" step="any" disabled={isReadOnly} {...register('thigh_r_cm')} className="h-12 rounded-2xl font-bold" />
+                </FormField>
+                <FormField label={t('body.weight.thigh_l')} id="thigh-l-cm" error={errors.thigh_l_cm?.message}>
+                  <Input id="thigh-l-cm" type="number" step="any" disabled={isReadOnly} {...register('thigh_l_cm')} className="h-12 rounded-2xl font-bold" />
+                </FormField>
+                <FormField label={t('body.weight.calf_r')} id="calf-r-cm" error={errors.calf_r_cm?.message}>
+                  <Input id="calf-r-cm" type="number" step="any" disabled={isReadOnly} {...register('calf_r_cm')} className="h-12 rounded-2xl font-bold" />
+                </FormField>
+                <FormField label={t('body.weight.calf_l')} id="calf-l-cm" error={errors.calf_l_cm?.message}>
+                  <Input id="calf-l-cm" type="number" step="any" disabled={isReadOnly} {...register('calf_l_cm')} className="h-12 rounded-2xl font-bold" />
+                </FormField>
+              </div>
           </div>
-        </div>
+        </details>
 
         {/* NOTES */}
         <FormField label={t('body.weight.notes')} id="notes" icon={<FileText size={14} />} error={errors.notes?.message} optional>

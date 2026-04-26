@@ -6,6 +6,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './features/auth/LoginPage';
 import ResetPasswordPage from './features/auth/ResetPasswordPage';
 import BodyPage from './features/body/BodyPage';
+import NutritionPage from './features/body/NutritionPage';
 import ChatPage from './features/chat/ChatPage';
 import DashboardPage from './features/dashboard/DashboardPage';
 import LandingPage from './features/landing/LandingPage';
@@ -76,7 +77,10 @@ export function AppRoutes() {
           <Route index element={<DashboardPage />} />
           <Route path="plan" element={<PlanPage />} />
           <Route path="workouts" element={<WorkoutsPage />} />
-          <Route path="body/*" element={<BodyPage />} />
+          <Route path="body" element={<BodyPage />} />
+          <Route path="nutrition" element={<NutritionPage />} />
+          <Route path="body/weight" element={<Navigate to="/dashboard/body" replace />} />
+          <Route path="body/nutrition" element={<Navigate to="/dashboard/nutrition" replace />} />
           <Route path="chat" element={<ChatPage />} />
           
           {/* Settings Sub-routes */}

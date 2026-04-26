@@ -25,14 +25,14 @@ export function QuickAddFAB() {
       id: 'weight',
       labelKey: 'body.weight.register_weight',
       icon: Scale,
-      onClick: () => { void navigate('/dashboard/body/weight?action=log-weight'); },
+      onClick: () => { void navigate('/dashboard/body?action=log-weight'); },
       color: 'bg-emerald-500 hover:bg-emerald-400'
     },
     {
       id: 'meal',
       labelKey: 'body.nutrition.register_title',
       icon: Utensils,
-      onClick: () => { void navigate('/dashboard/body/nutrition?action=log-meal'); },
+      onClick: () => { void navigate('/dashboard/nutrition?action=log-meal'); },
       color: 'bg-orange-500 hover:bg-orange-400'
     },
     {

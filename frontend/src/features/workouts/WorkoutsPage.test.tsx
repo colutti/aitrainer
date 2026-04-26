@@ -82,7 +82,7 @@ describe('WorkoutsPage', () => {
 
     render(<WorkoutsPage />);
     
-    const deleteBtn = screen.getAllByLabelText('Delete')[0]!;
+    const deleteBtn = screen.getAllByLabelText(/Excluir|Delete/i)[0]!;
     fireEvent.click(deleteBtn);
     
     await waitFor(() => {
