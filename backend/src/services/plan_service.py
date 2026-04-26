@@ -153,6 +153,15 @@ def _merge_plan_sections(latest_plan: UserPlan | None, payload: PlanUpsertInput)
     return merged
 
 
+def _coerce_datetime(value: datetime | str) -> datetime:
+    """Normalize timeline values that may arrive as ISO strings."""
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    raise TypeError(f"invalid datetime value type: {type(value).__name__}")
+
+
 def build_plan_singleton(
     user_email: str,
     latest_plan: UserPlan | None,
@@ -165,11 +174,13 @@ def build_plan_singleton(
 
     timeline_data = dict(merged["timeline"])
     start_date = latest_plan.timeline.start_date if latest_plan else now
-    timeline_data["start_date"] = timeline_data.get("start_date", start_date)
-    timeline_data.setdefault(
-        "target_date",
-        timeline_data["start_date"] + timedelta(days=84),
+    timeline_data["start_date"] = _coerce_datetime(
+        timeline_data.get("start_date", start_date)
     )
+    if "target_date" in timeline_data and timeline_data["target_date"] is not None:
+        timeline_data["target_date"] = _coerce_datetime(timeline_data["target_date"])
+    else:
+        timeline_data["target_date"] = timeline_data["start_date"] + timedelta(days=84)
 
     return UserPlan(
         user_email=user_email,

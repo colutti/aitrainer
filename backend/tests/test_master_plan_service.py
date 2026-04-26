@@ -108,3 +108,16 @@ def test_plan_snapshot_contains_full_master_context():
     assert snapshot.training_split == 'push_pull_legs'
     assert 'Plano mestre ativo' in text
     assert 'Metas nutricionais diarias' in text
+
+
+def test_build_plan_singleton_accepts_string_timeline_start_date():
+    payload = make_payload()
+    payload.timeline = {
+        'start_date': '2026-04-26T00:00:00',
+        'review_cadence': 'quinzenal',
+    }
+
+    plan = build_plan_singleton('user@test.com', None, payload)
+
+    assert plan.timeline.start_date == datetime(2026, 4, 26, 0, 0, 0)
+    assert plan.timeline.target_date == datetime(2026, 7, 19, 0, 0, 0)
