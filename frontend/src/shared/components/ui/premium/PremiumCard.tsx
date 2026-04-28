@@ -8,12 +8,12 @@ export interface PremiumCardProps extends HTMLAttributes<HTMLDivElement> {
   withPadding?: boolean;
 }
 
-export function PremiumCard({ 
-  className, 
-  children, 
-  withHover = true, 
+export function PremiumCard({
+  className,
+  children,
+  withHover = true,
   withPadding = false,
-  ...props 
+  ...props
 }: PremiumCardProps) {
   return (
     <div

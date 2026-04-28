@@ -4,36 +4,93 @@
 @theme {
   --font-display: 'Inter', system-ui, sans-serif;
   --font-body: 'Inter', system-ui, sans-serif;
-  --color-app-bg: #050505;
-  --color-app-surface: #0d0d0d;
-  --color-app-surface-raised: #141414;
-  --color-app-border: #232323;
-  --color-text-primary: #fafafa;
-  --color-text-secondary: #b5b5b5;
-  --color-text-muted: #7a7a7a;
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  /* Compatibility aliases for existing utility/variant usage */
-  --color-primary: #f3f4f6;
-  --color-primary-hover: #d1d5db;
-  --color-accent: #e5e7eb;
-  --color-gradient-start: #111827;
-  --color-gradient-end: #1f2937;
-  --color-user-message: #d1d5db;
-  --color-secondary: #1e1e21;
-  --color-dark-bg: var(--color-app-bg);
-  --color-light-bg: var(--color-app-surface);
-  --color-border: var(--color-app-border);
-  --color-dark-card: var(--color-app-surface);
+
+  --color-background: #131313;
+  --color-on-background: #e2e2e2;
+  --color-surface: #131313;
+  --color-surface-container-lowest: #0e0e0e;
+  --color-surface-container-low: #1b1b1b;
+  --color-surface-container: #1f1f1f;
+  --color-surface-container-high: #2a2a2a;
+  --color-surface-container-highest: #353535;
+  --color-surface-variant: #353535;
+  --color-on-surface: #e2e2e2;
+  --color-on-surface-variant: #c2c6d6;
+  --color-outline: #8c909f;
+  --color-outline-variant: #424754;
+  --color-primary: #adc6ff;
+  --color-on-primary: #002e6a;
+  --color-primary-container: #4d8eff;
+  --color-secondary: #4edea3;
+  --color-on-secondary: #003824;
+  --color-tertiary: #ffb786;
+  --color-on-tertiary: #502400;
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-success: var(--color-secondary);
+  --color-warning: var(--color-tertiary);
+
+  --space-base: 8px;
+  --space-gutter: 24px;
+  --space-page: 40px;
+  --space-card: 24px;
+  --radius-sm: 2px;
+  --radius-default: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --container-max: 1280px;
+
+  /* Compatibility aliases for the ongoing screen migration */
+  --color-app-bg: var(--color-background);
+  --color-app-surface: var(--color-surface-container);
+  --color-app-surface-raised: var(--color-surface-container-high);
+  --color-app-border: var(--color-outline-variant);
+  --color-text-primary: var(--color-on-surface);
+  --color-text-secondary: var(--color-on-surface-variant);
+  --color-text-muted: var(--color-outline);
+  --color-text-tertiary: var(--color-outline);
+  --color-primary-hover: var(--color-primary-container);
+  --color-accent: var(--color-primary-container);
+  --color-gradient-start: var(--color-primary-container);
+  --color-gradient-end: var(--color-primary);
+  --color-user-message: var(--color-primary-container);
+  --color-dark-bg: var(--color-background);
+  --color-light-bg: var(--color-surface-container-low);
+  --color-border: var(--color-outline-variant);
+  --color-dark-card: var(--color-surface-container);
+}
+
+@utility app-surface {
+  @apply relative overflow-hidden rounded-[var(--radius-lg)] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)] text-[color:var(--color-on-surface)];
+}
+
+@utility app-surface-hover {
+  @apply transition-colors duration-200 hover:bg-[color:var(--color-surface-container-high)];
+}
+
+@utility app-button-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] border border-transparent bg-[color:var(--color-primary)] px-6 py-2 text-sm font-semibold text-[color:var(--color-on-primary)] transition-[background-color,border-color,color,transform] duration-200 outline-none hover:bg-[color:var(--color-primary-container)] active:translate-y-px disabled:pointer-events-none disabled:opacity-50;
+}
+
+@utility app-button-secondary {
+  @apply inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-high)] px-6 py-2 text-sm font-semibold text-[color:var(--color-on-surface)] transition-[background-color,border-color,color,transform] duration-200 outline-none hover:bg-[color:var(--color-surface-container-highest)] active:translate-y-px disabled:pointer-events-none disabled:opacity-50;
+}
+
+@utility app-button-ghost {
+  @apply inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] border border-transparent bg-transparent px-4 py-2 text-sm font-medium text-[color:var(--color-on-surface-variant)] transition-[background-color,color,transform] duration-200 outline-none hover:bg-[color:var(--color-surface-container)] hover:text-[color:var(--color-on-surface)] active:translate-y-px active:bg-[color:var(--color-surface-container-high)] disabled:pointer-events-none disabled:opacity-50;
+}
+
+@utility app-field {
+  @apply h-11 rounded-[var(--radius-md)] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] text-[color:var(--color-on-surface)] placeholder:text-[color:var(--color-on-surface-variant)] transition-[border-color,box-shadow,background-color] duration-200 outline-none focus-visible:border-[color:var(--color-primary)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)]/20 disabled:cursor-not-allowed disabled:opacity-50;
 }
 
 @utility surface-card {
-  @apply rounded-[24px] border border-[color:var(--color-app-border)] bg-[color:var(--color-app-surface)] text-[color:var(--color-text-primary)] relative overflow-hidden transition-colors duration-200;
+  @apply app-surface;
 }
 
 @utility surface-card-hover {
-  @apply hover:bg-[color:var(--color-app-surface-raised)] hover:border-white/15;
+  @apply app-surface-hover;
 }
 
 @utility glass-card {
@@ -45,31 +102,31 @@
 }
 
 @utility btn-premium {
-  @apply flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white text-black font-black hover:bg-zinc-200 active:scale-95 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply app-button-primary;
 }
 
 @utility btn-glass {
-  @apply flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-[color:var(--color-app-surface-raised)] border border-white/10 text-white font-bold hover:bg-[#1a1a1a] active:scale-95 transition-colors disabled:opacity-50;
+  @apply app-button-secondary;
 }
 
 @utility btn-ghost {
-  @apply p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 transition-all active:scale-95;
+  @apply app-button-ghost;
 }
 
 @utility text-premium-label {
-  @apply text-zinc-500 font-bold tracking-[0.2em] uppercase text-[10px] md:text-xs mb-2;
+  @apply text-[13px] font-medium uppercase tracking-[0.05em] text-[color:var(--color-on-surface-variant)];
 }
 
 @utility text-premium-heading {
-  @apply text-4xl md:text-5xl font-black text-white tracking-tight;
+  @apply text-[32px] font-semibold tracking-[-0.01em] text-[color:var(--color-on-surface)];
 }
 
 @utility text-premium-value {
-  @apply text-5xl md:text-7xl font-black tracking-tighter text-white leading-none;
+  @apply text-[40px] md:text-[56px] font-semibold tracking-[-0.03em] leading-none text-[color:var(--color-on-surface)];
 }
 
 @utility form-field {
-  @apply rounded-2xl border border-white/10 bg-zinc-900/70 text-white placeholder:text-zinc-500 transition-all focus:outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10 disabled:cursor-not-allowed disabled:opacity-50;
+  @apply app-field;
 }
 
 @utility custom-scrollbar {
@@ -93,7 +150,7 @@
 
 body {
   font-family: var(--font-body);
-  @apply bg-[color:var(--color-app-bg)] text-zinc-50 selection:bg-white/15;
+  @apply bg-[color:var(--color-background)] text-[color:var(--color-on-background)] selection:bg-primary/20;
 }
 
 a,
@@ -154,23 +211,23 @@ textarea:-webkit-autofill:focus,
 select:-webkit-autofill,
 select:-webkit-autofill:hover,
 select:-webkit-autofill:focus {
-  -webkit-text-fill-color: #fafafa !important;
-  -webkit-box-shadow: 0 0 0 1000px #18181b inset !important;
-  box-shadow: 0 0 0 1000px #18181b inset !important;
-  caret-color: #fafafa;
+  -webkit-text-fill-color: #e2e2e2 !important;
+  -webkit-box-shadow: 0 0 0 1000px #1b1b1b inset !important;
+  box-shadow: 0 0 0 1000px #1b1b1b inset !important;
+  caret-color: #e2e2e2;
 }
 
 /* Markdown Table Styling */
 .markdown-content table {
-  @apply w-full border-collapse my-6 text-sm overflow-hidden rounded-xl border border-white/10 bg-black/20;
+  @apply my-6 w-full overflow-hidden rounded-[var(--radius-lg)] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] text-sm;
 }
 
 .markdown-content th {
-  @apply bg-white/10 font-black text-indigo-300 uppercase tracking-widest text-[10px] p-4 text-left border-b border-white/10;
+  @apply border-b border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-high)] p-4 text-left text-[11px] font-semibold uppercase tracking-[0.05em] text-[color:var(--color-on-surface-variant)];
 }
 
 .markdown-content td {
-  @apply p-4 text-left border-b border-white/5 text-zinc-200;
+  @apply border-b border-[color:var(--color-outline-variant)]/60 p-4 text-left text-[color:var(--color-on-surface)];
 }
 
 .markdown-content tr:last-child td {
@@ -178,28 +235,27 @@ select:-webkit-autofill:focus {
 }
 
 .markdown-content tr:nth-child(even) {
-  @apply bg-white/[0.03];
+  @apply bg-[color:var(--color-surface-container)];
 }
 
 .markdown-content tr:hover {
-  @apply bg-white/[0.05] transition-colors;
+  @apply bg-[color:var(--color-surface-container-high)] transition-colors;
 }
 
-/* Ensure table looks good on indigo background (user messages) */
 .message-bubble-user .markdown-content table {
-  @apply border-white/20 bg-indigo-900/30;
+  @apply border-[color:var(--color-primary-container)] bg-[color:var(--color-surface-container-high)];
 }
 
 .message-bubble-user .markdown-content th {
-  @apply bg-white/20 text-white border-white/20;
+  @apply border-[color:var(--color-primary-container)] bg-[color:var(--color-surface-container-highest)] text-[color:var(--color-primary)];
 }
 
 .message-bubble-user .markdown-content td {
-  @apply border-white/10 text-indigo-50;
+  @apply border-[color:var(--color-outline-variant)] text-[color:var(--color-on-surface)];
 }
 
 .message-bubble-user .markdown-content tr:nth-child(even) {
-  @apply bg-white/10;
+  @apply bg-[color:var(--color-surface-container)];
 }
 
 /* Mobile Touch Targets */

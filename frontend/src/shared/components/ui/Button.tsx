@@ -3,19 +3,23 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../../utils/cn';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all appearance-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 disabled:opacity-50 disabled:pointer-events-none active:scale-95 [-webkit-tap-highlight-color:transparent]',
+  'inline-flex appearance-none items-center justify-center gap-2 rounded-[var(--radius-md)] border text-sm font-semibold transition-[background-color,border-color,color,transform] duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-primary)]/20 disabled:pointer-events-none disabled:opacity-50 active:translate-y-px [-webkit-tap-highlight-color:transparent]',
   {
     variants: {
       variant: {
-        primary: 'bg-[#14b8a6] text-black border border-[#2dd4bf]/30 hover:bg-[#0d9488] shadow-none',
-        secondary: 'bg-[color:var(--color-app-surface-raised)] border border-white/10 text-[color:var(--color-text-primary)] hover:bg-[#1a1a1a]',
-        ghost: 'text-text-secondary hover:text-text-primary hover:bg-white/5 active:bg-white/10',
-        danger: 'bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500/20',
+        primary:
+          'border-transparent bg-[color:var(--color-primary)] text-[color:var(--color-on-primary)] hover:bg-[color:var(--color-primary-container)]',
+        secondary:
+          'border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-high)] text-[color:var(--color-on-surface)] hover:bg-[color:var(--color-surface-container-highest)]',
+        ghost:
+          'border-transparent bg-transparent text-[color:var(--color-on-surface-variant)] hover:bg-[color:var(--color-surface-container)] hover:text-[color:var(--color-on-surface)] active:bg-[color:var(--color-surface-container-high)]',
+        danger:
+          'border-transparent bg-[color:var(--color-error)] text-[color:var(--color-on-error)] hover:opacity-90',
       },
       size: {
         default: 'h-11 px-6 py-2',
-        sm: 'h-9 px-4 rounded-md',
-        lg: 'h-12 px-8 rounded-xl',
+        sm: 'h-9 px-4 rounded-[var(--radius-default)]',
+        lg: 'h-12 px-8',
         icon: 'h-10 w-10',
       },
       fullWidth: {
@@ -35,9 +39,6 @@ interface ButtonProps
   isLoading?: boolean;
 }
 
-/**
- * Premium Button component with multiple variants and sizes
- */
 export function Button({
   className,
   variant,

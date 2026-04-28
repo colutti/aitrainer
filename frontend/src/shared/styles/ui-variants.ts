@@ -1,51 +1,51 @@
 /**
- * UI Variants and Constants for the Premium Design System.
- * Bridging CSS Utilities with TypeScript for semantic styling.
+ * Semantic visual contracts for the shared product design system.
  */
 
 export const PREMIUM_UI = {
-  // Base background for the monochrome workspace
-  pageWrapper: "min-h-screen bg-[color:var(--color-app-bg)] text-[color:var(--color-text-primary)] font-sans selection:bg-white/15 relative overflow-hidden",
-  
-  // Card styles (solid surface system)
+  pageWrapper:
+    "relative min-h-screen overflow-hidden bg-[color:var(--color-background)] text-[color:var(--color-on-background)] font-sans selection:bg-primary/20",
+  page: "mx-auto w-full max-w-[var(--container-max)] px-4 md:px-6 xl:px-[var(--space-gutter)]",
+  section: "space-y-6",
+
   card: {
-    base: "surface-card",
-    hover: "surface-card-hover",
+    base: "relative overflow-hidden rounded-[var(--radius-lg)] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)] text-[color:var(--color-on-surface)]",
+    hover: "transition-colors duration-200 hover:bg-[color:var(--color-surface-container-high)]",
     padding: "p-6 md:p-8",
   },
 
-  // Button styles
   button: {
-    premium: "btn-premium",
-    glass: "btn-glass",
-    ghost: "btn-ghost",
+    premium:
+      "inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] border border-transparent bg-[color:var(--color-primary)] px-6 py-2 text-sm font-semibold text-[color:var(--color-on-primary)] transition-[background-color,border-color,color,transform] duration-200 outline-none hover:bg-[color:var(--color-primary-container)] active:translate-y-px disabled:pointer-events-none disabled:opacity-50",
+    glass:
+      "inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-high)] px-6 py-2 text-sm font-semibold text-[color:var(--color-on-surface)] transition-[background-color,border-color,color,transform] duration-200 outline-none hover:bg-[color:var(--color-surface-container-highest)] active:translate-y-px disabled:pointer-events-none disabled:opacity-50",
+    ghost:
+      "inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] border border-transparent bg-transparent px-4 py-2 text-sm font-medium text-[color:var(--color-on-surface-variant)] transition-[background-color,color,transform] duration-200 outline-none hover:bg-[color:var(--color-surface-container)] hover:text-[color:var(--color-on-surface)] active:translate-y-px active:bg-[color:var(--color-surface-container-high)] disabled:pointer-events-none disabled:opacity-50",
   },
 
-  // Layout structures
   grid: {
     bento: "grid grid-cols-2 md:grid-cols-4 gap-4 auto-rows-[minmax(120px,auto)]",
     stack: "flex flex-col gap-4",
   },
 
-  // Typography
   text: {
-    label: "text-premium-label",
-    heading: "text-premium-heading",
-    value: "text-premium-value",
-    subvalue: "text-zinc-500 font-bold text-lg uppercase tracking-widest",
+    label: "text-[13px] font-medium uppercase tracking-[0.05em] text-[color:var(--color-on-surface-variant)]",
+    heading: "text-[32px] font-semibold tracking-[-0.01em] text-[color:var(--color-on-surface)]",
+    title: "text-[18px] font-semibold text-[color:var(--color-on-surface)]",
+    body: "text-[16px] leading-[1.6] text-[color:var(--color-on-surface-variant)]",
+    value: "text-[40px] md:text-[56px] font-semibold tracking-[-0.03em] leading-none text-[color:var(--color-on-surface)]",
+    subvalue: "text-[13px] font-medium uppercase tracking-[0.05em] text-[color:var(--color-outline)]",
   },
 
-  // Icons and Badges
   badge: {
-    base: "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border leading-none shadow-sm",
-    glass: "bg-white/10 border-white/10 text-white",
-    success: "bg-emerald-400/10 border-emerald-400/20 text-emerald-400",
-    warning: "bg-orange-400/10 border-orange-400/20 text-orange-400",
+    base: "inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.05em] leading-none",
+    glass: "border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-high)] text-[color:var(--color-on-surface-variant)]",
+    success: "border-[color:var(--color-secondary)]/30 bg-[color:var(--color-secondary)]/12 text-[color:var(--color-secondary)]",
+    warning: "border-[color:var(--color-tertiary)]/30 bg-[color:var(--color-tertiary)]/12 text-[color:var(--color-tertiary)]",
   },
 
-  // Animations
   animation: {
     fadeIn: "animate-in fade-in duration-500",
     slideUp: "animate-in slide-in-from-bottom-4 duration-500",
-  }
+  },
 };
