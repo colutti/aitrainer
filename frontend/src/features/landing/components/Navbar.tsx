@@ -37,7 +37,7 @@ export const Navbar = () => {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-200 border-b ${
         scrolled
-          ? 'bg-dark-bg border-border py-4'
+          ? 'bg-[color:var(--color-background)] border-[color:var(--color-outline-variant)] py-4'
           : 'bg-transparent border-transparent py-6'
       }`}
     >
@@ -95,7 +95,7 @@ export const Navbar = () => {
 
       {/* Mobile menu */}
       {isMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-dark-bg border-b border-border p-6 flex flex-col gap-6 animate-fade-in">
+        <div className="md:hidden absolute top-full left-0 right-0 bg-[color:var(--color-background)] border-b border-[color:var(--color-outline-variant)] p-6 flex flex-col gap-6 animate-fade-in">
           {navLinks.map((link) => (
             <Button
               key={link.name}
@@ -107,7 +107,7 @@ export const Navbar = () => {
               {link.name}
             </Button>
           ))}
-          <div className="h-px bg-border" />
+          <div className="h-px bg-[color:var(--color-outline-variant)]" />
           <div className="flex items-center justify-between">
             <span className="text-sm text-text-secondary">{t('settings.language')}</span>
             <LanguageSelector />

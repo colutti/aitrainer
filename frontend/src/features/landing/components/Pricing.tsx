@@ -54,7 +54,7 @@ export const Pricing = () => {
   const plans = PLAN_CATALOG.map((entry) => buildPlanCardModel(entry, t, isPt));
 
   return (
-    <section id="planos" className="py-20 px-4 sm:px-6 lg:px-8 border-t border-border">
+    <section id="planos" className="py-20 px-4 sm:px-6 lg:px-8 border-t border-[color:var(--color-outline-variant)]">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="font-display text-3xl font-bold text-text-primary mb-4">

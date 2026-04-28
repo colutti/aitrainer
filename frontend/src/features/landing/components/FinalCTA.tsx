@@ -10,7 +10,7 @@ export const FinalCTA = () => {
   const { enableNewUserSignups } = usePublicConfig();
 
   return (
-    <section className="py-24 px-4 sm:px-6 lg:px-8 bg-primary/5 border-t border-border">
+    <section className="py-24 px-4 sm:px-6 lg:px-8 bg-[color:var(--color-primary)]/5 border-t border-[color:var(--color-outline-variant)]">
       <div className="max-w-3xl mx-auto text-center">
         <h2 className="font-display text-4xl font-bold text-text-primary mb-6">
           {t('landing.cta.title')}
@@ -23,7 +23,7 @@ export const FinalCTA = () => {
           variant="primary"
           size="lg"
           disabled={!enableNewUserSignups}
-          className="bg-primary bg-none hover:bg-primary-hover shadow-none rounded-lg h-14 px-10 text-lg"
+          className="shadow-none rounded-lg h-14 px-10 text-lg"
         >
           {t('landing.cta.button')}
           <ChevronRight size={20} className="ml-2" />

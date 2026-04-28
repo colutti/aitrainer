@@ -13,8 +13,8 @@ export const Hero = () => {
     <section className="pt-32 pb-16 md:pt-48 md:pb-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-primary/10 border border-primary/20 mb-6">
-            <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-[color:var(--color-primary)]/10 border border-[color:var(--color-primary)]/30 mb-6">
+            <span className="text-xs font-semibold text-[color:var(--color-primary)] uppercase tracking-wider">
               {t('landing.hero.eyebrow')}
             </span>
           </div>
@@ -33,7 +33,7 @@ export const Hero = () => {
               variant="primary"
               size="lg"
               disabled={!enableNewUserSignups}
-              className="bg-primary bg-none hover:bg-primary-hover shadow-none rounded-lg h-14 px-8 text-lg"
+              className="shadow-none rounded-lg h-14 px-8 text-lg"
             >
               {t('landing.hero.cta')}
               <ChevronRight className="ml-2 w-5 h-5" />
@@ -45,7 +45,7 @@ export const Hero = () => {
               }}
               variant="secondary"
               size="lg"
-              className="rounded-lg border-border bg-dark-card h-14 px-8 text-lg"
+              className="rounded-lg border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] h-14 px-8 text-lg"
             >
               {t('landing.hero.demo_cta')}
             </Button>
@@ -53,15 +53,15 @@ export const Hero = () => {
 
           <div className="mt-8 flex flex-wrap gap-6 text-sm text-text-muted">
             <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[color:var(--color-primary)]" />
               {t('landing.hero.proof_1')}
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[color:var(--color-primary)]" />
               {t('landing.hero.proof_2')}
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[color:var(--color-primary)]" />
               {t('landing.hero.proof_3')}
             </div>
           </div>
