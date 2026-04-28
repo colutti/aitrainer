@@ -13,7 +13,7 @@ export function AppShell({ children, className, testId = 'app-shell' }: AppShell
     <div
       data-testid={testId}
       className={cn(
-        'min-h-[100dvh] bg-[color:var(--color-app-bg)] text-[color:var(--color-text-primary)]',
+        'min-h-[100dvh] bg-[color:var(--color-background)] text-[color:var(--color-on-background)]',
         className
       )}
     >

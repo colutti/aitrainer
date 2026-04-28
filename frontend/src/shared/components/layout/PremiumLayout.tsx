@@ -52,7 +52,7 @@ export function PremiumLayout() {
         data-testid="desktop-nav"
         id="desktop-nav"
         className={cn(
-          'hidden md:flex fixed top-0 left-0 right-0 h-20 items-center z-50 bg-[color:var(--color-app-bg)] border-b border-white/8',
+          'hidden md:flex fixed top-0 left-0 right-0 h-20 items-center z-50 bg-[color:var(--color-background)] border-b border-[color:var(--color-outline-variant)]',
           layoutMode.navClassName
         )}
       >
@@ -123,7 +123,7 @@ export function PremiumLayout() {
       </nav>
 
       {/* --- MOBILE HEADER --- */}
-      <header className="md:hidden sticky top-0 z-40 bg-[color:var(--color-app-bg)] px-4 py-3 pt-7 flex flex-col gap-2 border-b border-white/8">
+      <header className="md:hidden sticky top-0 z-40 bg-[color:var(--color-background)] px-4 py-3 pt-7 flex flex-col gap-2 border-b border-[color:var(--color-outline-variant)]">
         <div className="flex items-center justify-between gap-3">
           <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 p-1 flex items-center justify-center">
              <img src="/logo_icon.png" alt="Logo" className="w-full h-full object-contain opacity-80" />

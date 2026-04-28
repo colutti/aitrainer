@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 
+import { InsightScreen } from '../../shared/components/layout/InsightScreen';
 import { useAuthStore } from '../../shared/hooks/useAuth';
 import { useDashboardStore } from '../../shared/hooks/useDashboard';
 import { useNotificationStore } from '../../shared/hooks/useNotification';
@@ -199,23 +200,31 @@ export default function DashboardPage() {
 
   // Injeção de Dados na View
   return (
-    <DashboardView 
-      isLoading={isLoading && !data}
-      metabolism={metabolism}
-      body={body}
-      mergedWeightData={getMergedWeightData()}
-      mergedFatData={getMergedFatData()}
-      mergedMuscleData={getMergedMuscleData()}
-      recentActivities={data?.recentActivities ?? []}
-      recentPRs={recentPRs ?? []}
-      strengthRadar={strengthRadar ?? null}
-      volumeTrend={volumeTrend ?? []}
-      weeklyFrequency={weeklyFrequency ?? []}
-      streak={streak ?? null}
-      calories={calories}
-      workouts={workouts}
-      confidenceLevel={confidenceLevel}
-      confidenceColor={confidenceColor}
-    />
+    <div data-testid="dashboard-insight-screen">
+      <InsightScreen
+        title={t('dashboard.title')}
+        subtitle={t('dashboard.subtitle')}
+        content={
+          <DashboardView
+            isLoading={isLoading && !data}
+            metabolism={metabolism}
+            body={body}
+            mergedWeightData={getMergedWeightData()}
+            mergedFatData={getMergedFatData()}
+            mergedMuscleData={getMergedMuscleData()}
+            recentActivities={data?.recentActivities ?? []}
+            recentPRs={recentPRs ?? []}
+            strengthRadar={strengthRadar ?? null}
+            volumeTrend={volumeTrend ?? []}
+            weeklyFrequency={weeklyFrequency ?? []}
+            streak={streak ?? null}
+            calories={calories}
+            workouts={workouts}
+            confidenceLevel={confidenceLevel}
+            confidenceColor={confidenceColor}
+          />
+        }
+      />
+    </div>
   );
-  }
+}

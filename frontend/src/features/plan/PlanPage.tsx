@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
+import { InsightScreen } from '../../shared/components/layout/InsightScreen';
 import { usePlanStore } from '../../shared/hooks/usePlan';
 
 import { PlanView } from './components/PlanView';
@@ -16,23 +17,24 @@ export default function PlanPage() {
   }, [fetchPlan]);
 
   return (
-    <section className="mx-auto w-full max-w-[1600px] space-y-6">
-      <div className="space-y-1.5 px-1">
-        <h1 className="text-2xl font-bold tracking-tight text-white md:text-3xl">{t('plan.title')}</h1>
-        <p className="text-sm text-zinc-400">{t('plan.subtitle')}</p>
-      </div>
-
-      <PlanView
-        plan={plan}
-        isLoading={isLoading}
-        onOpenChat={() => {
-          void navigate('/dashboard/chat', {
-            state: {
-              draftMessage: t('plan.empty.prefill_message'),
-            },
-          });
-        }}
+    <div data-testid="plan-screen">
+      <InsightScreen
+        title={t('plan.title')}
+        subtitle={t('plan.subtitle')}
+        content={
+          <PlanView
+            plan={plan}
+            isLoading={isLoading}
+            onOpenChat={() => {
+              void navigate('/dashboard/chat', {
+                state: {
+                  draftMessage: t('plan.empty.prefill_message'),
+                },
+              });
+            }}
+          />
+        }
       />
-    </section>
+    </div>
   );
 }

@@ -176,10 +176,10 @@ export default function OnboardingPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#09090b] text-white p-4">
+      <div className="min-h-screen flex items-center justify-center bg-[color:var(--color-background)] text-[color:var(--color-on-background)] p-4">
         <div className="text-center space-y-4">
-          <h1 className="text-2xl font-black uppercase text-red-500">{t('onboarding.error_title')}</h1>
-          <p className="text-zinc-500">{error}</p>
+          <h1 className="text-2xl font-black uppercase text-[color:var(--color-error)]">{t('onboarding.error_title')}</h1>
+          <p className="text-[color:var(--color-on-surface-variant)]">{error}</p>
           <Button onClick={() => { void navigate('/'); }}>{t('common.back')}</Button>
         </div>
       </div>
@@ -187,7 +187,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <OnboardingView 
+    <OnboardingView
       step={step}
       onNext={handleNext}
       onBack={handleBack}
