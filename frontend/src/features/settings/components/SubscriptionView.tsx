@@ -65,14 +65,14 @@ export function SubscriptionView({
     return (
       <div className="space-y-8 animate-pulse">
         <div className="flex items-center gap-4">
-           <Skeleton className="w-14 h-14 rounded-2xl bg-white/5" />
+           <Skeleton className="w-14 h-14 rounded-2xl bg-[color:var(--color-surface-container)]" />
            <div className="space-y-2">
-              <Skeleton className="h-4 w-32 bg-white/5" />
-              <Skeleton className="h-8 w-64 bg-white/5" />
+              <Skeleton className="h-4 w-32 bg-[color:var(--color-surface-container)]" />
+              <Skeleton className="h-8 w-64 bg-[color:var(--color-surface-container)]" />
            </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-           {[1, 2, 3].map(i => <Skeleton key={i} className="h-96 rounded-[32px] bg-white/5" />)}
+           {[1, 2, 3].map(i => <Skeleton key={i} className="h-96 rounded-[32px] bg-[color:var(--color-surface-container)]" />)}
         </div>
       </div>
     );
@@ -129,7 +129,7 @@ export function SubscriptionView({
                   onSubscribe(planIdLower);
                 }
               }}
-              className="bg-black/20"
+              className="bg-[color:var(--color-background)]"
             />
           );
         })}
@@ -143,8 +143,8 @@ export function SubscriptionView({
                 <Sparkles size={28} className="text-indigo-400" />
              </div>
              <div>
-                <h3 className="text-xl font-black text-white tracking-tight">{t('settings.subscription.manage_title')}</h3>
-                <p className="text-sm text-zinc-500 font-medium leading-relaxed max-w-md">
+                <h3 className="text-xl font-black text-text-primary tracking-tight">{t('settings.subscription.manage_title')}</h3>
+                <p className="text-sm text-text-muted font-medium leading-relaxed max-w-md">
                   {t('settings.subscription.manage_subtitle')}
                 </p>
              </div>
@@ -155,7 +155,7 @@ export function SubscriptionView({
             onClick={() => { if (!isReadOnly) onManage(); }} 
             disabled={isReadOnly || loading !== null}
             data-testid="btn-manage-subscription"
-            className="w-full md:w-auto px-8 py-4 rounded-full bg-white/5 border border-white/10 text-white font-black hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+            className="w-full md:w-auto px-8 py-4 rounded-full bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] text-text-primary font-black hover:bg-white/10 transition-all flex items-center justify-center gap-2"
           >
             {loading === 'manage' && !isReadOnly && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
             {isReadOnly ? t('settings.subscription.read_only', 'Somente leitura') : t('settings.subscription.manage_button')}
@@ -164,7 +164,7 @@ export function SubscriptionView({
       )}
 
       {/* SECURITY BADGE */}
-      <div className="flex items-center justify-center gap-2 text-zinc-600 opacity-50">
+      <div className="flex items-center justify-center gap-2 text-text-muted opacity-50">
          <AlertCircle size={14} />
          <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Pagamento Seguro via Stripe • Criptografia 256-bit</span>
       </div>

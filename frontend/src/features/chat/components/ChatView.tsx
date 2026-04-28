@@ -231,12 +231,12 @@ export function ChatView({
   return (
     <div
       data-testid="chat-workspace"
-      className="h-full min-h-0 bg-[color:var(--color-app-bg)]"
+      className="h-full min-h-0 bg-[color:var(--color-background)]"
     >
-      <section data-testid="chat-conversation-column" className="flex min-h-0 h-full flex-col border-r border-white/8">
-        <div data-testid="chat-header" className="flex-none h-14 md:h-16 border-b border-white/8 px-4 md:px-6 flex items-center justify-between">
+      <section data-testid="chat-conversation-column" className="flex min-h-0 h-full flex-col border-r border-[color:var(--color-outline-variant)]">
+        <div data-testid="chat-header" className="flex-none h-14 md:h-16 border-b border-[color:var(--color-outline-variant)] px-4 md:px-6 flex items-center justify-between">
           <div className="flex items-center gap-3 mx-auto w-full max-w-[88rem]">
-            <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shrink-0 bg-zinc-800">
+            <div className="w-10 h-10 rounded-xl overflow-hidden border border-[color:var(--color-outline-variant)] shrink-0 bg-[color:var(--color-surface-container)]">
               {trainer ? (
                 <img
                   src={`/assets/avatars/${trainer.trainer_id.toLowerCase()}.png`}
@@ -244,16 +244,16 @@ export function ChatView({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-zinc-700">
-                  <Bot size={20} className="text-white" />
+                <div className="w-full h-full flex items-center justify-center bg-[color:var(--color-surface-container-high)]">
+                  <Bot size={20} className="text-text-primary" />
                 </div>
               )}
             </div>
             <div>
-              <h1 className="text-sm font-black text-white tracking-tight uppercase leading-tight">{trainerName}</h1>
+              <h1 className="text-sm font-black text-text-primary tracking-tight uppercase leading-tight">{trainerName}</h1>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{t('chat.online_now', 'Online')}</span>
+                <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">{t('chat.online_now', 'Online')}</span>
               </div>
             </div>
           </div>
@@ -273,10 +273,10 @@ export function ChatView({
 
             {messages.length === 0 && !isLoading ? (
               <div className="h-[60vh] flex flex-col items-center justify-center opacity-30 select-none text-center">
-                <div className="w-20 h-20 bg-white/5 rounded-3xl flex items-center justify-center mb-6 border border-white/5 shadow-inner">
-                  <Sparkles size={40} className="text-white" />
+                <div className="w-20 h-20 bg-[color:var(--color-surface-container)] rounded-3xl flex items-center justify-center mb-6 border border-[color:var(--color-outline-variant)] shadow-inner">
+                  <Sparkles size={40} className="text-text-primary" />
                 </div>
-                <p className="text-lg font-black text-white uppercase tracking-[0.2em]">{t('chat.start_conversation')}</p>
+                <p className="text-lg font-black text-text-primary uppercase tracking-[0.2em]">{t('chat.start_conversation')}</p>
               </div>
             ) : (
               <>
@@ -309,20 +309,20 @@ export function ChatView({
             )}
 
             {isStreaming && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#09090b]/80 border border-white/5 mb-4 w-fit">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#09090b]/80 border border-[color:var(--color-outline-variant)] mb-4 w-fit">
                 <div className="flex gap-1">
                   <span className="w-1 h-1 bg-zinc-300 rounded-full animate-bounce [animation-duration:0.6s]" />
                   <span className="w-1 h-1 bg-zinc-300 rounded-full animate-bounce [animation-duration:0.6s] [animation-delay:0.2s]" />
                   <span className="w-1 h-1 bg-zinc-300 rounded-full animate-bounce [animation-duration:0.6s] [animation-delay:0.4s]" />
                 </div>
-                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
+                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">
                   {t('chat.typing', { name: trainerName })}
                 </span>
               </div>
             )}
 
             {!isLimitError ? (
-              <div className="surface-card rounded-[28px] p-2 border-white/10">
+              <div className="surface-card rounded-[28px] p-2 border-[color:var(--color-outline-variant)]">
                 <form
                   data-testid="chat-form"
                   onSubmit={(e) => {
@@ -353,7 +353,7 @@ export function ChatView({
                     variant="ghost"
                     size="icon"
                     disabled={isStreaming || isDemoUser}
-                    className="w-11 h-11 rounded-full bg-white/5 text-zinc-200"
+                    className="w-11 h-11 rounded-full bg-[color:var(--color-surface-container)] text-text-secondary"
                     onClick={() => {
                       imageInputRef.current?.click();
                     }}
@@ -371,7 +371,7 @@ export function ChatView({
                     ref={textareaRef}
                     data-testid="chat-input"
                     placeholder={t('chat.input_placeholder', { name: trainerName.split(' ')[0] })}
-                    className="flex-1 bg-transparent py-3 pl-4 pr-2 text-base text-white placeholder:text-zinc-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none max-h-[200px] overflow-y-auto"
+                    className="flex-1 bg-transparent py-3 pl-4 pr-2 text-base text-text-primary placeholder:text-text-muted focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none max-h-[200px] overflow-y-auto"
                     value={inputValue}
                     onChange={(e) => {
                       setInputValue(e.target.value);
@@ -397,7 +397,7 @@ export function ChatView({
                     disabled={!canSubmit}
                     className={cn(
                       'w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg shrink-0 mb-0.5',
-                      canSubmit ? 'bg-white text-black active:scale-90' : 'bg-white/5 text-zinc-700 cursor-not-allowed',
+                      canSubmit ? 'bg-white text-black active:scale-90' : 'bg-[color:var(--color-surface-container)] text-text-muted cursor-not-allowed',
                     )}
                   >
                     <Send size={20} className={cn(isStreaming && 'animate-pulse', 'ml-0.5')} />
@@ -406,21 +406,21 @@ export function ChatView({
                 {selectedImagePreviews.length > 0 && (
                   <div className="px-4 pt-2 pb-1">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-semibold text-zinc-400">
+                      <span className="text-[10px] font-semibold text-text-secondary">
                         {selectedImagePreviews.length}/{MAX_IMAGES_PER_MESSAGE} imagens selecionadas
                       </span>
-                      <span className="text-[10px] text-zinc-500">Máx. {maxImageSizeMb}MB por imagem</span>
+                      <span className="text-[10px] text-text-muted">Máx. {maxImageSizeMb}MB por imagem</span>
                     </div>
                     <div className="flex gap-2 overflow-x-auto">
                       {selectedImagePreviews.map((preview, index) => (
-                        <div key={`${preview.slice(0, 20)}-${index.toString()}`} className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/10 shrink-0">
+                        <div key={`${preview.slice(0, 20)}-${index.toString()}`} className="relative w-20 h-20 rounded-xl overflow-hidden border border-[color:var(--color-outline-variant)] shrink-0">
                           <img src={preview} alt="preview" className="w-full h-full object-cover" />
                           <button
                             type="button"
                             onClick={() => {
                               removeSelectedImageAt(index);
                             }}
-                            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-white flex items-center justify-center"
+                            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-[color:var(--color-background)]/80 text-text-primary flex items-center justify-center"
                             data-testid={`chat-image-clear-${index.toString()}`}
                           >
                             <X size={12} />
@@ -439,16 +439,16 @@ export function ChatView({
                 </div>
               </div>
             ) : (
-              <PremiumCard className={cn(PREMIUM_UI.card.padding, 'border-white/10 bg-[color:var(--color-app-surface-raised)]')}>
+              <PremiumCard className={cn(PREMIUM_UI.card.padding, 'border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)]')}>
                 <div className="flex flex-col items-center text-center space-y-5">
                   <div className="w-14 h-14 bg-white/10 rounded-full flex items-center justify-center border border-white/20">
-                    <Sparkles size={28} className="text-white" />
+                    <Sparkles size={28} className="text-text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-black text-white tracking-tight">
+                    <h3 className="text-xl font-black text-text-primary tracking-tight">
                       {error === 'TRIAL_EXPIRED' ? t('chat.trial_ended.title') : t('chat.daily_limit.title')}
                     </h3>
-                    <p className="mt-2 text-sm text-zinc-400 font-medium leading-relaxed max-w-sm">
+                    <p className="mt-2 text-sm text-text-secondary font-medium leading-relaxed max-w-sm">
                       {error === 'TRIAL_EXPIRED' ? t('chat.trial_ended.description') : t('chat.daily_limit.description')}
                     </p>
                   </div>

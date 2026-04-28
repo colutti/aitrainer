@@ -29,7 +29,7 @@ export default function SettingsPage() {
         title={t('settings.title')}
         subtitle={t('settings.subtitle')}
         actions={
-          <nav className="grid grid-cols-5 gap-1 surface-card rounded-2xl p-1.5 border-white/10 w-full lg:w-fit md:flex md:rounded-full md:overflow-x-auto hide-scrollbar max-w-full">
+          <nav className="grid grid-cols-5 gap-1 surface-card rounded-2xl p-1.5 border-[color:var(--color-outline-variant)] w-full lg:w-fit md:flex md:rounded-full md:overflow-x-auto hide-scrollbar max-w-full">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
@@ -41,7 +41,7 @@ export default function SettingsPage() {
                     "flex items-center justify-center gap-1.5 md:gap-2 px-0.5 md:px-4 lg:px-6 py-2 rounded-xl md:rounded-full text-[10px] md:text-xs font-black transition-all uppercase tracking-wider lg:tracking-widest whitespace-nowrap",
                     isActive
                       ? "bg-white text-black shadow-lg"
-                      : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
+                      : "text-text-muted hover:text-text-secondary hover:bg-[color:var(--color-surface-container)]"
                   )}
                 >
                   <Icon size={16} className="shrink-0" />

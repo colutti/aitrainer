@@ -120,8 +120,8 @@ export const MessageBubble = memo(function MessageBubble({ message, resolveText,
         <div className={cn(
           "w-10 h-10 rounded-2xl border flex items-center justify-center overflow-hidden shadow-lg",
           isTrainer 
-            ? "bg-zinc-900 border-white/5 text-indigo-400" 
-            : "bg-indigo-500 border-white/10 text-white"
+            ? "bg-zinc-900 border-[color:var(--color-outline-variant)] text-indigo-400" 
+            : "bg-indigo-500 border-[color:var(--color-outline-variant)] text-text-primary"
         )}>
           {isTrainer ? (
             trainerId ? (
@@ -140,15 +140,15 @@ export const MessageBubble = memo(function MessageBubble({ message, resolveText,
         "flex flex-col max-w-full lg:max-w-[88%] xl:max-w-[82%] 2xl:max-w-[88%]",
         isTrainer ? "items-start" : "items-end"
       )} data-testid="chat-message-bubble">
-        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600 mb-1.5 ml-1">
+        <span className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5 ml-1">
           {isTrainer ? (trainerId ?? 'AI Trainer') : (userName ?? t('common.athlete'))}
         </span>
         
         <div className={cn(
           "px-5 py-4 rounded-[24px] relative overflow-hidden",
           isTrainer 
-            ? "bg-white/[0.03] backdrop-blur-2xl border border-white/5 rounded-bl-none text-zinc-200 message-bubble-trainer" 
-            : "bg-gradient-to-br from-indigo-500 to-indigo-600 border border-white/10 rounded-br-none text-white shadow-xl shadow-indigo-500/10 message-bubble-user"
+            ? "bg-[color:var(--color-surface-container-low)] backdrop-blur-2xl border border-[color:var(--color-outline-variant)] rounded-bl-none text-text-secondary message-bubble-trainer" 
+            : "bg-gradient-to-br from-indigo-500 to-indigo-600 border border-[color:var(--color-outline-variant)] rounded-br-none text-text-primary shadow-xl shadow-indigo-500/10 message-bubble-user"
         )}>
           {isTrainer && (
             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none" />
@@ -172,14 +172,14 @@ export const MessageBubble = memo(function MessageBubble({ message, resolveText,
                   key={`${image.base64.slice(0, 12)}-${index.toString()}`}
                   src={`data:${image.mimeType};base64,${image.base64}`}
                   alt={`attachment-${index.toString()}`}
-                  className="w-28 h-28 object-cover rounded-xl border border-white/10"
+                  className="w-28 h-28 object-cover rounded-xl border border-[color:var(--color-outline-variant)]"
                 />
               ))}
             </div>
           )}
         </div>
         
-        <span className="text-[9px] font-bold text-zinc-700 mt-1.5 uppercase tracking-tighter">
+        <span className="text-[9px] font-bold text-text-muted mt-1.5 uppercase tracking-tighter">
           {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </span>
       </div>
