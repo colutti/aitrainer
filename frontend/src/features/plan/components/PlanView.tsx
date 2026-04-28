@@ -96,9 +96,9 @@ function resolveRoutineForSchedule(
 function PlanSkeleton() {
   return (
     <div data-testid="plan-skeleton" className="space-y-6 animate-pulse">
-      <Skeleton className="h-32 rounded-[28px] bg-white/5" />
-      <Skeleton className="h-96 rounded-[28px] bg-white/5" />
-      <Skeleton className="h-48 rounded-[28px] bg-white/5" />
+      <Skeleton className="h-32 rounded-[28px] bg-[color:var(--color-surface-container)]" />
+      <Skeleton className="h-96 rounded-[28px] bg-[color:var(--color-surface-container)]" />
+      <Skeleton className="h-48 rounded-[28px] bg-[color:var(--color-surface-container)]" />
     </div>
   );
 }
@@ -136,15 +136,15 @@ function TimelineHeader({
   }, [startDate, targetDate]);
 
   return (
-    <PremiumCard className="relative overflow-hidden border-white/10 bg-[color:var(--color-app-surface-raised)] px-5 py-4 md:px-6 md:py-5">
+    <PremiumCard className="relative overflow-hidden border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] px-5 py-4 md:px-6 md:py-5">
       <div className="relative space-y-5">
-        <div className="flex items-center gap-3 text-white">
+        <div className="flex items-center gap-3 text-text-primary">
           <CalendarDays size={20} className="text-cyan-300" />
           <h2 className="text-lg md:text-xl font-bold tracking-tight">{title}</h2>
         </div>
 
         <div className="space-y-3">
-          <div className="h-3 w-full rounded-full bg-[color:var(--color-app-bg)]">
+          <div className="h-3 w-full rounded-full bg-[color:var(--color-background)]">
             <div
               className="relative h-3 rounded-full"
               style={{
@@ -152,18 +152,18 @@ function TimelineHeader({
                 background: `linear-gradient(90deg, ${CYAN} 0%, ${GREEN} 100%)`,
               }}
             >
-              <div className="absolute right-[-8px] top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border-2 border-cyan-300 bg-[color:var(--color-app-surface-raised)]" />
+              <div className="absolute right-[-8px] top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border-2 border-cyan-300 bg-[color:var(--color-surface-container-low)]" />
             </div>
           </div>
-          <div className="flex items-center justify-between text-xs font-medium text-zinc-300 md:text-sm">
+          <div className="flex items-center justify-between text-xs font-medium text-text-secondary md:text-sm">
             <p>
-              {formatDateByLocale(startDate, locale)} <span className="text-zinc-500">({t('plan.labels.start')})</span>
+              {formatDateByLocale(startDate, locale)} <span className="text-text-muted">({t('plan.labels.start')})</span>
             </p>
             <p className="text-cyan-200">
               {t('plan.labels.week_of', { week: timeline.week, total: timeline.totalWeeks })}
             </p>
             <p>
-              {formatDateByLocale(targetDate, locale)} <span className="text-zinc-500">({t('plan.labels.target')})</span>
+              {formatDateByLocale(targetDate, locale)} <span className="text-text-muted">({t('plan.labels.target')})</span>
             </p>
           </div>
         </div>
@@ -174,15 +174,15 @@ function TimelineHeader({
 
 function NutritionTargetCard({ metric }: { metric: RingMetric }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+    <div className="overflow-hidden rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)]">
       <div
-        className="px-4 py-2 text-center font-semibold text-zinc-900"
+        className="px-4 py-2 text-center font-semibold text-[color:var(--color-on-primary)]"
         style={{ backgroundColor: 'rgba(34,211,238,0.95)' }}
       >
         <p className="text-sm md:text-base leading-none">{metric.label}</p>
       </div>
       <div className="px-4 py-5 text-center">
-        <p className="text-xl md:text-2xl font-medium leading-none text-zinc-100">
+        <p className="text-xl md:text-2xl font-medium leading-none text-text-primary">
           {Math.round(metric.target)}
           <span className="ml-1 text-base md:text-lg">{metric.unit}</span>
         </p>
@@ -202,9 +202,9 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
 
   if (!plan) {
     return (
-      <PremiumCard className="space-y-4 border-white/10 bg-[color:var(--color-app-surface-raised)] p-8 text-center md:p-10">
-        <h2 className="text-2xl font-bold tracking-tight text-white">{t('plan.empty.title')}</h2>
-        <p className="mx-auto max-w-xl text-sm font-medium text-zinc-400">{t('plan.empty.description')}</p>
+      <PremiumCard className="space-y-4 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-8 text-center md:p-10">
+        <h2 className="text-2xl font-bold tracking-tight text-text-primary">{t('plan.empty.title')}</h2>
+        <p className="mx-auto max-w-xl text-sm font-medium text-text-muted">{t('plan.empty.description')}</p>
         <div>
           <Button type="button" onClick={onOpenChat} className="rounded-full px-6 py-3 font-bold">
             {t('plan.empty.cta')}
@@ -264,8 +264,8 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
       />
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <PremiumCard className="space-y-4 border-white/10 bg-[color:var(--color-app-surface-raised)] p-5">
-          <h3 className="text-sm font-bold uppercase tracking-wide text-white">{t('plan.sections.daily_routine')}</h3>
+        <PremiumCard className="space-y-4 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5">
+          <h3 className="text-sm font-bold uppercase tracking-wide text-text-primary">{t('plan.sections.daily_routine')}</h3>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -276,7 +276,7 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
                 'rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide transition-all',
                 isViewingToday
                   ? 'border-cyan-400 bg-cyan-400/20 text-cyan-100'
-                  : 'border-white/10 bg-[color:var(--color-app-bg)] text-zinc-300 hover:border-cyan-500/40 hover:text-zinc-100'
+                  : 'border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] text-text-secondary hover:border-cyan-500/40 hover:text-text-primary'
               )}
             >
               {t('plan.sections.daily_routine')}
@@ -297,7 +297,7 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
                       'shrink-0 rounded-xl border px-3 py-2 text-center text-[11px] md:text-xs font-bold uppercase transition-all',
                       isActive
                         ? 'border-cyan-400 bg-cyan-400/20 text-cyan-100'
-                        : 'border-white/10 bg-[color:var(--color-app-bg)] text-zinc-300 hover:border-cyan-500/40 hover:text-zinc-100',
+                        : 'border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] text-text-secondary hover:border-cyan-500/40 hover:text-text-primary',
                     )}
                     aria-pressed={isActive}
                   >
@@ -311,13 +311,13 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
           <div className="grid grid-cols-1 gap-3 xl:grid-cols-2" data-testid="plan-weekly-exercises">
             {selectedRoutine?.exercises.length ? (
               selectedRoutine.exercises.map((exercise) => (
-                <div key={`${selectedDay}-${exercise.name}`} className="flex items-center gap-4 rounded-2xl border border-white/10 bg-[color:var(--color-app-bg)] p-4">
-                  <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-zinc-200">
+                <div key={`${selectedDay}-${exercise.name}`} className="flex items-center gap-4 rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">
+                  <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[color:var(--color-outline)] bg-[color:var(--color-surface-container)] text-text-secondary">
                     <Dumbbell size={22} />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-base font-semibold text-zinc-100 md:text-lg">{exercise.name}</p>
-                    <div className="flex flex-wrap gap-4 text-xs font-medium text-zinc-300 md:text-sm">
+                    <p className="text-base font-semibold text-text-primary md:text-lg">{exercise.name}</p>
+                    <div className="flex flex-wrap gap-4 text-xs font-medium text-text-secondary md:text-sm">
                       <span>
                         {t('plan.labels.sets_reps')}: {exercise.sets} x {exercise.reps}
                       </span>
@@ -329,7 +329,7 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
                 </div>
               ))
             ) : (
-              <div className="space-y-3 rounded-2xl border border-white/10 bg-[color:var(--color-app-bg)] p-5 text-sm font-semibold text-zinc-400 xl:col-span-2">
+              <div className="space-y-3 rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-5 text-sm font-semibold text-text-muted xl:col-span-2">
                 <p>{t('plan.labels.rest_day')}</p>
                 <Button type="button" variant="secondary" onClick={onOpenChat} className="h-10 rounded-lg px-4 text-xs md:text-sm">
                   {t('plan.empty.cta')}
@@ -340,19 +340,19 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
         </PremiumCard>
 
         <div className="space-y-5">
-          <PremiumCard className="space-y-4 border-white/10 bg-[color:var(--color-app-surface-raised)] p-5">
-            <h3 className="text-sm font-bold uppercase tracking-wide text-white">{t('plan.sections.overview')}</h3>
-            <div className="space-y-3 rounded-xl border border-white/10 bg-[color:var(--color-app-bg)] p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-zinc-400">{t('plan.labels.primary_goal')}</p>
-              <p className="text-lg font-bold text-zinc-100 md:text-xl">{plan.strategy.rationale}</p>
-              <p className="text-sm font-medium text-zinc-200 md:text-base">{plan.overview.objective_summary}</p>
+          <PremiumCard className="space-y-4 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-text-primary">{t('plan.sections.overview')}</h3>
+            <div className="space-y-3 rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">{t('plan.labels.primary_goal')}</p>
+              <p className="text-lg font-bold text-text-primary md:text-xl">{plan.strategy.rationale}</p>
+              <p className="text-sm font-medium text-text-secondary md:text-base">{plan.overview.objective_summary}</p>
             </div>
-            <div className="space-y-3 rounded-xl border border-white/10 bg-[color:var(--color-app-bg)] p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-zinc-400">{t('plan.labels.success_criteria')}</p>
+            <div className="space-y-3 rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">{t('plan.labels.success_criteria')}</p>
               <div className="space-y-2">
                 {successCriteria.map((criterion) => (
-                  <div key={criterion} className="flex items-start gap-2 text-zinc-200">
-                    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-white/20 bg-white/5 text-zinc-200">
+                  <div key={criterion} className="flex items-start gap-2 text-text-secondary">
+                    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-outline)] bg-[color:var(--color-surface-container)] text-text-secondary">
                       <Check size={12} />
                     </span>
                     <p className="text-xs font-medium md:text-sm">{criterion}</p>
@@ -362,8 +362,8 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
             </div>
           </PremiumCard>
 
-          <PremiumCard className="space-y-5 border-white/10 bg-[color:var(--color-app-surface-raised)] p-5">
-            <h3 className="text-sm font-bold uppercase tracking-wide text-white">{t('plan.sections.nutrition_strategy')}</h3>
+          <PremiumCard className="space-y-5 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-text-primary">{t('plan.sections.nutrition_strategy')}</h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {metrics.map((metric) => (
                 <NutritionTargetCard key={metric.id} metric={metric} />
@@ -371,21 +371,21 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
             </div>
           </PremiumCard>
 
-          <PremiumCard className="space-y-3 border-white/10 bg-[color:var(--color-app-surface-raised)] p-5">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-white">{t('plan.sections.latest_checkpoint')}</h3>
+          <PremiumCard className="space-y-3 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5">
+            <h3 className="text-xs font-bold uppercase tracking-wide text-text-primary">{t('plan.sections.latest_checkpoint')}</h3>
             {plan.latest_checkpoint ? (
               <div className="space-y-2">
-                <p className="text-sm font-medium text-zinc-200">{plan.latest_checkpoint.summary}</p>
-                <p className="text-xs font-medium text-zinc-300 md:text-sm">
+                <p className="text-sm font-medium text-text-secondary">{plan.latest_checkpoint.summary}</p>
+                <p className="text-xs font-medium text-text-secondary md:text-sm">
                   {t('plan.checkpoint.decision')}: {plan.latest_checkpoint.decision}
                 </p>
-                <p className="text-xs font-medium text-zinc-300 md:text-sm">
+                <p className="text-xs font-medium text-text-secondary md:text-sm">
                   {t('plan.checkpoint.next_focus')}: {plan.latest_checkpoint.next_focus}
                 </p>
               </div>
             ) : (
               <div className="space-y-3">
-                <p className="text-xs font-semibold text-zinc-400">{t('plan.checkpoint.empty')}</p>
+                <p className="text-xs font-semibold text-text-muted">{t('plan.checkpoint.empty')}</p>
                 <Button type="button" variant="secondary" onClick={onOpenChat} className="h-10 rounded-lg px-4 text-xs md:text-sm">
                   {t('plan.empty.cta')}
                 </Button>
