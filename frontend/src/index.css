@@ -130,14 +130,16 @@
 }
 
 @utility custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.28) transparent;
   &::-webkit-scrollbar {
-    @apply w-1.5;
+    @apply w-2;
   }
   &::-webkit-scrollbar-track {
     @apply bg-transparent;
   }
   &::-webkit-scrollbar-thumb {
-    @apply bg-white/10 rounded-full hover:bg-white/20;
+    @apply bg-white/25 rounded-full hover:bg-white/40;
   }
 }
 

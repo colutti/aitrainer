@@ -1,8 +1,6 @@
 import { useEffect, useRef, useMemo, useLayoutEffect, useCallback, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import { InsightScreen } from '../../shared/components/layout/InsightScreen';
 import { useAuthStore } from '../../shared/hooks/useAuth';
 import { useChatStore } from '../../shared/hooks/useChat';
 import { useSettingsStore } from '../../shared/hooks/useSettings';
@@ -17,7 +15,6 @@ import { ChatView } from './components/ChatView';
  * Manages chat logic, streaming state, and scroll behavior.
  */
 export default function ChatPage() {
-  const { t } = useTranslation();
   const { messages, isStreaming, error, fetchHistory, sendMessage, loadMore, hasMore, isLoading } = useChatStore();
   const { trainer, availableTrainers, fetchTrainer, fetchAvailableTrainers } = useSettingsStore();
   const { userInfo } = useAuthStore();
@@ -34,7 +31,7 @@ export default function ChatPage() {
   
   const prevScrollHeightRef = useRef<number>(0);
   const prevMessagesLength = useRef(0);
-  const [shouldAutoScroll, setShouldAutoScroll] = useState(false);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const isFirstRenderRef = useRef(true);
   const bootstrappedRef = useRef(false);
 
@@ -67,7 +64,7 @@ export default function ChatPage() {
     setShouldAutoScroll(isAtBottom);
 
     // Load more detection (top)
-    if (scrollTop === 0 && hasMore && !isLoading && messages.length > 0) {
+    if (scrollTop <= 1 && hasMore && !isLoading && messages.length > 0) {
       prevScrollHeightRef.current = scrollHeight;
       void loadMore();
     }
@@ -107,26 +104,20 @@ export default function ChatPage() {
   }, [isStreaming, sendMessage]);
 
   return (
-    <div data-testid="conversation-screen">
-      <InsightScreen
-        title={t('nav.chat')}
-        subtitle={currentTrainer?.name ?? t('chat.default_trainer_name')}
-        content={
-          <ChatView
-            messages={messages}
-            isStreaming={isStreaming}
-            isLoading={isLoading}
-            hasMore={hasMore}
-            error={error}
-            trainer={currentTrainer}
-            userInfo={userInfo}
-            initialInputValue={draftSeed}
-            onSend={handleSend}
-            onScroll={handleScroll}
-            scrollContainerRef={scrollContainerRef}
-            messagesEndRef={messagesEndRef}
-          />
-        }
+    <div data-testid="conversation-screen" className="h-full min-h-0">
+      <ChatView
+        messages={messages}
+        isStreaming={isStreaming}
+        isLoading={isLoading}
+        hasMore={hasMore}
+        error={error}
+        trainer={currentTrainer}
+        userInfo={userInfo}
+        initialInputValue={draftSeed}
+        onSend={handleSend}
+        onScroll={handleScroll}
+        scrollContainerRef={scrollContainerRef}
+        messagesEndRef={messagesEndRef}
       />
     </div>
   );

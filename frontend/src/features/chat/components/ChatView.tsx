@@ -1,4 +1,4 @@
-import { Bot, Send, Sparkles, AlertCircle, Paperclip, X } from 'lucide-react';
+import { Send, Sparkles, AlertCircle, Paperclip, X } from 'lucide-react';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -234,31 +234,6 @@ export function ChatView({
       className="h-full min-h-0 bg-[color:var(--color-background)]"
     >
       <section data-testid="chat-conversation-column" className="flex min-h-0 h-full flex-col border-r border-[color:var(--color-outline-variant)]">
-        <div data-testid="chat-header" className="flex-none h-14 md:h-16 border-b border-[color:var(--color-outline-variant)] px-4 md:px-6 flex items-center justify-between">
-          <div className="flex items-center gap-3 mx-auto w-full max-w-[88rem]">
-            <div className="w-10 h-10 rounded-xl overflow-hidden border border-[color:var(--color-outline-variant)] shrink-0 bg-[color:var(--color-surface-container)]">
-              {trainer ? (
-                <img
-                  src={`/assets/avatars/${trainer.trainer_id.toLowerCase()}.png`}
-                  alt={trainerName}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-[color:var(--color-surface-container-high)]">
-                  <Bot size={20} className="text-text-primary" />
-                </div>
-              )}
-            </div>
-            <div>
-              <h1 className="text-sm font-semibold text-text-primary tracking-tight uppercase leading-tight">{trainerName}</h1>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-bold text-text-muted uppercase tracking-[0.05em]">{t('chat.online_now', 'Online')}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div
           ref={scrollContainerRef}
           onScroll={onScroll}

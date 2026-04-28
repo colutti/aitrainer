@@ -148,7 +148,7 @@ export const MessageBubble = memo(function MessageBubble({ message, resolveText,
           "px-5 py-4 rounded-[24px] relative overflow-hidden",
           isTrainer 
             ? "bg-[color:var(--color-surface-container-low)] backdrop-blur-2xl border border-[color:var(--color-outline-variant)] rounded-bl-none text-text-secondary message-bubble-trainer" 
-            : "bg-[color:var(--color-primary)] border border-[color:var(--color-outline-variant)] rounded-br-none text-text-primary  shadow-indigo-500/10 message-bubble-user"
+            : "bg-[color:var(--color-user-message)] border border-[color:var(--color-primary)] rounded-br-none text-[color:var(--color-on-primary)] shadow-indigo-500/10 message-bubble-user"
         )}>
           {isTrainer && (
             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none" />

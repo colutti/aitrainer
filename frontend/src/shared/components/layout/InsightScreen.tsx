@@ -25,7 +25,9 @@ export function InsightScreen({
     <div data-testid="insight-screen" className={cn('space-y-6', className)}>
       <PageHeader title={title} subtitle={subtitle} actions={actions} />
       {metrics ? <div data-testid="insight-screen-metrics">{metrics}</div> : null}
-      <div data-testid="insight-screen-content">{content}</div>
+      <div data-testid="insight-screen-content" className="min-h-0 flex-1">
+        {content}
+      </div>
     </div>
   );
 }
