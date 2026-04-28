@@ -37,7 +37,7 @@ export function WidgetRecentPRs({ prs }: WidgetRecentPRsProps) {
           {displayPrs.map((pr) => (
             <div 
               key={pr.id} 
-              className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl hover:border-yellow-500/30 transition-colors group relative overflow-hidden"
+              className="flex items-center justify-between p-4 bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] rounded-2xl hover:border-yellow-500/30 transition-colors group relative overflow-hidden"
             >
               <div className="flex items-center gap-4 relative z-10">
                 <div className="h-10 w-10 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500 font-bold text-xs shrink-0">
@@ -53,7 +53,7 @@ export function WidgetRecentPRs({ prs }: WidgetRecentPRsProps) {
 
               <div className="text-right relative z-10 shrink-0">
                 <div className="flex items-center gap-1 justify-end">
-                  <span className="text-xl font-black text-white tracking-tight">{pr.weight}<span className="text-sm font-medium text-text-muted ml-0.5">{t('dashboard.weight_unit')}</span></span>
+                  <span className="text-xl font-black text-text-primary tracking-tight">{pr.weight}<span className="text-sm font-medium text-text-muted ml-0.5">{t('dashboard.weight_unit')}</span></span>
                 </div>
                 {pr.previous_weight && (
                   <div className="flex items-center justify-end gap-1 text-[10px] text-emerald-400 font-bold">

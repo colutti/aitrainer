@@ -27,7 +27,7 @@ export function WidgetCompositionChart({
   const padding = (maxValue - minValue) * 0.15;
 
   return (
-    <div className="bg-dark-card border border-border rounded-2xl p-6 relative overflow-hidden group h-full">
+    <div className="bg-[color:var(--color-surface-container-low)] border border-[color:var(--color-outline-variant)] rounded-2xl p-6 relative overflow-hidden group h-full">
       <div className="relative z-10 flex flex-col h-full justify-between">
         <div className="mb-4">
           <h3 className="text-sm font-bold text-text-secondary uppercase tracking-wider mb-1">

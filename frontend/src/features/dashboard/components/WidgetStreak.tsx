@@ -17,12 +17,12 @@ export function WidgetStreak({ currentWeeks = 0, currentDays = 0 }: WidgetStreak
       <div className="flex flex-col justify-center">
         <p className="text-[9px] text-orange-400/70 font-bold uppercase tracking-widest leading-none mb-0.5 hidden xs:block">{t('dashboard.streak')}</p>
         <div className="flex items-baseline gap-1 leading-none">
-          <span className="text-sm font-black text-white">{currentWeeks}</span>
+          <span className="text-sm font-black text-text-primary">{currentWeeks}</span>
           <span className="text-[9px] text-text-muted font-bold uppercase hidden xs:inline">{t('dashboard.streak_w')}</span>
           {currentDays > 0 && (
             <>
               <span className="text-[9px] text-text-muted mx-0.5">•</span>
-              <span className="text-sm font-bold text-white">{currentDays}</span>
+              <span className="text-sm font-bold text-text-primary">{currentDays}</span>
               <span className="text-[9px] text-text-muted font-bold uppercase">{t('dashboard.streak_d')}</span>
             </>
           )}

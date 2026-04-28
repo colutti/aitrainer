@@ -39,7 +39,7 @@ export function WidgetWeeklyFrequency({ days, className }: WidgetWeeklyFrequency
                 "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[9px] sm:text-[10px] font-bold transition-all duration-500 border relative",
                 active 
                   ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)] scale-110" 
-                  : "bg-white/5 text-text-muted border-white/5 opacity-50"
+                  : "bg-[color:var(--color-surface-container)] text-text-muted border-[color:var(--color-outline-variant)] opacity-50"
               )}
             >
               {dayLabels[index]}
