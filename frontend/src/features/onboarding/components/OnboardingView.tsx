@@ -57,11 +57,11 @@ export function OnboardingView({
   const { t, i18n } = useTranslation();
 
   const TRAINERS = [
-    { id: 'atlas', name: 'Atlas', description: t('onboarding.trainers.atlas'), color: 'from-orange-500 to-red-600' },
-    { id: 'luna', name: 'Luna', description: t('onboarding.trainers.luna'), color: 'from-indigo-400 to-purple-600' },
-    { id: 'sargento', name: 'Sargento', description: t('onboarding.trainers.sargento'), color: 'from-slate-600 to-slate-800' },
-    { id: 'sofia', name: 'Sofia', description: t('onboarding.trainers.sofia'), color: 'from-rose-400 to-pink-600' },
-    { id: 'gymbro', name: 'GymBro', description: t('onboarding.trainers.gymbro'), color: 'from-yellow-400 to-orange-500' },
+    { id: 'atlas', name: 'Atlas', description: t('onboarding.trainers.atlas') },
+    { id: 'luna', name: 'Luna', description: t('onboarding.trainers.luna') },
+    { id: 'sargento', name: 'Sargento', description: t('onboarding.trainers.sargento') },
+    { id: 'sofia', name: 'Sofia', description: t('onboarding.trainers.sofia') },
+    { id: 'gymbro', name: 'GymBro', description: t('onboarding.trainers.gymbro') },
   ];
 
   const isPt = i18n.language.startsWith('pt');
@@ -79,13 +79,13 @@ export function OnboardingView({
         return (
           <motion.div key="step2" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-8">
             <div className="text-center">
-              <h2 className="text-3xl font-black text-white tracking-tight uppercase mb-2">{t('onboarding.step_2_title')}</h2>
-              <p className="text-zinc-500 text-sm font-medium">{t('onboarding.step_2_subtitle')}</p>
+              <h2 className="text-3xl font-black text-text-primary tracking-tight uppercase mb-2">{t('onboarding.step_2_title')}</h2>
+              <p className="text-text-muted text-sm font-medium">{t('onboarding.step_2_subtitle')}</p>
             </div>
 
             <div className="space-y-6">
               <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-1">{t('settings.gender')}</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted ml-1">{t('settings.gender')}</label>
                 <div className="grid grid-cols-2 gap-3">
                   {['male', 'female'].map((g) => (
                     <Button
@@ -96,8 +96,8 @@ export function OnboardingView({
                       className={cn(
                         "h-auto py-4 rounded-2xl border font-bold transition-all text-sm",
                         formData.gender === t(`onboarding.genders.${g}`)
-                          ? "bg-white/10 border-white/20 text-white shadow-xl shadow-white/5"
-                          : "bg-white/[0.02] border-white/5 text-zinc-500 hover:border-white/10"
+                          ? "bg-[color:var(--color-surface-container)] border-[color:var(--color-outline)] text-text-primary shadow-xl shadow-white/5"
+                          : "bg-[color:var(--color-surface-container-low)] border-[color:var(--color-outline-variant)] text-text-muted hover:border-[color:var(--color-outline-variant)]"
                       )}
                     >
                       {t(`onboarding.genders.${g}`)}
@@ -156,7 +156,7 @@ export function OnboardingView({
               size="lg" 
               onClick={() => { onNext(); }} 
               disabled={!formData.gender || !formData.name || !formData.age || !formData.height || !formData.weight}
-              className="h-14 rounded-2xl bg-white text-black font-black shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all"
+              className="h-14 rounded-2xl font-black hover:scale-[1.02] active:scale-[0.98] transition-all"
             >
               {t('onboarding.next')}
               <ChevronRight className="ml-2 w-5 h-5" />
@@ -168,8 +168,8 @@ export function OnboardingView({
         return (
           <motion.div key="step3" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-8">
             <div className="text-center">
-              <h2 className="text-3xl font-black text-white tracking-tight uppercase mb-2">{t('onboarding.step_plan_title')}</h2>
-              <p className="text-zinc-500 text-sm font-medium">{t('onboarding.step_plan_subtitle')}</p>
+              <h2 className="text-3xl font-black text-text-primary tracking-tight uppercase mb-2">{t('onboarding.step_plan_title')}</h2>
+              <p className="text-text-muted text-sm font-medium">{t('onboarding.step_plan_subtitle')}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -191,21 +191,21 @@ export function OnboardingView({
                     selected={formData.subscription_plan?.toLowerCase() === plan.id}
                     actionLabel={plan.buttonLabel}
                     onAction={() => { setFormData({ ...formData, subscription_plan: normalizedPlanName }); }}
-                    className="bg-black/20"
+                    className=""
                   />
                 );
               })}
             </div>
 
             <div className="flex gap-4">
-              <Button type="button" variant="ghost" size="icon" onClick={() => { onBack(); }} className="h-14 w-14 rounded-2xl bg-white/5 border border-white/5 text-zinc-400 hover:text-white transition-all">
+              <Button type="button" variant="secondary" size="icon" onClick={() => { onBack(); }} className="h-14 w-14 rounded-2xl transition-all">
                 <ChevronLeft size={24} />
               </Button>
               <Button 
                 fullWidth 
                 size="lg" 
                 onClick={() => { onNext(); }}
-                className="h-14 rounded-2xl bg-white text-black font-black shadow-2xl"
+                className="h-14 rounded-2xl font-black"
               >
                 {t('onboarding.next')}
                 <ChevronRight className="ml-2 w-5 h-5" />
@@ -218,8 +218,8 @@ export function OnboardingView({
         return (
           <motion.div key="step4" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-8">
             <div className="text-center">
-              <h2 className="text-3xl font-black text-white tracking-tight uppercase mb-2">{t('onboarding.step_3_title')}</h2>
-              <p className="text-zinc-500 text-sm font-medium">{t('onboarding.step_3_subtitle')}</p>
+              <h2 className="text-3xl font-black text-text-primary tracking-tight uppercase mb-2">{t('onboarding.step_3_title')}</h2>
+              <p className="text-text-muted text-sm font-medium">{t('onboarding.step_3_subtitle')}</p>
             </div>
 
             <div className="space-y-3">
@@ -233,31 +233,31 @@ export function OnboardingView({
                     onClick={() => { if (!isLocked) setFormData({...formData, trainer_type: trainer.id}); }}
                     className={cn(
                       "p-4 cursor-pointer transition-all flex items-center gap-4 relative overflow-hidden group",
-                      isSelected ? "bg-white/10 border-white/20 shadow-xl" : "bg-white/[0.02] border-white/5",
+                      isSelected ? "bg-[color:var(--color-surface-container)] border-[color:var(--color-outline)] shadow-xl" : "bg-[color:var(--color-surface-container-low)] border-[color:var(--color-outline-variant)]",
                       isLocked && "opacity-40 grayscale cursor-not-allowed"
                     )}
                   >
                     <div className="relative">
-                      <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/10 bg-zinc-900">
+                      <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)]">
                         <img src={`/assets/avatars/${trainer.id}.png`} alt={trainer.name} className="w-full h-full object-cover" />
                       </div>
                       {isSelected && (
-                        <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-indigo-500 border-2 border-zinc-900 flex items-center justify-center text-white">
+                        <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[color:var(--color-primary)] border-2 border-[color:var(--color-background)] flex items-center justify-center text-[color:var(--color-on-primary)]">
                           <Check size={12} strokeWidth={4} />
                         </div>
                       )}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <h4 className="font-black text-white uppercase tracking-tight">{trainer.name}</h4>
-                        {isLocked && <Lock size={12} className="text-zinc-600" />}
+                        <h4 className="font-black text-text-primary uppercase tracking-tight">{trainer.name}</h4>
+                        {isLocked && <Lock size={12} className="text-text-muted" />}
                       </div>
-                      <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider leading-relaxed line-clamp-2">
+                      <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider leading-relaxed line-clamp-2">
                         {trainer.description}
                       </p>
                     </div>
                     {isLocked && (
-                      <span className="text-[9px] font-black uppercase bg-white/5 border border-white/10 px-2 py-1 rounded-full text-zinc-500">PRO</span>
+                      <span className="text-[9px] font-black uppercase bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] px-2 py-1 rounded-full text-text-muted">PRO</span>
                     )}
                   </PremiumCard>
                 );
@@ -265,7 +265,7 @@ export function OnboardingView({
             </div>
 
             <div className="flex gap-4">
-              <Button type="button" variant="ghost" size="icon" onClick={() => { onBack(); }} className="h-14 w-14 rounded-2xl bg-white/5 border border-white/5 text-zinc-400 hover:text-white transition-all">
+              <Button type="button" variant="secondary" size="icon" onClick={() => { onBack(); }} className="h-14 w-14 rounded-2xl transition-all">
                 <ChevronLeft size={24} />
               </Button>
               <Button 
@@ -273,7 +273,7 @@ export function OnboardingView({
                 size="lg" 
                 onClick={() => { void onSubmit(); }} 
                 isLoading={loading}
-                className="h-14 rounded-2xl bg-white text-black font-black shadow-2xl"
+                className="h-14 rounded-2xl font-black"
               >
                 {t('onboarding.next')}
                 <ChevronRight className="ml-2 w-5 h-5" />
@@ -286,20 +286,20 @@ export function OnboardingView({
         return (
           <motion.div key="step5" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-8">
             <div className="text-center">
-              <h2 className="text-3xl font-black text-white tracking-tight uppercase mb-2">{t('onboarding.integrations_title')}</h2>
-              <p className="text-zinc-500 text-sm font-medium">{t('onboarding.integrations_desc')}</p>
+              <h2 className="text-3xl font-black text-text-primary tracking-tight uppercase mb-2">{t('onboarding.integrations_title')}</h2>
+              <p className="text-text-muted text-sm font-medium">{t('onboarding.integrations_desc')}</p>
             </div>
 
             <div className="space-y-4">
               {/* Hevy Bento Card */}
-              <PremiumCard className="p-6 bg-gradient-to-br from-indigo-500/10 to-transparent border-white/10">
+              <PremiumCard className="p-6 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)]">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 shadow-inner">
                     <Dumbbell size={20} />
                   </div>
                   <div>
-                    <h3 className="font-black text-white uppercase tracking-tight">Hevy Workouts</h3>
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{t('onboarding.integrations_hevy_desc')}</p>
+                    <h3 className="font-black text-text-primary uppercase tracking-tight">Hevy Workouts</h3>
+                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest">{t('onboarding.integrations_hevy_desc')}</p>
                   </div>
                 </div>
                 
@@ -314,7 +314,7 @@ export function OnboardingView({
                     type="button"
                     onClick={() => { void onHevyConnect(); }} 
                     disabled={!hevyApiKey || connectingHevy}
-                    className="h-12 px-6 rounded-xl bg-indigo-500 text-white font-black hover:bg-indigo-600 active:scale-95 transition-all shadow-lg shadow-indigo-500/20 border-indigo-500"
+                    className="h-12 px-6 rounded-xl font-black active:scale-95 transition-all"
                   >
                     {connectingHevy ? <RefreshCw className="animate-spin" size={18} /> : t('common.connect')}
                   </Button>
@@ -323,13 +323,13 @@ export function OnboardingView({
 
               {/* CSV Import Bento Cards */}
               <div className="grid grid-cols-2 gap-4">
-                <PremiumCard className="p-5 flex flex-col items-center text-center group cursor-pointer hover:bg-white/[0.04] transition-all">
+                <PremiumCard className="p-5 flex flex-col items-center text-center group cursor-pointer hover:bg-[color:var(--color-surface-container)] transition-all">
                   <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 mb-3 shadow-inner group-hover:scale-110 transition-transform">
                     <Database size={24} />
                   </div>
-                  <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-3">MyFitnessPal</h4>
+                  <h4 className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] mb-3">MyFitnessPal</h4>
                   <label className="w-full">
-                    <div className="py-2.5 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase text-zinc-500 group-hover:text-white group-hover:bg-white/10 transition-all">
+                    <div className="py-2.5 rounded-xl bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] text-[10px] font-black uppercase text-text-muted group-hover:text-text-primary group-hover:bg-[color:var(--color-surface-container)] transition-all">
                       {importing === 'mfp' ? <RefreshCw size={14} className="animate-spin mx-auto" /> : 'Upload CSV'}
                     </div>
                     <input type="file" accept=".csv" className="hidden" onChange={e => {
@@ -339,13 +339,13 @@ export function OnboardingView({
                   </label>
                 </PremiumCard>
 
-                <PremiumCard className="p-5 flex flex-col items-center text-center group cursor-pointer hover:bg-white/[0.04] transition-all">
+                <PremiumCard className="p-5 flex flex-col items-center text-center group cursor-pointer hover:bg-[color:var(--color-surface-container)] transition-all">
                   <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500 mb-3 shadow-inner group-hover:scale-110 transition-transform">
                     <Scale size={24} />
                   </div>
-                  <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-3">Zepp Life</h4>
+                  <h4 className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] mb-3">Zepp Life</h4>
                   <label className="w-full">
-                    <div className="py-2.5 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase text-zinc-500 group-hover:text-white group-hover:bg-white/10 transition-all">
+                    <div className="py-2.5 rounded-xl bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] text-[10px] font-black uppercase text-text-muted group-hover:text-text-primary group-hover:bg-[color:var(--color-surface-container)] transition-all">
                       {importing === 'zepp' ? <RefreshCw size={14} className="animate-spin mx-auto" /> : 'Upload CSV'}
                     </div>
                     <input type="file" accept=".csv" className="hidden" onChange={e => {
@@ -362,7 +362,7 @@ export function OnboardingView({
                 fullWidth 
                 size="lg" 
                 onClick={() => { onNext(); }}
-                className="h-14 rounded-2xl bg-white text-black font-black shadow-2xl hover:scale-[1.02] transition-all"
+                className="h-14 rounded-2xl font-black hover:scale-[1.02] transition-all"
               >
                 {t('onboarding.finish')}
                 <ArrowRight className="ml-2 w-5 h-5" />
@@ -388,8 +388,8 @@ export function OnboardingView({
             </div>
             
             <div className="space-y-3">
-              <h1 className="text-4xl font-black text-white tracking-tighter uppercase">{t('onboarding.success_title')}</h1>
-              <p className="text-zinc-500 font-bold uppercase tracking-widest text-xs leading-relaxed max-w-sm mx-auto">
+              <h1 className="text-4xl font-black text-text-primary tracking-tighter uppercase">{t('onboarding.success_title')}</h1>
+              <p className="text-text-muted font-bold uppercase tracking-widest text-xs leading-relaxed max-w-sm mx-auto">
                 {t('onboarding.success_desc', { name: formData.name ?? '' })}
               </p>
             </div>
@@ -398,7 +398,7 @@ export function OnboardingView({
               fullWidth 
               size="lg" 
               onClick={onFinish}
-              className="mt-8 h-16 rounded-[2rem] bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black text-lg shadow-2xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-widest"
+              className="mt-8 h-16 rounded-[2rem] font-black text-lg hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-widest"
             >
               {t('onboarding.go_to_dashboard')}
             </Button>
@@ -411,10 +411,7 @@ export function OnboardingView({
   };
 
   return (
-    <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-6 relative overflow-hidden selection:bg-white/20">
-      {/* Background Ambient Light */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-indigo-500/10 blur-[150px] pointer-events-none rounded-full" />
-      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-emerald-500/5 blur-[120px] pointer-events-none rounded-full" />
+    <div className="min-h-screen bg-[color:var(--color-background)] flex items-center justify-center p-6 relative overflow-hidden selection:bg-[color:var(--color-surface-container)]">
 
       <div className="w-full max-w-2xl relative z-10">
         {/* Progress Dots */}
@@ -425,8 +422,8 @@ export function OnboardingView({
                 key={s} 
                 className={cn(
                   "h-1.5 rounded-full transition-all duration-500",
-                  step === s ? "w-12 bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]" : 
-                  step > s ? "w-4 bg-zinc-700" : "w-4 bg-zinc-800"
+                  step === s ? "w-12 bg-[color:var(--color-primary)]" : 
+                  step > s ? "w-4 bg-[color:var(--color-surface-container-high)]" : "w-4 bg-[color:var(--color-surface-container-low)]"
                 )}
               />
             ))}
