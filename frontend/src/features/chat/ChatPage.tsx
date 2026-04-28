@@ -1,6 +1,7 @@
 import { useEffect, useRef, useMemo, useLayoutEffect, useCallback, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import { InsightScreen } from '../../shared/components/layout/InsightScreen';
 import { useAuthStore } from '../../shared/hooks/useAuth';
 import { useChatStore } from '../../shared/hooks/useChat';
 import { useSettingsStore } from '../../shared/hooks/useSettings';
@@ -104,19 +105,27 @@ export default function ChatPage() {
   }, [isStreaming, sendMessage]);
 
   return (
-    <ChatView 
-      messages={messages}
-      isStreaming={isStreaming}
-      isLoading={isLoading}
-      hasMore={hasMore}
-      error={error}
-      trainer={currentTrainer}
-      userInfo={userInfo}
-      initialInputValue={draftSeed}
-      onSend={handleSend}
-      onScroll={handleScroll}
-      scrollContainerRef={scrollContainerRef}
-      messagesEndRef={messagesEndRef}
-    />
+    <div data-testid="conversation-screen">
+      <InsightScreen
+        title="Chat"
+        subtitle={currentTrainer?.name ?? 'Trainer'}
+        content={
+          <ChatView
+            messages={messages}
+            isStreaming={isStreaming}
+            isLoading={isLoading}
+            hasMore={hasMore}
+            error={error}
+            trainer={currentTrainer}
+            userInfo={userInfo}
+            initialInputValue={draftSeed}
+            onSend={handleSend}
+            onScroll={handleScroll}
+            scrollContainerRef={scrollContainerRef}
+            messagesEndRef={messagesEndRef}
+          />
+        }
+      />
+    </div>
   );
 }

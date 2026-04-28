@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { EntityListScreen } from '../../shared/components/layout/EntityListScreen';
 import { useConfirmation } from '../../shared/hooks/useConfirmation';
 import { useDemoMode } from '../../shared/hooks/useDemoMode';
 import { useMemoryStore } from '../../shared/hooks/useMemory';
@@ -56,18 +57,26 @@ export default function MemoriesPage() {
   };
 
   return (
-    <MemoriesView 
-      memories={memories}
-      isLoading={isLoading}
-      totalMemories={totalMemories}
-      currentPage={currentPage}
-      totalPages={totalPages}
-      isReadOnly={isDemoUser}
-      onDelete={(id) => { void handleDelete(id); }}
-      onPageChange={(page) => {
-        if (page > currentPage) void nextPage();
-        else if (page < currentPage) void previousPage();
-      }}
-    />
+    <div data-testid="memories-list-screen">
+      <EntityListScreen
+        title={t('memories.title')}
+        subtitle={t('memories.subtitle')}
+        list={
+          <MemoriesView
+            memories={memories}
+            isLoading={isLoading}
+            totalMemories={totalMemories}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            isReadOnly={isDemoUser}
+            onDelete={(id) => { void handleDelete(id); }}
+            onPageChange={(page) => {
+              if (page > currentPage) void nextPage();
+              else if (page < currentPage) void previousPage();
+            }}
+          />
+        }
+      />
+    </div>
   );
 }
