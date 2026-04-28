@@ -22,7 +22,7 @@ export function WidgetWeeklyFrequency({ days, className }: WidgetWeeklyFrequency
   return (
     <div className={cn("relative group transition-all duration-500 flex flex-col h-full", className)}>
       <div className="flex items-center gap-3 mb-4">
-        <div className="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+        <div className="h-8 w-8 rounded-lg bg-[color:var(--color-secondary)]/10 text-[color:var(--color-secondary)] flex items-center justify-center">
           <Calendar size={16} />
         </div>
         <div>
@@ -38,7 +38,7 @@ export function WidgetWeeklyFrequency({ days, className }: WidgetWeeklyFrequency
               className={cn(
                 "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[9px] sm:text-[10px] font-bold transition-all duration-500 border relative",
                 active 
-                  ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)] scale-110" 
+                  ? "bg-emerald-500/20 text-[color:var(--color-secondary)] border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.2)] scale-110" 
                   : "bg-[color:var(--color-surface-container)] text-text-muted border-[color:var(--color-outline-variant)] opacity-50"
               )}
             >

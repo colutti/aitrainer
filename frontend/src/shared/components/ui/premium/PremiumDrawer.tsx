@@ -48,7 +48,7 @@ export function PremiumDrawer({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 z-[100] cursor-pointer"
+            className="fixed inset-0 bg-[color:var(--color-background)]/80 z-[100] cursor-pointer"
           />
 
           {/* DRAWER CONTENT */}
@@ -58,7 +58,7 @@ export function PremiumDrawer({
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className={cn(
-              "fixed right-0 top-0 h-full w-full md:w-[500px] bg-[color:var(--color-surface-container)] border-l border-[color:var(--color-outline-variant)] z-[101] shadow-2xl flex flex-col",
+              "fixed right-0 top-0 h-full w-full md:w-[500px] bg-[color:var(--color-surface-container)] border-l border-[color:var(--color-outline-variant)] z-[101]  flex flex-col",
               className
             )}
           >
@@ -71,8 +71,8 @@ export function PremiumDrawer({
                   </div>
                 )}
                 <div>
-                  <h2 className="text-xl font-black text-[color:var(--color-on-surface)] tracking-tight">{title}</h2>
-                  {subtitle && <p className="text-xs text-[color:var(--color-on-surface-variant)] font-bold uppercase tracking-widest">{subtitle}</p>}
+                  <h2 className="text-xl font-semibold text-[color:var(--color-on-surface)] tracking-tight">{title}</h2>
+                  {subtitle && <p className="text-xs text-[color:var(--color-on-surface-variant)] font-bold uppercase tracking-[0.05em]">{subtitle}</p>}
                 </div>
               </div>
               

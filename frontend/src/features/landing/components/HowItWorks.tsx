@@ -21,7 +21,7 @@ export const HowItWorks = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
           {steps.map((item, idx) => (
             <div key={idx} className="relative group">
-              <div className="font-display text-6xl font-black text-[color:var(--color-primary)]/10 mb-6 group-hover:text-[color:var(--color-primary)] transition-colors">
+              <div className="font-display text-6xl font-semibold text-[color:var(--color-primary)]/10 mb-6 group-hover:text-[color:var(--color-primary)] transition-colors">
                 {`0${(idx + 1).toString()}`}
               </div>
               <h3 className="text-2xl font-bold text-text-[color:var(--color-primary)] mb-4">

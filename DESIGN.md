@@ -1,207 +1,190 @@
 ---
-name: FityQ
-description: Monochrome coaching workspace that prioritizes clear action and measurable progress.
+name: Developer Performance Interface
+description: Dark-mode-only design system for developer-centric, high-comprehension product workflows.
 colors:
-  app-bg: "#050505"
-  app-surface: "#0d0d0d"
-  app-surface-raised: "#141414"
-  app-border: "#232323"
-  text-primary: "#fafafa"
-  text-secondary: "#b5b5b5"
-  text-muted: "#7a7a7a"
-  accent-action: "#14b8a6"
-  accent-action-hover: "#0d9488"
-  state-success: "#22c55e"
-  state-warning: "#f59e0b"
-  state-error: "#ef4444"
+  surface: '#131313'
+  surface-dim: '#131313'
+  surface-bright: '#393939'
+  surface-container-lowest: '#0e0e0e'
+  surface-container-low: '#1b1b1b'
+  surface-container: '#1f1f1f'
+  surface-container-high: '#2a2a2a'
+  surface-container-highest: '#353535'
+  on-surface: '#e2e2e2'
+  on-surface-variant: '#c2c6d6'
+  inverse-surface: '#e2e2e2'
+  inverse-on-surface: '#303030'
+  outline: '#8c909f'
+  outline-variant: '#424754'
+  surface-tint: '#adc6ff'
+  primary: '#adc6ff'
+  on-primary: '#002e6a'
+  primary-container: '#4d8eff'
+  on-primary-container: '#00285d'
+  inverse-primary: '#005ac2'
+  secondary: '#4edea3'
+  on-secondary: '#003824'
+  secondary-container: '#00a572'
+  on-secondary-container: '#00311f'
+  tertiary: '#ffb786'
+  on-tertiary: '#502400'
+  tertiary-container: '#df7412'
+  on-tertiary-container: '#461f00'
+  error: '#ffb4ab'
+  on-error: '#690005'
+  error-container: '#93000a'
+  on-error-container: '#ffdad6'
+  primary-fixed: '#d8e2ff'
+  primary-fixed-dim: '#adc6ff'
+  on-primary-fixed: '#001a42'
+  on-primary-fixed-variant: '#004395'
+  secondary-fixed: '#6ffbbe'
+  secondary-fixed-dim: '#4edea3'
+  on-secondary-fixed: '#002113'
+  on-secondary-fixed-variant: '#005236'
+  tertiary-fixed: '#ffdcc6'
+  tertiary-fixed-dim: '#ffb786'
+  on-tertiary-fixed: '#311400'
+  on-tertiary-fixed-variant: '#723600'
+  background: '#131313'
+  on-background: '#e2e2e2'
+  surface-variant: '#353535'
 typography:
-  display:
-    fontFamily: "Inter, system-ui, sans-serif"
-    fontSize: "3rem"
-    fontWeight: 900
-    lineHeight: 1.05
-    letterSpacing: "-0.02em"
-  headline:
-    fontFamily: "Inter, system-ui, sans-serif"
-    fontSize: "2rem"
-    fontWeight: 700
-    lineHeight: 1.15
-  title:
-    fontFamily: "Inter, system-ui, sans-serif"
-    fontSize: "1.25rem"
-    fontWeight: 700
-    lineHeight: 1.25
-  body:
-    fontFamily: "Inter, system-ui, sans-serif"
-    fontSize: "0.875rem"
-    fontWeight: 400
-    lineHeight: 1.5
-  label:
-    fontFamily: "Inter, system-ui, sans-serif"
-    fontSize: "0.75rem"
-    fontWeight: 800
-    lineHeight: 1.2
-    letterSpacing: "0.2em"
+  hero-display:
+    fontFamily: Inter
+    fontSize: 64px
+    fontWeight: '700'
+    lineHeight: '1.1'
+    letterSpacing: -0.02em
+  headline-lg:
+    fontFamily: Inter
+    fontSize: 32px
+    fontWeight: '600'
+    lineHeight: '1.2'
+    letterSpacing: -0.01em
+  card-title:
+    fontFamily: Inter
+    fontSize: 18px
+    fontWeight: '600'
+    lineHeight: '1.4'
+    letterSpacing: 0em
+  body-md:
+    fontFamily: Inter
+    fontSize: 16px
+    fontWeight: '400'
+    lineHeight: '1.6'
+    letterSpacing: 0em
+  label-sm:
+    fontFamily: Inter
+    fontSize: 13px
+    fontWeight: '500'
+    lineHeight: '1'
+    letterSpacing: 0.05em
 rounded:
-  sm: "6px"
-  md: "8px"
-  lg: "12px"
-  xl: "16px"
-  surface: "24px"
-  pill: "999px"
+  sm: 0.125rem
+  DEFAULT: 0.25rem
+  md: 0.375rem
+  lg: 0.5rem
+  xl: 0.75rem
+  full: 9999px
 spacing:
-  xs: "6px"
-  sm: "8px"
-  md: "12px"
-  lg: "16px"
-  xl: "24px"
-  xxl: "32px"
-components:
-  button-primary:
-    backgroundColor: "{colors.accent-action}"
-    textColor: "{colors.app-bg}"
-    rounded: "{rounded.md}"
-    padding: "0 24px"
-    height: "44px"
-  button-primary-hover:
-    backgroundColor: "{colors.accent-action-hover}"
-    textColor: "{colors.app-bg}"
-    rounded: "{rounded.md}"
-  button-secondary:
-    backgroundColor: "{colors.app-surface-raised}"
-    textColor: "{colors.text-primary}"
-    rounded: "{rounded.md}"
-    padding: "0 24px"
-    height: "44px"
-  button-ghost:
-    backgroundColor: "transparent"
-    textColor: "{colors.text-secondary}"
-    rounded: "{rounded.md}"
-    padding: "0 12px"
-    height: "40px"
-  input-default:
-    backgroundColor: "{colors.app-surface-raised}"
-    textColor: "{colors.text-primary}"
-    rounded: "{rounded.xl}"
-    padding: "0 12px"
-    height: "44px"
-  card-surface:
-    backgroundColor: "{colors.app-surface}"
-    textColor: "{colors.text-primary}"
-    rounded: "{rounded.surface}"
-    padding: "24px"
-  nav-pill-active:
-    backgroundColor: "rgba(255,255,255,0.1)"
-    textColor: "{colors.text-primary}"
-    rounded: "{rounded.pill}"
-    padding: "8px 24px"
+  base: 8px
+  container-max: 1280px
+  gutter: 24px
+  margin-page: 40px
+  card-padding: 24px
 ---
 
-# Design System: FityQ
+# Design System: Developer Performance Interface
 
-## 1. Overview
+## 1. Brand & Style
 
-**Creative North Star: "The Night Shift Coaching Console"**
+The design system is engineered for high-performance technical environments, prioritizing speed of comprehension and functional clarity. It targets a developer-centric audience that values efficiency over decorative flair.
 
-This system is built for users checking plans, workouts, and recovery in short, high-focus sessions, often early morning or late evening. The interface behaves like an instrument panel, low glare, high contrast, and explicit next actions.
-
-The visual personality follows PRODUCT.md directly: practical, intelligent, and accountable. Surfaces stay quiet and monochrome so recommendation moments and critical actions carry visual authority. The system explicitly rejects noisy motivational aesthetics, sterile medical bureaucracy, badge-first gamification, and over-designed "AI" styling.
-
-**Key Characteristics:**
-- Monochrome-first workspace with one action accent.
-- Dense but readable hierarchy tuned for decision speed.
-- Tactile controls with clear state feedback.
-- Flat-by-default depth model with restrained lift cues.
-- Utility copy and labels that prioritize action clarity.
+The aesthetic is rooted in Minimalism and Modern Corporate styles, utilizing a dark-mode-only philosophy. By stripping away non-functional elements like glows, heavy gradients, and drop shadows, the system emphasizes data and connectivity. The emotional response is reliability, precision, and under-the-hood power. Visual hierarchy is achieved through high-contrast typography and razor-thin structural lines rather than depth or color washes.
 
 ## 2. Colors
 
-The palette is restrained: dark neutrals carry almost all surface area, with a single teal action accent used only for primary intent.
+The palette is strictly functional. The foundation is a true black-family background language to minimize eye strain and maximize the contrast of text and interactive elements.
 
-### Primary
-- **Teal Command** (`#14b8a6`): Primary actions, high-priority confirms, selected progress affordances.
-
-### Secondary
-- **Teal Pressed** (`#0d9488`): Hover and active feedback for primary action controls.
-
-### Neutral
-- **Midnight Base** (`#050505`): Global app background and shell framing.
-- **Graphite Surface** (`#0d0d0d`): Default containers and content planes.
-- **Raised Graphite** (`#141414`): Inputs, elevated states, and secondary buttons.
-- **Quiet Divider** (`#232323`): Structural borders and separation lines.
-- **Signal White** (`#fafafa`): Primary text and iconography.
-- **Support Gray** (`#b5b5b5`): Secondary copy and labels.
-- **Tertiary Gray** (`#7a7a7a`): Quiet metadata and low-emphasis annotations.
+- Primary Accent: Vibrant indigo-blue for primary calls to action and critical path interactions.
+- Neutrals: Deep gray scale for structure and separation.
+- Typography: High-contrast light text for headings and medium-gray for secondary information.
 
 ### Named Rules
-**The Single Accent Rule.** The primary accent is reserved for explicit actions and selected state confirmation, never for decorative fills.
+
+The primary accent is reserved for explicit actions and selected critical state only, never decorative fills.
 
 ## 3. Typography
 
-**Display Font:** Inter (with system-ui, sans-serif fallback)  
-**Body Font:** Inter (with system-ui, sans-serif fallback)  
-**Label/Mono Font:** Inter (uppercase label treatment)
+This design system uses Inter across the full type scale for legibility and technical clarity.
 
-**Character:** Compact, technical, and direct. Typography is optimized for glanceability in operational flows, not editorial expression.
+- Headlines use tighter spacing and heavier weights.
+- Body copy keeps generous line-height for readable technical documentation and detail-heavy views.
+- Numerical and code accents should prefer monospace where practical to reinforce developer context.
 
-### Hierarchy
-- **Display** (900, `3rem`, 1.05): Hero numeric values and major page moments.
-- **Headline** (700, `2rem`, 1.15): Primary section headings and key screen titles.
-- **Title** (700, `1.25rem`, 1.25): Card and module titles.
-- **Body** (400, `0.875rem`, 1.5): Main explanatory and supporting copy, capped to 65-75ch where long-form text appears.
-- **Label** (800, `0.75rem`, `0.2em` tracking, uppercase): Micro-labels, state tags, and compact metadata.
+## 4. Layout & Spacing
 
-### Named Rules
-**The Operator Density Rule.** Use short, high-contrast text blocks and avoid paragraph-heavy sections in decision-critical screens.
+The system follows a fixed-grid desktop model with centered content up to 1280px and a base-8 spacing rhythm.
 
-## 4. Elevation
+- Grid model: 12 columns for high-level page architecture.
+- Card layouts: Symmetrical 3-column or 4-column structures for feature and insight blocks.
+- Rhythm: 24px spacing standard for module separation and card internals.
 
-Depth is flat by default, with layering communicated primarily through tonal changes (`#0d0d0d` to `#141414`) and border contrast (`#232323`). Shadows are present only as subtle state feedback in navigation and badges.
+## 5. Elevation & Depth
 
-### Shadow Vocabulary
-- **Soft Lift** (`box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35)`): Floating mobile navigation shell.
-- **Micro Emphasis** (`box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25)`): Compact badge and active pill emphasis.
+Depth is communicated by low-contrast outlines instead of shadows.
 
-### Named Rules
-**The Flat-By-Default Rule.** Resting surfaces stay flat, lift appears only when state needs to be acknowledged.
+- Background baseline: `#131313`.
+- Raised containers: `#0e0e0e` to `#1f1f1f` tiers with `1px` borders at `#424754`.
+- Flatness rule: no drop shadows or ambient occlusion in standard UI surfaces.
 
-## 5. Components
+## 6. Shapes
+
+Shape language is disciplined and professional, using soft rounding with technical precision.
+
+- Cards and buttons: 6px to 8px typical radius.
+- Inputs: match button radius for visual cohesion.
+- Pills/circles: avoid except compact status chips and indicators.
+
+## 7. Components
 
 ### Buttons
-- **Shape:** Medium rounding (`8px`) for standard CTAs, large icon pills on navigation controls.
-- **Primary:** Teal action fill (`#14b8a6`) with dark text (`#050505`), height (`44px`), horizontal padding (`24px`).
-- **Hover / Focus:** Hover shifts to pressed teal (`#0d9488`), focus uses a soft white ring (`2px` with 30% opacity).
-- **Secondary / Ghost:** Secondary uses raised graphite (`#141414`) with subtle border; ghost remains transparent with text emphasis on hover.
 
-### Cards / Containers
-- **Corner Style:** Large rounded shells (`24px`) for main content modules.
-- **Background:** Graphite surface (`#0d0d0d`) with raised hover state (`#141414`).
-- **Shadow Strategy:** Border-led separation with minimal shadow usage.
-- **Border:** Quiet structural line (`#232323`).
-- **Internal Padding:** Core modules use (`24px` to `32px`) spacing.
+- Primary: solid indigo-blue (`#adc6ff`) with dark text (`#002e6a`), no gradients.
+- Secondary/Ghost: subtle outlined treatment (`#424754`) with high-contrast text.
+- Hit area: comfortable interaction targets with 14px to 16px content scale.
 
-### Inputs / Fields
-- **Style:** Raised dark field with border, large rounding (`16px`), fixed control height (`44px`).
-- **Focus:** Border brightens and subtle ring appears for keyboard focus.
-- **Error / Disabled:** Error switches to red border and ring context; disabled lowers opacity and interaction.
+### Cards
 
-### Navigation
-- **Desktop:** Pill-based nav inside a low-contrast container; active routes use white-tinted pill state.
-- **Mobile:** Floating bottom capsule with blur and soft shadow; icons communicate core workflows at a glance.
-- **State Language:** Active state is always filled, inactive state is muted text-on-transparent.
+- Border: `1px solid #424754`.
+- Fill: dark surface tier from token scale (`surface-container` family).
+- Content hierarchy: title in `on-surface`; description in `on-surface-variant`.
 
-## 6. Do's and Don'ts
+### Inputs & Search
 
-### Do:
-- **Do** keep neutral surfaces dominant (`#050505`, `#0d0d0d`, `#141414`) and reserve teal for explicit action intent.
-- **Do** use clear state feedback on controls: hover, focus-visible, and active must all be visually distinct.
-- **Do** preserve compact hierarchy for operational scanning, especially in dashboard and plan flows.
-- **Do** keep cards and modules function-led, with borders and tonal layering instead of decorative effects.
+- Fill: dark surface tier.
+- Border: `1px` outline-variant default.
+- Focus: primary blue border and ring.
+- Placeholder: `on-surface-variant`.
 
-### Don't:
-- **Don't** mimic generic motivational fitness apps that over-index on hype and streak pressure.
-- **Don't** drift into clinical health dashboards that feel cold, bureaucratic, or hard to act on.
-- **Don't** ship gamified interfaces that prioritize badges and novelty over training quality and adherence.
-- **Don't** introduce over-designed "AI" aesthetics that reduce trust in recommendation quality.
-- **Don't** use `border-left` or `border-right` accents greater than `1px` as visual decoration.
-- **Don't** use gradient text, decorative glassmorphism defaults, or repetitive identical card grids.
+### Chips/Tags
+
+- Low-profile badges with subtle border and `label-sm` typography.
+- Use for API status, model tags, categories, and lightweight metadata.
+
+## 8. Do and Don't
+
+### Do
+
+- Keep interface flat, crisp, and structured.
+- Prioritize hierarchy through typography and spacing.
+- Reuse centralized tokens and shared primitives.
+- Keep equivalent screens on the same layout grammar.
+
+### Don't
+
+- Don't add decorative glow, heavy gradients, or glassmorphism.
+- Don't introduce shadow-based depth as default hierarchy.
+- Don't diverge flow-specific forms/lists into different visual patterns.
+- Don't use accent color as decoration outside action/state semantics.

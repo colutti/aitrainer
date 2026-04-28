@@ -10,14 +10,14 @@ export function WidgetStreak({ currentWeeks = 0, currentDays = 0 }: WidgetStreak
   const { t } = useTranslation();
 
   return (
-    <div className="flex items-center gap-2.5 bg-orange-500/5 border border-orange-500/20 px-4 py-2 rounded-xl h-[46px] transition-all hover:bg-orange-500/10 cursor-default">
-      <div className="text-orange-400">
+    <div className="flex items-center gap-2.5 bg-orange-500/5 border border-[color:var(--color-tertiary)]/20 px-4 py-2 rounded-xl h-[46px] transition-all hover:bg-[color:var(--color-tertiary)]/10 cursor-default">
+      <div className="text-[color:var(--color-tertiary)]">
         <Flame size={18} fill="currentColor" className="animate-pulse" />
       </div>
       <div className="flex flex-col justify-center">
-        <p className="text-[9px] text-orange-400/70 font-bold uppercase tracking-widest leading-none mb-0.5 hidden xs:block">{t('dashboard.streak')}</p>
+        <p className="text-[9px] text-[color:var(--color-tertiary)]/70 font-bold uppercase tracking-[0.05em] leading-none mb-0.5 hidden xs:block">{t('dashboard.streak')}</p>
         <div className="flex items-baseline gap-1 leading-none">
-          <span className="text-sm font-black text-text-primary">{currentWeeks}</span>
+          <span className="text-sm font-semibold text-text-primary">{currentWeeks}</span>
           <span className="text-[9px] text-text-muted font-bold uppercase hidden xs:inline">{t('dashboard.streak_w')}</span>
           {currentDays > 0 && (
             <>

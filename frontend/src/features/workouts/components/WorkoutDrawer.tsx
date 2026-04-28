@@ -193,11 +193,11 @@ export function WorkoutDrawer({ workout, isOpen, isReadOnly = false, onClose }: 
       isOpen={isOpen}
       onClose={onClose}
       title={workout ? (isReadOnly ? t('workouts.record_details') : t('workouts.edit_workout')) : t('workouts.register_workout')}
-      subtitle={workout ? workout.date.split('T')[0] : t('workouts.subtitle')}
+      subtitle={workout ? workout.date.split('T')[0] : undefined}
       icon={<Dumbbell size={24} />}
     >
       {isReadOnly && (
-        <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-amber-200">
+        <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-200">
           Demo Read-Only
         </div>
       )}
@@ -259,7 +259,7 @@ export function WorkoutDrawer({ workout, isOpen, isReadOnly = false, onClose }: 
         <div className="space-y-6">
           <div className="flex items-center justify-between pb-2 border-b border-white/5">
             <div className="flex items-center gap-2">
-              <Dumbbell size={18} className="text-indigo-400" />
+              <Dumbbell size={18} className="text-[color:var(--color-primary)]" />
               <h3 className="text-sm font-bold text-white uppercase tracking-wider">
                 {t('workouts.exercises')}
               </h3>
@@ -277,7 +277,7 @@ export function WorkoutDrawer({ workout, isOpen, isReadOnly = false, onClose }: 
           </div>
 
           {errors.exercises?.message && (
-            <p className="text-sm text-red-400">{t(errors.exercises.message)}</p>
+            <p className="text-sm text-[color:var(--color-error)]">{t(errors.exercises.message)}</p>
           )}
 
           <div className="space-y-4">
@@ -297,7 +297,7 @@ export function WorkoutDrawer({ workout, isOpen, isReadOnly = false, onClose }: 
           </div>
         </div>
 
-        <div className="sticky bottom-0 pt-6 bg-[#0d0d0f]/95 backdrop-blur-sm border-t border-white/5 flex gap-4">
+        <div className="sticky bottom-0 pt-6 bg-gradient-to-t from-[#0d0d0f]/80 to-transparent backdrop-blur-sm border-t border-white/5 flex gap-4">
           <Button fullWidth variant="secondary" type="button" onClick={onClose}>
             {t('common.cancel')}
           </Button>
@@ -371,7 +371,7 @@ function ExerciseCard({
         {setArray.fields.map((setField, setIndex) => (
           <div key={setField.id} className="rounded-2xl border border-white/5 bg-[#111114]/70 p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-widest text-zinc-400">
+              <span className="text-xs font-semibold uppercase tracking-[0.05em] text-zinc-400">
                 {t('workouts.set')} {setIndex + 1}
               </span>
               {setArray.fields.length > 1 && (

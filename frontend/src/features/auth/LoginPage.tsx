@@ -203,7 +203,7 @@ export default function LoginPage() {
         className="w-full max-w-md relative z-10"
       >
         <div className="text-center mb-10">
-          <h1 className="text-5xl font-black text-[color:var(--color-on-surface)] tracking-tighter mb-2">FITYQ</h1>
+          <h1 className="text-5xl font-semibold text-[color:var(--color-on-surface)] tracking-tighter mb-2">FITYQ</h1>
           <p className="text-[color:var(--color-on-surface-variant)] font-bold uppercase text-[10px] tracking-[0.3em]">{t('nav.brand_tagline')}</p>
         </div>
 
@@ -223,7 +223,7 @@ export default function LoginPage() {
               type="button"
               variant="ghost"
               onClick={() => { setIsLogin(true); }}
-              className={`flex-1 h-auto py-3 text-[10px] font-black uppercase tracking-widest relative z-10 transition-colors duration-300 rounded-xl ${isLogin ? 'text-white hover:text-white hover:bg-transparent' : 'text-zinc-500 hover:text-zinc-300 hover:bg-transparent'}`}
+              className={`flex-1 h-auto py-3 text-[10px] font-semibold uppercase tracking-[0.05em] relative z-10 transition-colors duration-300 rounded-xl ${isLogin ? 'text-white hover:text-white hover:bg-transparent' : 'text-zinc-500 hover:text-zinc-300 hover:bg-transparent'}`}
             >
               Login
             </Button>
@@ -232,14 +232,14 @@ export default function LoginPage() {
                 type="button"
                 variant="ghost"
                 onClick={() => { setIsLogin(false); }}
-                className={`flex-1 h-auto py-3 text-[10px] font-black uppercase tracking-widest relative z-10 transition-colors duration-300 rounded-xl ${!isLogin ? 'text-white hover:text-white hover:bg-transparent' : 'text-zinc-500 hover:text-zinc-300 hover:bg-transparent'}`}
+                className={`flex-1 h-auto py-3 text-[10px] font-semibold uppercase tracking-[0.05em] relative z-10 transition-colors duration-300 rounded-xl ${!isLogin ? 'text-white hover:text-white hover:bg-transparent' : 'text-zinc-500 hover:text-zinc-300 hover:bg-transparent'}`}
               >
                 Registro
               </Button>
             )}
           </div>
           {!enableNewUserSignups && (
-            <p className="text-[10px] font-bold uppercase tracking-widest text-amber-300/80 mb-6 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-[0.05em] text-amber-300/80 mb-6 text-center">
               {t('auth.new_signups_disabled')}
             </p>
           )}
@@ -248,7 +248,7 @@ export default function LoginPage() {
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
-              className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-2xl mb-6 flex items-center gap-3"
+              className="bg-[color:var(--color-error)]/10 border border-[color:var(--color-error)]/20 text-[color:var(--color-error)] p-4 rounded-2xl mb-6 flex items-center gap-3"
             >
               <AlertCircle size={18} />
               <p className="text-xs font-bold">{error}</p>
@@ -258,7 +258,7 @@ export default function LoginPage() {
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
-              className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 p-4 rounded-2xl mb-6 flex items-center gap-3"
+              className="bg-[color:var(--color-secondary)]/10 border border-[color:var(--color-secondary)]/20 text-emerald-300 p-4 rounded-2xl mb-6 flex items-center gap-3"
             >
               <AlertCircle size={18} />
               <p className="text-xs font-bold">{notice}</p>
@@ -268,7 +268,7 @@ export default function LoginPage() {
           {isLogin ? (
             <form onSubmit={(e) => { void handleSubmitLogin(onSubmitLogin)(e); }} className="space-y-5">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">E-mail</label>
+                <label className="text-[10px] font-semibold uppercase tracking-[0.05em] text-zinc-500 ml-1">E-mail</label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
                   <Input 
@@ -284,14 +284,14 @@ export default function LoginPage() {
 
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center px-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Senha</label>
+                  <label className="text-[10px] font-semibold uppercase tracking-[0.05em] text-zinc-500">Senha</label>
                   <Button
                     type="button"
                     variant="ghost"
                     disabled={isLoading}
                     size="sm"
                     onClick={() => { void handleForgotPassword(); }}
-                    className="h-auto p-0 text-[9px] font-black uppercase text-zinc-300 hover:text-white transition-colors hover:bg-transparent"
+                    className="h-auto p-0 text-[9px] font-semibold uppercase text-zinc-300 hover:text-white transition-colors hover:bg-transparent"
                   >
                     {t('auth.forgot_password')}
                   </Button>
@@ -344,7 +344,7 @@ export default function LoginPage() {
           ) : (
             <form onSubmit={(e) => { void handleSubmitSignup(onSubmitSignup)(e); }} className="space-y-5">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Nome Completo</label>
+                <label className="text-[10px] font-semibold uppercase tracking-[0.05em] text-zinc-500 ml-1">Nome Completo</label>
                 <Input 
                   {...registerSignup('name')} 
                   data-testid="register-name"
@@ -354,7 +354,7 @@ export default function LoginPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">E-mail</label>
+                <label className="text-[10px] font-semibold uppercase tracking-[0.05em] text-zinc-500 ml-1">E-mail</label>
                 <Input 
                   type="email" 
                   {...registerSignup('email')} 
@@ -366,7 +366,7 @@ export default function LoginPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Senha</label>
+                  <label className="text-[10px] font-semibold uppercase tracking-[0.05em] text-zinc-500 ml-1">Senha</label>
                   <Input 
                     type="password" 
                     {...registerSignup('password')} 
@@ -376,7 +376,7 @@ export default function LoginPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Confirmar</label>
+                  <label className="text-[10px] font-semibold uppercase tracking-[0.05em] text-zinc-500 ml-1">Confirmar</label>
                   <Input 
                     type="password" 
                     {...registerSignup('confirmPassword')} 
@@ -400,7 +400,7 @@ export default function LoginPage() {
           )}
         </PremiumCard>
 
-        <p className="text-center mt-10 text-[10px] font-bold text-zinc-600 uppercase tracking-widest leading-loose">
+        <p className="text-center mt-10 text-[10px] font-bold text-zinc-600 uppercase tracking-[0.05em] leading-loose">
           Ao continuar, você aceita nossos <Link to="/termos-de-uso" className="text-zinc-400 hover:text-white transition-colors">Termos de Uso</Link> e <Link to="/politica-de-privacidade" className="text-zinc-400 hover:text-white transition-colors">Política de Privacidade</Link>
         </p>
       </motion.div>

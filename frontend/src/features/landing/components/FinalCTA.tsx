@@ -28,7 +28,7 @@ export const FinalCTA = () => {
           {t('landing.cta.button')}
           <ChevronRight size={20} className="ml-2" />
         </Button>
-        <p className="text-xs text-text-muted mt-6 uppercase font-bold tracking-widest">
+        <p className="text-xs text-text-muted mt-6 uppercase font-bold tracking-[0.05em]">
           {t('landing.cta.trial')}
         </p>
       </div>

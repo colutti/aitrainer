@@ -60,32 +60,32 @@ export function PremiumLayout() {
           <div className="w-10 h-10 rounded-xl bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] flex items-center justify-center overflow-hidden p-1.5">
             <img src="/logo_icon.png" alt="FityQ Logo" className="w-full h-full object-contain" />
           </div>
-          <span className="font-black tracking-widest uppercase text-base bg-gradient-to-r from-white to-zinc-500 bg-clip-text text-transparent">FityQ</span>
+          <span className="text-base font-semibold uppercase tracking-[0.05em] text-text-primary">FityQ</span>
           {isDemoUser && (
-            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-amber-300 border border-amber-500/30 bg-amber-500/10">
+            <span className="px-3 py-1 rounded-[var(--radius-full)] text-[10px] font-semibold uppercase tracking-[0.05em] text-[color:var(--color-tertiary)] border border-[color:var(--color-tertiary)]/30 bg-[color:var(--color-tertiary)]/10">
               Demo Read-Only
             </span>
           )}
         </div>
         
         <div className="flex-1 flex justify-center">
-          <div className="flex bg-[color:var(--color-surface-container)] backdrop-blur-md rounded-full p-1 border border-[color:var(--color-outline-variant)]">
-            <NavLink to="/dashboard" end data-testid="desktop-nav-home" className={({ isActive }) => cn("px-6 py-2 rounded-full text-sm font-semibold transition-all", isActive ? "bg-[color:var(--color-surface-container-high)] text-text-primary shadow-lg" : "text-text-secondary hover:text-text-secondary")}>
+          <div className="flex bg-[color:var(--color-surface-container)] rounded-[var(--radius-full)] p-1 border border-[color:var(--color-outline-variant)]">
+            <NavLink to="/dashboard" end data-testid="desktop-nav-home" className={({ isActive }) => cn("px-6 py-2 rounded-[var(--radius-full)] text-sm font-semibold transition-colors", isActive ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-secondary hover:text-text-secondary")}>
               {t('nav.home')}
             </NavLink>
-            <NavLink to="/dashboard/plan" data-testid="desktop-nav-plan" className={() => cn("px-6 py-2 rounded-full text-sm font-semibold transition-all", isPathActive('/dashboard/plan') ? "bg-[color:var(--color-surface-container-high)] text-text-primary shadow-lg" : "text-text-secondary hover:text-text-secondary")}>
+            <NavLink to="/dashboard/plan" data-testid="desktop-nav-plan" className={() => cn("px-6 py-2 rounded-[var(--radius-full)] text-sm font-semibold transition-colors", isPathActive('/dashboard/plan') ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-secondary hover:text-text-secondary")}>
               {t('nav.plan')}
             </NavLink>
-            <NavLink to="/dashboard/workouts" data-testid="desktop-nav-workouts" className={() => cn("px-6 py-2 rounded-full text-sm font-semibold transition-all", isPathActive('/dashboard/workouts') ? "bg-[color:var(--color-surface-container-high)] text-text-primary shadow-lg" : "text-text-secondary hover:text-text-secondary")}>
+            <NavLink to="/dashboard/workouts" data-testid="desktop-nav-workouts" className={() => cn("px-6 py-2 rounded-[var(--radius-full)] text-sm font-semibold transition-colors", isPathActive('/dashboard/workouts') ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-secondary hover:text-text-secondary")}>
               {t('nav.workouts')}
             </NavLink>
-            <NavLink to="/dashboard/body" data-testid="desktop-nav-body" className={() => cn("px-6 py-2 rounded-full text-sm font-semibold transition-all", isPathActive('/dashboard/body') ? "bg-[color:var(--color-surface-container-high)] text-text-primary shadow-lg" : "text-text-secondary hover:text-text-secondary")}>
+            <NavLink to="/dashboard/body" data-testid="desktop-nav-body" className={() => cn("px-6 py-2 rounded-[var(--radius-full)] text-sm font-semibold transition-colors", isPathActive('/dashboard/body') ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-secondary hover:text-text-secondary")}>
               {t('nav.body')}
             </NavLink>
-            <NavLink to="/dashboard/nutrition" data-testid="desktop-nav-nutrition" className={() => cn("px-6 py-2 rounded-full text-sm font-semibold transition-all", isPathActive('/dashboard/nutrition') ? "bg-[color:var(--color-surface-container-high)] text-text-primary shadow-lg" : "text-text-secondary hover:text-text-secondary")}>
+            <NavLink to="/dashboard/nutrition" data-testid="desktop-nav-nutrition" className={() => cn("px-6 py-2 rounded-[var(--radius-full)] text-sm font-semibold transition-colors", isPathActive('/dashboard/nutrition') ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-secondary hover:text-text-secondary")}>
               {t('nav.nutrition')}
             </NavLink>
-            <NavLink to="/dashboard/chat" data-testid="desktop-nav-chat" className={() => cn("px-6 py-2 rounded-full text-sm font-semibold transition-all", isPathActive('/dashboard/chat') ? "bg-[color:var(--color-surface-container-high)] text-text-primary shadow-lg" : "text-text-secondary hover:text-text-secondary")}>
+            <NavLink to="/dashboard/chat" data-testid="desktop-nav-chat" className={() => cn("px-6 py-2 rounded-[var(--radius-full)] text-sm font-semibold transition-colors", isPathActive('/dashboard/chat') ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-secondary hover:text-text-secondary")}>
               {t('nav.chat')}
             </NavLink>
           </div>
@@ -98,8 +98,8 @@ export function PremiumLayout() {
           </div>
 
           <div data-testid="nav-subscription-status" className="hidden lg:flex flex-col items-end mr-2">
-             <span className="text-[9px] font-black uppercase tracking-[0.2em] text-text-muted">Membro</span>
-             <span className="text-[10px] font-black text-indigo-400 border border-indigo-500/20 bg-indigo-500/5 px-2 py-0.5 rounded shadow-sm">{userInfo?.subscription_plan ?? 'Free'}</span>
+             <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-text-muted">Membro</span>
+             <span className="text-[10px] font-semibold text-[color:var(--color-primary)] border border-[color:var(--color-primary)]/20 bg-[color:var(--color-primary)]/5 px-2 py-0.5 rounded-[var(--radius-default)]">{userInfo?.subscription_plan ?? 'Free'}</span>
           </div>
           <NavLink to="/dashboard/settings" data-testid="desktop-nav-settings" className={({ isActive }) => cn("p-2.5 rounded-xl transition-all border", isActive ? "bg-[color:var(--color-surface-container-high)] border-[color:var(--color-outline-variant)] text-text-primary" : "border-transparent text-text-secondary hover:bg-[color:var(--color-surface-container)] hover:text-text-secondary")}>
             <Settings size={20} />
@@ -112,7 +112,7 @@ export function PremiumLayout() {
           >
             Logout
           </Button>
-          <div className="w-10 h-10 rounded-xl bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] overflow-hidden flex items-center justify-center shadow-inner">
+          <div className="w-10 h-10 rounded-[var(--radius-lg)] bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] overflow-hidden flex items-center justify-center">
             {userInfo?.photo_base64 ? (
               <img src={userInfo.photo_base64} alt="Profile" className="w-full h-full object-cover" />
             ) : (
@@ -129,9 +129,9 @@ export function PremiumLayout() {
              <img src="/logo_icon.png" alt="Logo" className="w-full h-full object-contain opacity-80" />
           </div>
           <div className="flex-1">
-            <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">FityQ Premium</p>
-            <p className="text-sm font-black text-text-primary leading-tight">{userInfo?.name.split(' ')[0] ?? 'Atleta'}</p>
-            {isDemoUser && <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-300">Demo Read-Only</p>}
+            <p className="text-[10px] font-bold text-text-muted uppercase tracking-[0.05em]">FityQ Premium</p>
+            <p className="text-sm font-semibold text-text-primary leading-tight">{userInfo?.name.split(' ')[0] ?? 'Atleta'}</p>
+            {isDemoUser && <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-300">Demo Read-Only</p>}
           </div>
           <LanguageSelector />
         </div>
@@ -152,7 +152,7 @@ export function PremiumLayout() {
       </main>
 
       {/* --- MOBILE BOTTOM NAV (PÍLULA FLUTUANTE) --- */}
-      <nav data-testid="mobile-nav" className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-sm rounded-[2.5rem] bg-[color:var(--color-surface-container-low)]/90 backdrop-blur-2xl border border-[color:var(--color-outline-variant)] shadow-2xl z-50 flex items-center justify-between px-3 py-3">
+      <nav data-testid="mobile-nav" className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-sm rounded-[var(--radius-full)] bg-[color:var(--color-surface-container-low)] border border-[color:var(--color-outline-variant)] z-50 flex items-center justify-between px-3 py-3">
         <NavLink to="/dashboard" end data-testid="nav-home" className={({ isActive }) => cn("p-3 rounded-full transition-all duration-300 flex-1 flex justify-center", isActive ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-muted hover:text-text-secondary")}>
           <Home size={22} />
         </NavLink>
@@ -171,7 +171,7 @@ export function PremiumLayout() {
         </NavLink>
         <NavLink to="/dashboard/chat" data-testid="nav-chat" className={() => cn("p-3 rounded-full transition-all duration-300 relative flex-1 flex justify-center", isPathActive('/dashboard/chat') ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-muted hover:text-text-secondary")}>
           <MessageCircle size={22} />
-          <span className="absolute top-2 right-1/2 translate-x-3 w-2 h-2 rounded-full bg-indigo-500 border-2 border-zinc-900 shadow-glow shadow-indigo-500"></span>
+          <span className="absolute top-2 right-1/2 translate-x-3 w-2 h-2 rounded-full bg-[color:var(--color-primary)] border-2 border-[color:var(--color-background)]"></span>
         </NavLink>
         <NavLink to="/dashboard/settings" data-testid="nav-settings" className={() => cn("p-3 rounded-full transition-all duration-300 flex-1 flex justify-center", isPathActive('/dashboard/settings') ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-muted hover:text-text-secondary")}>
           <Settings size={22} />

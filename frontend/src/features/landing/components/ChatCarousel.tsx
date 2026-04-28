@@ -38,7 +38,7 @@ export const ChatCarousel = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {steps.map((step) => (
             <div key={step.title} className="rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-6">
-              <p className="text-xs font-bold uppercase tracking-widest text-[color:var(--color-primary)] mb-3">{step.eyebrow}</p>
+              <p className="text-xs font-bold uppercase tracking-[0.05em] text-[color:var(--color-primary)] mb-3">{step.eyebrow}</p>
               <h3 className="text-xl font-bold text-text-[color:var(--color-primary)] mb-3">{step.title}</h3>
               <p className="text-sm text-text-secondary leading-relaxed">{step.description}</p>
             </div>
@@ -46,14 +46,14 @@ export const ChatCarousel = () => {
         </div>
 
         <div className="rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-6 sm:p-8">
-          <div className="text-xs font-bold uppercase tracking-widest text-[color:var(--color-primary)] mb-2">
+          <div className="text-xs font-bold uppercase tracking-[0.05em] text-[color:var(--color-primary)] mb-2">
             {t('landing.demo_case.label')}
           </div>
           <h3 className="text-2xl font-bold text-text-[color:var(--color-primary)] mb-6">{t('landing.demo_case.title')}</h3>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5">
-              <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-3">
+              <p className="text-xs font-bold uppercase tracking-[0.05em] text-text-muted mb-3">
                 {t('landing.demo_case.context_title')}
               </p>
               <ul className="space-y-2">
@@ -66,7 +66,7 @@ export const ChatCarousel = () => {
             </div>
 
             <div className="rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5">
-              <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-2">
+              <p className="text-xs font-bold uppercase tracking-[0.05em] text-text-muted mb-2">
                 {t('landing.demo_case.trainer_title')}
               </p>
               <p className="text-sm font-semibold text-[color:var(--color-primary)] mb-3">{t('landing.demo_case.trainer_name')}</p>

@@ -69,7 +69,7 @@ export function NutritionView({
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-[32px] bg-[color:var(--color-surface-container)]" />)}
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-[var(--radius-lg)] bg-[color:var(--color-surface-container)]" />)}
         </div>
       </div>
     );
@@ -97,7 +97,7 @@ export function NutritionView({
             type="button"
             onClick={onRegisterMeal}
             disabled={isReadOnly}
-            className="flex items-center gap-2 px-6 py-3 rounded-full bg-white text-black font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/10"
+            className="flex items-center gap-2 px-6 py-3 rounded-full bg-white text-black font-semibold hover:scale-105 active:scale-95 transition-all  shadow-white/10"
           >
             <Plus size={20} strokeWidth={3} />
             {t('nutrition.register_meal')}
@@ -110,13 +110,13 @@ export function NutritionView({
       {/* TODAY SUMMARY BENTO */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Calories Card */}
-        <PremiumCard className="col-span-2 md:col-span-1 p-6 flex flex-col justify-between min-h-[160px] bg-gradient-to-br from-orange-500/10 to-transparent">
-           <div className="flex items-center gap-2 text-orange-400">
+        <PremiumCard className="col-span-2 md:col-span-1 p-6 flex flex-col justify-between min-h-[160px] bg-[color:var(--color-surface-container-low)]">
+           <div className="flex items-center gap-2 text-[color:var(--color-tertiary)]">
               <Flame size={18} fill="currentColor" />
-              <span className="text-[10px] font-black uppercase tracking-widest">{t('nutrition.calories')}</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.05em]">{t('nutrition.calories')}</span>
            </div>
            <div>
-              <p className="text-4xl font-black text-text-primary leading-none">
+              <p className="text-4xl font-semibold text-text-primary leading-none">
                 {formatNumber(today?.calories ?? 0, 'integer')}
               </p>
               <p className="text-xs font-bold text-text-muted mt-1">/ {targetCalsStr} kcal</p>
@@ -131,12 +131,12 @@ export function NutritionView({
 
         {/* Proteins */}
         <PremiumCard className="p-6 flex flex-col justify-between min-h-[160px]">
-           <div className="flex items-center gap-2 text-red-400">
+           <div className="flex items-center gap-2 text-[color:var(--color-error)]">
               <Beef size={18} />
-              <span className="text-[10px] font-black uppercase tracking-widest">{t('nutrition.proteins')}</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.05em]">{t('nutrition.proteins')}</span>
            </div>
            <div>
-              <p className="text-3xl font-black text-text-primary leading-none">{String(today?.protein_grams ?? 0)}g</p>
+              <p className="text-3xl font-semibold text-text-primary leading-none">{String(today?.protein_grams ?? 0)}g</p>
               <p className="text-xs font-bold text-text-muted mt-1">/ {proteinTargetStr}g</p>
            </div>
            <div className="mt-4 h-1.5 w-full bg-[color:var(--color-background)] rounded-full overflow-hidden">
@@ -151,10 +151,10 @@ export function NutritionView({
         <PremiumCard className="p-6 flex flex-col justify-between min-h-[160px]">
            <div className="flex items-center gap-2 text-blue-400">
               <Wheat size={18} />
-              <span className="text-[10px] font-black uppercase tracking-widest">{t('nutrition.carbs')}</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.05em]">{t('nutrition.carbs')}</span>
            </div>
            <div>
-              <p className="text-3xl font-black text-text-primary leading-none">{String(today?.carbs_grams ?? 0)}g</p>
+              <p className="text-3xl font-semibold text-text-primary leading-none">{String(today?.carbs_grams ?? 0)}g</p>
               <p className="text-xs font-bold text-text-muted mt-1">/ {carbsTargetStr}g</p>
            </div>
            <div className="mt-4 h-1.5 w-full bg-[color:var(--color-background)] rounded-full overflow-hidden">
@@ -167,12 +167,12 @@ export function NutritionView({
 
         {/* Fats */}
         <PremiumCard className="p-6 flex flex-col justify-between min-h-[160px]">
-           <div className="flex items-center gap-2 text-emerald-400">
+           <div className="flex items-center gap-2 text-[color:var(--color-secondary)]">
               <Droplets size={18} />
-              <span className="text-[10px] font-black uppercase tracking-widest">{t('nutrition.fats')}</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.05em]">{t('nutrition.fats')}</span>
            </div>
            <div>
-              <p className="text-3xl font-black text-text-primary leading-none">{String(today?.fat_grams ?? 0)}g</p>
+              <p className="text-3xl font-semibold text-text-primary leading-none">{String(today?.fat_grams ?? 0)}g</p>
               <p className="text-xs font-bold text-text-muted mt-1">/ {fatTargetStr}g</p>
            </div>
            <div className="mt-4 h-1.5 w-full bg-[color:var(--color-background)] rounded-full overflow-hidden">
@@ -188,8 +188,8 @@ export function NutritionView({
         {/* History Column */}
         <div className="lg:col-span-2 space-y-4">
            <div className="flex items-center justify-between px-2">
-              <h2 className="text-xl font-black text-text-primary tracking-tight uppercase">{t('nutrition.history_title')}</h2>
-              <Button type="button" variant="ghost" size="sm" className="h-auto p-0 text-[10px] font-black text-text-muted uppercase tracking-widest hover:text-text-primary hover:bg-transparent transition-colors">
+              <h2 className="text-xl font-semibold text-text-primary tracking-tight uppercase">{t('nutrition.history_title')}</h2>
+              <Button type="button" variant="ghost" size="sm" className="h-auto p-0 text-[10px] font-semibold text-text-muted uppercase tracking-[0.05em] hover:text-text-primary hover:bg-transparent transition-colors">
                  {t('nutrition.view_charts')}
               </Button>
            </div>
@@ -218,7 +218,7 @@ export function NutritionView({
 
         {/* Adherence Sidebar */}
         <div className="space-y-4">
-           <h2 className="text-xl font-black text-text-primary tracking-tight uppercase px-2">{t('nutrition.adherence_title')}</h2>
+           <h2 className="text-xl font-semibold text-text-primary tracking-tight uppercase px-2">{t('nutrition.adherence_title')}</h2>
            <PremiumCard className="p-8 flex flex-col items-center text-center">
               <div className="relative w-32 h-32 flex items-center justify-center mb-6">
                 <svg className="w-full h-full transform -rotate-90 drop-shadow-[0_0_15px_rgba(99,102,241,0.2)]">
@@ -227,14 +227,14 @@ export function NutritionView({
                     cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent"
                     strokeDasharray={364.4}
                     strokeDashoffset={364.4 * (1 - (stats?.stability_score ?? 0) / 100)}
-                    className="text-indigo-500"
+                    className="text-[color:var(--color-primary)]"
                     strokeLinecap="round"
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   { }
-                  <span className="text-4xl font-black text-text-primary">{stabilityScoreStr}%</span>
-                  <span className="text-[9px] text-text-muted font-bold uppercase tracking-widest mt-1">{t('nutrition.consistency')}</span>
+                  <span className="text-4xl font-semibold text-text-primary">{stabilityScoreStr}%</span>
+                  <span className="text-[9px] text-text-muted font-bold uppercase tracking-[0.05em] mt-1">{t('nutrition.consistency')}</span>
                 </div>
               </div>
               
@@ -254,7 +254,7 @@ export function NutritionView({
                           ? "bg-indigo-500 border-indigo-400 shadow-[0_0_10px_rgba(99,102,241,0.3)]" 
                           : "bg-[color:var(--color-surface-container)] border-[color:var(--color-outline-variant)]"
                       )} />
-                      <span className="text-[10px] text-text-muted font-black uppercase">{weeklyDays[i]}</span>
+                      <span className="text-[10px] text-text-muted font-semibold uppercase">{weeklyDays[i]}</span>
                     </div>
                   );
                 })}
@@ -264,7 +264,7 @@ export function NutritionView({
       </div>
 
       {/* WARNING FOOTER */}
-      <div className="flex items-center gap-2 p-4 bg-orange-500/5 text-orange-500/50 text-[9px] font-black uppercase tracking-[0.2em] border border-orange-500/10 rounded-2xl justify-center backdrop-blur-sm">
+      <div className="flex items-center gap-2 p-4 bg-orange-500/5 text-[color:var(--color-tertiary)]/50 text-[9px] font-semibold uppercase tracking-[0.2em] border border-orange-500/10 rounded-2xl justify-center backdrop-blur-sm">
         <AlertCircle size={14} />
         {t('memories.processing_warning')}
       </div>

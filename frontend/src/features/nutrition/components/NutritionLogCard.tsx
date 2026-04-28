@@ -42,7 +42,7 @@ export function NutritionLogCard({ log, isReadOnly = false, onDelete, onEdit, on
       icon={<Utensils size={22} />}
       title={formatDate(log.date)}
       leadingMeta={(
-        <span className="text-[10px] font-black text-orange-400 bg-orange-400/10 px-1.5 py-0.5 rounded flex items-center gap-1 uppercase tracking-wider">
+        <span className="text-[10px] font-semibold text-[color:var(--color-tertiary)] bg-orange-400/10 px-1.5 py-0.5 rounded flex items-center gap-1 uppercase tracking-wider">
           <Flame size={10} fill="currentColor" />
           {log.calories.toLocaleString()} kcal
         </span>
@@ -50,15 +50,15 @@ export function NutritionLogCard({ log, isReadOnly = false, onDelete, onEdit, on
       metrics={[
         {
           label: t('nutrition.proteins'),
-          value: <p className="text-sm font-black text-emerald-400 tabular-nums">{Math.round(log.protein_grams)}g</p>,
+          value: <p className="text-sm font-semibold text-[color:var(--color-secondary)] tabular-nums">{Math.round(log.protein_grams)}g</p>,
         },
         {
           label: t('nutrition.carbs'),
-          value: <p className="text-sm font-black text-blue-400 tabular-nums">{Math.round(log.carbs_grams)}g</p>,
+          value: <p className="text-sm font-semibold text-blue-400 tabular-nums">{Math.round(log.carbs_grams)}g</p>,
         },
         {
           label: t('nutrition.fats'),
-          value: <p className="text-sm font-black text-orange-400 tabular-nums">{Math.round(log.fat_grams)}g</p>,
+          value: <p className="text-sm font-semibold text-[color:var(--color-tertiary)] tabular-nums">{Math.round(log.fat_grams)}g</p>,
         },
       ]}
       notes={log.notes ? `"${log.notes}"` : undefined}

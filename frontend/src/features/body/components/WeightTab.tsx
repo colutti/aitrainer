@@ -135,7 +135,7 @@ export function WeightTab() {
         emptyState={{
           title: t('body.weight.empty_history'),
           description: t('body.weight.empty_history_desc', ''),
-          icon: <History size={40} className="text-zinc-500" />,
+          icon: <History size={40} className="text-text-muted" />,
           action: (
             <Button
               type="button"

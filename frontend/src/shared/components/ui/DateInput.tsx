@@ -126,7 +126,7 @@ export function DateInput({
           {formatDisplay(value)}
         </Button>
         {open && (
-          <div className="absolute z-50 mt-1 rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)] shadow-lg p-3">
+          <div className="absolute z-50 mt-1 rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)]  p-3">
             <DayPicker
               mode="single"
               selected={selected}
@@ -143,7 +143,7 @@ export function DateInput({
         )}
       </div>
       {error && (
-        <p className="text-xs font-medium text-red-500 px-1">{error}</p>
+        <p className="text-xs font-medium text-[color:var(--color-error)] px-1">{error}</p>
       )}
     </div>
   );

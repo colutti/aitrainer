@@ -37,7 +37,7 @@ export function UserAvatar({ photo, name, size = 'md', className }: UserAvatarPr
   return (
     <div
       className={cn(
-        'rounded-full bg-gradient-to-br from-gradient-start to-gradient-start/70 flex items-center justify-center text-white font-bold flex-shrink-0',
+        'rounded-full bg-gradient-to-br from-gradient-start to-gradient-start/70 flex items-center justify-center text-text-primary font-bold flex-shrink-0',
         sizeClasses[size],
         className
       )}

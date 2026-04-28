@@ -12,7 +12,7 @@ export function Skeleton({ variant = 'line', className }: SkeletonProps) {
   return (
     <div
       className={cn(
-        'animate-pulse bg-zinc-800/50',
+        'animate-pulse bg-[color:var(--color-surface-container)]/50',
         variant === 'card' && 'h-32 rounded-xl',
         variant === 'line' && 'h-4 rounded',
         variant === 'circle' && 'h-12 w-12 rounded-full',

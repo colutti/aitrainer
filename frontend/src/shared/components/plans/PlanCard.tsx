@@ -51,7 +51,7 @@ export function PlanCard({
     >
       <div className="mb-6">
         {plan.badge ? (
-          <span className="inline-flex mb-4 rounded-full border border-[color:var(--color-primary)]/30 bg-[color:var(--color-primary)]/10 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[color:var(--color-primary)]">
+          <span className="inline-flex mb-4 rounded-full border border-[color:var(--color-primary)]/30 bg-[color:var(--color-primary)]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[color:var(--color-primary)]">
             {plan.badge}
           </span>
         ) : null}

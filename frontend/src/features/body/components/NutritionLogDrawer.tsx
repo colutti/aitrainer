@@ -1,13 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Flame, Beef, Wheat, Droplets, Pencil, Save, History, Calendar } from 'lucide-react';
 import { useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import { Button } from '../../../shared/components/ui/Button';
-import { DateInput } from '../../../shared/components/ui/DateInput';
 import { Input } from '../../../shared/components/ui/Input';
+import { FormField } from '../../../shared/components/ui/premium/FormField';
 import { PremiumDrawer } from '../../../shared/components/ui/premium/PremiumDrawer';
 import { type NutritionLog, type NutritionFormData } from '../../../shared/types/nutrition';
 import { formatDate } from '../../../shared/utils/format-date';
@@ -43,7 +43,7 @@ export function NutritionLogDrawer({
   const { t } = useTranslation();
   const isEditMode = mode === 'edit' && !isReadOnly;
 
-  const { register, handleSubmit, reset, control, formState: { errors, isSubmitting } } = useForm<NutritionFormData>({
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<NutritionFormData>({
     resolver: zodResolver(nutritionSchema),
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
@@ -52,6 +52,8 @@ export function NutritionLogDrawer({
       protein_grams: 0,
       carbs_grams: 0,
       fat_grams: 0,
+      fiber_grams: 0,
+      sodium_mg: 0,
     },
   });
 
@@ -92,177 +94,146 @@ export function NutritionLogDrawer({
     <PremiumDrawer
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditMode 
+      title={isEditMode
         ? (log ? t('body.nutrition.edit_title') : t('body.nutrition.register_title'))
         : t('body.nutrition.record_details')}
       subtitle={log ? formatDate(log.date) : undefined}
-      icon={isEditMode ? <Pencil className="text-amber-400" size={24} /> : <Flame className="text-orange-500" size={24} />}
+      icon={isEditMode ? <Pencil className="text-amber-400" size={24} /> : <Flame className="text-[color:var(--color-tertiary)]" size={24} />}
     >
       {isReadOnly && (
-        <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-amber-200">
+        <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-200">
           Demo Read-Only
         </div>
       )}
 
       {isEditMode ? (
-        <form onSubmit={(e) => { void handleSubmit(handleFormSubmit)(e); }} className="space-y-6">
-          <div className="space-y-4">
-            <Controller
-              name="date"
-              control={control}
-              render={({ field }) => (
-                <DateInput
-                  label={t('body.nutrition.date')}
-                  value={field.value}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  error={errors.date?.message}
-                />
-              )}
-            />
-            
-            <Input 
-              id="calories"
-              label={t('body.nutrition.calories')} 
-              type="number" 
-              step="any"
-              placeholder="Ex: 500" 
+        <form onSubmit={(e) => { void handleSubmit(handleFormSubmit)(e); }} className="space-y-8">
+          <FormField label={t('body.nutrition.date')} id="nutrition-date" error={errors.date?.message}>
+            <Input
+              id="nutrition-date"
+              type="date"
               disabled={isReadOnly}
-              error={errors.calories?.message}
-              {...register('calories')}
+              {...register('date')}
+              className="h-14 rounded-2xl font-bold"
             />
-            
-            <div className="grid grid-cols-3 gap-4">
-              <Input 
-                id="protein_grams"
-                label={t('body.nutrition.protein')} 
-                type="number" 
+          </FormField>
+
+          <div className="bg-[color:var(--color-surface-container)] p-6 rounded-3xl border border-[color:var(--color-outline-variant)] shadow-inner">
+            <FormField label={t('body.nutrition.calories')} id="calories" error={errors.calories?.message}>
+              <Input
+                id="calories"
+                type="number"
                 step="any"
+                placeholder="500"
                 disabled={isReadOnly}
-                error={errors.protein_grams?.message}
-                {...register('protein_grams')}
+                {...register('calories')}
+                className="h-20 rounded-2xl text-4xl font-semibold"
               />
-              <Input 
-                id="carbs_grams"
-                label={t('body.nutrition.carbs')} 
-                type="number" 
-                step="any"
-                disabled={isReadOnly}
-                error={errors.carbs_grams?.message}
-                {...register('carbs_grams')}
-              />
-              <Input 
-                id="fat_grams"
-                label={t('body.nutrition.fat')} 
-                type="number" 
-                step="any"
-                disabled={isReadOnly}
-                error={errors.fat_grams?.message}
-                {...register('fat_grams')}
-              />
+            </FormField>
+          </div>
+
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 pb-2 border-b border-[color:var(--color-outline-variant)]">
+              <History className="text-[color:var(--color-primary)]" size={18} />
+              <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">{t('body.nutrition.macros_breakdown')}</h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <FormField label={t('body.nutrition.protein')} id="protein_grams" icon={<Beef size={14} className="text-text-secondary" />} error={errors.protein_grams?.message}>
+                <Input id="protein_grams" type="number" step="any" disabled={isReadOnly} {...register('protein_grams')} className="h-14 rounded-2xl font-bold" />
+              </FormField>
+              <FormField label={t('body.nutrition.carbs')} id="carbs_grams" icon={<Wheat size={14} className="text-text-secondary" />} error={errors.carbs_grams?.message}>
+                <Input id="carbs_grams" type="number" step="any" disabled={isReadOnly} {...register('carbs_grams')} className="h-14 rounded-2xl font-bold" />
+              </FormField>
+              <FormField label={t('body.nutrition.fat')} id="fat_grams" icon={<Droplets size={14} className="text-text-secondary" />} error={errors.fat_grams?.message}>
+                <Input id="fat_grams" type="number" step="any" disabled={isReadOnly} {...register('fat_grams')} className="h-14 rounded-2xl font-bold" />
+              </FormField>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                id="fiber_grams"
-                label={t('body.nutrition.fiber')}
-                type="number"
-                step="any"
-                disabled={isReadOnly}
-                error={errors.fiber_grams?.message}
-                {...register('fiber_grams')}
-              />
-              <Input
-                id="sodium_mg"
-                label={t('body.nutrition.sodium')}
-                type="number"
-                step="any"
-                disabled={isReadOnly}
-                error={errors.sodium_mg?.message}
-                {...register('sodium_mg')}
-              />
+              <FormField label={t('body.nutrition.fiber')} id="fiber_grams" error={errors.fiber_grams?.message}>
+                <Input id="fiber_grams" type="number" step="any" disabled={isReadOnly} {...register('fiber_grams')} className="h-14 rounded-2xl font-bold" />
+              </FormField>
+              <FormField label={t('body.nutrition.sodium')} id="sodium_mg" error={errors.sodium_mg?.message}>
+                <Input id="sodium_mg" type="number" step="any" disabled={isReadOnly} {...register('sodium_mg')} className="h-14 rounded-2xl font-bold" />
+              </FormField>
             </div>
           </div>
 
-          <div className="pt-6 flex gap-4">
-            <Button 
-              fullWidth 
-              variant="secondary" 
-              type="button" 
-              onClick={onClose}
-              className="rounded-2xl"
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button 
-              fullWidth 
-              variant="primary" 
-              type="submit" 
-              isLoading={isSubmitting}
-              disabled={isReadOnly}
-              className="shadow-orange rounded-2xl"
-            >
-              <Save size={18} className="mr-2" />
-              {t('common.save')}
-            </Button>
-          </div>
+          <Button fullWidth type="submit" isLoading={isSubmitting} disabled={isReadOnly} className="btn-premium h-16">
+            <Save size={20} strokeWidth={3} />
+            {t('common.save')}
+          </Button>
         </form>
       ) : log && (
         <div className="space-y-8">
-          {/* Summary Card */}
-          <div className="bg-white/5 p-6 rounded-3xl border border-white/10 flex items-center justify-between">
+          <div className="bg-[color:var(--color-surface-container)] p-6 rounded-3xl border border-[color:var(--color-outline-variant)] flex items-center justify-between">
             <div>
-              <p className="text-xs text-zinc-500 mb-1 font-bold uppercase tracking-wider">{t('body.nutrition.calories')}</p>
+              <p className="text-xs text-text-muted mb-1 font-bold uppercase tracking-wider">{t('body.nutrition.calories')}</p>
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black text-white">{log.calories}</span>
-                <span className="text-xl text-zinc-500 font-bold">kcal</span>
+                <span className="text-4xl font-semibold text-text-primary">{log.calories}</span>
+                <span className="text-xl text-text-muted font-bold">kcal</span>
               </div>
             </div>
-            <div className="bg-orange-500/10 p-4 rounded-2xl shadow-[0_0_15px_rgba(249,115,22,0.1)]">
-              <Flame className="text-orange-500" size={32} />
+            <div className="bg-[color:var(--color-tertiary)]/10 p-4 rounded-2xl shadow-[0_0_15px_rgba(249,115,22,0.1)]">
+              <Flame className="text-[color:var(--color-tertiary)]" size={32} />
             </div>
           </div>
 
-          {/* Macros Breakdown */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2 pb-2 border-b border-white/5">
-              <History className="text-indigo-400" size={18} />
-              <h3 className="text-xs font-black text-white uppercase tracking-widest">
+            <div className="flex items-center gap-2 pb-2 border-b border-[color:var(--color-outline-variant)]">
+              <History className="text-[color:var(--color-primary)]" size={18} />
+              <h3 className="text-xs font-semibold text-text-primary uppercase tracking-[0.05em]">
                 {t('body.nutrition.macros_breakdown')}
               </h3>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
-              <div className="bg-white/5 p-4 rounded-2xl border border-white/5 space-y-2">
-                <div className="flex items-center gap-2 text-red-400">
+              <div className="bg-[color:var(--color-surface-container)] p-4 rounded-2xl border border-[color:var(--color-outline-variant)] space-y-2">
+                <div className="flex items-center gap-2 text-[color:var(--color-error)]">
                   <Beef size={14} />
-                  <span className="text-[10px] font-black uppercase tracking-wider">{t('body.nutrition.protein')}</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider">{t('body.nutrition.protein')}</span>
                 </div>
-                <p className="text-xl font-black text-white">{log.protein_grams}g</p>
-              </div>
-              
-              <div className="bg-white/5 p-4 rounded-2xl border border-white/5 space-y-2">
-                <div className="flex items-center gap-2 text-blue-400">
-                  <Wheat size={14} />
-                  <span className="text-[10px] font-black uppercase tracking-wider">{t('body.nutrition.carbs')}</span>
-                </div>
-                <p className="text-xl font-black text-white">{log.carbs_grams}g</p>
+                <p className="text-xl font-semibold text-text-primary">{log.protein_grams}g</p>
               </div>
 
-              <div className="bg-white/5 p-4 rounded-2xl border border-white/5 space-y-2">
-                <div className="flex items-center gap-2 text-emerald-400">
-                  <Droplets size={14} />
-                  <span className="text-[10px] font-black uppercase tracking-wider">{t('body.nutrition.fat')}</span>
+              <div className="bg-[color:var(--color-surface-container)] p-4 rounded-2xl border border-[color:var(--color-outline-variant)] space-y-2">
+                <div className="flex items-center gap-2 text-blue-400">
+                  <Wheat size={14} />
+                  <span className="text-[10px] font-semibold uppercase tracking-wider">{t('body.nutrition.carbs')}</span>
                 </div>
-                <p className="text-xl font-black text-white">{log.fat_grams}g</p>
+                <p className="text-xl font-semibold text-text-primary">{log.carbs_grams}g</p>
+              </div>
+
+              <div className="bg-[color:var(--color-surface-container)] p-4 rounded-2xl border border-[color:var(--color-outline-variant)] space-y-2">
+                <div className="flex items-center gap-2 text-[color:var(--color-secondary)]">
+                  <Droplets size={14} />
+                  <span className="text-[10px] font-semibold uppercase tracking-wider">{t('body.nutrition.fat')}</span>
+                </div>
+                <p className="text-xl font-semibold text-text-primary">{log.fat_grams}g</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-[color:var(--color-surface-container)] p-4 rounded-2xl border border-[color:var(--color-outline-variant)] space-y-2">
+                <div className="flex items-center gap-2 text-violet-400">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider">{t('body.nutrition.fiber')}</span>
+                </div>
+                <p className="text-xl font-semibold text-text-primary">{log.fiber_grams}g</p>
+              </div>
+
+              <div className="bg-[color:var(--color-surface-container)] p-4 rounded-2xl border border-[color:var(--color-outline-variant)] space-y-2">
+                <div className="flex items-center gap-2 text-cyan-400">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider">{t('body.nutrition.sodium')}</span>
+                </div>
+                <p className="text-xl font-semibold text-text-primary">{log.sodium_mg}mg</p>
               </div>
             </div>
           </div>
 
-          {/* Date Info */}
-          <div className="flex items-center gap-4 p-5 bg-white/5 rounded-2xl text-sm border border-white/5">
-            <Calendar className="text-zinc-500" size={20} />
-            <span className="text-zinc-300 font-bold capitalize">{formatDate(log.date)}</span>
+          <div className="flex items-center gap-4 p-5 bg-[color:var(--color-surface-container)] rounded-2xl text-sm border border-[color:var(--color-outline-variant)]">
+            <Calendar className="text-text-muted" size={20} />
+            <span className="text-text-secondary font-bold capitalize">{formatDate(log.date)}</span>
           </div>
         </div>
       )}

@@ -79,13 +79,13 @@ export function OnboardingView({
         return (
           <motion.div key="step2" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-8">
             <div className="text-center">
-              <h2 className="text-3xl font-black text-text-primary tracking-tight uppercase mb-2">{t('onboarding.step_2_title')}</h2>
+              <h2 className="text-3xl font-semibold text-text-primary tracking-tight uppercase mb-2">{t('onboarding.step_2_title')}</h2>
               <p className="text-text-muted text-sm font-medium">{t('onboarding.step_2_subtitle')}</p>
             </div>
 
             <div className="space-y-6">
               <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted ml-1">{t('settings.gender')}</label>
+                <label className="text-[10px] font-semibold uppercase tracking-[0.2em] text-text-muted ml-1">{t('settings.gender')}</label>
                 <div className="grid grid-cols-2 gap-3">
                   {['male', 'female'].map((g) => (
                     <Button
@@ -96,7 +96,7 @@ export function OnboardingView({
                       className={cn(
                         "h-auto py-4 rounded-2xl border font-bold transition-all text-sm",
                         formData.gender === t(`onboarding.genders.${g}`)
-                          ? "bg-[color:var(--color-surface-container)] border-[color:var(--color-outline)] text-text-primary shadow-xl shadow-white/5"
+                          ? "bg-[color:var(--color-surface-container)] border-[color:var(--color-outline)] text-text-primary  shadow-white/5"
                           : "bg-[color:var(--color-surface-container-low)] border-[color:var(--color-outline-variant)] text-text-muted hover:border-[color:var(--color-outline-variant)]"
                       )}
                     >
@@ -156,7 +156,7 @@ export function OnboardingView({
               size="lg" 
               onClick={() => { onNext(); }} 
               disabled={!formData.gender || !formData.name || !formData.age || !formData.height || !formData.weight}
-              className="h-14 rounded-2xl font-black hover:scale-[1.02] active:scale-[0.98] transition-all"
+              className="h-14 rounded-2xl font-semibold hover:scale-[1.02] active:scale-[0.98] transition-all"
             >
               {t('onboarding.next')}
               <ChevronRight className="ml-2 w-5 h-5" />
@@ -168,7 +168,7 @@ export function OnboardingView({
         return (
           <motion.div key="step3" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-8">
             <div className="text-center">
-              <h2 className="text-3xl font-black text-text-primary tracking-tight uppercase mb-2">{t('onboarding.step_plan_title')}</h2>
+              <h2 className="text-3xl font-semibold text-text-primary tracking-tight uppercase mb-2">{t('onboarding.step_plan_title')}</h2>
               <p className="text-text-muted text-sm font-medium">{t('onboarding.step_plan_subtitle')}</p>
             </div>
 
@@ -205,7 +205,7 @@ export function OnboardingView({
                 fullWidth 
                 size="lg" 
                 onClick={() => { onNext(); }}
-                className="h-14 rounded-2xl font-black"
+                className="h-14 rounded-2xl font-semibold"
               >
                 {t('onboarding.next')}
                 <ChevronRight className="ml-2 w-5 h-5" />
@@ -218,7 +218,7 @@ export function OnboardingView({
         return (
           <motion.div key="step4" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-8">
             <div className="text-center">
-              <h2 className="text-3xl font-black text-text-primary tracking-tight uppercase mb-2">{t('onboarding.step_3_title')}</h2>
+              <h2 className="text-3xl font-semibold text-text-primary tracking-tight uppercase mb-2">{t('onboarding.step_3_title')}</h2>
               <p className="text-text-muted text-sm font-medium">{t('onboarding.step_3_subtitle')}</p>
             </div>
 
@@ -233,7 +233,7 @@ export function OnboardingView({
                     onClick={() => { if (!isLocked) setFormData({...formData, trainer_type: trainer.id}); }}
                     className={cn(
                       "p-4 cursor-pointer transition-all flex items-center gap-4 relative overflow-hidden group",
-                      isSelected ? "bg-[color:var(--color-surface-container)] border-[color:var(--color-outline)] shadow-xl" : "bg-[color:var(--color-surface-container-low)] border-[color:var(--color-outline-variant)]",
+                      isSelected ? "bg-[color:var(--color-surface-container)] border-[color:var(--color-outline)] " : "bg-[color:var(--color-surface-container-low)] border-[color:var(--color-outline-variant)]",
                       isLocked && "opacity-40 grayscale cursor-not-allowed"
                     )}
                   >
@@ -249,7 +249,7 @@ export function OnboardingView({
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <h4 className="font-black text-text-primary uppercase tracking-tight">{trainer.name}</h4>
+                        <h4 className="font-semibold text-text-primary uppercase tracking-tight">{trainer.name}</h4>
                         {isLocked && <Lock size={12} className="text-text-muted" />}
                       </div>
                       <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider leading-relaxed line-clamp-2">
@@ -257,7 +257,7 @@ export function OnboardingView({
                       </p>
                     </div>
                     {isLocked && (
-                      <span className="text-[9px] font-black uppercase bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] px-2 py-1 rounded-full text-text-muted">PRO</span>
+                      <span className="text-[9px] font-semibold uppercase bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] px-2 py-1 rounded-full text-text-muted">PRO</span>
                     )}
                   </PremiumCard>
                 );
@@ -273,7 +273,7 @@ export function OnboardingView({
                 size="lg" 
                 onClick={() => { void onSubmit(); }} 
                 isLoading={loading}
-                className="h-14 rounded-2xl font-black"
+                className="h-14 rounded-2xl font-semibold"
               >
                 {t('onboarding.next')}
                 <ChevronRight className="ml-2 w-5 h-5" />
@@ -286,7 +286,7 @@ export function OnboardingView({
         return (
           <motion.div key="step5" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-8">
             <div className="text-center">
-              <h2 className="text-3xl font-black text-text-primary tracking-tight uppercase mb-2">{t('onboarding.integrations_title')}</h2>
+              <h2 className="text-3xl font-semibold text-text-primary tracking-tight uppercase mb-2">{t('onboarding.integrations_title')}</h2>
               <p className="text-text-muted text-sm font-medium">{t('onboarding.integrations_desc')}</p>
             </div>
 
@@ -294,12 +294,12 @@ export function OnboardingView({
               {/* Hevy Bento Card */}
               <PremiumCard className="p-6 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)]">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 shadow-inner">
+                  <div className="p-2.5 rounded-xl bg-indigo-500/20 text-[color:var(--color-primary)] border border-[color:var(--color-primary)]/20 shadow-inner">
                     <Dumbbell size={20} />
                   </div>
                   <div>
-                    <h3 className="font-black text-text-primary uppercase tracking-tight">Hevy Workouts</h3>
-                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest">{t('onboarding.integrations_hevy_desc')}</p>
+                    <h3 className="font-semibold text-text-primary uppercase tracking-tight">Hevy Workouts</h3>
+                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-[0.05em]">{t('onboarding.integrations_hevy_desc')}</p>
                   </div>
                 </div>
                 
@@ -314,7 +314,7 @@ export function OnboardingView({
                     type="button"
                     onClick={() => { void onHevyConnect(); }} 
                     disabled={!hevyApiKey || connectingHevy}
-                    className="h-12 px-6 rounded-xl font-black active:scale-95 transition-all"
+                    className="h-12 px-6 rounded-xl font-semibold active:scale-95 transition-all"
                   >
                     {connectingHevy ? <RefreshCw className="animate-spin" size={18} /> : t('common.connect')}
                   </Button>
@@ -324,12 +324,12 @@ export function OnboardingView({
               {/* CSV Import Bento Cards */}
               <div className="grid grid-cols-2 gap-4">
                 <PremiumCard className="p-5 flex flex-col items-center text-center group cursor-pointer hover:bg-[color:var(--color-surface-container)] transition-all">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 mb-3 shadow-inner group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 rounded-2xl bg-[color:var(--color-secondary)]/10 border border-[color:var(--color-secondary)]/20 flex items-center justify-center text-[color:var(--color-secondary)] mb-3 shadow-inner group-hover:scale-110 transition-transform">
                     <Database size={24} />
                   </div>
-                  <h4 className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] mb-3">MyFitnessPal</h4>
+                  <h4 className="text-[10px] font-semibold text-text-secondary uppercase tracking-[0.2em] mb-3">MyFitnessPal</h4>
                   <label className="w-full">
-                    <div className="py-2.5 rounded-xl bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] text-[10px] font-black uppercase text-text-muted group-hover:text-text-primary group-hover:bg-[color:var(--color-surface-container)] transition-all">
+                    <div className="py-2.5 rounded-xl bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] text-[10px] font-semibold uppercase text-text-muted group-hover:text-text-primary group-hover:bg-[color:var(--color-surface-container)] transition-all">
                       {importing === 'mfp' ? <RefreshCw size={14} className="animate-spin mx-auto" /> : 'Upload CSV'}
                     </div>
                     <input type="file" accept=".csv" className="hidden" onChange={e => {
@@ -340,12 +340,12 @@ export function OnboardingView({
                 </PremiumCard>
 
                 <PremiumCard className="p-5 flex flex-col items-center text-center group cursor-pointer hover:bg-[color:var(--color-surface-container)] transition-all">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500 mb-3 shadow-inner group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 rounded-2xl bg-[color:var(--color-primary)]/10 border border-[color:var(--color-primary)]/20 flex items-center justify-center text-[color:var(--color-primary)] mb-3 shadow-inner group-hover:scale-110 transition-transform">
                     <Scale size={24} />
                   </div>
-                  <h4 className="text-[10px] font-black text-text-secondary uppercase tracking-[0.2em] mb-3">Zepp Life</h4>
+                  <h4 className="text-[10px] font-semibold text-text-secondary uppercase tracking-[0.2em] mb-3">Zepp Life</h4>
                   <label className="w-full">
-                    <div className="py-2.5 rounded-xl bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] text-[10px] font-black uppercase text-text-muted group-hover:text-text-primary group-hover:bg-[color:var(--color-surface-container)] transition-all">
+                    <div className="py-2.5 rounded-xl bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] text-[10px] font-semibold uppercase text-text-muted group-hover:text-text-primary group-hover:bg-[color:var(--color-surface-container)] transition-all">
                       {importing === 'zepp' ? <RefreshCw size={14} className="animate-spin mx-auto" /> : 'Upload CSV'}
                     </div>
                     <input type="file" accept=".csv" className="hidden" onChange={e => {
@@ -362,7 +362,7 @@ export function OnboardingView({
                 fullWidth 
                 size="lg" 
                 onClick={() => { onNext(); }}
-                className="h-14 rounded-2xl font-black hover:scale-[1.02] transition-all"
+                className="h-14 rounded-2xl font-semibold hover:scale-[1.02] transition-all"
               >
                 {t('onboarding.finish')}
                 <ArrowRight className="ml-2 w-5 h-5" />
@@ -377,7 +377,7 @@ export function OnboardingView({
             <div className="relative mx-auto w-32 h-32 mb-8">
               <motion.div 
                 initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', damping: 12, stiffness: 200 }}
-                className="w-full h-full rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-500 shadow-[0_0_50px_rgba(16,185,129,0.2)]"
+                className="w-full h-full rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-[color:var(--color-secondary)] shadow-[0_0_50px_rgba(16,185,129,0.2)]"
               >
                 <Check size={64} strokeWidth={4} />
               </motion.div>
@@ -388,8 +388,8 @@ export function OnboardingView({
             </div>
             
             <div className="space-y-3">
-              <h1 className="text-4xl font-black text-text-primary tracking-tighter uppercase">{t('onboarding.success_title')}</h1>
-              <p className="text-text-muted font-bold uppercase tracking-widest text-xs leading-relaxed max-w-sm mx-auto">
+              <h1 className="text-4xl font-semibold text-text-primary tracking-tighter uppercase">{t('onboarding.success_title')}</h1>
+              <p className="text-text-muted font-bold uppercase tracking-[0.05em] text-xs leading-relaxed max-w-sm mx-auto">
                 {t('onboarding.success_desc', { name: formData.name ?? '' })}
               </p>
             </div>
@@ -398,7 +398,7 @@ export function OnboardingView({
               fullWidth 
               size="lg" 
               onClick={onFinish}
-              className="mt-8 h-16 rounded-[2rem] font-black text-lg hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-widest"
+              className="mt-8 h-16 rounded-[2rem] font-semibold text-lg hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-[0.05em]"
             >
               {t('onboarding.go_to_dashboard')}
             </Button>

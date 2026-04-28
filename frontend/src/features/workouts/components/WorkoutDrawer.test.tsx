@@ -33,6 +33,7 @@ describe('WorkoutDrawer', () => {
     render(<WorkoutDrawer {...defaultProps} />);
 
     expect(screen.getByText(/Registrar Treino/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Gerencie seu histórico de performance/i)).not.toBeInTheDocument();
 
     await waitFor(() => {
       expect(mockFetchWorkoutTypes).toHaveBeenCalled();
@@ -170,5 +171,16 @@ describe('WorkoutDrawer', () => {
     expect(screen.getByLabelText(/Tipo de Treino/i)).toBeDisabled();
     expect(screen.getByRole('button', { name: /Salvar treino/i })).toBeDisabled();
     expect(screen.queryByRole('button', { name: /Adicionar exercício/i })).toBeDisabled();
+  });
+
+  it('renders action footer without solid dark block background', () => {
+    const { container } = render(<WorkoutDrawer {...defaultProps} />);
+
+    const cancelButton = screen.getByRole('button', { name: /Cancelar/i });
+    const footer = cancelButton.closest('div');
+
+    expect(footer).toBeTruthy();
+    expect(footer?.className).not.toContain('bg-[#0d0d0f]/95');
+    expect(container.querySelector('.from-\\[\\#0d0d0f\\]\\/80')).toBeTruthy();
   });
 });

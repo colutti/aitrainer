@@ -22,8 +22,6 @@ interface RingMetric {
 }
 
 const WEEKDAY_ORDER = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-const CYAN = '#22d3ee';
-const GREEN = 'var(--color-success)';
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
@@ -96,9 +94,9 @@ function resolveRoutineForSchedule(
 function PlanSkeleton() {
   return (
     <div data-testid="plan-skeleton" className="space-y-6 animate-pulse">
-      <Skeleton className="h-32 rounded-[28px] bg-[color:var(--color-surface-container)]" />
-      <Skeleton className="h-96 rounded-[28px] bg-[color:var(--color-surface-container)]" />
-      <Skeleton className="h-48 rounded-[28px] bg-[color:var(--color-surface-container)]" />
+      <Skeleton className="h-32 rounded-[var(--radius-lg)] bg-[color:var(--color-surface-container)]" />
+      <Skeleton className="h-96 rounded-[var(--radius-lg)] bg-[color:var(--color-surface-container)]" />
+      <Skeleton className="h-48 rounded-[var(--radius-lg)] bg-[color:var(--color-surface-container)]" />
     </div>
   );
 }
@@ -139,7 +137,7 @@ function TimelineHeader({
     <PremiumCard className="relative overflow-hidden border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] px-5 py-4 md:px-6 md:py-5">
       <div className="relative space-y-5">
         <div className="flex items-center gap-3 text-text-primary">
-          <CalendarDays size={20} className="text-cyan-300" />
+          <CalendarDays size={20} className="text-[color:var(--color-primary)]" />
           <h2 className="text-lg md:text-xl font-bold tracking-tight">{title}</h2>
         </div>
 
@@ -149,17 +147,17 @@ function TimelineHeader({
               className="relative h-3 rounded-full"
               style={{
                 width: `${String(timeline.progress)}%`,
-                background: `linear-gradient(90deg, ${CYAN} 0%, ${GREEN} 100%)`,
+                backgroundColor: 'var(--color-primary)',
               }}
             >
-              <div className="absolute right-[-8px] top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border-2 border-cyan-300 bg-[color:var(--color-surface-container-low)]" />
+              <div className="absolute right-[-8px] top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border-2 border-[color:var(--color-primary)] bg-[color:var(--color-surface-container-low)]" />
             </div>
           </div>
           <div className="flex items-center justify-between text-xs font-medium text-text-secondary md:text-sm">
             <p>
               {formatDateByLocale(startDate, locale)} <span className="text-text-muted">({t('plan.labels.start')})</span>
             </p>
-            <p className="text-cyan-200">
+            <p className="text-[color:var(--color-primary)]">
               {t('plan.labels.week_of', { week: timeline.week, total: timeline.totalWeeks })}
             </p>
             <p>
@@ -174,10 +172,10 @@ function TimelineHeader({
 
 function NutritionTargetCard({ metric }: { metric: RingMetric }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)]">
+    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)]">
       <div
         className="px-4 py-2 text-center font-semibold text-[color:var(--color-on-primary)]"
-        style={{ backgroundColor: 'rgba(34,211,238,0.95)' }}
+        style={{ backgroundColor: 'var(--color-primary)' }}
       >
         <p className="text-sm md:text-base leading-none">{metric.label}</p>
       </div>
@@ -206,7 +204,7 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
         <h2 className="text-2xl font-bold tracking-tight text-text-primary">{t('plan.empty.title')}</h2>
         <p className="mx-auto max-w-xl text-sm font-medium text-text-muted">{t('plan.empty.description')}</p>
         <div>
-          <Button type="button" onClick={onOpenChat} className="rounded-full px-6 py-3 font-bold">
+          <Button type="button" onClick={onOpenChat} className="px-6 py-3 font-bold">
             {t('plan.empty.cta')}
           </Button>
         </div>
@@ -273,10 +271,10 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
                 setSelectedDay(todayIsoDay);
               }}
               className={cn(
-                'rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide transition-all',
+                'rounded-[var(--radius-full)] border px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.05em] transition-colors',
                 isViewingToday
-                  ? 'border-cyan-400 bg-cyan-400/20 text-cyan-100'
-                  : 'border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] text-text-secondary hover:border-cyan-500/40 hover:text-text-primary'
+                  ? 'border-[color:var(--color-primary)] bg-[color:var(--color-primary)]/15 text-[color:var(--color-primary)]'
+                  : 'border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] text-text-secondary hover:border-[color:var(--color-primary)]/40 hover:text-text-primary'
               )}
             >
               {t('plan.sections.daily_routine')}
@@ -294,15 +292,15 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
                       setSelectedDay(day);
                     }}
                     className={cn(
-                      'shrink-0 rounded-xl border px-3 py-2 text-center text-[11px] md:text-xs font-bold uppercase transition-all',
+                      'shrink-0 rounded-[var(--radius-md)] border px-3 py-2 text-center text-[11px] md:text-xs font-bold uppercase tracking-[0.05em] transition-colors',
                       isActive
-                        ? 'border-cyan-400 bg-cyan-400/20 text-cyan-100'
-                        : 'border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] text-text-secondary hover:border-cyan-500/40 hover:text-text-primary',
+                        ? 'border-[color:var(--color-primary)] bg-[color:var(--color-primary)]/15 text-[color:var(--color-primary)]'
+                        : 'border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] text-text-secondary hover:border-[color:var(--color-primary)]/40 hover:text-text-primary',
                     )}
                     aria-pressed={isActive}
                   >
                     <span>{label}</span>
-                    {isToday ? <span className="ml-1 text-cyan-300">{t('dashboard.week_short')}</span> : null}
+                    {isToday ? <span className="ml-1 text-[color:var(--color-primary)]">{t('dashboard.week_short')}</span> : null}
                   </button>
                 );
               })}
@@ -311,8 +309,8 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
           <div className="grid grid-cols-1 gap-3 xl:grid-cols-2" data-testid="plan-weekly-exercises">
             {selectedRoutine?.exercises.length ? (
               selectedRoutine.exercises.map((exercise) => (
-                <div key={`${selectedDay}-${exercise.name}`} className="flex items-center gap-4 rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">
-                  <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[color:var(--color-outline)] bg-[color:var(--color-surface-container)] text-text-secondary">
+                <div key={`${selectedDay}-${exercise.name}`} className="flex items-center gap-4 rounded-[var(--radius-lg)] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">
+                  <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-[color:var(--color-outline)] bg-[color:var(--color-surface-container)] text-text-secondary">
                     <Dumbbell size={22} />
                   </div>
                   <div className="space-y-1">
@@ -329,7 +327,7 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
                 </div>
               ))
             ) : (
-              <div className="space-y-3 rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-5 text-sm font-semibold text-text-muted xl:col-span-2">
+              <div className="space-y-3 rounded-[var(--radius-lg)] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-5 text-sm font-semibold text-text-muted xl:col-span-2">
                 <p>{t('plan.labels.rest_day')}</p>
                 <Button type="button" variant="secondary" onClick={onOpenChat} className="h-10 rounded-lg px-4 text-xs md:text-sm">
                   {t('plan.empty.cta')}

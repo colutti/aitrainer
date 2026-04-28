@@ -42,10 +42,10 @@ export function DataView({
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in duration-300">
-        <div className="w-20 h-20 rounded-[2rem] bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 mb-6 shadow-2xl shadow-red-500/10">
+        <div className="w-20 h-20 rounded-[2rem] bg-[color:var(--color-error)]/10 border border-[color:var(--color-error)]/20 flex items-center justify-center text-[color:var(--color-error)] mb-6  shadow-red-500/10">
           <AlertCircle size={40} />
         </div>
-        <h3 className="text-2xl font-black text-text-primary mb-2">{t('common.error_loading', 'Erro ao carregar')}</h3>
+        <h3 className="text-2xl font-semibold text-text-primary mb-2">{t('common.error_loading', 'Erro ao carregar')}</h3>
         <p className="text-text-muted max-w-xs mb-8 text-sm">{t('common.error_loading_desc', 'Não foi possível carregar os dados.')}</p>
         {onRetry && (
           <Button
@@ -64,7 +64,7 @@ export function DataView({
 
   if (isEmpty) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center opacity-40 animate-in fade-in duration-500 border-2 border-dashed border-[color:var(--color-outline-variant)] rounded-[32px]">
+      <div className="flex flex-col items-center justify-center py-20 text-center opacity-40 animate-in fade-in duration-500 border-2 border-dashed border-[color:var(--color-outline-variant)] rounded-[var(--radius-lg)]">
         <div className="w-20 h-20 rounded-3xl bg-[color:var(--color-surface-container)] flex items-center justify-center mb-6">
           {emptyState?.icon ?? <FolderOpen size={40} className="text-text-muted" />}
         </div>

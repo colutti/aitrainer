@@ -53,10 +53,10 @@ export function WidgetRecentPRs({ prs }: WidgetRecentPRsProps) {
 
               <div className="text-right relative z-10 shrink-0">
                 <div className="flex items-center gap-1 justify-end">
-                  <span className="text-xl font-black text-text-primary tracking-tight">{pr.weight}<span className="text-sm font-medium text-text-muted ml-0.5">{t('dashboard.weight_unit')}</span></span>
+                  <span className="text-xl font-semibold text-text-primary tracking-tight">{pr.weight}<span className="text-sm font-medium text-text-muted ml-0.5">{t('dashboard.weight_unit')}</span></span>
                 </div>
                 {pr.previous_weight && (
-                  <div className="flex items-center justify-end gap-1 text-[10px] text-emerald-400 font-bold">
+                  <div className="flex items-center justify-end gap-1 text-[10px] text-[color:var(--color-secondary)] font-bold">
                       <ArrowUpRight size={10} />
                       <span>+{((pr.weight - pr.previous_weight)).toFixed(2)}{t('dashboard.weight_unit')}</span>
                   </div>

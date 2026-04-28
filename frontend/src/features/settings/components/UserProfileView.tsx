@@ -53,10 +53,10 @@ export default function UserProfileView({
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-pulse">
         <div className="lg:col-span-1 space-y-6">
-          <div className="h-80 bg-[color:var(--color-surface-container)] rounded-[32px]" />
+          <div className="h-80 bg-[color:var(--color-surface-container)] rounded-[var(--radius-lg)]" />
         </div>
         <div className="lg:col-span-2 space-y-6">
-          <div className="h-96 bg-[color:var(--color-surface-container)] rounded-[32px]" />
+          <div className="h-96 bg-[color:var(--color-surface-container)] rounded-[var(--radius-lg)]" />
         </div>
       </div>
     );
@@ -72,11 +72,11 @@ export default function UserProfileView({
       <div className="lg:col-span-1 space-y-6">
         <PremiumCard className="p-8 text-center flex flex-col items-center">
            <div className={`relative group ${isReadOnly ? 'cursor-default' : 'cursor-pointer'}`} onClick={() => { if (!isReadOnly) document.getElementById('photo-upload')?.click(); }}>
-              <div className="w-32 h-32 rounded-[40px] bg-[color:var(--color-surface-container)] border-4 border-[color:var(--color-outline-variant)] overflow-hidden shadow-2xl transition-transform group-hover:scale-105">
+              <div className="w-32 h-32 rounded-[40px] bg-[color:var(--color-surface-container)] border-4 border-[color:var(--color-outline-variant)] overflow-hidden  transition-transform group-hover:scale-105">
                  {photoUrl ? (
                    <img src={photoUrl} alt="Profile" className="w-full h-full object-cover" />
                  ) : (
-                   <div className="w-full h-full flex items-center justify-center bg-indigo-500/20 text-indigo-400">
+                   <div className="w-full h-full flex items-center justify-center bg-indigo-500/20 text-[color:var(--color-primary)]">
                       <User size={48} />
                    </div>
                  )}
@@ -93,18 +93,18 @@ export default function UserProfileView({
                   if (file) void onPhotoUpload(file);
                 }}
               />
-              <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-indigo-500 border-4 border-[#09090b] flex items-center justify-center text-text-primary shadow-lg">
+              <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-indigo-500 border-4 border-[#09090b] flex items-center justify-center text-text-primary ">
                  <Camera size={16} />
               </div>
            </div>
            {isReadOnly && (
-             <div className="mt-4 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-black uppercase tracking-[0.2em] text-amber-300">
+             <div className="mt-4 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-300">
                Demo Read-Only
              </div>
            )}
 
            <div className="mt-6 mb-8">
-              <h2 data-testid="profile-header-name" className="text-xl font-black text-text-primary leading-tight">{userName}</h2>
+              <h2 data-testid="profile-header-name" className="text-xl font-semibold text-text-primary leading-tight">{userName}</h2>
               <p className="text-sm text-text-muted font-medium flex items-center justify-center gap-2 mt-1">
                 <Mail size={14} /> {profile?.email}
               </p>
@@ -112,12 +112,12 @@ export default function UserProfileView({
 
            <div className="grid grid-cols-2 gap-4 w-full">
               <div className="bg-[color:var(--color-surface-container)] p-3 rounded-2xl border border-[color:var(--color-outline-variant)]">
-                <p className="text-[9px] uppercase font-black text-text-muted tracking-widest">{t('common.age')}</p>
-                <p className="text-lg font-black text-text-primary">{profile?.age ?? '-'}</p>
+                <p className="text-[9px] uppercase font-semibold text-text-muted tracking-[0.05em]">{t('common.age')}</p>
+                <p className="text-lg font-semibold text-text-primary">{profile?.age ?? '-'}</p>
               </div>
               <div className="bg-[color:var(--color-surface-container)] p-3 rounded-2xl border border-[color:var(--color-outline-variant)]">
-                <p className="text-[9px] uppercase font-black text-text-muted tracking-widest">{t('common.gender')}</p>
-                <p className="text-lg font-black text-text-primary capitalize">{profile?.gender ?? '-'}</p>
+                <p className="text-[9px] uppercase font-semibold text-text-muted tracking-[0.05em]">{t('common.gender')}</p>
+                <p className="text-lg font-semibold text-text-primary capitalize">{profile?.gender ?? '-'}</p>
               </div>
            </div>
         </PremiumCard>
@@ -127,10 +127,10 @@ export default function UserProfileView({
       <div className="lg:col-span-2 space-y-6">
         <PremiumCard className="p-8">
            <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+              <div className="w-10 h-10 rounded-xl bg-[color:var(--color-primary)]/10 border border-[color:var(--color-primary)]/20 flex items-center justify-center text-[color:var(--color-primary)]">
                  <Activity size={20} />
               </div>
-              <h3 className="text-xl font-black text-text-primary tracking-tight uppercase">{t('settings.profile.personal_info')}</h3>
+              <h3 className="text-xl font-semibold text-text-primary tracking-tight uppercase">{t('settings.profile.personal_info')}</h3>
            </div>
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -179,7 +179,7 @@ export default function UserProfileView({
                     {...register('height', { valueAsNumber: true })}
                     className="pl-12 h-14 rounded-2xl"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-text-muted uppercase tracking-widest">cm</span>
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-text-muted uppercase tracking-[0.05em]">cm</span>
                 </div>
               </FormField>
            </div>
@@ -187,10 +187,10 @@ export default function UserProfileView({
 
         <PremiumCard className="p-8">
            <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <div className="w-10 h-10 rounded-xl bg-[color:var(--color-secondary)]/10 border border-[color:var(--color-secondary)]/20 flex items-center justify-center text-[color:var(--color-secondary)]">
                  <Target size={20} />
               </div>
-              <h3 className="text-xl font-black text-text-primary tracking-tight uppercase">{t('settings.profile.goals')}</h3>
+              <h3 className="text-xl font-semibold text-text-primary tracking-tight uppercase">{t('settings.profile.goals')}</h3>
            </div>
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -218,7 +218,7 @@ export default function UserProfileView({
                     {...register('target_weight', { valueAsNumber: true })}
                     className="pl-12 h-14 rounded-2xl"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-text-muted uppercase tracking-widest">kg</span>
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-text-muted uppercase tracking-[0.05em]">kg</span>
                 </div>
               </FormField>
 
@@ -233,7 +233,7 @@ export default function UserProfileView({
                     {...register('weekly_rate', { valueAsNumber: true })}
                     className="pl-12 h-14 rounded-2xl"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-text-muted uppercase tracking-widest">kg/sem</span>
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-text-muted uppercase tracking-[0.05em]">kg/sem</span>
                 </div>
               </FormField>
            </div>
@@ -242,7 +242,7 @@ export default function UserProfileView({
               <Button 
                 type="submit" 
                 disabled={isSaving || isReadOnly}
-                className="btn-premium h-14 px-10 rounded-2xl text-base shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className="btn-premium h-14 px-10 rounded-2xl text-base  hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
                 {isReadOnly ? t('settings.profile.read_only', 'Somente leitura') : isSaving ? t('common.loading') : t('common.save')}
                 <ChevronRight className="ml-2 w-5 h-5" />

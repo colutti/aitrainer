@@ -272,8 +272,10 @@
     }
   },
   "dashboard": {
+    "title": "Inicio",
+    "subtitle": "Resumen de tu progreso",
     "greeting": "¡Buenos días, {{name}}!",
-    "summary_subtitle": "Resumen de su rendimiento metabólico y físico.",
+    "summary_subtitle": "Análisis basado en los datos de las últimas 3 semanas.",
     "daily_target": "Meta Diaria",
     "confidence": "Confianza IA",
     "recent_activity": "Actividad Reciente",

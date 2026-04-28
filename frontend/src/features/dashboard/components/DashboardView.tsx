@@ -1,6 +1,5 @@
 import {
   Activity,
-  AlertCircle,
   Dumbbell,
   Flame,
   Scale,
@@ -10,7 +9,6 @@ import {
   Zap,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
 
 import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
 import { Skeleton } from '../../../shared/components/ui/Skeleton';
@@ -46,7 +44,6 @@ export interface DashboardViewProps {
   confidenceLevel: string;
   confidenceColor: string;
   calories: DashboardStats['calories'];
-  workouts: DashboardStats['workouts'];
 }
 
 export function DashboardView({
@@ -65,7 +62,6 @@ export function DashboardView({
   confidenceColor,
   confidenceLevel,
   calories,
-  workouts,
 }: DashboardViewProps) {
   const { t } = useTranslation();
 
@@ -83,7 +79,7 @@ export function DashboardView({
     return (
       <div
         className={cn(
-          'inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-black',
+          'inline-flex items-center gap-1 rounded-[var(--radius-md)] border px-2 py-1 text-xs font-semibold',
           isPositive ? positiveClassName : negativeClassName,
         )}
       >
@@ -105,10 +101,10 @@ export function DashboardView({
   if (isLoading) {
     return (
       <div data-testid="dashboard-skeleton" className="space-y-6">
-        <Skeleton className="h-24 w-full rounded-[32px] bg-[color:var(--color-surface-container)]" />
+        <Skeleton className="h-24 w-full rounded-[var(--radius-lg)] bg-[color:var(--color-surface-container)]" />
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-64 rounded-[32px] bg-[color:var(--color-surface-container)]" />
+            <Skeleton key={i} className="h-64 rounded-[var(--radius-lg)] bg-[color:var(--color-surface-container)]" />
           ))}
         </div>
       </div>
@@ -126,21 +122,21 @@ export function DashboardView({
           >
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(380px,0.95fr)]">
               <div>
-                <div className="mb-2 flex items-center gap-2 text-emerald-400">
+                <div className="mb-2 flex items-center gap-2 text-[color:var(--color-primary)]">
                   <Target size={16} />
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em]">{t('dashboard.daily_target')}</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.05em]">{t('dashboard.daily_target')}</span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-black leading-none text-text-primary">{metabolism.daily_target}</span>
-                  <span className="text-xl font-black uppercase text-text-secondary">kcal</span>
+                  <span className="text-5xl font-semibold leading-none text-text-primary">{metabolism.daily_target}</span>
+                  <span className="text-xl font-semibold uppercase text-text-secondary">kcal</span>
                 </div>
                 <div className="mt-3 flex items-center gap-2">
-                  <span className="rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)] px-3 py-1 text-[10px] font-black uppercase tracking-wider text-text-primary">
+                  <span className="rounded-[var(--radius-full)] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.05em] text-text-primary">
                     {t(`body.metabolism.goals.${metabolism.goal_type}`)}
                   </span>
                   <span
                     className={cn(
-                      'inline-flex h-8 items-center gap-2 rounded-lg border px-3 text-[10px] font-black uppercase tracking-wider',
+                      'inline-flex h-8 items-center gap-2 rounded-[var(--radius-md)] border px-3 text-[10px] font-semibold uppercase tracking-[0.05em]',
                       confidenceColor,
                     )}
                   >
@@ -150,46 +146,46 @@ export function DashboardView({
                 </div>
               </div>
 
-              <div className="space-y-3 rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-3">
+              <div className="space-y-3 rounded-[var(--radius-lg)] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-3">
                 <div>
-                  <div className="mb-1 flex items-center justify-between text-[10px] font-black uppercase tracking-wider">
+                  <div className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider">
                     <span className="text-text-muted">{t('body.metabolism.general_consistency')}</span>
-                    <span className="text-emerald-400">{metabolism.consistency_score}%</span>
+                    <span className="text-[color:var(--color-primary)]">{metabolism.consistency_score}%</span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-[color:var(--color-background)]">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-cyan-400 to-fuchsia-500"
+                      className="h-full rounded-full bg-[color:var(--color-primary)]"
                       style={{ width: `${String(metabolism.consistency_score)}%` }}
                     />
                   </div>
                 </div>
                 <div>
-                  <div className="mb-1 flex items-center justify-between text-[10px] font-black uppercase tracking-wider">
+                  <div className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider">
                     <span className="text-text-muted">{t('body.metabolism.caloric_stability')}</span>
-                    <span className="text-orange-400">{metabolism.stability_score}%</span>
+                    <span className="text-[color:var(--color-secondary)]">{metabolism.stability_score}%</span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-[color:var(--color-background)]">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400"
+                      className="h-full rounded-full bg-[color:var(--color-secondary)]"
                       style={{ width: `${String(metabolism.stability_score)}%` }}
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2 border-t border-[color:var(--color-outline-variant)] pt-2">
                   <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-text-muted">{t('body.metabolism.tdee_label')}</p>
-                    <p className="text-sm font-black text-emerald-400">{metabolism.tdee}</p>
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.05em] text-text-muted">{t('body.metabolism.tdee_label')}</p>
+                    <p className="text-sm font-semibold text-[color:var(--color-primary)]">{metabolism.tdee}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-text-muted">{t('body.metabolism.avg_balance')}</p>
-                    <p className={cn('text-sm font-black', metabolism.energy_balance > 0 ? 'text-orange-400' : 'text-emerald-400')}>
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.05em] text-text-muted">{t('body.metabolism.avg_balance')}</p>
+                    <p className={cn('text-sm font-semibold', metabolism.energy_balance > 0 ? 'text-[color:var(--color-tertiary)]' : 'text-[color:var(--color-primary)]')}>
                       {metabolism.energy_balance > 0 ? '+' : ''}
                       {metabolism.energy_balance}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-text-muted">{t('body.metabolism.trend_label')}</p>
-                    <p className={cn('text-sm font-black', metabolism.weekly_change > 0 ? 'text-orange-400' : 'text-blue-400')}>
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.05em] text-text-muted">{t('body.metabolism.trend_label')}</p>
+                    <p className={cn('text-sm font-semibold', metabolism.weekly_change > 0 ? 'text-[color:var(--color-tertiary)]' : 'text-[color:var(--color-primary)]')}>
                       {metabolism.weekly_change > 0 ? '+' : ''}
                       {metabolism.weekly_change.toFixed(2)}
                     </p>
@@ -203,138 +199,97 @@ export function DashboardView({
             <PremiumCard withHover={false} className="border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-4">
               <div className="mb-2 flex items-start justify-between">
                 <div className="flex items-center gap-2 text-text-secondary">
-                  <Scale size={16} className="text-emerald-400" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">{t('dashboard.chart.weight')}</span>
+                  <Scale size={16} className="text-[color:var(--color-primary)]" />
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.05em]">{t('dashboard.chart.weight')}</span>
                 </div>
-                <div className="text-[10px] font-black text-text-secondary">7d 15d 30d</div>
+                <div className="text-[10px] font-semibold text-text-secondary">7d 15d 30d</div>
               </div>
               <div className="mb-2 flex items-baseline gap-1">
-                <span className="text-5xl font-black text-text-primary">{body.weight_current.toFixed(1)}</span>
+                <span className="text-5xl font-semibold text-text-primary">{body.weight_current.toFixed(1)}</span>
                 <span className="text-lg font-bold text-text-muted">kg</span>
               </div>
               <div className="mb-2 flex flex-wrap gap-2">
-                {renderDiffChip(body.weight_diff, 'kg', '(7d)', 'text-orange-400 bg-orange-400/10', 'text-emerald-400 bg-emerald-400/10')}
-                {renderDiffChip(body.weight_diff_15, 'kg', '(15d)', 'text-orange-400 bg-orange-400/10', 'text-emerald-400 bg-emerald-400/10')}
-                {renderDiffChip(body.weight_diff_30, 'kg', '(30d)', 'text-orange-400 bg-orange-400/10', 'text-emerald-400 bg-emerald-400/10')}
+                {renderDiffChip(body.weight_diff, 'kg', '(7d)', 'text-[color:var(--color-tertiary)] bg-orange-400/10', 'text-[color:var(--color-secondary)] bg-emerald-400/10')}
+                {renderDiffChip(body.weight_diff_15, 'kg', '(15d)', 'text-[color:var(--color-tertiary)] bg-orange-400/10', 'text-[color:var(--color-secondary)] bg-emerald-400/10')}
+                {renderDiffChip(body.weight_diff_30, 'kg', '(30d)', 'text-[color:var(--color-tertiary)] bg-orange-400/10', 'text-[color:var(--color-secondary)] bg-emerald-400/10')}
               </div>
-              <DashboardMiniChart data={mergedWeightData} dataKey="weight" color="#22c55e" id="weight" />
+              <DashboardMiniChart data={mergedWeightData} dataKey="weight" color="var(--color-primary)" id="weight" />
             </PremiumCard>
 
             <PremiumCard withHover={false} data-testid="widget-fat" className="border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-4">
               <div className="mb-2 flex items-start justify-between">
                 <div className="flex items-center gap-2 text-text-secondary">
-                  <Flame size={16} className="text-orange-400" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">{t('dashboard.chart.fat')}</span>
+                  <Flame size={16} className="text-[color:var(--color-tertiary)]" />
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.05em]">{t('dashboard.chart.fat')}</span>
                 </div>
-                <div className="text-[10px] font-black text-text-secondary">7d 15d 30d</div>
+                <div className="text-[10px] font-semibold text-text-secondary">7d 15d 30d</div>
               </div>
               <div className="mb-2 flex items-baseline gap-1">
-                <span className="text-5xl font-black text-text-primary">{typeof body.body_fat_pct === 'number' ? body.body_fat_pct.toFixed(1) : '--'}</span>
+                <span className="text-5xl font-semibold text-text-primary">{typeof body.body_fat_pct === 'number' ? body.body_fat_pct.toFixed(1) : '--'}</span>
                 <span className="text-lg font-bold text-text-muted">%</span>
               </div>
               <div className="mb-2 flex flex-wrap gap-2">
-                {renderDiffChip(body.fat_diff, '%', '(7d)', 'text-orange-400 bg-orange-400/10', 'text-emerald-400 bg-emerald-400/10')}
-                {renderDiffChip(body.fat_diff_15, '%', '(15d)', 'text-orange-400 bg-orange-400/10', 'text-emerald-400 bg-emerald-400/10')}
-                {renderDiffChip(body.fat_diff_30, '%', '(30d)', 'text-orange-400 bg-orange-400/10', 'text-emerald-400 bg-emerald-400/10')}
+                {renderDiffChip(body.fat_diff, '%', '(7d)', 'text-[color:var(--color-tertiary)] bg-orange-400/10', 'text-[color:var(--color-secondary)] bg-emerald-400/10')}
+                {renderDiffChip(body.fat_diff_15, '%', '(15d)', 'text-[color:var(--color-tertiary)] bg-orange-400/10', 'text-[color:var(--color-secondary)] bg-emerald-400/10')}
+                {renderDiffChip(body.fat_diff_30, '%', '(30d)', 'text-[color:var(--color-tertiary)] bg-orange-400/10', 'text-[color:var(--color-secondary)] bg-emerald-400/10')}
               </div>
-              <DashboardMiniChart data={mergedFatData} dataKey="value" color="#fb923c" id="fat" />
+              <DashboardMiniChart data={mergedFatData} dataKey="value" color="var(--color-tertiary)" id="fat" />
             </PremiumCard>
 
             <PremiumCard withHover={false} className="border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-4">
               <div className="mb-2 flex items-start justify-between">
                 <div className="flex items-center gap-2 text-text-secondary">
-                  <Zap size={16} className="text-blue-400" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">{t('dashboard.chart.muscle')}</span>
+                  <Zap size={16} className="text-[color:var(--color-primary)]" />
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.05em]">{t('dashboard.chart.muscle')}</span>
                 </div>
-                <div className="text-[10px] font-black text-text-secondary">7d 15d 30d</div>
+                <div className="text-[10px] font-semibold text-text-secondary">7d 15d 30d</div>
               </div>
               <div className="mb-2 flex items-baseline gap-1">
-                <span className="text-5xl font-black text-text-primary">{typeof body.muscle_mass_kg === 'number' ? body.muscle_mass_kg.toFixed(1) : '--'}</span>
+                <span className="text-5xl font-semibold text-text-primary">{typeof body.muscle_mass_kg === 'number' ? body.muscle_mass_kg.toFixed(1) : '--'}</span>
                 <span className="text-lg font-bold text-text-muted">kg</span>
               </div>
               <div className="mb-2 flex flex-wrap gap-2">
-                {renderDiffChip(body.muscle_diff_kg, 'kg', '(7d)', 'text-emerald-400 bg-emerald-400/10', 'text-orange-400 bg-orange-400/10')}
-                {renderDiffChip(body.muscle_diff_kg_15, 'kg', '(15d)', 'text-emerald-400 bg-emerald-400/10', 'text-orange-400 bg-orange-400/10')}
-                {renderDiffChip(body.muscle_diff_kg_30, 'kg', '(30d)', 'text-emerald-400 bg-emerald-400/10', 'text-orange-400 bg-orange-400/10')}
+                {renderDiffChip(body.muscle_diff_kg, 'kg', '(7d)', 'text-[color:var(--color-secondary)] bg-emerald-400/10', 'text-[color:var(--color-tertiary)] bg-orange-400/10')}
+                {renderDiffChip(body.muscle_diff_kg_15, 'kg', '(15d)', 'text-[color:var(--color-secondary)] bg-emerald-400/10', 'text-[color:var(--color-tertiary)] bg-orange-400/10')}
+                {renderDiffChip(body.muscle_diff_kg_30, 'kg', '(30d)', 'text-[color:var(--color-secondary)] bg-emerald-400/10', 'text-[color:var(--color-tertiary)] bg-orange-400/10')}
               </div>
-              <DashboardMiniChart data={mergedMuscleData} dataKey="value" color="#38bdf8" id="muscle" />
+              <DashboardMiniChart data={mergedMuscleData} dataKey="value" color="var(--color-primary)" id="muscle" />
             </PremiumCard>
           </div>
 
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
             <PremiumCard withHover={false} className="border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-4 xl:col-span-2">
               <div className="mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-orange-400">
+                <div className="flex items-center gap-2 text-[color:var(--color-tertiary)]">
                   <Flame size={16} fill="currentColor" />
-                  <span className="text-xs font-black uppercase tracking-wider">{t('nutrition.calories')}</span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.05em]">{t('nutrition.calories')}</span>
                 </div>
-                <span className="text-3xl font-black text-text-primary">
+                <span className="text-3xl font-semibold text-text-primary">
                   {calories.consumed} <span className="text-lg text-text-muted">/ {calories.target} kcal</span>
                 </span>
               </div>
               <div className="mb-4 flex items-center gap-3">
                 <div className="h-3 flex-1 overflow-hidden rounded-full bg-[color:var(--color-background)]">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-orange-600 to-orange-400"
+                    className="h-full rounded-full bg-[color:var(--color-tertiary)]"
                     style={{ width: `${String(Math.min(100, calories.percent))}%` }}
                   />
                 </div>
-                <span className="text-lg font-black text-orange-400">{Math.round(calories.percent)}%</span>
+                <span className="text-lg font-semibold text-[color:var(--color-tertiary)]">{Math.round(calories.percent)}%</span>
               </div>
               <div className="grid grid-cols-3 gap-2 border-t border-[color:var(--color-outline-variant)] pt-3">
                 {macroCards.map((macro) => (
                   <div key={macro.label} className="rounded-lg border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-2 text-center">
-                    <p className="text-xl font-black text-text-primary">{macro.val}g</p>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">{macro.label}</p>
+                    <p className="text-xl font-semibold text-text-primary">{macro.val}g</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.05em] text-text-muted">{macro.label}</p>
                   </div>
                 ))}
               </div>
             </PremiumCard>
 
-            <PremiumCard withHover={false} className="border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-4">
-              <div className="mb-4 flex items-center justify-between">
-                <span className="text-xs font-black uppercase tracking-wider text-text-secondary">{t('dashboard.streak')}</span>
-                <span className="text-3xl font-black text-text-primary">{streak?.current_weeks ?? 0}</span>
-              </div>
-              <div className="mb-4 grid grid-cols-2 gap-2">
-                <div className="rounded-lg border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-2 text-center">
-                  <p className="text-lg font-black text-text-primary">{streak?.current_weeks ?? 0}</p>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-text-muted">{t('dashboard.streak_w')}</p>
-                </div>
-                <div className="rounded-lg border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-2 text-center">
-                  <p className="text-lg font-black text-text-primary">{streak?.current_days ?? 0}</p>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-text-muted">{t('dashboard.streak_d')}</p>
-                </div>
-              </div>
-              <div className="mt-4 rounded-lg border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-2 text-center">
-                <p className="text-[10px] font-black uppercase tracking-widest text-text-muted">{t('common.workouts')}</p>
-                <p className="text-sm font-black text-text-primary">{workouts.completed}/{workouts.target}</p>
-              </div>
-            </PremiumCard>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-            <PremiumCard withHover={false} className="border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-4">
-              <div className="mb-3 flex items-center gap-2">
-                <span className="text-xs font-black uppercase tracking-wider text-text-secondary">{t('dashboard.recent_prs_title')}</span>
-              </div>
-              <div className="space-y-2">
-                {recentPRs.slice(0, 4).map((pr) => (
-                  <div key={pr.id} className="flex items-center justify-between rounded-lg border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] px-3 py-2">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-black text-text-primary">{pr.exercise}</p>
-                      <p className="text-[10px] uppercase tracking-wider text-text-muted">
-                        {t('dashboard.reps', { count: pr.reps })}
-                      </p>
-                    </div>
-                    <span className="text-sm font-black text-text-secondary">
-                      {pr.weight}
-                      {t('dashboard.weight_unit')}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </PremiumCard>
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             <PremiumCard withHover={false} className="border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-4">
               <WidgetVolumeTrend data={volumeTrend} />
             </PremiumCard>
@@ -351,8 +306,8 @@ export function DashboardView({
 
           <PremiumCard withHover={false} className="border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-4">
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-text-secondary">{t('dashboard.streak')}</span>
-              <span className="text-3xl font-black text-text-primary">{streak?.current_weeks ?? 0}</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">{t('dashboard.streak')}</span>
+              <span className="text-3xl font-semibold text-text-primary">{streak?.current_weeks ?? 0}</span>
             </div>
             <WidgetWeeklyFrequency days={weeklyFrequency} />
           </PremiumCard>
@@ -360,19 +315,19 @@ export function DashboardView({
           <PremiumCard withHover={false} className="border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-4">
             <div className="mb-4 flex items-center gap-2 text-text-secondary">
               <Activity size={16} />
-              <span className="text-xs font-black uppercase tracking-widest">{t('dashboard.recent_activity')}</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.05em]">{t('dashboard.recent_activity')}</span>
             </div>
             <div className="space-y-3">
               {recentActivities.slice(0, 4).map((activity) => (
                 <div key={activity.id} className="flex items-start gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] text-indigo-400">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] text-[color:var(--color-primary)]">
                     {activity.type === 'workout' ? <Dumbbell size={14} /> : activity.type === 'nutrition' ? <Flame size={14} /> : <Scale size={14} />}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold text-text-primary">{activity.title}</p>
                     <p className="truncate text-xs text-text-muted">{activity.subtitle}</p>
                   </div>
-                  <span className="pt-0.5 text-[10px] font-black uppercase text-text-muted">{activity.date}</span>
+                  <span className="pt-0.5 text-[10px] font-semibold uppercase text-text-muted">{activity.date}</span>
                 </div>
               ))}
             </div>
@@ -380,23 +335,6 @@ export function DashboardView({
         </aside>
       </DashboardWorkspaceSection>
 
-      <div className="flex items-center justify-center gap-2 rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-4">
-        <AlertCircle size={14} className="text-text-muted" />
-        <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted">{t('body.metabolism.info_desc')}</p>
-      </div>
-
-      <PremiumCard withHover={false} className="border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5">
-        <Link to="/dashboard/plan" data-testid="dashboard-plan-entry" className="group flex items-center justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted">{t('dashboard.plan_entry.eyebrow')}</p>
-            <p className="mt-1 text-sm font-black text-text-primary">{t('dashboard.plan_entry.title')}</p>
-            <p className="mt-1 text-xs font-medium text-text-secondary">{t('dashboard.plan_entry.description')}</p>
-          </div>
-          <span className="rounded-full border border-[color:var(--color-outline-variant)] px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-text-secondary transition-colors group-hover:border-white/25 group-hover:text-text-primary">
-            {t('dashboard.plan_entry.cta')}
-          </span>
-        </Link>
-      </PremiumCard>
     </div>
   );
 }

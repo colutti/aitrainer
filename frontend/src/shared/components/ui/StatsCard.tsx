@@ -30,9 +30,9 @@ export function StatsCard({
   const { t } = useTranslation();
   const variants = {
     primary: 'bg-[color:var(--color-primary)]/10 text-[color:var(--color-primary)] border-[color:var(--color-primary)]/20',
-    orange: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
+    orange: 'bg-[color:var(--color-tertiary)]/10 text-[color:var(--color-tertiary)] border-[color:var(--color-tertiary)]/20',
     blue: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-    green: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+    green: 'bg-[color:var(--color-secondary)]/10 text-[color:var(--color-secondary)] border-[color:var(--color-secondary)]/20',
     secondary: 'bg-zinc-700/10 text-text-secondary border-zinc-700/20',
     purple: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
   };
@@ -63,8 +63,8 @@ export function StatsCard({
           {trend && (
             <span className={cn(
               "text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider",
-              trend === 'down' ? 'bg-red-500/10 text-red-500 border border-red-500/10' : 
-              trend === 'up' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/10' : 
+              trend === 'down' ? 'bg-[color:var(--color-error)]/10 text-[color:var(--color-error)] border border-red-500/10' : 
+              trend === 'up' ? 'bg-[color:var(--color-secondary)]/10 text-[color:var(--color-secondary)] border border-emerald-500/10' : 
               'bg-blue-500/10 text-blue-500 border border-blue-500/10'
             )}>
               {t(`common.trends.${trend}`)}

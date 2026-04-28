@@ -19,9 +19,8 @@ const optionalNumber = (min: number, max: number) => z.preprocess(
 const weightSchema = z.object({
   date: z.string().min(1),
   weight_kg: z.coerce.number().min(20).max(300),
-  body_fat_pct: z.coerce.number().min(2).max(70),
+  body_fat_pct: optionalNumber(2, 70),
   muscle_mass_pct: optionalNumber(2, 100),
-  muscle_mass_kg: optionalNumber(10, 150),
   visceral_fat: optionalNumber(1, 50),
   body_water_pct: optionalNumber(2, 100),
   bone_mass_kg: optionalNumber(0, 20),
@@ -70,9 +69,8 @@ export function WeightLogDrawer({ isOpen, onClose, onSubmit, isReadOnly = false,
       reset({
         date: log.date.split('T')[0],
         weight_kg: log.weight_kg,
-        body_fat_pct: log.body_fat_pct ?? 0,
+        body_fat_pct: log.body_fat_pct,
         muscle_mass_pct: log.muscle_mass_pct,
-        muscle_mass_kg: log.muscle_mass_kg,
         visceral_fat: log.visceral_fat,
         body_water_pct: log.body_water_pct,
         bone_mass_kg: log.bone_mass_kg,
@@ -90,7 +88,7 @@ export function WeightLogDrawer({ isOpen, onClose, onSubmit, isReadOnly = false,
         notes: log.notes,
       });
     } else {
-      reset({ weight_kg: 0, body_fat_pct: 0, date: new Date().toISOString().split('T')[0] });
+      reset({ weight_kg: undefined, body_fat_pct: undefined, date: new Date().toISOString().split('T')[0] });
     }
   }, [log, reset, isOpen]);
 
@@ -103,7 +101,7 @@ export function WeightLogDrawer({ isOpen, onClose, onSubmit, isReadOnly = false,
       icon={<Scale size={24} />}
     >
       {isReadOnly && (
-        <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-amber-200">
+        <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-200">
           Demo Read-Only
         </div>
       )}
@@ -131,7 +129,7 @@ export function WeightLogDrawer({ isOpen, onClose, onSubmit, isReadOnly = false,
                 disabled={isReadOnly}
                 {...register('weight_kg')}
                 placeholder="0.0"
-                className="pl-14 h-20 text-4xl font-black bg-transparent border-transparent focus:border-[color:var(--color-outline-variant)] rounded-2xl"
+                className="pl-14 h-20 text-4xl font-semibold bg-transparent border-transparent focus:border-[color:var(--color-outline-variant)] rounded-2xl"
               />
               <span className="absolute right-6 top-1/2 -translate-y-1/2 text-xl font-bold text-text-muted uppercase">kg</span>
             </div>
@@ -161,10 +159,6 @@ export function WeightLogDrawer({ isOpen, onClose, onSubmit, isReadOnly = false,
                   <Input id="muscle-mass-pct" type="number" step="any" disabled={isReadOnly} {...register('muscle_mass_pct')} placeholder="%" className="h-14 rounded-2xl font-bold" />
                 </FormField>
                 
-                <FormField label={t('body.weight.muscle_mass')} id="muscle-mass-kg" icon={<Bone size={14} className="text-text-secondary" />} error={errors.muscle_mass_kg?.message}>
-                  <Input id="muscle-mass-kg" type="number" step="any" disabled={isReadOnly} {...register('muscle_mass_kg')} placeholder="kg" className="h-14 rounded-2xl font-bold" />
-                </FormField>
-
                 <FormField label={t('body.weight.visceral_fat')} id="visceral-fat" icon={<Ruler size={14} className="text-text-secondary" />} error={errors.visceral_fat?.message}>
                   <Input id="visceral-fat" type="number" step="any" disabled={isReadOnly} {...register('visceral_fat')} placeholder="1-20" className="h-14 rounded-2xl font-bold" />
                 </FormField>

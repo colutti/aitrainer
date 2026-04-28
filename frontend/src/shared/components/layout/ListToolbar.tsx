@@ -14,7 +14,7 @@ export function ListToolbar({ children, leftSlot, rightSlot, className }: ListTo
     <div
       data-testid="list-toolbar"
       className={cn(
-        'flex flex-col gap-3 rounded-[var(--radius-md)] border border-[color:var(--color-app-border)] bg-[color:var(--color-app-surface-raised)] p-3 md:flex-row md:items-center md:justify-between',
+        'flex flex-col gap-3 rounded-[var(--radius-md)] border border-[color:var(--color-app-border)] bg-[color:var(--color-surface-container-low)] p-3 md:flex-row md:items-center md:justify-between',
         className
       )}
     >

@@ -250,10 +250,10 @@ export function ChatView({
               )}
             </div>
             <div>
-              <h1 className="text-sm font-black text-text-primary tracking-tight uppercase leading-tight">{trainerName}</h1>
+              <h1 className="text-sm font-semibold text-text-primary tracking-tight uppercase leading-tight">{trainerName}</h1>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">{t('chat.online_now', 'Online')}</span>
+                <span className="text-[10px] font-bold text-text-muted uppercase tracking-[0.05em]">{t('chat.online_now', 'Online')}</span>
               </div>
             </div>
           </div>
@@ -276,7 +276,7 @@ export function ChatView({
                 <div className="w-20 h-20 bg-[color:var(--color-surface-container)] rounded-3xl flex items-center justify-center mb-6 border border-[color:var(--color-outline-variant)] shadow-inner">
                   <Sparkles size={40} className="text-text-primary" />
                 </div>
-                <p className="text-lg font-black text-text-primary uppercase tracking-[0.2em]">{t('chat.start_conversation')}</p>
+                <p className="text-lg font-semibold text-text-primary uppercase tracking-[0.2em]">{t('chat.start_conversation')}</p>
               </div>
             ) : (
               <>
@@ -296,14 +296,14 @@ export function ChatView({
         <div className="flex-none p-4 md:p-6 w-full">
           <div className="max-w-[88rem] mx-auto w-full">
             {error !== null && !isLimitError && (
-              <div className="bg-red-500/10 text-red-400 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full border border-red-500/20 text-center mb-4 animate-in slide-in-from-bottom-2">
+              <div className="bg-[color:var(--color-error)]/10 text-[color:var(--color-error)] text-[10px] font-bold uppercase tracking-[0.05em] px-4 py-2 rounded-full border border-[color:var(--color-error)]/20 text-center mb-4 animate-in slide-in-from-bottom-2">
                 <AlertCircle size={12} className="inline mr-2 -mt-0.5" />
                 {resolveErrorLabel(error)}
               </div>
             )}
 
             {isDemoUser && (
-              <div className="bg-amber-500/10 text-amber-300 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full border border-amber-500/20 text-center mb-4">
+              <div className="bg-amber-500/10 text-amber-300 text-[10px] font-bold uppercase tracking-[0.05em] px-4 py-2 rounded-full border border-amber-500/20 text-center mb-4">
                 Demo read-only
               </div>
             )}
@@ -315,14 +315,14 @@ export function ChatView({
                   <span className="w-1 h-1 bg-zinc-300 rounded-full animate-bounce [animation-duration:0.6s] [animation-delay:0.2s]" />
                   <span className="w-1 h-1 bg-zinc-300 rounded-full animate-bounce [animation-duration:0.6s] [animation-delay:0.4s]" />
                 </div>
-                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">
+                <span className="text-[10px] font-semibold text-text-muted uppercase tracking-[0.05em]">
                   {t('chat.typing', { name: trainerName })}
                 </span>
               </div>
             )}
 
             {!isLimitError ? (
-              <div className="surface-card rounded-[28px] p-2 border-[color:var(--color-outline-variant)]">
+              <div className="surface-card rounded-[var(--radius-lg)] p-2 border-[color:var(--color-outline-variant)]">
                 <form
                   data-testid="chat-form"
                   onSubmit={(e) => {
@@ -396,7 +396,7 @@ export function ChatView({
                     size="icon"
                     disabled={!canSubmit}
                     className={cn(
-                      'w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg shrink-0 mb-0.5',
+                      'w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300  shrink-0 mb-0.5',
                       canSubmit ? 'bg-white text-black active:scale-90' : 'bg-[color:var(--color-surface-container)] text-text-muted cursor-not-allowed',
                     )}
                   >
@@ -445,7 +445,7 @@ export function ChatView({
                     <Sparkles size={28} className="text-text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-black text-text-primary tracking-tight">
+                    <h3 className="text-xl font-semibold text-text-primary tracking-tight">
                       {error === 'TRIAL_EXPIRED' ? t('chat.trial_ended.title') : t('chat.daily_limit.title')}
                     </h3>
                     <p className="mt-2 text-sm text-text-secondary font-medium leading-relaxed max-w-sm">
@@ -457,7 +457,7 @@ export function ChatView({
                     onClick={() => {
                       window.location.href = '/dashboard/settings/subscription';
                     }}
-                    className="w-full max-w-xs bg-white text-black font-black py-3.5 px-8 rounded-full transition-transform active:scale-95 shadow-xl shadow-white/10"
+                    className="w-full max-w-xs bg-white text-black font-semibold py-3.5 px-8 rounded-full transition-transform active:scale-95  shadow-white/10"
                   >
                     {t('chat.upgrade_button')}
                   </Button>

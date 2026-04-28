@@ -15,7 +15,7 @@ export function ScreenSection({ children, title, description, actions, className
     <section
       data-testid="screen-section"
       className={cn(
-        'rounded-[var(--radius-lg)] border border-[color:var(--color-app-border)] bg-[color:var(--color-app-surface)] p-4 md:p-6',
+        'rounded-[var(--radius-lg)] border border-[color:var(--color-app-border)] bg-[color:var(--color-surface-container)] p-4 md:p-6',
         className
       )}
     >

@@ -57,7 +57,7 @@ describe('StatsCard', () => {
     );
 
     // The icon wrapper div should have the orange gradient classes
-    const iconContainer = container.querySelector('.text-orange-500');
+    const iconContainer = container.querySelector('.text-[color:var(--color-tertiary)]');
     expect(iconContainer).toBeInTheDocument();
   });
 });

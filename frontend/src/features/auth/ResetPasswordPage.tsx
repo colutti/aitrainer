@@ -108,12 +108,12 @@ export default function ResetPasswordPage() {
 
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-10">
-          <h1 className="text-5xl font-black text-[color:var(--color-on-surface)] tracking-tighter mb-2">FITYQ</h1>
+          <h1 className="text-5xl font-semibold text-[color:var(--color-on-surface)] tracking-tighter mb-2">FITYQ</h1>
           <p className="text-[color:var(--color-on-surface-variant)] font-bold uppercase text-[10px] tracking-[0.3em]">{t('nav.brand_tagline')}</p>
         </div>
 
         <PremiumCard className="p-10 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-high)]">
-          <h2 className="text-xl font-black text-[color:var(--color-on-surface)] uppercase tracking-widest mb-6">
+          <h2 className="text-xl font-semibold text-[color:var(--color-on-surface)] uppercase tracking-[0.05em] mb-6">
             {t('auth.reset_password_title')}
           </h2>
 
@@ -122,7 +122,7 @@ export default function ResetPasswordPage() {
           ) : null}
 
           {!isValidatingCode && errorKey ? (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-2xl mb-6 flex items-center gap-3">
+            <div className="bg-[color:var(--color-error)]/10 border border-[color:var(--color-error)]/20 text-[color:var(--color-error)] p-4 rounded-2xl mb-6 flex items-center gap-3">
               <AlertCircle size={18} />
               <p className="text-xs font-bold">{t(errorKey)}</p>
             </div>
@@ -149,7 +149,7 @@ export default function ResetPasswordPage() {
               />
 
               {passwordErrors.length > 0 ? (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-300 p-4 rounded-2xl">
+                <div className="bg-[color:var(--color-error)]/10 border border-[color:var(--color-error)]/20 text-red-300 p-4 rounded-2xl">
                   <ul className="list-disc ml-4 space-y-1 text-xs font-bold">
                     {passwordErrors.map((passwordError) => (
                       <li key={passwordError}>{t(passwordError)}</li>
@@ -172,7 +172,7 @@ export default function ResetPasswordPage() {
 
           {!isValidatingCode && isSuccess ? (
             <div className="space-y-6">
-              <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 p-4 rounded-2xl flex items-center gap-3">
+              <div className="bg-[color:var(--color-secondary)]/10 border border-[color:var(--color-secondary)]/20 text-emerald-300 p-4 rounded-2xl flex items-center gap-3">
                 <AlertCircle size={18} />
                 <p className="text-xs font-bold">{t('auth.reset_password_success')}</p>
               </div>

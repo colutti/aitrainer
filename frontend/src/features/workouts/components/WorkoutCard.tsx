@@ -51,7 +51,7 @@ export function WorkoutCard({ workout, isReadOnly = false, onDelete, onEdit, onC
         </span>
       )}
       leadingMeta={(
-        <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-cyan-300 bg-cyan-400/10">
+        <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-300 bg-cyan-400/10">
           <Clock size={12} />
           {workout.duration_minutes ?? '--'} min
         </span>
@@ -59,12 +59,12 @@ export function WorkoutCard({ workout, isReadOnly = false, onDelete, onEdit, onC
       metrics={[
         {
           label: t('workouts.exercises'),
-          value: <span className="text-sm font-black text-emerald-400 tabular-nums">{workout.exercises.length}</span>,
+          value: <span className="text-sm font-semibold text-[color:var(--color-secondary)] tabular-nums">{workout.exercises.length}</span>,
         },
         {
           label: t('workouts.total_volume'),
           value: (
-            <span className="text-sm font-black text-orange-400 tabular-nums">
+            <span className="text-sm font-semibold text-[color:var(--color-tertiary)] tabular-nums">
               {formattedTotalVolume}
               <span className="ml-1 text-[10px] opacity-80">{volumeUnit}</span>
             </span>

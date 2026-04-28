@@ -38,7 +38,7 @@ export function BodyView({ activeTab, onTabChange }: BodyViewProps) {
         </div>
 
         {/* PILL TABS */}
-        <div className="flex bg-white/5 backdrop-blur-md rounded-full p-1 border border-white/5 w-fit">
+        <div className="flex bg-[color:var(--color-surface-container)] backdrop-blur-md rounded-full p-1 border border-[color:var(--color-outline-variant)] w-fit">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -50,10 +50,10 @@ export function BodyView({ activeTab, onTabChange }: BodyViewProps) {
                 data-testid={`body-tab-${tab.id}`}
                 onClick={() => { onTabChange(tab.id as BodyTab); }}
                 className={cn(
-                  "flex items-center gap-2 px-4 md:px-6 py-2 rounded-full text-xs md:text-sm font-black transition-all uppercase tracking-widest",
+                  "flex items-center gap-2 px-4 md:px-6 py-2 rounded-full text-xs md:text-sm font-semibold transition-all uppercase tracking-[0.05em]",
                   isActive 
-                    ? "bg-white text-black shadow-lg" 
-                    : "text-zinc-500 hover:text-zinc-300"
+                    ? "bg-white text-black " 
+                    : "text-text-muted hover:text-text-secondary"
                 )}
               >
                 <Icon size={16} />

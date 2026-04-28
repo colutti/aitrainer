@@ -72,7 +72,7 @@ export function SubscriptionView({
            </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-           {[1, 2, 3].map(i => <Skeleton key={i} className="h-96 rounded-[32px] bg-[color:var(--color-surface-container)]" />)}
+           {[1, 2, 3].map(i => <Skeleton key={i} className="h-96 rounded-[var(--radius-lg)] bg-[color:var(--color-surface-container)]" />)}
         </div>
       </div>
     );
@@ -81,14 +81,14 @@ export function SubscriptionView({
   return (
     <div className={cn(PREMIUM_UI.animation.fadeIn, "space-y-10")}>
       {isReadOnly && (
-        <PremiumCard className="p-4 border-amber-500/20 bg-amber-500/5 text-amber-200 text-[10px] font-black uppercase tracking-[0.2em]">
+        <PremiumCard className="p-4 border-amber-500/20 bg-amber-500/5 text-amber-200 text-[10px] font-semibold uppercase tracking-[0.2em]">
           {readOnlyLabel ?? DEFAULT_READ_ONLY_MESSAGE}
         </PremiumCard>
       )}
       
       {/* HEADER SECTION */}
       <div className="flex items-center gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+        <div className="w-14 h-14 rounded-2xl bg-[color:var(--color-primary)]/10 border border-[color:var(--color-primary)]/20 flex items-center justify-center text-[color:var(--color-primary)]">
           <CreditCard size={28} />
         </div>
         <div>
@@ -137,13 +137,13 @@ export function SubscriptionView({
 
       {/* MANAGE SUBSCRIPTION CALLOUT */}
               {currentPlan !== 'free' && (
-        <PremiumCard className="p-8 flex flex-col md:flex-row items-center justify-between gap-8 bg-gradient-to-r from-indigo-900/20 to-transparent border-indigo-500/20">
+        <PremiumCard className="p-8 flex flex-col md:flex-row items-center justify-between gap-8 bg-[color:var(--color-surface-container-low)] border-[color:var(--color-primary)]/20">
           <div className="flex items-center gap-5">
              <div className="w-14 h-14 bg-indigo-500/20 rounded-full flex items-center justify-center shrink-0 border border-indigo-500/30">
-                <Sparkles size={28} className="text-indigo-400" />
+                <Sparkles size={28} className="text-[color:var(--color-primary)]" />
              </div>
              <div>
-                <h3 className="text-xl font-black text-text-primary tracking-tight">{t('settings.subscription.manage_title')}</h3>
+                <h3 className="text-xl font-semibold text-text-primary tracking-tight">{t('settings.subscription.manage_title')}</h3>
                 <p className="text-sm text-text-muted font-medium leading-relaxed max-w-md">
                   {t('settings.subscription.manage_subtitle')}
                 </p>
@@ -155,7 +155,7 @@ export function SubscriptionView({
             onClick={() => { if (!isReadOnly) onManage(); }} 
             disabled={isReadOnly || loading !== null}
             data-testid="btn-manage-subscription"
-            className="w-full md:w-auto px-8 py-4 rounded-full bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] text-text-primary font-black hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+            className="w-full md:w-auto px-8 py-4 rounded-full bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] text-text-primary font-semibold hover:bg-white/10 transition-all flex items-center justify-center gap-2"
           >
             {loading === 'manage' && !isReadOnly && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
             {isReadOnly ? t('settings.subscription.read_only', 'Somente leitura') : t('settings.subscription.manage_button')}

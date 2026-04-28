@@ -54,7 +54,7 @@ export function TrainerSettingsView({
            </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-           {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-48 rounded-[32px] bg-[color:var(--color-surface-container)]" />)}
+           {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-48 rounded-[var(--radius-lg)] bg-[color:var(--color-surface-container)]" />)}
         </div>
       </div>
     );
@@ -65,7 +65,7 @@ export function TrainerSettingsView({
       
       {/* HEADER */}
       <div className="flex items-center gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+        <div className="w-14 h-14 rounded-2xl bg-[color:var(--color-primary)]/10 border border-[color:var(--color-primary)]/20 flex items-center justify-center text-[color:var(--color-primary)]">
           <Dumbbell size={28} />
         </div>
         <div>
@@ -106,8 +106,8 @@ export function TrainerSettingsView({
                       />
                    </div>
                    <div>
-                     <h3 className="font-black text-text-primary text-xl tracking-tight">{trainer.name}</h3>
-                     <p className="text-text-muted text-xs font-bold mt-1 leading-relaxed uppercase tracking-widest">
+                     <h3 className="font-semibold text-text-primary text-xl tracking-tight">{trainer.name}</h3>
+                     <p className="text-text-muted text-xs font-bold mt-1 leading-relaxed uppercase tracking-[0.05em]">
                        {t(`landing.trainers.profiles.${trainerId}.tagline`, { defaultValue: trainer.short_description })}
                      </p>
                    </div>
@@ -142,9 +142,9 @@ export function TrainerSettingsView({
 
       {availableTrainers.length === 0 && !isLoading && (
         <div className="text-center py-20 opacity-40 flex flex-col items-center">
-             <AlertCircle className="mx-auto text-red-400 mb-4" size={48} />
+             <AlertCircle className="mx-auto text-[color:var(--color-error)] mb-4" size={48} />
              <p className="font-bold text-text-primary">{t('settings.trainer.load_error')}</p>
-             <Button type="button" variant="secondary" onClick={onRetry} className="mt-6 px-8 py-3 rounded-full border border-[color:var(--color-outline-variant)] font-black text-sm uppercase tracking-widest hover:bg-[color:var(--color-surface-container)]">
+             <Button type="button" variant="secondary" onClick={onRetry} className="mt-6 px-8 py-3 rounded-full border border-[color:var(--color-outline-variant)] font-semibold text-sm uppercase tracking-[0.05em] hover:bg-[color:var(--color-surface-container)]">
                  {t('settings.trainer.retry')}
              </Button>
         </div>
@@ -156,7 +156,7 @@ export function TrainerSettingsView({
             type="button"
             onClick={() => { if (!isReadOnly) onSave(); }} 
             disabled={isReadOnly || isSaving || !selectedTrainerId} 
-            className="w-full md:w-auto px-12 py-4 rounded-full bg-white text-black font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/10 disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-3"
+            className="w-full md:w-auto px-12 py-4 rounded-full bg-white text-black font-semibold hover:scale-105 active:scale-95 transition-all  shadow-white/10 disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-3"
           >
              {isSaving && !isReadOnly && <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />}
              {isReadOnly ? t('settings.trainer.read_only', 'Somente leitura') : isSaving ? t('settings.trainer.saving') : t('settings.trainer.save_button')}

@@ -97,7 +97,7 @@ export function DataList<T>({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
             {title && (
-              <h2 className="text-xl font-black text-text-primary flex items-center gap-2 tracking-tight">
+              <h2 className="text-xl font-semibold text-text-primary flex items-center gap-2 tracking-tight">
                 {title}
               </h2>
             )}
@@ -149,11 +149,11 @@ export function DataList<T>({
         /* Empty State */
         <div className="bg-[color:var(--color-surface-container-low)] border border-[color:var(--color-outline-variant)] border-dashed rounded-xl p-12 text-center">
           {emptyState.icon && (
-            <div className="w-16 h-16 rounded-lg bg-white/5 flex items-center justify-center mx-auto mb-4 text-text-muted">
+            <div className="w-16 h-16 rounded-lg bg-[color:var(--color-surface-container)] flex items-center justify-center mx-auto mb-4 text-text-muted">
               {emptyState.icon}
             </div>
           )}
-          <h3 className="text-xl font-black text-text-primary tracking-tight">{emptyState.title}</h3>
+          <h3 className="text-xl font-semibold text-text-primary tracking-tight">{emptyState.title}</h3>
           <p className="text-text-secondary mt-2 max-w-xs mx-auto">
             {emptyState.description}
           </p>

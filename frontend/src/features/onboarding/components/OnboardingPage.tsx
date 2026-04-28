@@ -178,7 +178,7 @@ export default function OnboardingPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[color:var(--color-background)] text-[color:var(--color-on-background)] p-4">
         <div className="text-center space-y-4">
-          <h1 className="text-2xl font-black uppercase text-[color:var(--color-error)]">{t('onboarding.error_title')}</h1>
+          <h1 className="text-2xl font-semibold uppercase text-[color:var(--color-error)]">{t('onboarding.error_title')}</h1>
           <p className="text-[color:var(--color-on-surface-variant)]">{error}</p>
           <Button onClick={() => { void navigate('/'); }}>{t('common.back')}</Button>
         </div>

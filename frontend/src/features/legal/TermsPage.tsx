@@ -4,7 +4,7 @@ export default function TermsPage() {
   return (
     <div data-testid="legal-page-shell" className="min-h-screen bg-[color:var(--color-background)] text-[color:var(--color-on-background)] px-4 py-10">
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-black tracking-tight mb-2">Termos de Uso</h1>
+        <h1 className="text-3xl font-semibold tracking-tight mb-2">Termos de Uso</h1>
         <p className="text-sm text-zinc-400 mb-8">Ultima atualizacao: 2026-04-01</p>
 
         <div className="space-y-5 text-sm leading-7 text-zinc-200">

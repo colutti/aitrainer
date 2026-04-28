@@ -111,7 +111,7 @@ export default function DashboardPage() {
     workouts: { completed: 0, target: 0 },
   };
 
-  const { metabolism, body, calories, workouts } = stats;
+  const { metabolism, body, calories } = stats;
   const { streak, weightHistory, recentPRs, strengthRadar, volumeTrend, weeklyFrequency } = data ?? {};
 
   // ==============================
@@ -188,9 +188,9 @@ export default function DashboardPage() {
   };
 
   const confidenceColor = {
-    'high': 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+    'high': 'text-[color:var(--color-secondary)] bg-emerald-400/10 border-emerald-400/20',
     'medium': 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
-    'low': 'text-orange-400 bg-orange-400/10 border-orange-400/20',
+    'low': 'text-[color:var(--color-tertiary)] bg-orange-400/10 border-orange-400/20',
     'none': 'text-text-muted bg-white/5 border-white/10'
   }[metabolism.confidence] ?? 'text-text-muted';
 
@@ -203,7 +203,7 @@ export default function DashboardPage() {
     <div data-testid="dashboard-insight-screen">
       <InsightScreen
         title={t('dashboard.title')}
-        subtitle={t('dashboard.subtitle')}
+        subtitle={t('dashboard.summary_subtitle')}
         content={
           <DashboardView
             isLoading={isLoading && !data}
@@ -219,7 +219,6 @@ export default function DashboardPage() {
             weeklyFrequency={weeklyFrequency ?? []}
             streak={streak ?? null}
             calories={calories}
-            workouts={workouts}
             confidenceLevel={confidenceLevel}
             confidenceColor={confidenceColor}
           />

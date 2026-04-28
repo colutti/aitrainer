@@ -38,9 +38,9 @@ export default function SettingsPage() {
                   to={tab.to}
                   aria-label={tab.label}
                   className={({ isActive }) => cn(
-                    "flex items-center justify-center gap-1.5 md:gap-2 px-0.5 md:px-4 lg:px-6 py-2 rounded-xl md:rounded-full text-[10px] md:text-xs font-black transition-all uppercase tracking-wider lg:tracking-widest whitespace-nowrap",
+                    "flex items-center justify-center gap-1.5 md:gap-2 px-0.5 md:px-4 lg:px-6 py-2 rounded-xl md:rounded-full text-[10px] md:text-xs font-semibold transition-all uppercase tracking-wider lg:tracking-[0.05em] whitespace-nowrap",
                     isActive
-                      ? "bg-white text-black shadow-lg"
+                      ? "bg-white text-black "
                       : "text-text-muted hover:text-text-secondary hover:bg-[color:var(--color-surface-container)]"
                   )}
                 >

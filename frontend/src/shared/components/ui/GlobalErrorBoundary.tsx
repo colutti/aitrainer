@@ -45,7 +45,7 @@ class ErrorBoundaryClass extends Component<Props & { t: TFunction }, State> {
             <AlertTriangle size={32} />
           </div>
           <div className="space-y-2">
-            <h3 className="text-xl font-black text-[color:var(--color-on-surface)] tracking-tight">
+            <h3 className="text-xl font-semibold text-[color:var(--color-on-surface)] tracking-tight">
               {this.props.t('errors.server_error')}
             </h3>
             <p className="text-[color:var(--color-on-surface-variant)] max-w-xs mx-auto">

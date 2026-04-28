@@ -135,7 +135,7 @@ export function NutritionTab() {
         emptyState={{
           title: t('nutrition.empty_history_title'),
           description: '',
-          icon: <History size={40} className="text-zinc-500" />,
+          icon: <History size={40} className="text-text-muted" />,
           action: (
             <Button
               type="button"

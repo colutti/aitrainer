@@ -39,8 +39,8 @@ export function Pagination({
         </Button>
 
         <div className="flex flex-col items-center">
-          <span className="text-[color:var(--color-on-surface-variant)] font-black text-[10px] uppercase tracking-[0.2em] mb-0.5">Página</span>
-          <span className="text-[color:var(--color-on-surface)] font-black text-sm">
+          <span className="text-[color:var(--color-on-surface-variant)] font-semibold text-[10px] uppercase tracking-[0.2em] mb-0.5">Página</span>
+          <span className="text-[color:var(--color-on-surface)] font-semibold text-sm">
             {currentPage} <span className="text-[color:var(--color-outline)] mx-1">/</span> {totalPages}
           </span>
         </div>

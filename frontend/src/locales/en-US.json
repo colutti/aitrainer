@@ -272,8 +272,10 @@
     }
   },
   "dashboard": {
+    "title": "Home",
+    "subtitle": "Progress overview",
     "greeting": "Good morning, {{name}}!",
-    "summary_subtitle": "Summary of your metabolic and physical performance.",
+    "summary_subtitle": "Analysis based on data from the last 3 weeks.",
     "daily_target": "Daily Target",
     "confidence": "AI Confidence",
     "recent_activity": "Recent Activity",

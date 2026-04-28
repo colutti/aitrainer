@@ -34,6 +34,8 @@ describe('NutritionLogDrawer', () => {
     expect(screen.getByText('150g')).toBeInTheDocument();
     expect(screen.getByText('200g')).toBeInTheDocument();
     expect(screen.getByText('60g')).toBeInTheDocument();
+    expect(screen.getByText('28g')).toBeInTheDocument();
+    expect(screen.getByText('1800mg')).toBeInTheDocument();
   });
 
   it('should render correctly in edit mode', () => {

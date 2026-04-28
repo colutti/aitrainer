@@ -77,7 +77,7 @@ export function MemoriesView({
   return (
     <div className={cn(PREMIUM_UI.animation.fadeIn, "space-y-10 pb-20")}>
       {isReadOnly && (
-        <PremiumCard className="p-4 border-amber-500/20 bg-amber-500/5 text-amber-200 text-[10px] font-black uppercase tracking-[0.2em]">
+        <PremiumCard className="p-4 border-amber-500/20 bg-amber-500/5 text-amber-200 text-[10px] font-semibold uppercase tracking-[0.2em]">
           Demo Read-Only
         </PremiumCard>
       )}
@@ -86,29 +86,29 @@ export function MemoriesView({
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className={PREMIUM_UI.text.heading}>
-            <Brain className="inline-block mr-3 text-indigo-400 mb-1" size={32} />
+            <Brain className="inline-block mr-3 text-[color:var(--color-primary)] mb-1" size={32} />
             {t('memories.title')}
           </h1>
           <p className={PREMIUM_UI.text.label}>{t('memories.subtitle')}</p>
         </div>
         
-        <PremiumCard className="px-6 py-3 flex items-center gap-4 bg-indigo-500/5 border-indigo-500/20 ring-1 ring-indigo-500/10">
+        <PremiumCard className="px-6 py-3 flex items-center gap-4 bg-indigo-500/5 border-[color:var(--color-primary)]/20 ring-1 ring-indigo-500/10">
           <div className="text-left">
-            <p className="text-[10px] uppercase font-black text-text-muted tracking-widest leading-none mb-1">{t('memories.total_insights')}</p>
-            <p className="text-2xl font-black text-text-primary leading-none">{totalMemories}</p>
+            <p className="text-[10px] uppercase font-semibold text-text-muted tracking-[0.05em] leading-none mb-1">{t('memories.total_insights')}</p>
+            <p className="text-2xl font-semibold text-text-primary leading-none">{totalMemories}</p>
           </div>
           <div className="w-px h-8 bg-white/10" />
-          <Database size={24} className="text-indigo-400 opacity-50" />
+          <Database size={24} className="text-[color:var(--color-primary)] opacity-50" />
         </PremiumCard>
       </div>
 
       {/* INTRO EXPLANATION */}
-      <PremiumCard className="p-6 flex items-start gap-5 bg-gradient-to-br from-indigo-900/20 to-transparent border-indigo-500/20">
-        <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+      <PremiumCard className="p-6 flex items-start gap-5 bg-[color:var(--color-surface-container-low)] border-[color:var(--color-primary)]/20">
+        <div className="w-12 h-12 rounded-2xl bg-[color:var(--color-primary)]/10 border border-[color:var(--color-primary)]/20 flex items-center justify-center text-[color:var(--color-primary)] shrink-0">
            <Sparkles size={24} />
         </div>
         <div className="space-y-1">
-          <h3 className="font-black text-text-primary uppercase tracking-tight">{t('memories.what_are_memories')}</h3>
+          <h3 className="font-semibold text-text-primary uppercase tracking-tight">{t('memories.what_are_memories')}</h3>
           <p className="text-sm text-text-muted font-medium leading-relaxed">
             {t('memories.description')}
           </p>
@@ -120,7 +120,7 @@ export function MemoriesView({
         {memories.length === 0 ? (
           <div className="py-20 flex flex-col items-center justify-center text-center opacity-30 select-none">
             <Search size={64} className="mb-4 text-text-muted" />
-            <p className="text-lg font-black text-text-primary uppercase tracking-widest">{t('memories.empty_title')}</p>
+            <p className="text-lg font-semibold text-text-primary uppercase tracking-[0.05em]">{t('memories.empty_title')}</p>
           </div>
         ) : (
           memories.map((m) => (
@@ -131,7 +131,7 @@ export function MemoriesView({
             >
               <div className="flex gap-5 items-start">
                 <div className="shrink-0 mt-1">
-                  <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-[color:var(--color-outline-variant)] flex items-center justify-center text-indigo-400 group-hover:bg-indigo-500 group-hover:text-text-primary transition-all duration-500 shadow-inner">
+                  <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-[color:var(--color-outline-variant)] flex items-center justify-center text-[color:var(--color-primary)] group-hover:bg-indigo-500 group-hover:text-text-primary transition-all duration-500 shadow-inner">
                     <Database size={18} />
                   </div>
                 </div>
@@ -139,11 +139,11 @@ export function MemoriesView({
                 <div className="flex-1 space-y-3 min-w-0">
                   <p className="text-text-primary text-base font-medium leading-relaxed">{getMemoryText(m)}</p>
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1.5 text-[10px] text-text-muted font-black uppercase tracking-widest">
+                    <div className="flex items-center gap-1.5 text-[10px] text-text-muted font-semibold uppercase tracking-[0.05em]">
                       <Calendar size={12} />
                       {m.created_at ? new Date(m.created_at).toLocaleDateString(i18n.language) : 'N/A'}
                     </div>
-                    <span className="px-2 py-0.5 bg-[color:var(--color-surface-container)] rounded-md border border-[color:var(--color-outline-variant)] text-[9px] font-black text-text-muted uppercase tracking-widest">
+                    <span className="px-2 py-0.5 bg-[color:var(--color-surface-container)] rounded-md border border-[color:var(--color-outline-variant)] text-[9px] font-semibold text-text-muted uppercase tracking-[0.05em]">
                        {t('memories.ai_memory')}
                     </span>
                   </div>
@@ -160,7 +160,7 @@ export function MemoriesView({
                   aria-label="shared.delete"
                   data-testid="btn-delete-memory"
                   disabled={isReadOnly}
-                  className="shrink-0 h-10 w-10 rounded-full bg-red-500/5 text-red-500 md:opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/20 disabled:opacity-30 disabled:hover:bg-red-500/5"
+                  className="shrink-0 h-10 w-10 rounded-full bg-red-500/5 text-[color:var(--color-error)] md:opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/20 disabled:opacity-30 disabled:hover:bg-red-500/5"
                   title={t('shared.delete')}
                 >
                   <Trash2 size={18} />
@@ -179,13 +179,13 @@ export function MemoriesView({
             variant="ghost"
             onClick={() => { onPageChange(currentPage - 1); }}
             disabled={isReadOnly || currentPage === 1 || isLoading}
-            className="flex items-center gap-2 px-6 py-2 rounded-full bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] text-xs font-black uppercase tracking-widest text-text-secondary hover:text-text-primary hover:bg-white/10 disabled:opacity-20 transition-all"
+            className="flex items-center gap-2 px-6 py-2 rounded-full bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] text-xs font-semibold uppercase tracking-[0.05em] text-text-secondary hover:text-text-primary hover:bg-white/10 disabled:opacity-20 transition-all"
           >
             <ChevronLeft size={16} />
             {t('memories.previous')}
           </Button>
           
-          <span className="text-text-muted font-black text-xs uppercase tracking-widest">
+          <span className="text-text-muted font-semibold text-xs uppercase tracking-[0.05em]">
             {currentPage} <span className="mx-1 opacity-30">/</span> {totalPages}
           </span>
 
@@ -194,7 +194,7 @@ export function MemoriesView({
             variant="ghost"
             onClick={() => { onPageChange(currentPage + 1); }}
             disabled={isReadOnly || currentPage === totalPages || isLoading}
-            className="flex items-center gap-2 px-6 py-2 rounded-full bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] text-xs font-black uppercase tracking-widest text-text-secondary hover:text-text-primary hover:bg-white/10 disabled:opacity-20 transition-all"
+            className="flex items-center gap-2 px-6 py-2 rounded-full bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] text-xs font-semibold uppercase tracking-[0.05em] text-text-secondary hover:text-text-primary hover:bg-white/10 disabled:opacity-20 transition-all"
           >
             {t('memories.next')}
             <ChevronRight size={16} />
@@ -203,7 +203,7 @@ export function MemoriesView({
       )}
 
       {/* WARNING FOOTER */}
-      <div className="flex items-center gap-2 p-4 bg-orange-500/5 text-orange-500/50 text-[9px] font-black uppercase tracking-[0.2em] border border-orange-500/10 rounded-2xl justify-center backdrop-blur-sm">
+      <div className="flex items-center gap-2 p-4 bg-orange-500/5 text-[color:var(--color-tertiary)]/50 text-[9px] font-semibold uppercase tracking-[0.2em] border border-orange-500/10 rounded-2xl justify-center backdrop-blur-sm">
         <AlertCircle size={14} />
         {t('memories.processing_warning')}
       </div>

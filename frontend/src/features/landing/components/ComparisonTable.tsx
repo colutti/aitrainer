@@ -53,16 +53,16 @@ export const ComparisonTable = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[color:var(--color-surface-container-low)] border-b border-[color:var(--color-outline-variant)]">
-                <th className="p-6 text-xs font-bold text-text-muted uppercase tracking-widest"></th>
+                <th className="p-6 text-xs font-bold text-text-muted uppercase tracking-[0.05em]"></th>
                 <th className="p-6 text-center">
                   <span className="font-bold text-[color:var(--color-primary)]">
                     {t('landing.comparison.headers.fityq')}
                   </span>
                 </th>
-                <th className="p-6 text-center text-xs font-bold text-text-muted uppercase tracking-widest">
+                <th className="p-6 text-center text-xs font-bold text-text-muted uppercase tracking-[0.05em]">
                   {t('landing.comparison.headers.personal')}
                 </th>
-                <th className="p-6 text-center text-xs font-bold text-text-muted uppercase tracking-widest">
+                <th className="p-6 text-center text-xs font-bold text-text-muted uppercase tracking-[0.05em]">
                   {t('landing.comparison.headers.generic')}
                 </th>
               </tr>

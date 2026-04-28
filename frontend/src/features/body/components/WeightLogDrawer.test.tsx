@@ -38,7 +38,6 @@ describe('WeightLogDrawer', () => {
     const compositionSummary = container.querySelector('details summary');
     if (!compositionSummary) throw new Error('Composition summary not found');
     fireEvent.click(compositionSummary);
-    const fatInput = screen.getByTestId('body-fat-pct');
     const measurementSummary = container.querySelectorAll('details summary')[1];
     if (!measurementSummary) throw new Error('Measurements summary not found');
     fireEvent.click(measurementSummary);
@@ -48,7 +47,6 @@ describe('WeightLogDrawer', () => {
     
     fireEvent.change(dateInput, { target: { value: '2026-04-01' } });
     fireEvent.change(weightInput, { target: { value: '82.5' } });
-    fireEvent.change(fatInput, { target: { value: '16.2' } });
     fireEvent.change(musclePctInput, { target: { value: '42.1' } });
     fireEvent.change(neckInput, { target: { value: '37' } });
     
@@ -60,7 +58,7 @@ describe('WeightLogDrawer', () => {
       const submittedData = mockProps.onSubmit.mock.calls[0]![0];
       expect(submittedData.date).toBe('2026-04-01');
       expect(submittedData.weight_kg).toBe(82.5);
-      expect(submittedData.body_fat_pct).toBe(16.2);
+      expect(submittedData.body_fat_pct).toBeUndefined();
       expect(submittedData.muscle_mass_pct).toBe(42.1);
       expect(submittedData.neck_cm).toBe(37);
     });

@@ -5,7 +5,7 @@ import { cn } from '../../utils/cn';
 type StatusTone = 'default' | 'success' | 'warning' | 'error' | 'info';
 
 const toneClassMap: Record<StatusTone, string> = {
-  default: 'border-[color:var(--color-app-border)] bg-[color:var(--color-app-surface-raised)] text-[color:var(--color-text-secondary)]',
+  default: 'border-[color:var(--color-app-border)] bg-[color:var(--color-surface-container-low)] text-[color:var(--color-text-secondary)]',
   success: 'border-[color:var(--color-success)]/40 bg-[color:var(--color-success)]/15 text-[color:var(--color-success)]',
   warning: 'border-[color:var(--color-warning)]/40 bg-[color:var(--color-warning)]/15 text-[color:var(--color-warning)]',
   error: 'border-[color:var(--color-error)]/40 bg-[color:var(--color-error)]/15 text-[color:var(--color-error)]',

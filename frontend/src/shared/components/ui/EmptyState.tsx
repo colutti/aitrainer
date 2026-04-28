@@ -31,7 +31,7 @@ export function EmptyState({
       </div>
       
       <div className="space-y-2 max-w-xs">
-        <h3 className="text-xl font-black text-[color:var(--color-on-surface)] tracking-tight">
+        <h3 className="text-xl font-semibold text-[color:var(--color-on-surface)] tracking-tight">
           {title}
         </h3>
         <p className="text-sm text-[color:var(--color-on-surface-variant)] leading-relaxed">

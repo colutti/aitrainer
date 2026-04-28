@@ -35,7 +35,7 @@ export function ConfirmationModal({
       {/* Backdrop */}
       <div
         data-testid="modal-backdrop"
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-[color:var(--color-background)]/80 backdrop-blur-sm"
         onClick={onCancel}
       />
 
@@ -48,7 +48,7 @@ export function ConfirmationModal({
         <div className="flex flex-col items-center text-center mb-6">
           <div className={cn(
             "w-12 h-12 rounded-full flex items-center justify-center mb-4",
-            isDanger ? "bg-red-500/10 text-red-500" : "bg-[color:var(--color-primary)]/10 text-text-primary"
+            isDanger ? "bg-[color:var(--color-error)]/10 text-[color:var(--color-error)]" : "bg-[color:var(--color-primary)]/10 text-text-primary"
           )}
             data-testid="confirmation-icon-badge"
           >
@@ -80,7 +80,7 @@ export function ConfirmationModal({
             onClick={onAccept}
             fullWidth
             className={cn(
-              "h-11 font-bold text-white",
+              "h-11 font-bold text-text-primary",
               isDanger 
                 ? "bg-red-500 hover:bg-red-600 border-red-500 shadow-none" 
                 : "bg-[#14b8a6] hover:bg-[#0d9488] text-black border-[#2dd4bf]/30 shadow-none"

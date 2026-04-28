@@ -40,16 +40,16 @@ export function WeightLogCard({ log, isReadOnly = false, onDelete, onEdit, onCli
       icon={<Scale size={24} />}
       title={formatDate(log.date)}
       leadingMeta={(
-        <span className="text-xl font-black text-text-primary tracking-tighter">
+        <span className="text-xl font-semibold text-text-primary tracking-tighter">
           {log.weight_kg.toFixed(1)} <span className="text-[10px] font-bold text-text-muted uppercase ml-0.5">kg</span>
         </span>
       )}
       subtitle={hasTrend ? (
         <div className={cn(
-          "flex items-center gap-1 text-[10px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter",
+          "flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-tighter",
           isTrendUp
-            ? "bg-orange-500/10 text-orange-500"
-            : "bg-emerald-500/10 text-emerald-500"
+            ? "bg-[color:var(--color-tertiary)]/10 text-[color:var(--color-tertiary)]"
+            : "bg-[color:var(--color-secondary)]/10 text-[color:var(--color-secondary)]"
         )}>
           {isTrendUp ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
           <span>{(Math.abs(log.weight_kg - (log.trend_weight ?? 0))).toFixed(1)}</span>
@@ -59,16 +59,16 @@ export function WeightLogCard({ log, isReadOnly = false, onDelete, onEdit, onCli
         {
           label: t('body.weight.body_fat').split(' ')[0],
           value: log.body_fat_pct ? (
-            <span className="text-sm font-black text-text-primary tabular-nums">{log.body_fat_pct.toFixed(1)}<span className="text-[10px] ml-0.5 opacity-50">%</span></span>
+            <span className="text-sm font-semibold text-text-primary tabular-nums">{log.body_fat_pct.toFixed(1)}<span className="text-[10px] ml-0.5 opacity-50">%</span></span>
           ) : <div className="w-4 h-0.5 bg-[color:var(--color-surface-container)] rounded-full mt-2" />,
-          valueClassName: 'text-sm font-black text-text-primary tabular-nums',
+          valueClassName: 'text-sm font-semibold text-text-primary tabular-nums',
         },
         {
           label: t('body.weight.muscle_mass').split(' ')[0],
           value: log.muscle_mass_kg ? (
-            <span className="text-sm font-black text-text-primary tabular-nums">{log.muscle_mass_kg.toFixed(1)}<span className="text-[10px] ml-0.5 opacity-50">kg</span></span>
+            <span className="text-sm font-semibold text-text-primary tabular-nums">{log.muscle_mass_kg.toFixed(1)}<span className="text-[10px] ml-0.5 opacity-50">kg</span></span>
           ) : <div className="w-4 h-0.5 bg-[color:var(--color-surface-container)] rounded-full mt-2" />,
-          valueClassName: 'text-sm font-black text-text-primary tabular-nums',
+          valueClassName: 'text-sm font-semibold text-text-primary tabular-nums',
         },
       ]}
       notes={log.notes ? `"${log.notes}"` : undefined}

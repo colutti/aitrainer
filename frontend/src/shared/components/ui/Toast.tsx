@@ -47,7 +47,7 @@ export function Toast({ id: _id, message, type, onClose }: ToastProps) {
         flex items-center gap-3 p-4 rounded-lg border
         ${typeStyles[type]}
         animate-in slide-in-from-right-full
-        shadow-lg backdrop-blur-sm
+         backdrop-blur-sm
       `}
     >
       <div className="flex-shrink-0">{icons[type]}</div>

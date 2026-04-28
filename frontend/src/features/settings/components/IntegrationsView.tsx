@@ -61,7 +61,7 @@ export function IntegrationsView({
   return (
     <div className={cn(PREMIUM_UI.animation.fadeIn, "space-y-12 pb-20")}>
       {isReadOnly && (
-        <PremiumCard className="p-4 border-amber-500/20 bg-amber-500/5 text-amber-200 text-[10px] font-black uppercase tracking-[0.2em]">
+        <PremiumCard className="p-4 border-amber-500/20 bg-amber-500/5 text-amber-200 text-[10px] font-semibold uppercase tracking-[0.2em]">
           Demo Read-Only
         </PremiumCard>
       )}
@@ -69,18 +69,18 @@ export function IntegrationsView({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         {/* HEVY INTEGRATION */}
         <div className="space-y-6">
-          <h2 className="text-xl font-black text-text-primary tracking-tight uppercase px-2">{t('settings.integrations.hevy.title')}</h2>
+          <h2 className="text-xl font-semibold text-text-primary tracking-tight uppercase px-2">{t('settings.integrations.hevy.title')}</h2>
           <PremiumCard className="p-8 space-y-8 flex flex-col">
             <div className="flex items-center gap-4">
                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
                   <Dumbbell size={24} />
                </div>
                <div>
-                  <h3 className="font-black text-text-primary text-lg">{t('settings.integrations.hevy.subtitle')}</h3>
+                  <h3 className="font-semibold text-text-primary text-lg">{t('settings.integrations.hevy.subtitle')}</h3>
                   {hevy.status?.enabled && (
                     <div className="flex items-center gap-1.5 mt-1">
                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                       <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">{t('settings.integrations.shared.connected')}</span>
+                       <span className="text-[10px] font-semibold text-[color:var(--color-secondary)] uppercase tracking-[0.05em]">{t('settings.integrations.shared.connected')}</span>
                     </div>
                   )}
                </div>
@@ -94,7 +94,7 @@ export function IntegrationsView({
                   </p>
                 )}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-text-muted ml-1">API Key</label>
+                  <label className="text-[10px] font-semibold uppercase tracking-[0.05em] text-text-muted ml-1">API Key</label>
                   <input 
                     type="password"
                     placeholder={t('settings.integrations.hevy.hevy_placeholder')}
@@ -108,7 +108,7 @@ export function IntegrationsView({
                   type="button"
                   onClick={hevy.onSave}
                   disabled={isReadOnly || hevy.loading || !hevy.key || !integrationsEnabled}
-                  className="w-full py-4 rounded-full bg-white text-black font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/10 disabled:opacity-50"
+                  className="w-full py-4 rounded-full bg-white text-black font-semibold hover:scale-105 active:scale-95 transition-all  shadow-white/10 disabled:opacity-50"
                 >
                   {hevy.loading ? '...' : t('common.confirm')}
                 </Button>
@@ -117,7 +117,7 @@ export function IntegrationsView({
               <div className="space-y-6 flex flex-col">
                 <div className="bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] p-4 rounded-2xl flex items-center justify-between">
                    <div className="flex items-center gap-2 text-text-secondary text-sm font-medium">
-                      <Check size={16} className="text-emerald-400" />
+                      <Check size={16} className="text-[color:var(--color-secondary)]" />
                       {t('settings.integrations.shared.active', { key: hevy.status.apiKeyMasked })}
                    </div>
                   <Button
@@ -125,7 +125,7 @@ export function IntegrationsView({
                      variant="ghost"
                      onClick={hevy.onRemove}
                      disabled={isReadOnly || hevy.loading || !integrationsEnabled}
-                     className="h-auto p-0 text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 hover:bg-transparent transition-colors"
+                     className="h-auto p-0 text-[10px] font-semibold text-[color:var(--color-error)] uppercase tracking-[0.05em] hover:text-red-300 hover:bg-transparent transition-colors"
                    >
                      {t('settings.integrations.shared.remove')}
                    </Button>
@@ -135,7 +135,7 @@ export function IntegrationsView({
                   type="button"
                   onClick={hevy.onSync}
                   disabled={isReadOnly || hevy.syncing || !integrationsEnabled}
-                  className="w-full py-4 rounded-full bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] text-text-primary font-black hover:bg-white/10 transition-all flex items-center justify-center gap-3"
+                  className="w-full py-4 rounded-full bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] text-text-primary font-semibold hover:bg-white/10 transition-all flex items-center justify-center gap-3"
                 >
                   <RefreshCw size={18} className={cn(hevy.syncing && "animate-spin")} />
                   {t('settings.integrations.hevy.sync_button')}
@@ -147,18 +147,18 @@ export function IntegrationsView({
 
         {/* TELEGRAM INTEGRATION */}
         <div className="space-y-6">
-          <h2 className="text-xl font-black text-text-primary tracking-tight uppercase px-2">{t('settings.integrations.telegram.title')}</h2>
+          <h2 className="text-xl font-semibold text-text-primary tracking-tight uppercase px-2">{t('settings.integrations.telegram.title')}</h2>
           <PremiumCard className="p-8 space-y-8 flex flex-col">
             <div className="flex items-center gap-4">
                <div className="w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
                   <Send size={22} />
                </div>
                <div>
-                  <h3 className="font-black text-text-primary text-lg">{t('settings.integrations.telegram.subtitle')}</h3>
+                  <h3 className="font-semibold text-text-primary text-lg">{t('settings.integrations.telegram.subtitle')}</h3>
                   {telegram.status?.linked && (
                     <div className="flex items-center gap-1.5 mt-1">
                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                       <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">{t('settings.integrations.shared.connected')}</span>
+                       <span className="text-[10px] font-semibold text-[color:var(--color-secondary)] uppercase tracking-[0.05em]">{t('settings.integrations.shared.connected')}</span>
                     </div>
                   )}
                </div>
@@ -181,7 +181,7 @@ export function IntegrationsView({
                   </div>
 
                   <div className="pt-6 border-t border-[color:var(--color-outline-variant)]">
-                     <h4 className="text-xs font-black text-text-primary uppercase tracking-widest mb-4">{t('settings.integrations.telegram.notifications_title')}</h4>
+                     <h4 className="text-xs font-semibold text-text-primary uppercase tracking-[0.05em] mb-4">{t('settings.integrations.telegram.notifications_title')}</h4>
                      <label 
                        className="flex items-start gap-4 p-4 rounded-2xl bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] hover:bg-white/[0.08] transition-all cursor-pointer group"
                      >
@@ -190,10 +190,10 @@ export function IntegrationsView({
                           checked={telegram.notifyOnWorkout}
                           disabled={isReadOnly || !telegramEnabled}
                           onChange={(e) => { telegram.onToggleNotify(e.target.checked); }}
-                          className="mt-1 w-4 h-4 rounded border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] text-indigo-500 focus:ring-indigo-500/20 cursor-pointer"
+                          className="mt-1 w-4 h-4 rounded border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] text-[color:var(--color-primary)] focus:ring-indigo-500/20 cursor-pointer"
                         />
                         <div className="flex-1">
-                           <p className="text-sm font-black text-text-primary group-hover:text-indigo-400 transition-colors">{t('settings.integrations.telegram.notifications_item_title')}</p>
+                           <p className="text-sm font-semibold text-text-primary group-hover:text-[color:var(--color-primary)] transition-colors">{t('settings.integrations.telegram.notifications_item_title')}</p>
                            <p className="text-xs text-text-muted mt-1 leading-relaxed">{t('settings.integrations.telegram.notifications_item_desc')}</p>
                         </div>
                      </label>
@@ -202,14 +202,14 @@ export function IntegrationsView({
               ) : telegram.code ? (
                 <div className="space-y-6 text-center flex flex-col justify-center">
                    <p className="text-sm font-medium text-text-secondary leading-relaxed">{t('settings.integrations.telegram.send_code')}</p>
-                   <div className="text-4xl font-black text-text-primary tracking-[0.3em] bg-[color:var(--color-background)] py-6 px-4 rounded-3xl border border-[color:var(--color-outline-variant)] select-all shadow-inner tabular-nums my-4">
+                   <div className="text-4xl font-semibold text-text-primary tracking-[0.3em] bg-[color:var(--color-background)] py-6 px-4 rounded-3xl border border-[color:var(--color-outline-variant)] select-all shadow-inner tabular-nums my-4">
                       {telegram.code.code}
                    </div>
                    <a 
                      href={telegram.code.url}
                      target="_blank"
                      rel="noopener noreferrer"
-                     className="inline-flex items-center gap-2 text-xs font-black text-indigo-400 uppercase tracking-widest hover:text-indigo-300 transition-colors"
+                     className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--color-primary)] uppercase tracking-[0.05em] hover:text-indigo-300 transition-colors"
                    >
                       {t('settings.integrations.telegram.open_bot')}
                       <ExternalLink size={14} />
@@ -221,7 +221,7 @@ export function IntegrationsView({
                     type="button"
                     onClick={telegram.onGenerate}
                     disabled={isReadOnly || telegram.loading || !telegramEnabled}
-                    className="w-full py-4 rounded-full bg-white text-black font-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/10 disabled:opacity-50 flex items-center justify-center gap-3"
+                    className="w-full py-4 rounded-full bg-white text-black font-semibold hover:scale-105 active:scale-95 transition-all  shadow-white/10 disabled:opacity-50 flex items-center justify-center gap-3"
                   >
                     <Smartphone size={20} />
                     {t('settings.integrations.telegram.generate_code')}
@@ -235,7 +235,7 @@ export function IntegrationsView({
 
       {/* IMPORTS BENTO */}
       <div className="space-y-6 pt-12 border-t border-[color:var(--color-outline-variant)]">
-         <h2 className="text-xl font-black text-text-primary tracking-tight uppercase px-2">{t('settings.integrations.imports.title')}</h2>
+         <h2 className="text-xl font-semibold text-text-primary tracking-tight uppercase px-2">{t('settings.integrations.imports.title')}</h2>
          {!importsEnabled && (
            <p className="px-2 text-xs font-bold uppercase tracking-wider text-amber-300">
              {t('settings.integrations.pro_only')}
@@ -245,12 +245,12 @@ export function IntegrationsView({
             <PremiumCard className="p-8 space-y-4 bg-gradient-to-br from-blue-900/20 to-transparent border-blue-500/20 group">
                <div className="flex items-center gap-3">
                   <div className="w-2 h-8 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
-                  <h3 className="font-black text-text-primary text-lg">MyFitnessPal</h3>
+                  <h3 className="font-semibold text-text-primary text-lg">MyFitnessPal</h3>
                </div>
                <p className="text-sm text-text-muted font-medium leading-relaxed">{t('settings.integrations.imports.mfp_desc')}</p>
                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[color:var(--color-outline-variant)] rounded-3xl hover:bg-[color:var(--color-surface-container)] hover:border-blue-500/30 cursor-pointer transition-all">
                   <Upload size={32} className="text-text-muted group-hover:text-blue-400 transition-colors mb-2" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">{t('settings.integrations.imports.click_to_select')}</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.05em] text-text-muted">{t('settings.integrations.imports.click_to_select')}</span>
                   <input 
                     type="file" 
                     accept=".csv" 
@@ -264,15 +264,15 @@ export function IntegrationsView({
                </label>
             </PremiumCard>
 
-            <PremiumCard className="p-8 space-y-4 bg-gradient-to-br from-orange-900/20 to-transparent border-orange-500/20 group">
+            <PremiumCard className="p-8 space-y-4 bg-gradient-to-br from-orange-900/20 to-transparent border-[color:var(--color-tertiary)]/20 group">
                <div className="flex items-center gap-3">
                   <div className="w-2 h-8 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]" />
-                  <h3 className="font-black text-text-primary text-lg">Zepp Life</h3>
+                  <h3 className="font-semibold text-text-primary text-lg">Zepp Life</h3>
                </div>
                <p className="text-sm text-text-muted font-medium leading-relaxed">{t('settings.integrations.imports.zepp_desc')}</p>
                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[color:var(--color-outline-variant)] rounded-3xl hover:bg-[color:var(--color-surface-container)] hover:border-orange-500/30 cursor-pointer transition-all">
-                  <Upload size={32} className="text-text-muted group-hover:text-orange-400 transition-colors mb-2" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-text-muted">{t('settings.integrations.imports.click_to_select')}</span>
+                  <Upload size={32} className="text-text-muted group-hover:text-[color:var(--color-tertiary)] transition-colors mb-2" />
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.05em] text-text-muted">{t('settings.integrations.imports.click_to_select')}</span>
                   <input 
                     type="file" 
                     accept=".csv" 
@@ -291,9 +291,9 @@ export function IntegrationsView({
       {imports.importing && (
         <div className="fixed inset-0 bg-[#09090b]/80 backdrop-blur-md z-[100] flex items-center justify-center animate-in fade-in">
            <PremiumCard className="p-10 flex flex-col items-center gap-6 border-indigo-500/30 shadow-[0_0_50px_rgba(99,102,241,0.2)]">
-              <RefreshCw size={48} className="text-indigo-400 animate-spin" />
+              <RefreshCw size={48} className="text-[color:var(--color-primary)] animate-spin" />
               <div className="text-center space-y-2">
-                 <h3 className="text-2xl font-black text-text-primary uppercase tracking-tight">{t('settings.integrations.imports.processing')}</h3>
+                 <h3 className="text-2xl font-semibold text-text-primary uppercase tracking-tight">{t('settings.integrations.imports.processing')}</h3>
                  <p className="text-sm text-text-muted font-medium">{t('settings.integrations.imports.waiting_desc', 'Processando seus dados, isso pode levar alguns instantes...')}</p>
               </div>
            </PremiumCard>

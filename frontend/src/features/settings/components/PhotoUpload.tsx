@@ -174,7 +174,7 @@ export function PhotoUpload({
               disabled={processing || isLoading}
               size="sm"
               variant="ghost"
-              className="text-red-400 hover:text-red-300 hover:bg-red-500/10 gap-2"
+              className="text-[color:var(--color-error)] hover:text-red-300 hover:bg-[color:var(--color-error)]/10 gap-2"
             >
               <X size={16} />
               Remover
@@ -184,7 +184,7 @@ export function PhotoUpload({
 
         {/* Error Message */}
         {error && (
-          <p className="text-sm text-red-400 text-center max-w-xs">{error}</p>
+          <p className="text-sm text-[color:var(--color-error)] text-center max-w-xs">{error}</p>
         )}
 
         {/* Processing State */}

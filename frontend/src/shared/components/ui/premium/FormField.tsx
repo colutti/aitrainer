@@ -31,12 +31,12 @@ export function FormField({
       <div className="flex justify-between items-center px-1">
         <label htmlFor={id} className={PREMIUM_UI.text.label}>
           <span className="flex items-center gap-2">
-            {icon && <span className="text-zinc-400">{icon}</span>}
+            {icon && <span className="text-text-secondary">{icon}</span>}
             {label}
           </span>
         </label>
         {optional && (
-          <span className="text-[9px] font-black uppercase text-[color:var(--color-on-surface-variant)] tracking-widest">
+          <span className="text-[9px] font-semibold uppercase text-[color:var(--color-on-surface-variant)] tracking-[0.05em]">
             Opcional
           </span>
         )}

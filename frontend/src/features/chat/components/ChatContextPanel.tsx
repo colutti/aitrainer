@@ -15,7 +15,7 @@ export function ChatContextPanel({ trainerName, trainerId, isStreaming, messageC
       <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[color:var(--color-text-muted)]">
         {t('chat.context.trainer_label')}
       </p>
-      <h2 data-testid="chat-context-trainer-name" className="mt-2 text-lg font-black text-[color:var(--color-text-primary)]">
+      <h2 data-testid="chat-context-trainer-name" className="mt-2 text-lg font-semibold text-[color:var(--color-text-primary)]">
         {trainerName}
       </h2>
       <p className="mt-4 text-sm text-[color:var(--color-text-secondary)]">

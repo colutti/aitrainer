@@ -118,9 +118,9 @@ export const MessageBubble = memo(function MessageBubble({ message, resolveText,
       {/* AVATAR */}
       <div data-testid="chat-message-avatar" className="flex flex-none mb-1">
         <div className={cn(
-          "w-10 h-10 rounded-2xl border flex items-center justify-center overflow-hidden shadow-lg",
+          "w-10 h-10 rounded-2xl border flex items-center justify-center overflow-hidden ",
           isTrainer 
-            ? "bg-zinc-900 border-[color:var(--color-outline-variant)] text-indigo-400" 
+            ? "bg-zinc-900 border-[color:var(--color-outline-variant)] text-[color:var(--color-primary)]" 
             : "bg-indigo-500 border-[color:var(--color-outline-variant)] text-text-primary"
         )}>
           {isTrainer ? (
@@ -140,7 +140,7 @@ export const MessageBubble = memo(function MessageBubble({ message, resolveText,
         "flex flex-col max-w-full lg:max-w-[88%] xl:max-w-[82%] 2xl:max-w-[88%]",
         isTrainer ? "items-start" : "items-end"
       )} data-testid="chat-message-bubble">
-        <span className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-1.5 ml-1">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.05em] text-text-muted mb-1.5 ml-1">
           {isTrainer ? (trainerId ?? 'AI Trainer') : (userName ?? t('common.athlete'))}
         </span>
         
@@ -148,7 +148,7 @@ export const MessageBubble = memo(function MessageBubble({ message, resolveText,
           "px-5 py-4 rounded-[24px] relative overflow-hidden",
           isTrainer 
             ? "bg-[color:var(--color-surface-container-low)] backdrop-blur-2xl border border-[color:var(--color-outline-variant)] rounded-bl-none text-text-secondary message-bubble-trainer" 
-            : "bg-gradient-to-br from-indigo-500 to-indigo-600 border border-[color:var(--color-outline-variant)] rounded-br-none text-text-primary shadow-xl shadow-indigo-500/10 message-bubble-user"
+            : "bg-[color:var(--color-primary)] border border-[color:var(--color-outline-variant)] rounded-br-none text-text-primary  shadow-indigo-500/10 message-bubble-user"
         )}>
           {isTrainer && (
             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none" />
