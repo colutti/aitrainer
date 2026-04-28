@@ -24,7 +24,7 @@ export const StickyMobileCTA = () => {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-dark-bg border-t border-border flex md:hidden animate-fade-in">
+    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-[color:var(--color-background)] border-t border-[color:var(--color-outline-variant)] flex md:hidden animate-fade-in">
       <Button
         onClick={() => { void navigate(enableNewUserSignups ? '/login?mode=register' : '/login'); }}
         variant="primary"

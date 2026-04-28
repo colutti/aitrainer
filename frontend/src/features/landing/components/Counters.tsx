@@ -65,12 +65,12 @@ export const Counters = () => {
   ];
 
   return (
-    <section className="py-12 border-y border-border bg-dark-bg">
+    <section className="py-12 border-y border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {stats.map((stat, idx) => (
             <div key={idx} className="text-center">
-              <div className="font-display text-4xl font-bold text-text-primary mb-2">
+              <div className="font-display text-4xl font-bold text-text-[color:var(--color-primary)] mb-2">
                 <Counter end={stat.value} suffix={stat.suffix} />
               </div>
               <div className="text-xs font-semibold text-text-muted uppercase tracking-wider">

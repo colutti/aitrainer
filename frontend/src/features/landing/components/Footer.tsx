@@ -4,21 +4,21 @@ export const Footer = () => {
   const { t } = useTranslation();
 
   return (
-    <footer className="py-12 px-4 sm:px-6 lg:px-8 border-t border-border bg-dark-bg">
+    <footer className="py-12 px-4 sm:px-6 lg:px-8 border-t border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)]">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
         <div className="flex items-center gap-2">
           <img src="/logo_icon.png" alt="FityQ" className="w-6 h-6" />
-          <span className="font-display font-bold text-text-primary text-lg">FityQ</span>
+          <span className="font-display font-bold text-text-[color:var(--color-primary)] text-lg">FityQ</span>
         </div>
         
         <div className="flex items-center gap-8">
-          <a href="/termos-de-uso" className="text-sm text-text-secondary hover:text-text-primary transition-colors">
+          <a href="/termos-de-uso" className="text-sm text-text-secondary hover:text-text-[color:var(--color-primary)] transition-colors">
             {t('landing.footer.terms')}
           </a>
-          <a href="/politica-de-privacidade" className="text-sm text-text-secondary hover:text-text-primary transition-colors">
+          <a href="/politica-de-privacidade" className="text-sm text-text-secondary hover:text-text-[color:var(--color-primary)] transition-colors">
             {t('landing.footer.privacy')}
           </a>
-          <a href="#" className="text-sm text-text-secondary hover:text-text-primary transition-colors">
+          <a href="#" className="text-sm text-text-secondary hover:text-text-[color:var(--color-primary)] transition-colors">
             {t('landing.footer.contact')}
           </a>
         </div>

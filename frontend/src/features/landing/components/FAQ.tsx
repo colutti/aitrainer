@@ -11,9 +11,9 @@ export const FAQ = () => {
   const faqItems = t('landing.faq.items', { returnObjects: true }) as { q: string; a: string }[];
 
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 border-t border-border">
+    <section className="py-20 px-4 sm:px-6 lg:px-8 border-t border-[color:var(--color-outline-variant)]">
       <div className="max-w-2xl mx-auto">
-        <h2 className="font-display text-3xl font-bold text-text-primary text-center mb-12">
+        <h2 className="font-display text-3xl font-bold text-text-[color:var(--color-primary)] text-center mb-12">
           {t('landing.faq.title')}
         </h2>
 
@@ -23,7 +23,7 @@ export const FAQ = () => {
             return (
               <div 
                 key={idx}
-                className="border-b border-border last:border-0"
+                className="border-b border-[color:var(--color-outline-variant)] last:border-0"
               >
                 <Button
                   type="button"
@@ -31,12 +31,12 @@ export const FAQ = () => {
                   onClick={() => { setOpenIndex(isOpen ? null : idx); }}
                   className="w-full h-auto flex items-center justify-between py-6 px-0 text-left group hover:bg-transparent"
                 >
-                  <span className={`text-base font-bold transition-colors ${isOpen ? 'text-primary' : 'text-text-primary group-hover:text-text-secondary'}`}>
+                  <span className={`text-base font-bold transition-colors ${isOpen ? 'text-[color:var(--color-primary)]' : 'text-text-[color:var(--color-primary)] group-hover:text-text-secondary'}`}>
                     {item.q}
                   </span>
                   <ChevronDown 
                     className={`w-4 h-4 text-text-muted transition-transform duration-200 ${
-                      isOpen ? 'rotate-180 text-primary' : ''
+                      isOpen ? 'rotate-180 text-[color:var(--color-primary)]' : ''
                     }`} 
                   />
                 </Button>

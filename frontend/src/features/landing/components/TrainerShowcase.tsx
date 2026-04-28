@@ -75,7 +75,7 @@ export const TrainerShowcase = () => {
   }
 
   return (
-    <section id="treinadores" className="py-20 px-4 sm:px-6 lg:px-8 bg-dark-bg border-t border-border">
+    <section id="treinadores" className="py-20 px-4 sm:px-6 lg:px-8 bg-[color:var(--color-background)] border-t border-[color:var(--color-outline-variant)]">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="font-display text-3xl font-bold text-text-primary mb-4">
@@ -95,14 +95,14 @@ export const TrainerShowcase = () => {
               onClick={() => { setSelectedId(trainer.id); }}
               className={`h-auto min-h-44 w-full items-start flex-col p-6 rounded-lg border transition-all text-left ${
                 selectedId === trainer.id
-                  ? 'bg-secondary border-primary'
-                  : 'bg-dark-bg border-border hover:border-text-muted'
+                  ? 'bg-[color:var(--color-secondary)]/20 border-[color:var(--color-primary)]'
+                  : 'bg-[color:var(--color-background)] border-[color:var(--color-outline-variant)] hover:border-[color:var(--color-outline)]'
               }`}
             >
               <img
                 src={trainer.avatar}
                 alt={trainer.name}
-                className="w-16 h-16 rounded mb-4 object-cover border border-border"
+                className="w-16 h-16 rounded mb-4 object-cover border border-[color:var(--color-outline-variant)]"
               />
               <h3 className="font-bold text-text-primary mb-1">{trainer.name}</h3>
               <p className="text-xs text-text-secondary line-clamp-3">{trainer.forWho}</p>
@@ -110,7 +110,7 @@ export const TrainerShowcase = () => {
           ))}
         </div>
 
-        <div className="mt-8 p-6 sm:p-8 rounded-2xl border border-border bg-light-bg/95 shadow-[0_18px_45px_rgba(0,0,0,0.25)]">
+        <div className="mt-8 p-6 sm:p-8 rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)]">
           <div className="flex flex-col sm:flex-row gap-6">
             <img
               src={selectedTrainer.avatar}

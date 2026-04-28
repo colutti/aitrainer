@@ -19,7 +19,7 @@ export const ComparisonTable = () => {
     },
     {
       label: t('landing.comparison.rows.memory'),
-      fityq: <Check className="w-5 h-5 text-primary mx-auto" />,
+      fityq: <Check className="w-5 h-5 text-[color:var(--color-primary)] mx-auto" />,
       personal: <Minus className="w-5 h-5 text-text-muted mx-auto" />,
       generic: <X className="w-5 h-5 text-text-muted mx-auto" />,
     },
@@ -38,10 +38,10 @@ export const ComparisonTable = () => {
   ];
 
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-dark-bg border-t border-border">
+    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-[color:var(--color-background)] border-t border-[color:var(--color-outline-variant)]">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="font-display text-3xl font-bold text-text-primary mb-4">
+          <h2 className="font-display text-3xl font-bold text-text-[color:var(--color-primary)] mb-4">
             {t('landing.comparison.title')}
           </h2>
           <p className="text-lg text-text-secondary">
@@ -49,13 +49,13 @@ export const ComparisonTable = () => {
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
+        <div className="overflow-x-auto rounded-lg border border-[color:var(--color-outline-variant)] shadow-sm">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-light-bg border-b border-border">
+              <tr className="bg-[color:var(--color-surface-container-low)] border-b border-[color:var(--color-outline-variant)]">
                 <th className="p-6 text-xs font-bold text-text-muted uppercase tracking-widest"></th>
                 <th className="p-6 text-center">
-                  <span className="font-bold text-primary">
+                  <span className="font-bold text-[color:var(--color-primary)]">
                     {t('landing.comparison.headers.fityq')}
                   </span>
                 </th>
@@ -71,12 +71,12 @@ export const ComparisonTable = () => {
               {rows.map((row, idx) => (
                 <tr 
                   key={idx} 
-                  className="bg-dark-bg hover:bg-secondary/50 transition-colors"
+                  className="bg-[color:var(--color-background)] hover:bg-secondary/50 transition-colors"
                 >
-                  <td className="p-6 text-sm font-medium text-text-primary">
+                  <td className="p-6 text-sm font-medium text-text-[color:var(--color-primary)]">
                     {row.label}
                   </td>
-                  <td className="p-6 text-center text-sm font-bold text-text-primary bg-primary/5">
+                  <td className="p-6 text-center text-sm font-bold text-text-[color:var(--color-primary)] bg-[color:var(--color-primary)]/5">
                     {row.fityq}
                   </td>
                   <td className="p-6 text-center text-sm text-text-secondary">

@@ -30,7 +30,7 @@ export const ProductShowcase = () => {
   ];
 
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 border-t border-border bg-dark-bg">
+    <section className="py-20 px-4 sm:px-6 lg:px-8 border-t border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)]">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="font-display text-3xl font-bold text-text-primary mb-4">
@@ -42,19 +42,19 @@ export const ProductShowcase = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="rounded-2xl border border-border bg-light-bg p-6">
+          <div className="rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-6">
             <h3 className="text-lg font-bold text-text-primary mb-1">{t('landing.showcase.dashboard_title')}</h3>
             <p className="text-sm text-text-secondary mb-5">{t('landing.showcase.dashboard_subtitle')}</p>
             <div className="grid grid-cols-2 gap-2">
               {dashboardHighlights.map((item) => (
-                <div key={item} className="rounded-md border border-border bg-dark-bg px-3 py-2 text-xs text-text-secondary">
+                <div key={item} className="rounded-md border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] px-3 py-2 text-xs text-text-secondary">
                   {item}
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-light-bg p-6">
+          <div className="rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-6">
             <h3 className="text-lg font-bold text-text-primary mb-1">{t('landing.showcase.chat_title')}</h3>
             <p className="text-sm text-text-secondary mb-5">{t('landing.showcase.chat_subtitle')}</p>
             <div className="space-y-3">
@@ -64,18 +64,18 @@ export const ProductShowcase = () => {
               >
                 {t('landing.showcase.chat_example_user')}
               </div>
-              <div className="rounded-lg border border-border bg-dark-bg text-sm text-text-secondary px-4 py-3">
+              <div className="rounded-lg border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] text-sm text-text-secondary px-4 py-3">
                 {t('landing.showcase.chat_example_trainer')}
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-light-bg p-6">
+          <div className="rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-6">
             <h3 className="text-lg font-bold text-text-primary mb-1">{t('landing.showcase.metabolism_title')}</h3>
             <p className="text-sm text-text-secondary mb-5">{t('landing.showcase.metabolism_subtitle')}</p>
             <div className="space-y-2">
               {metabolismStats.map((item) => (
-                <div key={item} className="rounded-md border border-border bg-dark-bg px-3 py-2 text-xs text-text-secondary">
+                <div key={item} className="rounded-md border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] px-3 py-2 text-xs text-text-secondary">
                   {item}
                 </div>
               ))}
@@ -87,7 +87,7 @@ export const ProductShowcase = () => {
           <Button
             onClick={() => { void navigate('/login'); }}
             variant="secondary"
-            className="border-border bg-dark-card rounded-md inline-flex items-center gap-2"
+            className="border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] rounded-md inline-flex items-center gap-2"
           >
             {t('landing.hero.demo_cta')}
             <ChevronRight size={16} />
