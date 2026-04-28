@@ -80,7 +80,7 @@ describe('ChatPage', () => {
         <ChatPage />
       </MemoryRouter>
     );
-    expect(screen.getByText('Treinador AI')).toBeInTheDocument();
+    expect(screen.getAllByText('Treinador AI').length).toBeGreaterThan(0);
   });
 
   it('renders resolved trainer name in chat header', () => {

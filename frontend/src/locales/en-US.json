@@ -1,7 +1,8 @@
 {
   "shared": {
     "edit": "Edit entry",
-    "delete": "Delete entry"
+    "delete": "Delete entry",
+    "read_only": "Read-only mode"
   },
   "common": {
     "logout": "Logout",
@@ -543,6 +544,8 @@
     "delete_confirm_btn": "Delete",
     "delete_success": "Meal removed!",
     "delete_error": "Error removing meal.",
+    "manual_coming_soon": "Manual entry will be available soon in this interface.",
+    "import_coming_soon": "Import will be available soon in this interface.",
     "notifications": {
       "save_success": "Nutrition log saved!",
       "save_error": "Error saving nutrition log.",

@@ -5,7 +5,7 @@ import { useAuthStore } from './useAuth';
 import type { UserInfo } from './useAuth';
 import { useNotificationStore } from './useNotification';
 
-const DEFAULT_READ_ONLY_MESSAGE = 'Demo Read-Only';
+const DEFAULT_READ_ONLY_MESSAGE = 'Read-only mode';
 
 export interface DemoModeGuard {
   isDemoUser: boolean;

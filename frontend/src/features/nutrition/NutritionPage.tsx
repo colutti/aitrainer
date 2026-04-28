@@ -67,13 +67,13 @@ export default function NutritionPage() {
         if (blockIfReadOnly()) {
           return;
         }
-        notify.info("Registro manual em breve nesta UI Premium");
+        notify.info(t('nutrition.manual_coming_soon'));
       }}
       onImport={() => {
         if (blockIfReadOnly()) {
           return;
         }
-        notify.info("Importação em breve nesta UI Premium");
+        notify.info(t('nutrition.import_coming_soon'));
       }}
       onDeleteLog={(id) => { void handleDelete(id); }}
       pagination={{

@@ -1,7 +1,8 @@
 {
   "shared": {
     "edit": "Editar registro",
-    "delete": "Eliminar registro"
+    "delete": "Eliminar registro",
+    "read_only": "Modo solo lectura"
   },
   "common": {
     "logout": "Cerrar sesión",
@@ -543,6 +544,8 @@
     "delete_confirm_btn": "Eliminar",
     "delete_success": "¡Comida eliminada!",
     "delete_error": "Error al eliminar la comida.",
+    "manual_coming_soon": "El registro manual estará disponible pronto en esta interfaz.",
+    "import_coming_soon": "La importación estará disponible pronto en esta interfaz.",
     "notifications": {
       "save_success": "¡Registro nutricional guardado!",
       "save_error": "Error al guardar el registro nutricional.",

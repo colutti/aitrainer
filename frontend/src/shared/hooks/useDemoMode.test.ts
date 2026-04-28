@@ -46,7 +46,7 @@ describe('useDemoMode', () => {
 
     expect(blocked).toBe(true);
     expect(executed).not.toHaveBeenCalled();
-    expect(notifyInfo).toHaveBeenCalledWith('Demo Read-Only');
+    expect(notifyInfo).toHaveBeenCalledWith('Read-only mode');
   });
 
   it('supports an explicit read-only override', () => {

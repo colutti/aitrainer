@@ -1,4 +1,5 @@
 import { useEffect, useRef, useMemo, useLayoutEffect, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { InsightScreen } from '../../shared/components/layout/InsightScreen';
@@ -16,6 +17,7 @@ import { ChatView } from './components/ChatView';
  * Manages chat logic, streaming state, and scroll behavior.
  */
 export default function ChatPage() {
+  const { t } = useTranslation();
   const { messages, isStreaming, error, fetchHistory, sendMessage, loadMore, hasMore, isLoading } = useChatStore();
   const { trainer, availableTrainers, fetchTrainer, fetchAvailableTrainers } = useSettingsStore();
   const { userInfo } = useAuthStore();
@@ -107,8 +109,8 @@ export default function ChatPage() {
   return (
     <div data-testid="conversation-screen">
       <InsightScreen
-        title="Chat"
-        subtitle={currentTrainer?.name ?? 'Trainer'}
+        title={t('nav.chat')}
+        subtitle={currentTrainer?.name ?? t('chat.default_trainer_name')}
         content={
           <ChatView
             messages={messages}
