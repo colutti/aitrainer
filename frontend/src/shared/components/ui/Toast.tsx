@@ -59,7 +59,7 @@ export function Toast({ id: _id, message, type, onClose }: ToastProps) {
         onClick={onClose}
         variant="ghost"
         size="icon"
-        className="h-6 w-6 flex-shrink-0 rounded-md hover:bg-white/10"
+        className="h-6 w-6 flex-shrink-0 rounded-md hover:bg-[color:var(--color-surface-container-high)]"
         aria-label="Close notification"
       >
         <X className="h-4 w-4" />

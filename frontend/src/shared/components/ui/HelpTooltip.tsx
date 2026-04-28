@@ -77,7 +77,7 @@ export function HelpTooltip({
       {isVisible && (
         <div
           className={cn(
-            "absolute z-50 w-[min(16rem,calc(100vw-2rem))] p-4 rounded-2xl bg-dark-card border border-border shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200",
+            "absolute z-50 w-[min(16rem,calc(100vw-2rem))] p-4 rounded-2xl bg-[color:var(--color-surface-container-low)] border border-[color:var(--color-outline-variant)] shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200",
             sideStyles[side],
             alignStyles[align]
           )}
@@ -85,7 +85,7 @@ export function HelpTooltip({
         >
           <div
             className={cn(
-              "absolute left-3 w-3 h-3 bg-dark-card border-border rotate-45",
+              "absolute left-3 w-3 h-3 bg-[color:var(--color-surface-container-low)] border-[color:var(--color-outline-variant)] rotate-45",
               arrowStyles[side]
             )}
           />

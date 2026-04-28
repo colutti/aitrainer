@@ -41,18 +41,18 @@ export function HistoryLogCard({
     <PremiumCard
       onClick={onClick}
       data-testid={dataTestId}
-      className={`w-full cursor-pointer border border-white/5 px-4 py-4 md:px-6 md:py-5 ${className}`.trim()}
+      className={`w-full cursor-pointer border border-[color:var(--color-outline-variant)] px-4 py-4 md:px-6 md:py-5 ${className}`.trim()}
     >
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex min-w-0 flex-1 items-start gap-3">
-          <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-zinc-300 ${iconClassName}`.trim()}>
+          <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)] text-text-secondary ${iconClassName}`.trim()}>
             {icon}
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h3 className="truncate text-base font-bold leading-tight text-white">{title}</h3>
+                <h3 className="truncate text-base font-bold leading-tight text-text-primary">{title}</h3>
                 {(subtitle ?? leadingMeta) && (
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     {subtitle}
@@ -63,7 +63,7 @@ export function HistoryLogCard({
 
               <div className="flex items-center gap-2">
                 {actions}
-                <div className="p-1 text-zinc-500">
+                <div className="p-1 text-text-muted">
                   <ChevronRight size={18} />
                 </div>
               </div>
@@ -75,14 +75,14 @@ export function HistoryLogCard({
             >
               {metrics.map((metric, index) => (
                 <div key={index} className={metric.wrapperClassName}>
-                  <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">{metric.label}</div>
+                  <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-muted">{metric.label}</div>
                   <div className={metric.valueClassName}>{metric.value}</div>
                 </div>
               ))}
             </div>
 
             {notes && (
-              <div className="mt-3 truncate rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2 text-xs text-zinc-400">
+              <div className="mt-3 truncate rounded-lg border border-[color:var(--color-outline-variant)] bg-white/[0.02] px-3 py-2 text-xs text-text-secondary">
                 {notes}
               </div>
             )}

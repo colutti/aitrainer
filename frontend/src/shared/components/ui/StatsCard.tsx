@@ -33,7 +33,7 @@ export function StatsCard({
     orange: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
     blue: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
     green: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-    secondary: 'bg-zinc-700/10 text-zinc-400 border-zinc-700/20',
+    secondary: 'bg-zinc-700/10 text-text-secondary border-zinc-700/20',
     purple: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
   };
 

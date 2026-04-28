@@ -45,14 +45,14 @@ export function DataView({
         <div className="w-20 h-20 rounded-[2rem] bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 mb-6 shadow-2xl shadow-red-500/10">
           <AlertCircle size={40} />
         </div>
-        <h3 className="text-2xl font-black text-white mb-2">{t('common.error_loading', 'Erro ao carregar')}</h3>
-        <p className="text-zinc-500 max-w-xs mb-8 text-sm">{t('common.error_loading_desc', 'Não foi possível carregar os dados.')}</p>
+        <h3 className="text-2xl font-black text-text-primary mb-2">{t('common.error_loading', 'Erro ao carregar')}</h3>
+        <p className="text-text-muted max-w-xs mb-8 text-sm">{t('common.error_loading_desc', 'Não foi possível carregar os dados.')}</p>
         {onRetry && (
           <Button
             type="button"
             variant="secondary"
             onClick={onRetry}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all active:scale-95"
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] text-text-primary font-bold hover:bg-[color:var(--color-surface-container-high)] transition-all active:scale-95"
           >
             <RefreshCcw size={18} />
             {t('common.retry', 'Tentar novamente')}
@@ -64,12 +64,12 @@ export function DataView({
 
   if (isEmpty) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center opacity-40 animate-in fade-in duration-500 border-2 border-dashed border-white/5 rounded-[32px]">
-        <div className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center mb-6">
-          {emptyState?.icon ?? <FolderOpen size={40} className="text-zinc-500" />}
+      <div className="flex flex-col items-center justify-center py-20 text-center opacity-40 animate-in fade-in duration-500 border-2 border-dashed border-[color:var(--color-outline-variant)] rounded-[32px]">
+        <div className="w-20 h-20 rounded-3xl bg-[color:var(--color-surface-container)] flex items-center justify-center mb-6">
+          {emptyState?.icon ?? <FolderOpen size={40} className="text-text-muted" />}
         </div>
-        <h3 className="text-xl font-bold text-white mb-2">{emptyState?.title ?? t('common.no_data', 'Nenhum dado')}</h3>
-        <p className="text-sm text-zinc-500 max-w-xs">{emptyState?.description ?? t('common.no_data_desc', 'Sem registros por enquanto.')}</p>
+        <h3 className="text-xl font-bold text-text-primary mb-2">{emptyState?.title ?? t('common.no_data', 'Nenhum dado')}</h3>
+        <p className="text-sm text-text-muted max-w-xs">{emptyState?.description ?? t('common.no_data_desc', 'Sem registros por enquanto.')}</p>
       </div>
     );
   }

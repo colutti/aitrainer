@@ -40,8 +40,8 @@ export function WeightLogCard({ log, isReadOnly = false, onDelete, onEdit, onCli
       icon={<Scale size={24} />}
       title={formatDate(log.date)}
       leadingMeta={(
-        <span className="text-xl font-black text-white tracking-tighter">
-          {log.weight_kg.toFixed(1)} <span className="text-[10px] font-bold text-zinc-500 uppercase ml-0.5">kg</span>
+        <span className="text-xl font-black text-text-primary tracking-tighter">
+          {log.weight_kg.toFixed(1)} <span className="text-[10px] font-bold text-text-muted uppercase ml-0.5">kg</span>
         </span>
       )}
       subtitle={hasTrend ? (
@@ -59,16 +59,16 @@ export function WeightLogCard({ log, isReadOnly = false, onDelete, onEdit, onCli
         {
           label: t('body.weight.body_fat').split(' ')[0],
           value: log.body_fat_pct ? (
-            <span className="text-sm font-black text-white tabular-nums">{log.body_fat_pct.toFixed(1)}<span className="text-[10px] ml-0.5 opacity-50">%</span></span>
-          ) : <div className="w-4 h-0.5 bg-white/5 rounded-full mt-2" />,
-          valueClassName: 'text-sm font-black text-white tabular-nums',
+            <span className="text-sm font-black text-text-primary tabular-nums">{log.body_fat_pct.toFixed(1)}<span className="text-[10px] ml-0.5 opacity-50">%</span></span>
+          ) : <div className="w-4 h-0.5 bg-[color:var(--color-surface-container)] rounded-full mt-2" />,
+          valueClassName: 'text-sm font-black text-text-primary tabular-nums',
         },
         {
           label: t('body.weight.muscle_mass').split(' ')[0],
           value: log.muscle_mass_kg ? (
-            <span className="text-sm font-black text-white tabular-nums">{log.muscle_mass_kg.toFixed(1)}<span className="text-[10px] ml-0.5 opacity-50">kg</span></span>
-          ) : <div className="w-4 h-0.5 bg-white/5 rounded-full mt-2" />,
-          valueClassName: 'text-sm font-black text-white tabular-nums',
+            <span className="text-sm font-black text-text-primary tabular-nums">{log.muscle_mass_kg.toFixed(1)}<span className="text-[10px] ml-0.5 opacity-50">kg</span></span>
+          ) : <div className="w-4 h-0.5 bg-[color:var(--color-surface-container)] rounded-full mt-2" />,
+          valueClassName: 'text-sm font-black text-text-primary tabular-nums',
         },
       ]}
       notes={log.notes ? `"${log.notes}"` : undefined}
@@ -80,7 +80,7 @@ export function WeightLogCard({ log, isReadOnly = false, onDelete, onEdit, onCli
               variant="ghost"
               size="icon"
               onClick={(e) => { e.stopPropagation(); onEdit(log); }}
-              className="h-9 w-9 rounded-full text-zinc-400 hover:bg-white/10 hover:text-white"
+              className="h-9 w-9 rounded-full text-text-secondary hover:bg-[color:var(--color-surface-container-high)] hover:text-text-primary"
               title={t('shared.edit')}
               aria-label={t('shared.edit')}
             >

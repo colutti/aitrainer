@@ -49,7 +49,7 @@ export function QuickAddFAB() {
       {/* Backdrop when open */}
       <div 
         className={cn(
-          "fixed inset-0 bg-black/40 backdrop-blur-sm z-[-1] transition-all duration-300 pointer-events-auto cursor-pointer",
+          "fixed inset-0 bg-[color:var(--color-background)] backdrop-blur-sm z-[-1] transition-all duration-300 pointer-events-auto cursor-pointer",
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
         onClick={() => { setIsOpen(false); }}
@@ -66,7 +66,7 @@ export function QuickAddFAB() {
             className="flex items-center gap-3 transition-transform pointer-events-auto"
             style={{ transitionDelay: `${(idx * 40).toString()}ms` }}
           >
-            <span className="px-3 py-1.5 rounded bg-dark-card border border-border text-xs font-black uppercase tracking-wider text-text-primary shadow-lg">
+            <span className="px-3 py-1.5 rounded bg-[color:var(--color-surface-container-low)] border border-[color:var(--color-outline-variant)] text-xs font-black uppercase tracking-wider text-text-primary shadow-lg">
               {t(action.labelKey)}
             </span>
             <Button
@@ -76,7 +76,7 @@ export function QuickAddFAB() {
               aria-label={t(action.labelKey)}
               onClick={() => { action.onClick(); setIsOpen(false); }}
               className={cn(
-                "w-12 h-12 rounded-lg flex items-center justify-center text-white shadow-xl transition-colors duration-150 active:scale-95 group",
+                "w-12 h-12 rounded-lg flex items-center justify-center text-text-primary shadow-xl transition-colors duration-150 active:scale-95 group",
                 action.color
               )}
             >
@@ -96,8 +96,8 @@ export function QuickAddFAB() {
         className={cn(
           "w-16 h-16 rounded-xl flex items-center justify-center shadow-lg pointer-events-auto transition-all duration-150 active:scale-90",
           isOpen 
-            ? "bg-[color:var(--color-app-surface)] text-[color:var(--color-text-primary)] rotate-45 border border-white/20"
-            : "bg-[color:var(--color-app-surface-raised)] text-[color:var(--color-text-primary)] border border-white/20"
+            ? "bg-[color:var(--color-surface-container)] text-text-primary rotate-45 border border-[color:var(--color-outline)]"
+            : "bg-[color:var(--color-surface-container-low)] text-text-primary border border-[color:var(--color-outline)]"
         )}
       >
         <Plus size={32} />

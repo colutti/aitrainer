@@ -119,10 +119,10 @@ export function WeightLogDrawer({ isOpen, onClose, onSubmit, isReadOnly = false,
         </FormField>
         
         {/* PRIMARY METRIC */}
-        <div className="bg-white/5 p-6 rounded-3xl border border-white/10 shadow-inner">
+        <div className="bg-[color:var(--color-surface-container)] p-6 rounded-3xl border border-[color:var(--color-outline-variant)] shadow-inner">
           <FormField label={t('body.weight.weight')} id="weight-kg" error={errors.weight_kg?.message}>
             <div className="relative">
-              <Scale className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={24} />
+              <Scale className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={24} />
               <Input
                 id="weight-kg"
                 data-testid="weight-kg"
@@ -131,53 +131,53 @@ export function WeightLogDrawer({ isOpen, onClose, onSubmit, isReadOnly = false,
                 disabled={isReadOnly}
                 {...register('weight_kg')}
                 placeholder="0.0"
-                className="pl-14 h-20 text-4xl font-black bg-transparent border-transparent focus:border-white/10 rounded-2xl"
+                className="pl-14 h-20 text-4xl font-black bg-transparent border-transparent focus:border-[color:var(--color-outline-variant)] rounded-2xl"
               />
-              <span className="absolute right-6 top-1/2 -translate-y-1/2 text-xl font-bold text-zinc-500 uppercase">kg</span>
+              <span className="absolute right-6 top-1/2 -translate-y-1/2 text-xl font-bold text-text-muted uppercase">kg</span>
             </div>
           </FormField>
         </div>
 
         {/* COMPOSITION GRID */}
         <details className="space-y-4 group" open={Boolean(log)}>
-          <summary className="list-none cursor-pointer rounded-2xl border border-border bg-dark-card px-4 py-3 text-sm font-semibold text-zinc-200">
+          <summary className="list-none cursor-pointer rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] px-4 py-3 text-sm font-semibold text-text-secondary">
             <span className="inline-flex items-center gap-2">
               <Target size={16} />
               {t('body.weight.composition_toggle')}
             </span>
           </summary>
           <div className="space-y-6 pt-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-white/5">
-                <Target size={18} className="text-zinc-300" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('body.weight.composition_title')}</h3>
+              <div className="flex items-center gap-2 pb-2 border-b border-[color:var(--color-outline-variant)]">
+                <Target size={18} className="text-text-secondary" />
+                <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">{t('body.weight.composition_title')}</h3>
               </div>
               
               <div className="grid grid-cols-2 gap-6">
-                <FormField label={t('body.weight.body_fat')} id="body-fat-pct" icon={<Flame size={14} className="text-zinc-400" />} error={errors.body_fat_pct?.message}>
+                <FormField label={t('body.weight.body_fat')} id="body-fat-pct" icon={<Flame size={14} className="text-text-secondary" />} error={errors.body_fat_pct?.message}>
                   <Input id="body-fat-pct" data-testid="body-fat-pct" type="number" step="any" disabled={isReadOnly} {...register('body_fat_pct')} placeholder="%" className="h-14 rounded-2xl font-bold" />
                 </FormField>
 
-                <FormField label={`${t('body.weight.muscle_mass')} (%)`} id="muscle-mass-pct" icon={<Target size={14} className="text-zinc-400" />} error={errors.muscle_mass_pct?.message}>
+                <FormField label={`${t('body.weight.muscle_mass')} (%)`} id="muscle-mass-pct" icon={<Target size={14} className="text-text-secondary" />} error={errors.muscle_mass_pct?.message}>
                   <Input id="muscle-mass-pct" type="number" step="any" disabled={isReadOnly} {...register('muscle_mass_pct')} placeholder="%" className="h-14 rounded-2xl font-bold" />
                 </FormField>
                 
-                <FormField label={t('body.weight.muscle_mass')} id="muscle-mass-kg" icon={<Bone size={14} className="text-zinc-400" />} error={errors.muscle_mass_kg?.message}>
+                <FormField label={t('body.weight.muscle_mass')} id="muscle-mass-kg" icon={<Bone size={14} className="text-text-secondary" />} error={errors.muscle_mass_kg?.message}>
                   <Input id="muscle-mass-kg" type="number" step="any" disabled={isReadOnly} {...register('muscle_mass_kg')} placeholder="kg" className="h-14 rounded-2xl font-bold" />
                 </FormField>
 
-                <FormField label={t('body.weight.visceral_fat')} id="visceral-fat" icon={<Ruler size={14} className="text-zinc-400" />} error={errors.visceral_fat?.message}>
+                <FormField label={t('body.weight.visceral_fat')} id="visceral-fat" icon={<Ruler size={14} className="text-text-secondary" />} error={errors.visceral_fat?.message}>
                   <Input id="visceral-fat" type="number" step="any" disabled={isReadOnly} {...register('visceral_fat')} placeholder="1-20" className="h-14 rounded-2xl font-bold" />
                 </FormField>
 
-                <FormField label={t('body.weight.body_water')} id="body-water-pct" icon={<Droplets size={14} className="text-zinc-400" />} error={errors.body_water_pct?.message}>
+                <FormField label={t('body.weight.body_water')} id="body-water-pct" icon={<Droplets size={14} className="text-text-secondary" />} error={errors.body_water_pct?.message}>
                   <Input id="body-water-pct" type="number" step="any" disabled={isReadOnly} {...register('body_water_pct')} placeholder="%" className="h-14 rounded-2xl font-bold" />
                 </FormField>
 
-                <FormField label={t('body.weight.bone_mass')} id="bone-mass-kg" icon={<Bone size={14} className="text-zinc-400" />} error={errors.bone_mass_kg?.message}>
+                <FormField label={t('body.weight.bone_mass')} id="bone-mass-kg" icon={<Bone size={14} className="text-text-secondary" />} error={errors.bone_mass_kg?.message}>
                   <Input id="bone-mass-kg" type="number" step="any" disabled={isReadOnly} {...register('bone_mass_kg')} placeholder="kg" className="h-14 rounded-2xl font-bold" />
                 </FormField>
 
-                <FormField label={t('body.weight.bmr')} id="bmr" icon={<Flame size={14} className="text-zinc-400" />} error={errors.bmr?.message}>
+                <FormField label={t('body.weight.bmr')} id="bmr" icon={<Flame size={14} className="text-text-secondary" />} error={errors.bmr?.message}>
                   <Input id="bmr" type="number" step="1" disabled={isReadOnly} {...register('bmr')} placeholder="kcal" className="h-14 rounded-2xl font-bold" />
                 </FormField>
               </div>
@@ -186,16 +186,16 @@ export function WeightLogDrawer({ isOpen, onClose, onSubmit, isReadOnly = false,
 
         {/* BODY MEASUREMENTS */}
         <details className="space-y-4 group" open={Boolean(log)}>
-          <summary className="list-none cursor-pointer rounded-2xl border border-border bg-dark-card px-4 py-3 text-sm font-semibold text-zinc-200">
+          <summary className="list-none cursor-pointer rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] px-4 py-3 text-sm font-semibold text-text-secondary">
             <span className="inline-flex items-center gap-2">
               <Ruler size={16} />
               {t('body.weight.measurements_toggle')}
             </span>
           </summary>
           <div className="space-y-6 pt-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-white/5">
-                <Ruler size={18} className="text-zinc-300" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('body.weight.measurements_title')}</h3>
+              <div className="flex items-center gap-2 pb-2 border-b border-[color:var(--color-outline-variant)]">
+                <Ruler size={18} className="text-text-secondary" />
+                <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">{t('body.weight.measurements_title')}</h3>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
