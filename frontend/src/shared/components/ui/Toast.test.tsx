@@ -17,7 +17,7 @@ describe('Toast', () => {
 
       const toast = screen.getByText('Operation successful');
       expect(toast).toBeInTheDocument();
-      expect(toast.closest('[data-testid="toast"]')).toHaveClass('bg-green-500/10');
+      expect(toast.closest('[data-testid="toast"]')).toHaveClass('bg-[color:var(--color-secondary)]/10');
     });
 
     it('should render error toast with correct styling', () => {
@@ -27,7 +27,7 @@ describe('Toast', () => {
 
       const toast = screen.getByText('Operation failed');
       expect(toast).toBeInTheDocument();
-      expect(toast.closest('[data-testid="toast"]')).toHaveClass('bg-red-500/10');
+      expect(toast.closest('[data-testid="toast"]')).toHaveClass('bg-[color:var(--color-error)]/10');
     });
 
     it('should render info toast with correct styling', () => {
@@ -42,7 +42,7 @@ describe('Toast', () => {
 
       const toast = screen.getByText('Information message');
       expect(toast).toBeInTheDocument();
-      expect(toast.closest('[data-testid="toast"]')).toHaveClass('bg-blue-500/10');
+      expect(toast.closest('[data-testid="toast"]')).toHaveClass('bg-[color:var(--color-primary)]/10');
     });
   });
 

@@ -99,7 +99,7 @@ export function DateInput({
       {label && (
         <label
           htmlFor={id}
-          className="text-sm font-medium text-text-secondary px-1"
+          className="text-sm font-medium text-[color:var(--color-on-surface-variant)] px-1"
         >
           {label}
         </label>
@@ -126,7 +126,7 @@ export function DateInput({
           {formatDisplay(value)}
         </Button>
         {open && (
-          <div className="absolute z-50 mt-1 rounded-xl border border-border bg-dark-card shadow-lg p-3">
+          <div className="absolute z-50 mt-1 rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)] shadow-lg p-3">
             <DayPicker
               mode="single"
               selected={selected}

@@ -32,16 +32,16 @@ export function Pagination({
           size="icon"
           disabled={currentPage === 1 || isLoading}
           onClick={() => { onPageChange(currentPage - 1); }}
-          className="h-14 w-14 rounded-2xl bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-20"
+          className="h-14 w-14 rounded-2xl bg-[color:var(--color-surface-container-low)] border border-[color:var(--color-outline-variant)] text-[color:var(--color-on-surface-variant)] hover:text-[color:var(--color-on-surface)] hover:bg-[color:var(--color-surface-container-high)] disabled:opacity-20"
           aria-label="Anterior"
         >
           <ChevronLeft size={20} />
         </Button>
 
         <div className="flex flex-col items-center">
-          <span className="text-zinc-500 font-black text-[10px] uppercase tracking-[0.2em] mb-0.5">Página</span>
-          <span className="text-white font-black text-sm">
-            {currentPage} <span className="text-zinc-600 mx-1">/</span> {totalPages}
+          <span className="text-[color:var(--color-on-surface-variant)] font-black text-[10px] uppercase tracking-[0.2em] mb-0.5">Página</span>
+          <span className="text-[color:var(--color-on-surface)] font-black text-sm">
+            {currentPage} <span className="text-[color:var(--color-outline)] mx-1">/</span> {totalPages}
           </span>
         </div>
 
@@ -50,7 +50,7 @@ export function Pagination({
           size="icon"
           disabled={currentPage === totalPages || isLoading}
           onClick={() => { onPageChange(currentPage + 1); }}
-          className="h-14 w-14 rounded-2xl bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-20"
+          className="h-14 w-14 rounded-2xl bg-[color:var(--color-surface-container-low)] border border-[color:var(--color-outline-variant)] text-[color:var(--color-on-surface-variant)] hover:text-[color:var(--color-on-surface)] hover:bg-[color:var(--color-surface-container-high)] disabled:opacity-20"
           aria-label="Próxima"
         >
           <ChevronRight size={20} />
@@ -73,7 +73,7 @@ export function Pagination({
         <span className="hidden sm:inline">Anterior</span>
       </Button>
 
-      <div className="flex items-center px-1 md:px-4 font-medium text-text-secondary text-[10px] md:text-sm whitespace-nowrap">
+      <div className="flex items-center px-1 md:px-4 font-medium text-[color:var(--color-on-surface-variant)] text-[10px] md:text-sm whitespace-nowrap">
         {currentPage}/{totalPages}
       </div>
 

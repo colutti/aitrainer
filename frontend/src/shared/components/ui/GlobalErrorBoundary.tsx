@@ -40,15 +40,15 @@ class ErrorBoundaryClass extends Component<Props & { t: TFunction }, State> {
       }
 
       return (
-        <div className="flex flex-col items-center justify-center p-8 text-center bg-dark-card border border-red-500/20 rounded-xl space-y-4">
-          <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">
+        <div className="flex flex-col items-center justify-center p-8 text-center bg-[color:var(--color-surface-container-low)] border border-[color:var(--color-error)]/30 rounded-xl space-y-4">
+          <div className="w-16 h-16 rounded-full bg-[color:var(--color-error)]/10 flex items-center justify-center text-[color:var(--color-error)]">
             <AlertTriangle size={32} />
           </div>
           <div className="space-y-2">
-            <h3 className="text-xl font-black text-text-primary tracking-tight">
+            <h3 className="text-xl font-black text-[color:var(--color-on-surface)] tracking-tight">
               {this.props.t('errors.server_error')}
             </h3>
-            <p className="text-text-secondary max-w-xs mx-auto">
+            <p className="text-[color:var(--color-on-surface-variant)] max-w-xs mx-auto">
               {this.props.t('errors.default')}
             </p>
           </div>

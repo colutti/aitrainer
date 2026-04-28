@@ -23,18 +23,18 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className={cn(
-      "flex flex-col items-center justify-center p-8 text-center bg-dark-card/30 border border-white/5 rounded-xl space-y-4",
+      "flex flex-col items-center justify-center p-8 text-center bg-[color:var(--color-surface-container-low)] border border-[color:var(--color-outline-variant)] rounded-xl space-y-4",
       className
     )}>
-      <div className="w-16 h-16 rounded-xl bg-white/5 flex items-center justify-center text-text-muted/50 mb-2">
+      <div className="w-16 h-16 rounded-xl bg-[color:var(--color-surface-container)] flex items-center justify-center text-[color:var(--color-on-surface-variant)] mb-2">
         <Icon size={32} />
       </div>
       
       <div className="space-y-2 max-w-xs">
-        <h3 className="text-xl font-black text-text-primary tracking-tight">
+        <h3 className="text-xl font-black text-[color:var(--color-on-surface)] tracking-tight">
           {title}
         </h3>
-        <p className="text-sm text-text-secondary leading-relaxed">
+        <p className="text-sm text-[color:var(--color-on-surface-variant)] leading-relaxed">
           {description}
         </p>
       </div>
@@ -43,7 +43,7 @@ export function EmptyState({
         <Button 
           variant="secondary" 
           onClick={onAction}
-          className="mt-4 px-8 py-2.5 rounded-lg bg-white/5 hover:bg-white/10 border-white/5 active:scale-95 transition-all duration-150"
+          className="mt-4 px-8 py-2.5 rounded-lg border-[color:var(--color-outline-variant)] active:scale-95 transition-all duration-150"
         >
           {actionLabel}
         </Button>

@@ -12,9 +12,9 @@ interface ToastProps {
 }
 
 const typeStyles: Record<NotificationType, string> = {
-  success: 'bg-green-500/10 border-green-500/20 text-green-400',
-  error: 'bg-red-500/10 border-red-500/20 text-red-400',
-  info: 'bg-blue-500/10 border-blue-500/20 text-blue-400',
+  success: 'bg-[color:var(--color-secondary)]/10 border-[color:var(--color-secondary)]/30 text-[color:var(--color-secondary)]',
+  error: 'bg-[color:var(--color-error)]/10 border-[color:var(--color-error)]/30 text-[color:var(--color-error)]',
+  info: 'bg-[color:var(--color-primary)]/10 border-[color:var(--color-primary)]/30 text-[color:var(--color-primary)]',
 };
 
 const icons: Record<NotificationType, React.ReactNode> = {
@@ -52,7 +52,7 @@ export function Toast({ id: _id, message, type, onClose }: ToastProps) {
     >
       <div className="flex-shrink-0">{icons[type]}</div>
 
-      <p className="flex-1 text-sm font-medium text-text-primary">{message}</p>
+      <p className="flex-1 text-sm font-medium text-[color:var(--color-on-surface)]">{message}</p>
 
       <Button
         data-testid="toast-close"

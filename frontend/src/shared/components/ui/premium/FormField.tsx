@@ -36,7 +36,7 @@ export function FormField({
           </span>
         </label>
         {optional && (
-          <span className="text-[9px] font-black uppercase text-zinc-600 tracking-widest">
+          <span className="text-[9px] font-black uppercase text-[color:var(--color-on-surface-variant)] tracking-widest">
             Opcional
           </span>
         )}
@@ -47,7 +47,7 @@ export function FormField({
       </div>
 
       {error && (
-        <p className="text-[10px] font-bold text-red-400 mt-1.5 animate-in fade-in slide-in-from-top-1 ml-1">
+        <p className="text-[10px] font-bold text-[color:var(--color-error)] mt-1.5 animate-in fade-in slide-in-from-top-1 ml-1">
           {error}
         </p>
       )}

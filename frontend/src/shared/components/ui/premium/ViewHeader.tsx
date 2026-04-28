@@ -26,7 +26,7 @@ export function ViewHeader({ title, subtitle, icon, action, className }: ViewHea
     <div data-testid="view-header" className={cn("flex flex-col md:flex-row md:items-end justify-between gap-6", className)}>
       <div className="flex items-center gap-4">
         {icon && (
-          <div data-testid="view-header-icon" className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 shadow-inner">
+          <div data-testid="view-header-icon" className="w-12 h-12 rounded-2xl bg-[color:var(--color-surface-container-low)] border border-[color:var(--color-outline-variant)] flex items-center justify-center text-[color:var(--color-on-surface-variant)] shadow-inner">
             {icon}
           </div>
         )}
