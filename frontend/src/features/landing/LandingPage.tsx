@@ -32,7 +32,10 @@ const LandingPage = () => {
   }, [isAuthenticated, isLoading, navigate]);
 
   return (
-    <div className="min-h-screen bg-dark-bg text-text-primary font-sans selection:bg-primary/30 selection:text-white overflow-x-hidden">
+    <div
+      data-testid="landing-shell"
+      className="min-h-screen bg-[color:var(--color-background)] text-[color:var(--color-on-background)] font-sans selection:bg-[color:var(--color-primary)]/25 overflow-x-hidden"
+    >
       <Navbar />
       
       <main>

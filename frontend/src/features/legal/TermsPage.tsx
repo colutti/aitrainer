@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-[#09090b] text-zinc-100 px-4 py-10">
+    <div data-testid="legal-page-shell" className="min-h-screen bg-[color:var(--color-background)] text-[color:var(--color-on-background)] px-4 py-10">
       <div className="max-w-3xl mx-auto">
         <h1 className="text-3xl font-black tracking-tight mb-2">Termos de Uso</h1>
         <p className="text-sm text-zinc-400 mb-8">Ultima atualizacao: 2026-04-01</p>
@@ -31,7 +31,7 @@ export default function TermsPage() {
         </div>
 
         <div className="mt-10">
-          <Link to="/login" className="text-sm text-teal-300 hover:text-teal-200 transition-colors">
+          <Link to="/login" className="text-sm text-[color:var(--color-primary)] hover:text-[color:var(--color-primary-container)] transition-colors">
             Voltar para login
           </Link>
         </div>

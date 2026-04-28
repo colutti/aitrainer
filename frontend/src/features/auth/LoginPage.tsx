@@ -193,18 +193,21 @@ export default function LoginPage() {
   const isRegisterLoading = loadingAction === 'register';
 
   return (
-    <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-4 selection:bg-white/20 overflow-hidden relative">
+    <div
+      data-testid="auth-form-shell"
+      className="min-h-screen bg-[color:var(--color-background)] text-[color:var(--color-on-background)] flex items-center justify-center p-4 overflow-hidden relative"
+    >
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md relative z-10"
       >
         <div className="text-center mb-10">
-          <h1 className="text-5xl font-black text-white tracking-tighter mb-2">FITYQ</h1>
-          <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-[0.3em]">{t('nav.brand_tagline')}</p>
+          <h1 className="text-5xl font-black text-[color:var(--color-on-surface)] tracking-tighter mb-2">FITYQ</h1>
+          <p className="text-[color:var(--color-on-surface-variant)] font-bold uppercase text-[10px] tracking-[0.3em]">{t('nav.brand_tagline')}</p>
         </div>
 
-        <PremiumCard withHover={false} className="p-10 border-white/10 bg-[color:var(--color-app-surface-raised)] shadow-2xl overflow-visible">
+        <PremiumCard withHover={false} className="p-10 bg-[color:var(--color-surface-container-high)] border-[color:var(--color-outline-variant)] overflow-visible">
           {/* TABS */}
           <div className="flex bg-zinc-900/80 p-1.5 rounded-2xl mb-8 border border-zinc-700/60 relative">
             <div 

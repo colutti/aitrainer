@@ -101,18 +101,19 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090b] flex items-center justify-center p-4 selection:bg-white/20">
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-[120px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-orange-500/10 rounded-full blur-[120px]" />
+    <div
+      data-testid="auth-form-shell"
+      className="min-h-screen bg-[color:var(--color-background)] text-[color:var(--color-on-background)] flex items-center justify-center p-4"
+    >
 
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-10">
-          <h1 className="text-5xl font-black text-white tracking-tighter mb-2">FITYQ</h1>
-          <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-[0.3em]">{t('nav.brand_tagline')}</p>
+          <h1 className="text-5xl font-black text-[color:var(--color-on-surface)] tracking-tighter mb-2">FITYQ</h1>
+          <p className="text-[color:var(--color-on-surface-variant)] font-bold uppercase text-[10px] tracking-[0.3em]">{t('nav.brand_tagline')}</p>
         </div>
 
-        <PremiumCard className="p-10 border-white/10 shadow-2xl backdrop-blur-3xl">
-          <h2 className="text-xl font-black text-white uppercase tracking-widest mb-6">
+        <PremiumCard className="p-10 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-high)]">
+          <h2 className="text-xl font-black text-[color:var(--color-on-surface)] uppercase tracking-widest mb-6">
             {t('auth.reset_password_title')}
           </h2>
 
