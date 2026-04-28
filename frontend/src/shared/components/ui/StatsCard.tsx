@@ -29,7 +29,7 @@ export function StatsCard({
 }: StatsCardProps) {
   const { t } = useTranslation();
   const variants = {
-    primary: 'bg-primary/10 text-primary border-primary/20',
+    primary: 'bg-[color:var(--color-primary)]/10 text-[color:var(--color-primary)] border-[color:var(--color-primary)]/20',
     orange: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
     blue: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
     green: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
@@ -38,7 +38,7 @@ export function StatsCard({
   };
 
   return (
-    <div className="bg-dark-card border border-border rounded-xl p-5 hover:border-primary/50 transition-colors duration-150 group">
+    <div className="bg-[color:var(--color-surface-container-low)] border border-[color:var(--color-outline-variant)] rounded-xl p-5 hover:border-[color:var(--color-primary)]/50 transition-colors duration-150 group">
       <div className="flex items-start justify-between">
         <div className="min-w-0">
           <p className="text-text-secondary text-[13px] font-semibold mb-1">{title}</p>
@@ -59,7 +59,7 @@ export function StatsCard({
       </div>
 
       {(trend ?? trendValue ?? false) && (
-        <div className="mt-4 pt-4 border-t border-border flex items-center gap-2">
+        <div className="mt-4 pt-4 border-t border-[color:var(--color-outline-variant)] flex items-center gap-2">
           {trend && (
             <span className={cn(
               "text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider",

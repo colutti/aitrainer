@@ -43,15 +43,15 @@ export function PlanCard({
   return (
     <div
       className={cn(
-        'flex flex-col p-8 rounded-2xl border bg-dark-bg',
-        isHighlighted ? 'border-primary/60 ring-1 ring-primary/30' : 'border-border',
+        'flex flex-col p-8 rounded-2xl border bg-[color:var(--color-background)]',
+        isHighlighted ? 'border-[color:var(--color-primary)]/60 ring-1 ring-[color:var(--color-primary)]/30' : 'border-[color:var(--color-outline-variant)]',
         context === 'selection' && 'cursor-pointer',
         className
       )}
     >
       <div className="mb-6">
         {plan.badge ? (
-          <span className="inline-flex mb-4 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-primary">
+          <span className="inline-flex mb-4 rounded-full border border-[color:var(--color-primary)]/30 bg-[color:var(--color-primary)]/10 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[color:var(--color-primary)]">
             {plan.badge}
           </span>
         ) : null}
@@ -70,7 +70,7 @@ export function PlanCard({
         fullWidth
         className={cn(
           'mb-8 rounded-md',
-          isHighlighted ? 'bg-primary bg-none hover:bg-primary-hover shadow-none' : 'border-border bg-dark-card'
+          isHighlighted ? 'shadow-none' : 'border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)]'
         )}
         data-testid={actionTestId}
       >
@@ -80,7 +80,7 @@ export function PlanCard({
       <ul className="space-y-3">
         {plan.features.map((feature) => (
           <li key={`${plan.id}-${feature}`} className="flex items-start gap-3 text-sm text-text-secondary">
-            <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <Check className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--color-primary)]" />
             <span>{feature}</span>
           </li>
         ))}

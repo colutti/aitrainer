@@ -66,7 +66,7 @@ describe('ConfirmationModal', () => {
       );
 
       const iconBadge = screen.getByTestId('confirmation-icon-badge');
-      expect(iconBadge).toHaveClass('bg-white/10');
+      expect(iconBadge).toHaveClass('bg-[color:var(--color-primary)]/10');
       expect(iconBadge).toHaveClass('text-text-primary');
       expect(iconBadge).not.toHaveClass('text-gradient-start');
     });

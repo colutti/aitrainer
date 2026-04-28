@@ -56,8 +56,8 @@ export function LanguageSelector() {
         onClick={() => { setIsOpen(!isOpen); }}
         className={cn(
           "h-auto flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-300",
-          "hover:bg-white/10 text-text-secondary hover:text-white border border-transparent",
-          isOpen && "bg-white/10 text-white border-white/10 shadow-lg"
+          "hover:bg-[color:var(--color-surface-container)] text-text-secondary hover:text-text-primary border border-transparent",
+          isOpen && "bg-[color:var(--color-surface-container)] text-text-primary border-[color:var(--color-outline-variant)]"
         )}
         aria-haspopup="true"
         aria-expanded={isOpen}
@@ -68,7 +68,7 @@ export function LanguageSelector() {
 
       {isOpen && (
         <div 
-          className="absolute right-0 mt-2 w-48 rounded-2xl bg-dark-card border border-white/10 shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-200"
+          className="absolute right-0 mt-2 w-48 rounded-2xl bg-[color:var(--color-surface-container-low)] border border-[color:var(--color-outline-variant)] py-2 z-50 animate-in fade-in zoom-in-95 duration-200"
         >
           {languages.map((lang) => (
             <Button
@@ -76,7 +76,7 @@ export function LanguageSelector() {
               variant="ghost"
               onClick={() => { handleLanguageChange(lang.code); }}
               className={cn(
-                "h-auto w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors rounded-none hover:bg-white/5",
+                "h-auto w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors rounded-none hover:bg-[color:var(--color-surface-container)]",
                 i18n.language === lang.code ? "text-text-primary font-bold" : "text-text-secondary"
               )}
             >

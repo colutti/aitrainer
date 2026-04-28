@@ -42,13 +42,13 @@ export function ConfirmationModal({
       {/* Modal */}
       <div
         data-testid="confirmation-modal"
-        className="relative bg-dark-card border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200"
+        className="relative bg-[color:var(--color-surface-container-low)] border border-[color:var(--color-outline-variant)] rounded-2xl p-6 max-w-md w-full animate-in zoom-in-95 duration-200"
       >
         {/* Icon & Title */}
         <div className="flex flex-col items-center text-center mb-6">
           <div className={cn(
             "w-12 h-12 rounded-full flex items-center justify-center mb-4",
-            isDanger ? "bg-red-500/10 text-red-500" : "bg-white/10 text-text-primary"
+            isDanger ? "bg-red-500/10 text-red-500" : "bg-[color:var(--color-primary)]/10 text-text-primary"
           )}
             data-testid="confirmation-icon-badge"
           >

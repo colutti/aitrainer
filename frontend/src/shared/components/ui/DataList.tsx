@@ -60,10 +60,10 @@ export function DataList<T>({
         {(title ?? actions) && (
           <div className="flex items-center justify-between mb-6">
             <div>
-              {title && <div className="h-8 w-48 bg-dark-card rounded-lg mb-2" />}
-              {description && <div className="h-4 w-64 bg-dark-card rounded-lg" />}
+              {title && <div className="h-8 w-48 bg-[color:var(--color-surface-container-low)] rounded-lg mb-2" />}
+              {description && <div className="h-4 w-64 bg-[color:var(--color-surface-container-low)] rounded-lg" />}
             </div>
-            {actions && <div className="h-10 w-32 bg-dark-card rounded-lg" />}
+            {actions && <div className="h-10 w-32 bg-[color:var(--color-surface-container-low)] rounded-lg" />}
           </div>
         )}
         
@@ -80,7 +80,7 @@ export function DataList<T>({
             <div 
               key={i} 
               className={cn(
-                "bg-dark-card rounded-xl border border-border",
+                "bg-[color:var(--color-surface-container-low)] rounded-xl border border-[color:var(--color-outline-variant)]",
                 layout === 'grid' ? "h-64" : "h-24"
               )} 
             />
@@ -147,7 +147,7 @@ export function DataList<T>({
         </>
       ) : (
         /* Empty State */
-        <div className="bg-dark-card border border-border border-dashed rounded-xl p-12 text-center">
+        <div className="bg-[color:var(--color-surface-container-low)] border border-[color:var(--color-outline-variant)] border-dashed rounded-xl p-12 text-center">
           {emptyState.icon && (
             <div className="w-16 h-16 rounded-lg bg-white/5 flex items-center justify-center mx-auto mb-4 text-text-muted">
               {emptyState.icon}
