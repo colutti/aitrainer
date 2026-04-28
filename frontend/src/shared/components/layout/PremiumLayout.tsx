@@ -11,6 +11,7 @@ import { Button } from '../ui/Button';
 import { LanguageSelector } from '../ui/LanguageSelector';
 import { QuickAddFAB } from '../ui/QuickAddFAB';
 
+import { AppShell } from './AppShell';
 import { getLayoutMode } from './layoutModes';
 
 /**
@@ -39,7 +40,13 @@ export function PremiumLayout() {
   };
 
   return (
-    <div className="h-[100dvh] bg-[color:var(--color-app-bg)] text-zinc-50 font-sans selection:bg-white/15 relative overflow-hidden flex flex-col">
+    <AppShell
+      testId="premium-layout-shell"
+      className={cn(
+        'h-[100dvh] text-zinc-50 font-sans selection:bg-white/15 relative overflow-hidden flex flex-col',
+        layoutMode.shellClassName
+      )}
+    >
       {/* --- DESKTOP TOP NAV (DOCK) --- */}
       <nav
         data-testid="desktop-nav"
@@ -131,10 +138,14 @@ export function PremiumLayout() {
       </header>
 
       {/* --- CONTEÚDO PRINCIPAL (Expanded for 4K) --- */}
-      <main className={cn(
+      <main
+        data-testid="premium-layout-main"
+        className={cn(
         "pb-32 pt-2 md:pt-28 min-h-0 flex-1 overflow-x-hidden",
+        layoutMode.mainClassName,
         isChatPage ? "overflow-hidden md:pb-0" : "overflow-y-auto"
-      )}>
+      )}
+      >
         <div data-testid="app-shell-main" className={cn("mx-auto w-full h-full min-h-0", layoutMode.contentClassName)}>
           <Outlet />
         </div>
@@ -181,6 +192,6 @@ export function PremiumLayout() {
       {/* --- GLOBAL SYSTEM COMPONENTS --- */}
       {!isSubscriptionPage && !isChatPage && !isDemoUser && <QuickAddFAB />}
 
-    </div>
+    </AppShell>
   );
 }

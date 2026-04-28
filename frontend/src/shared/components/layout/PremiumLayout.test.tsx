@@ -25,6 +25,8 @@ describe('PremiumLayout', () => {
     );
 
     expect(screen.getByTestId('app-shell-main')).toHaveClass('max-w-[1920px]');
+    expect(screen.getByTestId('premium-layout-shell')).toHaveClass('app-shell--workspace');
+    expect(screen.getByTestId('premium-layout-main')).toHaveClass('app-shell-main--workspace');
   });
 
   it('applies the conversation width mode on chat route', () => {
@@ -40,6 +42,8 @@ describe('PremiumLayout', () => {
     );
 
     expect(screen.getByTestId('app-shell-main')).toHaveClass('max-w-[2160px]');
+    expect(screen.getByTestId('premium-layout-shell')).toHaveClass('app-shell--conversation');
+    expect(screen.getByTestId('premium-layout-main')).toHaveClass('app-shell-main--conversation');
     expect(screen.getByTestId('desktop-nav')).not.toHaveClass('backdrop-blur-xl');
   });
 
