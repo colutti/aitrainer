@@ -47,14 +47,14 @@ export function TrainerSettingsView({
     return (
       <div className="space-y-8 animate-pulse">
         <div className="flex items-center gap-4">
-           <Skeleton className="w-14 h-14 rounded-2xl bg-white/5" />
+           <Skeleton className="w-14 h-14 rounded-2xl bg-[color:var(--color-surface-container)]" />
            <div className="space-y-2">
-              <Skeleton className="h-4 w-32 bg-white/5" />
-              <Skeleton className="h-8 w-64 bg-white/5" />
+              <Skeleton className="h-4 w-32 bg-[color:var(--color-surface-container)]" />
+              <Skeleton className="h-8 w-64 bg-[color:var(--color-surface-container)]" />
            </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-           {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-48 rounded-[32px] bg-white/5" />)}
+           {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-48 rounded-[32px] bg-[color:var(--color-surface-container)]" />)}
         </div>
       </div>
     );
@@ -106,8 +106,8 @@ export function TrainerSettingsView({
                       />
                    </div>
                    <div>
-                     <h3 className="font-black text-white text-xl tracking-tight">{trainer.name}</h3>
-                     <p className="text-zinc-500 text-xs font-bold mt-1 leading-relaxed uppercase tracking-widest">
+                     <h3 className="font-black text-text-primary text-xl tracking-tight">{trainer.name}</h3>
+                     <p className="text-text-muted text-xs font-bold mt-1 leading-relaxed uppercase tracking-widest">
                        {t(`landing.trainers.profiles.${trainerId}.tagline`, { defaultValue: trainer.short_description })}
                      </p>
                    </div>
@@ -115,23 +115,23 @@ export function TrainerSettingsView({
                 
                 <div className="flex items-center gap-3">
                    {isLocked && (
-                      <div className="p-2 rounded-xl bg-white/5 border border-white/10 text-zinc-500">
+                      <div className="p-2 rounded-xl bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] text-text-muted">
                          <Lock size={16} data-testid="lock-icon" />
                       </div>
                    )}
                    <div className={cn(
                     "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
                     isActive
-                      ? "border-indigo-500 bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]"
-                      : "border-white/10"
+                      ? "border-indigo-500 bg-indigo-500 text-text-primary shadow-[0_0_15px_rgba(99,102,241,0.4)]"
+                      : "border-[color:var(--color-outline-variant)]"
                   )}>
                     {isActive && <Check size={14} strokeWidth={4} data-testid="check-icon" />}
                   </div>
                 </div>
               </div>
               
-              <div className="mt-6 pt-6 border-t border-white/5">
-                  <p className="text-sm text-zinc-400 font-medium italic leading-relaxed">
+              <div className="mt-6 pt-6 border-t border-[color:var(--color-outline-variant)]">
+                  <p className="text-sm text-text-secondary font-medium italic leading-relaxed">
                     "{t(`landing.trainers.profiles.${trainerId}.catchphrase`, { defaultValue: trainer.catchphrase })}"
                   </p>
               </div>
@@ -143,15 +143,15 @@ export function TrainerSettingsView({
       {availableTrainers.length === 0 && !isLoading && (
         <div className="text-center py-20 opacity-40 flex flex-col items-center">
              <AlertCircle className="mx-auto text-red-400 mb-4" size={48} />
-             <p className="font-bold text-white">{t('settings.trainer.load_error')}</p>
-             <Button type="button" variant="secondary" onClick={onRetry} className="mt-6 px-8 py-3 rounded-full border border-white/10 font-black text-sm uppercase tracking-widest hover:bg-white/5">
+             <p className="font-bold text-text-primary">{t('settings.trainer.load_error')}</p>
+             <Button type="button" variant="secondary" onClick={onRetry} className="mt-6 px-8 py-3 rounded-full border border-[color:var(--color-outline-variant)] font-black text-sm uppercase tracking-widest hover:bg-[color:var(--color-surface-container)]">
                  {t('settings.trainer.retry')}
              </Button>
         </div>
       )}
 
       {/* FOOTER ACTIONS */}
-      <div className="flex justify-end pt-10 border-t border-white/5">
+      <div className="flex justify-end pt-10 border-t border-[color:var(--color-outline-variant)]">
           <Button
             type="button"
             onClick={() => { if (!isReadOnly) onSave(); }} 

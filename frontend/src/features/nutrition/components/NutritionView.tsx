@@ -62,14 +62,14 @@ export function NutritionView({
     return (
       <div data-testid="nutrition-skeleton" className="space-y-8 animate-pulse">
         <div className="flex justify-between items-end">
-          <Skeleton className="h-12 w-64 bg-white/5" />
+          <Skeleton className="h-12 w-64 bg-[color:var(--color-surface-container)]" />
           <div className="flex gap-3">
-            <Skeleton className="h-12 w-32 rounded-full bg-white/5" />
-            <Skeleton className="h-12 w-40 rounded-full bg-white/5" />
+            <Skeleton className="h-12 w-32 rounded-full bg-[color:var(--color-surface-container)]" />
+            <Skeleton className="h-12 w-40 rounded-full bg-[color:var(--color-surface-container)]" />
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-[32px] bg-white/5" />)}
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32 rounded-[32px] bg-[color:var(--color-surface-container)]" />)}
         </div>
       </div>
     );
@@ -88,7 +88,7 @@ export function NutritionView({
             variant="secondary"
             onClick={onImport}
             disabled={isReadOnly}
-            className="flex items-center gap-2 px-5 py-3 rounded-full bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all"
+            className="flex items-center gap-2 px-5 py-3 rounded-full bg-[color:var(--color-surface-container)] border border-[color:var(--color-outline-variant)] text-text-primary font-bold hover:bg-white/10 transition-all"
           >
             <Upload size={18} />
             <span className="hidden sm:inline">{t('nutrition.import')}</span>
@@ -116,12 +116,12 @@ export function NutritionView({
               <span className="text-[10px] font-black uppercase tracking-widest">{t('nutrition.calories')}</span>
            </div>
            <div>
-              <p className="text-4xl font-black text-white leading-none">
+              <p className="text-4xl font-black text-text-primary leading-none">
                 {formatNumber(today?.calories ?? 0, 'integer')}
               </p>
-              <p className="text-xs font-bold text-zinc-500 mt-1">/ {targetCalsStr} kcal</p>
+              <p className="text-xs font-bold text-text-muted mt-1">/ {targetCalsStr} kcal</p>
            </div>
-           <div className="mt-4 h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
+           <div className="mt-4 h-1.5 w-full bg-[color:var(--color-background)] rounded-full overflow-hidden">
               <div 
                 className="h-full bg-orange-500 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.5)]" 
                 style={{ width: `${String(Math.min(100, ((today?.calories ?? 0) / targetCals) * 100))}%` }}
@@ -136,10 +136,10 @@ export function NutritionView({
               <span className="text-[10px] font-black uppercase tracking-widest">{t('nutrition.proteins')}</span>
            </div>
            <div>
-              <p className="text-3xl font-black text-white leading-none">{String(today?.protein_grams ?? 0)}g</p>
-              <p className="text-xs font-bold text-zinc-500 mt-1">/ {proteinTargetStr}g</p>
+              <p className="text-3xl font-black text-text-primary leading-none">{String(today?.protein_grams ?? 0)}g</p>
+              <p className="text-xs font-bold text-text-muted mt-1">/ {proteinTargetStr}g</p>
            </div>
-           <div className="mt-4 h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
+           <div className="mt-4 h-1.5 w-full bg-[color:var(--color-background)] rounded-full overflow-hidden">
               <div 
                 className="h-full bg-red-500 rounded-full" 
                 style={{ width: `${String(Math.min(100, ((today?.protein_grams ?? 0) / macroTargets.protein) * 100))}%` }}
@@ -154,10 +154,10 @@ export function NutritionView({
               <span className="text-[10px] font-black uppercase tracking-widest">{t('nutrition.carbs')}</span>
            </div>
            <div>
-              <p className="text-3xl font-black text-white leading-none">{String(today?.carbs_grams ?? 0)}g</p>
-              <p className="text-xs font-bold text-zinc-500 mt-1">/ {carbsTargetStr}g</p>
+              <p className="text-3xl font-black text-text-primary leading-none">{String(today?.carbs_grams ?? 0)}g</p>
+              <p className="text-xs font-bold text-text-muted mt-1">/ {carbsTargetStr}g</p>
            </div>
-           <div className="mt-4 h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
+           <div className="mt-4 h-1.5 w-full bg-[color:var(--color-background)] rounded-full overflow-hidden">
               <div 
                 className="h-full bg-blue-500 rounded-full" 
                 style={{ width: `${String(Math.min(100, ((today?.carbs_grams ?? 0) / macroTargets.carbs) * 100))}%` }}
@@ -172,10 +172,10 @@ export function NutritionView({
               <span className="text-[10px] font-black uppercase tracking-widest">{t('nutrition.fats')}</span>
            </div>
            <div>
-              <p className="text-3xl font-black text-white leading-none">{String(today?.fat_grams ?? 0)}g</p>
-              <p className="text-xs font-bold text-zinc-500 mt-1">/ {fatTargetStr}g</p>
+              <p className="text-3xl font-black text-text-primary leading-none">{String(today?.fat_grams ?? 0)}g</p>
+              <p className="text-xs font-bold text-text-muted mt-1">/ {fatTargetStr}g</p>
            </div>
-           <div className="mt-4 h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
+           <div className="mt-4 h-1.5 w-full bg-[color:var(--color-background)] rounded-full overflow-hidden">
               <div 
                 className="h-full bg-emerald-500 rounded-full" 
                 style={{ width: `${String(Math.min(100, ((today?.fat_grams ?? 0) / macroTargets.fat) * 100))}%` }}
@@ -188,8 +188,8 @@ export function NutritionView({
         {/* History Column */}
         <div className="lg:col-span-2 space-y-4">
            <div className="flex items-center justify-between px-2">
-              <h2 className="text-xl font-black text-white tracking-tight uppercase">{t('nutrition.history_title')}</h2>
-              <Button type="button" variant="ghost" size="sm" className="h-auto p-0 text-[10px] font-black text-zinc-500 uppercase tracking-widest hover:text-white hover:bg-transparent transition-colors">
+              <h2 className="text-xl font-black text-text-primary tracking-tight uppercase">{t('nutrition.history_title')}</h2>
+              <Button type="button" variant="ghost" size="sm" className="h-auto p-0 text-[10px] font-black text-text-muted uppercase tracking-widest hover:text-text-primary hover:bg-transparent transition-colors">
                  {t('nutrition.view_charts')}
               </Button>
            </div>
@@ -218,11 +218,11 @@ export function NutritionView({
 
         {/* Adherence Sidebar */}
         <div className="space-y-4">
-           <h2 className="text-xl font-black text-white tracking-tight uppercase px-2">{t('nutrition.adherence_title')}</h2>
+           <h2 className="text-xl font-black text-text-primary tracking-tight uppercase px-2">{t('nutrition.adherence_title')}</h2>
            <PremiumCard className="p-8 flex flex-col items-center text-center">
               <div className="relative w-32 h-32 flex items-center justify-center mb-6">
                 <svg className="w-full h-full transform -rotate-90 drop-shadow-[0_0_15px_rgba(99,102,241,0.2)]">
-                  <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-white/5" />
+                  <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-text-primary/5" />
                   <circle
                     cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent"
                     strokeDasharray={364.4}
@@ -233,17 +233,17 @@ export function NutritionView({
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   { }
-                  <span className="text-4xl font-black text-white">{stabilityScoreStr}%</span>
-                  <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mt-1">{t('nutrition.consistency')}</span>
+                  <span className="text-4xl font-black text-text-primary">{stabilityScoreStr}%</span>
+                  <span className="text-[9px] text-text-muted font-bold uppercase tracking-widest mt-1">{t('nutrition.consistency')}</span>
                 </div>
               </div>
               
-              <h3 className="font-bold text-white mb-2">{t('nutrition.stability_score')}</h3>
-              <p className="text-xs text-zinc-500 font-medium leading-relaxed">
+              <h3 className="font-bold text-text-primary mb-2">{t('nutrition.stability_score')}</h3>
+              <p className="text-xs text-text-muted font-medium leading-relaxed">
                 {t('nutrition.stability_description')}
               </p>
 
-              <div className="mt-8 pt-6 border-t border-white/5 w-full grid grid-cols-7 gap-1.5">
+              <div className="mt-8 pt-6 border-t border-[color:var(--color-outline-variant)] w-full grid grid-cols-7 gap-1.5">
                 {stats?.weekly_adherence.map((adhered, i) => {
                   const weeklyDays = t('nutrition.weekly_days', { returnObjects: true }) as string[];
                   return (
@@ -252,9 +252,9 @@ export function NutritionView({
                         "w-full aspect-square rounded-md border transition-all",
                         adhered 
                           ? "bg-indigo-500 border-indigo-400 shadow-[0_0_10px_rgba(99,102,241,0.3)]" 
-                          : "bg-white/5 border-white/10"
+                          : "bg-[color:var(--color-surface-container)] border-[color:var(--color-outline-variant)]"
                       )} />
-                      <span className="text-[10px] text-zinc-600 font-black uppercase">{weeklyDays[i]}</span>
+                      <span className="text-[10px] text-text-muted font-black uppercase">{weeklyDays[i]}</span>
                     </div>
                   );
                 })}
