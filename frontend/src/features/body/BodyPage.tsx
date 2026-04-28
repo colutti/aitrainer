@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-import { ViewHeader } from '../../shared/components/ui/premium/ViewHeader';
+import { InsightScreen } from '../../shared/components/layout/InsightScreen';
 
 import { WeightTab } from './components/WeightTab';
 
@@ -13,9 +13,12 @@ export default function BodyPage() {
   const { t } = useTranslation();
 
   return (
-    <section className="mx-auto w-full max-w-[1600px] space-y-8 pb-20">
-      <ViewHeader title={t('body.weight_title')} subtitle={t('body.weight_subtitle')} />
-      <WeightTab />
-    </section>
+    <div data-testid="body-insight-screen">
+      <InsightScreen
+        title={t('body.weight_title')}
+        subtitle={t('body.weight_subtitle')}
+        content={<WeightTab />}
+      />
+    </div>
   );
 }

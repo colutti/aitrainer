@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { EntityListScreen } from '../../../shared/components/layout/EntityListScreen';
 import { Button } from '../../../shared/components/ui/Button';
 import { DataList } from '../../../shared/components/ui/DataList';
 import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
@@ -75,16 +76,13 @@ export function NutritionView({
   }
 
   return (
-    <div className={cn(PREMIUM_UI.animation.fadeIn, "space-y-8 pb-20")}>
+    <div className={cn(PREMIUM_UI.animation.fadeIn, "space-y-8 pb-20")} data-testid="nutrition-list-screen">
       
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h1 className={PREMIUM_UI.text.heading}>{t('nutrition.title')}</h1>
-          <p className={PREMIUM_UI.text.label}>{t('nutrition.subtitle')}</p>
-        </div>
-        
-        <div className="flex gap-3">
+      <EntityListScreen
+        title={t('nutrition.title')}
+        subtitle={t('nutrition.subtitle')}
+        actions={
+          <div className="flex gap-3">
           <Button
             type="button"
             variant="secondary"
@@ -104,8 +102,10 @@ export function NutritionView({
             <Plus size={20} strokeWidth={3} />
             {t('nutrition.register_meal')}
           </Button>
-        </div>
-      </div>
+          </div>
+        }
+        list={<></>}
+      />
 
       {/* TODAY SUMMARY BENTO */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
