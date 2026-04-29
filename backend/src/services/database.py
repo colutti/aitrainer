@@ -3,8 +3,8 @@ This module contains the database logic for the application.
 """
 
 from datetime import datetime, date
+from typing import TYPE_CHECKING
 import pymongo
-from langchain_mongodb.chat_message_histories import MongoDBChatMessageHistory
 
 from src.core.config import settings
 from src.api.models.trainer_profile import TrainerProfile
@@ -29,6 +29,9 @@ from src.repositories.prompt_repository import PromptRepository
 from src.repositories.telegram_repository import TelegramRepository
 from src.repositories.plan_repository import PlanRepository
 from src.services.adaptive_tdee import AdaptiveTDEEService
+
+if TYPE_CHECKING:
+    from langchain_mongodb.chat_message_histories import MongoDBChatMessageHistory
 
 
 # pylint: disable=too-many-instance-attributes
@@ -154,8 +157,12 @@ class MongoDatabase:
             user_email, prompt_data, settings.MAX_PROMPT_LOGS
         )
 
-    def _get_chat_message_history(self, session_id: str) -> MongoDBChatMessageHistory:
+    def _get_chat_message_history(self, session_id: str) -> "MongoDBChatMessageHistory":
         # Deprecated: functionality moved to repository
+        from langchain_mongodb.chat_message_histories import (  # pylint: disable=import-outside-toplevel
+            MongoDBChatMessageHistory,
+        )
+
         return MongoDBChatMessageHistory(
             connection_string=settings.MONGO_URI,
             session_id=session_id,

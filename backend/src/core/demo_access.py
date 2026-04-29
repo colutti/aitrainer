@@ -6,12 +6,11 @@ from fastapi import Depends, HTTPException, status
 
 from src.core.deps import get_mongo_database
 from src.services.auth import verify_token
-from src.services.database import MongoDatabase
 
 DEMO_READ_ONLY_DETAIL = "demo_read_only"
 
 CurrentUser = Annotated[str, Depends(verify_token)]
-DatabaseDep = Annotated[MongoDatabase, Depends(get_mongo_database)]
+DatabaseDep = Annotated[Any, Depends(get_mongo_database)]
 
 
 def is_demo_user(profile: Any | None) -> bool:

@@ -18,6 +18,7 @@ if not path.exists():
     sys.exit(0)
 
 pairs = []
+placeholder_keys = []
 for raw in path.read_text(encoding="utf-8").splitlines():
     line = raw.strip()
     if not line or line.startswith("#") or "=" not in line:
@@ -31,7 +32,13 @@ for raw in path.read_text(encoding="utf-8").splitlines():
         continue
     if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
         value = value[1:-1]
+    if "CHANGE_ME" in value or "change_me" in value:
+        placeholder_keys.append(key)
     pairs.append(f"{key}={value}")
+
+if placeholder_keys:
+    print(f"ERROR: placeholder values detected in {path}: {', '.join(placeholder_keys)}", file=sys.stderr)
+    sys.exit(2)
 
 if not pairs:
     print("")

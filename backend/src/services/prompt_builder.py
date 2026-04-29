@@ -250,18 +250,9 @@ class PromptBuilder:
 
         prompt_template = ChatPromptTemplate.from_messages(messages)
 
-        # 5. Verify formatting and log
-        try:
-            rendered_prompt = prompt_template.format(**input_data)
-            logger.debug(
-                "Prompt built with runtime context | Chars: %d",
-                len(rendered_prompt),
-            )
-        except KeyError as e:
-            logger.error(
-                "🛡️ ERROR: KeyError during prompt building: %s. Unescaped braces?",
-                e,
-            )
-            raise
+        logger.debug(
+            "Prompt built with runtime context | user_message chars: %d",
+            len(input_data.get("user_message", "")),
+        )
 
         return prompt_template

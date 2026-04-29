@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from typing import Annotated, TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
@@ -54,7 +55,16 @@ async def message_ai(
     """
     Handles an AI messaging request for an authenticated user.
     """
-    logger.info("Received message from user %s: %s", user_email, message.user_message)
+    preview = message.user_message.replace("\n", " ")[:120]
+    message_hash = hashlib.sha256(message.user_message.encode("utf-8")).hexdigest()[:12]
+    logger.info(
+        "Received message from user %s (chars=%d, images=%d, sha=%s, preview=%s)",
+        user_email,
+        len(message.user_message),
+        len(message.images or []),
+        message_hash,
+        preview,
+    )
 
     # Detect and save timezone from header
     tz = request.headers.get("X-User-Timezone")

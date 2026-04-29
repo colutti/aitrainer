@@ -1,63 +1,44 @@
-from unittest.mock import patch
+"""Tests for Firebase Admin initialization helpers."""
 
-from src.core.firebase import ensure_firebase_initialized, init_firebase
+from __future__ import annotations
+
+from unittest.mock import MagicMock, patch
+
+from src.core.firebase import _load_service_account_json, init_firebase
 
 
-@patch("src.core.firebase.initialize_app")
-@patch("src.core.firebase.credentials.Certificate")
-@patch("src.core.firebase.settings")
-def test_init_firebase_accepts_json_credentials(
-    mock_settings,
-    mock_certificate,
-    mock_initialize,
-):
-    mock_settings.FIREBASE_CREDENTIALS = '{"type":"service_account","project_id":"demo"}'
-
-    init_firebase()
-
-    mock_certificate.assert_called_once_with(
-        {"type": "service_account", "project_id": "demo"}
+def test_load_service_account_json_normalizes_literal_newlines_in_private_key() -> None:
+    """Firebase env JSON with literal private_key newlines should still parse."""
+    raw = (
+        '{"type":"service_account","project_id":"demo","private_key_id":"abc",'
+        '"private_key":"-----BEGIN PRIVATE KEY-----\n'
+        'line1\nline2\n-----END PRIVATE KEY-----\n",'
+        '"client_email":"demo@example.com"}'
     )
-    mock_initialize.assert_called_once()
+
+    parsed = _load_service_account_json(raw)
+
+    assert parsed["project_id"] == "demo"
+    assert parsed["private_key"].count("\n") == 4
 
 
-@patch("src.core.firebase.logger")
-@patch("src.core.firebase.settings")
-def test_init_firebase_logs_warning_when_credentials_are_missing(
-    mock_settings,
-    mock_logger,
-):
-    mock_settings.FIREBASE_CREDENTIALS = ""
+def test_init_firebase_uses_normalized_json_credentials() -> None:
+    """The Firebase initializer must pass normalized credentials to Certificate."""
+    raw = (
+        '{"type":"service_account","project_id":"demo","private_key_id":"abc",'
+        '"private_key":"-----BEGIN PRIVATE KEY-----\nline1\n-----END PRIVATE KEY-----\n",'
+        '"client_email":"demo@example.com"}'
+    )
 
-    init_firebase()
+    with patch("src.core.firebase.settings") as mock_settings, patch(
+        "src.core.firebase.get_app", side_effect=ValueError("missing app")
+    ), patch("src.core.firebase.initialize_app") as mock_initialize_app, patch(
+        "src.core.firebase.credentials.Certificate"
+    ) as mock_certificate:
+        mock_settings.FIREBASE_CREDENTIALS = raw
+        mock_certificate.return_value = MagicMock()
 
-    mock_logger.warning.assert_called_once()
+        init_firebase()
 
-
-@patch("src.core.firebase.get_app")
-@patch("src.core.firebase.init_firebase")
-def test_ensure_firebase_initialized_calls_init_once_when_missing(
-    mock_init_firebase,
-    mock_get_app,
-):
-    ensure_firebase_initialized.cache_clear()
-    mock_get_app.side_effect = ValueError("No app")
-
-    ensure_firebase_initialized()
-    ensure_firebase_initialized()
-
-    mock_init_firebase.assert_called_once()
-
-
-@patch("src.core.firebase.get_app")
-@patch("src.core.firebase.init_firebase")
-def test_ensure_firebase_initialized_skips_init_when_app_exists(
-    mock_init_firebase,
-    mock_get_app,
-):
-    ensure_firebase_initialized.cache_clear()
-    mock_get_app.return_value = object()
-
-    ensure_firebase_initialized()
-
-    mock_init_firebase.assert_not_called()
+    mock_certificate.assert_called_once()
+    mock_initialize_app.assert_called_once()

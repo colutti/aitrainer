@@ -1,11 +1,12 @@
 """Tests for OpenRouter settings loading."""
 
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from pydantic import ValidationError
 
-from src.core.config import Settings
+from src.core.config import Settings, validate_required_runtime_config
 
 
 class TestOpenRouterSettings(unittest.TestCase):
@@ -33,6 +34,12 @@ class TestOpenRouterSettings(unittest.TestCase):
                 "QDRANT_PORT": "6333",
                 "QDRANT_COLLECTION_NAME": "test",
                 "QDRANT_API_KEY": "test",
+                "TELEGRAM_BOT_TOKEN": "test",
+                "TELEGRAM_WEBHOOK_SECRET": "test",
+                "STRIPE_API_KEY": "sk_test",
+                "STRIPE_WEBHOOK_SECRET": "whsec_test",
+                "STRIPE_PRICE_ID_BASIC": "price_basic",
+                "STRIPE_PRICE_ID_PRO": "price_pro",
             },
         ):
             settings = Settings()
@@ -64,11 +71,44 @@ class TestOpenRouterSettings(unittest.TestCase):
                 "QDRANT_PORT": "6333",
                 "QDRANT_COLLECTION_NAME": "test",
                 "QDRANT_API_KEY": "test",
+                "TELEGRAM_BOT_TOKEN": "test",
+                "TELEGRAM_WEBHOOK_SECRET": "test",
+                "STRIPE_API_KEY": "sk_test",
+                "STRIPE_WEBHOOK_SECRET": "whsec_test",
+                "STRIPE_PRICE_ID_BASIC": "price_basic",
+                "STRIPE_PRICE_ID_PRO": "price_pro",
             },
             clear=True,
         ):
             with self.assertRaises(ValidationError):
                 Settings()
+
+    def test_required_runtime_config_rejects_placeholders(self):
+        """Runtime config validation should fail fast on placeholder values."""
+        settings = SimpleNamespace(
+            SECRET_KEY="ok",
+            DB_NAME="ok",
+            MONGO_URI="mongodb://localhost",
+            QDRANT_HOST="localhost",
+            QDRANT_COLLECTION_NAME="ok",
+            QDRANT_API_KEY="ok",
+            OPENROUTER_API_KEY="ok",
+            OPENROUTER_BASE_URL="ok",
+            OPENROUTER_ROUTING_MODEL="ok",
+            OPENROUTER_PROMPT_PRESET="ok",
+            TELEGRAM_BOT_TOKEN="ok",
+            TELEGRAM_WEBHOOK_SECRET="ok",
+            STRIPE_API_KEY="ok",
+            STRIPE_WEBHOOK_SECRET="ok",
+            STRIPE_PRICE_ID_BASIC="ok",
+            STRIPE_PRICE_ID_PRO="ok",
+        )
+
+        validate_required_runtime_config(settings)
+
+        settings.MONGO_URI = "CHANGE_ME_MONGO_URI"
+        with self.assertRaises(ValueError):
+            validate_required_runtime_config(settings)
 
 
 if __name__ == "__main__":

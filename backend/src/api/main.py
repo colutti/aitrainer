@@ -8,10 +8,12 @@ from time import perf_counter
 from typing import Any
 
 import uvicorn
+import stripe as stripe_sdk
 from pymongo.errors import PyMongoError
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from firebase_admin import get_app  # type: ignore
 
 from src.api.endpoints import (
     user,
@@ -31,7 +33,8 @@ from src.api.endpoints import (
     plan,
 )
 from src.core.config import settings
-from src.core.deps import get_ai_trainer_brain, get_mongo_database
+from src.core.deps import get_ai_trainer_brain, get_mongo_database, get_qdrant_client
+from src.core.firebase import ensure_firebase_initialized
 from src.core.logs import logger, set_log_level
 from src.core.limiter import limiter, RATE_LIMITING_ENABLED
 
@@ -116,6 +119,9 @@ def warmup_dependencies() -> None:
     Warm expensive shared dependencies at process startup to avoid
     first-request latency spikes on chat-related endpoints.
     """
+    if not settings.WARMUP_AI_ON_STARTUP:
+        logger.info("Dependency warmup skipped (WARMUP_AI_ON_STARTUP=false)")
+        return
     started = perf_counter()
     get_ai_trainer_brain()
     elapsed_ms = (perf_counter() - started) * 1000
@@ -138,6 +144,37 @@ def health_check() -> JSONResponse:
         logger.error("MongoDB health check failed: %s", e)
         health_status["status"] = "unhealthy"
         health_status["services"]["mongodb"] = f"unhealthy: {str(e)}"
+
+    # Check Qdrant
+    try:
+        qdrant_client = get_qdrant_client()
+        qdrant_client.get_collections()
+        health_status["services"]["qdrant"] = "healthy"
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.error("Qdrant health check failed: %s", e)
+        health_status["status"] = "unhealthy"
+        health_status["services"]["qdrant"] = f"unhealthy: {str(e)}"
+
+    # Check Firebase Admin initialization, which social login depends on.
+    try:
+        ensure_firebase_initialized()
+        get_app()
+        health_status["services"]["firebase"] = "healthy"
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.error("Firebase health check failed: %s", e)
+        health_status["status"] = "unhealthy"
+        health_status["services"]["firebase"] = f"unhealthy: {str(e)}"
+
+    # Check Stripe configuration used for billing and entitlement flows.
+    try:
+        if not settings.STRIPE_API_KEY or not settings.STRIPE_WEBHOOK_SECRET:
+            raise ValueError("Stripe config incomplete")
+        stripe_sdk.api_key = settings.STRIPE_API_KEY
+        health_status["services"]["stripe"] = "healthy"
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.error("Stripe health check failed: %s", e)
+        health_status["status"] = "unhealthy"
+        health_status["services"]["stripe"] = f"unhealthy: {str(e)}"
 
     status_code = 200 if health_status["status"] == "healthy" else 503
     return JSONResponse(content=health_status, status_code=status_code)

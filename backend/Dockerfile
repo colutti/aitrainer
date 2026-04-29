@@ -77,4 +77,4 @@ USER app
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "gunicorn src.api.main:app --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000}"]
+CMD ["sh", "-c", "gunicorn src.api.main:app --workers ${WEB_CONCURRENCY:-1} --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000}"]

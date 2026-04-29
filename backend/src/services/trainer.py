@@ -115,7 +115,9 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         self._llm_client: LLMClient = llm_client
         self._qdrant_client = qdrant_client
         self.prompt_builder = PromptBuilder()
-        self._executor = ThreadPoolExecutor(max_workers=10)
+        self._executor = ThreadPoolExecutor(
+            max_workers=settings.AI_TRAINER_THREADPOOL_WORKERS
+        )
 
     def calculate_effective_limits(
         self, profile: UserProfile, plan

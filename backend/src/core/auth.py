@@ -3,15 +3,14 @@ Admin authentication and authorization utilities.
 Extends the existing auth system with admin role checking.
 """
 
-from typing import Annotated
+from typing import Annotated, Any
 from fastapi import Depends, HTTPException, status
 from src.services.auth import verify_token
 from src.core.deps import get_mongo_database
-from src.services.database import MongoDatabase
 
 
 def verify_admin(
-    email: str = Depends(verify_token), db: MongoDatabase = Depends(get_mongo_database)
+    email: str = Depends(verify_token), db: Any = Depends(get_mongo_database)
 ) -> str:
     """
     Verifica se o usuário autenticado é admin.
