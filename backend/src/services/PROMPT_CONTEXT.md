@@ -1,7 +1,8 @@
-# Prompt Context Service (OpenRouter Preset)
+# Prompt Context Service (OpenRouter Auto Router + Preset)
 
-This backend uses an OpenRouter preset (`OPENROUTER_CHAT_MODEL`) as the source of
-system instructions. The local backend no longer builds a large instruction prompt.
+This backend uses OpenRouter auto routing (`OPENROUTER_ROUTING_MODEL`) and an
+OpenRouter preset (`OPENROUTER_PROMPT_PRESET`) as the source of system
+instructions. The local backend no longer builds a large instruction prompt.
 
 ## Runtime Contract
 
@@ -58,9 +59,10 @@ RUNTIME_CONTEXT_JSON (PROMPT_CONTEXT_V1):
 
 ## Configuration and Safety
 
-- `OPENROUTER_CHAT_MODEL` must start with `@preset/` (validated in settings).
+- `OPENROUTER_ROUTING_MODEL` defines routing target (default: `openrouter/auto`).
+- `OPENROUTER_PROMPT_PRESET` must start with `@preset/` (validated in settings).
 - `PROMPT_CONTEXT_CONTRACT_VERSION` defaults to `prompt_context_v1`.
-- If preset configuration is invalid, app startup fails via settings validation.
+- If routing/preset configuration is invalid, app startup fails via settings validation.
 
 ## Preset Authoring Guidance
 

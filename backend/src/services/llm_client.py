@@ -48,12 +48,24 @@ class LLMClient:
     _llm: Any = None
     model_name: str = ""
     supports_multimodal: bool = True
+    USER_FACING_ERROR_MESSAGES = {
+        "pt-BR": "Desculpe, ocorreu um erro interno. Tente novamente em instantes.",
+        "en-US": "Sorry, an internal error occurred. Please try again shortly.",
+        "es-ES": "Lo sentimos, ocurrió un error interno. Inténtalo de nuevo en breve.",
+    }
 
     def _llm_for_request(self, user_email: str | None):
         """Returns an LLM runnable bound to OpenRouter user when available."""
         if user_email:
             return self._llm.bind(user=user_email)
         return self._llm
+
+    @classmethod
+    def get_user_facing_error_message(cls, locale: str | None) -> str:
+        """Returns localized safe error message with fallback to pt-BR."""
+        return cls.USER_FACING_ERROR_MESSAGES.get(
+            locale or "pt-BR", cls.USER_FACING_ERROR_MESSAGES["pt-BR"]
+        )
 
     @classmethod
     def from_config(cls) -> "LLMClient":
@@ -64,14 +76,22 @@ class LLMClient:
 
         if not cls._initialized:
             logger.info(
-                "Creating OpenRouterClient with model preset: %s",
-                settings.OPENROUTER_CHAT_MODEL,
+                "Creating OpenRouterClient with routing model %s and preset %s",
+                settings.OPENROUTER_ROUTING_MODEL,
+                settings.OPENROUTER_PROMPT_PRESET,
             )
             cls._initialized = True
+        routing_model = (
+            settings.OPENROUTER_ROUTING_MODEL
+            or settings.OPENROUTER_CHAT_MODEL
+            or "openrouter/auto"
+        )
+        prompt_preset = settings.OPENROUTER_PROMPT_PRESET or None
         return OpenRouterClient(
             api_key=settings.OPENROUTER_API_KEY,
-            model=settings.OPENROUTER_CHAT_MODEL,
+            model=routing_model,
             base_url=settings.OPENROUTER_BASE_URL,
+            preset=prompt_preset,
         )
 
     async def stream_with_tools(
@@ -162,7 +182,7 @@ class LLMClient:
 
         except (ValueError, TypeError, AttributeError, Exception) as e:  # pylint: disable=broad-exception-caught
             logger.error("Error in stream_with_tools: %s", e)
-            yield f"Error processing request: {str(e)}"
+            yield self.get_user_facing_error_message(input_data.get("user_locale"))
         finally:
             # Log prompt with tokens at the END of streaming
             duration_ms = int((time.time() - start_time) * 1000)
@@ -302,7 +322,7 @@ class LLMClient:
                     yield chunk
         except (ValueError, TypeError, AttributeError, Exception) as e:  # pylint: disable=broad-exception-caught
             logger.error("Error in stream_simple: %s", e)
-            yield f"Error processing request: {str(e)}"
+            yield self.get_user_facing_error_message(input_data.get("user_locale"))
         finally:
             # Log prompt at the END of streaming
             duration_ms = int((time.time() - start_time) * 1000)
@@ -401,14 +421,22 @@ class LLMClient:
 class OpenRouterClient(LLMClient):
     """LLM Client for OpenRouter models."""
 
-    def __init__(self, api_key: str, model: str, base_url: str):
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        base_url: str,
+        preset: str | None = None,
+    ):
         """Initialize OpenRouter client through OpenAI-compatible API."""
         from langchain_openai import ChatOpenAI  # pylint: disable=import-outside-toplevel
         from pydantic import SecretStr  # pylint: disable=import-outside-toplevel
 
         self.model_name = model
+        model_kwargs = {"extra_body": {"preset": preset}} if preset else {}
         self._llm = ChatOpenAI(
             model=model,
             base_url=base_url,
             api_key=SecretStr(api_key) if api_key else SecretStr(""),
+            model_kwargs=model_kwargs,
         )

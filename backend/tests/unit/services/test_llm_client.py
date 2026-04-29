@@ -9,14 +9,21 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
     @patch("src.core.config.settings")
     def test_factory_openrouter(self, mock_settings):
         """Test creating OpenRouter client via factory."""
-        mock_settings.OPENROUTER_CHAT_MODEL = "@preset/fityq-chat"
+        mock_settings.OPENROUTER_ROUTING_MODEL = "openrouter/auto"
+        mock_settings.OPENROUTER_PROMPT_PRESET = "@preset/fityq-chat"
+        mock_settings.OPENROUTER_CHAT_MODEL = ""
         mock_settings.OPENROUTER_API_KEY = "or-test"
         mock_settings.OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
         with patch("src.services.llm_client.OpenRouterClient") as MockOpenRouter:
             client = LLMClient.from_config()
             self.assertIsInstance(client, MagicMock)  # MockOpenRouter return
-            MockOpenRouter.assert_called_once()
+            MockOpenRouter.assert_called_once_with(
+                api_key="or-test",
+                model="openrouter/auto",
+                base_url="https://openrouter.ai/api/v1",
+                preset="@preset/fityq-chat",
+            )
 
     async def test_stream_simple_success(self):
         """Test simple streaming success."""
@@ -317,7 +324,10 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
         async for chunk in client.stream_with_tools(prompt, {}, []):
             results.append(chunk)
 
-        self.assertIn("Error processing request", results[0])
+        self.assertEqual(
+            results[0], client.USER_FACING_ERROR_MESSAGES["pt-BR"]
+        )
+        self.assertNotIn("Agent Error", results[0])
 
     @patch("src.services.llm_client.create_agent")
     @patch("src.core.config.settings")
@@ -349,8 +359,42 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
             results.append(chunk)
 
         self.assertGreaterEqual(len(results), 1)
-        self.assertIn("Error processing request", results[0])
+        self.assertEqual(
+            results[0], client.USER_FACING_ERROR_MESSAGES["pt-BR"]
+        )
         self.assertTrue(any(isinstance(item, dict) for item in results))
+
+    @patch("src.services.llm_client.create_agent")
+    async def test_stream_with_tools_error_is_localized_en_us(self, mock_create_agent):
+        """Error message should be localized when user_locale is en-US."""
+        client = LLMClient()
+        mock_create_agent.side_effect = Exception("Agent Error")
+        prompt = MagicMock()
+
+        results = []
+        async for chunk in client.stream_with_tools(
+            prompt, {"user_locale": "en-US"}, []
+        ):
+            results.append(chunk)
+
+        self.assertEqual(results[0], client.USER_FACING_ERROR_MESSAGES["en-US"])
+        self.assertNotIn("Agent Error", results[0])
+
+    @patch("src.services.llm_client.create_agent")
+    async def test_stream_with_tools_error_is_localized_es_es(self, mock_create_agent):
+        """Error message should be localized when user_locale is es-ES."""
+        client = LLMClient()
+        mock_create_agent.side_effect = Exception("Agent Error")
+        prompt = MagicMock()
+
+        results = []
+        async for chunk in client.stream_with_tools(
+            prompt, {"user_locale": "es-ES"}, []
+        ):
+            results.append(chunk)
+
+        self.assertEqual(results[0], client.USER_FACING_ERROR_MESSAGES["es-ES"])
+        self.assertNotIn("Agent Error", results[0])
 
     def test_openrouter_init(self):
         """Test OpenRouter client initialization."""
@@ -360,7 +404,28 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
                 model="@preset/fityq-chat",
                 base_url="https://openrouter.ai/api/v1",
             )
-            mock_cls.assert_called_once()
+            mock_cls.assert_called_once_with(
+                model="@preset/fityq-chat",
+                base_url="https://openrouter.ai/api/v1",
+                api_key=unittest.mock.ANY,
+                model_kwargs={},
+            )
+
+    def test_openrouter_auto_router_with_preset_payload(self):
+        """Spike: OpenRouter auto router should forward preset via extra_body."""
+        with patch("langchain_openai.ChatOpenAI") as mock_cls:
+            OpenRouterClient(
+                api_key="or-key",
+                model="openrouter/auto",
+                base_url="https://openrouter.ai/api/v1",
+                preset="fityq-chat",
+            )
+            mock_cls.assert_called_once_with(
+                model="openrouter/auto",
+                base_url="https://openrouter.ai/api/v1",
+                api_key=unittest.mock.ANY,
+                model_kwargs={"extra_body": {"preset": "fityq-chat"}},
+            )
 
 
 if __name__ == "__main__":
