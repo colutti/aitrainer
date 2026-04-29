@@ -7,7 +7,7 @@ In the OpenRouter preset architecture, this builder is responsible for:
 - Constructing ChatPromptTemplate with a minimal local system message
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import json
 from typing import Any
@@ -125,7 +125,11 @@ class PromptBuilder:
             now = datetime.now(ZoneInfo(user_timezone))
         except ZoneInfoNotFoundError:
             user_timezone = "Europe/Madrid"
-            now = datetime.now(ZoneInfo(user_timezone))
+            try:
+                now = datetime.now(ZoneInfo(user_timezone))
+            except ZoneInfoNotFoundError:
+                user_timezone = "UTC"
+                now = datetime.now(timezone.utc)
 
         if not current_date:
             current_date = now.strftime("%Y-%m-%d")

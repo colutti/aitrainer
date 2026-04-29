@@ -4,7 +4,7 @@ Verifies that prompts are built correctly and long_term_summary is injected.
 """
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import patch
 from src.services.prompt_builder import PromptBuilder
 from src.api.models.user_profile import UserProfile
@@ -187,6 +187,28 @@ def test_build_input_data_formats_user_message_in_user_timezone(sample_profile):
         )
 
     assert input_data["user_message"] == '<msg data="29/04" hora="06:35">bom dia</msg>'
+
+
+def test_build_input_data_falls_back_to_utc_when_zoneinfo_unavailable(sample_profile):
+    """Verify no crash when timezone database is unavailable in runtime."""
+    sample_profile.timezone = "Europe/Madrid"
+
+    fixed_dt = datetime(2026, 4, 29, 4, 35, tzinfo=timezone.utc)
+    with patch("src.services.prompt_builder.ZoneInfo", side_effect=Exception("no tzdata")):
+        with patch("src.services.prompt_builder.ZoneInfoNotFoundError", Exception):
+            with patch("src.services.prompt_builder.datetime") as mock_datetime:
+                mock_datetime.now.return_value = fixed_dt
+                input_data = PromptBuilder.build_input_data(
+                    profile=sample_profile,
+                    trainer_profile_summary="",
+                    user_profile_summary="",
+                    formatted_history_msgs=[],
+                    user_input="bom dia",
+                    current_date=None,
+                )
+
+    assert input_data["user_timezone"] == "UTC"
+    assert input_data["user_message"] == '<msg data="29/04" hora="04:35">bom dia</msg>'
 
 
 def test_get_prompt_template_no_telegram_by_default(sample_profile):
