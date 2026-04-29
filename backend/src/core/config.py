@@ -4,6 +4,7 @@ This module contains the configuration settings for the application.
 
 import logging
 import os
+from typing import Any
 
 from pydantic import ValidationError, field_validator, Field
 from pydantic_settings import (
@@ -13,6 +14,46 @@ from pydantic_settings import (
 )
 
 from src.core.logs import logger
+
+_CRITICAL_RUNTIME_ENV_VARS = (
+    "SECRET_KEY",
+    "DB_NAME",
+    "MONGO_URI",
+    "QDRANT_HOST",
+    "QDRANT_COLLECTION_NAME",
+    "QDRANT_API_KEY",
+    "OPENROUTER_API_KEY",
+    "OPENROUTER_BASE_URL",
+    "OPENROUTER_ROUTING_MODEL",
+    "OPENROUTER_PROMPT_PRESET",
+    "TELEGRAM_BOT_TOKEN",
+    "TELEGRAM_WEBHOOK_SECRET",
+    "STRIPE_API_KEY",
+    "STRIPE_WEBHOOK_SECRET",
+    "STRIPE_PRICE_ID_BASIC",
+    "STRIPE_PRICE_ID_PRO",
+)
+
+
+def validate_required_runtime_config(current_settings: Any) -> None:
+    """Fail fast when required runtime config is missing or placeholder-like."""
+    missing = []
+    placeholder = []
+    for key in _CRITICAL_RUNTIME_ENV_VARS:
+        value = getattr(current_settings, key, "")
+        if not isinstance(value, str) or not value.strip():
+            missing.append(key)
+            continue
+        if "CHANGE_ME" in value or "change_me" in value:
+            placeholder.append(key)
+
+    errors = []
+    if missing:
+        errors.append(f"missing required runtime vars: {', '.join(missing)}")
+    if placeholder:
+        errors.append(f"placeholder runtime vars: {', '.join(placeholder)}")
+    if errors:
+        raise ValueError("; ".join(errors))
 
 
 class Settings(BaseSettings):
@@ -51,10 +92,21 @@ class Settings(BaseSettings):
     MAX_LONG_TERM_MEMORY_MESSAGES: int = Field(default=50)
     LLM_STREAM_TIMEOUT_SECONDS: int = Field(default=120)
     LLM_STREAM_INACTIVITY_TIMEOUT_SECONDS: int = Field(default=45)
+    LLM_AGENT_RECURSION_LIMIT: int = Field(default=20)
+    AI_TRAINER_THREADPOOL_WORKERS: int = Field(default=4)
+    WARMUP_AI_ON_STARTUP: bool = Field(default=False)
     ALLOWED_ORIGINS: str | list[str] = Field(default="*")
     LOG_LEVEL: str = "INFO"
     RATE_LIMIT_LOGIN: str = "5/minute"
     MAX_PROMPT_LOGS: int = 20
+    LANGSMITH_TRACING: bool = False
+    LANGSMITH_TRACING_ENABLED: bool = False
+    LANGSMITH_API_KEY: str = ""
+    LANGSMITH_WORKSPACE_ID: str = ""
+    LANGSMITH_ENDPOINT: str = "https://api.smith.langchain.com"
+    LANGSMITH_PROJECT: str = ""
+    LANGSMITH_ENVIRONMENT: str = "local"
+    LANGSMITH_SAMPLE_RATE: float = 1.0
 
     # ====== BETTERSTACK INTEGRATION ======
     BETTERSTACK_API_TOKEN: str = ""
@@ -146,7 +198,8 @@ class Settings(BaseSettings):
 # Instanciação segura
 try:
     settings = Settings()  # type: ignore
+    validate_required_runtime_config(settings)
     logger.setLevel(getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO))
-except ValidationError as validation_error:
+except (ValidationError, ValueError) as validation_error:
     logger.critical("CRITICAL ERROR: Missing environment variables in .env file!")
     logger.critical(validation_error)

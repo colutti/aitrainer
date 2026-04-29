@@ -6,6 +6,7 @@ Provides a unified interface for OpenRouter.
 import warnings
 import time
 import asyncio
+import hashlib
 from typing import AsyncGenerator, Any
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import AIMessage, ToolMessage, HumanMessage
@@ -36,6 +37,12 @@ except ImportError:
 warnings.filterwarnings("ignore", message=".*Core Pydantic V1 functionality.*")
 
 from src.core.logs import logger  # noqa: E402  pylint: disable=wrong-import-position
+from src.core.langsmith import (  # noqa: E402  pylint: disable=wrong-import-position
+    setup_environment as setup_langsmith_environment,
+    build_runnable_config,
+    merge_runtime_metadata,
+    create_tool_run_span,
+)
 
 
 class LLMClient:
@@ -53,6 +60,7 @@ class LLMClient:
         "en-US": "Sorry, an internal error occurred. Please try again shortly.",
         "es-ES": "Lo sentimos, ocurrió un error interno. Inténtalo de nuevo en breve.",
     }
+    _langsmith_bootstrapped = False
 
     def _llm_for_request(self, user_email: str | None):
         """Returns an LLM runnable bound to OpenRouter user when available."""
@@ -74,11 +82,15 @@ class LLMClient:
         """
         from src.core.config import settings  # pylint: disable=import-outside-toplevel
 
+        if not cls._langsmith_bootstrapped:
+            setup_langsmith_environment()
+            cls._langsmith_bootstrapped = True
+
         if not cls._initialized:
             logger.info(
                 "Creating OpenRouterClient with routing model %s and preset %s",
                 settings.OPENROUTER_ROUTING_MODEL,
-                settings.OPENROUTER_PROMPT_PRESET,
+                settings.OPENROUTER_PROMPT_PRESET or settings.OPENROUTER_CHAT_MODEL,
             )
             cls._initialized = True
         routing_model = (
@@ -86,7 +98,11 @@ class LLMClient:
             or settings.OPENROUTER_CHAT_MODEL
             or "openrouter/auto"
         )
-        prompt_preset = settings.OPENROUTER_PROMPT_PRESET or None
+        prompt_preset = (
+            settings.OPENROUTER_PROMPT_PRESET
+            or settings.OPENROUTER_CHAT_MODEL
+            or None
+        )
         return OpenRouterClient(
             api_key=settings.OPENROUTER_API_KEY,
             model=routing_model,
@@ -102,7 +118,7 @@ class LLMClient:
         user_email: str | None = None,
         log_callback=None,
     ) -> AsyncGenerator[str | dict, None]:
-        # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals,too-many-branches
+        # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals,too-many-branches,too-many-statements
 
         """
         Invokes the LLM with tool support using LangGraph's ReAct agent.
@@ -112,9 +128,11 @@ class LLMClient:
             dict: Tool results with type="tool_result"
             dict: Final summary with type="tools_summary"
         """
+        user_message = str(input_data.get("user_message", ""))
         logger.info(
-            "Invoking LLM with tools (LangGraph) for input: %s",
-            input_data.get("user_message"),
+            "Invoking LLM with tools (LangGraph) for input chars=%d sha=%s",
+            len(user_message),
+            hashlib.sha256(user_message.encode("utf-8")).hexdigest()[:12],
         )
         if input_data.get("user_images") and not self.supports_multimodal:
             raise ValueError("IMAGE_INPUT_NOT_SUPPORTED_BY_PROVIDER")
@@ -123,8 +141,8 @@ class LLMClient:
         start_time = time.time()
         usage_metadata: dict = {"input_tokens": 0, "output_tokens": 0}
         runtime_metadata: dict[str, Any] = {}
-        prompt_str = ""
         usage_metadata_captured = False  # Track if we already captured
+        config: RunnableConfig = {}
 
         messages: list[Any] = []
         try:
@@ -132,6 +150,8 @@ class LLMClient:
                 key: value for key, value in input_data.items() if key != "user_image"
             }
             messages = list(prompt_template.format_messages(**format_input))
+            input_data["messages_count"] = len(messages)
+            input_data["tools"] = [str(t.name) for t in tools]
             if input_data.get("user_images"):
                 user_images = input_data["user_images"]
                 content_blocks = [
@@ -152,10 +172,16 @@ class LLMClient:
                         content=content_blocks
                     )
                 )
-            prompt_str = prompt_template.format(**input_data)
             request_llm = self._llm_for_request(user_email)
             agent: Any = create_agent(request_llm, tools)
-            config: RunnableConfig = {"recursion_limit": 50}
+            from src.core.config import settings  # pylint: disable=import-outside-toplevel
+            config: RunnableConfig = build_runnable_config(
+                run_name="chat.tools",
+                mode="tools",
+                user_email=user_email,
+                input_data=input_data,
+                recursion_limit=int(settings.LLM_AGENT_RECURSION_LIMIT),
+            )
             async for event in self._iter_agent_events(
                 agent=agent, messages=messages, config=config
             ):
@@ -168,6 +194,11 @@ class LLMClient:
 
                 if isinstance(event, ToolMessage):
                     tools_called.append(str(event.name or "unknown"))
+                    create_tool_run_span(
+                        tool_name=str(event.name or "unknown"),
+                        content=event.content,
+                        tool_call_id=event.tool_call_id,
+                    )
                     yield {
                         "type": "tool_result",
                         "content": event.content,
@@ -186,6 +217,24 @@ class LLMClient:
         finally:
             # Log prompt with tokens at the END of streaming
             duration_ms = int((time.time() - start_time) * 1000)
+            try:
+                merge_runtime_metadata(
+                    config,
+                    {
+                        "tools_called": tools_called,
+                        "duration_ms": duration_ms,
+                        "requested_model": self.model_name,
+                        "resolved_model": runtime_metadata.get("resolved_model", self.model_name),
+                        "resolved_provider": runtime_metadata.get("resolved_provider"),
+                        "usage_cost": runtime_metadata.get("usage_cost"),
+                        "service_tier": runtime_metadata.get("service_tier"),
+                        "status": "success",
+                        "tokens_input": usage_metadata.get("input_tokens", 0),
+                        "tokens_output": usage_metadata.get("output_tokens", 0),
+                    },
+                )
+            except (ValueError, TypeError, AttributeError, Exception) as trace_err:  # pylint: disable=broad-exception-caught
+                logger.warning("Failed to append LangSmith metadata: %s", trace_err)
             if log_callback and user_email:
                 try:
                     tokens_in = usage_metadata.get("input_tokens", 0)
@@ -193,13 +242,14 @@ class LLMClient:
                     log_callback(
                         user_email,
                         {
-                            "prompt": prompt_str,
+                            "prompt_preview": user_message[:500],
+                            "prompt_hash": hashlib.sha256(
+                                user_message.encode("utf-8")
+                            ).hexdigest(),
+                            "prompt_chars": len(user_message),
                             "prompt_name": "chat",
                             "type": "with_tools",
-                            "messages": [
-                                {"role": msg.type, "content": msg.content}
-                                for msg in messages
-                            ],
+                            "messages_count": len(messages),
                             "tools": [t.name for t in tools],
                             "tools_called": tools_called,
                             "tokens_input": tokens_in,
@@ -258,7 +308,7 @@ class LLMClient:
         user_email: str | None = None,
         log_callback=None,
     ) -> AsyncGenerator[str, None]:
-        # pylint: disable=too-many-branches,too-many-locals
+        # pylint: disable=too-many-branches,too-many-locals,too-many-statements
         """
         Simple streaming without tools.
 
@@ -282,15 +332,23 @@ class LLMClient:
         usage_metadata: dict = {"input_tokens": 0, "output_tokens": 0}
         runtime_metadata: dict[str, Any] = {}
         usage_metadata_captured = False  # Flag to ensure we capture only once
+        config: RunnableConfig = {}
 
         try:
             prompt_str = prompt_template.format(**input_data)
+            input_data["prompt_name"] = "resumo"
+            config: RunnableConfig = build_runnable_config(
+                run_name="chat.simple",
+                mode="simple",
+                user_email=user_email,
+                input_data=input_data,
+            )
 
             # Try to stream from LLM directly first (to capture usage_metadata)
             try:
                 request_llm = self._llm_for_request(user_email)
                 chain_before_parser = prompt_template | request_llm
-                async for chunk in chain_before_parser.astream(input_data):
+                async for chunk in chain_before_parser.astream(input_data, config=config):
                     # Capture usage_metadata from AIMessage (only once - first chunk with tokens)
                     if isinstance(chunk, AIMessage):
                         # Capture usage_metadata if not captured yet
@@ -318,7 +376,7 @@ class LLMClient:
             except (AttributeError, TypeError):
                 # Fallback: use full chain with parser if direct LLM stream fails
                 chain = prompt_template | self._llm | StrOutputParser()
-                async for chunk in chain.astream(input_data):
+                async for chunk in chain.astream(input_data, config=config):
                     yield chunk
         except (ValueError, TypeError, AttributeError, Exception) as e:  # pylint: disable=broad-exception-caught
             logger.error("Error in stream_simple: %s", e)
@@ -326,6 +384,23 @@ class LLMClient:
         finally:
             # Log prompt at the END of streaming
             duration_ms = int((time.time() - start_time) * 1000)
+            try:
+                merge_runtime_metadata(
+                    config,
+                    {
+                        "duration_ms": duration_ms,
+                        "requested_model": self.model_name,
+                        "resolved_model": runtime_metadata.get("resolved_model", self.model_name),
+                        "resolved_provider": runtime_metadata.get("resolved_provider"),
+                        "usage_cost": runtime_metadata.get("usage_cost"),
+                        "service_tier": runtime_metadata.get("service_tier"),
+                        "status": "success",
+                        "tokens_input": usage_metadata.get("input_tokens", 0),
+                        "tokens_output": usage_metadata.get("output_tokens", 0),
+                    },
+                )
+            except (ValueError, TypeError, AttributeError, Exception) as trace_err:  # pylint: disable=broad-exception-caught
+                logger.warning("Failed to append LangSmith metadata: %s", trace_err)
             if log_callback and user_email:
                 try:
                     log_callback(
@@ -385,21 +460,28 @@ class LLMClient:
         """Extracts model/provider/cost metadata from runtime response."""
         response_metadata = getattr(event, "response_metadata", {}) or {}
         usage_metadata = getattr(event, "usage_metadata", {}) or {}
+        additional_kwargs = getattr(event, "additional_kwargs", {}) or {}
         if not isinstance(response_metadata, dict):
             response_metadata = {}
         if not isinstance(usage_metadata, dict):
             usage_metadata = {}
+        if not isinstance(additional_kwargs, dict):
+            additional_kwargs = {}
 
         resolved_model = (
             response_metadata.get("model_name")
             or response_metadata.get("model")
+            or response_metadata.get("resolved_model")
             or usage_metadata.get("model_name")
             or usage_metadata.get("model")
+            or additional_kwargs.get("model")
         )
         resolved_provider = (
             response_metadata.get("provider")
             or response_metadata.get("provider_name")
+            or response_metadata.get("model_provider")
             or usage_metadata.get("provider")
+            or additional_kwargs.get("provider")
         )
         usage_cost = response_metadata.get("cost") or usage_metadata.get("cost")
         service_tier = (
@@ -433,10 +515,10 @@ class OpenRouterClient(LLMClient):
         from pydantic import SecretStr  # pylint: disable=import-outside-toplevel
 
         self.model_name = model
-        model_kwargs = {"extra_body": {"preset": preset}} if preset else {}
+        extra_body = {"preset": preset} if preset else None
         self._llm = ChatOpenAI(
             model=model,
             base_url=base_url,
             api_key=SecretStr(api_key) if api_key else SecretStr(""),
-            model_kwargs=model_kwargs,
+            extra_body=extra_body,
         )

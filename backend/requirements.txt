@@ -23,6 +23,7 @@ langchain-classic
 langchain-community
 langchain-core
 langchain-mongodb
+langsmith
 langchain-openai
 langgraph>=1.0.6
 langgraph-checkpoint>=4.0.0

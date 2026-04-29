@@ -25,6 +25,25 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
                 preset="@preset/fityq-chat",
             )
 
+    @patch("src.core.config.settings")
+    def test_factory_openrouter_uses_chat_model_as_preset_fallback(self, mock_settings):
+        """If the explicit preset is absent, fall back to OPENROUTER_CHAT_MODEL."""
+        mock_settings.OPENROUTER_ROUTING_MODEL = "openrouter/auto"
+        mock_settings.OPENROUTER_PROMPT_PRESET = ""
+        mock_settings.OPENROUTER_CHAT_MODEL = "@preset/fityq-chat-prod"
+        mock_settings.OPENROUTER_API_KEY = "or-test"
+        mock_settings.OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
+        with patch("src.services.llm_client.OpenRouterClient") as MockOpenRouter:
+            client = LLMClient.from_config()
+            self.assertIsInstance(client, MagicMock)
+            MockOpenRouter.assert_called_once_with(
+                api_key="or-test",
+                model="openrouter/auto",
+                base_url="https://openrouter.ai/api/v1",
+                preset="@preset/fityq-chat-prod",
+            )
+
     async def test_stream_simple_success(self):
         """Test simple streaming success."""
         client = LLMClient()
@@ -231,6 +250,32 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
         client._llm.bind.assert_called_once_with(user="user@test.com")
         self.assertEqual(results, ["ok"])
 
+    async def test_stream_simple_passes_runnable_config(self):
+        """stream_simple should pass tracing-friendly RunnableConfig to astream."""
+        client = LLMClient()
+        client._llm = MagicMock()
+
+        mock_chain = MagicMock()
+        captured = {}
+
+        async def mock_stream(*args, **kwargs):
+            captured["config"] = kwargs.get("config")
+            yield "ok"
+
+        mock_chain.astream = mock_stream
+        prompt = MagicMock()
+        prompt.format.return_value = "formatted prompt"
+        prompt.__or__.return_value = mock_chain
+
+        with patch("src.services.llm_client.build_runnable_config") as build_config:
+            build_config.return_value = {"run_name": "chat.simple", "metadata": {}}
+            results = []
+            async for chunk in client.stream_simple(prompt, {}, user_email="u@test.com"):
+                results.append(chunk)
+
+        self.assertEqual(results, ["ok"])
+        self.assertEqual(captured["config"]["run_name"], "chat.simple")
+
     @patch("src.services.llm_client.create_agent")
     async def test_stream_with_tools_binds_openrouter_user(self, mock_create_agent):
         """stream_with_tools should bind `user` before building the agent."""
@@ -260,6 +305,57 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
 
         client._llm.bind.assert_called_once_with(user="user@test.com")
         self.assertEqual(results[0], "Hello")
+
+    @patch("src.services.llm_client.create_agent")
+    async def test_stream_with_tools_passes_runnable_config(self, mock_create_agent):
+        """stream_with_tools should pass tracing-friendly RunnableConfig to agent."""
+        client = LLMClient()
+        client._llm = MagicMock()
+
+        mock_agent = MagicMock()
+        captured = {}
+
+        async def mock_astream(*args, **kwargs):
+            captured["config"] = kwargs.get("config")
+            yield (AIMessage(content="Hello"), "meta")
+
+        mock_agent.astream = mock_astream
+        mock_create_agent.return_value = mock_agent
+
+        prompt = MagicMock()
+        prompt.format_messages.return_value = []
+        prompt.format.return_value = "prompt"
+
+        with patch("src.services.llm_client.build_runnable_config") as build_config:
+            build_config.return_value = {"run_name": "chat.tools", "metadata": {}, "recursion_limit": 20}
+            results = []
+            async for chunk in client.stream_with_tools(prompt, {}, []):
+                results.append(chunk)
+
+        self.assertEqual(captured["config"]["run_name"], "chat.tools")
+        self.assertEqual(results[0], "Hello")
+
+    async def test_stream_simple_tracing_metadata_failure_is_fail_open(self):
+        """Metadata merge failures must not break stream_simple response."""
+        client = LLMClient()
+        client._llm = MagicMock()
+
+        mock_chain = MagicMock()
+
+        async def mock_stream(*args, **kwargs):
+            yield "ok"
+
+        mock_chain.astream = mock_stream
+        prompt = MagicMock()
+        prompt.format.return_value = "formatted prompt"
+        prompt.__or__.return_value = mock_chain
+
+        with patch("src.services.llm_client.merge_runtime_metadata", side_effect=ValueError("boom")):
+            results = []
+            async for chunk in client.stream_simple(prompt, {}, user_email="u@test.com"):
+                results.append(chunk)
+
+        self.assertEqual(results, ["ok"])
 
     async def test_stream_simple_without_user_does_not_bind(self):
         """stream_simple should preserve legacy behavior when no user email is provided."""
@@ -295,7 +391,7 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
         async def mock_astream(*args, **kwargs):
             msg = AIMessage(content="Hello")
             yield (msg, "meta")
-            
+
         mock_agent.astream = mock_astream
 
         prompt = MagicMock()
@@ -404,12 +500,12 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
                 model="@preset/fityq-chat",
                 base_url="https://openrouter.ai/api/v1",
             )
-            mock_cls.assert_called_once_with(
-                model="@preset/fityq-chat",
-                base_url="https://openrouter.ai/api/v1",
-                api_key=unittest.mock.ANY,
-                model_kwargs={},
-            )
+            mock_cls.assert_called_once()
+            kwargs = mock_cls.call_args.kwargs
+            self.assertEqual(kwargs["model"], "@preset/fityq-chat")
+            self.assertEqual(kwargs["base_url"], "https://openrouter.ai/api/v1")
+            self.assertIn("api_key", kwargs)
+            self.assertEqual(kwargs["extra_body"], None)
 
     def test_openrouter_auto_router_with_preset_payload(self):
         """Spike: OpenRouter auto router should forward preset via extra_body."""
@@ -420,12 +516,12 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
                 base_url="https://openrouter.ai/api/v1",
                 preset="fityq-chat",
             )
-            mock_cls.assert_called_once_with(
-                model="openrouter/auto",
-                base_url="https://openrouter.ai/api/v1",
-                api_key=unittest.mock.ANY,
-                model_kwargs={"extra_body": {"preset": "fityq-chat"}},
-            )
+            mock_cls.assert_called_once()
+            kwargs = mock_cls.call_args.kwargs
+            self.assertEqual(kwargs["model"], "openrouter/auto")
+            self.assertEqual(kwargs["base_url"], "https://openrouter.ai/api/v1")
+            self.assertIn("api_key", kwargs)
+            self.assertEqual(kwargs["extra_body"], {"preset": "fityq-chat"})
 
 
 if __name__ == "__main__":
