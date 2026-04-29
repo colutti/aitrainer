@@ -8,6 +8,7 @@ In the OpenRouter preset architecture, this builder is responsible for:
 """
 
 from datetime import datetime
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import json
 from typing import Any
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -113,7 +114,19 @@ class PromptBuilder:
             6: "Domingo",
         }
 
-        now = datetime.now()
+        raw_timezone = getattr(profile, "timezone", None)
+        user_timezone = (
+            raw_timezone
+            if isinstance(raw_timezone, str) and raw_timezone
+            else "Europe/Madrid"
+        )
+
+        try:
+            now = datetime.now(ZoneInfo(user_timezone))
+        except ZoneInfoNotFoundError:
+            user_timezone = "Europe/Madrid"
+            now = datetime.now(ZoneInfo(user_timezone))
+
         if not current_date:
             current_date = now.strftime("%Y-%m-%d")
 
@@ -129,12 +142,6 @@ class PromptBuilder:
         plan_section = format_plan_snapshot(plan_snapshot)
         has_active_plan = plan_snapshot is not None
         metabolism_section = PromptBuilder._format_metabolism_section(metabolism_data)
-        raw_timezone = getattr(profile, "timezone", None)
-        user_timezone = (
-            raw_timezone
-            if isinstance(raw_timezone, str) and raw_timezone
-            else "Europe/Madrid"
-        )
         raw_user_name = getattr(profile, "display_name", None)
         user_name = raw_user_name if isinstance(raw_user_name, str) and raw_user_name else "Aluno"
         runtime_context = {

@@ -5,6 +5,7 @@ Verifies that prompts are built correctly and long_term_summary is injected.
 
 import pytest
 from datetime import datetime
+from unittest.mock import patch
 from src.services.prompt_builder import PromptBuilder
 from src.api.models.user_profile import UserProfile
 
@@ -167,6 +168,25 @@ def test_get_prompt_template_adds_telegram_format(sample_profile):
     rendered = prompt_template.format(**input_data)
 
     assert '"channel": "telegram"' in rendered
+
+
+def test_build_input_data_formats_user_message_in_user_timezone(sample_profile):
+    """Verify <msg> date/time is generated using profile timezone."""
+    sample_profile.timezone = "Europe/Madrid"
+
+    fixed_dt = datetime(2026, 4, 29, 6, 35)
+    with patch("src.services.prompt_builder.datetime") as mock_datetime:
+        mock_datetime.now.return_value = fixed_dt
+        input_data = PromptBuilder.build_input_data(
+            profile=sample_profile,
+            trainer_profile_summary="",
+            user_profile_summary="",
+            formatted_history_msgs=[],
+            user_input="bom dia",
+            current_date=None,
+        )
+
+    assert input_data["user_message"] == '<msg data="29/04" hora="06:35">bom dia</msg>'
 
 
 def test_get_prompt_template_no_telegram_by_default(sample_profile):
