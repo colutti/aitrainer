@@ -740,6 +740,9 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             plan_snapshot=enriched_plan_snapshot,
             metabolism_data=metabolism_data,
         )
+        input_data["user_locale"] = (
+            trainer_profile_obj.preferred_language or "pt-BR"
+        )
         if image_payloads:
             input_data["user_images"] = image_payloads
 
