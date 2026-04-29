@@ -70,22 +70,22 @@ export function PremiumLayout() {
         
         <div className="flex-1 flex justify-center">
           <div className="flex bg-[color:var(--color-surface-container)] rounded-[var(--radius-full)] p-1 border border-[color:var(--color-outline-variant)]">
-            <NavLink to="/dashboard" end data-testid="desktop-nav-home" className={({ isActive }) => cn("px-6 py-2 rounded-[var(--radius-full)] text-sm font-semibold transition-colors", isActive ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-secondary hover:text-text-secondary")}>
+            <NavLink to="/dashboard" end data-testid="desktop-nav-home" className={({ isActive }) => cn("px-6 py-2 rounded-[var(--radius-full)] text-sm font-semibold transition-colors whitespace-nowrap shrink-0", isActive ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-secondary hover:text-text-secondary")}>
               {t('nav.home')}
             </NavLink>
-            <NavLink to="/dashboard/plan" data-testid="desktop-nav-plan" className={() => cn("px-6 py-2 rounded-[var(--radius-full)] text-sm font-semibold transition-colors", isPathActive('/dashboard/plan') ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-secondary hover:text-text-secondary")}>
+            <NavLink to="/dashboard/plan" data-testid="desktop-nav-plan" className={() => cn("px-6 py-2 rounded-[var(--radius-full)] text-sm font-semibold transition-colors whitespace-nowrap shrink-0", isPathActive('/dashboard/plan') ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-secondary hover:text-text-secondary")}>
               {t('nav.plan')}
             </NavLink>
-            <NavLink to="/dashboard/workouts" data-testid="desktop-nav-workouts" className={() => cn("px-6 py-2 rounded-[var(--radius-full)] text-sm font-semibold transition-colors", isPathActive('/dashboard/workouts') ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-secondary hover:text-text-secondary")}>
+            <NavLink to="/dashboard/workouts" data-testid="desktop-nav-workouts" className={() => cn("px-6 py-2 rounded-[var(--radius-full)] text-sm font-semibold transition-colors whitespace-nowrap shrink-0", isPathActive('/dashboard/workouts') ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-secondary hover:text-text-secondary")}>
               {t('nav.workouts')}
             </NavLink>
-            <NavLink to="/dashboard/body" data-testid="desktop-nav-body" className={() => cn("px-6 py-2 rounded-[var(--radius-full)] text-sm font-semibold transition-colors", isPathActive('/dashboard/body') ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-secondary hover:text-text-secondary")}>
+            <NavLink to="/dashboard/body" data-testid="desktop-nav-body" className={() => cn("px-6 py-2 rounded-[var(--radius-full)] text-sm font-semibold transition-colors whitespace-nowrap shrink-0", isPathActive('/dashboard/body') ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-secondary hover:text-text-secondary")}>
               {t('nav.body')}
             </NavLink>
-            <NavLink to="/dashboard/nutrition" data-testid="desktop-nav-nutrition" className={() => cn("px-6 py-2 rounded-[var(--radius-full)] text-sm font-semibold transition-colors", isPathActive('/dashboard/nutrition') ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-secondary hover:text-text-secondary")}>
+            <NavLink to="/dashboard/nutrition" data-testid="desktop-nav-nutrition" className={() => cn("px-6 py-2 rounded-[var(--radius-full)] text-sm font-semibold transition-colors whitespace-nowrap shrink-0", isPathActive('/dashboard/nutrition') ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-secondary hover:text-text-secondary")}>
               {t('nav.nutrition')}
             </NavLink>
-            <NavLink to="/dashboard/chat" data-testid="desktop-nav-chat" className={() => cn("px-6 py-2 rounded-[var(--radius-full)] text-sm font-semibold transition-colors", isPathActive('/dashboard/chat') ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-secondary hover:text-text-secondary")}>
+            <NavLink to="/dashboard/chat" data-testid="desktop-nav-chat" className={() => cn("px-6 py-2 rounded-[var(--radius-full)] text-sm font-semibold transition-colors whitespace-nowrap shrink-0", isPathActive('/dashboard/chat') ? "bg-[color:var(--color-surface-container-high)] text-text-primary" : "text-text-secondary hover:text-text-secondary")}>
               {t('nav.chat')}
             </NavLink>
           </div>
