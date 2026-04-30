@@ -1,0 +1,26 @@
+{
+  "node_name": "persistence_guard",
+  "enabled": true,
+  "model_provider": "openrouter",
+  "model_name": "openai/gpt-4.1-nano",
+  "temperature": 0.0,
+  "max_tokens": 2048,
+  "tool_policy": "restricted",
+  "tool_names": [
+    "list_events",
+    "create_event",
+    "update_event",
+    "delete_event",
+    "search_memory",
+    "save_memory",
+    "update_memory",
+    "delete_memory"
+  ],
+  "prompt_file": "backend/src/services/agents/config/prompts/persistence_guard.md",
+  "response_format": "text",
+  "version": "v1",
+  "context_blocks": ["request", "technical_response", "training_analysis", "nutrition_analysis", "plan_workspace"],
+  "peer_inputs": ["general_conversation", "training_specialist", "nutrition_specialist"],
+  "persona_mode": "none",
+  "output_contract": "json(event_action,memory_action,reason,...)"
+}

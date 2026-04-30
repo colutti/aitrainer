@@ -95,6 +95,7 @@ class Settings(BaseSettings):
     LLM_AGENT_RECURSION_LIMIT: int = Field(default=20)
     AI_TRAINER_THREADPOOL_WORKERS: int = Field(default=4)
     WARMUP_AI_ON_STARTUP: bool = Field(default=False)
+    ENABLE_EXPERIMENTAL_CONVERSATION_GRAPH: bool = Field(default=True)
     ALLOWED_ORIGINS: str | list[str] = Field(default="*")
     LOG_LEVEL: str = "INFO"
     RATE_LIMIT_LOGIN: str = "5/minute"

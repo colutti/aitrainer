@@ -62,10 +62,30 @@ class LLMClient:
     }
     _langsmith_bootstrapped = False
 
-    def _llm_for_request(self, user_email: str | None):
+    def _llm_for_request(
+        self,
+        user_email: str | None,
+        model_override: str | None = None,
+        preset_override: str | None = None,
+    ):
         """Returns an LLM runnable bound to OpenRouter user when available."""
+        request_llm = self._llm
+        if model_override or preset_override:
+            request_llm = self._llm_for_node(
+                model_override=model_override,
+                preset_override=preset_override,
+            )
         if user_email:
-            return self._llm.bind(user=user_email)
+            return request_llm.bind(user=user_email)
+        return request_llm
+
+    def _llm_for_node(
+        self,
+        model_override: str | None = None,
+        preset_override: str | None = None,
+    ):
+        """Return a node-specific LLM runnable. Base implementation reuses default."""
+        del model_override, preset_override
         return self._llm
 
     @classmethod
@@ -117,6 +137,10 @@ class LLMClient:
         tools: list,
         user_email: str | None = None,
         log_callback=None,
+        model_override: str | None = None,
+        preset_override: str | None = None,
+        run_name: str = "chat.tools",
+        mode: str = "tools",
     ) -> AsyncGenerator[str | dict, None]:
         # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals,too-many-branches,too-many-statements
 
@@ -143,6 +167,7 @@ class LLMClient:
         runtime_metadata: dict[str, Any] = {}
         usage_metadata_captured = False  # Track if we already captured
         config: RunnableConfig = {}
+        requested_model = model_override or self.model_name
 
         messages: list[Any] = []
         try:
@@ -172,12 +197,16 @@ class LLMClient:
                         content=content_blocks
                     )
                 )
-            request_llm = self._llm_for_request(user_email)
+            request_llm = self._llm_for_request(
+                user_email=user_email,
+                model_override=model_override,
+                preset_override=preset_override,
+            )
             agent: Any = create_agent(request_llm, tools)
             from src.core.config import settings  # pylint: disable=import-outside-toplevel
             config: RunnableConfig = build_runnable_config(
-                run_name="chat.tools",
-                mode="tools",
+                run_name=run_name,
+                mode=mode,
                 user_email=user_email,
                 input_data=input_data,
                 recursion_limit=int(settings.LLM_AGENT_RECURSION_LIMIT),
@@ -223,7 +252,7 @@ class LLMClient:
                     {
                         "tools_called": tools_called,
                         "duration_ms": duration_ms,
-                        "requested_model": self.model_name,
+                        "requested_model": requested_model,
                         "resolved_model": runtime_metadata.get("resolved_model", self.model_name),
                         "resolved_provider": runtime_metadata.get("resolved_provider"),
                         "usage_cost": runtime_metadata.get("usage_cost"),
@@ -247,7 +276,7 @@ class LLMClient:
                                 user_message.encode("utf-8")
                             ).hexdigest(),
                             "prompt_chars": len(user_message),
-                            "prompt_name": "chat",
+                            "prompt_name": str(input_data.get("prompt_name", "chat")),
                             "type": "with_tools",
                             "messages_count": len(messages),
                             "tools": [t.name for t in tools],
@@ -255,8 +284,8 @@ class LLMClient:
                             "tokens_input": tokens_in,
                             "tokens_output": tokens_out,
                             "duration_ms": duration_ms,
-                            "model": self.model_name,
-                            "requested_model": self.model_name,
+                            "model": requested_model,
+                            "requested_model": requested_model,
                             "resolved_model": runtime_metadata.get(
                                 "resolved_model", self.model_name
                             ),
@@ -515,10 +544,32 @@ class OpenRouterClient(LLMClient):
         from pydantic import SecretStr  # pylint: disable=import-outside-toplevel
 
         self.model_name = model
+        self._api_key = api_key
+        self._base_url = base_url
+        self._preset = preset
         extra_body = {"preset": preset} if preset else None
         self._llm = ChatOpenAI(
             model=model,
             base_url=base_url,
             api_key=SecretStr(api_key) if api_key else SecretStr(""),
+            extra_body=extra_body,
+        )
+
+    def _llm_for_node(
+        self,
+        model_override: str | None = None,
+        preset_override: str | None = None,
+    ):
+        """Return an OpenRouter client for a specific graph node."""
+        from langchain_openai import ChatOpenAI  # pylint: disable=import-outside-toplevel
+        from pydantic import SecretStr  # pylint: disable=import-outside-toplevel
+
+        model = model_override or self.model_name
+        preset = preset_override if preset_override is not None else self._preset
+        extra_body = {"preset": preset} if preset else None
+        return ChatOpenAI(
+            model=model,
+            base_url=self._base_url,
+            api_key=SecretStr(self._api_key) if self._api_key else SecretStr(""),
             extra_body=extra_body,
         )

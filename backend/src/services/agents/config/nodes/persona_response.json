@@ -1,0 +1,17 @@
+{
+  "node_name": "persona_response",
+  "enabled": true,
+  "model_provider": "openrouter",
+  "model_name": "openai/gpt-4o-mini",
+  "temperature": 0.4,
+  "max_tokens": 4096,
+  "tool_policy": "restricted",
+  "tool_names": [],
+  "prompt_file": "backend/src/services/agents/config/prompts/persona_response.md",
+  "response_format": "text",
+  "version": "v1",
+  "context_blocks": ["request", "trainer_persona", "technical_response"],
+  "peer_inputs": ["general_conversation"],
+  "persona_mode": "final_only",
+  "output_contract": "text"
+}

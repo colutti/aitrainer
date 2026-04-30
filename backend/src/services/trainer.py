@@ -86,6 +86,8 @@ from src.services.memory_service import (
 )
 from src.services.plan_service import build_plan_prompt_snapshot
 from src.services.adaptive_tdee import AdaptiveTDEEService
+from src.services.agents.config_registry import AgentConfigRegistry
+from src.services.graph.conversation_graph import ConversationGraphRunner
 from src.core.logs import logger
 from src.api.models.chat_history import ChatHistory
 from src.api.models.user_profile import UserProfile
@@ -115,6 +117,8 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         self._llm_client: LLMClient = llm_client
         self._qdrant_client = qdrant_client
         self.prompt_builder = PromptBuilder()
+        self._agent_registry = AgentConfigRegistry("src/services/agents/config")
+        self._graph_runner = ConversationGraphRunner(self, self._agent_registry)
         self._executor = ThreadPoolExecutor(
             max_workers=settings.AI_TRAINER_THREADPOOL_WORKERS
         )
@@ -693,6 +697,20 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             str: Individual chunks of the AI trainer's response.
         """
         logger.info("Generating workout stream for user: %s", user_email)
+        if settings.ENABLE_EXPERIMENTAL_CONVERSATION_GRAPH:
+            try:
+                async for chunk in self._graph_runner.run_stream(
+                    user_email=user_email,
+                    user_input=user_input,
+                    is_telegram=bool((message_options or {}).get("is_telegram", False)),
+                    user_images=(message_options or {}).get("image_payloads"),
+                    background_tasks=background_tasks,
+                ):
+                    yield chunk
+                return
+            except Exception as graph_err:  # pylint: disable=broad-exception-caught
+                logger.error("Graph runtime failed, fallback to legacy flow: %s", graph_err)
+
         image_payloads = (message_options or {}).get("image_payloads")
 
         # 1. Retrieve profiles (sequentially to avoid redundant DB calls and plan mismatch)
@@ -749,7 +767,6 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             input_data["user_images"] = image_payloads
 
         raw_response: list[str] = []
-        stream_buffer = ""
         try:
             async with asyncio.timeout(self.get_llm_stream_timeout_seconds()):
                 async for chunk in self._llm_client.stream_with_tools(
@@ -764,10 +781,6 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
                 ):
                     if isinstance(chunk, str):
                         raw_response.append(chunk)
-                        stream_buffer += chunk
-                        visible, stream_buffer = self.split_stream_visible_text(stream_buffer)
-                        if visible:
-                            yield visible
         except TimeoutError:
             logger.error(
                 "LLM stream timeout for user %s after %ss",
@@ -777,14 +790,14 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
             yield "Error processing request: STREAM_TIMEOUT"
             return
 
-        if stream_buffer:
-            if cleaned_tail := self.strip_internal_wrappers(stream_buffer):
-                yield cleaned_tail
+        final_response = self.strip_internal_wrappers("".join(raw_response))
+        if final_response:
+            yield final_response
 
         await self.finalize_ai_response(
             user_email=user_email,
             user_input=user_input,
-            final_response=self.strip_internal_wrappers("".join(raw_response)),
+            final_response=final_response,
             metadata={
                 "trainer_type": trainer_profile_obj.trainer_type or "atlas",
                 "needs_cycle_reset": needs_cycle_reset,

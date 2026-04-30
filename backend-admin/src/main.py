@@ -14,7 +14,13 @@ from pymongo.errors import PyMongoError
 
 # Project imports
 from src.core.deps import get_admin_db
-from src.api.endpoints import admin_analytics, admin_users, admin_prompts, admin_tokens
+from src.api.endpoints import (
+    admin_analytics,
+    admin_users,
+    admin_prompts,
+    admin_tokens,
+    admin_agent_configs,
+)
 
 # Load environment variables
 load_dotenv()
@@ -168,6 +174,7 @@ app.include_router(admin_analytics.router)
 app.include_router(admin_users.router)
 app.include_router(admin_prompts.router)
 app.include_router(admin_tokens.router)
+app.include_router(admin_agent_configs.router)
 
 @app.get("/health")
 async def health_check():

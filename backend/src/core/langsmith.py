@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from contextlib import nullcontext, contextmanager
 from typing import Any
 
 from langchain_core.runnables import RunnableConfig
@@ -85,6 +86,11 @@ def build_runnable_config(
         "messages_count": int(input_data.get("messages_count", 0) or 0),
         "tools_available": [str(t) for t in tools],
         "status": "running",
+        "request_id": input_data.get("request_id"),
+        "conversation_id": input_data.get("conversation_id"),
+        "turn_id": input_data.get("turn_id"),
+        "node_name": input_data.get("node_name"),
+        "node_config_hash": input_data.get("node_config_hash"),
     }
     config["run_name"] = run_name
     config["tags"] = tags
@@ -166,3 +172,63 @@ def _build_callbacks(tags: list[str]) -> list[Any]:
     except (ValueError, TypeError, AttributeError, ImportError, Exception) as exc:  # pylint: disable=broad-exception-caught
         logger.warning("Failed to initialize LangSmith tracer callback: %s", exc)
         return []
+
+
+def create_graph_run_context(
+    *,
+    run_name: str,
+    metadata: dict[str, Any] | None = None,
+):
+    """Create a root LangSmith trace context for graph execution."""
+    if not is_tracing_enabled():
+        return nullcontext()
+    try:
+        from langsmith.run_helpers import trace  # pylint: disable=import-outside-toplevel
+
+        return trace(
+            name=run_name,
+            run_type="chain",
+            metadata=metadata or {},
+        )
+    except (ValueError, TypeError, AttributeError, ImportError, Exception) as exc:  # pylint: disable=broad-exception-caught
+        logger.warning("Failed to create LangSmith graph trace context: %s", exc)
+        return nullcontext()
+
+
+@contextmanager
+def create_node_run_context(
+    *,
+    node_name: str,
+    metadata: dict[str, Any] | None = None,
+):
+    """Create one explicit child run for a graph node."""
+    if not is_tracing_enabled():
+        yield None
+        return
+    try:
+        from langsmith.run_helpers import (  # pylint: disable=import-outside-toplevel
+            get_current_run_tree,
+        )
+
+        run_tree = get_current_run_tree()
+        if run_tree is None:
+            yield None
+            return
+        child = run_tree.create_child(
+            name=f"graph.node.{node_name}",
+            run_type="chain",
+            inputs={"node_name": node_name},
+        )
+        if metadata and hasattr(child, "add_metadata"):
+            child.add_metadata(metadata)
+        try:
+            yield child
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            child.end(
+                outputs={"status": "error", "error_type": type(exc).__name__}
+            )
+            raise
+        child.end(outputs={"status": "success"})
+    except (ValueError, TypeError, AttributeError, ImportError, Exception) as exc:  # pylint: disable=broad-exception-caught
+        logger.warning("Failed to create LangSmith node trace context: %s", exc)
+        yield None

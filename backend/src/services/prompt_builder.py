@@ -177,6 +177,12 @@ class PromptBuilder:
             },
         }
 
+        formatted_history = "\n".join(
+            str(getattr(msg, "content", "")).strip()
+            for msg in formatted_history_msgs
+            if str(getattr(msg, "content", "")).strip()
+        )
+
         return {
             "trainer_profile": trainer_profile_summary,
             "trainer_name": runtime_context["trainer"]["name"],
@@ -189,6 +195,7 @@ class PromptBuilder:
             "agenda_section": agenda_section,  # Agenda section for dynamic context
             "plan_section": plan_section,
             "metabolism_section": metabolism_section,
+            "formatted_history": formatted_history,
             "current_date": current_date,
             "day_of_week": dias_pt[now.weekday()],
             "current_time": now.strftime("%H:%M"),
