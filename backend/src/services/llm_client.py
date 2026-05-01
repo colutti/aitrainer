@@ -105,15 +105,11 @@ class LLMClient:
 
         if not cls._initialized:
             logger.info(
-                "Creating OpenRouterClient with routing model %s",
-                settings.OPENROUTER_ROUTING_MODEL,
+                "Creating OpenRouterClient with chat model %s",
+                settings.OPENROUTER_CHAT_MODEL or "deepseek/deepseek-v4-flash",
             )
             cls._initialized = True
-        routing_model = (
-            settings.OPENROUTER_ROUTING_MODEL
-            or settings.OPENROUTER_CHAT_MODEL
-            or "openrouter/auto"
-        )
+        routing_model = settings.OPENROUTER_CHAT_MODEL or "deepseek/deepseek-v4-flash"
         return OpenRouterClient(
             api_key=settings.OPENROUTER_API_KEY,
             model=routing_model,

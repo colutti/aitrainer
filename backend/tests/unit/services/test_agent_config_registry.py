@@ -78,6 +78,7 @@ def test_node_contract_defaults_match_runtime_design():
     assert "training_analysis" in plan.context_blocks
     assert plan.model_name == "deepseek/deepseek-v4-flash"
     assert general.model_name == "deepseek/deepseek-v4-flash"
+    assert "OPENROUTER_ROUTING_MODEL" not in general.prompt_text
     assert "persona" not in turn_context.prompt_text.lower()
     assert "persona" not in training.prompt_text.lower()
     assert "persona" not in nutrition.prompt_text.lower()

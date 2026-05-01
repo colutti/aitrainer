@@ -17,7 +17,6 @@ class TestOpenRouterSettings(unittest.TestCase):
             {
                 "OPENROUTER_API_KEY": "or-test",
                 "OPENROUTER_BASE_URL": "https://openrouter.ai/api/v1",
-                "OPENROUTER_ROUTING_MODEL": "openrouter/auto",
                 "OPENROUTER_EMBED_MODEL": "openai/text-embedding-3-small",
                 "OPENROUTER_EMBED_DIMENSIONS": "768",
                 "SECRET_KEY": "test",
@@ -42,7 +41,6 @@ class TestOpenRouterSettings(unittest.TestCase):
             settings = Settings()
 
             self.assertEqual(settings.OPENROUTER_API_KEY, "or-test")
-            self.assertEqual(settings.OPENROUTER_ROUTING_MODEL, "openrouter/auto")
             self.assertEqual(
                 settings.OPENROUTER_EMBED_MODEL, "openai/text-embedding-3-small"
             )
@@ -59,7 +57,6 @@ class TestOpenRouterSettings(unittest.TestCase):
             QDRANT_API_KEY="ok",
             OPENROUTER_API_KEY="ok",
             OPENROUTER_BASE_URL="ok",
-            OPENROUTER_ROUTING_MODEL="ok",
             TELEGRAM_BOT_TOKEN="ok",
             TELEGRAM_WEBHOOK_SECRET="ok",
             STRIPE_API_KEY="ok",

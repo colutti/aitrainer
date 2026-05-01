@@ -24,7 +24,6 @@ _CRITICAL_RUNTIME_ENV_VARS = (
     "QDRANT_API_KEY",
     "OPENROUTER_API_KEY",
     "OPENROUTER_BASE_URL",
-    "OPENROUTER_ROUTING_MODEL",
     "TELEGRAM_BOT_TOKEN",
     "TELEGRAM_WEBHOOK_SECRET",
     "STRIPE_API_KEY",
@@ -131,19 +130,10 @@ class Settings(BaseSettings):
     # ====== OPENROUTER ======
     OPENROUTER_API_KEY: str = ""
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
-    OPENROUTER_ROUTING_MODEL: str = "openrouter/auto"
     OPENROUTER_CHAT_MODEL: str = ""
     OPENROUTER_EMBED_MODEL: str = "openai/text-embedding-3-small"
     OPENROUTER_EMBED_DIMENSIONS: int = 768
     PROMPT_CONTEXT_CONTRACT_VERSION: str = "prompt_context_v1"
-
-    @field_validator("OPENROUTER_ROUTING_MODEL", mode="before")
-    @classmethod
-    def validate_openrouter_routing_model(cls, v: str) -> str:
-        """Ensure routing model is configured."""
-        if isinstance(v, str) and v.strip():
-            return v.strip()
-        raise ValueError("OPENROUTER_ROUTING_MODEL must be a non-empty model slug")
 
     # ====== MONGO STUFF ======
     DB_NAME: str = Field(default="aitrainer")

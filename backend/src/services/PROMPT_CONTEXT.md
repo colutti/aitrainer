@@ -1,8 +1,8 @@
 # Prompt Context Service
 
-This backend uses OpenRouter routing models and local prompt files per node as
-the source of system instructions. The shared runtime payload below remains the
-primary dynamic context contract passed into the graph nodes.
+This backend uses per-node models and local prompt files as the source of system
+instructions. The shared runtime payload below remains the primary dynamic
+context contract passed into the graph nodes.
 
 ## Runtime Contract
 
@@ -59,7 +59,6 @@ RUNTIME_CONTEXT_JSON (PROMPT_CONTEXT_V1):
 
 ## Configuration and Safety
 
-- `OPENROUTER_ROUTING_MODEL` defines routing target (default: `openrouter/auto`).
 - `PROMPT_CONTEXT_CONTRACT_VERSION` defaults to `prompt_context_v1`.
 - Node prompts live under `backend/src/services/agents/config/prompts/`.
 
