@@ -221,14 +221,14 @@ def create_node_run_context(
         )
         if metadata and hasattr(child, "add_metadata"):
             child.add_metadata(metadata)
-        try:
-            yield child
-        except Exception as exc:  # pylint: disable=broad-exception-caught
-            child.end(
-                outputs={"status": "error", "error_type": type(exc).__name__}
-            )
-            raise
-        child.end(outputs={"status": "success"})
     except (ValueError, TypeError, AttributeError, ImportError, Exception) as exc:  # pylint: disable=broad-exception-caught
         logger.warning("Failed to create LangSmith node trace context: %s", exc)
         yield None
+        return
+
+    try:
+        yield child
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        child.end(outputs={"status": "error", "error_type": type(exc).__name__})
+        raise
+    child.end(outputs={"status": "success"})

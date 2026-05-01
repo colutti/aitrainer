@@ -66,14 +66,12 @@ class LLMClient:
         self,
         user_email: str | None,
         model_override: str | None = None,
-        preset_override: str | None = None,
     ):
         """Returns an LLM runnable bound to OpenRouter user when available."""
         request_llm = self._llm
-        if model_override or preset_override:
+        if model_override:
             request_llm = self._llm_for_node(
                 model_override=model_override,
-                preset_override=preset_override,
             )
         if user_email:
             return request_llm.bind(user=user_email)
@@ -82,10 +80,9 @@ class LLMClient:
     def _llm_for_node(
         self,
         model_override: str | None = None,
-        preset_override: str | None = None,
     ):
         """Return a node-specific LLM runnable. Base implementation reuses default."""
-        del model_override, preset_override
+        del model_override
         return self._llm
 
     @classmethod
@@ -108,9 +105,8 @@ class LLMClient:
 
         if not cls._initialized:
             logger.info(
-                "Creating OpenRouterClient with routing model %s and preset %s",
+                "Creating OpenRouterClient with routing model %s",
                 settings.OPENROUTER_ROUTING_MODEL,
-                settings.OPENROUTER_PROMPT_PRESET or settings.OPENROUTER_CHAT_MODEL,
             )
             cls._initialized = True
         routing_model = (
@@ -118,16 +114,10 @@ class LLMClient:
             or settings.OPENROUTER_CHAT_MODEL
             or "openrouter/auto"
         )
-        prompt_preset = (
-            settings.OPENROUTER_PROMPT_PRESET
-            or settings.OPENROUTER_CHAT_MODEL
-            or None
-        )
         return OpenRouterClient(
             api_key=settings.OPENROUTER_API_KEY,
             model=routing_model,
             base_url=settings.OPENROUTER_BASE_URL,
-            preset=prompt_preset,
         )
 
     async def stream_with_tools(
@@ -138,7 +128,6 @@ class LLMClient:
         user_email: str | None = None,
         log_callback=None,
         model_override: str | None = None,
-        preset_override: str | None = None,
         run_name: str = "chat.tools",
         mode: str = "tools",
     ) -> AsyncGenerator[str | dict, None]:
@@ -200,7 +189,6 @@ class LLMClient:
             request_llm = self._llm_for_request(
                 user_email=user_email,
                 model_override=model_override,
-                preset_override=preset_override,
             )
             agent: Any = create_agent(request_llm, tools)
             from src.core.config import settings  # pylint: disable=import-outside-toplevel
@@ -537,7 +525,6 @@ class OpenRouterClient(LLMClient):
         api_key: str,
         model: str,
         base_url: str,
-        preset: str | None = None,
     ):
         """Initialize OpenRouter client through OpenAI-compatible API."""
         from langchain_openai import ChatOpenAI  # pylint: disable=import-outside-toplevel
@@ -546,30 +533,25 @@ class OpenRouterClient(LLMClient):
         self.model_name = model
         self._api_key = api_key
         self._base_url = base_url
-        self._preset = preset
-        extra_body = {"preset": preset} if preset else None
         self._llm = ChatOpenAI(
             model=model,
             base_url=base_url,
             api_key=SecretStr(api_key) if api_key else SecretStr(""),
-            extra_body=extra_body,
+            extra_body=None,
         )
 
     def _llm_for_node(
         self,
         model_override: str | None = None,
-        preset_override: str | None = None,
     ):
         """Return an OpenRouter client for a specific graph node."""
         from langchain_openai import ChatOpenAI  # pylint: disable=import-outside-toplevel
         from pydantic import SecretStr  # pylint: disable=import-outside-toplevel
 
         model = model_override or self.model_name
-        preset = preset_override if preset_override is not None else self._preset
-        extra_body = {"preset": preset} if preset else None
         return ChatOpenAI(
             model=model,
             base_url=self._base_url,
             api_key=SecretStr(self._api_key) if self._api_key else SecretStr(""),
-            extra_body=extra_body,
+            extra_body=None,
         )

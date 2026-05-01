@@ -2,11 +2,12 @@
   "node_name": "nutrition_specialist",
   "enabled": true,
   "model_provider": "openrouter",
-  "model_name": "openai/gpt-4.1-mini",
+  "model_name": "deepseek/deepseek-v4-flash",
   "temperature": 0.2,
   "max_tokens": 4096,
   "tool_policy": "restricted",
   "tool_names": [
+    "save_daily_nutrition",
     "get_workouts",
     "get_workouts_raw",
     "get_nutrition",
@@ -16,10 +17,10 @@
     "get_user_goal"
   ],
   "prompt_file": "backend/src/services/agents/config/prompts/nutrition_specialist.md",
-  "response_format": "text",
+  "response_format": "json",
   "version": "v1",
-  "context_blocks": ["request", "user_profile", "trainer_identity", "active_plan", "metabolism", "history_summary", "context_summary", "training_analysis"],
+  "context_blocks": ["request", "user_profile", "active_plan", "metabolism", "history_summary", "context_summary", "training_analysis"],
   "peer_inputs": ["training_specialist"],
   "persona_mode": "none",
-  "output_contract": "text"
+  "output_contract": "json(analysis_text,domain_status,plan_signal,memory_candidates,event_candidates)"
 }

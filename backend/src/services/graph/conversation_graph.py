@@ -6,7 +6,7 @@ import asyncio
 import json
 import re
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 from uuid import uuid4
 from typing import Any, Optional
 
@@ -106,10 +106,9 @@ class ConversationGraphRunner:
         "intent_router",
         "training_specialist",
         "nutrition_specialist",
-        "plan_manager",
+        "plan_specialist",
         "general_conversation",
         "persistence_guard",
-        "persona_response",
     )
 
     def __init__(self, brain, registry: AgentConfigRegistry):
@@ -119,6 +118,108 @@ class ConversationGraphRunner:
     @staticmethod
     def _escape_template_text(text: str) -> str:
         return text.replace("{", "{{").replace("}", "}}")
+
+    @staticmethod
+    def _parse_iso_date(value: str | None) -> date | None:
+        if not value:
+            return None
+        try:
+            return date.fromisoformat(str(value).strip())
+        except ValueError:
+            return None
+
+    @classmethod
+    def _infer_event_recurrence(cls, value: str | None) -> str:
+        if not value:
+            return "none"
+        normalized = cls._normalize_text(value)
+        if any(token in normalized for token in ("semanal", "semana", "segunda", "terca", "quarta", "quinta", "sexta", "sabado", "domingo")):
+            return "weekly"
+        if any(token in normalized for token in ("mensal", "mes", "mês")):
+            return "monthly"
+        return "none"
+
+    @classmethod
+    def _normalize_event_date(cls, value: str | None) -> str:
+        if not value:
+            return ""
+        normalized = str(value).strip()
+        if cls._parse_iso_date(normalized):
+            return normalized
+        match = _ISO_DATE_PATTERN.search(normalized)
+        return match.group(1) if match else ""
+
+    @classmethod
+    def _build_plan_lifecycle_flags(
+        cls,
+        *,
+        plan_window_end: str | None,
+        next_review: str | None,
+        current_date: str | None,
+    ) -> dict[str, bool]:
+        today = cls._parse_iso_date(current_date)
+        target = cls._parse_iso_date(plan_window_end)
+        review = cls._parse_iso_date(next_review)
+        if today is None:
+            return {"timeline_expired": False, "next_review_due": False}
+        return {
+            "timeline_expired": bool(target and target <= today),
+            "next_review_due": bool(review and review <= today),
+        }
+
+    @staticmethod
+    def _infer_response_locale(text: str) -> str:
+        normalized = ConversationGraphRunner._normalize_text(text)
+        spanish_markers = {
+            "grasa",
+            "carbos",
+            "carbohidratos",
+            "entrené",
+            "entrene",
+            "hoy",
+            "mañana",
+            "manana",
+            "lunes",
+            "martes",
+            "miércoles",
+            "miercoles",
+            "jueves",
+            "viernes",
+            "sábado",
+            "sabado",
+            "domingo",
+            "peso",
+            "proteína",
+            "proteina",
+        }
+        english_markers = {
+            "today",
+            "trained",
+            "training",
+            "protein",
+            "carbs",
+            "calories",
+            "back",
+            "today",
+            "want",
+            "maintain",
+            "muscle",
+            "weight",
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday",
+        }
+        spanish_hits = sum(1 for marker in spanish_markers if marker in normalized)
+        english_hits = sum(1 for marker in english_markers if marker in normalized)
+        if spanish_hits > english_hits:
+            return "es-ES"
+        if english_hits > spanish_hits:
+            return "en-US"
+        return "pt-BR"
 
     async def run_stream(
         self,
@@ -160,21 +261,22 @@ class ConversationGraphRunner:
 
             if state.security_status != "safe":
                 state.technical_response = self._blocked_response()
+                state.final_response = state.technical_response
+                state.response["technical"] = state.technical_response
+                state.response["final"] = state.final_response
             else:
                 if state.intent in {"training", "plan", "multi_domain"}:
                     await self._run_node("training_specialist", state)
                 if state.intent in {"nutrition", "plan", "multi_domain"}:
                     await self._run_node("nutrition_specialist", state)
-                await self._run_node("plan_manager", state)
+                await self._run_node("plan_specialist", state)
                 if state.plan_needs_revision:
                     if state.intent in {"training", "plan", "multi_domain"}:
                         await self._run_node("training_specialist", state)
                     if state.intent in {"nutrition", "plan", "multi_domain"}:
                         await self._run_node("nutrition_specialist", state)
                 await self._run_node("general_conversation", state)
-
             await self._run_node("persistence_guard", state)
-            await self._run_node("persona_response", state)
             logger.info(
                 "graph.turn_completed request_id=%s conversation_id=%s turn_id=%s intent=%s security=%s tools_called=%s persistence_actions=%s",
                 state.request_id,
@@ -282,11 +384,28 @@ class ConversationGraphRunner:
             plan_snapshot=build_plan_prompt_snapshot(plan) if plan else None,
             metabolism_data=metabolism,
         )
-        input_data["user_locale"] = trainer_profile.preferred_language or "pt-BR"
+        detected_locale = self._infer_response_locale(state.user_input_sanitized or state.user_input_raw)
+        input_data["user_locale"] = detected_locale
         runtime_context = dict(input_data.get("runtime_context") or {})
         session_ctx = dict(runtime_context.get("session") or {})
         session_ctx["channel"] = state.channel
+        session_ctx["response_locale"] = detected_locale
         runtime_context["session"] = session_ctx
+        input_data["runtime_context"] = runtime_context
+        plan_lifecycle = self._build_plan_lifecycle_flags(
+            plan_window_end=(
+                plan.timeline.target_date.strftime("%Y-%m-%d") if plan else None
+            ),
+            next_review=(
+                str(plan.current_summary.next_review).strip()
+                if plan and plan.current_summary.next_review
+                else None
+            ),
+            current_date=input_data.get("current_date"),
+        )
+        runtime_plan = dict(runtime_context.get("plan") or {})
+        runtime_plan["lifecycle"] = plan_lifecycle
+        runtime_context["plan"] = runtime_plan
         input_data["runtime_context"] = runtime_context
         input_data["runtime_context_json"] = json.dumps(
             runtime_context, ensure_ascii=True, sort_keys=True
@@ -312,6 +431,8 @@ class ConversationGraphRunner:
         state.shared_context["plan_section"] = input_data.get("plan_section", "")
         state.shared_context["metabolism_section"] = input_data.get("metabolism_section", "")
         state.shared_context["history_summary"] = input_data.get("formatted_history", "")
+        state.shared_context["plan_lifecycle"] = plan_lifecycle
+        state.shared_context["persistence_candidates"] = {"memory": [], "event": []}
         state.request["sanitized_input"] = state.user_input_sanitized
         context_summary = await self._run_llm_node(
             node_name="turn_context",
@@ -385,35 +506,51 @@ class ConversationGraphRunner:
         state.routing["reason"] = str(parsed.get("reason", "")).strip()
         state.node_outputs["intent_router"] = intent
 
-    async def _node_plan_manager(self, state: GraphState) -> None:
-        state.shared_context["plan_manager_note"] = f"intent={state.intent}"
+    async def _node_plan_specialist(self, state: GraphState) -> None:
+        state.shared_context["plan_specialist_note"] = f"intent={state.intent}"
         input_data = state.shared_context.get("input_data", {})
         plan_section = input_data.get("plan_section", "")
         state.shared_context["has_active_plan"] = bool(plan_section)
         coordinator = await self._run_llm_node(
-            node_name="plan_manager",
+            node_name="plan_specialist",
             state=state,
             extra_context=(
                 f"ANALISE_TREINO:\n{state.node_outputs.get('training_specialist', '')}\n\n"
                 f"ANALISE_NUTRICAO:\n{state.node_outputs.get('nutrition_specialist', '')}"
             ),
-            allowed_tools=set(),
+            allowed_tools={
+                "get_plan",
+                "upsert_plan",
+                "plan_help",
+                "get_user_goal",
+                "update_user_goal",
+                "get_metabolism_data",
+            },
         )
         parsed = self._parse_json_object(coordinator)
         state.plan_needs_revision = bool(parsed.get("needs_revision", False))
+        plan_status = str(parsed.get("plan_status", "")).strip()
         reason = str(parsed.get("reason", "")).strip()
         plan_candidate = str(parsed.get("plan_candidate", "")).strip()
-        state.node_outputs["plan_manager"] = (
-            "Objetivo: coordenar plano e consistencia entre treino e nutricao. "
+        user_reply = str(parsed.get("user_reply", "")).strip()
+        self._merge_persistence_candidates(
+            state,
+            memory_candidates=parsed.get("memory_candidates"),
+            event_candidates=parsed.get("event_candidates"),
+        )
+        state.node_outputs["plan_specialist"] = user_reply or (
+            "Objetivo: gerenciar ciclo de vida do plano e consistencia entre treino e nutricao. "
             f"intent={state.intent}; has_active_plan={state.shared_context['has_active_plan']}; "
-            f"revisao_necessaria={state.plan_needs_revision}; reason={reason}"
+            f"plan_status={plan_status}; revisao_necessaria={state.plan_needs_revision}; reason={reason}"
         )
         state.shared_context["plan_workspace"] = {
             "intent": state.intent,
             "has_active_plan": state.shared_context["has_active_plan"],
+            "plan_status": plan_status,
             "needs_revision": state.plan_needs_revision,
             "reason": reason,
             "plan_candidate": plan_candidate,
+            "lifecycle": state.shared_context.get("plan_lifecycle", {}),
             "training_preview": self._truncate(
                 state.node_outputs.get("training_specialist", ""), 280
             ),
@@ -430,17 +567,33 @@ class ConversationGraphRunner:
             state=state,
             extra_context=f"{self._shared_context_payload(state)}{peer_block}",
             allowed_tools={
+                "save_workout",
                 "get_workouts",
                 "get_workouts_raw",
                 "list_hevy_routines",
                 "get_hevy_routine_detail",
-                "search_hevy_exercises",
+                "trigger_hevy_import",
+                "save_body_composition",
                 "get_body_composition",
                 "get_body_composition_raw",
             },
         )
-        state.shared_context["training_analysis"] = {"status": "generated", "text": response}
-        state.node_outputs["training_specialist"] = response
+        parsed = self._parse_json_object(response)
+        analysis_text = str(parsed.get("analysis_text", "")).strip()
+        domain_status = str(parsed.get("domain_status", "generated")).strip() or "generated"
+        plan_signal = str(parsed.get("plan_signal", "")).strip()
+        final_text = analysis_text or response
+        state.shared_context["training_analysis"] = {
+            "status": domain_status,
+            "text": final_text,
+            "plan_signal": plan_signal,
+        }
+        self._merge_persistence_candidates(
+            state,
+            memory_candidates=parsed.get("memory_candidates"),
+            event_candidates=parsed.get("event_candidates"),
+        )
+        state.node_outputs["training_specialist"] = final_text
 
     async def _node_nutrition_specialist(self, state: GraphState) -> None:
         peer_output = state.node_outputs.get("training_specialist", "")
@@ -450,6 +603,7 @@ class ConversationGraphRunner:
             state=state,
             extra_context=f"{self._shared_context_payload(state)}{peer_block}",
             allowed_tools={
+                "save_daily_nutrition",
                 "get_workouts",
                 "get_workouts_raw",
                 "get_nutrition",
@@ -459,18 +613,34 @@ class ConversationGraphRunner:
                 "get_user_goal",
             },
         )
-        state.shared_context["nutrition_analysis"] = {"status": "generated", "text": response}
-        state.node_outputs["nutrition_specialist"] = response
+        parsed = self._parse_json_object(response)
+        analysis_text = str(parsed.get("analysis_text", "")).strip()
+        domain_status = str(parsed.get("domain_status", "generated")).strip() or "generated"
+        plan_signal = str(parsed.get("plan_signal", "")).strip()
+        final_text = analysis_text or response
+        state.shared_context["nutrition_analysis"] = {
+            "status": domain_status,
+            "text": final_text,
+            "plan_signal": plan_signal,
+        }
+        self._merge_persistence_candidates(
+            state,
+            memory_candidates=parsed.get("memory_candidates"),
+            event_candidates=parsed.get("event_candidates"),
+        )
+        state.node_outputs["nutrition_specialist"] = final_text
 
     async def _node_general_conversation(self, state: GraphState) -> None:
         if state.security_status != "safe":
             state.technical_response = self._blocked_response()
+            state.node_outputs["general_conversation"] = state.technical_response
             return
         specialist_context = "\n\n".join(
             [
                 self._shared_context_payload(state),
                 state.node_outputs.get("training_specialist", ""),
                 state.node_outputs.get("nutrition_specialist", ""),
+                state.node_outputs.get("plan_specialist", ""),
             ]
         ).strip()
         response = await self._run_llm_node(
@@ -482,12 +652,40 @@ class ConversationGraphRunner:
                 "plan_help",
             },
         )
-        state.technical_response = response
-        state.response["technical"] = response
+        public_text = response
+        strip_wrappers = getattr(self._brain, "strip_internal_wrappers", None)
+        if callable(strip_wrappers):
+            public_text = strip_wrappers(response)
+        state.technical_response = public_text
+        state.response["technical"] = public_text
+        state.final_response = public_text
+        state.response["final"] = public_text
+        state.node_outputs["general_conversation"] = public_text
 
     async def _node_persistence_guard(self, state: GraphState) -> None:
         action_detail = "no_action"
         tools_by_name = {tool.name: tool for tool in self._brain.get_tools(state.user_email)}
+        structured_candidates = dict(state.shared_context.get("persistence_candidates") or {})
+        event_candidates = self._normalize_candidates(
+            structured_candidates.get("event"), "event_action"
+        )
+        memory_candidates = self._normalize_candidates(
+            structured_candidates.get("memory"), "memory_action"
+        )
+        if event_candidates:
+            parsed = event_candidates[0]
+            state.persistence_intents = parsed
+            event_action = self._execute_event_intent(state, tools_by_name, parsed)
+            if event_action:
+                self._log_persistence_decision(state, event_action)
+                return
+        if memory_candidates:
+            parsed = memory_candidates[0]
+            state.persistence_intents = parsed
+            memory_action = self._execute_memory_intent(state, tools_by_name, parsed)
+            if memory_action:
+                self._log_persistence_decision(state, memory_action)
+                return
         planner = await self._run_llm_node(
             node_name="persistence_guard",
             state=state,
@@ -510,29 +708,6 @@ class ConversationGraphRunner:
             return
         state.node_outputs["persistence_guard"] = "no_action"
         self._log_persistence_decision(state, action_detail)
-
-    async def _node_persona_response(self, state: GraphState) -> None:
-        if state.security_status != "safe":
-            state.final_response = self._blocked_response()
-            return
-        trainer_summary = (
-            state.shared_context.get("input_data", {}).get("trainer_profile", "")[:1200]
-        )
-        styled = await self._run_llm_node(
-            node_name="persona_response",
-            state=state,
-            extra_context=(
-                f"PERSONA:\n{trainer_summary}\n\n"
-                f"RESPOSTA_TECNICA_BASE:\n{state.technical_response}"
-            ),
-            allowed_tools=set(),
-        )
-        public_text = styled
-        strip_wrappers = getattr(self._brain, "strip_internal_wrappers", None)
-        if callable(strip_wrappers):
-            public_text = strip_wrappers(styled)
-        state.final_response = public_text
-        state.response["final"] = public_text
 
     async def _run_llm_node(
         self,
@@ -591,7 +766,6 @@ class ConversationGraphRunner:
             user_email=state.user_email,
             log_callback=self._brain.get_log_callback(None),
             model_override=cfg.model_name,
-            preset_override=None,
             run_name=f"graph.{node_name}",
             mode=f"graph:{node_name}",
         ):
@@ -602,10 +776,46 @@ class ConversationGraphRunner:
                 state.tools_called.append(tool_name)
         return "".join(chunks).strip() or state.user_input_sanitized
 
+    @staticmethod
+    def _normalize_candidates(
+        raw_candidates: Any,
+        action_key: str,
+    ) -> list[dict[str, Any]]:
+        if not isinstance(raw_candidates, list):
+            return []
+        normalized: list[dict[str, Any]] = []
+        for candidate in raw_candidates:
+            if not isinstance(candidate, dict):
+                continue
+            action = str(candidate.get(action_key, "none")).strip().lower()
+            if action in {"", "none"}:
+                continue
+            normalized.append(candidate)
+        return normalized
+
+    def _merge_persistence_candidates(
+        self,
+        state: GraphState,
+        *,
+        memory_candidates: Any = None,
+        event_candidates: Any = None,
+    ) -> None:
+        bucket = state.shared_context.setdefault(
+            "persistence_candidates",
+            {"memory": [], "event": []},
+        )
+        bucket["memory"].extend(
+            self._normalize_candidates(memory_candidates, "memory_action")
+        )
+        bucket["event"].extend(
+            self._normalize_candidates(event_candidates, "event_action")
+        )
+
     def _build_context_catalog(self, state: GraphState) -> dict[str, str]:
         input_data = state.shared_context.get("input_data", {})
         return {
             "request": state.user_input_sanitized or state.user_input_raw,
+            "user_locale": str(input_data.get("user_locale", "pt-BR")),
             "user_profile": str(state.shared_context.get("user_profile_summary", "")),
             "trainer_identity": str(state.shared_context.get("trainer_identity", "")),
             "trainer_persona": str(state.shared_context.get("trainer_persona", "")),
@@ -616,7 +826,9 @@ class ConversationGraphRunner:
             "context_summary": str(state.shared_context.get("context_summary", "")),
             "training_analysis": str(state.node_outputs.get("training_specialist", "")),
             "nutrition_analysis": str(state.node_outputs.get("nutrition_specialist", "")),
+            "plan_analysis": str(state.node_outputs.get("plan_specialist", "")),
             "plan_workspace": str(state.shared_context.get("plan_workspace", "")),
+            "plan_lifecycle": str(state.shared_context.get("plan_lifecycle", {})),
             "technical_response": str(state.technical_response),
             "security_result": str(state.security_status),
             "persistence_intents": str(state.persistence_intents),
@@ -649,6 +861,11 @@ class ConversationGraphRunner:
         event_title = str(parsed.get("event_title", "")).strip()
         event_date = str(parsed.get("event_date", "")).strip()
         event_id = str(parsed.get("event_id", "")).strip()
+        event_recurrence = str(
+            parsed.get("event_recurrence", parsed.get("recurrence", ""))
+        ).strip().lower()
+        if event_recurrence not in {"weekly", "monthly"}:
+            event_recurrence = "none"
         list_tool = tools_by_name.get("list_events")
         existing_events_dump = str(list_tool.invoke({})) if list_tool else ""
         if list_tool:
@@ -656,6 +873,18 @@ class ConversationGraphRunner:
         matched_event = self._find_matching_event(existing_events_dump, event_title, event_date)
         if not event_id and matched_event:
             event_id = matched_event["id"]
+        normalized_date = self._normalize_event_date(event_date)
+        if not normalized_date and event_date:
+            inferred_recurrence = self._infer_event_recurrence(event_date)
+            if event_recurrence == "none":
+                event_recurrence = inferred_recurrence
+
+        if normalized_date:
+            event_date = normalized_date
+        else:
+            event_date = ""
+            if event_recurrence == "none":
+                event_recurrence = self._infer_event_recurrence(event_title)
 
         if event_action == "delete":
             delete_tool = tools_by_name.get("delete_event")
@@ -672,6 +901,8 @@ class ConversationGraphRunner:
                 payload["title"] = event_title[:120]
             if event_date:
                 payload["date"] = event_date
+            if event_recurrence != "none":
+                payload["recurrence"] = event_recurrence
             if event_id and update_tool and len(payload) > 1:
                 result = update_tool.invoke(payload)
                 state.persistence_actions.append(f"update_event:{result}")
@@ -697,6 +928,8 @@ class ConversationGraphRunner:
                 payload = {"title": event_title[:120]}
                 if event_date:
                     payload["date"] = event_date
+                if event_recurrence != "none":
+                    payload["recurrence"] = event_recurrence
                 result = event_tool.invoke(payload)
                 state.persistence_actions.append(f"create_event:{result}")
                 state.tools_called.append("create_event")
@@ -772,7 +1005,8 @@ class ConversationGraphRunner:
             f"RUNTIME_CONTEXT_JSON:\n{self._truncate(runtime_json, 4000)}\n\n"
             f"PLAN_SECTION:\n{self._truncate(plan_section, 1200)}\n\n"
             f"AGENDA_SECTION:\n{self._truncate(agenda_section, 1200)}\n\n"
-            f"METABOLISM_SECTION:\n{self._truncate(metabolism_section, 1200)}"
+            f"METABOLISM_SECTION:\n{self._truncate(metabolism_section, 1200)}\n\n"
+            f"PLAN_LIFECYCLE:\n{state.shared_context.get('plan_lifecycle', {})}"
         )
         return payload
 

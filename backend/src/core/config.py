@@ -25,7 +25,6 @@ _CRITICAL_RUNTIME_ENV_VARS = (
     "OPENROUTER_API_KEY",
     "OPENROUTER_BASE_URL",
     "OPENROUTER_ROUTING_MODEL",
-    "OPENROUTER_PROMPT_PRESET",
     "TELEGRAM_BOT_TOKEN",
     "TELEGRAM_WEBHOOK_SECRET",
     "STRIPE_API_KEY",
@@ -133,21 +132,10 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: str = ""
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
     OPENROUTER_ROUTING_MODEL: str = "openrouter/auto"
-    OPENROUTER_PROMPT_PRESET: str = "@preset/fityq-chat"
     OPENROUTER_CHAT_MODEL: str = ""
     OPENROUTER_EMBED_MODEL: str = "openai/text-embedding-3-small"
     OPENROUTER_EMBED_DIMENSIONS: int = 768
     PROMPT_CONTEXT_CONTRACT_VERSION: str = "prompt_context_v1"
-
-    @field_validator("OPENROUTER_PROMPT_PRESET", mode="before")
-    @classmethod
-    def validate_openrouter_prompt_preset(cls, v: str) -> str:
-        """Enforce preset format for OpenRouter prompt preset."""
-        if isinstance(v, str) and v.startswith("@preset/"):
-            return v
-        raise ValueError(
-            "OPENROUTER_PROMPT_PRESET must use an OpenRouter preset (e.g. @preset/fityq-chat)"
-        )
 
     @field_validator("OPENROUTER_ROUTING_MODEL", mode="before")
     @classmethod

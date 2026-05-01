@@ -4,17 +4,16 @@
 
 Replace the single-agent orchestration with an explicit graph runtime that keeps shared context stable, enforces prompt safety, guarantees persistence checks, and makes node-level prompt/model changes easy through repository files.
 
-## Node Topology (9 nodes)
+## Node Topology (8 nodes)
 
 1. `TurnContextNode`
 2. `PromptSecurityNode`
 3. `IntentRouterNode`
-4. `PlanManagerNode`
-5. `TrainingSpecialistNode`
-6. `NutritionSpecialistNode`
+4. `TrainingSpecialistNode`
+5. `NutritionSpecialistNode`
+6. `PlanSpecialistNode`
 7. `GeneralConversationNode`
 8. `PersistenceGuardNode`
-9. `PersonaResponseNode`
 
 ## Runtime State Contract
 
@@ -48,7 +47,7 @@ Implementation contract:
   - `AVAILABLE_CONTEXT` from manifest `context_blocks`
   - `PEER_INPUTS` from manifest `peer_inputs`
   - `OUTPUT_CONTRACT` from manifest `output_contract`
-- Trainer persona context is restricted to `persona_response` (`persona_mode=final_only`).
+- Trainer persona context is injected only into `general_conversation`, which now produces the final user-facing response.
 - Node-level model assignments in manifests are runtime defaults.
 
 ## Observability Policy
@@ -65,7 +64,7 @@ Implementation contract:
 
 ## Persistence Policy
 
-`PersistenceGuardNode` runs before final response, decides and executes memory/event actions (`create`, `update`, `delete`) with deduplication checks.
+`PersistenceGuardNode` runs after final synthesis, decides and executes memory/event actions (`create`, `update`, `delete`) with deduplication checks.
 
 Implementation note:
 - persistence now follows `planner -> executor`: the node first produces structured persistence intents via LLM, then executes the approved event/memory action in deterministic code.
@@ -75,7 +74,8 @@ Implementation note:
 - Specialists always receive the same shared runtime context payload.
 - `NutritionSpecialistNode` also receives `TrainingSpecialistNode` output when available.
 - `TrainingSpecialistNode` receives `NutritionSpecialistNode` output on revision pass.
-- `PlanManagerNode` evaluates consistency after specialist outputs and can trigger one revision cycle.
+- `PlanSpecialistNode` owns plan discovery, revision, renewal and persistence after specialist outputs and can trigger one revision cycle.
+- `GeneralConversationNode` is now the final response node and applies persona inline instead of delegating to a separate style-only node.
 
 ## Dev Test Setup
 

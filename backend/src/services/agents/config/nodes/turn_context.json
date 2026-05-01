@@ -2,7 +2,7 @@
   "node_name": "turn_context",
   "enabled": true,
   "model_provider": "openrouter",
-  "model_name": "openai/gpt-4.1-nano",
+  "model_name": "openai/gpt-5-nano",
   "temperature": 0.0,
   "max_tokens": 1024,
   "tool_policy": "restricted",
@@ -10,7 +10,7 @@
   "prompt_file": "backend/src/services/agents/config/prompts/turn_context.md",
   "response_format": "text",
   "version": "v1",
-  "context_blocks": ["request", "user_profile", "trainer_identity", "agenda", "active_plan", "metabolism", "history_summary"],
+  "context_blocks": ["request", "user_profile", "agenda", "active_plan", "metabolism", "history_summary"],
   "peer_inputs": [],
   "persona_mode": "none",
   "output_contract": "text"

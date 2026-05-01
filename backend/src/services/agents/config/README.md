@@ -3,6 +3,10 @@
 This directory is the source of truth for graph node runtime behavior.
 Prompt markdown files are full node instructions; Python runtime only injects allowed context, peer outputs, and output contract.
 
+Operational architecture reference:
+
+- `backend/src/services/agents/config/GRAPH_RUNTIME.md`
+
 ## Structure
 
 - `nodes/*.json`: node manifests

@@ -1,8 +1,8 @@
-# Prompt Context Service (OpenRouter Auto Router + Preset)
+# Prompt Context Service
 
-This backend uses OpenRouter auto routing (`OPENROUTER_ROUTING_MODEL`) and an
-OpenRouter preset (`OPENROUTER_PROMPT_PRESET`) as the source of system
-instructions. The local backend no longer builds a large instruction prompt.
+This backend uses OpenRouter routing models and local prompt files per node as
+the source of system instructions. The shared runtime payload below remains the
+primary dynamic context contract passed into the graph nodes.
 
 ## Runtime Contract
 
@@ -60,13 +60,12 @@ RUNTIME_CONTEXT_JSON (PROMPT_CONTEXT_V1):
 ## Configuration and Safety
 
 - `OPENROUTER_ROUTING_MODEL` defines routing target (default: `openrouter/auto`).
-- `OPENROUTER_PROMPT_PRESET` must start with `@preset/` (validated in settings).
 - `PROMPT_CONTEXT_CONTRACT_VERSION` defaults to `prompt_context_v1`.
-- If routing/preset configuration is invalid, app startup fails via settings validation.
+- Node prompts live under `backend/src/services/agents/config/prompts/`.
 
-## Preset Authoring Guidance
+## Node Prompt Guidance
 
-OpenRouter preset instructions should:
+Node prompt instructions should:
 
 - Treat `RUNTIME_CONTEXT_JSON` as primary dynamic context.
 - Prefer `plan.summary` and `plan.has_active_plan` for plan behavior.

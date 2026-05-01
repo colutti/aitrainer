@@ -4,7 +4,7 @@
 
 ## Goal
 
-Make prompt files the full source of truth for each graph node, enforce per-node context allowlists, restrict trainer persona to the final response node, and assign explicit OpenRouter models per node.
+Make prompt files the full source of truth for each graph node, enforce per-node context allowlists, concentrate trainer persona in the final synthesis node, and assign explicit OpenRouter models per node.
 
 ## Current Status Snapshot (2026-04-30)
 
@@ -81,15 +81,14 @@ Make prompt files the full source of truth for each graph node, enforce per-node
 
 ### Required Model Defaults
 
-- `turn_context`: `openai/gpt-4.1-nano`
-- `prompt_security`: `meta-llama/llama-guard-3-8b`
-- `intent_router`: `openai/gpt-4.1-nano`
+- `turn_context`: `openai/gpt-5-nano`
+- `prompt_security`: `openai/gpt-5-nano`
+- `intent_router`: `openai/gpt-5-nano`
 - `training_specialist`: `openai/gpt-4.1-mini`
 - `nutrition_specialist`: `openai/gpt-4.1-mini`
-- `plan_manager`: `openai/gpt-4o-mini`
+- `plan_specialist`: `openai/gpt-4.1-mini`
 - `general_conversation`: `openai/gpt-4o-mini`
-- `persistence_guard`: `openai/gpt-4.1-nano`
-- `persona_response`: `openai/gpt-4o-mini`
+- `persistence_guard`: `openai/gpt-5-nano`
 
 ### Prompt Content Requirements
 
@@ -120,7 +119,7 @@ Each prompt file must define:
 - Architecture spec explicitly states:
   - prompt files are full prompts
   - context is node-scoped by allowlist
-  - persona only reaches `persona_response`
+  - persona reaches only the final synthesis node
   - manifest models are runtime defaults
 - Operator README documents manifest schema and runtime contract.
 
@@ -144,7 +143,7 @@ Each prompt file must define:
 4. Validate:
    - `prompt_security` only receives request-oriented context.
    - `training_specialist` and `nutrition_specialist` do not receive `trainer_persona`.
-   - `persona_response` receives `trainer_persona`.
+   - `general_conversation` receives `trainer_persona`.
 
 ### M-02 Runtime Config Drift Check
 
@@ -167,10 +166,9 @@ Each prompt file must define:
 2. Validate node execution order and participation:
    - `training_specialist`
    - `nutrition_specialist`
-   - `plan_manager`
+   - `plan_specialist`
    - `general_conversation`
    - `persistence_guard`
-   - `persona_response`
 3. Validate model names used match node manifests.
 
 ---
@@ -187,7 +185,7 @@ If the partner requests granular history, split into per-task commits.
 - registry validation rejects malformed contract fields
 - admin endpoint exposes effective prompt/model/context metadata
 - `prompt_security` receives only request context
-- `persona_response` alone receives `trainer_persona`
+- `general_conversation` alone receives `trainer_persona`
 - `nutrition_specialist` can consume `training_analysis`
 - prompt rendering includes `AVAILABLE_CONTEXT`, `PEER_INPUTS`, `OUTPUT_CONTRACT`
 - inline objective text is absent from runtime system prompt
@@ -199,6 +197,6 @@ If the partner requests granular history, split into per-task commits.
 
 | ID | Cenário | Passos | Resultado Esperado | Status |
 |---|---|---|---|---|
-| M-01 | Inspeção real de prompts por nó | Executar protocolo M-01 | Persona só no `persona_response`; contexto mínimo por nó | Pendente |
+| M-01 | Inspeção real de prompts por nó | Executar protocolo M-01 | Persona só no `general_conversation`; contexto mínimo por nó | Pendente |
 | M-02 | Verificação operacional de config | Executar protocolo M-02 | Endpoint reflete schema expandido + hash atualizado | Pendente |
 | M-03 | Fluxo multi-domínio completo | Executar protocolo M-03 | Nós e modelos corretos conforme manifesto | Pendente |

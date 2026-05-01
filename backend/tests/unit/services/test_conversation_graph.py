@@ -35,6 +35,104 @@ async def test_prompt_security_blocks_injection():
 
 
 @pytest.mark.asyncio
+async def test_turn_context_infers_response_locale_from_input(monkeypatch):
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    class FakeTdeeService:
+        def __init__(self, _db):
+            del _db
+
+        def calculate_tdee(self, *_args, **_kwargs):
+            return {
+                "tdee": 2400,
+                "daily_target": 2200,
+                "goal_type": "maintain",
+                "goal_weekly_rate": 0.0,
+                "confidence": "medium",
+                "macro_targets": {"protein_g": 160, "carbs_g": 180, "fat_g": 60},
+            }
+
+    class FakeEventRepo:
+        def __init__(self, _db):
+            del _db
+
+        def get_active_events(self, *_args, **_kwargs):
+            return []
+
+    monkeypatch.setattr("src.services.graph.conversation_graph.AdaptiveTDEEService", FakeTdeeService)
+    monkeypatch.setattr("src.services.graph.conversation_graph.EventRepository", FakeEventRepo)
+    class FakeWindowMemory:
+        def load_memory_variables(self, _inputs):
+            del _inputs
+            return {"chat_history": []}
+
+    class FakeDatabase:
+        database = object()
+
+        def get_plan(self, _email):
+            del _email
+            return None
+
+        def get_window_memory(self, *args, **kwargs):
+            del args, kwargs
+            return FakeWindowMemory()
+
+    brain.database = FakeDatabase()
+    brain.get_log_callback.return_value = None
+    brain.prompt_builder.build_input_data.return_value = {
+        "user_profile": "perfil",
+        "trainer_profile": "treinador",
+        "formatted_history": "",
+        "current_date": "2026-05-01",
+        "agenda_section": "",
+        "plan_section": "",
+        "metabolism_section": "",
+        "runtime_context": {"session": {"channel": "app"}, "plan": {}},
+    }
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield "ok"
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="I trained back today",
+        user_input_sanitized="I trained back today",
+        channel="app",
+    )
+
+    await runner._node_turn_context(state)  # pylint: disable=protected-access
+
+    assert state.shared_context["input_data"]["user_locale"] == "en-US"
+    assert state.shared_context["input_data"]["runtime_context"]["session"]["response_locale"] == "en-US"
+
+
+@pytest.mark.asyncio
+async def test_prompt_security_allows_normal_fitness_coaching():
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield '{"status":"safe","reason":"allowed","sanitized":"quero ajustar treino e dieta"}'
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="quero ajustar treino e dieta",
+        user_input_sanitized="quero ajustar treino e dieta",
+        channel="app",
+    )
+    await runner._node_prompt_security(state)  # pylint: disable=protected-access
+    assert state.security_status == "safe"
+    assert state.user_input_sanitized == "quero ajustar treino e dieta"
+
+
+@pytest.mark.asyncio
 async def test_intent_router_detects_multi_domain():
     runner, brain = _runner_with_brain()
     state = GraphState(
@@ -61,8 +159,18 @@ def test_extract_helpers_parse_ids_and_json():
     assert parsed["status"] == "safe"
 
 
+def test_plan_lifecycle_flags_detect_expired_target_and_due_review():
+    flags = ConversationGraphRunner._build_plan_lifecycle_flags(  # pylint: disable=protected-access
+        plan_window_end="2026-04-01",
+        next_review="2026-04-02",
+        current_date="2026-04-30",
+    )
+    assert flags["timeline_expired"] is True
+    assert flags["next_review_due"] is True
+
+
 @pytest.mark.asyncio
-async def test_plan_manager_detects_conflict_for_revision():
+async def test_plan_specialist_tracks_plan_outcome():
     runner, brain = _runner_with_brain()
     state = GraphState(
         user_email="a@b.com",
@@ -74,14 +182,95 @@ async def test_plan_manager_detects_conflict_for_revision():
     state.node_outputs["training_specialist"] = "Plano inconsistente com carga semanal"
     async def fake_stream_with_tools(**kwargs):
         del kwargs
-        yield '{"needs_revision":true,"reason":"inconsistencia","plan_candidate":"ajustar volume"}'
+        yield (
+            '{"plan_status":"updated","reason":"inconsistencia","user_reply":"plano ajustado",'
+            '"needs_revision":true,"plan_candidate":"ajustar volume",'
+            '"memory_candidates":[{"memory_action":"save","memory_content":"prefere treino curto","memory_category":"context"}],'
+            '"event_candidates":[{"event_action":"create","event_title":"revisao do plano","event_date":"2026-05-10"}]}'
+        )
         yield {"type": "tools_summary", "tools_called": []}
 
     brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
     brain.get_log_callback.return_value = None
-    await runner._node_plan_manager(state)  # pylint: disable=protected-access
+    await runner._node_plan_specialist(state)  # pylint: disable=protected-access
     assert state.plan_needs_revision is True
     assert state.shared_context["plan_workspace"]["plan_candidate"] == "ajustar volume"
+    assert state.shared_context["plan_workspace"]["plan_status"] == "updated"
+    assert state.shared_context["persistence_candidates"]["memory"][0]["memory_content"] == "prefere treino curto"
+    assert state.shared_context["persistence_candidates"]["event"][0]["event_title"] == "revisao do plano"
+
+
+@pytest.mark.asyncio
+async def test_training_specialist_parses_structured_output_and_plan_signal():
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"analysis_text":"Leitura dos dados: houve treino.\\nInterpretacao: progresso.\\nProximas acoes: manter.",'
+            '"domain_status":"progress","plan_signal":"ajustar volume do plano",'
+            '"memory_candidates":[{"memory_action":"save","memory_content":"gosta de treinos curtos","memory_category":"preference"}],'
+            '"event_candidates":[]}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="treinei hoje",
+        user_input_sanitized="treinei hoje",
+        channel="app",
+    )
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_training_specialist(state)  # pylint: disable=protected-access
+
+    assert state.node_outputs["training_specialist"].startswith("Leitura dos dados:")
+    assert state.shared_context["training_analysis"]["status"] == "progress"
+    assert state.shared_context["training_analysis"]["plan_signal"] == "ajustar volume do plano"
+    assert state.shared_context["persistence_candidates"]["memory"][0]["memory_content"] == "gosta de treinos curtos"
+
+
+@pytest.mark.asyncio
+async def test_persistence_guard_prefers_structured_candidates_before_llm():
+    runner, brain = _runner_with_brain()
+    create_event = MagicMock()
+    create_event.name = "create_event"
+    create_event.invoke.return_value = "ok"
+    brain.get_tools.return_value = [create_event]
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        raise AssertionError("LLM should not be used when structured candidates already exist")
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="mensagem",
+        user_input_sanitized="mensagem",
+        channel="app",
+    )
+    state.shared_context = {
+        "persistence_candidates": {
+            "memory": [],
+            "event": [{"event_action": "create", "event_title": "check-in", "event_date": "2026-05-05"}],
+        },
+        "input_data": {"user_locale": "pt-BR"},
+    }
+
+    await runner._node_persistence_guard(state)  # pylint: disable=protected-access
+
+    create_event.invoke.assert_called_once()
+    assert state.node_outputs["persistence_guard"] == "create_event"
 
 
 @pytest.mark.asyncio
@@ -255,7 +444,138 @@ async def test_run_llm_node_attaches_node_metadata_to_input_data():
 
 
 @pytest.mark.asyncio
-async def test_persona_response_receives_trainer_persona_only_in_final_node():
+async def test_run_llm_node_does_not_forward_preset_to_graph_nodes():
+    runner, brain = _runner_with_brain()
+    captured = {}
+
+    async def fake_stream_with_tools(**kwargs):
+        captured["kwargs"] = kwargs
+        yield "ok"
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    brain.get_log_callback.return_value = None
+
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="mensagem",
+        user_input_sanitized="mensagem",
+        channel="app",
+    )
+    state.shared_context = {"input_data": {"user_locale": "pt-BR"}}
+
+    await runner._run_llm_node(  # pylint: disable=protected-access
+        node_name="prompt_security",
+        state=state,
+        allowed_tools=set(),
+    )
+
+    assert "preset_override" not in captured["kwargs"]
+
+
+@pytest.mark.asyncio
+async def test_training_specialist_receives_transact_and_read_tools():
+    runner, brain = _runner_with_brain()
+    captured = {}
+    tool_names = [
+        "save_workout",
+        "get_workouts",
+        "get_workouts_raw",
+        "list_hevy_routines",
+        "get_hevy_routine_detail",
+        "trigger_hevy_import",
+        "get_body_composition",
+        "get_body_composition_raw",
+    ]
+    tool_mocks = []
+    for tool_name in tool_names:
+        tool = MagicMock()
+        tool.name = tool_name
+        tool_mocks.append(tool)
+    brain.get_tools.return_value = tool_mocks
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        captured["tools"] = [tool.name for tool in kwargs["tools"]]
+        yield "ok"
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="treinei hoje",
+        user_input_sanitized="treinei hoje",
+        channel="app",
+    )
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_training_specialist(state)  # pylint: disable=protected-access
+
+    assert "save_workout" in captured["tools"]
+    assert "trigger_hevy_import" in captured["tools"]
+
+
+@pytest.mark.asyncio
+async def test_plan_specialist_receives_upsert_plan_tools():
+    runner, brain = _runner_with_brain()
+    captured = {}
+    tool_names = [
+        "get_plan",
+        "upsert_plan",
+        "plan_help",
+        "get_user_goal",
+        "update_user_goal",
+        "get_metabolism_data",
+    ]
+    tool_mocks = []
+    for tool_name in tool_names:
+        tool = MagicMock()
+        tool.name = tool_name
+        tool_mocks.append(tool)
+    brain.get_tools.return_value = tool_mocks
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        captured["tools"] = [tool.name for tool in kwargs["tools"]]
+        yield (
+            '{"plan_status":"missing","reason":"sem plano","user_reply":"vamos montar",'
+            '"needs_revision":false,"plan_candidate":""}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="quero um plano",
+        user_input_sanitized="quero um plano",
+        channel="app",
+    )
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_plan_specialist(state)  # pylint: disable=protected-access
+
+    assert "upsert_plan" in captured["tools"]
+    assert "get_plan" in captured["tools"]
+
+
+@pytest.mark.asyncio
+async def test_general_conversation_receives_trainer_persona_in_final_synthesis():
     runner, brain = _runner_with_brain()
     captured = {}
 
@@ -270,11 +590,11 @@ async def test_persona_response_receives_trainer_persona_only_in_final_node():
     state.shared_context = {
         "trainer_identity": {"name": "Breno"},
         "trainer_persona": "persona completa",
-        "technical_response": "base",
         "input_data": {"user_locale": "pt-BR"},
     }
+    state.node_outputs["plan_specialist"] = "plano coerente"
 
-    await runner._run_llm_node(node_name="persona_response", state=state, allowed_tools=set())
+    await runner._run_llm_node(node_name="general_conversation", state=state, allowed_tools=set())
     assert "persona completa" in captured["system"]
 
 
@@ -341,7 +661,7 @@ def test_graph_state_exposes_runtime_contract_blocks():
 
 
 @pytest.mark.asyncio
-async def test_persona_response_strips_internal_wrappers():
+async def test_general_conversation_strips_internal_wrappers_into_final_response():
     runner, brain = _runner_with_brain()
     brain.get_log_callback.return_value = None
     brain.strip_internal_wrappers.side_effect = lambda text: text.replace(
@@ -366,8 +686,77 @@ async def test_persona_response_strips_internal_wrappers():
             "user_locale": "pt-BR",
         }
     }
+    state.node_outputs["plan_specialist"] = "plano coerente"
 
-    await runner._node_persona_response(state)  # pylint: disable=protected-access
+    await runner._node_general_conversation(state)  # pylint: disable=protected-access
 
     assert state.final_response == "resposta final"
     assert state.response["final"] == "resposta final"
+    assert state.node_outputs["general_conversation"] == "resposta final"
+
+
+@pytest.mark.asyncio
+async def test_general_conversation_localizes_section_headers_by_locale():
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield "Data Reading:\nThis is a test response.\n\nInterpretation:\nStill a test.\n\nNext Actions:\nKeep going."
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(user_email="a@b.com", user_input_raw="hi", user_input_sanitized="hi", channel="app")
+    state.shared_context = {"input_data": {"user_locale": "en-US"}}
+
+    await runner._node_general_conversation(state)  # pylint: disable=protected-access
+
+    assert state.final_response.startswith("Data Reading:")
+    assert state.node_outputs["general_conversation"].startswith("Data Reading:")
+
+
+@pytest.mark.asyncio
+async def test_persistence_guard_converts_weekly_follow_up_into_recurring_event():
+    runner, brain = _runner_with_brain()
+    list_events = MagicMock()
+    list_events.name = "list_events"
+    list_events.invoke.return_value = "📋 Você não tem eventos ativos no momento."
+    create_event = MagicMock()
+    create_event.name = "create_event"
+    create_event.invoke.return_value = "ok"
+    brain.get_tools.return_value = [list_events, create_event]
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"event_action":"create","event_title":"check-in de peso","event_date":"todas as segundas-feiras",'
+            '"event_id":"","memory_action":"none","memory_content":"","reason":"agenda"}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="me lembra toda segunda de pesar",
+        user_input_sanitized="me lembra toda segunda de pesar",
+        channel="app",
+    )
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_persistence_guard(state)  # pylint: disable=protected-access
+
+    create_event.invoke.assert_called_once()
+    assert create_event.invoke.call_args.args[0] == {
+        "title": "check-in de peso",
+        "recurrence": "weekly",
+    }
+    assert state.node_outputs["persistence_guard"] == "create_event"

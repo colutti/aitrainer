@@ -213,3 +213,4 @@ Project-specific design skill:
 ## Maintenance
 
 Keep this document updated when stack, commands, app boundaries, or validation workflow change.
+Keep project documentation updated whenever behavior, architecture, prompts, models, workflows, contracts, or operational guidance change.

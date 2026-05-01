@@ -10,7 +10,6 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
     def test_factory_openrouter(self, mock_settings):
         """Test creating OpenRouter client via factory."""
         mock_settings.OPENROUTER_ROUTING_MODEL = "openrouter/auto"
-        mock_settings.OPENROUTER_PROMPT_PRESET = "@preset/fityq-chat"
         mock_settings.OPENROUTER_CHAT_MODEL = ""
         mock_settings.OPENROUTER_API_KEY = "or-test"
         mock_settings.OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
@@ -22,15 +21,13 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
                 api_key="or-test",
                 model="openrouter/auto",
                 base_url="https://openrouter.ai/api/v1",
-                preset="@preset/fityq-chat",
             )
 
     @patch("src.core.config.settings")
-    def test_factory_openrouter_uses_chat_model_as_preset_fallback(self, mock_settings):
-        """If the explicit preset is absent, fall back to OPENROUTER_CHAT_MODEL."""
-        mock_settings.OPENROUTER_ROUTING_MODEL = "openrouter/auto"
-        mock_settings.OPENROUTER_PROMPT_PRESET = ""
-        mock_settings.OPENROUTER_CHAT_MODEL = "@preset/fityq-chat-prod"
+    def test_factory_openrouter_uses_chat_model_as_routing_fallback(self, mock_settings):
+        """If the routing model is absent, fall back to OPENROUTER_CHAT_MODEL."""
+        mock_settings.OPENROUTER_ROUTING_MODEL = ""
+        mock_settings.OPENROUTER_CHAT_MODEL = "openai/gpt-4.1-mini"
         mock_settings.OPENROUTER_API_KEY = "or-test"
         mock_settings.OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
@@ -39,9 +36,8 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(client, MagicMock)
             MockOpenRouter.assert_called_once_with(
                 api_key="or-test",
-                model="openrouter/auto",
+                model="openai/gpt-4.1-mini",
                 base_url="https://openrouter.ai/api/v1",
-                preset="@preset/fityq-chat-prod",
             )
 
     async def test_stream_simple_success(self):
@@ -507,21 +503,20 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
             self.assertIn("api_key", kwargs)
             self.assertEqual(kwargs["extra_body"], None)
 
-    def test_openrouter_auto_router_with_preset_payload(self):
-        """Spike: OpenRouter auto router should forward preset via extra_body."""
+    def test_openrouter_auto_router_has_no_preset_payload(self):
+        """OpenRouter auto router should not forward preset via extra_body."""
         with patch("langchain_openai.ChatOpenAI") as mock_cls:
             OpenRouterClient(
                 api_key="or-key",
                 model="openrouter/auto",
                 base_url="https://openrouter.ai/api/v1",
-                preset="fityq-chat",
             )
             mock_cls.assert_called_once()
             kwargs = mock_cls.call_args.kwargs
             self.assertEqual(kwargs["model"], "openrouter/auto")
             self.assertEqual(kwargs["base_url"], "https://openrouter.ai/api/v1")
             self.assertIn("api_key", kwargs)
-            self.assertEqual(kwargs["extra_body"], {"preset": "fityq-chat"})
+            self.assertEqual(kwargs["extra_body"], None)
 
 
 if __name__ == "__main__":
