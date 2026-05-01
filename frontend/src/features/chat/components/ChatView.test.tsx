@@ -6,6 +6,7 @@ import { ChatView } from './ChatView';
 const i18n = {
   language: 'en-US',
 };
+const isDev = import.meta.env.DEV;
 
 afterEach(() => {
   i18n.language = 'en-US';
@@ -35,6 +36,8 @@ const mockProps = {
   error: null,
   trainer: { trainer_id: 'atlas', name: 'Atlas' } as any,
   userInfo: { name: 'Student', photo_base64: 'base64' } as any,
+  debugTrace: null,
+  debugTraceError: null,
   initialInputValue: '',
   onSend: vi.fn(),
   onScroll: vi.fn(),
@@ -43,11 +46,15 @@ const mockProps = {
 };
 
 describe('ChatView', () => {
-  it('renders workspace structure with conversation column only', () => {
+  it('renders workspace structure with the optional debug panel in dev', () => {
     render(<ChatView {...mockProps} />);
     expect(screen.getByTestId('chat-workspace')).toBeInTheDocument();
     expect(screen.getByTestId('chat-conversation-column')).toBeInTheDocument();
-    expect(screen.queryByTestId('chat-context-panel')).not.toBeInTheDocument();
+    if (isDev) {
+      expect(screen.getByTestId('chat-context-panel')).toBeInTheDocument();
+    } else {
+      expect(screen.queryByTestId('chat-context-panel')).not.toBeInTheDocument();
+    }
   });
 
   it('keeps chat form inside conversation column', () => {
@@ -55,14 +62,18 @@ describe('ChatView', () => {
     expect(screen.getByTestId('chat-conversation-column')).toContainElement(screen.getByTestId('chat-form'));
   });
 
-  it('uses compact chat header height', () => {
+  it('uses split layout when the debug panel is visible', () => {
     render(<ChatView {...mockProps} />);
-    expect(screen.getByTestId('chat-header')).toHaveClass('h-14', 'md:h-16');
+    expect(screen.getByTestId('chat-workspace')).toHaveClass('lg:grid', 'lg:grid-cols-[minmax(0,1fr)_22rem]', 'lg:h-[calc(100dvh-7rem)]', 'lg:overflow-hidden');
   });
 
   it('keeps empty state rendering without context panel', () => {
     render(<ChatView {...mockProps} messages={[]} />);
-    expect(screen.queryByTestId('chat-context-panel')).not.toBeInTheDocument();
+    if (isDev) {
+      expect(screen.getByTestId('chat-context-panel')).toBeInTheDocument();
+    } else {
+      expect(screen.queryByTestId('chat-context-panel')).not.toBeInTheDocument();
+    }
     expect(screen.getByText('chat.start_conversation')).toBeInTheDocument();
   });
 
@@ -168,5 +179,55 @@ describe('ChatView', () => {
 
     expect(screen.getByText('Demo read-only')).toBeInTheDocument();
     expect(screen.getByTestId('chat-input')).toBeDisabled();
+  });
+
+  it('shows the last graph trace in the debug panel', () => {
+    if (!isDev) return;
+
+    render(
+      <ChatView
+        {...mockProps}
+        debugTrace={{
+          user_email: 'student@example.com',
+          request_id: 'req-1',
+          conversation_id: 'student@example.com',
+          turn_id: 'turn-1',
+          channel: 'app',
+          status: 'success',
+          error: null,
+          started_at: '2026-05-01T10:00:00.000Z',
+          ended_at: '2026-05-01T10:00:02.000Z',
+          duration_ms: 2000,
+          intent: 'training',
+          security_status: 'safe',
+          plan_needs_revision: false,
+          tools_called: ['get_plan'],
+          persistence_actions: [],
+          final_response: 'Resposta final',
+          technical_response: 'Resposta técnica',
+          node_outputs: {
+            turn_context: 'Contexto pronto',
+          },
+          nodes: [
+            {
+              node_name: 'turn_context',
+              status: 'completed',
+              started_at: '2026-05-01T10:00:00.000Z',
+              completed_at: '2026-05-01T10:00:01.000Z',
+              duration_ms: 1000,
+              output_preview: 'Contexto pronto',
+              error: null,
+              config_hash: 'hash',
+              config_version: 'v1',
+              model: 'model',
+            },
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByText('turn_context')).toBeInTheDocument();
+    expect(screen.getByText('Contexto pronto')).toBeInTheDocument();
+    expect(screen.getByText('Resposta final')).toBeInTheDocument();
   });
 });

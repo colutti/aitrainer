@@ -4,7 +4,10 @@ This module contains the AI trainer brain, which is responsible for interacting 
 # pylint: disable=too-many-lines
 
 import asyncio
+import copy
 import re
+from collections import OrderedDict
+from threading import Lock
 from typing import Optional, TYPE_CHECKING
 from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor
@@ -99,7 +102,7 @@ if TYPE_CHECKING:
     from qdrant_client import QdrantClient
 
 
-class AITrainerBrain:  # pylint: disable=too-many-public-methods
+class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instance-attributes
     """
     Service class responsible for orchestrating AI trainer interactions.
     Uses LLMClient for LLM operations (abstracted from specific providers).
@@ -122,6 +125,9 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         self._executor = ThreadPoolExecutor(
             max_workers=settings.AI_TRAINER_THREADPOOL_WORKERS
         )
+        self._graph_debug_traces: "OrderedDict[str, dict]" = OrderedDict()
+        self._graph_debug_lock = Lock()
+        self._graph_debug_limit = 20
 
     def calculate_effective_limits(
         self, profile: UserProfile, plan
@@ -209,6 +215,33 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
     def database(self) -> MongoDatabase:
         """Returns the database instance."""
         return self._database
+
+    @staticmethod
+    def is_graph_debug_enabled() -> bool:
+        """Returns True only in the development runtime."""
+        return settings.LANGSMITH_ENVIRONMENT.lower() == "dev"
+
+    def store_graph_debug_trace(self, turn_id: str, trace: dict) -> None:
+        """Store the latest graph trace for later inspection in dev."""
+        if not self.is_graph_debug_enabled():
+            return
+        payload = copy.deepcopy(trace)
+        payload["turn_id"] = turn_id
+        with self._graph_debug_lock:
+            self._graph_debug_traces[turn_id] = payload
+            self._graph_debug_traces.move_to_end(turn_id)
+            while len(self._graph_debug_traces) > self._graph_debug_limit:
+                self._graph_debug_traces.popitem(last=False)
+
+    def get_graph_debug_trace(self, turn_id: str, user_email: str) -> dict | None:
+        """Return a stored trace if debug mode is enabled and ownership matches."""
+        if not self.is_graph_debug_enabled():
+            return None
+        with self._graph_debug_lock:
+            trace = self._graph_debug_traces.get(turn_id)
+            if trace is None or trace.get("user_email") != user_email:
+                return None
+            return copy.deepcopy(trace)
 
     def log_prompt_in_background(
         self,
@@ -677,13 +710,14 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
         """Returns the maximum streaming time allowed for one LLM response."""
         return float(settings.LLM_STREAM_TIMEOUT_SECONDS)
 
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals,too-many-arguments,too-many-positional-arguments
     async def send_message_ai(
         self,
         user_email: str,
         user_input: str,
         background_tasks: Optional[BackgroundTasks] = None,
         message_options: dict | None = None,
+        turn_id: str | None = None,
     ):
         """
         Generates LLM response using the latest chat window only.
@@ -705,11 +739,42 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods
                     is_telegram=bool((message_options or {}).get("is_telegram", False)),
                     user_images=(message_options or {}).get("image_payloads"),
                     background_tasks=background_tasks,
+                    turn_id=turn_id,
                 ):
                     yield chunk
                 return
             except Exception as graph_err:  # pylint: disable=broad-exception-caught
                 logger.error("Graph runtime failed, fallback to legacy flow: %s", graph_err)
+                if turn_id and self.is_graph_debug_enabled():
+                    channel = (
+                        "telegram"
+                        if bool((message_options or {}).get("is_telegram", False))
+                        else "app"
+                    )
+                    self.store_graph_debug_trace(
+                        turn_id,
+                        {
+                            "user_email": user_email,
+                            "request_id": "",
+                            "conversation_id": user_email,
+                            "turn_id": turn_id,
+                            "channel": channel,
+                            "status": "error",
+                            "error": str(graph_err),
+                            "started_at": None,
+                            "ended_at": None,
+                            "duration_ms": None,
+                            "intent": "general",
+                            "security_status": "unknown",
+                            "plan_needs_revision": False,
+                            "tools_called": [],
+                            "persistence_actions": [],
+                            "final_response": "",
+                            "technical_response": "",
+                            "node_outputs": {},
+                            "nodes": [],
+                        },
+                    )
 
         image_payloads = (message_options or {}).get("image_payloads")
 

@@ -92,6 +92,7 @@ app.add_middleware(
     allow_credentials=allow_credentials_,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Graph-Turn-Id"],
 )
 
 app.include_router(user.router, prefix="/user", tags=["user"])

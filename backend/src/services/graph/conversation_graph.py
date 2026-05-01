@@ -229,8 +229,10 @@ class ConversationGraphRunner:
         is_telegram: bool,
         user_images: Optional[list[dict[str, str]]],
         background_tasks,
+        turn_id: str | None = None,
     ):
         """Run graph and yield streamed text."""
+        started_at = datetime.utcnow()
         state = GraphState(
             user_email=user_email,
             user_input_raw=user_input,
@@ -239,6 +241,7 @@ class ConversationGraphRunner:
             is_telegram=is_telegram,
             user_images=user_images,
             user_input_sanitized=user_input,
+            turn_id=turn_id or str(uuid4()),
         )
         state.request["sanitized_input"] = user_input
 
@@ -250,58 +253,74 @@ class ConversationGraphRunner:
             "graph_nodes": list(self.NODE_ORDER),
             "node_configs": self._registry.as_metadata(),
         }
-        with create_graph_run_context(
-            run_name="graph.conversation",
-            metadata=trace_metadata,
-        ):
-            for node_name in self.NODE_ORDER[:3]:
-                await self._run_node(node_name, state)
-                if node_name == "prompt_security" and state.security_status != "safe":
-                    break
+        graph_error: str | None = None
+        try:
+            with create_graph_run_context(
+                run_name="graph.conversation",
+                metadata=trace_metadata,
+            ):
+                for node_name in self.NODE_ORDER[:3]:
+                    await self._run_node(node_name, state)
+                    if node_name == "prompt_security" and state.security_status != "safe":
+                        break
 
-            if state.security_status != "safe":
-                state.technical_response = self._blocked_response()
-                state.final_response = state.technical_response
-                state.response["technical"] = state.technical_response
-                state.response["final"] = state.final_response
-            else:
-                if state.intent in {"training", "plan", "multi_domain"}:
-                    await self._run_node("training_specialist", state)
-                if state.intent in {"nutrition", "plan", "multi_domain"}:
-                    await self._run_node("nutrition_specialist", state)
-                await self._run_node("plan_specialist", state)
-                if state.plan_needs_revision:
+                if state.security_status != "safe":
+                    state.technical_response = self._blocked_response()
+                    state.final_response = state.technical_response
+                    state.response["technical"] = state.technical_response
+                    state.response["final"] = state.final_response
+                else:
                     if state.intent in {"training", "plan", "multi_domain"}:
                         await self._run_node("training_specialist", state)
                     if state.intent in {"nutrition", "plan", "multi_domain"}:
                         await self._run_node("nutrition_specialist", state)
-                await self._run_node("general_conversation", state)
-            await self._run_node("persistence_guard", state)
-            logger.info(
-                "graph.turn_completed request_id=%s conversation_id=%s turn_id=%s intent=%s security=%s tools_called=%s persistence_actions=%s",
-                state.request_id,
-                state.conversation_id,
-                state.turn_id,
-                state.intent,
-                state.security_status,
-                state.tools_called,
-                state.persistence_actions,
-            )
+                    await self._run_node("plan_specialist", state)
+                    if state.plan_needs_revision:
+                        if state.intent in {"training", "plan", "multi_domain"}:
+                            await self._run_node("training_specialist", state)
+                        if state.intent in {"nutrition", "plan", "multi_domain"}:
+                            await self._run_node("nutrition_specialist", state)
+                    await self._run_node("general_conversation", state)
+                await self._run_node("persistence_guard", state)
+                logger.info(
+                    "graph.turn_completed request_id=%s conversation_id=%s turn_id=%s intent=%s security=%s tools_called=%s persistence_actions=%s",
+                    state.request_id,
+                    state.conversation_id,
+                    state.turn_id,
+                    state.intent,
+                    state.security_status,
+                    state.tools_called,
+                    state.persistence_actions,
+                )
 
-            yield state.final_response
+                yield state.final_response
 
-            await self._brain.finalize_ai_response(
-                user_email=user_email,
-                user_input=user_input,
-                final_response=state.final_response,
-                metadata={
-                    "trainer_type": state.shared_context.get("trainer_type", "atlas"),
-                    "needs_cycle_reset": bool(state.shared_context.get("needs_cycle_reset", False)),
-                    "background_tasks": background_tasks,
-                    "log_callback": self._brain.get_log_callback(background_tasks),
-                    "user_images": user_images,
-                },
-            )
+                await self._brain.finalize_ai_response(
+                    user_email=user_email,
+                    user_input=user_input,
+                    final_response=state.final_response,
+                    metadata={
+                        "trainer_type": state.shared_context.get("trainer_type", "atlas"),
+                        "needs_cycle_reset": bool(state.shared_context.get("needs_cycle_reset", False)),
+                        "background_tasks": background_tasks,
+                        "log_callback": self._brain.get_log_callback(background_tasks),
+                        "user_images": user_images,
+                    },
+                )
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            graph_error = str(exc)
+            raise
+        finally:
+            if self._brain.is_graph_debug_enabled():
+                self._brain.store_graph_debug_trace(
+                    state.turn_id,
+                    self._build_debug_trace(
+                        state=state,
+                        started_at=started_at,
+                        ended_at=datetime.utcnow(),
+                        graph_error=graph_error,
+                    ),
+                )
 
     async def _run_node(self, node_name: str, state: GraphState) -> None:
         cfg = self._registry.get_node_config(node_name)
@@ -313,13 +332,18 @@ class ConversationGraphRunner:
             "conversation_id": state.conversation_id,
             "turn_id": state.turn_id,
         }
+        node_started_at = datetime.utcnow()
         state.node_metadata[node_name] = {
             **base_meta,
-            "started_at": datetime.utcnow().isoformat(),
+            "started_at": node_started_at.isoformat(),
         }
         if not cfg.enabled:
             state.node_metadata[node_name]["status"] = "skipped_disabled"
-            state.node_metadata[node_name]["completed_at"] = datetime.utcnow().isoformat()
+            node_completed_at = datetime.utcnow()
+            state.node_metadata[node_name]["completed_at"] = node_completed_at.isoformat()
+            state.node_metadata[node_name]["duration_ms"] = int(
+                (node_completed_at - node_started_at).total_seconds() * 1000
+            )
             logger.info(
                 "graph.node_skipped node=%s cfg=%s request_id=%s",
                 node_name,
@@ -334,22 +358,79 @@ class ConversationGraphRunner:
             state.request_id,
         )
         node = getattr(self, f"_node_{node_name}")
-        with create_node_run_context(node_name=node_name, metadata=base_meta):
-            if asyncio.iscoroutinefunction(node):
-                await node(state)
-            else:
-                node(state)
-        state.node_metadata[node_name]["status"] = "completed"
-        state.node_metadata[node_name]["output_preview"] = self._truncate(
-            state.node_outputs.get(node_name, ""),
-            320,
-        )
-        state.node_metadata[node_name]["completed_at"] = datetime.utcnow().isoformat()
+        try:
+            with create_node_run_context(node_name=node_name, metadata=base_meta):
+                if asyncio.iscoroutinefunction(node):
+                    await node(state)
+                else:
+                    node(state)
+            state.node_metadata[node_name]["status"] = "completed"
+            state.node_metadata[node_name]["output_preview"] = self._truncate(
+                state.node_outputs.get(node_name, ""),
+                320,
+            )
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            state.node_metadata[node_name]["status"] = "failed"
+            state.node_metadata[node_name]["error"] = str(exc)
+            raise
+        finally:
+            node_completed_at = datetime.utcnow()
+            state.node_metadata[node_name]["completed_at"] = node_completed_at.isoformat()
+            state.node_metadata[node_name]["duration_ms"] = int(
+                (node_completed_at - node_started_at).total_seconds() * 1000
+            )
         logger.info(
             "graph.node_completed node=%s request_id=%s",
             node_name,
             state.request_id,
         )
+
+    def _build_debug_trace(
+        self,
+        *,
+        state: GraphState,
+        started_at: datetime,
+        ended_at: datetime,
+        graph_error: str | None,
+    ) -> dict[str, Any]:
+        nodes: list[dict[str, Any]] = []
+        for node_name in self.NODE_ORDER:
+            meta = dict(state.node_metadata.get(node_name, {}))
+            nodes.append(
+                {
+                    "node_name": node_name,
+                    "status": meta.get("status", "pending"),
+                    "started_at": meta.get("started_at"),
+                    "completed_at": meta.get("completed_at"),
+                    "duration_ms": meta.get("duration_ms"),
+                    "output_preview": meta.get("output_preview", ""),
+                    "error": meta.get("error"),
+                    "config_hash": meta.get("config_hash"),
+                    "config_version": meta.get("config_version"),
+                    "model": meta.get("model"),
+                }
+            )
+        return {
+            "user_email": state.user_email,
+            "request_id": state.request_id,
+            "conversation_id": state.conversation_id,
+            "turn_id": state.turn_id,
+            "channel": state.channel,
+            "status": "error" if graph_error else "success",
+            "error": graph_error,
+            "started_at": started_at.isoformat(),
+            "ended_at": ended_at.isoformat(),
+            "duration_ms": int((ended_at - started_at).total_seconds() * 1000),
+            "intent": state.intent,
+            "security_status": state.security_status,
+            "plan_needs_revision": state.plan_needs_revision,
+            "tools_called": state.tools_called,
+            "persistence_actions": state.persistence_actions,
+            "final_response": state.final_response,
+            "technical_response": state.technical_response,
+            "node_outputs": state.node_outputs,
+            "nodes": nodes,
+        }
 
     async def _node_turn_context(self, state: GraphState) -> None:
         profile = self._brain.get_or_create_user_profile(state.user_email)

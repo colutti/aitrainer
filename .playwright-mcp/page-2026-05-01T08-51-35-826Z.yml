@@ -1,0 +1,323 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6] [cursor=pointer]:
+        - img "FityQ" [ref=e7]
+        - generic [ref=e8]: FityQ
+      - generic [ref=e9]:
+        - button "See demo" [ref=e10] [cursor=pointer]
+        - button "Differentiators" [ref=e11] [cursor=pointer]
+        - button "Plans" [ref=e12] [cursor=pointer]
+      - generic [ref=e13]:
+        - button "EN" [ref=e15]:
+          - img [ref=e16]
+          - generic [ref=e19]: EN
+        - button "Login" [ref=e20]
+  - main [ref=e21]:
+    - generic [ref=e24]:
+      - generic [ref=e26]: Intelligent coaching for real life
+      - heading "Turn your routine into consistent progress." [level=1] [ref=e27]
+      - paragraph [ref=e28]: Training, nutrition, body composition, and metabolism in one coaching system with memory, context, and practical guidance for everyday life.
+      - generic [ref=e29]:
+        - button "Start free trial" [disabled]:
+          - text: Start free trial
+          - img
+        - button "See demo" [ref=e30]
+      - generic [ref=e31]:
+        - generic [ref=e32]: Free trial
+        - generic [ref=e34]: No perfect routine required
+        - generic [ref=e36]: Real-world context
+    - generic [ref=e39]:
+      - generic [ref=e40]:
+        - heading "See how FityQ works in everyday life" [level=2] [ref=e41]
+        - paragraph [ref=e42]: Your routine creates signals. FityQ organizes that context and turns it into practical guidance you can actually follow.
+      - generic [ref=e43]:
+        - generic [ref=e44]:
+          - paragraph [ref=e45]: Your routine
+          - heading "Workout, meals, and weight enter the system" [level=3] [ref=e46]
+          - paragraph [ref=e47]: You track the basics manually or import data you already use.
+        - generic [ref=e48]:
+          - paragraph [ref=e49]: The system understands
+          - heading "Trends and context become clear" [level=3] [ref=e50]
+          - paragraph [ref=e51]: FityQ crosses frequency, intake, weight, and recovery to detect what changed.
+        - generic [ref=e52]:
+          - paragraph [ref=e53]: Your mentor guides
+          - heading "You get the next step with clarity" [level=3] [ref=e54]
+          - paragraph [ref=e55]: Instead of generic motivation, you get useful guidance for that moment.
+      - generic [ref=e56]:
+        - generic [ref=e57]: Realistic example
+        - heading "A normal week, handled with more intelligence" [level=3] [ref=e58]
+        - generic [ref=e59]:
+          - generic [ref=e60]:
+            - paragraph [ref=e61]: Detected context
+            - list [ref=e62]:
+              - listitem [ref=e63]: 2 fewer workouts than planned
+              - listitem [ref=e64]: 3 days above calorie target
+              - listitem [ref=e65]: Weight fluctuating without a clear trend
+          - generic [ref=e66]:
+            - paragraph [ref=e67]: Mentor response
+            - paragraph [ref=e68]: Atlas Prime
+            - paragraph [ref=e69]: "You do not need to overcompensate. Your best move today is to restore consistency: short workout, high protein, and a simple calorie target."
+    - generic [ref=e71]:
+      - generic [ref=e72]:
+        - heading "How it works in practice" [level=2] [ref=e73]
+        - paragraph [ref=e74]: Less guessing. More clarity on what to do today.
+      - generic [ref=e75]:
+        - generic [ref=e76]:
+          - generic [ref=e77]: "01"
+          - heading "Your data goes in" [level=3] [ref=e78]
+          - paragraph [ref=e79]: Workouts, meals, weight, and body composition are tracked manually or imported.
+          - img [ref=e81]
+        - generic [ref=e83]:
+          - generic [ref=e84]: "02"
+          - heading "The system organizes signals and trends" [level=3] [ref=e85]
+          - paragraph [ref=e86]: FityQ turns scattered routine data into clear context on consistency, balance, and progress.
+          - img [ref=e88]
+        - generic [ref=e90]:
+          - generic [ref=e91]: "03"
+          - heading "You get practical guidance" [level=3] [ref=e92]
+          - paragraph [ref=e93]: Your mentor uses memory and context to respond clearly, not with generic advice.
+    - generic [ref=e95]:
+      - generic [ref=e96]:
+        - heading "The operating system for your progress" [level=2] [ref=e97]
+        - paragraph [ref=e98]: Dashboard, chat, and metabolic insight working together to turn your routine into practical clarity.
+      - generic [ref=e99]:
+        - generic [ref=e100]:
+          - heading "Dashboard" [level=3] [ref=e101]
+          - paragraph [ref=e102]: Many signals, one clear reading
+          - generic [ref=e103]:
+            - generic [ref=e104]: Daily target
+            - generic [ref=e105]: Metabolic confidence
+            - generic [ref=e106]: Weight
+            - generic [ref=e107]: Fat
+            - generic [ref=e108]: Muscle mass
+            - generic [ref=e109]: Calories
+            - generic [ref=e110]: Recent activity
+            - generic [ref=e111]: Weekly frequency
+            - generic [ref=e112]: Recent PRs
+            - generic [ref=e113]: Strength radar
+        - generic [ref=e114]:
+          - heading "Context-aware chat" [level=3] [ref=e115]
+          - paragraph [ref=e116]: Guidance that understands your week
+          - generic [ref=e117]:
+            - generic [ref=e118]: I trained less this week and missed my targets on some days. What makes the most sense today?
+            - generic [ref=e119]: Today's goal is not extreme compensation. Let's protect consistency with a short workout, high protein, and a simple calorie target.
+        - generic [ref=e120]:
+          - heading "Adaptive metabolism" [level=3] [ref=e121]
+          - paragraph [ref=e122]: Less fixed formula, more reality
+          - generic [ref=e123]:
+            - generic [ref=e124]: Daily target
+            - generic [ref=e125]: Confidence
+            - generic [ref=e126]: Energy balance
+            - generic [ref=e127]: Weekly trend
+            - generic [ref=e128]: Consistency
+            - generic [ref=e129]: Calorie stability
+      - button "See demo" [ref=e131]:
+        - text: See demo
+        - img [ref=e132]
+    - generic [ref=e135]:
+      - generic [ref=e136]:
+        - heading "Choose the coaching style that fits you" [level=2] [ref=e137]
+        - paragraph [ref=e138]: Each mentor reads the same context with a different personality. You choose the one that matches how you like to grow.
+      - generic [ref=e139]:
+        - button "Atlas Prime Atlas Prime For people who prefer clarity and data-guided decisions." [ref=e140]:
+          - img "Atlas Prime" [ref=e141]
+          - heading "Atlas Prime" [level=3] [ref=e142]
+          - paragraph [ref=e143]: For people who prefer clarity and data-guided decisions.
+        - button "Luna Stardust Luna Stardust For people seeking consistency with more lightness and balance." [ref=e144]:
+          - img "Luna Stardust" [ref=e145]
+          - heading "Luna Stardust" [level=3] [ref=e146]
+          - paragraph [ref=e147]: For people seeking consistency with more lightness and balance.
+        - button "Dra. Sofia Pulse Dra. Sofia Pulse For people who value physiological context and metabolic reading." [ref=e148]:
+          - img "Dra. Sofia Pulse" [ref=e149]
+          - heading "Dra. Sofia Pulse" [level=3] [ref=e150]
+          - paragraph [ref=e151]: For people who value physiological context and metabolic reading.
+        - button "Major Steel Major Steel For people who respond better to pressure and firm structure." [ref=e152]:
+          - img "Major Steel" [ref=e153]
+          - heading "Major Steel" [level=3] [ref=e154]
+          - paragraph [ref=e155]: For people who respond better to pressure and firm structure.
+        - button "Breno 'The Bro' Silva Breno 'The Bro' Silva For people who want encouragement, energy, and partnership." [ref=e156]:
+          - img "Breno 'The Bro' Silva" [ref=e157]
+          - heading "Breno 'The Bro' Silva" [level=3] [ref=e158]
+          - paragraph [ref=e159]: For people who want encouragement, energy, and partnership.
+      - generic [ref=e161]:
+        - img "Breno 'The Bro' Silva" [ref=e162]
+        - generic [ref=e163]:
+          - heading "Breno 'The Bro' Silva" [level=3] [ref=e164]
+          - paragraph [ref=e165]: Motivational, close, and easy to follow.
+          - paragraph [ref=e166]: For people who want encouragement, energy, and partnership.
+          - paragraph [ref=e167]: Consistency, confidence, and routine without extra pressure.
+          - paragraph [ref=e168]: "\"Let's get back to the basics done well. That's what builds real results.\""
+          - button "Start with this mentor" [disabled]
+    - generic [ref=e170]:
+      - generic [ref=e171]:
+        - heading "Why FityQ feels different" [level=2] [ref=e172]
+        - paragraph [ref=e173]: It is not just a chat. It is a system that turns your routine into useful context.
+      - generic [ref=e174]:
+        - generic [ref=e175]:
+          - img [ref=e177]
+          - heading "Memory that learns from your routine" [level=3] [ref=e187]
+          - paragraph [ref=e188]: The system remembers what has been happening to answer with better context.
+        - generic [ref=e189]:
+          - img [ref=e191]
+          - heading "Adaptive metabolic reading" [level=3] [ref=e193]
+          - paragraph [ref=e194]: Your metabolism stops being a fixed formula and starts reflecting your real data.
+        - generic [ref=e195]:
+          - img [ref=e197]
+          - heading "Dashboard with connected signals" [level=3] [ref=e202]
+          - paragraph [ref=e203]: Weight, fat, muscle, calories, activity, and frequency in one place.
+        - generic [ref=e204]:
+          - img [ref=e206]
+          - heading "Mentors with different styles" [level=3] [ref=e211]
+          - paragraph [ref=e212]: The same context can produce different guidance depending on who fits you best.
+        - generic [ref=e213]:
+          - img [ref=e215]
+          - heading "Real integrations and imports" [level=3] [ref=e218]
+          - paragraph [ref=e219]: Use the tools you already track to accelerate the system's usefulness.
+        - generic [ref=e220]:
+          - img [ref=e222]
+          - heading "Support beyond the app" [level=3] [ref=e224]
+          - paragraph [ref=e225]: In Pro, you can also use chat images and Telegram access.
+    - generic [ref=e227]:
+      - generic [ref=e228]:
+        - heading "Bring your routine into the system" [level=2] [ref=e229]
+        - paragraph [ref=e230]: The more context goes in, the more useful the guidance becomes.
+      - generic [ref=e231]:
+        - generic [ref=e232]:
+          - img [ref=e234]
+          - heading "Hevy" [level=3] [ref=e236]
+          - paragraph [ref=e237]: Import or sync workouts to turn execution into context.
+        - generic [ref=e239]:
+          - img [ref=e241]
+          - heading "MyFitnessPal" [level=3] [ref=e244]
+          - paragraph [ref=e245]: Bring nutrition history to connect intake and progress.
+        - generic [ref=e247]:
+          - img [ref=e249]
+          - heading "Zepp Life" [level=3] [ref=e251]
+          - paragraph [ref=e252]: Use weight and body composition data to enrich the system reading.
+    - generic [ref=e255]:
+      - generic [ref=e256]:
+        - heading "Start simple. Grow with context." [level=2] [ref=e257]
+        - paragraph [ref=e258]: The free trial exists so you can feel the system working in your routine before deciding.
+      - generic [ref=e259]:
+        - generic [ref=e260]:
+          - generic [ref=e261]:
+            - heading "Free" [level=3] [ref=e262]
+            - paragraph [ref=e263]: Try FityQ coaching for 7 days.
+          - generic [ref=e264]: Free
+          - button "Start free" [disabled]
+          - list [ref=e265]:
+            - listitem [ref=e266]:
+              - img [ref=e267]
+              - generic [ref=e269]: 20 messages per day
+            - listitem [ref=e270]:
+              - img [ref=e271]
+              - generic [ref=e273]: 1 trainer
+            - listitem [ref=e274]:
+              - img [ref=e275]
+              - generic [ref=e277]: No integrations
+            - listitem [ref=e278]:
+              - img [ref=e279]
+              - generic [ref=e281]: No photos
+        - generic [ref=e282]:
+          - generic [ref=e283]:
+            - heading "Basic" [level=3] [ref=e284]
+            - paragraph [ref=e285]: Your personal trainer for daily use, without automations.
+          - generic [ref=e286]: $4.99/mo
+          - button "Subscribe Basic" [disabled]
+          - list [ref=e287]:
+            - listitem [ref=e288]:
+              - img [ref=e289]
+              - generic [ref=e291]: 100 messages per month
+            - listitem [ref=e292]:
+              - img [ref=e293]
+              - generic [ref=e295]: All trainers
+            - listitem [ref=e296]:
+              - img [ref=e297]
+              - generic [ref=e299]: Manual and focused usage
+            - listitem [ref=e300]:
+              - img [ref=e301]
+              - generic [ref=e303]: No integrations and no photos
+        - generic [ref=e304]:
+          - generic [ref=e305]:
+            - generic [ref=e306]: Recommended
+            - heading "Pro" [level=3] [ref=e307]
+            - paragraph [ref=e308]: The full experience with data, photos, and automations.
+          - generic [ref=e309]: $9.99/mo
+          - button "Subscribe Pro" [disabled]
+          - list [ref=e310]:
+            - listitem [ref=e311]:
+              - img [ref=e312]
+              - generic [ref=e314]: 300 messages per month
+            - listitem [ref=e315]:
+              - img [ref=e316]
+              - generic [ref=e318]: Chat photo analysis
+            - listitem [ref=e319]:
+              - img [ref=e320]
+              - generic [ref=e322]: Hevy, Telegram, and imports
+            - listitem [ref=e323]:
+              - img [ref=e324]
+              - generic [ref=e326]: All trainers
+    - generic [ref=e328]:
+      - heading "FAQ" [level=2] [ref=e329]
+      - generic [ref=e330]:
+        - generic [ref=e331]:
+          - button "Do I need to connect apps for it to work?" [ref=e332]:
+            - generic [ref=e333]: Do I need to connect apps for it to work?
+            - img [ref=e334]
+          - generic [ref=e336]: No. You can start with manual tracking and add integrations later.
+        - generic [ref=e337]:
+          - button "Does it work if I do not have a perfect routine?" [ref=e338]:
+            - generic [ref=e339]: Does it work if I do not have a perfect routine?
+            - img [ref=e340]
+          - generic [ref=e342]: Yes. The idea is to help you stay consistent in real life, not demand perfection.
+        - generic [ref=e343]:
+          - button "How does memory work?" [ref=e344]:
+            - generic [ref=e345]: How does memory work?
+            - img [ref=e346]
+          - generic [ref=e348]: FityQ uses your routine history to respond with more context and continuity over time.
+        - generic [ref=e349]:
+          - button "How is metabolism calculated?" [ref=e350]:
+            - generic [ref=e351]: How is metabolism calculated?
+            - img [ref=e352]
+          - generic [ref=e354]: The metabolic reading uses your weight and nutrition data to produce an adaptive estimate instead of relying only on fixed formulas.
+        - generic [ref=e355]:
+          - button "What is the difference between plans?" [ref=e356]:
+            - generic [ref=e357]: What is the difference between plans?
+            - img [ref=e358]
+          - generic [ref=e360]: The free trial lets you experience the core proposal. Paid plans expand usage volume, mentor access, and resources like images, integrations, and Telegram.
+        - generic [ref=e361]:
+          - button "Can I cancel anytime?" [ref=e362]:
+            - generic [ref=e363]: Can I cancel anytime?
+            - img [ref=e364]
+          - generic [ref=e366]: Yes. You can stop your subscription without long-term contracts.
+        - generic [ref=e367]:
+          - button "Does FityQ replace medical or nutritional guidance?" [ref=e368]:
+            - generic [ref=e369]: Does FityQ replace medical or nutritional guidance?
+            - img [ref=e370]
+          - generic [ref=e372]: No. The product provides digital support for routine, habits, and performance, but does not replace individualized professional care.
+        - generic [ref=e373]:
+          - button "Where can I read about privacy and terms of use?" [ref=e374]:
+            - generic [ref=e375]: Where can I read about privacy and terms of use?
+            - img [ref=e376]
+          - generic [ref=e378]: Links to Privacy Policy and Terms of Use are available on the landing page and in the footer.
+    - generic [ref=e380]:
+      - heading "Start building a smarter routine" [level=2] [ref=e381]
+      - paragraph [ref=e382]: Try FityQ and see how your routine can turn into clarity, context, and consistency.
+      - button "Start free trial" [disabled]:
+        - text: Start free trial
+        - img
+      - paragraph [ref=e383]: No commitment.
+  - contentinfo [ref=e384]:
+    - generic [ref=e385]:
+      - generic [ref=e386]:
+        - img "FityQ" [ref=e387]
+        - generic [ref=e388]: FityQ
+      - generic [ref=e389]:
+        - link "Terms" [ref=e390] [cursor=pointer]:
+          - /url: /termos-de-uso
+        - link "Privacy" [ref=e391] [cursor=pointer]:
+          - /url: /politica-de-privacidade
+        - link "Contact" [ref=e392] [cursor=pointer]:
+          - /url: "#"
+      - paragraph [ref=e393]: © 2026 FitYQ. All rights reserved.

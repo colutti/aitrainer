@@ -172,10 +172,51 @@ def test_message_ai_success():
 
     assert response.status_code == 200
     assert response.headers["content-type"] == "text/event-stream; charset=utf-8"
+    assert response.headers["X-Graph-Turn-Id"]
 
     # Streaming response - read chunks
     content = response.text
     assert len(content) > 0
+
+    app.dependency_overrides = {}
+
+
+def test_get_graph_debug_trace_success():
+    """Test retrieving the last graph trace in dev mode."""
+    app.dependency_overrides[verify_token] = lambda: "test@example.com"
+    mock_brain = MagicMock()
+    mock_brain.is_graph_debug_enabled.return_value = True
+    mock_brain.get_graph_debug_trace.return_value = {
+        "turn_id": "turn-1",
+        "status": "success",
+        "nodes": [],
+    }
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+    response = client.get(
+        "/message/debug/turn/turn-1",
+        headers={"Authorization": "Bearer test_token"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["turn_id"] == "turn-1"
+
+    app.dependency_overrides = {}
+
+
+def test_get_graph_debug_trace_disabled_outside_dev():
+    """Test the debug endpoint is hidden outside dev."""
+    app.dependency_overrides[verify_token] = lambda: "test@example.com"
+    mock_brain = MagicMock()
+    mock_brain.is_graph_debug_enabled.return_value = False
+    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+    response = client.get(
+        "/message/debug/turn/turn-1",
+        headers={"Authorization": "Bearer test_token"}
+    )
+
+    assert response.status_code == 404
 
     app.dependency_overrides = {}
 

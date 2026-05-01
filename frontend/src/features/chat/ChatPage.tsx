@@ -15,7 +15,18 @@ import { ChatView } from './components/ChatView';
  * Manages chat logic, streaming state, and scroll behavior.
  */
 export default function ChatPage() {
-  const { messages, isStreaming, error, fetchHistory, sendMessage, loadMore, hasMore, isLoading } = useChatStore();
+  const {
+    messages,
+    isStreaming,
+    error,
+    fetchHistory,
+    sendMessage,
+    loadMore,
+    hasMore,
+    isLoading,
+    debugTrace,
+    debugTraceError,
+  } = useChatStore();
   const { trainer, availableTrainers, fetchTrainer, fetchAvailableTrainers } = useSettingsStore();
   const { userInfo } = useAuthStore();
   
@@ -113,6 +124,8 @@ export default function ChatPage() {
         error={error}
         trainer={currentTrainer}
         userInfo={userInfo}
+        debugTrace={debugTrace}
+        debugTraceError={debugTraceError}
         initialInputValue={draftSeed}
         onSend={handleSend}
         onScroll={handleScroll}

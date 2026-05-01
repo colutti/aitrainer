@@ -8,6 +8,8 @@
     "logout": "Logout",
     "previous": "Previous",
     "next": "Next",
+    "yes": "Yes",
+    "no": "No",
     "confirm": "Confirm",
     "cancel": "Cancel",
     "confirmAction": "Confirm Action",
@@ -410,6 +412,33 @@
       "responding_now": "Responding now",
       "message_count": "{{count}} messages in this conversation",
       "default_trainer_id": "default-trainer"
+    },
+    "debug": {
+      "title": "Last response debug",
+      "subtitle": "Visible only in development. Shows node order, timing, and output.",
+      "loading": "Loading the latest trace...",
+      "load_error": "Could not load the latest trace.",
+      "no_data": "No trace is available for the latest response.",
+      "none": "None",
+      "no_output": "No output recorded",
+      "identifiers": "Identifiers",
+      "request_id": "Request",
+      "turn_id": "Turn",
+      "intent": "Intent",
+      "security": "Security",
+      "duration_total": "Total time",
+      "revision": "Needs revision",
+      "tools": "Tools",
+      "nodes_title": "Executed nodes",
+      "final_response": "Final response",
+      "status": {
+        "completed": "Completed",
+        "skipped_disabled": "Skipped",
+        "failed": "Failed",
+        "pending": "Pending",
+        "error": "Error",
+        "success": "Success"
+      }
     },
     "trial_ended": {
       "title": "Free Trial Ended",

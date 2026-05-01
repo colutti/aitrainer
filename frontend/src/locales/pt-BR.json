@@ -8,6 +8,8 @@
     "logout": "Sair",
     "previous": "Anterior",
     "next": "Próxima",
+    "yes": "Sim",
+    "no": "Não",
     "confirm": "Confirmar",
     "cancel": "Cancelar",
     "confirmAction": "Confirmar Ação",
@@ -410,6 +412,33 @@
       "responding_now": "Respondendo agora",
       "message_count": "{{count}} mensagens nesta conversa",
       "default_trainer_id": "treinador-padrao"
+    },
+    "debug": {
+      "title": "Depuração da última resposta",
+      "subtitle": "Visível apenas em desenvolvimento. Mostra a ordem, o tempo e a saída de cada nó.",
+      "loading": "Carregando trace da última resposta...",
+      "load_error": "Falha ao carregar o trace da última resposta.",
+      "no_data": "Nenhum trace disponível para a última resposta.",
+      "none": "Nenhuma",
+      "no_output": "Sem saída registrada",
+      "identifiers": "Identificadores",
+      "request_id": "Request",
+      "turn_id": "Turno",
+      "intent": "Intenção",
+      "security": "Segurança",
+      "duration_total": "Tempo total",
+      "revision": "Precisa revisão",
+      "tools": "Ferramentas",
+      "nodes_title": "Nós executados",
+      "final_response": "Resposta final",
+      "status": {
+        "completed": "Concluído",
+        "skipped_disabled": "Ignorado",
+        "failed": "Falhou",
+        "pending": "Pendente",
+        "error": "Erro",
+        "success": "Sucesso"
+      }
     },
     "trial_ended": {
       "title": "Teste Grátis Encerrado",

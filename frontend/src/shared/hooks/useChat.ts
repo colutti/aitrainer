@@ -2,7 +2,7 @@ import i18next from 'i18next';
 import { create } from 'zustand';
 
 import { httpClient, API_BASE_URL } from '../api/http-client';
-import type { ChatMessage, MessageImagePayload } from '../types/chat';
+import type { ChatGraphTrace, ChatMessage, MessageImagePayload } from '../types/chat';
 
 interface ChatState {
   messages: ChatMessage[];
@@ -10,6 +10,8 @@ interface ChatState {
   isStreaming: boolean;
   error: string | null;
   hasMore: boolean;
+  debugTrace: ChatGraphTrace | null;
+  debugTraceError: string | null;
 }
 
 interface ChatActions {
@@ -18,6 +20,7 @@ interface ChatActions {
   sendMessage: (text: string, images?: MessageImagePayload[]) => Promise<void>;
   clearHistory: () => void;
   reset: () => void;
+  fetchDebugTrace: (turnId: string) => Promise<void>;
 }
 
 type ChatStore = ChatState & ChatActions;
@@ -38,6 +41,8 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
   isStreaming: false,
   error: null,
   hasMore: true,
+  debugTrace: null,
+  debugTraceError: null,
 
   fetchHistory: async () => {
     if (historyInFlight) return historyInFlight;
@@ -122,7 +127,9 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
     set((state) => ({ 
       messages: [...state.messages, userMessage],
       isStreaming: true,
-      error: null
+      error: null,
+      debugTrace: null,
+      debugTraceError: null,
     }));
 
     let timeoutId: number | null = null;
@@ -149,6 +156,8 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
           })),
         }),
       });
+      const responseHeaders = response.headers as Headers | { get?: (name: string) => string | null } | undefined;
+      const graphTurnId = responseHeaders?.get?.('X-Graph-Turn-Id') ?? null;
 
       if (!response.ok) {
         if (response.status === 422) {
@@ -242,8 +251,10 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
           return { messages: newMessages };
         });
       }
-      
       set({ isStreaming: false });
+      if (import.meta.env.DEV && graphTurnId) {
+        await _get().fetchDebugTrace(graphTurnId);
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       let errorMessage = 'Ocorreu um problema ao enviar sua mensagem.';
@@ -272,7 +283,8 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
       
       set({ 
         isStreaming: false, 
-        error: errorMessage 
+        error: errorMessage,
+        debugTraceError: null,
       });
     } finally {
       if (timeoutId) {
@@ -282,7 +294,7 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
   },
 
   clearHistory: () => {
-    set({ messages: [] });
+    set({ messages: [], debugTrace: null, debugTraceError: null });
   },
 
   reset: () => {
@@ -293,7 +305,26 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
       isLoading: false,
       isStreaming: false,
       error: null,
-      hasMore: true
+      hasMore: true,
+      debugTrace: null,
+      debugTraceError: null,
     });
+  },
+
+  fetchDebugTrace: async (turnId: string) => {
+    if (!import.meta.env.DEV || !turnId) return;
+    try {
+      const trace = await httpClient<ChatGraphTrace>(`/message/debug/turn/${turnId}`);
+      set({ debugTrace: trace ?? null, debugTraceError: null });
+    } catch (traceError) {
+      console.error('Error loading graph debug trace:', traceError);
+      set({
+        debugTrace: null,
+        debugTraceError: i18next.t(
+          'chat.debug.load_error',
+          'Falha ao carregar o trace da última resposta.',
+        ),
+      });
+    }
   },
 }));

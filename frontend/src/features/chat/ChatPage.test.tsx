@@ -29,6 +29,8 @@ describe('ChatPage', () => {
     loadMore: mockLoadMore,
     hasMore: false,
     isLoading: false,
+    debugTrace: null,
+    debugTraceError: null,
   };
 
   const defaultSettingsStore = {

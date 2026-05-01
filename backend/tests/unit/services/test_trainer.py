@@ -35,21 +35,58 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         self.mock_db.get_conversation_memory.return_value = (
             self.mock_conversation_memory
         )
+        self.mock_db.get_plan.return_value = None
 
         # Need to mock _llm attribute for the summarization LLM
         self.mock_llm._llm = MagicMock()
 
-        with patch("src.services.trainer.settings") as mock_settings:
-            mock_settings.MAX_LONG_TERM_MEMORY_MESSAGES = 20
-            mock_settings.MAX_SHORT_TERM_MEMORY_MESSAGES = 10
+        self.settings_patcher = patch("src.services.trainer.settings")
+        mock_settings = self.settings_patcher.start()
+        self.addCleanup(self.settings_patcher.stop)
+        mock_settings.MAX_LONG_TERM_MEMORY_MESSAGES = 20
+        mock_settings.MAX_SHORT_TERM_MEMORY_MESSAGES = 10
+        mock_settings.AI_TRAINER_THREADPOOL_WORKERS = 4
+        mock_settings.LANGSMITH_ENVIRONMENT = "dev"
+        mock_settings.ENABLE_EXPERIMENTAL_CONVERSATION_GRAPH = False
 
-            # Mock get_window_memory to return our mock
-            self.mock_conversation_memory = MockConversationMemory()
-            self.mock_db.get_window_memory.return_value = self.mock_conversation_memory
+        # Mock get_window_memory to return our mock
+        self.mock_conversation_memory = MockConversationMemory()
+        self.mock_db.get_window_memory.return_value = self.mock_conversation_memory
 
-            self.brain = AITrainerBrain(
-                database=self.mock_db, llm_client=self.mock_llm
-            )
+        self.brain = AITrainerBrain(
+            database=self.mock_db, llm_client=self.mock_llm
+        )
+        self.brain.get_tools = MagicMock(return_value=[])
+        self.brain.prompt_builder.build_input_data = MagicMock(
+            return_value={
+                "user_profile": "perfil",
+                "trainer_profile": "treinador",
+                "formatted_history": "",
+                "current_date": "2026-05-01",
+                "agenda_section": "",
+                "plan_section": "",
+                "metabolism_section": "",
+                "runtime_context": {"session": {"channel": "app"}, "plan": {}},
+            }
+        )
+        self.brain.prompt_builder.get_prompt_template = MagicMock(return_value=MagicMock())
+
+        self.tdee_patcher = patch("src.services.trainer.AdaptiveTDEEService")
+        mock_tdee_cls = self.tdee_patcher.start()
+        self.addCleanup(self.tdee_patcher.stop)
+        mock_tdee_cls.return_value.calculate_tdee.return_value = {
+            "tdee": 2400,
+            "daily_target": 2200,
+            "goal_type": "maintain",
+            "goal_weekly_rate": 0.0,
+            "confidence": "medium",
+            "macro_targets": {"protein_g": 160, "carbs_g": 180, "fat_g": 60},
+        }
+
+        self.event_repo_patcher = patch("src.services.trainer.EventRepository")
+        mock_event_repo_cls = self.event_repo_patcher.start()
+        self.addCleanup(self.event_repo_patcher.stop)
+        mock_event_repo_cls.return_value.get_active_events.return_value = []
 
     async def test_send_message_ai_success(self):
         """
@@ -192,6 +229,54 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
 
         assert messages[0].text == "Resposta antiga"
         assert messages[1].text == 'Dados do usuário: <msg data="arquivo.csv">linha 1</msg>'
+
+    @patch("src.services.trainer.settings")
+    def test_graph_debug_trace_roundtrip_is_dev_only(self, mock_settings):
+        mock_settings.LANGSMITH_ENVIRONMENT = "dev"
+
+        trace = {
+            "user_email": "test@test.com",
+            "request_id": "req-1",
+            "conversation_id": "test@test.com",
+            "turn_id": "turn-1",
+            "channel": "app",
+            "status": "success",
+            "error": None,
+            "started_at": "2026-05-01T10:00:00.000Z",
+            "ended_at": "2026-05-01T10:00:01.000Z",
+            "duration_ms": 1000,
+            "intent": "general",
+            "security_status": "safe",
+            "plan_needs_revision": False,
+            "tools_called": [],
+            "persistence_actions": [],
+            "final_response": "ok",
+            "technical_response": "ok",
+            "node_outputs": {},
+            "nodes": [],
+        }
+
+        self.brain.store_graph_debug_trace("turn-1", trace)
+        stored = self.brain.get_graph_debug_trace("turn-1", "test@test.com")
+        assert stored is not None
+        assert stored["turn_id"] == "turn-1"
+        assert stored["status"] == "success"
+        assert self.brain.get_graph_debug_trace("turn-1", "other@test.com") is None
+
+    @patch("src.services.trainer.settings")
+    def test_graph_debug_trace_disabled_outside_dev(self, mock_settings):
+        mock_settings.LANGSMITH_ENVIRONMENT = "prod"
+
+        self.brain.store_graph_debug_trace(
+            "turn-1",
+            {
+                "user_email": "test@test.com",
+                "turn_id": "turn-1",
+                "status": "success",
+                "nodes": [],
+            },
+        )
+        assert self.brain.get_graph_debug_trace("turn-1", "test@test.com") is None
 
 
 if __name__ == "__main__":

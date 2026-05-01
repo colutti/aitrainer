@@ -8,10 +8,11 @@ import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
 import type { UserInfo } from '../../../shared/hooks/useAuth';
 import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { PREMIUM_UI } from '../../../shared/styles/ui-variants';
-import type { ChatMessage, MessageImagePayload } from '../../../shared/types/chat';
+import type { ChatGraphTrace, ChatMessage, MessageImagePayload } from '../../../shared/types/chat';
 import type { TrainerCard } from '../../../shared/types/settings';
 import { cn } from '../../../shared/utils/cn';
 
+import { ChatContextPanel } from './ChatContextPanel';
 import { MessageBubble } from './MessageBubble';
 
 export interface ChatViewProps {
@@ -22,6 +23,8 @@ export interface ChatViewProps {
   error: string | null;
   trainer: TrainerCard | null;
   userInfo: UserInfo | null;
+  debugTrace?: ChatGraphTrace | null;
+  debugTraceError?: string | null;
   initialInputValue?: string;
   onSend: (text: string, images?: MessageImagePayload[]) => void | Promise<void>;
   onScroll: (e: React.UIEvent<HTMLDivElement>) => void;
@@ -71,6 +74,8 @@ export function ChatView({
   error,
   trainer,
   userInfo,
+  debugTrace,
+  debugTraceError,
   initialInputValue = '',
   onSend,
   onScroll,
@@ -97,6 +102,7 @@ export function ChatView({
   const trainerName = trainer?.name ?? t('chat.default_trainer_name');
   const { isReadOnly: isDemoUser } = useDemoMode(userInfo);
   const normalizedLocale = i18n.language.toLowerCase();
+  const showDebugPanel = import.meta.env.DEV;
 
   useEffect(() => {
     setInputValue(initialInputValue);
@@ -231,9 +237,18 @@ export function ChatView({
   return (
     <div
       data-testid="chat-workspace"
-      className="h-full min-h-0 bg-[color:var(--color-background)]"
+      className={cn(
+        'h-full min-h-0 bg-[color:var(--color-background)]',
+        showDebugPanel && 'lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:h-[calc(100dvh-7rem)] lg:overflow-hidden',
+      )}
     >
-      <section data-testid="chat-conversation-column" className="flex min-h-0 h-full flex-col border-r border-[color:var(--color-outline-variant)]">
+      <section
+        data-testid="chat-conversation-column"
+        className={cn(
+          'flex min-h-0 h-full flex-col',
+          showDebugPanel && 'lg:border-r lg:border-[color:var(--color-outline-variant)]',
+        )}
+      >
         <div
           ref={scrollContainerRef}
           onScroll={onScroll}
@@ -442,6 +457,21 @@ export function ChatView({
           </div>
         </div>
       </section>
+      {showDebugPanel && (
+        <aside className="hidden min-h-0 lg:block lg:h-full">
+          <div className="h-full min-h-0 overflow-y-scroll [scrollbar-gutter:stable] custom-scrollbar border-l border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-lowest)]">
+            <ChatContextPanel
+              trainerName={trainerName}
+              trainerId={trainer?.trainer_id ?? null}
+              isStreaming={isStreaming}
+              messageCount={messages.length}
+              debugTrace={debugTrace ?? null}
+              debugTraceError={debugTraceError ?? null}
+              showDebugPanel={showDebugPanel}
+            />
+          </div>
+        </aside>
+      )}
     </div>
   );
 }
