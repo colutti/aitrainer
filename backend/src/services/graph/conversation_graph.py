@@ -415,6 +415,7 @@ class ConversationGraphRunner:
                     "config_hash": meta.get("config_hash"),
                     "config_version": meta.get("config_version"),
                     "model": meta.get("model"),
+                    "tools_called": meta.get("tools_called", []),
                 }
             )
         return {
@@ -858,6 +859,7 @@ class ConversationGraphRunner:
             elif isinstance(chunk, dict) and chunk.get("type") == "tool_result":
                 tool_name = str(chunk.get("tool_name", "unknown"))
                 state.tools_called.append(tool_name)
+                state.node_metadata.setdefault(node_name, {}).setdefault("tools_called", []).append(tool_name)
         return "".join(chunks).strip() or state.user_input_sanitized
 
     @staticmethod

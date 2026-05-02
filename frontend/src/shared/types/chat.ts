@@ -21,6 +21,7 @@ export interface ChatGraphNodeTrace {
   config_hash?: string | null;
   config_version?: string | null;
   model?: string | null;
+  tools_called?: string[];
 }
 
 export interface ChatGraphTrace {

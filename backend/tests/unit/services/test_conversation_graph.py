@@ -1,5 +1,7 @@
 """Tests for conversation graph node behavior."""
 
+from datetime import datetime
+
 import pytest
 from unittest.mock import MagicMock
 
@@ -857,3 +859,38 @@ async def test_memory_hub_converts_weekly_follow_up_into_recurring_event():
         "recurrence": "weekly",
     }
     assert state.node_outputs["memory_hub"] == "create_event"
+
+
+def test_build_debug_trace_includes_tools_called_per_node():
+    runner = _runner()
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="hello",
+        channel="app",
+    )
+    state.node_metadata["training_specialist"] = {
+        "status": "completed",
+        "started_at": "2026-05-02T10:00:00",
+        "completed_at": "2026-05-02T10:00:01",
+        "duration_ms": 1000,
+        "tools_called": ["search_memory", "update_memory"],
+    }
+    state.node_metadata["coach_reply"] = {
+        "status": "completed",
+        "started_at": "2026-05-02T10:00:02",
+        "completed_at": "2026-05-02T10:00:03",
+        "duration_ms": 1000,
+    }
+
+    trace = runner._build_debug_trace(
+        state=state,
+        started_at=datetime.utcnow(),
+        ended_at=datetime.utcnow(),
+        graph_error=None,
+    )
+
+    training_node = next(n for n in trace["nodes"] if n["node_name"] == "training_specialist")
+    coach_node = next(n for n in trace["nodes"] if n["node_name"] == "coach_reply")
+
+    assert training_node["tools_called"] == ["search_memory", "update_memory"]
+    assert coach_node["tools_called"] == []

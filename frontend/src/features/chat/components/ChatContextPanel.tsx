@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-import type { ChatGraphTrace } from '../../../shared/types/chat';
+import type { ChatGraphNodeTrace, ChatGraphTrace } from '../../../shared/types/chat';
 import { cn } from '../../../shared/utils/cn';
 
 interface ChatContextPanelProps {
@@ -23,11 +23,30 @@ const formatDuration = (durationMs?: number | null): string => {
   return `${(durationMs / 1000).toFixed(1)}s`;
 };
 
+const getNodeStatusClasses = (status: string, hasStarted: boolean): string => {
+  if (status === 'completed' || status === 'success') {
+    return 'border-emerald-500/30 bg-emerald-500/10';
+  }
+  if (status === 'failed' || status === 'error') {
+    return 'border-red-500/30 bg-red-500/10';
+  }
+  if (status === 'pending' && !hasStarted) {
+    return 'border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] opacity-60';
+  }
+  if (status === 'pending') {
+    return 'border-amber-500/30 bg-amber-500/10';
+  }
+  if (status === 'skipped_disabled') {
+    return 'border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] opacity-60';
+  }
+  return 'border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)]';
+};
+
 export function ChatContextPanel({
-  trainerName,
-  trainerId,
+  trainerName: _trainerName,
+  trainerId: _trainerId,
   isStreaming,
-  messageCount,
+  messageCount: _messageCount,
   debugTrace,
   debugTraceError,
   showDebugPanel = false,
@@ -40,10 +59,11 @@ export function ChatContextPanel({
     pending: t('chat.debug.status.pending'),
     error: t('chat.debug.status.error'),
     success: t('chat.debug.status.success'),
+    not_called: t('chat.debug.status.not_called'),
   };
-  const traceNodes =
-    (debugTrace?.nodes?.length ?? 0) > 0
-      ? debugTrace?.nodes ?? []
+  const traceNodes: ChatGraphNodeTrace[] =
+    (debugTrace?.nodes ?? []).length > 0
+      ? (debugTrace?.nodes ?? [])
       : Object.entries(debugTrace?.node_outputs ?? {}).map(([nodeName, outputPreview]) => ({
           node_name: nodeName,
           status: 'success',
@@ -53,32 +73,12 @@ export function ChatContextPanel({
 
   return (
     <div className="surface-card relative isolate flex h-full min-h-0 flex-col overflow-hidden p-4 md:p-5" data-testid="chat-context-panel">
-      <section>
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[color:var(--color-text-muted)]">
-          {t('chat.context.trainer_label')}
-        </p>
-        <h2 data-testid="chat-context-trainer-name" className="mt-2 text-lg font-semibold text-[color:var(--color-text-primary)]">
-          {trainerName}
-        </h2>
-        <p className="mt-4 text-sm text-[color:var(--color-text-secondary)]">
-          {isStreaming
-            ? t('chat.context.responding_now')
-            : t('chat.context.message_count', { count: messageCount })}
-        </p>
-        <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[color:var(--color-text-muted)]">
-          {trainerId ?? t('chat.context.default_trainer_id')}
-        </p>
-      </section>
-
       {showDebugPanel && (
-        <section className="border-t border-[color:var(--color-outline-variant)] pt-4 flex min-h-0 flex-1 flex-col">
+        <section className="flex min-h-0 flex-1 flex-col">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[color:var(--color-text-muted)]">
                 {t('chat.debug.title')}
-              </p>
-              <p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">
-                {t('chat.debug.subtitle')}
               </p>
             </div>
             {debugTrace && (
@@ -149,24 +149,49 @@ export function ChatContextPanel({
                   {t('chat.debug.nodes_title')}
                 </p>
                 <div className="mt-3 space-y-2">
-                  {traceNodes.map((node) => (
-                    <div key={node.node_name} className="rounded-2xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-[color:var(--color-text-primary)]">{node.node_name}</p>
-                          <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-muted)]">
-                            {nodeStatuses[node.status] ?? node.status}
-                          </p>
+                  {traceNodes.map((node) => {
+                    const hasStarted = !!node.started_at;
+                    const isNotCalled = node.status === 'pending' && !hasStarted;
+                    const displayStatus = isNotCalled ? 'not_called' : node.status;
+                    return (
+                      <div
+                        key={node.node_name}
+                        className={cn(
+                          'rounded-2xl border p-3',
+                          getNodeStatusClasses(node.status, hasStarted),
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-[color:var(--color-text-primary)]">{node.node_name}</p>
+                            <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-muted)]">
+                              {nodeStatuses[displayStatus] ?? displayStatus}
+                            </p>
+                          </div>
+                          <span className="text-[10px] font-mono text-[color:var(--color-text-muted)]">
+                            {formatDuration(node.duration_ms)}
+                          </span>
                         </div>
-                        <span className="text-[10px] font-mono text-[color:var(--color-text-muted)]">
-                          {formatDuration(node.duration_ms)}
-                        </span>
+                        {node.tools_called != null && node.tools_called.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {node.tools_called.map((tool) => (
+                              <span
+                                key={tool}
+                                className="rounded-full border border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container)] px-2 py-0.5 text-[10px] text-[color:var(--color-text-secondary)]"
+                              >
+                                {tool}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {!isNotCalled && (
+                          <p className="mt-2 text-xs text-[color:var(--color-text-secondary)] whitespace-pre-wrap break-words">
+                            {node.output_preview?.trim() ? node.output_preview : t('chat.debug.no_output')}
+                          </p>
+                        )}
                       </div>
-                      <p className="mt-2 text-xs text-[color:var(--color-text-secondary)] whitespace-pre-wrap break-words">
-                        {node.output_preview?.trim() ? node.output_preview : t('chat.debug.no_output')}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {traceNodes.length === 0 && (
                     <p className="text-xs text-[color:var(--color-text-secondary)]">
                       {t('chat.debug.no_data')}

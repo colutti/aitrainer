@@ -437,7 +437,8 @@
         "failed": "Failed",
         "pending": "Pending",
         "error": "Error",
-        "success": "Success"
+        "success": "Success",
+        "not_called": "Not called"
       }
     },
     "trial_ended": {
