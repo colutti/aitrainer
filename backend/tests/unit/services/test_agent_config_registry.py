@@ -68,16 +68,16 @@ def test_node_contract_defaults_match_runtime_design():
     assert "trainer_identity" not in nutrition.context_blocks
     assert "trainer_identity" not in plan.context_blocks
     assert security.context_blocks == ["request"]
-    assert security.model_name == "openai/gpt-5-nano"
+    assert security.model_name == "google/gemini-2.5-flash-lite"
     assert "trainer_persona" not in training.context_blocks
-    assert training.model_name == "deepseek/deepseek-v4-flash"
+    assert training.model_name == "google/gemini-3.1-flash-lite-preview"
     assert "save_workout" in training.tool_names
     assert "save_daily_nutrition" in nutrition.tool_names
-    assert nutrition.model_name == "deepseek/deepseek-v4-flash"
+    assert nutrition.model_name == "google/gemini-3.1-flash-lite-preview"
     assert "upsert_plan" in plan.tool_names
     assert "training_analysis" in plan.context_blocks
-    assert plan.model_name == "deepseek/deepseek-v4-flash"
-    assert general.model_name == "deepseek/deepseek-v4-flash"
+    assert plan.model_name == "google/gemini-3.1-flash-lite-preview"
+    assert general.model_name == "google/gemini-3.1-flash-lite-preview"
     assert "OPENROUTER_ROUTING_MODEL" not in general.prompt_text
     assert "persona" not in turn_context.prompt_text.lower()
     assert "persona" not in training.prompt_text.lower()

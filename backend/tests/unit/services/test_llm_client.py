@@ -10,6 +10,7 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
     def test_factory_openrouter(self, mock_settings):
         """Test creating OpenRouter client via factory."""
         mock_settings.OPENROUTER_CHAT_MODEL = "deepseek/deepseek-v4-flash"
+        mock_settings.OPENROUTER_PROMPT_PRESET = ""
         mock_settings.OPENROUTER_API_KEY = "or-test"
         mock_settings.OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
@@ -19,6 +20,7 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
             MockOpenRouter.assert_called_once_with(
                 api_key="or-test",
                 model="deepseek/deepseek-v4-flash",
+                preset=None,
                 base_url="https://openrouter.ai/api/v1",
             )
 
@@ -476,6 +478,7 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
             OpenRouterClient(
                 api_key="or-key",
                 model="@preset/fityq-chat",
+                preset="@preset/fityq-chat",
                 base_url="https://openrouter.ai/api/v1",
             )
             mock_cls.assert_called_once()
@@ -483,7 +486,7 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(kwargs["model"], "@preset/fityq-chat")
             self.assertEqual(kwargs["base_url"], "https://openrouter.ai/api/v1")
             self.assertIn("api_key", kwargs)
-            self.assertEqual(kwargs["extra_body"], None)
+            self.assertEqual(kwargs["extra_body"], {"preset": "@preset/fityq-chat"})
 
     def test_openrouter_auto_router_has_no_preset_payload(self):
         """OpenRouter client should not forward preset via extra_body."""
@@ -491,6 +494,7 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
             OpenRouterClient(
                 api_key="or-key",
                 model="deepseek/deepseek-v4-flash",
+                preset=None,
                 base_url="https://openrouter.ai/api/v1",
             )
             mock_cls.assert_called_once()
@@ -499,6 +503,17 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(kwargs["base_url"], "https://openrouter.ai/api/v1")
             self.assertIn("api_key", kwargs)
             self.assertEqual(kwargs["extra_body"], None)
+
+    def test_factory_rejects_preset_as_model(self):
+        """Preset-style model names must be rejected by the factory."""
+        with patch("src.core.config.settings") as mock_settings:
+            mock_settings.OPENROUTER_CHAT_MODEL = "@preset/fityq-chat-prod"
+            mock_settings.OPENROUTER_PROMPT_PRESET = ""
+            mock_settings.OPENROUTER_API_KEY = "or-test"
+            mock_settings.OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
+            with self.assertRaises(ValueError, msg="OPENROUTER_CHAT_MODEL must be a model name, not a preset slug"):
+                LLMClient.from_config()
 
 
 if __name__ == "__main__":

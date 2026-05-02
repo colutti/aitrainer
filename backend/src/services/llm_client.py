@@ -109,10 +109,17 @@ class LLMClient:
                 settings.OPENROUTER_CHAT_MODEL or "deepseek/deepseek-v4-flash",
             )
             cls._initialized = True
-        routing_model = settings.OPENROUTER_CHAT_MODEL or "deepseek/deepseek-v4-flash"
+        routing_model = settings.OPENROUTER_CHAT_MODEL
+        if not routing_model:
+            raise ValueError("OPENROUTER_CHAT_MODEL must be configured with a model name")
+        if routing_model.startswith("@preset/"):
+            raise ValueError(
+                "OPENROUTER_CHAT_MODEL must be a model name, not a preset slug"
+            )
         return OpenRouterClient(
             api_key=settings.OPENROUTER_API_KEY,
             model=routing_model,
+            preset=settings.OPENROUTER_PROMPT_PRESET or None,
             base_url=settings.OPENROUTER_BASE_URL,
         )
 
@@ -520,6 +527,7 @@ class OpenRouterClient(LLMClient):
         self,
         api_key: str,
         model: str,
+        preset: str | None,
         base_url: str,
     ):
         """Initialize OpenRouter client through OpenAI-compatible API."""
@@ -529,11 +537,12 @@ class OpenRouterClient(LLMClient):
         self.model_name = model
         self._api_key = api_key
         self._base_url = base_url
+        self._preset = preset
         self._llm = ChatOpenAI(
             model=model,
             base_url=base_url,
             api_key=SecretStr(api_key) if api_key else SecretStr(""),
-            extra_body=None,
+            extra_body={"preset": preset} if preset else None,
         )
 
     def _llm_for_node(
@@ -545,9 +554,13 @@ class OpenRouterClient(LLMClient):
         from pydantic import SecretStr  # pylint: disable=import-outside-toplevel
 
         model = model_override or self.model_name
+        if not model:
+            raise ValueError("OpenRouter node model is not configured")
+        if model.startswith("@preset/"):
+            raise ValueError("OpenRouter node model must not be a preset slug")
         return ChatOpenAI(
             model=model,
             base_url=self._base_url,
             api_key=SecretStr(self._api_key) if self._api_key else SecretStr(""),
-            extra_body=None,
+            extra_body={"preset": self._preset} if self._preset else None,
         )

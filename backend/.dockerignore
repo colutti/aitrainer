@@ -19,6 +19,7 @@ tests/
 Dockerfile
 docker-compose.yml
 *.md
+!src/services/agents/config/prompts/*.md
 .git
 .gitignore
 scripts/import_scale_data.py
