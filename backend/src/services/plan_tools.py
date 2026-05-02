@@ -193,7 +193,8 @@ def create_upsert_plan_tool(database, user_email: str):
             checkpoints=checkpoints or [],
         )
 
-        missing_fields = missing_master_plan_fields(payload)
+        latest = database.get_latest_plan(user_email)
+        missing_fields = missing_master_plan_fields(payload, latest)
         if missing_fields:
             return (
                 "ERRO_UPSERT_PLAN_INCOMPLETO: faltam campos obrigatorios: "
@@ -202,8 +203,6 @@ def create_upsert_plan_tool(database, user_email: str):
                 "Use o payload minimo e tente novamente no proximo turno.\n"
                 f"{_minimum_upsert_payload_template()}"
             )
-
-        latest = database.get_latest_plan(user_email)
         try:
             plan = build_plan_singleton(user_email, latest, payload)
             plan_id = database.save_plan(plan)

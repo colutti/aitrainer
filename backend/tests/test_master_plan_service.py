@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from src.api.models.plan import PlanUpsertInput
+from src.api.models.plan import PlanUpsertInput, UserPlan
 from src.services.plan_service import (
     build_plan_prompt_snapshot,
     build_plan_singleton,
@@ -121,3 +121,71 @@ def test_build_plan_singleton_accepts_string_timeline_start_date():
 
     assert plan.timeline.start_date == datetime(2026, 4, 26, 0, 0, 0)
     assert plan.timeline.target_date == datetime(2026, 7, 19, 0, 0, 0)
+
+
+def test_partial_nutrition_update_preserves_existing_carbs_and_fat():
+    """When trainer updates only protein_g, existing carbs_g and fat_g are preserved."""
+    full_payload = make_payload()
+    existing_plan = build_plan_singleton('user@test.com', None, full_payload)
+
+    # Trainer sends only protein_g change
+    partial_payload = PlanUpsertInput(
+        title='Plano Mestre Teste',
+        change_reason='increase_protein',
+        goal={
+            'primary': 'lose_fat',
+            'objective_summary': 'Chegar a 15% de gordura corporal',
+        },
+        timeline={
+            'target_date': datetime(2026, 9, 1),
+            'review_cadence': 'quinzenal',
+        },
+        strategy={
+            'rationale': 'deficit moderado',
+            'adaptation_policy': 'ajustes',
+        },
+        nutrition_strategy={
+            'daily_targets': {
+                'calories': 2200,
+                'protein_g': 200,
+                # carbs_g and fat_g intentionally omitted
+            },
+        },
+        training_program={
+            'split_name': 'push_pull_legs',
+            'frequency_per_week': 5,
+            'session_duration_min': 60,
+            'routines': [
+                {
+                    'id': 'push_a',
+                    'name': 'Push A',
+                    'exercises': [
+                        {
+                            'name': 'Supino reto',
+                            'sets': 4,
+                            'reps': '6-8',
+                            'load_guidance': 'RPE 8',
+                        }
+                    ],
+                }
+            ],
+            'weekly_schedule': [
+                {'day': 'monday', 'routine_id': 'push_a', 'focus': 'push', 'type': 'training'}
+            ],
+        },
+        current_summary={
+            'active_focus': 'consistencia',
+            'rationale': 'executar bloco base',
+            'next_review': '2026-05-15',
+        },
+    )
+
+    # Validation should pass because existing plan fills missing fields
+    missing = missing_master_plan_fields(partial_payload, existing_plan)
+    assert missing == [], f"Expected no missing fields but got: {missing}"
+
+    # Build should merge and preserve carbs_g and fat_g
+    updated = build_plan_singleton('user@test.com', existing_plan, partial_payload)
+    assert updated.nutrition_strategy.daily_targets.protein_g == 200
+    assert updated.nutrition_strategy.daily_targets.carbs_g == 200
+    assert updated.nutrition_strategy.daily_targets.fat_g == 70

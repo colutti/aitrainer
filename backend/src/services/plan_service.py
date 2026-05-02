@@ -2,7 +2,12 @@
 
 from datetime import datetime, timedelta
 
-from src.api.models.plan import PlanPromptContext, PlanUpsertInput, UserPlan
+from src.api.models.plan import (
+    NutritionStrategy,
+    PlanPromptContext,
+    PlanUpsertInput,
+    UserPlan,
+)
 
 REQUIRED_GOAL_FIELDS = ("primary", "objective_summary")
 REQUIRED_TIMELINE_FIELDS = ("target_date", "review_cadence")
@@ -33,8 +38,15 @@ def _missing_required_fields(payload: dict, required_fields: tuple[str, ...]) ->
     return missing
 
 
-def missing_master_plan_fields(payload: PlanUpsertInput) -> list[str]:
-    """Validate required minimal fields for creation/update payload."""
+def missing_master_plan_fields(
+    payload: PlanUpsertInput, latest_plan: UserPlan | None = None
+) -> list[str]:
+    """Validate required minimal fields for creation/update payload.
+
+    When a latest_plan exists, daily_target fields missing from the payload
+    are filled from the existing plan so that partial nutrition updates
+    (e.g. only protein_g) are accepted.
+    """
 
     missing: list[str] = []
     missing.extend(
@@ -64,11 +76,25 @@ def missing_master_plan_fields(payload: PlanUpsertInput) -> list[str]:
     if not isinstance(nutrition_targets, dict):
         missing.append("nutrition_strategy.daily_targets")
     else:
+        # Merge with existing plan targets so partial updates are valid
+        merged_targets: dict = dict(nutrition_targets)
+        if (
+            latest_plan
+            and latest_plan.nutrition_strategy
+            and latest_plan.nutrition_strategy.daily_targets
+        ):
+            existing = latest_plan.nutrition_strategy.daily_targets.model_dump(
+                exclude_none=True
+            )
+            for key, value in existing.items():
+                if key not in merged_targets or merged_targets.get(key) is None:
+                    merged_targets[key] = value
+
         missing.extend(
             [
                 f"nutrition_strategy.daily_targets.{field}"
                 for field in _missing_required_fields(
-                    nutrition_targets,
+                    merged_targets,
                     REQUIRED_NUTRITION_TARGET_FIELDS,
                 )
             ]
@@ -120,6 +146,20 @@ def missing_master_plan_fields(payload: PlanUpsertInput) -> list[str]:
     return sorted(set(missing))
 
 
+def _merge_nutrition_strategy(
+    latest: NutritionStrategy, payload: dict
+) -> dict:
+    """Deep-merge nutrition strategy, preserving existing daily_target fields."""
+    latest_dict = latest.model_dump()
+    merged = {**latest_dict, **payload}
+    # Deep merge daily_targets so partial updates keep existing carbs_g/fat_g
+    latest_targets = latest_dict.get("daily_targets") or {}
+    payload_targets = payload.get("daily_targets") or {}
+    if isinstance(latest_targets, dict) and isinstance(payload_targets, dict):
+        merged["daily_targets"] = {**latest_targets, **payload_targets}
+    return merged
+
+
 def _merge_plan_sections(latest_plan: UserPlan | None, payload: PlanUpsertInput) -> dict:
     if latest_plan is None:
         return {
@@ -136,10 +176,9 @@ def _merge_plan_sections(latest_plan: UserPlan | None, payload: PlanUpsertInput)
         "goal": {**latest_plan.goal.model_dump(), **payload.goal},
         "timeline": {**latest_plan.timeline.model_dump(), **payload.timeline},
         "strategy": {**latest_plan.strategy.model_dump(), **payload.strategy},
-        "nutrition_strategy": {
-            **latest_plan.nutrition_strategy.model_dump(),
-            **payload.nutrition_strategy,
-        },
+        "nutrition_strategy": _merge_nutrition_strategy(
+            latest_plan.nutrition_strategy, payload.nutrition_strategy
+        ),
         "training_program": {
             **latest_plan.training_program.model_dump(),
             **payload.training_program,
