@@ -37,6 +37,7 @@ export interface NutritionStats {
     carbs: number;
     fat: number;
   };
+  macro_source?: 'plan' | 'fallback' | 'none';
   stability_score?: number;
   last_14_days: DailyMacros[];
 }

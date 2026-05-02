@@ -83,6 +83,7 @@ export default function DashboardPage() {
       energy_balance: 0,
       status: 'maintenance',
       macro_targets: null,
+      macro_source: 'fallback' as const,
       goal_type: 'maintain' as const,
       consistency_score: 0,
       stability_score: 0

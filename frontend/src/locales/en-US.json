@@ -303,6 +303,8 @@
     "recent_prs_subtitle": "Your strength evolution",
     "no_prs_yet": "No records yet. Keep training!",
     "pr_label": "PR",
+    "macro_source_plan": "Set by plan",
+    "macro_source_fallback": "Auto-calculated",
     "reps": "reps",
     "weight_unit": "kg",
     "strength_radar_title": "Strength Balance",

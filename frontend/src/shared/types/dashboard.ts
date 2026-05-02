@@ -11,6 +11,7 @@ export interface DashboardStats {
       carbs: number;
       fat: number;
     } | null;
+    macro_source: 'plan' | 'fallback' | 'none';
     goal_type: string;
     consistency_score: number;
     stability_score: number;

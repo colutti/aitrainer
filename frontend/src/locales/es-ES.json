@@ -303,6 +303,8 @@
     "recent_prs_subtitle": "Su evolución en fuerza",
     "no_prs_yet": "Aún no hay récords. ¡Sigue entrenando!",
     "pr_label": "PR",
+    "macro_source_plan": "Definido por el plan",
+    "macro_source_fallback": "Calculado automáticamente",
     "reps": "reps",
     "weight_unit": "kg",
     "strength_radar_title": "Equilibrio de Fuerza",

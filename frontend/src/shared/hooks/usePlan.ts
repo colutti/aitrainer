@@ -113,8 +113,8 @@ function mapBackendToPlan(payload: BackendPlanPayload): Plan {
     nutrition_targets: {
       calories: nutritionTargets.calories ?? 0,
       protein_g: nutritionTargets.protein_g ?? 0,
-      carbs_g: nutritionTargets.carbs_g,
-      fat_g: nutritionTargets.fat_g,
+      carbs_g: nutritionTargets.carbs_g ?? 0,
+      fat_g: nutritionTargets.fat_g ?? 0,
       fiber_g: nutritionTargets.fiber_g,
     },
     adherence_notes: payload.nutrition_strategy?.adherence_notes ?? [],

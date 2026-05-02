@@ -30,6 +30,8 @@ const mockPlan: Plan = {
   nutrition_targets: {
     calories: 2200,
     protein_g: 180,
+    carbs_g: 200,
+    fat_g: 70,
   },
   adherence_notes: [],
   training_program: {
