@@ -32,3 +32,22 @@ def test_build_input_data_includes_formatted_history_summary():
     )
 
     assert data["formatted_history"] == "\n".join(msg.content for msg in history)
+
+
+def test_format_metabolism_section_shows_macro_targets():
+    """Regression: calculate_macro_targets returns protein/carbs/fat keys,
+    but prompt builder looked for protein_g/carbs_g/fat_g, causing
+    'indisponivel' to always be shown to the trainer."""
+    metabolism_data = {
+        "tdee": 2500,
+        "daily_target": 2200,
+        "goal_type": "lose",
+        "goal_weekly_rate": -0.5,
+        "confidence": "medium",
+        "macro_targets": {"protein": 128, "carbs": 202, "fat": 54},
+    }
+    result = PromptBuilder._format_metabolism_section(metabolism_data)
+    assert "128" in result, "protein value should appear in formatted section"
+    assert "202" in result, "carbs value should appear in formatted section"
+    assert "54" in result, "fat value should appear in formatted section"
+    assert "indisponivel" not in result, "should never show indisponivel when data exists"

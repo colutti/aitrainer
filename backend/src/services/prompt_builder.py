@@ -57,14 +57,19 @@ class PromptBuilder:
         if not metabolism_data:
             return ""
 
-        macro_targets = metabolism_data.get("macro_targets") or {}
+        raw_macros = metabolism_data.get("macro_targets") or {}
+        macro_targets = {
+            "protein_g": raw_macros.get("protein") or raw_macros.get("protein_g"),
+            "carbs_g": raw_macros.get("carbs") or raw_macros.get("carbs_g"),
+            "fat_g": raw_macros.get("fat") or raw_macros.get("fat_g"),
+        }
 
         def _field(block: dict, key: str) -> str:
             value = block.get(key)
             return str(value) if value is not None else "indisponivel"
 
         return (
-            "Fonte oficial (algoritmo adaptativo):\n"
+            "Sugestao do algoritmo adaptativo (referencia — o plano pode sobrescrever):\n"
             f"- TDEE atual: {_field(metabolism_data, 'tdee')} kcal\n"
             f"- Meta diaria atual: {_field(metabolism_data, 'daily_target')} kcal\n"
             f"- Objetivo: {_field(metabolism_data, 'goal_type')} "
@@ -73,7 +78,11 @@ class PromptBuilder:
             "- Macros de referencia do algoritmo:\n"
             f"  - Proteina: {_field(macro_targets, 'protein_g')} g\n"
             f"  - Carboidratos: {_field(macro_targets, 'carbs_g')} g\n"
-            f"  - Gorduras: {_field(macro_targets, 'fat_g')} g"
+            f"  - Gorduras: {_field(macro_targets, 'fat_g')} g\n"
+            "\n"
+            "NOTA: Se o plano mestre tem metas nutricionais definidas, "
+            "elas sobrepoe estes macros do algoritmo. Sempre use as metas "
+            "do plano como fonte primaria para orientar o usuario."
         )
 
     @staticmethod
