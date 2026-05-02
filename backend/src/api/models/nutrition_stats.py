@@ -53,6 +53,9 @@ class NutritionStats(BaseModel):
         default=None, description="Meta calórica diária baseada no TDEE e objetivo"
     )
     macro_targets: dict | None = Field(default=None, description="Metas de macros")
+    macro_source: str = Field(
+        default="fallback", description="Fonte das macros: plan, fallback, ou none"
+    )
     stability_score: int | None = Field(
         default=None, description="Score de estabilidade"
     )

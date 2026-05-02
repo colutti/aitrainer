@@ -11,6 +11,8 @@ from pymongo.database import Database
 from src.api.models.nutrition_log import NutritionLog, NutritionWithId
 from src.api.models.nutrition_stats import NutritionStats, DailyMacros
 from src.repositories.base import BaseRepository
+from src.repositories.plan_repository import PlanRepository
+from src.services.macro_resolver import resolve_macro_targets
 
 
 class NutritionRepository(BaseRepository):
@@ -20,6 +22,7 @@ class NutritionRepository(BaseRepository):
 
     def __init__(self, database: Database):
         super().__init__(database, "nutrition_logs")
+        self._database = database
         self.ensure_query_indexes()
 
     def ensure_query_indexes(self) -> None:
@@ -234,6 +237,30 @@ class NutritionRepository(BaseRepository):
             self.logger.warning("Failed to calculate Adaptive TDEE for stats: %s", e)
             return {}
 
+    def _resolve_macro_targets(
+        self, user_email: str, period_stats: dict
+    ) -> tuple[dict, str]:
+        """Resolve effective macro targets from plan or TDEE fallback."""
+        plan = PlanRepository(self._database).get_plan(user_email)
+        plan_daily_targets = None
+        if plan and plan.nutrition_strategy and plan.nutrition_strategy.daily_targets:
+            plan_daily_targets = plan.nutrition_strategy.daily_targets.model_dump(
+                exclude_none=True
+            )
+
+        resolved = resolve_macro_targets(
+            tdee_macros=period_stats.get("macro_targets"),
+            plan_daily_targets=plan_daily_targets,
+        )
+
+        macro_dict = {
+            "protein": resolved["protein"] or 0,
+            "carbs": resolved["carbs"] or 0,
+            "fat": resolved["fat"] or 0,
+        }
+        return macro_dict, resolved.get("source", "fallback")
+
+    # pylint: disable=too-many-locals
     def get_stats(self, user_email: str, tdee_service=None) -> NutritionStats:
         """
         Calculates and retrieves comprehensive nutrition statistics for a user.
@@ -256,6 +283,10 @@ class NutritionRepository(BaseRepository):
         total_logs = self.collection.count_documents({"user_email": user_email})
         period_stats = self._get_tdee_stats(user_email, tdee_service)
 
+        macro_dict, macro_source = self._resolve_macro_targets(
+            user_email, period_stats
+        )
+
         return NutritionStats(
             today=today_log,
             weekly_adherence=weekly_adherence,
@@ -267,6 +298,7 @@ class NutritionRepository(BaseRepository):
             total_logs=total_logs,
             tdee=period_stats.get("tdee"),
             daily_target=period_stats.get("daily_target"),
-            macro_targets=period_stats.get("macro_targets"),
+            macro_targets=macro_dict,
+            macro_source=macro_source,
             stability_score=period_stats.get("stability_score"),
         )
