@@ -1,7 +1,5 @@
 """Tests for macro target resolution (plan-first, TDEE fallback)."""
 
-import pytest
-
 from src.services.macro_resolver import resolve_macro_targets
 
 

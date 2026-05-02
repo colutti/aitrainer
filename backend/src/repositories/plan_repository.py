@@ -6,6 +6,8 @@ import pymongo
 from pymongo import ReturnDocument
 from pymongo.database import Database
 
+from pydantic import ValidationError
+
 from src.api.models.plan import UserPlan
 from src.repositories.base import BaseRepository
 
@@ -48,7 +50,15 @@ class PlanRepository(BaseRepository):
             {"user_email": user_email},
             sort=[("updated_at", pymongo.DESCENDING)],
         )
-        return UserPlan(**doc) if doc else None
+        if not doc:
+            return None
+        try:
+            return UserPlan(**doc)
+        except ValidationError:
+            self.logger.warning(
+                "Invalid plan document for user %s, returning None", user_email
+            )
+            return None
 
     def get_latest_plan(self, user_email: str) -> UserPlan | None:
         """Returns singleton plan (same document)."""
