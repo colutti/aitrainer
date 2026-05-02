@@ -20,6 +20,7 @@ interface BodyState {
   fetchLogs: (page?: number, pageSize?: number) => Promise<void>;
   fetchStats: () => Promise<void>;
   logWeight: (data: Partial<WeightLog>) => Promise<void>;
+  updateWeight: (logId: string, data: Partial<WeightLog>) => Promise<void>;
   deleteLog: (date: string) => Promise<void>;
   reset: () => void;
 }
@@ -77,6 +78,20 @@ export const useBodyStore = create<BodyState>((set, get) => ({
       set({ 
         isLoading: false, 
         error: err instanceof Error ? err.message : 'Error logging weight' 
+      });
+      throw err;
+    }
+  },
+
+  updateWeight: async (logId: string, data: Partial<WeightLog>) => {
+    set({ isLoading: true });
+    try {
+      await httpClient(`/weight/${logId}`, { method: 'PUT', body: JSON.stringify(data) });
+      await Promise.all([get().fetchLogs(), get().fetchStats()]);
+    } catch (err) {
+      set({ 
+        isLoading: false, 
+        error: err instanceof Error ? err.message : 'Error updating weight' 
       });
       throw err;
     }

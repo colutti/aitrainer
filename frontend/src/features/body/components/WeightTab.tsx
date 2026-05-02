@@ -30,6 +30,7 @@ export function WeightTab() {
     fetchStats,
     deleteLog,
     logWeight,
+    updateWeight,
   } = useBodyStore();
   
   const { t } = useTranslation();
@@ -80,7 +81,11 @@ export function WeightTab() {
       return;
     }
     try {
-      await logWeight(data as Partial<WeightLog>);
+      if (selectedLog?.id) {
+        await updateWeight(selectedLog.id, data as Partial<WeightLog>);
+      } else {
+        await logWeight(data as Partial<WeightLog>);
+      }
       handleCloseDrawer();
     } catch { /* Handled by store */ }
   };

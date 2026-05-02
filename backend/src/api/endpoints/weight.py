@@ -70,6 +70,42 @@ def log_weight(
     }
 
 
+@router.put("/{log_id}")
+def update_weight_log(
+    log_id: str,
+    log_input: WeightLogInput,
+    user_email: WritableCurrentUser,
+    db: DatabaseDep,
+) -> dict:
+    """
+    Updates an existing weight log by its ID.
+    """
+    tdee_service = AdaptiveTDEEService(db)
+
+    recent_logs = db.weight.get_logs(user_email, limit=1)
+    prev_trend = None
+    if recent_logs:
+        prev_trend = recent_logs[0].trend_weight
+
+    new_trend = tdee_service.calculate_ema_trend(log_input.weight_kg, prev_trend)
+
+    log = WeightLog(
+        user_email=user_email, trend_weight=new_trend, **log_input.model_dump()
+    )
+
+    success = db.weight.update_log(log_id, user_email, log)
+
+    if not success:
+        raise HTTPException(status_code=404, detail="Weight log not found")
+
+    return {
+        "message": "Weight log updated successfully",
+        "id": log_id,
+        "date": log.date,
+        "trend_weight": round(new_trend, 2) if new_trend else None,
+    }
+
+
 @router.delete("/{date_str}")
 def delete_weight_log(
     date_str: str, user_email: WritableCurrentUser, brain: AITrainerBrainDep

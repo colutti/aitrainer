@@ -67,6 +67,30 @@ class NutritionRepository(BaseRepository):
         )
         return [NutritionLog(**doc) for doc in cursor]
 
+    def update_log(self, log_id: str, user_email: str, log: NutritionLog) -> bool:
+        """
+        Updates an existing nutrition log by its ID.
+        """
+        log_date = log.date
+        if isinstance(log_date, py_date) and not isinstance(log_date, datetime):
+            log_date = datetime.combine(log_date, datetime.min.time())
+        log_date = log_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        log.date = log_date
+
+        data = log.model_dump()
+        data["user_email"] = user_email
+
+        result = self.collection.replace_one(
+            {"_id": ObjectId(log_id), "user_email": user_email},
+            data
+        )
+        updated = result.matched_count > 0
+        if updated:
+            self.logger.info("Nutrition log %s updated for user %s", log_id, user_email)
+        else:
+            self.logger.warning("Nutrition log %s not found for update", log_id)
+        return updated
+
     def delete_log(self, log_id: str) -> bool:
         """
         Deletes a nutrition log by its ID.

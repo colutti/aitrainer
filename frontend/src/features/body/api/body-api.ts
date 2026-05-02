@@ -50,6 +50,13 @@ export const bodyApi = {
       body: JSON.stringify({ weight_kg: weight, ...data }),
     }) as Promise<WeightLog>;
   },
+
+  updateWeight: async (logId: string, weight: number, data: Partial<WeightLog> = {}): Promise<WeightLog> => {
+    return httpClient<WeightLog>(`/weight/${logId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ weight_kg: weight, ...data }),
+    }) as Promise<WeightLog>;
+  },
   
   deleteWeight: async (date: string): Promise<void> => {
     await httpClient(`/weight/${date}`, { method: 'DELETE' });

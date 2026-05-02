@@ -21,6 +21,7 @@ interface NutritionState {
   fetchLogs: (page?: number, limit?: number) => Promise<void>;
   fetchStats: () => Promise<void>;
   createLog: (data: CreateNutritionLogRequest) => Promise<void>;
+  updateLog: (logId: string, data: CreateNutritionLogRequest) => Promise<void>;
   deleteLog: (id: string) => Promise<void>;
   reset: () => void;
 }
@@ -80,6 +81,20 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
       set({ 
         isLoading: false, 
         error: err instanceof Error ? err.message : 'Error creating nutrition log' 
+      });
+      throw err;
+    }
+  },
+
+  updateLog: async (logId: string, data: CreateNutritionLogRequest) => {
+    set({ isLoading: true });
+    try {
+      await httpClient(`/nutrition/log/${logId}`, { method: 'PUT', body: JSON.stringify(data) });
+      await Promise.all([get().fetchLogs(), get().fetchStats()]);
+    } catch (err) {
+      set({ 
+        isLoading: false, 
+        error: err instanceof Error ? err.message : 'Error updating nutrition log' 
       });
       throw err;
     }

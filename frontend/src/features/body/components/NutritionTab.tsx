@@ -9,7 +9,7 @@ import { useConfirmation } from '../../../shared/hooks/useConfirmation';
 import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { useNutritionStore } from '../../../shared/hooks/useNutrition';
 import { PREMIUM_UI } from '../../../shared/styles/ui-variants';
-import { type NutritionLog, type NutritionFormData } from '../../../shared/types/nutrition';
+import { type NutritionLog, type NutritionFormData, type CreateNutritionLogRequest } from '../../../shared/types/nutrition';
 import { cn } from '../../../shared/utils/cn';
 import { NutritionLogCard } from '../../nutrition/components/NutritionLogCard';
 
@@ -30,6 +30,7 @@ export function NutritionTab() {
     fetchStats,
     deleteLog,
     createLog,
+    updateLog,
   } = useNutritionStore();
   
   const { t } = useTranslation();
@@ -65,18 +66,24 @@ export function NutritionTab() {
 
   const onSave = async (data: NutritionFormData) => {
     if (blockIfReadOnly()) return;
+
+    const payload: CreateNutritionLogRequest = {
+      date: data.date,
+      source: data.source,
+      calories: data.calories,
+      protein_grams: data.protein_grams ?? 0,
+      carbs_grams: data.carbs_grams ?? 0,
+      fat_grams: data.fat_grams ?? 0,
+      fiber_grams: data.fiber_grams ?? 0,
+      sodium_mg: data.sodium_mg ?? 0,
+    };
     
     try {
-      await createLog({
-        date: data.date,
-        source: data.source,
-        calories: data.calories,
-        protein_grams: data.protein_grams ?? 0,
-        carbs_grams: data.carbs_grams ?? 0,
-        fat_grams: data.fat_grams ?? 0,
-        fiber_grams: data.fiber_grams ?? 0,
-        sodium_mg: data.sodium_mg ?? 0,
-      });
+      if (selectedLog?.id) {
+        await updateLog(selectedLog.id, payload);
+      } else {
+        await createLog(payload);
+      }
       handleCloseDrawer();
     } catch {
       // Handled by store

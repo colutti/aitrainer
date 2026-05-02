@@ -218,6 +218,58 @@ async def import_myfitnesspal(
         raise HTTPException(status_code=500, detail="Falha ao importar dados.") from e
 
 
+@router.put("/log/{log_id}", response_model=NutritionWithId)
+def update_nutrition_log(
+    log_id: str,
+    user_email: WritableCurrentUser,
+    db: DatabaseDep,
+    log_data: CreateNutritionLogRequest,
+) -> NutritionWithId:
+    """
+    Updates an existing nutrition log by its ID.
+    """
+    logger.info("Updating nutrition log %s for user: %s", log_id, user_email)
+    try:
+        date_obj = datetime.fromisoformat(log_data.date)
+
+        nutrition_log = NutritionLog(
+            user_email=user_email,
+            date=date_obj,
+            calories=log_data.calories,
+            protein_grams=log_data.protein_grams,
+            carbs_grams=log_data.carbs_grams,
+            fat_grams=log_data.fat_grams,
+            fiber_grams=log_data.fiber_grams,
+            sugar_grams=None,
+            sodium_mg=log_data.sodium_mg,
+            cholesterol_mg=None,
+            source=log_data.source,
+            notes=None,
+        )
+
+        success = db.update_nutrition_log(log_id, user_email, nutrition_log)
+
+        if not success:
+            raise HTTPException(status_code=404, detail="Nutrition log not found")
+
+        saved_log = db.get_nutrition_by_id(log_id)
+        if not saved_log:
+            raise HTTPException(status_code=500, detail="Failed to retrieve saved log")
+
+        if "_id" in saved_log:
+            saved_log["_id"] = str(saved_log["_id"])
+
+        return NutritionWithId(**saved_log)
+    except HTTPException:
+        raise
+    except ValueError as e:
+        logger.warning("Validation error updating nutrition log %s: %s", log_id, e)
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        logger.error("Error updating nutrition log %s for user %s: %s", log_id, user_email, e)
+        raise HTTPException(status_code=500, detail="Failed to update nutrition log") from e
+
+
 @router.delete("/{log_id}")
 def delete_nutrition(
     log_id: str, user_email: WritableCurrentUser, db: DatabaseDep
