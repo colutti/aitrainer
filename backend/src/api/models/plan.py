@@ -46,8 +46,8 @@ class NutritionDailyTargets(BaseModel):
 
     calories: int = Field(..., gt=0)
     protein_g: int = Field(..., gt=0)
-    carbs_g: int | None = Field(default=None, gt=0)
-    fat_g: int | None = Field(default=None, gt=0)
+    carbs_g: int = Field(..., gt=0)
+    fat_g: int = Field(..., gt=0)
     fiber_g: int | None = Field(default=None, gt=0)
 
 

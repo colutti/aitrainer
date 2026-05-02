@@ -95,6 +95,8 @@ def create_plan_help_tool(_database, _user_email: str):
             "## Regras\n"
             "- Plano e singleton sobrescrito por usuario.\n"
             "- Criacao inicial exige objetivo, estrategia, metas nutricionais e programa semanal.\n"
+            "- Metas nutricionais (nutrition_strategy.daily_targets) DEVEM incluir "
+            "calories, protein_g, carbs_g e fat_g. Nunca omitir carbs_g ou fat_g.\n"
             "- Nao repetir upsert_plan com payload igual no mesmo turno.\n\n"
             "## Payload minimo recomendado\n"
             f"{_minimum_upsert_payload_template()}\n\n"
