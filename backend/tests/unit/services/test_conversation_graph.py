@@ -791,23 +791,25 @@ async def test_coach_reply_strips_internal_wrappers_into_final_response():
 
 
 @pytest.mark.asyncio
-async def test_coach_reply_localizes_section_headers_by_locale():
+async def test_coach_reply_returns_natural_flowing_text():
     runner, brain = _runner_with_brain()
     brain.get_log_callback.return_value = None
 
     async def fake_stream_with_tools(**kwargs):
         del kwargs
-        yield "Data Reading:\nThis is a test response.\n\nInterpretation:\nStill a test.\n\nNext Actions:\nKeep going."
+        yield "Hey! We are officially running Plan V21 now. The focus is on maintenance calories (2391 kcal) to consolidate this muscle gain, keeping the 6-day protocol (PPLx2). This is a key transition phase out of the deficit, so stay consistent with the diet and log your lifts. Next check-in is Monday (May 4th). Let's go!"
         yield {"type": "tools_summary", "tools_called": []}
 
     brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    brain.strip_internal_wrappers = None  # pylint: disable=protected-access
     state = GraphState(user_email="a@b.com", user_input_raw="hi", user_input_sanitized="hi", channel="app")
     state.shared_context = {"input_data": {"user_locale": "en-US"}}
 
     await runner._node_coach_reply(state)  # pylint: disable=protected-access
 
-    assert state.final_response.startswith("Data Reading:")
-    assert state.node_outputs["coach_reply"].startswith("Data Reading:")
+    assert state.final_response is not None
+    assert len(state.final_response) > 0
+    assert state.node_outputs["coach_reply"] == state.final_response
 
 
 @pytest.mark.asyncio

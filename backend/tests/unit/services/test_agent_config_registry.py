@@ -98,16 +98,12 @@ def test_prompt_texts_encode_node_responsibilities():
     assert "upsert_plan" in plan.prompt_text
     assert "multi_domain" in intent_router.prompt_text
     assert "Treinei costas hoje e comi 2400 kcal" in intent_router.prompt_text
-    assert "Leitura dos dados" in coach.prompt_text
     assert "persona ativa" in coach.prompt_text or "persona" in coach.prompt_text
     assert "idioma predominante" in coach.prompt_text
     assert "voz de entrenador" in coach.prompt_text
     assert "soar nativa" in coach.prompt_text
-    assert "Data Reading:" in coach.prompt_text
-    assert "Interpretation:" in coach.prompt_text
-    assert "Next Actions:" in coach.prompt_text
-    assert "Lectura de los datos:" in coach.prompt_text
-    assert "Proximas acciones:" in coach.prompt_text
+    assert "texto corrido e natural" in coach.prompt_text
+    assert "Nao use rotulos de secao" in coach.prompt_text
     assert "monstro" in coach.prompt_text
     assert "e nois" in coach.prompt_text
     assert coach.temperature == 0.2
