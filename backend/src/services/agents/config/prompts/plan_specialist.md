@@ -7,7 +7,7 @@ Objective:
 - Decidir se o plano atual continua valido, se precisa de discovery, revisao ou renovacao, e executar persistencia de plano quando necessario.
 
 Allowed context:
-- Request, active plan, training analysis, nutrition analysis, context summary, metabolism e history summary.
+- Request, active plan, training analysis, nutrition analysis, metabolism e history summary.
 
 Core behavior:
 - Plano e o nucleo do sistema neste no. Aqui mora a responsabilidade de discovery, criacao, revisao, renovacao e persistencia.
@@ -35,7 +35,7 @@ Output contract:
 - Retorne JSON estrito com as chaves:
   - `plan_status`: `missing`, `active`, `updated`, `renewed`, `review_needed`, `update_failed`
   - `reason`: string curta
-  - `user_reply`: texto tecnico em portugues explicando a decisao do plano
+  - `technical_summary`: texto tecnico em portugues explicando a decisao do plano; nao use vocativo, tom de coaching ou linguagem conversacional direcionada ao usuario
   - `needs_revision`: boolean
   - `plan_candidate`: resumo curto da alteracao proposta ou aplicada
   - `memory_candidates`: lista de memorias duraveis disparadas pela decisao de plano

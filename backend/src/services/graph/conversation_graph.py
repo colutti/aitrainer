@@ -54,7 +54,7 @@ class GraphState:
     user_input_sanitized: str = ""
     intent: str = "general"
     shared_context: dict[str, Any] = field(default_factory=dict)
-    technical_response: str = ""
+    coach_response: str = ""
     final_response: str = ""
     tools_called: list[str] = field(default_factory=list)
     persistence_actions: list[str] = field(default_factory=list)
@@ -87,7 +87,7 @@ class GraphState:
             "intent": self.intent,
         }
         self.response = {
-            "technical": self.technical_response,
+            "technical": self.coach_response,
             "final": self.final_response,
         }
         self.ops = {
@@ -101,14 +101,14 @@ class ConversationGraphRunner:
     """Orchestrates conversation through explicit nodes."""
 
     NODE_ORDER = (
-        "turn_context",
+        "session_context",
         "prompt_security",
         "intent_router",
         "training_specialist",
         "nutrition_specialist",
         "plan_specialist",
-        "general_conversation",
-        "persistence_guard",
+        "coach_reply",
+        "memory_hub",
     )
 
     def __init__(self, brain, registry: AgentConfigRegistry):
@@ -221,6 +221,13 @@ class ConversationGraphRunner:
             return "en-US"
         return "pt-BR"
 
+    @staticmethod
+    def _resolve_user_locale(preferred_language: str | None, text: str) -> str:
+        normalized_preference = str(preferred_language or "").strip()
+        if normalized_preference in {"pt-BR", "en-US", "es-ES"}:
+            return normalized_preference
+        return ConversationGraphRunner._infer_response_locale(text)
+
     async def run_stream(
         self,
         *,
@@ -265,9 +272,9 @@ class ConversationGraphRunner:
                         break
 
                 if state.security_status != "safe":
-                    state.technical_response = self._blocked_response()
-                    state.final_response = state.technical_response
-                    state.response["technical"] = state.technical_response
+                    state.coach_response = self._blocked_response()
+                    state.final_response = state.coach_response
+                    state.response["technical"] = state.coach_response
                     state.response["final"] = state.final_response
                 else:
                     if state.intent in {"training", "plan", "multi_domain"}:
@@ -280,8 +287,8 @@ class ConversationGraphRunner:
                             await self._run_node("training_specialist", state)
                         if state.intent in {"nutrition", "plan", "multi_domain"}:
                             await self._run_node("nutrition_specialist", state)
-                    await self._run_node("general_conversation", state)
-                await self._run_node("persistence_guard", state)
+                    await self._run_node("coach_reply", state)
+                await self._run_node("memory_hub", state)
                 logger.info(
                     "graph.turn_completed request_id=%s conversation_id=%s turn_id=%s intent=%s security=%s tools_called=%s persistence_actions=%s",
                     state.request_id,
@@ -427,12 +434,12 @@ class ConversationGraphRunner:
             "tools_called": state.tools_called,
             "persistence_actions": state.persistence_actions,
             "final_response": state.final_response,
-            "technical_response": state.technical_response,
+            "technical_response": state.coach_response,
             "node_outputs": state.node_outputs,
             "nodes": nodes,
         }
 
-    async def _node_turn_context(self, state: GraphState) -> None:
+    async def _node_session_context(self, state: GraphState) -> None:
         profile = self._brain.get_or_create_user_profile(state.user_email)
         trainer_profile = self._brain.get_or_create_trainer_profile(state.user_email, profile)
         needs_cycle_reset = self._brain.check_message_limits(profile)
@@ -465,7 +472,10 @@ class ConversationGraphRunner:
             plan_snapshot=build_plan_prompt_snapshot(plan) if plan else None,
             metabolism_data=metabolism,
         )
-        detected_locale = self._infer_response_locale(state.user_input_sanitized or state.user_input_raw)
+        detected_locale = self._resolve_user_locale(
+            trainer_profile.preferred_language,
+            state.user_input_sanitized or state.user_input_raw,
+        )
         input_data["user_locale"] = detected_locale
         runtime_context = dict(input_data.get("runtime_context") or {})
         session_ctx = dict(runtime_context.get("session") or {})
@@ -515,14 +525,7 @@ class ConversationGraphRunner:
         state.shared_context["plan_lifecycle"] = plan_lifecycle
         state.shared_context["persistence_candidates"] = {"memory": [], "event": []}
         state.request["sanitized_input"] = state.user_input_sanitized
-        context_summary = await self._run_llm_node(
-            node_name="turn_context",
-            state=state,
-            allowed_tools=set(),
-            message_override=state.user_input_sanitized,
-        )
-        state.shared_context["context_summary"] = context_summary
-        state.node_outputs["turn_context"] = context_summary
+        state.node_outputs["session_context"] = "hydrated"
 
     async def _node_prompt_security(self, state: GraphState) -> None:
         lowered = state.user_input_raw.lower()
@@ -613,13 +616,13 @@ class ConversationGraphRunner:
         plan_status = str(parsed.get("plan_status", "")).strip()
         reason = str(parsed.get("reason", "")).strip()
         plan_candidate = str(parsed.get("plan_candidate", "")).strip()
-        user_reply = str(parsed.get("user_reply", "")).strip()
+        technical_summary = str(parsed.get("technical_summary", "")).strip()
         self._merge_persistence_candidates(
             state,
             memory_candidates=parsed.get("memory_candidates"),
             event_candidates=parsed.get("event_candidates"),
         )
-        state.node_outputs["plan_specialist"] = user_reply or (
+        state.node_outputs["plan_specialist"] = technical_summary or (
             "Objetivo: gerenciar ciclo de vida do plano e consistencia entre treino e nutricao. "
             f"intent={state.intent}; has_active_plan={state.shared_context['has_active_plan']}; "
             f"plan_status={plan_status}; revisao_necessaria={state.plan_needs_revision}; reason={reason}"
@@ -711,10 +714,10 @@ class ConversationGraphRunner:
         )
         state.node_outputs["nutrition_specialist"] = final_text
 
-    async def _node_general_conversation(self, state: GraphState) -> None:
+    async def _node_coach_reply(self, state: GraphState) -> None:
         if state.security_status != "safe":
-            state.technical_response = self._blocked_response()
-            state.node_outputs["general_conversation"] = state.technical_response
+            state.coach_response = self._blocked_response()
+            state.node_outputs["coach_reply"] = state.coach_response
             return
         specialist_context = "\n\n".join(
             [
@@ -725,7 +728,7 @@ class ConversationGraphRunner:
             ]
         ).strip()
         response = await self._run_llm_node(
-            node_name="general_conversation",
+            node_name="coach_reply",
             state=state,
             extra_context=specialist_context,
             allowed_tools={
@@ -737,13 +740,13 @@ class ConversationGraphRunner:
         strip_wrappers = getattr(self._brain, "strip_internal_wrappers", None)
         if callable(strip_wrappers):
             public_text = strip_wrappers(response)
-        state.technical_response = public_text
+        state.coach_response = public_text
         state.response["technical"] = public_text
         state.final_response = public_text
         state.response["final"] = public_text
-        state.node_outputs["general_conversation"] = public_text
+        state.node_outputs["coach_reply"] = public_text
 
-    async def _node_persistence_guard(self, state: GraphState) -> None:
+    async def _node_memory_hub(self, state: GraphState) -> None:
         action_detail = "no_action"
         tools_by_name = {tool.name: tool for tool in self._brain.get_tools(state.user_email)}
         structured_candidates = dict(state.shared_context.get("persistence_candidates") or {})
@@ -768,10 +771,10 @@ class ConversationGraphRunner:
                 self._log_persistence_decision(state, memory_action)
                 return
         planner = await self._run_llm_node(
-            node_name="persistence_guard",
+            node_name="memory_hub",
             state=state,
             extra_context=(
-                f"ANALISE_TECNICA:\n{state.technical_response}\n\n"
+                f"ANALISE_TECNICA:\n{state.coach_response}\n\n"
                 f"ANALISE_TREINO:\n{state.node_outputs.get('training_specialist', '')}\n\n"
                 f"ANALISE_NUTRICAO:\n{state.node_outputs.get('nutrition_specialist', '')}"
             ),
@@ -787,7 +790,7 @@ class ConversationGraphRunner:
         if memory_action:
             self._log_persistence_decision(state, memory_action)
             return
-        state.node_outputs["persistence_guard"] = "no_action"
+        state.node_outputs["memory_hub"] = "no_action"
         self._log_persistence_decision(state, action_detail)
 
     async def _run_llm_node(
@@ -904,13 +907,11 @@ class ConversationGraphRunner:
             "active_plan": str(state.shared_context.get("plan_section", input_data.get("plan_section", ""))),
             "metabolism": str(state.shared_context.get("metabolism_section", input_data.get("metabolism_section", ""))),
             "history_summary": str(state.shared_context.get("history_summary", "")),
-            "context_summary": str(state.shared_context.get("context_summary", "")),
             "training_analysis": str(state.node_outputs.get("training_specialist", "")),
             "nutrition_analysis": str(state.node_outputs.get("nutrition_specialist", "")),
-            "plan_analysis": str(state.node_outputs.get("plan_specialist", "")),
             "plan_workspace": str(state.shared_context.get("plan_workspace", "")),
             "plan_lifecycle": str(state.shared_context.get("plan_lifecycle", {})),
-            "technical_response": str(state.technical_response),
+            "coach_response": str(state.coach_response),
             "security_result": str(state.security_status),
             "persistence_intents": str(state.persistence_intents),
         }
@@ -973,7 +974,7 @@ class ConversationGraphRunner:
                 result = delete_tool.invoke({"event_id": event_id})
                 state.persistence_actions.append(f"delete_event:{result}")
                 state.tools_called.append("delete_event")
-                state.node_outputs["persistence_guard"] = "delete_event"
+                state.node_outputs["memory_hub"] = "delete_event"
                 return f"delete_event:{event_id}"
         if event_action == "update":
             update_tool = tools_by_name.get("update_event")
@@ -988,7 +989,7 @@ class ConversationGraphRunner:
                 result = update_tool.invoke(payload)
                 state.persistence_actions.append(f"update_event:{result}")
                 state.tools_called.append("update_event")
-                state.node_outputs["persistence_guard"] = "update_event"
+                state.node_outputs["memory_hub"] = "update_event"
                 return f"update_event:{event_id}"
         if event_action == "create":
             if matched_event:
@@ -1002,7 +1003,7 @@ class ConversationGraphRunner:
                     result = update_tool.invoke(payload)
                     state.persistence_actions.append(f"update_event:{result}")
                     state.tools_called.append("update_event")
-                    state.node_outputs["persistence_guard"] = "update_event"
+                    state.node_outputs["memory_hub"] = "update_event"
                     return f"update_event:{matched_event['id']}"
             event_tool = tools_by_name.get("create_event")
             if event_tool and event_title:
@@ -1014,7 +1015,7 @@ class ConversationGraphRunner:
                 result = event_tool.invoke(payload)
                 state.persistence_actions.append(f"create_event:{result}")
                 state.tools_called.append("create_event")
-                state.node_outputs["persistence_guard"] = "create_event"
+                state.node_outputs["memory_hub"] = "create_event"
                 return "create_event:title"
         return None
 
@@ -1046,7 +1047,7 @@ class ConversationGraphRunner:
                 )
                 state.persistence_actions.append(f"update_memory:{result}")
                 state.tools_called.append("update_memory")
-                state.node_outputs["persistence_guard"] = "update_memory"
+                state.node_outputs["memory_hub"] = "update_memory"
                 return f"update_memory:{memory_id}"
         if memory_action == "save":
             if memory_id:
@@ -1057,7 +1058,7 @@ class ConversationGraphRunner:
                     )
                     state.persistence_actions.append(f"update_memory:{result}")
                     state.tools_called.append("update_memory")
-                    state.node_outputs["persistence_guard"] = "update_memory"
+                    state.node_outputs["memory_hub"] = "update_memory"
                     return f"update_memory:{memory_id}"
             memory_tool = tools_by_name.get("save_memory")
             if memory_tool and memory_content:
@@ -1066,7 +1067,7 @@ class ConversationGraphRunner:
                 )
                 state.persistence_actions.append(f"save_memory:{result}")
                 state.tools_called.append("save_memory")
-                state.node_outputs["persistence_guard"] = "save_memory"
+                state.node_outputs["memory_hub"] = "save_memory"
                 return "save_memory:new"
         return None
 

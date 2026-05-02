@@ -1,5 +1,5 @@
 {
-  "node_name": "general_conversation",
+  "node_name": "coach_reply",
   "enabled": true,
   "model_provider": "openrouter",
   "model_name": "google/gemini-3.1-flash-lite-preview",
@@ -10,14 +10,13 @@
     "get_plan",
     "plan_help"
   ],
-  "prompt_file": "backend/src/services/agents/config/prompts/general_conversation.md",
+  "prompt_file": "backend/src/services/agents/config/prompts/coach_reply.md",
   "response_format": "text",
   "version": "v1",
   "context_blocks": [
     "request",
     "user_locale",
     "trainer_persona",
-    "context_summary",
     "training_analysis",
     "nutrition_analysis",
     "plan_workspace",

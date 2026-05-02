@@ -25,7 +25,6 @@
     "active_plan",
     "metabolism",
     "history_summary",
-    "context_summary",
     "training_analysis"
   ],
   "peer_inputs": [

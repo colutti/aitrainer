@@ -770,7 +770,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
                             "tools_called": [],
                             "persistence_actions": [],
                             "final_response": "",
-                            "technical_response": "",
+                            "coach_response": "",
                             "node_outputs": {},
                             "nodes": [],
                         },

@@ -35,7 +35,7 @@ async def test_prompt_security_blocks_injection():
 
 
 @pytest.mark.asyncio
-async def test_turn_context_infers_response_locale_from_input(monkeypatch):
+async def test_session_context_infers_response_locale_from_input(monkeypatch):
     runner, brain = _runner_with_brain()
     brain.get_log_callback.return_value = None
 
@@ -104,10 +104,105 @@ async def test_turn_context_infers_response_locale_from_input(monkeypatch):
         channel="app",
     )
 
-    await runner._node_turn_context(state)  # pylint: disable=protected-access
+    await runner._node_session_context(state)  # pylint: disable=protected-access
 
     assert state.shared_context["input_data"]["user_locale"] == "en-US"
     assert state.shared_context["input_data"]["runtime_context"]["session"]["response_locale"] == "en-US"
+
+
+@pytest.mark.asyncio
+async def test_session_context_prefers_trainer_profile_language_over_text_inference(monkeypatch):
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    class FakeTdeeService:
+        def __init__(self, _db):
+            del _db
+
+        def calculate_tdee(self, *_args, **_kwargs):
+            return {
+                "tdee": 2400,
+                "daily_target": 2200,
+                "goal_type": "maintain",
+                "goal_weekly_rate": 0.0,
+                "confidence": "medium",
+                "macro_targets": {"protein_g": 160, "carbs_g": 180, "fat_g": 60},
+            }
+
+    class FakeEventRepo:
+        def __init__(self, _db):
+            del _db
+
+        def get_active_events(self, *_args, **_kwargs):
+            return []
+
+    monkeypatch.setattr("src.services.graph.conversation_graph.AdaptiveTDEEService", FakeTdeeService)
+    monkeypatch.setattr("src.services.graph.conversation_graph.EventRepository", FakeEventRepo)
+
+    class FakeWindowMemory:
+        def load_memory_variables(self, _inputs):
+            del _inputs
+            return {"chat_history": []}
+
+    class FakeDatabase:
+        database = object()
+
+        def get_plan(self, _email):
+            del _email
+            return None
+
+        def get_window_memory(self, *args, **kwargs):
+            del args, kwargs
+            return FakeWindowMemory()
+
+    brain.database = FakeDatabase()
+    brain.prompt_builder.build_input_data.return_value = {
+        "user_profile": "perfil",
+        "trainer_profile": "treinador",
+        "formatted_history": "",
+        "current_date": "2026-05-01",
+        "agenda_section": "",
+        "plan_section": "",
+        "metabolism_section": "",
+        "runtime_context": {"session": {"channel": "app"}, "plan": {}},
+    }
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield "ok"
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="I trained back today",
+        user_input_sanitized="I trained back today",
+        channel="app",
+    )
+
+    original_get_or_create_trainer_profile = brain.get_or_create_trainer_profile
+
+    def fake_get_or_create_trainer_profile(_email, _profile):
+        del _email, _profile
+        return type(
+            "TrainerProfileStub",
+            (),
+            {
+                "trainer_type": "atlas",
+                "preferred_language": "pt-BR",
+                "personality_level": "balanced",
+                "get_trainer_profile_summary": lambda self: "treinador",
+            },
+        )()
+
+    brain.get_or_create_trainer_profile = fake_get_or_create_trainer_profile
+
+    await runner._node_session_context(state)  # pylint: disable=protected-access
+
+    assert state.shared_context["input_data"]["user_locale"] == "pt-BR"
+    assert state.shared_context["input_data"]["runtime_context"]["session"]["response_locale"] == "pt-BR"
+
+    brain.get_or_create_trainer_profile = original_get_or_create_trainer_profile
 
 
 @pytest.mark.asyncio
@@ -183,7 +278,7 @@ async def test_plan_specialist_tracks_plan_outcome():
     async def fake_stream_with_tools(**kwargs):
         del kwargs
         yield (
-            '{"plan_status":"updated","reason":"inconsistencia","user_reply":"plano ajustado",'
+            '{"plan_status":"updated","reason":"inconsistencia","technical_summary":"plano ajustado",'
             '"needs_revision":true,"plan_candidate":"ajustar volume",'
             '"memory_candidates":[{"memory_action":"save","memory_content":"prefere treino curto","memory_category":"context"}],'
             '"event_candidates":[{"event_action":"create","event_title":"revisao do plano","event_date":"2026-05-10"}]}'
@@ -241,7 +336,7 @@ async def test_training_specialist_parses_structured_output_and_plan_signal():
 
 
 @pytest.mark.asyncio
-async def test_persistence_guard_prefers_structured_candidates_before_llm():
+async def test_memory_hub_prefers_structured_candidates_before_llm():
     runner, brain = _runner_with_brain()
     create_event = MagicMock()
     create_event.name = "create_event"
@@ -267,14 +362,14 @@ async def test_persistence_guard_prefers_structured_candidates_before_llm():
         "input_data": {"user_locale": "pt-BR"},
     }
 
-    await runner._node_persistence_guard(state)  # pylint: disable=protected-access
+    await runner._node_memory_hub(state)  # pylint: disable=protected-access
 
     create_event.invoke.assert_called_once()
-    assert state.node_outputs["persistence_guard"] == "create_event"
+    assert state.node_outputs["memory_hub"] == "create_event"
 
 
 @pytest.mark.asyncio
-async def test_persistence_guard_uses_llm_intent_then_executes_tool():
+async def test_memory_hub_uses_llm_intent_then_executes_tool():
     runner, brain = _runner_with_brain()
     update_event = MagicMock()
     update_event.name = "update_event"
@@ -306,14 +401,14 @@ async def test_persistence_guard_uses_llm_intent_then_executes_tool():
             "metabolism_section": "",
         }
     }
-    await runner._node_persistence_guard(state)  # pylint: disable=protected-access
+    await runner._node_memory_hub(state)  # pylint: disable=protected-access
     update_event.invoke.assert_called_once()
     assert state.persistence_intents["event_action"] == "update"
-    assert state.node_outputs["persistence_guard"] == "update_event"
+    assert state.node_outputs["memory_hub"] == "update_event"
 
 
 @pytest.mark.asyncio
-async def test_persistence_guard_deduplicates_create_event_into_update():
+async def test_memory_hub_deduplicates_create_event_into_update():
     runner, brain = _runner_with_brain()
     list_events = MagicMock()
     list_events.name = "list_events"
@@ -351,13 +446,13 @@ async def test_persistence_guard_deduplicates_create_event_into_update():
             "metabolism_section": "",
         }
     }
-    await runner._node_persistence_guard(state)  # pylint: disable=protected-access
+    await runner._node_memory_hub(state)  # pylint: disable=protected-access
     update_event.invoke.assert_called_once()
-    assert state.node_outputs["persistence_guard"] == "update_event"
+    assert state.node_outputs["memory_hub"] == "update_event"
 
 
 @pytest.mark.asyncio
-async def test_persistence_guard_deduplicates_save_memory_into_update():
+async def test_memory_hub_deduplicates_save_memory_into_update():
     runner, brain = _runner_with_brain()
     search_memory = MagicMock()
     search_memory.name = "search_memory"
@@ -395,9 +490,9 @@ async def test_persistence_guard_deduplicates_save_memory_into_update():
             "metabolism_section": "",
         }
     }
-    await runner._node_persistence_guard(state)  # pylint: disable=protected-access
+    await runner._node_memory_hub(state)  # pylint: disable=protected-access
     update_memory.invoke.assert_called_once()
-    assert state.node_outputs["persistence_guard"] == "update_memory"
+    assert state.node_outputs["memory_hub"] == "update_memory"
 
 
 @pytest.mark.asyncio
@@ -546,7 +641,7 @@ async def test_plan_specialist_receives_upsert_plan_tools():
     async def fake_stream_with_tools(**kwargs):
         captured["tools"] = [tool.name for tool in kwargs["tools"]]
         yield (
-            '{"plan_status":"missing","reason":"sem plano","user_reply":"vamos montar",'
+            '{"plan_status":"missing","reason":"sem plano","technical_summary":"vamos montar",'
             '"needs_revision":false,"plan_candidate":""}'
         )
         yield {"type": "tools_summary", "tools_called": []}
@@ -575,7 +670,7 @@ async def test_plan_specialist_receives_upsert_plan_tools():
 
 
 @pytest.mark.asyncio
-async def test_general_conversation_receives_trainer_persona_in_final_synthesis():
+async def test_coach_reply_receives_trainer_persona_in_final_synthesis():
     runner, brain = _runner_with_brain()
     captured = {}
 
@@ -594,7 +689,7 @@ async def test_general_conversation_receives_trainer_persona_in_final_synthesis(
     }
     state.node_outputs["plan_specialist"] = "plano coerente"
 
-    await runner._run_llm_node(node_name="general_conversation", state=state, allowed_tools=set())
+    await runner._run_llm_node(node_name="coach_reply", state=state, allowed_tools=set())
     assert "persona completa" in captured["system"]
 
 
@@ -661,7 +756,7 @@ def test_graph_state_exposes_runtime_contract_blocks():
 
 
 @pytest.mark.asyncio
-async def test_general_conversation_strips_internal_wrappers_into_final_response():
+async def test_coach_reply_strips_internal_wrappers_into_final_response():
     runner, brain = _runner_with_brain()
     brain.get_log_callback.return_value = None
     brain.strip_internal_wrappers.side_effect = lambda text: text.replace(
@@ -688,15 +783,15 @@ async def test_general_conversation_strips_internal_wrappers_into_final_response
     }
     state.node_outputs["plan_specialist"] = "plano coerente"
 
-    await runner._node_general_conversation(state)  # pylint: disable=protected-access
+    await runner._node_coach_reply(state)  # pylint: disable=protected-access
 
     assert state.final_response == "resposta final"
     assert state.response["final"] == "resposta final"
-    assert state.node_outputs["general_conversation"] == "resposta final"
+    assert state.node_outputs["coach_reply"] == "resposta final"
 
 
 @pytest.mark.asyncio
-async def test_general_conversation_localizes_section_headers_by_locale():
+async def test_coach_reply_localizes_section_headers_by_locale():
     runner, brain = _runner_with_brain()
     brain.get_log_callback.return_value = None
 
@@ -709,14 +804,14 @@ async def test_general_conversation_localizes_section_headers_by_locale():
     state = GraphState(user_email="a@b.com", user_input_raw="hi", user_input_sanitized="hi", channel="app")
     state.shared_context = {"input_data": {"user_locale": "en-US"}}
 
-    await runner._node_general_conversation(state)  # pylint: disable=protected-access
+    await runner._node_coach_reply(state)  # pylint: disable=protected-access
 
     assert state.final_response.startswith("Data Reading:")
-    assert state.node_outputs["general_conversation"].startswith("Data Reading:")
+    assert state.node_outputs["coach_reply"].startswith("Data Reading:")
 
 
 @pytest.mark.asyncio
-async def test_persistence_guard_converts_weekly_follow_up_into_recurring_event():
+async def test_memory_hub_converts_weekly_follow_up_into_recurring_event():
     runner, brain = _runner_with_brain()
     list_events = MagicMock()
     list_events.name = "list_events"
@@ -752,11 +847,11 @@ async def test_persistence_guard_converts_weekly_follow_up_into_recurring_event(
         }
     }
 
-    await runner._node_persistence_guard(state)  # pylint: disable=protected-access
+    await runner._node_memory_hub(state)  # pylint: disable=protected-access
 
     create_event.invoke.assert_called_once()
     assert create_event.invoke.call_args.args[0] == {
         "title": "check-in de peso",
         "recurrence": "weekly",
     }
-    assert state.node_outputs["persistence_guard"] == "create_event"
+    assert state.node_outputs["memory_hub"] == "create_event"

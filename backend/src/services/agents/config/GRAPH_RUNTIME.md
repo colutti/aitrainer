@@ -16,20 +16,20 @@ Principios:
 - contexto e peer inputs sao injetados por allowlist
 - persistencia relevante e executada de forma deterministica no runtime
 - o plano e tratado como nucleo do produto
-- a persona do treinador fica apenas no `general_conversation`; os demais nos recebem contexto tecnico, nao voz/persona
+- a persona do entrenador fica apenas no `coach_reply`; os demais nos recebem contexto tecnico, nao voz/persona
 
 ## Ordem de execucao
 
 Ordem fixa do grafo:
 
-1. `turn_context`
+1. `session_context`
 2. `prompt_security`
 3. `intent_router`
 4. `training_specialist` se a intencao exigir treino
 5. `nutrition_specialist` se a intencao exigir nutricao
 6. `plan_specialist`
-7. `general_conversation`
-8. `persistence_guard`
+7. `coach_reply`
+8. `memory_hub`
 
 Regras de roteamento:
 
@@ -41,19 +41,18 @@ Regras de roteamento:
 - `plan_specialist` roda sempre que a mensagem nao foi bloqueada.
 - se `plan_specialist` marcar `needs_revision=true`, treino e nutricao podem
   rodar mais uma vez no mesmo turno para refinar o caso antes da sintese final.
-- `general_conversation` agora ja produz a resposta final ao usuario, inclusive
-  com a voz/persona do treinador.
-- `persistence_guard` roda por ultimo para registrar memoria e agenda sem
+- `coach_reply` produz a resposta final ao usuario, incluindo a voz/persona do entrenador.
+- `memory_hub` roda por ultimo para registrar memoria e agenda sem
   alterar a resposta final.
 
 ## O que cada no faz
 
-### `turn_context`
+### `session_context`
 
 Responsabilidade:
 
-- hidratar contexto canônico do turno
-- carregar perfil do usuario e do treinador
+- hidratar contexto deterministico do turno em codigo (sem LLM)
+- carregar perfil do usuario e do entrenador
 - carregar agenda, metabolismo, historico e plano ativo
 - produzir `runtime_context_json`
 - derivar sinais objetivos do ciclo de vida do plano
@@ -61,17 +60,9 @@ Responsabilidade:
 Saidas relevantes:
 
 - `shared_context.input_data`
-- `shared_context.context_summary`
 - `shared_context.plan_lifecycle`
 
-Sinais de lifecycle atualmente derivados em codigo:
-
-- `timeline_expired`
-- `next_review_due`
-
-Modelo default:
-
-- `openai/gpt-5-nano`
+Este no NAO faz inferencia LLM. Seu unico output e `state.node_outputs["session_context"] = "hydrated"`.
 
 ### `prompt_security`
 
@@ -206,7 +197,7 @@ Contrato de saida:
 
 - `plan_status`
 - `reason`
-- `user_reply`
+- `technical_summary` (texto tecnico interno, sem vocativo ou tom de coaching)
 - `needs_revision`
 - `plan_candidate`
 - `memory_candidates`
@@ -217,20 +208,20 @@ Modelo default:
 
 - `deepseek/deepseek-v4-flash`
 
-### `general_conversation`
+### `coach_reply`
 
 Responsabilidade:
 
 - sintetizar treino, nutricao e plano em uma unica resposta final
 - preservar coerencia tecnica
-- aplicar a persona do treinador sem mudar a semantica
+- aplicar a persona do entrenador sem mudar a semantica
 - responder no idioma predominante da mensagem do usuario com voz nativa, sem traducao literal nem importacao de bordoes do portugues
 - adaptar tambem os rotulos das secoes finais ao idioma escolhido
-- preencher `technical_response` e `final_response`
+- preencher `coach_response` e `final_response`
 
 Importante:
 
-- este no substituiu o antigo `persona_response`
+- este no substituiu o antigo `general_conversation`
 - estilo e persona foram fundidos aqui para economizar uma passada completa de LLM
 
 Formato esperado da resposta:
@@ -246,7 +237,7 @@ Modelo default:
 
 - `deepseek/deepseek-v4-flash`
 
-### `persistence_guard`
+### `memory_hub`
 
 Responsabilidade:
 
@@ -281,7 +272,7 @@ O `GraphState` carrega:
 - `node_metadata`
 - `tools_called`
 - `persistence_actions`
-- `technical_response`
+- `coach_response`
 - `final_response`
 
 ### Catalogo de contexto
@@ -296,13 +287,11 @@ Antes de cada chamada de LLM, o runtime monta um catalogo com blocos como:
 - `active_plan`
 - `metabolism`
 - `history_summary`
-- `context_summary`
 - `training_analysis`
 - `nutrition_analysis`
-- `plan_analysis`
 - `plan_workspace`
 - `plan_lifecycle`
-- `technical_response`
+- `coach_response`
 
 Cada no recebe apenas os blocos listados em seu manifesto `context_blocks`.
 
@@ -325,7 +314,7 @@ Executada pelo proprio no especialista:
 
 ### Persistencia de memoria e agenda
 
-Executada no `persistence_guard`:
+Executada no `memory_hub`:
 
 - `search_memory`, `save_memory`, `update_memory`, `delete_memory`
 - `list_events`, `create_event`, `update_event`, `delete_event`
@@ -337,21 +326,21 @@ O runtime prioriza candidatos estruturados:
 
 Para eventos recorrentes, o runtime usa `event_recurrence` quando disponivel e so envia `date` para a tool quando houver uma data ISO concreta.
 
-Se nenhum candidato valido existir, o `persistence_guard` usa sua propria LLM
+Se nenhum candidato valido existir, o `memory_hub` usa sua propria LLM
 para planejar a acao.
 
 ## Modelos atuais por no
 
 | No | Modelo |
 |---|---|
-| `turn_context` | `openai/gpt-5-nano` |
+| `session_context` | sem LLM (codigo puro) |
 | `prompt_security` | `openai/gpt-5-nano` |
 | `intent_router` | `openai/gpt-5-nano` |
 | `training_specialist` | `deepseek/deepseek-v4-flash` |
 | `nutrition_specialist` | `deepseek/deepseek-v4-flash` |
 | `plan_specialist` | `deepseek/deepseek-v4-flash` |
-| `general_conversation` | `deepseek/deepseek-v4-flash` |
-| `persistence_guard` | `openai/gpt-5-nano` |
+| `coach_reply` | `deepseek/deepseek-v4-flash` |
+| `memory_hub` | `openai/gpt-5-nano` |
 
 ## Onde editar
 
@@ -373,4 +362,4 @@ Validacao manual importante:
 - inspecionar traces `graph.*`
 - confirmar ordem real dos nos
 - confirmar tools chamadas por no
-- confirmar que `general_conversation` ja entrega a resposta final sem segunda passada
+- confirmar que `coach_reply` ja entrega a resposta final sem segunda passada

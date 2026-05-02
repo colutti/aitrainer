@@ -1,5 +1,5 @@
 {
-  "node_name": "turn_context",
+  "node_name": "session_context",
   "enabled": true,
   "model_provider": "openrouter",
   "model_name": "openai/gpt-oss-20b:nitro",
@@ -7,7 +7,7 @@
   "max_tokens": 1024,
   "tool_policy": "restricted",
   "tool_names": [],
-  "prompt_file": "backend/src/services/agents/config/prompts/turn_context.md",
+  "prompt_file": "backend/src/services/agents/config/prompts/session_context.md",
   "response_format": "text",
   "version": "v1",
   "context_blocks": [

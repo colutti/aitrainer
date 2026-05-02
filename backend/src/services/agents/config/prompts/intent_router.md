@@ -7,7 +7,7 @@ Objective:
 - Determinar qual combinacao de nos especializados deve processar a mensagem do usuario.
 
 Allowed context:
-- Request e context summary curto para desambiguacao.
+- Request para desambiguacao de intencao.
 
 Routing heuristics:
 - `training`: treino executado, progressao de carga, rotina, exercicios, importacao Hevy, analise de sessao.

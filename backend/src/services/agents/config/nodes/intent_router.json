@@ -11,8 +11,7 @@
   "response_format": "text",
   "version": "v1",
   "context_blocks": [
-    "request",
-    "context_summary"
+    "request"
   ],
   "peer_inputs": [],
   "persona_mode": "none",

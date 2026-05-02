@@ -1,5 +1,5 @@
 {
-  "node_name": "persistence_guard",
+  "node_name": "memory_hub",
   "enabled": true,
   "model_provider": "openrouter",
   "model_name": "google/gemini-3.1-flash-lite-preview",
@@ -16,18 +16,18 @@
     "update_memory",
     "delete_memory"
   ],
-  "prompt_file": "backend/src/services/agents/config/prompts/persistence_guard.md",
+  "prompt_file": "backend/src/services/agents/config/prompts/memory_hub.md",
   "response_format": "text",
   "version": "v1",
   "context_blocks": [
     "request",
-    "technical_response",
+    "coach_response",
     "training_analysis",
     "nutrition_analysis",
     "plan_workspace"
   ],
   "peer_inputs": [
-    "general_conversation",
+    "coach_reply",
     "training_specialist",
     "nutrition_specialist"
   ],
