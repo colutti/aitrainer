@@ -55,6 +55,7 @@ class MetabolismStats(BaseModel):
     energy_balance: float = 0.0
     status: str
     macro_targets: Optional[Dict[str, int]] = None
+    macro_source: str = "fallback"
     goal_type: str = "maintain"
     consistency_score: int = 0
     stability_score: int = 0

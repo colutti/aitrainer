@@ -10,6 +10,8 @@ from src.services.auth import verify_token
 from src.core.deps import get_mongo_database
 from src.services.database import MongoDatabase
 from src.services.adaptive_tdee import AdaptiveTDEEService
+from src.services.macro_resolver import resolve_macro_targets
+from src.repositories.plan_repository import PlanRepository
 from src.repositories.workout_repository import WorkoutRepository
 from src.api.models.dashboard import (
     DashboardData,
@@ -38,9 +40,31 @@ def _get_today() -> datetime:
 
 
 def _get_metabolism_stats(db: MongoDatabase, user_email: str) -> MetabolismStats:
-    """Metabolism section of dashboard."""
+    """Metabolism section of dashboard.
+
+    Macro targets come from the active plan if complete; otherwise
+    fall back to the TDEE algorithm's calculated macros.
+    """
     tdee_service = AdaptiveTDEEService(db)
     tdee_data = tdee_service.calculate_tdee(user_email, lookback_weeks=3)
+
+    plan = PlanRepository(db.database).get_plan(user_email)
+    plan_daily_targets = None
+    if plan and plan.nutrition_strategy and plan.nutrition_strategy.daily_targets:
+        plan_daily_targets = plan.nutrition_strategy.daily_targets.model_dump(
+            exclude_none=True
+        )
+
+    resolved = resolve_macro_targets(
+        tdee_macros=tdee_data.get("macro_targets"),
+        plan_daily_targets=plan_daily_targets,
+    )
+
+    macro_dict = {
+        "protein": resolved["protein"] or 0,
+        "carbs": resolved["carbs"] or 0,
+        "fat": resolved["fat"] or 0,
+    }
 
     return MetabolismStats(
         tdee=tdee_data.get("tdee", 0),
@@ -49,7 +73,8 @@ def _get_metabolism_stats(db: MongoDatabase, user_email: str) -> MetabolismStats
         weekly_change=tdee_data.get("weight_change_per_week", 0.0),
         energy_balance=tdee_data.get("energy_balance", 0.0),
         status=tdee_data.get("status", "maintenance"),
-        macro_targets=tdee_data.get("macro_targets"),
+        macro_targets=macro_dict,
+        macro_source=resolved.get("source", "fallback"),
         goal_type=tdee_data.get("goal_type", "maintain"),
         consistency_score=tdee_data.get("consistency_score", 0),
         stability_score=tdee_data.get("stability_score", 0),
