@@ -247,6 +247,16 @@ def format_plan_snapshot(snapshot: PlanPromptContext | None) -> str:
     schedule_count = len(snapshot.weekly_schedule)
     latest_checkpoint = snapshot.latest_checkpoint or {}
 
+    nt = snapshot.nutrition_targets
+    nutrition_str = (
+        f"{nt.get('calories', '?')} kcal, "
+        f"{nt.get('protein_g', '?')}g proteina, "
+        f"{nt.get('carbs_g', '?')}g carboidratos, "
+        f"{nt.get('fat_g', '?')}g gordura"
+        if nt
+        else "nao definidas"
+    )
+
     return (
         "Plano mestre ativo (fonte primaria):\n"
         f"- Titulo: {snapshot.title}\n"
@@ -257,7 +267,7 @@ def format_plan_snapshot(snapshot: PlanPromptContext | None) -> str:
         f"- Racional estrategico: {snapshot.strategy_rationale}\n"
         f"- Restricoes: {constraints}\n"
         f"- Preferencias: {preferences}\n"
-        f"- Metas nutricionais diarias: {snapshot.nutrition_targets}\n"
+        f"- Metas nutricionais diarias (FONTES PRIMARIAS, sobrepoe algoritmo): {nutrition_str}\n"
         f"- Split de treino: {snapshot.training_split}\n"
         f"- Rotinas no programa: {routines_count}\n"
         f"- Itens na agenda semanal: {schedule_count}\n"
