@@ -17,6 +17,7 @@
     "request",
     "user_locale",
     "trainer_persona",
+    "history_summary",
     "training_analysis",
     "nutrition_analysis",
     "plan_workspace",
@@ -28,6 +29,6 @@
     "nutrition_specialist",
     "plan_specialist"
   ],
-  "persona_mode": "none",
+  "persona_mode": "final_only",
   "output_contract": "text"
 }

@@ -24,7 +24,7 @@
     "user_profile",
     "active_plan",
     "metabolism",
-    "history_summary",
+    "history_summary_neutral",
     "training_analysis"
   ],
   "peer_inputs": [

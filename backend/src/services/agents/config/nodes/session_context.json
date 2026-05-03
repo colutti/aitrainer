@@ -2,23 +2,20 @@
   "node_name": "session_context",
   "enabled": true,
   "model_provider": "openrouter",
-  "model_name": "openai/gpt-oss-20b:nitro",
+  "model_name": "qwen/qwen3-next-80b-a3b-instruct",
   "temperature": 0.0,
-  "max_tokens": 1024,
+  "max_tokens": 8192,
+  "top_p": 1.0,
+  "frequency_penalty": 0.0,
   "tool_policy": "restricted",
   "tool_names": [],
   "prompt_file": "backend/src/services/agents/config/prompts/session_context.md",
   "response_format": "text",
-  "version": "v1",
+  "version": "v2",
   "context_blocks": [
-    "request",
-    "user_profile",
-    "agenda",
-    "active_plan",
-    "metabolism",
     "history_summary"
   ],
   "peer_inputs": [],
   "persona_mode": "none",
-  "output_contract": "text"
+  "output_contract": "Retorne APENAS o historico sanitizado, sem explicacoes ou comentarios adicionais."
 }

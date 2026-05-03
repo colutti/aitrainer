@@ -28,8 +28,9 @@ def test_registry_exposes_context_contract_fields():
     cfg = registry.get_node_config("coach_reply")
     assert cfg.context_blocks
     assert "trainer_persona" in cfg.context_blocks
+    assert "history_summary" in cfg.context_blocks
     assert "plan_specialist" in cfg.peer_inputs
-    assert cfg.persona_mode == "none"
+    assert cfg.persona_mode == "final_only"
     assert cfg.output_contract == "text"
 
 
@@ -60,9 +61,24 @@ def test_node_contract_defaults_match_runtime_design():
     training = registry.get_node_config("training_specialist")
     plan = registry.get_node_config("plan_specialist")
     nutrition = registry.get_node_config("nutrition_specialist")
+    intent_router = registry.get_node_config("intent_router")
+    memory_hub = registry.get_node_config("memory_hub")
 
-    assert coach.persona_mode == "none"
+    assert coach.persona_mode == "final_only"
+    assert training.persona_mode == "none"
+    assert nutrition.persona_mode == "none"
+    assert plan.persona_mode == "none"
+    assert intent_router.persona_mode == "none"
+    assert security.persona_mode == "none"
+    assert memory_hub.persona_mode == "none"
     assert "trainer_persona" in coach.context_blocks
+    assert "history_summary" in coach.context_blocks
+    assert "history_summary_neutral" in training.context_blocks
+    assert "history_summary_neutral" in nutrition.context_blocks
+    assert "history_summary_neutral" in plan.context_blocks
+    assert "history_summary" not in training.context_blocks
+    assert "history_summary" not in nutrition.context_blocks
+    assert "history_summary" not in plan.context_blocks
     assert "trainer_identity" not in session_context.context_blocks
     assert "trainer_identity" not in training.context_blocks
     assert "trainer_identity" not in nutrition.context_blocks
@@ -76,7 +92,7 @@ def test_node_contract_defaults_match_runtime_design():
     assert nutrition.model_name == "google/gemini-3.1-flash-lite-preview"
     assert "upsert_plan" in plan.tool_names
     assert "training_analysis" in plan.context_blocks
-    assert plan.model_name == "google/gemini-3.1-flash-lite-preview"
+    assert plan.model_name == "openai/gpt-oss-120b"
     assert coach.model_name == "google/gemini-3.1-flash-lite-preview"
     assert "OPENROUTER_ROUTING_MODEL" not in coach.prompt_text
     assert "context_summary" not in session_context.prompt_text.lower()
@@ -94,8 +110,14 @@ def test_prompt_texts_encode_node_responsibilities():
     coach = registry.get_node_config("coach_reply")
 
     assert "save_workout" in training.prompt_text
+    assert "history_summary_neutral" in training.prompt_text.lower()
     assert "save_daily_nutrition" in nutrition.prompt_text
+    assert "history_summary_neutral" in nutrition.prompt_text.lower()
     assert "upsert_plan" in plan.prompt_text
+    assert "upsert_plan" in plan.prompt_text
+    assert "chame `upsert_plan`" in plan.prompt_text.lower()
+    assert "history_summary" not in coach.prompt_text
+    assert "history summary" in coach.prompt_text.lower()
     assert "multi_domain" in intent_router.prompt_text
     assert "Treinei costas hoje e comi 2400 kcal" in intent_router.prompt_text
     assert "persona ativa" in coach.prompt_text or "persona" in coach.prompt_text
@@ -109,11 +131,13 @@ def test_prompt_texts_encode_node_responsibilities():
     assert coach.temperature == 0.2
 
 
-def test_session_context_has_no_llm_output():
+def test_session_context_config():
     registry = AgentConfigRegistry("src/services/agents/config")
     cfg = registry.get_node_config("session_context")
-    assert cfg.model_name == "openai/gpt-oss-20b:nitro"
+    assert cfg.model_name == "qwen/qwen3-next-80b-a3b-instruct"
     assert cfg.temperature == 0.0
+    assert cfg.top_p == 1.0
+    assert cfg.frequency_penalty == 0.0
     assert cfg.tool_names == []
 
 

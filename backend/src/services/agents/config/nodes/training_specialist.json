@@ -25,7 +25,7 @@
     "user_profile",
     "active_plan",
     "metabolism",
-    "history_summary"
+    "history_summary_neutral"
   ],
   "peer_inputs": [
     "nutrition_specialist"

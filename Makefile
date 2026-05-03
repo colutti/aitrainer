@@ -1,32 +1,10 @@
-.PHONY: dev stop reset logs verify verify-all test-once e2e test-backend-cov deploy-preflight deploy-build deploy-prod deploy-prod-fast deploy-smoke deploy-prod-env
-
-dev:
-	./scripts/dev/dev.sh
-
-stop:
-	./scripts/dev/stop.sh
-
-reset:
-	./scripts/dev/reset.sh
-
-logs:
-	./scripts/dev/logs.sh
-
-verify:
-	./scripts/verify/quick.sh
-
-verify-all:
-	./scripts/verify/all.sh
-
-test-once:
-	./scripts/verify/quick.sh
-	./scripts/verify/e2e.sh
-
-e2e:
-	./scripts/verify/e2e.sh
+.PHONY: dev stop reset logs user-reset user-reset-dry-run verify verify-all test-once e2e test-backend-cov test-conversation deploy-preflight deploy-build deploy-prod deploy-prod-fast deploy-smoke deploy-prod-env
 
 test-backend-cov:
 	./scripts/compose.sh -f docker-compose.test.yml run --rm backend-tests pytest --cov=src --cov-report=html --cov-report=term-missing
+
+test-conversation:
+	cd backend && .venv/bin/pytest tests/conversation/ -v --tb=short
 
 deploy-preflight:
 	./scripts/deploy/preflight.sh

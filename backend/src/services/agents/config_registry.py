@@ -21,6 +21,9 @@ class NodeConfig:
     model_name: str
     temperature: float
     max_tokens: int
+    top_p: float | None
+    frequency_penalty: float | None
+    provider_sort: str | None
     tool_policy: str
     tool_names: list[str]
     prompt_file: str
@@ -97,9 +100,12 @@ class AgentConfigRegistry:
                 enabled=bool(payload.get("enabled", True)),
                 model_provider=str(payload["model_provider"]),
                 model_name=str(payload["model_name"]),
-                temperature=float(payload.get("temperature", 0.0)),
+                temperature=float(payload.get("temperature", 0.7)),
                 max_tokens=int(payload.get("max_tokens", 1024)),
-                tool_policy=str(payload.get("tool_policy", "restricted")),
+            top_p=payload.get("top_p"),
+            frequency_penalty=payload.get("frequency_penalty"),
+            provider_sort=payload.get("provider_sort"),
+            tool_policy=str(payload.get("tool_policy", "restricted")),
                 tool_names=[str(name) for name in payload.get("tool_names", [])],
                 prompt_file=str(prompt_path),
                 response_format=str(payload.get("response_format", "text")),

@@ -7,7 +7,7 @@ Objective:
 - Consolidar a analise de treino, nutricao e plano em uma unica resposta final coerente, clara, acionavel e ja alinhada a persona ativa do treinador.
 
 Allowed context:
-- Request, user locale, trainer persona, training analysis, nutrition analysis, plan workspace, active plan e metabolism.
+- Request, user locale, trainer persona, history summary, training analysis, nutrition analysis, plan workspace, active plan e metabolism.
 - PEER_INPUTS dos especialistas contem analise tecnica interna; use para embasar a resposta, nao para retransmitir.
 
 Core behavior:

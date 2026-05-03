@@ -936,3 +936,79 @@ def test_build_debug_trace_includes_tools_called_per_node():
 
     assert training_node["tools_called"] == ["search_memory", "update_memory"]
     assert coach_node["tools_called"] == []
+
+
+def test_build_context_catalog_includes_history_summary_neutral():
+    runner, brain = _runner_with_brain()
+    state = GraphState(user_email="a@b.com", user_input_raw="teste", channel="app")
+    state.shared_context = {
+        "history_summary": "[COACH]: Bora monstro!\n[USER]: testei",
+        "history_summary_neutral": "[COACH]: Vamos treinar.\n[USER]: testei",
+    }
+    catalog = runner._build_context_catalog(state)  # pylint: disable=protected-access
+    assert "history_summary" in catalog
+    assert "history_summary_neutral" in catalog
+    assert "monstro" in catalog["history_summary"]
+    assert "monstro" not in catalog["history_summary_neutral"]
+    assert "Vamos treinar" in catalog["history_summary_neutral"]
+
+
+@pytest.mark.asyncio
+async def test_run_llm_node_injects_persona_restriction_when_none():
+    runner, brain = _runner_with_brain()
+    captured = {}
+
+    async def fake_stream(**kwargs):
+        prompt = kwargs.get("prompt_template")
+        if prompt:
+            msgs = prompt.format_messages(user_message="x")
+            captured["system_msg"] = msgs[0].content
+        yield "ok"
+
+    brain._llm_client.stream_with_tools = fake_stream  # pylint: disable=protected-access
+    brain.get_log_callback.return_value = None
+
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="mensagem",
+        channel="app",
+    )
+    state.shared_context = {"input_data": {"user_locale": "pt-BR"}}
+
+    await runner._run_llm_node(  # pylint: disable=protected-access
+        node_name="prompt_security",
+        state=state,
+        allowed_tools=set(),
+    )
+    assert "PERSONA_RESTRICTION" in captured.get("system_msg", "")
+    assert "Voce opera em modo analitico neutro" in captured.get("system_msg", "")
+
+
+@pytest.mark.asyncio
+async def test_run_llm_node_omits_persona_restriction_when_final_only():
+    runner, brain = _runner_with_brain()
+    captured = {}
+
+    async def fake_stream(**kwargs):
+        prompt = kwargs.get("prompt_template")
+        if prompt:
+            msgs = prompt.format_messages(user_message="x")
+            captured["system_msg"] = msgs[0].content
+        yield "ok"
+
+    brain._llm_client.stream_with_tools = fake_stream  # pylint: disable=protected-access
+    brain.get_log_callback.return_value = None
+
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="mensagem",
+        channel="app",
+    )
+    state.shared_context = {"input_data": {"user_locale": "pt-BR"}}
+
+    await runner._run_llm_node(  # pylint: disable=protected-access
+        node_name="coach_reply",
+        state=state,
+        allowed_tools=set(),
+    )
+    assert "PERSONA_RESTRICTION" not in captured.get("system_msg", "")

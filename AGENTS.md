@@ -118,6 +118,67 @@ make verify-all
 make test-once
 make e2e
 make test-backend-cov
+make test-conversation    # Conversation flow e2e tests (10 scenarios)
+make user-reset EMAIL=... # Reset user data for fresh test state
+```
+
+## Conversation Graph Nodes
+
+The conversation graph (`backend/src/services/graph/conversation_graph.py`) runs these nodes per turn:
+
+| Node | Model | Role |
+|---|---|---|
+| `session_context` | `qwen/qwen3-next-80b-a3b-instruct` | Sanitizes conversation history (removes persona - emoji, gírias, bordões) producing `history_summary_neutral` |
+| `prompt_security` | `google/gemini-2.5-flash-lite` | Detects injection attacks |
+| `intent_router` | `google/gemini-3.1-flash-lite-preview` | Classifies user intent |
+| `training_specialist` | `google/gemini-3.1-flash-lite-preview` | Analyzes training data |
+| `nutrition_specialist` | `google/gemini-3.1-flash-lite-preview` | Analyzes nutrition data |
+| `plan_specialist` | `openai/gpt-oss-120b` | Manages plan lifecycle (discovery → upsert_plan) |
+| `coach_reply` | `google/gemini-3.1-flash-lite-preview` | Generates user-facing response with persona |
+| `memory_hub` | `google/gemini-3.1-flash-lite-preview` | Persists memories and events |
+
+### Persona isolation
+
+Specialist nodes (training, nutrition, plan) operate in `persona_mode: "none"` and receive `history_summary_neutral` instead of raw `history_summary`. The `session_context` node uses an LLM to strip persona mannerisms (ex: "meu parceiro!", "sensacional!") while preserving all factual content. This prevents specialist nodes from adopting coach voice.
+
+### Plan creation flow
+
+The `plan_specialist` follows a 5-item discovery checklist (no explicit consent required):
+
+1. Objetivo principal (ex: ganhar massa, perder gordura)
+2. Prazo/meta (date or approximate deadline)
+3. Disponibilidade semanal (days + minutes per session) - combines info across turns
+4. Restrições/limitações ("nenhuma" is accepted)
+5. Metabolismo (via `get_metabolism_data` tool)
+
+When all 5 items are present, the plan_specialist calls `get_metabolism_data` → `plan_help` → `upsert_plan` in sequence.
+
+### OpenRouter provider routing
+
+The `plan_specialist` uses `provider_sort: "throughput"` in its node config to route to the fastest OpenRouter provider instead of the cheapest. This significantly reduced plan_specialist latency (~50%+). All other nodes use the default price-based routing which is optimal for flash-lite models.
+
+Each node config JSON can set:
+- `top_p` / `frequency_penalty` — LLM sampling params (default: null = use defaults)
+- `provider_sort` — OpenRouter routing: "throughput", "latency", or "price" (default: null = price-based)
+
+### Conversation E2E tests
+
+Independent conversation flow tests live in `tests/conversation/`. Each file is self-contained (no shared imports, no dependency on backend `src/` modules) and tests one conversation scenario against the live backend:
+
+```bash
+cd backend && .venv/bin/pytest tests/conversation/ -v   # all 10 scenarios
+cd backend && .venv/bin/pytest tests/conversation/test_01_verao_espanha.py -v  # single
+make test-conversation  # shortcut
+```
+
+Prerequisites: backend running (`make dev`), user `rafacolucci@gmail.com` exists.
+
+### User reset script
+
+`backend/scripts/reset_user_data.py` resets all user data (plan, memories, events, chat history, message counters) while preserving login. Used by the conversation tests to start from clean state:
+
+```bash
+make user-reset EMAIL=rafacolucci@gmail.com
 ```
 
 ## Architecture Notes

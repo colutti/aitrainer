@@ -1,6 +1,6 @@
 """Plan domain service helpers for master plan orchestration and prompt context."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
 from src.api.models.plan import (
     NutritionStrategy,
@@ -233,11 +233,21 @@ def _merge_plan_sections(latest_plan: UserPlan | None, payload: PlanUpsertInput)
 
 def _coerce_datetime(value: datetime | str) -> datetime:
     """Normalize timeline values that may arrive as ISO strings."""
-    if isinstance(value, datetime):
-        return value
     if isinstance(value, str):
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        result = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if result.tzinfo is None:
+            result = result.astimezone()
+        return result
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value.astimezone()
+        return value
     raise TypeError(f"invalid datetime value type: {type(value).__name__}")
+
+
+def _aware_now() -> datetime:
+    """Return current UTC time as an offset-aware datetime."""
+    return datetime.now(timezone.utc)
 
 
 def build_plan_singleton(
@@ -247,16 +257,14 @@ def build_plan_singleton(
 ) -> UserPlan:
     """Build singleton master plan payload."""
 
-    now = datetime.now()
+    now = _aware_now()
     merged = _merge_plan_sections(latest_plan, payload)
 
     timeline_data = dict(merged["timeline"])
-    start_date = latest_plan.timeline.start_date if latest_plan else now
-    timeline_data["start_date"] = _coerce_datetime(
-        timeline_data.get("start_date", start_date)
-    )
+    timeline_data["start_date"] = now
     if "target_date" in timeline_data and timeline_data["target_date"] is not None:
-        timeline_data["target_date"] = _coerce_datetime(timeline_data["target_date"])
+        target = _coerce_datetime(timeline_data["target_date"])
+        timeline_data["target_date"] = max(target, now)
     else:
         timeline_data["target_date"] = timeline_data["start_date"] + timedelta(days=84)
 

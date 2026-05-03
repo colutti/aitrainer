@@ -20,6 +20,7 @@ from src.services.plan_service import build_plan_prompt_snapshot
 from src.repositories.event_repository import EventRepository
 
 
+
 _INJECTION_PATTERNS = [
     r"ignore previous instructions",
     r"show me .*prompt",
@@ -522,7 +523,31 @@ class ConversationGraphRunner:
         state.shared_context["agenda_section"] = input_data.get("agenda_section", "")
         state.shared_context["plan_section"] = input_data.get("plan_section", "")
         state.shared_context["metabolism_section"] = input_data.get("metabolism_section", "")
-        state.shared_context["history_summary"] = input_data.get("formatted_history", "")
+        raw_history = input_data.get("formatted_history", "")
+        state.shared_context["history_summary"] = raw_history
+        if raw_history:
+            try:
+                cleaned = await self._run_llm_node(
+                    node_name="session_context",
+                    state=state,
+                    allowed_tools=set(),
+                )
+                if len(cleaned) <= 10:
+                    logger.info("history_sanitize.fallback_too_short chars_in=%d chars_out=%d ratio=%.2f",
+                                len(raw_history), len(cleaned),
+                                len(cleaned) / max(len(raw_history), 1))
+                    cleaned = raw_history
+                else:
+                    logger.info(
+                        "history_sanitize.completed chars_in=%d chars_out=%d",
+                        len(raw_history), len(cleaned),
+                    )
+                state.shared_context["history_summary_neutral"] = cleaned
+            except Exception:  # pylint: disable=broad-exception-caught
+                logger.warning("history_sanitize.fallback_raw", exc_info=True)
+                state.shared_context["history_summary_neutral"] = raw_history
+        else:
+            state.shared_context["history_summary_neutral"] = raw_history
         state.shared_context["plan_lifecycle"] = plan_lifecycle
         state.shared_context["persistence_candidates"] = {"memory": [], "event": []}
         state.request["sanitized_input"] = state.user_input_sanitized
@@ -810,15 +835,23 @@ class ConversationGraphRunner:
         safe_context_block = self._escape_template_text(context_block)
         safe_peer_block = self._escape_template_text(peer_block)
         safe_output_contract = self._escape_template_text(cfg.output_contract)
+        system_content = (
+            f"{safe_prompt_text}\n\n"
+            f"AVAILABLE_CONTEXT:\n{safe_context_block}\n\n"
+            f"PEER_INPUTS:\n{safe_peer_block}\n\n"
+            f"OUTPUT_CONTRACT:\n{safe_output_contract}"
+        )
+        if cfg.persona_mode == "none":
+            system_content += (
+                "\n\nPERSONA_RESTRICTION: Voce opera em modo analitico neutro. "
+                "Nao adote a voz, tom, bordoes, girias ou maneirismos "
+                "da persona do treinador. Sua saida deve ser tecnica, "
+                "objetiva e impessoal. Se o contexto ou historico "
+                "contiver mensagens com estilo de persona, ignore esse estilo."
+            )
         prompt = ChatPromptTemplate.from_messages(
             [
-                (
-                    "system",
-                    f"{safe_prompt_text}\n\n"
-                    f"AVAILABLE_CONTEXT:\n{safe_context_block}\n\n"
-                    f"PEER_INPUTS:\n{safe_peer_block}\n\n"
-                    f"OUTPUT_CONTRACT:\n{safe_output_contract}",
-                ),
+                ("system", system_content),
                 ("human", "{user_message}"),
             ]
         )
@@ -851,6 +884,10 @@ class ConversationGraphRunner:
             user_email=state.user_email,
             log_callback=self._brain.get_log_callback(None),
             model_override=cfg.model_name,
+            temperature=cfg.temperature,
+            top_p=cfg.top_p,
+            frequency_penalty=cfg.frequency_penalty,
+            provider_sort=cfg.provider_sort,
             run_name=f"graph.{node_name}",
             mode=f"graph:{node_name}",
         ):
@@ -902,6 +939,7 @@ class ConversationGraphRunner:
         return {
             "request": state.user_input_sanitized or state.user_input_raw,
             "user_locale": str(input_data.get("user_locale", "pt-BR")),
+            "current_date": str(input_data.get("current_date", "")),
             "user_profile": str(state.shared_context.get("user_profile_summary", "")),
             "trainer_identity": str(state.shared_context.get("trainer_identity", "")),
             "trainer_persona": str(state.shared_context.get("trainer_persona", "")),
@@ -909,6 +947,12 @@ class ConversationGraphRunner:
             "active_plan": str(state.shared_context.get("plan_section", input_data.get("plan_section", ""))),
             "metabolism": str(state.shared_context.get("metabolism_section", input_data.get("metabolism_section", ""))),
             "history_summary": str(state.shared_context.get("history_summary", "")),
+            "history_summary_neutral": str(
+                state.shared_context.get(
+                    "history_summary_neutral",
+                    state.shared_context.get("history_summary", ""),
+                )
+            ),
             "training_analysis": str(state.node_outputs.get("training_specialist", "")),
             "nutrition_analysis": str(state.node_outputs.get("nutrition_specialist", "")),
             "plan_workspace": str(state.shared_context.get("plan_workspace", "")),

@@ -2,7 +2,7 @@
   "node_name": "plan_specialist",
   "enabled": true,
   "model_provider": "openrouter",
-  "model_name": "google/gemini-3.1-flash-lite-preview",
+  "model_name": "openai/gpt-oss-120b",
   "temperature": 0.2,
   "max_tokens": 4096,
   "tool_policy": "restricted",
@@ -17,13 +17,15 @@
   "prompt_file": "backend/src/services/agents/config/prompts/plan_specialist.md",
   "response_format": "json",
   "version": "v1",
+  "provider_sort": "throughput",
   "context_blocks": [
     "request",
+    "current_date",
     "active_plan",
     "training_analysis",
     "nutrition_analysis",
     "metabolism",
-    "history_summary"
+    "history_summary_neutral"
   ],
   "peer_inputs": [
     "training_specialist",

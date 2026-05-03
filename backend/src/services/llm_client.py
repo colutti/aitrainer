@@ -66,12 +66,20 @@ class LLMClient:
         self,
         user_email: str | None,
         model_override: str | None = None,
+        temperature: float | None = None,
+        top_p: float | None = None,
+        frequency_penalty: float | None = None,
+        provider_sort: str | None = None,
     ):
         """Returns an LLM runnable bound to OpenRouter user when available."""
         request_llm = self._llm
         if model_override:
             request_llm = self._llm_for_node(
                 model_override=model_override,
+                temperature=temperature,
+                top_p=top_p,
+                frequency_penalty=frequency_penalty,
+                provider_sort=provider_sort,
             )
         if user_email:
             return request_llm.bind(user=user_email)
@@ -80,9 +88,17 @@ class LLMClient:
     def _llm_for_node(
         self,
         model_override: str | None = None,
+        temperature: float | None = None,
+        top_p: float | None = None,
+        frequency_penalty: float | None = None,
+        provider_sort: str | None = None,
     ):
         """Return a node-specific LLM runnable. Base implementation reuses default."""
         del model_override
+        del temperature
+        del top_p
+        del frequency_penalty
+        del provider_sort
         return self._llm
 
     @classmethod
@@ -131,6 +147,10 @@ class LLMClient:
         user_email: str | None = None,
         log_callback=None,
         model_override: str | None = None,
+        temperature: float | None = None,
+        top_p: float | None = None,
+        frequency_penalty: float | None = None,
+        provider_sort: str | None = None,
         run_name: str = "chat.tools",
         mode: str = "tools",
     ) -> AsyncGenerator[str | dict, None]:
@@ -192,6 +212,10 @@ class LLMClient:
             request_llm = self._llm_for_request(
                 user_email=user_email,
                 model_override=model_override,
+                temperature=temperature,
+                top_p=top_p,
+                frequency_penalty=frequency_penalty,
+                provider_sort=provider_sort,
             )
             agent: Any = create_agent(request_llm, tools)
             from src.core.config import settings  # pylint: disable=import-outside-toplevel
@@ -538,16 +562,23 @@ class OpenRouterClient(LLMClient):
         self._api_key = api_key
         self._base_url = base_url
         self._preset = preset
+        extra: dict[str, Any] = {}
+        if preset:
+            extra["preset"] = preset
         self._llm = ChatOpenAI(
             model=model,
             base_url=base_url,
             api_key=SecretStr(api_key) if api_key else SecretStr(""),
-            extra_body={"preset": preset} if preset else None,
+            extra_body=extra if extra else None,
         )
 
     def _llm_for_node(
         self,
         model_override: str | None = None,
+        temperature: float | None = None,
+        top_p: float | None = None,
+        frequency_penalty: float | None = None,
+        provider_sort: str | None = None,
     ):
         """Return an OpenRouter client for a specific graph node."""
         from langchain_openai import ChatOpenAI  # pylint: disable=import-outside-toplevel
@@ -558,9 +589,22 @@ class OpenRouterClient(LLMClient):
             raise ValueError("OpenRouter node model is not configured")
         if model.startswith("@preset/"):
             raise ValueError("OpenRouter node model must not be a preset slug")
-        return ChatOpenAI(
-            model=model,
-            base_url=self._base_url,
-            api_key=SecretStr(self._api_key) if self._api_key else SecretStr(""),
-            extra_body={"preset": self._preset} if self._preset else None,
-        )
+        kwargs: dict[str, Any] = {
+            "model": model,
+            "base_url": self._base_url,
+            "api_key": SecretStr(self._api_key) if self._api_key else SecretStr(""),
+        }
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+        if top_p is not None:
+            kwargs["top_p"] = top_p
+        if frequency_penalty is not None:
+            kwargs["frequency_penalty"] = frequency_penalty
+        extra: dict[str, Any] = {}
+        if self._preset:
+            extra["preset"] = self._preset
+        if provider_sort:
+            extra["provider"] = {"sort": provider_sort}
+        if extra:
+            kwargs["extra_body"] = extra
+        return ChatOpenAI(**kwargs)
