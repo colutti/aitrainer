@@ -21,7 +21,7 @@ def valid_payload() -> dict:
             'current_risks': [],
         },
         'nutrition_strategy': {
-            'daily_targets': {'calories': 2200, 'protein_g': 180},
+            'daily_targets': {'calories': 2200, 'protein_g': 180, 'carbs_g': 250, 'fat_g': 70},
             'adherence_notes': [],
         },
         'training_program': {
@@ -63,6 +63,9 @@ def test_upsert_plan_rejects_missing_required_fields():
 
     assert 'ERRO_UPSERT_PLAN_INCOMPLETO' in result
     assert 'PLANO_NAO_SALVO' in result
+    assert 'NAO tente chamar upsert_plan novamente' in result
+    assert 'discovery_needed' in result
+    assert 'tente novamente' not in result
     db.save_plan.assert_not_called()
 
 
@@ -114,6 +117,54 @@ def test_upsert_plan_loop_guard_marks_not_saved_state():
 
     assert 'ERRO_UPSERT_PLAN_LOOP_GUARD' in result
     assert 'PLANO_NAO_SALVO' in result
+
+
+def test_upsert_plan_rejects_incomplete_with_human_readable_field_descriptions():
+    db = MagicMock()
+    db.get_latest_plan.return_value = None
+    tool = create_upsert_plan_tool(db, 'user@test.com')
+
+    payload = valid_payload()
+    del payload['goal']['primary']
+
+    result = tool.invoke(payload)
+
+    assert 'ERRO_UPSERT_PLAN_INCOMPLETO' in result
+    assert 'goal.primary' in result
+    assert 'objetivo do aluno' in result
+    db.save_plan.assert_not_called()
+
+
+def test_upsert_plan_rejects_missing_nutrition_with_guidance():
+    db = MagicMock()
+    db.get_latest_plan.return_value = None
+    tool = create_upsert_plan_tool(db, 'user@test.com')
+
+    payload = valid_payload()
+    payload['nutrition_strategy'] = {}
+
+    result = tool.invoke(payload)
+
+    assert 'ERRO_UPSERT_PLAN_INCOMPLETO' in result
+    assert 'discovery_needed' in result
+    assert 'NAO tente chamar upsert_plan novamente' in result
+    db.save_plan.assert_not_called()
+
+
+def test_upsert_plan_rejects_incomplete_for_existing_plan_with_update_failed():
+    db = MagicMock()
+    db.get_latest_plan.return_value = MagicMock()
+    tool = create_upsert_plan_tool(db, 'user@test.com')
+
+    payload = valid_payload()
+    payload['goal'] = {}
+
+    result = tool.invoke(payload)
+
+    assert 'ERRO_UPSERT_PLAN_INCOMPLETO' in result
+    assert 'update_failed' in result
+    assert 'NAO tente chamar upsert_plan novamente' in result
+    db.save_plan.assert_not_called()
 
 
 def test_upsert_plan_rejects_schedule_with_unknown_routine_reference():

@@ -43,9 +43,8 @@ def missing_master_plan_fields(
 ) -> list[str]:
     """Validate required minimal fields for creation/update payload.
 
-    When a latest_plan exists, daily_target fields missing from the payload
-    are filled from the existing plan so that partial nutrition updates
-    (e.g. only protein_g) are accepted.
+    When a latest_plan exists, fields missing from the payload
+    are filled from the existing plan so that partial updates are accepted.
     """
 
     missing: list[str] = []
@@ -100,6 +99,17 @@ def missing_master_plan_fields(
             ]
         )
 
+    # training_program validation: fill missing from existing plan
+    existing_routines: dict = {}
+    if (
+        latest_plan
+        and latest_plan.training_program
+        and latest_plan.training_program.routines
+    ):
+        existing_routines = {
+            r.id: r.model_dump() for r in latest_plan.training_program.routines
+        }
+
     missing.extend(
         [
             f"training_program.{field}"
@@ -112,13 +122,21 @@ def missing_master_plan_fields(
             if not isinstance(routine, dict):
                 missing.append(f"training_program.routines[{index}]")
                 continue
+
+            # Fill missing fields from existing plan
+            merged_routine = dict(routine)
+            if routine.get("id") in existing_routines:
+                for key, value in existing_routines[routine["id"]].items():
+                    if key not in merged_routine or merged_routine.get(key) is None:
+                        merged_routine[key] = value
+
             missing.extend(
                 [
                     f"training_program.routines[{index}].{field}"
-                    for field in _missing_required_fields(routine, ("id", "name", "exercises"))
+                    for field in _missing_required_fields(merged_routine, ("id", "name", "exercises"))
                 ]
             )
-            exercises = routine.get("exercises", [])
+            exercises = merged_routine.get("exercises", [])
             if isinstance(exercises, list):
                 for ex_index, exercise in enumerate(exercises):
                     if not isinstance(exercise, dict):
@@ -160,6 +178,28 @@ def _merge_nutrition_strategy(
     return merged
 
 
+def _merge_training_program(latest, payload: dict) -> dict:
+    """Deep-merge training program, preserving existing routine exercises."""
+    latest_dict = latest.model_dump()
+    merged = {**latest_dict, **payload}
+
+    # Deep merge routines: preserve exercises from existing routines
+    latest_routines = {r["id"]: r for r in latest_dict.get("routines", [])}
+    payload_routines = payload.get("routines", [])
+    if isinstance(payload_routines, list):
+        merged_routines = []
+        for pr in payload_routines:
+            if isinstance(pr, dict) and pr.get("id") in latest_routines:
+                full = dict(latest_routines[pr["id"]])
+                full.update({k: v for k, v in pr.items() if v is not None})
+                merged_routines.append(full)
+            else:
+                merged_routines.append(pr)
+        merged["routines"] = merged_routines
+
+    return merged
+
+
 def _merge_plan_sections(latest_plan: UserPlan | None, payload: PlanUpsertInput) -> dict:
     if latest_plan is None:
         return {
@@ -179,10 +219,9 @@ def _merge_plan_sections(latest_plan: UserPlan | None, payload: PlanUpsertInput)
         "nutrition_strategy": _merge_nutrition_strategy(
             latest_plan.nutrition_strategy, payload.nutrition_strategy
         ),
-        "training_program": {
-            **latest_plan.training_program.model_dump(),
-            **payload.training_program,
-        },
+        "training_program": _merge_training_program(
+            latest_plan.training_program, payload.training_program
+        ),
         "current_summary": {
             **latest_plan.current_summary.model_dump(),
             **payload.current_summary,

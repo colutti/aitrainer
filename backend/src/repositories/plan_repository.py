@@ -44,6 +44,22 @@ class PlanRepository(BaseRepository):
         )
         return str(doc["_id"])
 
+    def partial_update_plan(self, user_email: str, updates: dict) -> str:
+        """Updates specific fields of the singleton plan using native MongoDB $set."""
+        updates["updated_at"] = datetime.now()
+        doc = self.collection.find_one_and_update(
+            {"user_email": user_email},
+            {"$set": updates},
+            upsert=True,
+            return_document=ReturnDocument.AFTER,
+        )
+        if doc is None:
+            return ""
+        self.collection.delete_many(
+            {"user_email": user_email, "_id": {"$ne": doc["_id"]}}
+        )
+        return str(doc["_id"])
+
     def get_plan(self, user_email: str) -> UserPlan | None:
         """Returns singleton plan for user."""
         doc = self.collection.find_one(
@@ -54,9 +70,9 @@ class PlanRepository(BaseRepository):
             return None
         try:
             return UserPlan(**doc)
-        except ValidationError:
+        except ValidationError as exc:
             self.logger.warning(
-                "Invalid plan document for user %s, returning None", user_email
+                "Invalid plan document for user %s: %s", user_email, exc,
             )
             return None
 

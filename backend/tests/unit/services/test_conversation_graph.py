@@ -298,6 +298,48 @@ async def test_plan_specialist_tracks_plan_outcome():
 
 
 @pytest.mark.asyncio
+async def test_plan_specialist_returns_discovery_needed_when_missing_data():
+    runner, brain = _runner_with_brain()
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="ola",
+        channel="app",
+        intent="general",
+    )
+    state.shared_context = {
+        "input_data": {
+            "plan_section": "",
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "agenda_section": "",
+            "metabolism_section": "",
+        },
+        "has_active_plan": False,
+        "plan_lifecycle": {"timeline_expired": False, "next_review_due": False},
+    }
+    state.node_outputs["training_specialist"] = "sem dados"
+    state.node_outputs["nutrition_specialist"] = "sem dados"
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"plan_status":"discovery_needed","reason":"sem dados do usuario",'
+            '"technical_summary":"Nao ha plano. Faltam dados de discovery: objetivo principal, '
+            'prazo com data alvo, disponibilidade semanal e restricoes.",'
+            '"needs_revision":false,"plan_candidate":"",'
+            '"memory_candidates":[],"event_candidates":[]}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    brain.get_log_callback.return_value = None
+    await runner._node_plan_specialist(state)
+
+    assert state.shared_context["plan_workspace"]["plan_status"] == "discovery_needed"
+    assert state.plan_needs_revision is False
+    assert "Faltam dados de discovery" in state.node_outputs["plan_specialist"]
+
+
+@pytest.mark.asyncio
 async def test_training_specialist_parses_structured_output_and_plan_signal():
     runner, brain = _runner_with_brain()
     brain.get_log_callback.return_value = None

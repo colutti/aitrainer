@@ -17,6 +17,41 @@ from src.services.plan_service import (
 )
 
 
+DISCOVERY_REQUIRED_FIELDS = {
+    "goal.primary": "objetivo do aluno (lose_fat, build_muscle, recomposition, performance)",
+    "goal.objective_summary": "resumo especifico do objetivo com criterio de sucesso",
+    "goal.success_criteria": "criterios de sucesso mensuraveis",
+    "timeline.target_date": "data alvo para atingir o objetivo (ISO 8601)",
+    "timeline.review_cadence": "cadencia de revisao (ex: semanal, quinzenal, mensal)",
+    "strategy.rationale": "racional estrategico do plano",
+    "strategy.adaptation_policy": "politica de adaptacao do plano",
+    "strategy.constraints": "restricoes e limitacoes",
+    "strategy.preferences": "preferencias do aluno",
+    "strategy.current_risks": "riscos atuais identificados",
+    "nutrition_strategy.daily_targets": "metas diarias (calories, protein_g, carbs_g, fat_g)",
+    "nutrition_strategy.daily_targets.calories": "calorias diarias alvo",
+    "nutrition_strategy.daily_targets.protein_g": "gramas de proteina diarios alvo",
+    "nutrition_strategy.daily_targets.carbs_g": "gramas de carboidratos diarios alvo",
+    "nutrition_strategy.daily_targets.fat_g": "gramas de gordura diarios alvo",
+    "training_program.split_name": "nome do split (push_pull_legs, upper_lower, full_body)",
+    "training_program.frequency_per_week": "frequencia semanal de treino (dias por semana)",
+    "training_program.session_duration_min": "duracao de cada sessao em minutos",
+    "training_program.routines": "lista de rotinas de treino com exercicios",
+    "training_program.weekly_schedule": "agenda semanal de treinos",
+    "current_summary.active_focus": "foco atual do plano",
+    "current_summary.rationale": "justificativa do foco atual",
+    "current_summary.next_review": "data da proxima revisao (ISO 8601)",
+}
+
+
+def _format_missing_fields_with_descriptions(missing_fields: list[str]) -> str:
+    lines = []
+    for field in missing_fields:
+        desc = DISCOVERY_REQUIRED_FIELDS.get(field, "campo obrigatorio")
+        lines.append(f"- {field}: {desc}")
+    return "\n".join(lines)
+
+
 def _minimum_upsert_payload_template() -> str:
     return dedent(
         """\
@@ -87,17 +122,36 @@ def create_plan_help_tool(_database, _user_email: str):
 
     @tool
     def plan_help() -> str:
-        """Retorna guia de como montar e ajustar plano mestre singleton."""
+        """Retorna guia de como montar e ajustar plano mestre singleton.
+
+        Use esta tool para relembrar o fluxo completo de criacao de plano,
+        incluindo quais dados coletar antes de chamar upsert_plan.
+        """
         return (
             "# Plan Tools Help\n\n"
             "## Fluxo obrigatorio\n"
-            "discovery objetivo+prazo -> montar payload completo -> 1 chamada upsert_plan\n\n"
+            "1. Discovery: colete do usuario objetivo, prazo, disponibilidade semanal, "
+            "restricoes e preferencias.\n"
+            "2. Consulte get_metabolism_data antes de definir macros.\n"
+            "3. Monte o payload COMPLETO com todos os campos obrigatorios.\n"
+            "4. Chame upsert_plan UMA VEZ com o payload completo.\n\n"
+            "## Quando NAO chamar upsert_plan\n"
+            "- Se o usuario nao informou objetivo principal, prazo/meta com data alvo, "
+            "disponibilidade semanal (dias e minutos), ou restricoes relevantes.\n"
+            "- Se voce nao tem dados metabolicos (chame get_metabolism_data primeiro).\n"
+            "- Se esta em fase de discovery: retorne plan_status='discovery_needed'.\n"
+            "- Se upsert_plan retornou ERRO_UPSERT_PLAN_INCOMPLETO: NAO tente novamente "
+            "no mesmo turno. Retorne plan_status='discovery_needed' e liste o que falta.\n\n"
             "## Regras\n"
             "- Plano e singleton sobrescrito por usuario.\n"
             "- Criacao inicial exige objetivo, estrategia, metas nutricionais e programa semanal.\n"
             "- Metas nutricionais (nutrition_strategy.daily_targets) DEVEM incluir "
             "calories, protein_g, carbs_g e fat_g. Nunca omitir carbs_g ou fat_g.\n"
-            "- Nao repetir upsert_plan com payload igual no mesmo turno.\n\n"
+            "- Nao repetir upsert_plan com payload igual no mesmo turno.\n"
+            "- Para ATUALIZAR: envie o payload COMPLETO com todos os campos. "
+            "O sistema faz merge automatico com o plano existente.\n"
+            "- Para mudar SOMENTE nutricao: envie training_program com split_name e "
+            "routines contendo apenas id+name. O sistema preserva exercises existentes.\n\n"
             "## Payload minimo recomendado\n"
             f"{_minimum_upsert_payload_template()}\n\n"
             "## Ferramentas\n"
@@ -164,7 +218,19 @@ def create_upsert_plan_tool(database, user_email: str):
         current_summary: dict,
         checkpoints: list[dict] | None = None,
     ) -> str:
-        """Cria/atualiza o plano mestre singleton com payload completo."""
+        """Cria ou atualiza o plano mestre singleton.
+
+        SO chame esta tool quando voce tiver TODOS os dados obrigatorios do usuario:
+        objetivo principal, resumo do objetivo com criterio de sucesso, prazo com data alvo,
+        disponibilidade semanal (dias e duracao), restricoes, estrategia, metas nutricionais
+        e programa de treino completo (rotinas + agenda semanal).
+
+        Se faltam dados do usuario, NAO chame esta tool. Retorne plan_status='discovery_needed'
+        e descreva em technical_summary quais informacoes faltam. O coach_reply vai transformar
+        isso em perguntas ao usuario.
+
+        Sempre chame get_metabolism_data ANTES de definir metas nutricionais numericas.
+        """
         logger.info("upsert_plan called for user: %s", user_email)
         payload_hash_source = {
             "title": title,
@@ -179,6 +245,7 @@ def create_upsert_plan_tool(database, user_email: str):
         }
         guard_error = _run_loop_guards(payload_hash_source)
         if guard_error:
+            logger.warning("upsert_plan BLOCKED by loop guard: %s", guard_error)
             return guard_error
 
         payload = PlanUpsertInput(
@@ -194,14 +261,75 @@ def create_upsert_plan_tool(database, user_email: str):
         )
 
         latest = database.get_latest_plan(user_email)
+        logger.info(
+            "upsert_plan nutrition payload: %s",
+            payload.nutrition_strategy.get("daily_targets", {}),
+        )
+
+        # NEW PLAN: validate everything and create from scratch
+        if latest is None:
+            missing_fields = missing_master_plan_fields(payload)
+            if missing_fields:
+                logger.warning(
+                    "upsert_plan REJECTED incomplete: %s", missing_fields,
+                )
+                discovery_list = _format_missing_fields_with_descriptions(missing_fields)
+                return (
+                    "ERRO_UPSERT_PLAN_INCOMPLETO: faltam campos obrigatorios:\n"
+                    f"{discovery_list}\n\n"
+                    "PLANO_NAO_SALVO. Nao afirme que salvou/ativou o plano.\n"
+                    "ACAO: NAO tente chamar upsert_plan novamente neste turno. "
+                    "RETORNE plan_status=discovery_needed e liste em technical_summary "
+                    "que faltam para completar o plano. O coach_reply vai transformar isso em "
+                    "perguntas ao usuario.\n"
+                    "Consulte plan_help para ver o payload minimo completo."
+                )
+            try:
+                plan = build_plan_singleton(user_email, None, payload)
+                plan_id = database.save_plan(plan)
+                snapshot = build_plan_prompt_snapshot(plan)
+                logger.info("upsert_plan saved for user: %s (plan_id=%s)", user_email, plan_id)
+                return (
+                    f"SUCESSO_UPSERT_PLAN: Plano salvo com sucesso. ID: {plan_id}.\n"
+                    f"{format_plan_snapshot(snapshot)}"
+                )
+            except ValidationError as exc:
+                logger.warning(
+                    "upsert_plan invalid structure for user %s: %s",
+                    user_email,
+                    exc,
+                )
+                validation_issues = ", ".join(
+                    ".".join(str(part) for part in err["loc"]) for err in exc.errors()
+                )
+                return (
+                    "ERRO_UPSERT_PLAN_ESTRUTURA_INVALIDA: "
+                    "estrutura do plano invalida para persistencia. "
+                    "PLANO_NAO_SALVO. Campos/locais invalidos: "
+                    f"{validation_issues}"
+                )
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                logger.error("upsert_plan failed for user %s: %s", user_email, exc, exc_info=True)
+                return (
+                    "ERRO_UPSERT_PLAN_PERSISTENCIA: falha ao salvar no banco. "
+                    "PLANO_NAO_SALVO. Nao afirme que salvou/ativou o plano."
+                )
+
+        # EXISTING PLAN: merge with existing, validate, then save
         missing_fields = missing_master_plan_fields(payload, latest)
         if missing_fields:
+            logger.warning(
+                "upsert_plan REJECTED incomplete: %s", missing_fields,
+            )
+            discovery_list = _format_missing_fields_with_descriptions(missing_fields)
             return (
-                "ERRO_UPSERT_PLAN_INCOMPLETO: faltam campos obrigatorios: "
-                f"{', '.join(missing_fields)}. "
-                "PLANO_NAO_SALVO. Nao afirme que salvou/ativou o plano. "
-                "Use o payload minimo e tente novamente no proximo turno.\n"
-                f"{_minimum_upsert_payload_template()}"
+                "ERRO_UPSERT_PLAN_INCOMPLETO: faltam campos obrigatorios:\n"
+                f"{discovery_list}\n\n"
+                "PLANO_NAO_SALVO. Nao afirme que salvou/ativou o plano.\n"
+                "ACAO: NAO tente chamar upsert_plan novamente neste turno. "
+                "Retorne plan_status='update_failed' e liste em technical_summary quais "
+                "informacoes adicionais sao necessarias. "
+                "Consulte plan_help para ver o payload minimo completo."
             )
         try:
             plan = build_plan_singleton(user_email, latest, payload)
@@ -211,21 +339,6 @@ def create_upsert_plan_tool(database, user_email: str):
             return (
                 f"SUCESSO_UPSERT_PLAN: Plano salvo com sucesso. ID: {plan_id}.\n"
                 f"{format_plan_snapshot(snapshot)}"
-            )
-        except ValidationError as exc:
-            logger.warning(
-                "upsert_plan invalid structure for user %s: %s",
-                user_email,
-                exc,
-            )
-            validation_issues = ", ".join(
-                ".".join(str(part) for part in err["loc"]) for err in exc.errors()
-            )
-            return (
-                "ERRO_UPSERT_PLAN_ESTRUTURA_INVALIDA: "
-                "estrutura do plano invalida para persistencia. "
-                "PLANO_NAO_SALVO. Campos/locais invalidos: "
-                f"{validation_issues}"
             )
         except Exception as exc:  # pylint: disable=broad-exception-caught
             logger.error("upsert_plan failed for user %s: %s", user_email, exc, exc_info=True)

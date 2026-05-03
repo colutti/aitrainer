@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from src.api.models.plan import PlanUpsertInput, UserPlan
+from src.api.models.plan import PlanUpsertInput
 from src.services.plan_service import (
     build_plan_prompt_snapshot,
     build_plan_singleton,
@@ -189,3 +189,65 @@ def test_partial_nutrition_update_preserves_existing_carbs_and_fat():
     assert updated.nutrition_strategy.daily_targets.protein_g == 200
     assert updated.nutrition_strategy.daily_targets.carbs_g == 200
     assert updated.nutrition_strategy.daily_targets.fat_g == 70
+
+
+def test_partial_training_update_preserves_existing_exercises():
+    """When trainer updates only nutrition, training_program routines without exercises
+    are filled from the existing plan."""
+    full_payload = make_payload()
+    existing_plan = build_plan_singleton('user@test.com', None, full_payload)
+
+    # Trainer sends training_program with routines but NO exercises
+    partial_payload = PlanUpsertInput(
+        title='Plano Mestre Teste',
+        change_reason='increase_protein',
+        goal={
+            'primary': 'lose_fat',
+            'objective_summary': 'Chegar a 15% de gordura corporal',
+        },
+        timeline={
+            'target_date': datetime(2026, 9, 1),
+            'review_cadence': 'quinzenal',
+        },
+        strategy={
+            'rationale': 'deficit moderado',
+            'adaptation_policy': 'ajustes',
+        },
+        nutrition_strategy={
+            'daily_targets': {
+                'calories': 2200,
+                'protein_g': 200,
+                'carbs_g': 200,
+                'fat_g': 70,
+            },
+        },
+        training_program={
+            'split_name': 'push_pull_legs',
+            'frequency_per_week': 5,
+            'session_duration_min': 60,
+            'routines': [
+                {
+                    'id': 'push_a',
+                    'name': 'Push A',
+                    # exercises intentionally omitted
+                }
+            ],
+            'weekly_schedule': [
+                {'day': 'monday', 'routine_id': 'push_a', 'focus': 'push', 'type': 'training'}
+            ],
+        },
+        current_summary={
+            'active_focus': 'consistencia',
+            'rationale': 'executar bloco base',
+            'next_review': '2026-05-15',
+        },
+    )
+
+    # Validation should pass — existing plan fills missing exercises
+    missing = missing_master_plan_fields(partial_payload, existing_plan)
+    assert missing == [], f"Expected no missing fields but got: {missing}"
+
+    # Build should merge and preserve existing exercises
+    updated = build_plan_singleton('user@test.com', existing_plan, partial_payload)
+    assert updated.training_program.routines[0].exercises[0].name == 'Supino Reto'
+    assert updated.training_program.routines[0].exercises[0].sets == 4

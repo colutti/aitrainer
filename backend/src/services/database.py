@@ -302,6 +302,10 @@ class MongoDatabase:
         """Delegates to plan repository."""
         return self.plans.get_latest_plan(user_email)
 
+    def partial_update_plan(self, user_email: str, updates: dict):
+        """Delegates to plan repository for partial $set updates."""
+        return self.plans.partial_update_plan(user_email, updates)
+
     def get_weight_logs_by_date_range(
         self, user_email: str, start_date: date, end_date: date
     ) -> list[WeightLog]:
