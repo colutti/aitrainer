@@ -308,16 +308,20 @@ class ConversationGraphRunner:
                     secondary_nutrition = "nutrition_specialist" in secondary_nodes
                     if training_owned or secondary_training:
                         await self._run_node("training_specialist", state)
+                        self._apply_specialist_handoff(state, "training_specialist")
                     if nutrition_owned or secondary_nutrition:
                         await self._run_node("nutrition_specialist", state)
+                        self._apply_specialist_handoff(state, "nutrition_specialist")
                     if plan_owned or has_plan_pressure:
                         await self._run_node("plan_specialist", state)
                         self._apply_specialist_handoff(state, "plan_specialist")
                     if state.plan_needs_revision:
                         if training_owned or secondary_training:
                             await self._run_node("training_specialist", state)
+                            self._apply_specialist_handoff(state, "training_specialist")
                         if nutrition_owned or secondary_nutrition:
                             await self._run_node("nutrition_specialist", state)
+                            self._apply_specialist_handoff(state, "nutrition_specialist")
                     await self._run_node("coach_reply", state)
                 await self._run_node("memory_hub", state)
                 snapshot = build_snapshot(state.conversation_state)
@@ -765,10 +769,18 @@ class ConversationGraphRunner:
             allowed_tools=get_node_llm_tools("training_specialist"),
         )
         parsed = self._parse_json_object(response)
+        technical_summary = str(parsed.get("technical_summary", "")).strip()
         analysis_text = str(parsed.get("analysis_text", "")).strip()
         domain_status = str(parsed.get("domain_status", "generated")).strip() or "generated"
         plan_signal = str(parsed.get("plan_signal", "")).strip()
-        final_text = analysis_text or response
+        action_status = str(parsed.get("action_status", "no_action_needed")).strip()
+        action_type = str(parsed.get("action_type", "analyze")).strip()
+        handoff_target = str(parsed.get("handoff_target", "")).strip()
+        handoff_reason = str(parsed.get("handoff_reason", "")).strip()
+        pending_action = parsed.get("pending_action", {})
+        if not isinstance(pending_action, dict):
+            pending_action = {}
+        final_text = technical_summary or analysis_text or response
         state.shared_context["training_analysis"] = {
             "status": domain_status,
             "text": final_text,
@@ -779,6 +791,15 @@ class ConversationGraphRunner:
             memory_candidates=parsed.get("memory_candidates"),
             event_candidates=parsed.get("event_candidates"),
         )
+        state.conversation_state["last_action_status"] = action_status
+        if pending_action:
+            state.conversation_state["pending_action"] = pending_action
+        state.specialist_states["training_specialist"] = {
+            "action_status": action_status,
+            "action_type": action_type,
+            "handoff_target": handoff_target,
+            "handoff_reason": handoff_reason,
+        }
         state.node_outputs["training_specialist"] = final_text
 
     async def _node_nutrition_specialist(self, state: GraphState) -> None:
@@ -791,10 +812,18 @@ class ConversationGraphRunner:
             allowed_tools=get_node_llm_tools("nutrition_specialist"),
         )
         parsed = self._parse_json_object(response)
+        technical_summary = str(parsed.get("technical_summary", "")).strip()
         analysis_text = str(parsed.get("analysis_text", "")).strip()
         domain_status = str(parsed.get("domain_status", "generated")).strip() or "generated"
         plan_signal = str(parsed.get("plan_signal", "")).strip()
-        final_text = analysis_text or response
+        action_status = str(parsed.get("action_status", "no_action_needed")).strip()
+        action_type = str(parsed.get("action_type", "analyze")).strip()
+        handoff_target = str(parsed.get("handoff_target", "")).strip()
+        handoff_reason = str(parsed.get("handoff_reason", "")).strip()
+        pending_action = parsed.get("pending_action", {})
+        if not isinstance(pending_action, dict):
+            pending_action = {}
+        final_text = technical_summary or analysis_text or response
         state.shared_context["nutrition_analysis"] = {
             "status": domain_status,
             "text": final_text,
@@ -805,6 +834,15 @@ class ConversationGraphRunner:
             memory_candidates=parsed.get("memory_candidates"),
             event_candidates=parsed.get("event_candidates"),
         )
+        state.conversation_state["last_action_status"] = action_status
+        if pending_action:
+            state.conversation_state["pending_action"] = pending_action
+        state.specialist_states["nutrition_specialist"] = {
+            "action_status": action_status,
+            "action_type": action_type,
+            "handoff_target": handoff_target,
+            "handoff_reason": handoff_reason,
+        }
         state.node_outputs["nutrition_specialist"] = final_text
 
     async def _node_coach_reply(self, state: GraphState) -> None:

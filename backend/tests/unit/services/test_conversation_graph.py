@@ -547,6 +547,85 @@ async def test_training_specialist_parses_structured_output_and_plan_signal():
 
 
 @pytest.mark.asyncio
+async def test_training_specialist_returns_executed_for_direct_action():
+    """Training specialist must return executed + action_status for direct actions."""
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"action_type":"execute_routine","action_status":"executed",'
+            '"domain_status":"progress","technical_summary":"Rotina criada com sucesso.",'
+            '"missing_inputs":[],"handoff_target":"","handoff_reason":"",'
+            '"pending_action":{"kind":"none","status":"no_action_needed","missing_slots":[]},'
+            '"plan_signal":"","memory_candidates":[],"event_candidates":[]}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="cria a rotina full body",
+        user_input_sanitized="cria a rotina full body",
+        channel="app",
+    )
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_training_specialist(state)  # pylint: disable=protected-access
+    assert state.specialist_states["training_specialist"]["action_status"] == "executed"
+    assert state.specialist_states["training_specialist"]["action_type"] == "execute_routine"
+
+
+@pytest.mark.asyncio
+async def test_training_specialist_escalates_to_plan_when_missing_structure():
+    """When training action lacks plan structure, return escalate_to_plan."""
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"action_type":"escalate","action_status":"escalate_to_plan",'
+            '"domain_status":"insufficient_data","technical_summary":"Sem split definido no plano.",'
+            '"missing_inputs":["split_name","frequency_per_week"],'
+            '"handoff_target":"plan_specialist","handoff_reason":"plano nao tem programa de treino",'
+            '"pending_action":{"kind":"plan_discovery","status":"needs_user_input","missing_slots":["training_program"]},'
+            '"plan_signal":"plano sem rotinas definidas","memory_candidates":[],"event_candidates":[]}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="cria treino pra mim",
+        user_input_sanitized="cria treino pra mim",
+        channel="app",
+    )
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_training_specialist(state)  # pylint: disable=protected-access
+    assert state.specialist_states["training_specialist"]["action_status"] == "escalate_to_plan"
+    assert state.specialist_states["training_specialist"]["handoff_target"] == "plan_specialist"
+
+
+@pytest.mark.asyncio
 async def test_memory_hub_prefers_structured_candidates_before_llm():
     runner, brain = _runner_with_brain()
     create_event = MagicMock()

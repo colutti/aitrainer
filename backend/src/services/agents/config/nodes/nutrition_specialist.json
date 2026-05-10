@@ -30,5 +30,5 @@
     "training_specialist"
   ],
   "persona_mode": "none",
-  "output_contract": "json(analysis_text,domain_status,plan_signal,memory_candidates,event_candidates)"
+  "output_contract": "json(action_type,action_status,domain_status,technical_summary,missing_inputs,handoff_target,handoff_reason,pending_action,plan_signal,memory_candidates,event_candidates)"
 }
