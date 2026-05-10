@@ -18,8 +18,11 @@ from src.services.adaptive_tdee import AdaptiveTDEEService
 from src.services.agents.config_registry import AgentConfigRegistry
 from src.services.agents.node_tool_policy import get_node_llm_tools
 from src.services.graph.conversation_contract import (
+    InteractionMode,
+    PrimaryOwner,
     build_snapshot,
     default_conversation_state,
+    merge_pending_action_update,
     parse_latest_snapshot,
 )
 from src.services.plan_service import build_plan_prompt_snapshot
@@ -629,10 +632,33 @@ class ConversationGraphRunner:
         intent = str(parsed.get("intent", "general")).strip().lower()
         if intent not in {"training", "nutrition", "plan", "multi_domain", "general"}:
             intent = "general"
+        interaction_mode = str(parsed.get("interaction_mode", "general")).strip().lower()
+        valid_modes = {m.value for m in InteractionMode}
+        if interaction_mode not in valid_modes:
+            interaction_mode = InteractionMode.GENERAL.value
+        primary_owner = str(parsed.get("primary_owner", "coach_reply")).strip().lower()
+        valid_owners = {o.value for o in PrimaryOwner}
+        if primary_owner not in valid_owners:
+            primary_owner = PrimaryOwner.COACH_REPLY.value
+        secondary_nodes = parsed.get("secondary_nodes", [])
+        if not isinstance(secondary_nodes, list):
+            secondary_nodes = []
+        pending_action_update = parsed.get("pending_action_update", {})
+        if not isinstance(pending_action_update, dict):
+            pending_action_update = {}
         state.intent = intent
         state.routing["intent"] = intent
         state.routing["reason"] = str(parsed.get("reason", "")).strip()
-        state.node_outputs["intent_router"] = intent
+        state.routing["interaction_mode"] = interaction_mode
+        state.routing["primary_owner"] = primary_owner
+        state.routing["secondary_nodes"] = secondary_nodes
+        state.conversation_state["active_domain"] = intent
+        state.conversation_state["interaction_mode"] = interaction_mode
+        state.conversation_state["primary_owner"] = primary_owner
+        state.conversation_state = merge_pending_action_update(
+            state.conversation_state, pending_action_update
+        )
+        state.node_outputs["intent_router"] = f"{intent}|{interaction_mode}|{primary_owner}"
 
     async def _node_plan_specialist(self, state: GraphState) -> None:
         state.shared_context["plan_specialist_note"] = f"intent={state.intent}"

@@ -9,12 +9,13 @@
   "tool_names": [],
   "prompt_file": "backend/src/services/agents/config/prompts/intent_router.md",
   "response_format": "text",
-  "version": "v2",
+  "version": "v3",
   "context_blocks": [
     "request",
-    "history_summary_neutral"
+    "history_summary_neutral",
+    "conversation_state"
   ],
   "peer_inputs": [],
   "persona_mode": "none",
-  "output_contract": "json(intent,reason)"
+  "output_contract": "json(intent,interaction_mode,primary_owner,secondary_nodes,pending_action_update,reason)"
 }

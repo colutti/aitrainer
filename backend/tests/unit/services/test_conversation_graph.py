@@ -1358,3 +1358,134 @@ async def test_intent_router_history_context_injected_into_llm():
 
     await runner._node_intent_router(state)  # pylint: disable=protected-access
     assert "history_summary_neutral" in captured["system"]
+
+
+@pytest.mark.asyncio
+async def test_intent_router_returns_interaction_mode_and_primary_owner():
+    """Router must return interaction_mode, primary_owner, and secondary_nodes."""
+    runner, brain = _runner_with_brain()
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="quero ganhar massa",
+        user_input_sanitized="quero ganhar massa",
+        channel="app",
+    )
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"intent":"plan","interaction_mode":"plan_discovery",'
+            '"primary_owner":"plan_specialist","secondary_nodes":[],'
+            '"pending_action_update":{"kind":"plan_discovery","status":"needs_user_input"},'
+            '"reason":"definicao de objetivo"}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    brain.get_log_callback.return_value = None
+    await runner._node_intent_router(state)  # pylint: disable=protected-access
+    assert state.routing["interaction_mode"] == "plan_discovery"
+    assert state.routing["primary_owner"] == "plan_specialist"
+    assert state.conversation_state["pending_action"]["kind"] == "plan_discovery"
+
+
+@pytest.mark.asyncio
+async def test_intent_router_returns_execution_request_for_materialization():
+    """A follow-up asking to materialize should be execution_request."""
+    runner, brain = _runner_with_brain()
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="entao cria pra mim",
+        user_input_sanitized="entao cria pra mim",
+        channel="app",
+    )
+    state.conversation_state = {
+        "active_domain": "plan",
+        "interaction_mode": "plan_review",
+        "primary_owner": "plan_specialist",
+        "pending_action": {
+            "kind": "domain_execution",
+            "status": "needs_user_input",
+            "missing_slots": [],
+        },
+        "last_action_status": "needs_user_input",
+    }
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"intent":"plan","interaction_mode":"execution_request",'
+            '"primary_owner":"training_specialist","secondary_nodes":[],'
+            '"pending_action_update":{"status":"executed"},'
+            '"reason":"pedido de materializacao de rotina"}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    brain.get_log_callback.return_value = None
+    await runner._node_intent_router(state)  # pylint: disable=protected-access
+    assert state.routing["primary_owner"] == "training_specialist"
+    assert state.conversation_state["pending_action"]["status"] == "executed"
+
+
+@pytest.mark.asyncio
+async def test_intent_router_preserves_slot_answer_for_pending_plan():
+    """When conversation_state has pending plan discovery, a data answer is slot_answer."""
+    runner, brain = _runner_with_brain()
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="3 vezes por semana",
+        user_input_sanitized="3 vezes por semana",
+        channel="app",
+    )
+    state.conversation_state = {
+        "active_domain": "plan",
+        "interaction_mode": "plan_discovery",
+        "primary_owner": "plan_specialist",
+        "pending_action": {
+            "kind": "plan_discovery",
+            "status": "needs_user_input",
+            "missing_slots": ["availability", "timeline"],
+        },
+        "last_action_status": "needs_user_input",
+    }
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"intent":"plan","interaction_mode":"slot_answer",'
+            '"primary_owner":"plan_specialist","secondary_nodes":[],'
+            '"pending_action_update":{"missing_slots":["timeline"]},'
+            '"reason":"resposta a pergunta de disponibilidade"}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    brain.get_log_callback.return_value = None
+    await runner._node_intent_router(state)  # pylint: disable=protected-access
+    assert state.routing["interaction_mode"] == "slot_answer"
+    assert state.routing["primary_owner"] == "plan_specialist"
+    assert state.conversation_state["pending_action"]["missing_slots"] == ["timeline"]
+
+
+@pytest.mark.asyncio
+async def test_intent_router_falls_back_for_invalid_mode_and_owner():
+    """Invalid interaction_mode or primary_owner must fall back to safe defaults."""
+    runner, brain = _runner_with_brain()
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="oi",
+        user_input_sanitized="oi",
+        channel="app",
+    )
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"intent":"general","interaction_mode":"invalid_mode",'
+            '"primary_owner":"invalid_owner","secondary_nodes":null,'
+            '"pending_action_update":null,"reason":"greeting"}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    brain.get_log_callback.return_value = None
+    await runner._node_intent_router(state)  # pylint: disable=protected-access
+    assert state.routing["interaction_mode"] == "general"
+    assert state.routing["primary_owner"] == "coach_reply"
