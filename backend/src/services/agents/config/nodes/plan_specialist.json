@@ -3,7 +3,7 @@
   "enabled": true,
   "model_provider": "openrouter",
   "model_name": "openai/gpt-oss-120b",
-  "temperature": 0.2,
+  "temperature": 0.1,
   "max_tokens": 4096,
   "tool_policy": "restricted",
   "tool_names": [
