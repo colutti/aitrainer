@@ -388,6 +388,13 @@
       "primary_goal": "Primary Goal",
       "success_criteria": "Success Criteria"
     },
+    "goal_labels": {
+      "lose_fat": "Lose fat",
+      "build_muscle": "Build muscle",
+      "recomposition": "Body recomposition",
+      "performance": "Performance",
+      "maintain": "Maintenance"
+    },
     "empty": {
       "title": "No plan found",
       "description": "Talk to AI to create your complete master plan.",

@@ -21,7 +21,7 @@ const mockPlan: Plan = {
   overview: {
     id: 'plan-1',
     title: 'Plano Recomp Rafael - V19',
-    primary_goal: 'lose_fat',
+    primary_goal: 'plan.goal_labels.lose_fat',
     objective_summary: 'Perder gordura mantendo performance',
     success_criteria: ['aderencia >= 80%', 'perda de peso semanal'],
     start_date: '2026-04-01',

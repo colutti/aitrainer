@@ -101,11 +101,21 @@ function mapBackendToPlan(payload: BackendPlanPayload): Plan {
   const latestCheckpoint = checkpoints.length > 0 ? checkpoints[checkpoints.length - 1] : undefined;
   const nutritionTargets = payload.nutrition_strategy?.daily_targets ?? {};
 
+  const primaryGoalRaw = payload.goal?.primary ?? '';
+  const goalLabelMap: Record<string, string> = {
+    lose_fat: 'plan.goal_labels.lose_fat',
+    build_muscle: 'plan.goal_labels.build_muscle',
+    recomposition: 'plan.goal_labels.recomposition',
+    performance: 'plan.goal_labels.performance',
+    maintain: 'plan.goal_labels.maintain',
+  };
+  const primaryGoalKey = goalLabelMap[primaryGoalRaw] ?? primaryGoalRaw;
+
   return {
     overview: {
       id: payload.id ?? 'plan',
       title: payload.title ?? 'Plano Mestre',
-      primary_goal: payload.goal?.primary ?? 'Nao definido',
+      primary_goal: primaryGoalKey,
       objective_summary: payload.goal?.objective_summary ?? 'Objetivo nao definido',
       success_criteria: payload.goal?.success_criteria ?? [],
       start_date: formatPlanDate(payload.timeline?.start_date),

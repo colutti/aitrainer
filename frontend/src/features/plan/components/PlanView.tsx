@@ -372,7 +372,7 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
             <h3 className="text-sm font-bold uppercase tracking-wide text-text-primary">{t('plan.sections.overview')}</h3>
             <div className="space-y-3 rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">{t('plan.labels.primary_goal')}</p>
-              <p className="text-lg font-bold text-text-primary md:text-xl">{plan.overview.primary_goal}</p>
+              <p className="text-lg font-bold text-text-primary md:text-xl">{t(plan.overview.primary_goal)}</p>
               <p className="text-sm font-medium text-text-secondary md:text-base">{plan.overview.objective_summary}</p>
             </div>
             <div className="space-y-3 rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">

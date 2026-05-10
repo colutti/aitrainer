@@ -13,7 +13,7 @@ const mockPlan: Plan = {
   overview: {
     id: 'plan-1',
     title: 'Plano Mestre',
-    primary_goal: 'gain_muscle',
+    primary_goal: 'plan.goal_labels.build_muscle',
     objective_summary: 'Ganhar massa magra mantendo gordura sob controle',
     success_criteria: ['aderencia >= 80%'],
     start_date: '2026-04-01',
