@@ -1806,3 +1806,31 @@ async def test_run_stream_plan_pending_suppresses_memory_events():
         pass
 
     create_event.invoke.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_format_proposal_block_includes_full_proposal_json():
+    runner = _runner()
+    workspace = {
+        "proposal_status": "ready",
+        "proposal": {
+            "split": "push_pull_legs",
+            "routines": [{"name": "Push", "exercises": ["Supino", "Desenvolvimento"]}],
+            "progression": "linear",
+        },
+        "missing_inputs": [],
+        "change_request": None,
+    }
+    block = runner._format_proposal_block("TREINO", workspace)
+    assert "PROPOSTA_TREINO_STATUS: ready" in block
+    assert "PROPOSTA_TREINO_JSON:" in block
+    assert "push_pull_legs" in block
+    assert "Supino" in block
+
+
+@pytest.mark.asyncio
+async def test_format_proposal_block_returns_empty_for_no_status():
+    runner = _runner()
+    workspace = {"proposal_status": ""}
+    block = runner._format_proposal_block("TREINO", workspace)
+    assert block == ""

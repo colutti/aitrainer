@@ -1078,7 +1078,10 @@ class ConversationGraphRunner:
             lines.append(f"CHANGE_REQUEST_{domain_name}_REASON: {change.get('reason', 'N/A')}")
         proposal = workspace.get("proposal")
         if proposal and isinstance(proposal, dict):
-            lines.append(f"PROPOSTA_{domain_name}_SUMMARY: {proposal.get('summary', str(proposal)[:200])}")
+            lines.append(
+                f"PROPOSTA_{domain_name}_JSON: "
+                f"{json.dumps(proposal, ensure_ascii=False, sort_keys=True)}"
+            )
         return "\n".join(lines)
 
     @staticmethod
