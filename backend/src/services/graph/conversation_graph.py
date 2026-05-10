@@ -878,7 +878,7 @@ class ConversationGraphRunner:
         memory_candidates = self._normalize_candidates(
             structured_candidates.get("memory"), "memory_action"
         )
-        if event_candidates:
+        if event_candidates and not self._has_unresolved_domain_pending_action(state):
             parsed = event_candidates[0]
             state.persistence_intents = parsed
             event_action = self._execute_event_intent(state, tools_by_name, parsed)
@@ -904,10 +904,11 @@ class ConversationGraphRunner:
         )
         parsed = self._parse_json_object(planner)
         state.persistence_intents = parsed
-        event_action = self._execute_event_intent(state, tools_by_name, parsed)
-        if event_action:
-            self._log_persistence_decision(state, event_action)
-            return
+        if not self._has_unresolved_domain_pending_action(state):
+            event_action = self._execute_event_intent(state, tools_by_name, parsed)
+            if event_action:
+                self._log_persistence_decision(state, event_action)
+                return
         memory_action = self._execute_memory_intent(state, tools_by_name, parsed)
         if memory_action:
             self._log_persistence_decision(state, memory_action)
@@ -1077,6 +1078,16 @@ class ConversationGraphRunner:
             if value:
                 chunks.append(f"[{node}]\n{value}")
         return "\n\n".join(chunks).strip() or "[none]"
+
+    @staticmethod
+    def _has_unresolved_domain_pending_action(state: GraphState) -> bool:
+        """Return True when there's a domain execution pending_action that isn't resolved."""
+        pa = state.conversation_state.get("pending_action", {})
+        return (
+            isinstance(pa, dict)
+            and pa.get("kind") == "domain_execution"
+            and pa.get("status") != "no_action_needed"
+        )
 
     def _apply_specialist_handoff(self, state: GraphState, node_name: str) -> None:
         """Apply a handoff from a specialist to the next owner.

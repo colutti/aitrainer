@@ -1454,6 +1454,95 @@ async def test_memory_hub_converts_weekly_follow_up_into_recurring_event():
     assert state.node_outputs["memory_hub"] == "create_event"
 
 
+@pytest.mark.asyncio
+async def test_memory_hub_skips_event_when_domain_pending_action_exists():
+    """memory_hub must not create events when a domain pending_action is unresolved."""
+    runner, brain = _runner_with_brain()
+    create_event = MagicMock()
+    create_event.name = "create_event"
+    create_event.invoke.return_value = "ok"
+    brain.get_tools.return_value = [create_event]
+    brain.get_log_callback.return_value = None
+
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="cria rotina",
+        user_input_sanitized="cria rotina",
+        channel="app",
+    )
+    state.conversation_state = {
+        "pending_action": {
+            "kind": "domain_execution",
+            "status": "needs_user_input",
+            "missing_slots": [],
+        },
+    }
+    state.shared_context = {
+        "persistence_candidates": {
+            "memory": [],
+            "event": [{
+                "event_action": "create",
+                "event_title": "criar rotina de treino",
+                "event_date": "2026-05-10",
+            }],
+        },
+        "input_data": {"user_locale": "pt-BR"},
+    }
+    state.node_outputs["coach_reply"] = "ok"
+
+    await runner._node_memory_hub(state)
+
+    create_event.invoke.assert_not_called()
+    assert state.node_outputs["memory_hub"] == "no_action"
+
+
+@pytest.mark.asyncio
+async def test_memory_hub_still_creates_legitimate_check_in_without_pending():
+    """Check-in event should proceed when no domain pending_action exists."""
+    runner, brain = _runner_with_brain()
+    list_events = MagicMock()
+    list_events.name = "list_events"
+    list_events.invoke.return_value = "Nao ha eventos ativos."
+    create_event = MagicMock()
+    create_event.name = "create_event"
+    create_event.invoke.return_value = "ok"
+    brain.get_tools.return_value = [list_events, create_event]
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"event_action":"create","event_title":"check-in de peso","event_date":"2026-05-10",'
+            '"event_id":"","memory_action":"none","memory_content":"","reason":"agenda"}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="me lembra de pesar",
+        user_input_sanitized="me lembra de pesar",
+        channel="app",
+    )
+    state.conversation_state = {
+        "pending_action": {"kind": "none", "status": "no_action_needed", "missing_slots": []},
+    }
+    state.node_outputs["coach_reply"] = "ok"
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_memory_hub(state)
+
+    create_event.invoke.assert_called_once()
+
+
 def test_build_debug_trace_includes_tools_called_per_node():
     runner = _runner()
     state = GraphState(
