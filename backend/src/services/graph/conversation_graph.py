@@ -960,7 +960,7 @@ class ConversationGraphRunner:
         configured_tools = set(cfg.tool_names or [])
         effective_tools = allowed_tools & configured_tools if configured_tools else allowed_tools
         if node_name == "training_specialist":
-            hevy_keywords = ["hevy", "sincroniz", "sync", "import", "export"]
+            hevy_keywords = ["hevy"]
             input_lower = (state.user_input_raw + " " + state.user_input_sanitized).lower()
             hevy_intent = any(kw in input_lower for kw in hevy_keywords)
             if hevy_intent:

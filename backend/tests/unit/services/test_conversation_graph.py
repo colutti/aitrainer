@@ -1010,6 +1010,53 @@ async def test_training_specialist_does_not_receive_hevy_tools_without_connectio
     assert "list_hevy_routines" not in captured["tools"]
 
 
+@pytest.mark.asyncio
+async def test_training_specialist_does_not_receive_hevy_tools_for_generic_import():
+    """Connected user + generic import word should NOT expose Hevy tools."""
+    runner, brain = _runner_with_brain()
+    captured = {}
+    tool_names = [
+        "save_workout", "get_workouts", "list_hevy_routines", "get_body_composition",
+    ]
+    tool_mocks = []
+    for tool_name in tool_names:
+        tool = MagicMock()
+        tool.name = tool_name
+        tool_mocks.append(tool)
+    brain.get_tools.return_value = tool_mocks
+    brain.get_log_callback.return_value = None
+    stub_profile = MagicMock()
+    stub_profile.hevy_enabled = True
+    stub_profile.hevy_api_key = "some-key"
+    brain.database.get_user_profile.return_value = stub_profile
+
+    async def fake_stream_with_tools(**kwargs):
+        captured["tools"] = [tool.name for tool in kwargs["tools"]]
+        yield "ok"
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="quero importar meu historico",
+        user_input_sanitized="quero importar meu historico",
+        channel="app",
+    )
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_training_specialist(state)
+
+    assert "save_workout" in captured["tools"]
+    assert "list_hevy_routines" not in captured["tools"]
+
 
 @pytest.mark.asyncio
 async def test_nutrition_specialist_receives_metabolism_adjustment_tool():
