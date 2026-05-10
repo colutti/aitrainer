@@ -157,6 +157,26 @@ class TestPendingActionMerge:
         assert result["interaction_mode"] == InteractionMode.PLAN_DISCOVERY.value
         assert result["pending_action"]["missing_slots"] == ["goal", "availability"]
 
+    def test_merge_resets_pending_action_when_kind_is_none(self):
+        """An update with kind='none' must clear the pending action entirely."""
+        base = {
+            "active_domain": "plan",
+            "pending_action": {
+                "kind": PendingActionKind.PLAN_DISCOVERY.value,
+                "status": ActionStatus.NEEDS_USER_INPUT.value,
+                "missing_slots": ["goal", "timeline"],
+            },
+        }
+        update = {
+            "kind": "none",
+            "status": "no_action_needed",
+            "missing_slots": [],
+        }
+        result = merge_pending_action_update(base, update)
+        assert result["pending_action"]["kind"] == "none"
+        assert result["pending_action"]["status"] == "no_action_needed"
+        assert result["pending_action"]["missing_slots"] == []
+
 
 class TestEnumValues:
     def test_interaction_modes_cover_expected_conversation_types(self):

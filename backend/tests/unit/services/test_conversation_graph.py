@@ -1898,3 +1898,40 @@ async def test_intent_router_falls_back_for_invalid_mode_and_owner():
     await runner._node_intent_router(state)  # pylint: disable=protected-access
     assert state.routing["interaction_mode"] == "general"
     assert state.routing["primary_owner"] == "coach_reply"
+
+
+@pytest.mark.asyncio
+async def test_intent_router_clears_pending_action_on_topic_change_to_general():
+    """When conversation switches to general, pending_action must be reset."""
+    runner, brain = _runner_with_brain()
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="oi, tudo bem?",
+        user_input_sanitized="oi, tudo bem?",
+        channel="app",
+    )
+    state.conversation_state = {
+        "active_domain": "plan",
+        "interaction_mode": "plan_discovery",
+        "primary_owner": "plan_specialist",
+        "pending_action": {
+            "kind": "plan_discovery",
+            "status": "needs_user_input",
+            "missing_slots": ["goal", "timeline"],
+        },
+        "last_action_status": "needs_user_input",
+    }
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"intent":"general","interaction_mode":"general",'
+            '"primary_owner":"coach_reply","secondary_nodes":[],'
+            '"pending_action_update":{},'
+            '"reason":"greeting"}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    brain.get_log_callback.return_value = None
+    await runner._node_intent_router(state)
+    assert state.conversation_state["pending_action"]["kind"] == "none"

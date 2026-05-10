@@ -18,6 +18,7 @@ from src.services.adaptive_tdee import AdaptiveTDEEService
 from src.services.agents.config_registry import AgentConfigRegistry
 from src.services.agents.node_tool_policy import get_node_llm_tools
 from src.services.graph.conversation_contract import (
+    ActionStatus,
     InteractionMode,
     PrimaryOwner,
     build_snapshot,
@@ -672,6 +673,12 @@ class ConversationGraphRunner:
         state.conversation_state["active_domain"] = intent
         state.conversation_state["interaction_mode"] = interaction_mode
         state.conversation_state["primary_owner"] = primary_owner
+        if interaction_mode == InteractionMode.GENERAL.value:
+            state.conversation_state["pending_action"] = {
+                "kind": "none",
+                "status": ActionStatus.NO_ACTION_NEEDED.value,
+                "missing_slots": [],
+            }
         state.conversation_state = merge_pending_action_update(
             state.conversation_state, pending_action_update
         )
