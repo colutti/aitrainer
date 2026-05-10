@@ -954,8 +954,19 @@ class ConversationGraphRunner:
         if node_name == "training_specialist":
             hevy_keywords = ["hevy", "sincroniz", "sync", "import", "export"]
             input_lower = (state.user_input_raw + " " + state.user_input_sanitized).lower()
-            if any(kw in input_lower for kw in hevy_keywords):
-                effective_tools |= get_hevy_tool_names()
+            hevy_intent = any(kw in input_lower for kw in hevy_keywords)
+            if hevy_intent:
+                try:
+                    profile = self._brain.database.get_user_profile(state.user_email)
+                    hevy_ready = bool(
+                        profile
+                        and getattr(profile, "hevy_enabled", False)
+                        and getattr(profile, "hevy_api_key", None)
+                    )
+                except Exception:
+                    hevy_ready = False
+                if hevy_ready:
+                    effective_tools |= get_hevy_tool_names()
         tools = [t for t in self._brain.get_tools(state.user_email) if t.name in effective_tools]
         chunks: list[str] = []
         async for chunk in self._brain._llm_client.stream_with_tools(  # pylint: disable=protected-access
