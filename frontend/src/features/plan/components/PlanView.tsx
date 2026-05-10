@@ -246,11 +246,13 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
     },
   ].filter((item) => item.target > 0) as RingMetric[];
 
-  const successCriteria = [
-    t('plan.labels.review_cadence') + ': ' + plan.overview.review_cadence,
-    t('plan.labels.active_focus') + ': ' + plan.overview.active_focus,
-    ...plan.adherence_notes,
-  ].filter((item) => item.trim().length > 0);
+  const successCriteria = plan.overview.success_criteria.length > 0
+    ? plan.overview.success_criteria
+    : [
+        t('plan.labels.review_cadence') + ': ' + plan.overview.review_cadence,
+        t('plan.labels.active_focus') + ': ' + plan.overview.active_focus,
+        ...plan.adherence_notes,
+      ].filter((item) => item.trim().length > 0);
 
   return (
     <div className="space-y-5 pb-20 font-sans" data-testid="plan-view">
@@ -370,7 +372,7 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
             <h3 className="text-sm font-bold uppercase tracking-wide text-text-primary">{t('plan.sections.overview')}</h3>
             <div className="space-y-3 rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">{t('plan.labels.primary_goal')}</p>
-              <p className="text-lg font-bold text-text-primary md:text-xl">{plan.strategy.rationale}</p>
+              <p className="text-lg font-bold text-text-primary md:text-xl">{plan.overview.primary_goal}</p>
               <p className="text-sm font-medium text-text-secondary md:text-base">{plan.overview.objective_summary}</p>
             </div>
             <div className="space-y-3 rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">

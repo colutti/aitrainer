@@ -1,7 +1,9 @@
 export interface PlanOverview {
   id: string;
   title: string;
+  primary_goal: string;
   objective_summary: string;
+  success_criteria: string[];
   start_date: string;
   target_date: string;
   review_cadence: string;

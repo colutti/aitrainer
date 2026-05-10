@@ -19,6 +19,7 @@ interface BackendPlanPayload {
   goal?: {
     primary?: string;
     objective_summary?: string;
+    success_criteria?: string[];
   };
   timeline?: {
     start_date?: string;
@@ -104,7 +105,9 @@ function mapBackendToPlan(payload: BackendPlanPayload): Plan {
     overview: {
       id: payload.id ?? 'plan',
       title: payload.title ?? 'Plano Mestre',
+      primary_goal: payload.goal?.primary ?? 'Nao definido',
       objective_summary: payload.goal?.objective_summary ?? 'Objetivo nao definido',
+      success_criteria: payload.goal?.success_criteria ?? [],
       start_date: formatPlanDate(payload.timeline?.start_date),
       target_date: formatPlanDate(payload.timeline?.target_date),
       review_cadence: payload.timeline?.review_cadence ?? 'Nao definido',
