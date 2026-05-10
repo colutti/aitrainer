@@ -32,6 +32,7 @@ def valid_payload() -> dict:
                 {
                     'id': 'upper_a',
                     'name': 'Upper A',
+                    'warmup': '5min aquecimento geral',
                     'exercises': [
                         {
                             'name': 'Supino',

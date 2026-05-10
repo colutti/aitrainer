@@ -289,6 +289,24 @@ def validate_training_program_quality(program: dict) -> list[str]:
                 f"{len(exercises)} exercise(s) for a {frequency}x/week program — "
                 f"high-frequency programs need at least 3 substantive exercises per session"
             )
+        if frequency >= 4:
+            for ex_idx, exercise in enumerate(exercises):
+                if not exercise.get("rest_seconds"):
+                    issues.append(
+                        f"routine[{idx}].exercises[{ex_idx}] "
+                        f"'{exercise.get('name', '')}' missing rest_seconds — "
+                        f"high-frequency programs require rest prescription"
+                    )
+        has_coaching = (
+            routine.get("warmup")
+            or routine.get("notes")
+            or any(ex.get("coach_notes") for ex in exercises)
+        )
+        if frequency >= 4 and not has_coaching:
+            issues.append(
+                f"routine[{idx}] '{routine.get('name', '')}' lacks coaching context — "
+                f"add warmup, notes, or coach_notes for at least one exercise"
+            )
     if not has_schedule:
         issues.append("training_program missing weekly_schedule")
     return issues

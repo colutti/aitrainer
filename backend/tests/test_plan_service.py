@@ -347,11 +347,12 @@ def test_validate_training_program_quality_passes_full_program():
             {
                 "id": "push",
                 "name": "Push",
+                "warmup": "5min aquecimento",
                 "exercises": [
-                    {"name": "Supino", "sets": 4, "reps": "6-8", "load_guidance": "RPE 8"},
-                    {"name": "Desenvolvimento", "sets": 3, "reps": "8-10", "load_guidance": "RPE 8"},
-                    {"name": "Crucifixo", "sets": 3, "reps": "10-12", "load_guidance": "RPE 7"},
-                    {"name": "Triceps", "sets": 3, "reps": "12-15", "load_guidance": "RPE 8"},
+                    {"name": "Supino", "sets": 4, "reps": "6-8", "load_guidance": "RPE 8", "rest_seconds": 90},
+                    {"name": "Desenvolvimento", "sets": 3, "reps": "8-10", "load_guidance": "RPE 8", "rest_seconds": 90},
+                    {"name": "Crucifixo", "sets": 3, "reps": "10-12", "load_guidance": "RPE 7", "rest_seconds": 60},
+                    {"name": "Triceps", "sets": 3, "reps": "12-15", "load_guidance": "RPE 8", "rest_seconds": 60},
                 ],
             },
         ],
@@ -405,6 +406,61 @@ def test_validate_training_program_quality_accepts_two_exercises_low_frequency()
         ],
         "weekly_schedule": [
             {"day": "monday", "routine_id": "fb", "focus": "full_body", "type": "training"},
+        ],
+    }
+    issues = validate_training_program_quality(program)
+    assert issues == []
+
+
+def test_validate_training_program_quality_rejects_missing_rest_high_frequency():
+    """High-frequency programs must have rest_seconds on all exercises."""
+    program = {
+        "split_name": "ppl",
+        "frequency_per_week": 6,
+        "session_duration_min": 60,
+        "routines": [
+            {
+                "id": "push",
+                "name": "Push",
+                "warmup": "5min aquecimento",
+                "exercises": [
+                    {"name": "Supino", "sets": 4, "reps": "6-8", "load_guidance": "RPE 8"},
+                    {"name": "Dev", "sets": 3, "reps": "8-10", "load_guidance": "RPE 8"},
+                    {"name": "Crucifixo", "sets": 3, "reps": "10-12", "load_guidance": "RPE 7"},
+                    {"name": "Triceps", "sets": 3, "reps": "12-15", "load_guidance": "RPE 8"},
+                ],
+            },
+        ],
+        "weekly_schedule": [
+            {"day": "monday", "routine_id": "push", "focus": "push", "type": "training"},
+        ],
+    }
+    issues = validate_training_program_quality(program)
+    assert len(issues) >= 1
+    assert any("rest_seconds" in issue.lower() for issue in issues)
+
+
+def test_validate_training_program_quality_passes_with_rest_and_coaching():
+    """Program with rest_seconds and routine-level warmup/notes passes."""
+    program = {
+        "split_name": "ppl",
+        "frequency_per_week": 6,
+        "session_duration_min": 60,
+        "routines": [
+            {
+                "id": "push",
+                "name": "Push",
+                "warmup": "5min aquecimento",
+                "exercises": [
+                    {"name": "Supino", "sets": 4, "reps": "6-8", "load_guidance": "RPE 8", "rest_seconds": 90},
+                    {"name": "Dev", "sets": 3, "reps": "8-10", "load_guidance": "RPE 8", "rest_seconds": 90},
+                    {"name": "Crucifixo", "sets": 3, "reps": "10-12", "load_guidance": "RPE 7", "rest_seconds": 60},
+                    {"name": "Triceps", "sets": 3, "reps": "12-15", "load_guidance": "RPE 8", "rest_seconds": 60},
+                ],
+            },
+        ],
+        "weekly_schedule": [
+            {"day": "monday", "routine_id": "push", "focus": "push", "type": "training"},
         ],
     }
     issues = validate_training_program_quality(program)
