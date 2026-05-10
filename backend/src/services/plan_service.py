@@ -283,10 +283,11 @@ def validate_training_program_quality(program: dict) -> list[str]:
                 f"routine[{idx}] '{routine.get('name', '')}' has exercises "
                 f"missing load_guidance, reps, or sets"
             )
-        if frequency >= 4 and len(exercises) <= 1:
+        if frequency >= 4 and len(exercises) <= 2:
             issues.append(
                 f"routine[{idx}] '{routine.get('name', '')}' has only "
-                f"{len(exercises)} exercise(s) for a {frequency}x/week program"
+                f"{len(exercises)} exercise(s) for a {frequency}x/week program — "
+                f"high-frequency programs need at least 3 substantive exercises per session"
             )
     if not has_schedule:
         issues.append("training_program missing weekly_schedule")

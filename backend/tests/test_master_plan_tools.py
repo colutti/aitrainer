@@ -209,3 +209,44 @@ def test_upsert_plan_rejects_schedule_with_unknown_routine_reference():
     assert 'ERRO_UPSERT_PLAN_ESTRUTURA_INVALIDA' in result
     assert 'PLANO_NAO_SALVO' in result
     db.save_plan.assert_not_called()
+
+
+def test_upsert_plan_rejects_shallow_high_frequency_program():
+    """A 6x/week program with only 2 exercises per routine must be rejected."""
+    db = MagicMock()
+    db.get_latest_plan.return_value = None
+    tool = create_upsert_plan_tool(db, 'user@test.com')
+
+    payload = valid_payload()
+    payload['training_program']['frequency_per_week'] = 6
+    payload['training_program']['routines'] = [
+        {
+            'id': 'push_a',
+            'name': 'Push A',
+            'exercises': [
+                {
+                    'name': 'Supino',
+                    'sets': 4,
+                    'reps': '6-8',
+                    'load_guidance': 'RPE 8',
+                    'rest_seconds': 90,
+                },
+                {
+                    'name': 'Desenvolvimento',
+                    'sets': 3,
+                    'reps': '8-10',
+                    'load_guidance': 'RPE 8',
+                    'rest_seconds': 90,
+                },
+            ],
+        },
+    ]
+    payload['training_program']['weekly_schedule'] = [
+        {'day': 'monday', 'routine_id': 'push_a', 'focus': 'upper', 'type': 'training'}
+    ]
+
+    result = tool.invoke(payload)
+
+    assert 'qualidade' in result.lower()
+    assert 'PLANO_NAO_SALVO' in result
+    db.save_plan.assert_not_called()
