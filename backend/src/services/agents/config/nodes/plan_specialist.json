@@ -32,5 +32,5 @@
     "nutrition_specialist"
   ],
   "persona_mode": "none",
-  "output_contract": "json(plan_status,reason,technical_summary,needs_revision,plan_candidate,memory_candidates,event_candidates)"
+  "output_contract": "json(plan_status,action_status,reason,technical_summary,needs_revision,plan_candidate,pending_slots,resolved_slots,pending_action,next_owner,memory_candidates,event_candidates)"
 }

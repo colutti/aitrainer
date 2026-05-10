@@ -67,9 +67,20 @@ Use `plan_help` no PASSO 2 para ver o template exato. Mas aqui estao lembretes i
 
 Retorne SEMPRE um JSON valido com estas chaves:
 - `plan_status`: "discovery_needed" | "missing" | "active" | "updated" | "renewed" | "review_needed" | "update_failed"
+- `action_status`: "executed" (se upsert_plan foi chamado com sucesso) | "needs_user_input" (se faltam dados de discovery) | "deferred" (se decidiu nao agir neste turno) | "no_action_needed" (se nao ha nada a fazer com plano)
 - `reason`: string explicativa curta
 - `technical_summary`: texto tecnico. Se discovery_needed, mencione APENAS itens da lista de 5 que estao pendentes.
 - `needs_revision`: boolean
 - `plan_candidate`: string resumo
+- `pending_slots`: lista de strings com os itens de discovery que ainda faltam (ex: ["goal", "timeline", "availability"])
+- `resolved_slots`: lista de strings com os itens de discovery que foram resolvidos neste turno (ex: ["goal"])
+- `pending_action`: objeto com `kind`, `status`, `missing_slots` descrevendo a acao pendente para o proximo turno. Se plan_status for `active`, `kind` deve ser `none` e `status` deve ser `no_action_needed`.
+- `next_owner`: "plan_specialist" (se discovery continua) | "training_specialist" (se plano pronto e usuario pede materializacao de treino) | "nutrition_specialist" (se plano pronto e foco e nutricao) | "" (se nao ha handoff especifico)
 - `memory_candidates`: lista
 - `event_candidates`: lista
+
+## Regras de handoff
+
+- Se o plano foi criado/atualizado com sucesso e o `conversation_state.pending_action.kind` for `domain_execution`, defina `next_owner` para o especialista de dominio relevante e `pending_action.kind` como `domain_execution`.
+- Se discovery esta em andamento, mantenha `next_owner` como `plan_specialist` e `pending_action.status` como `needs_user_input`.
+- Se nao ha acao pendente e o plano esta ativo, `pending_action.kind` deve ser `none`.

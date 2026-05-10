@@ -406,6 +406,107 @@ async def test_plan_specialist_returns_discovery_needed_when_missing_data():
 
 
 @pytest.mark.asyncio
+async def test_plan_specialist_returns_pending_slots_for_partial_discovery():
+    """When discovery is partial, plan_specialist must report pending_slots."""
+    runner, brain = _runner_with_brain()
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="quero ganhar massa, 3x por semana",
+        channel="app",
+        intent="plan",
+    )
+    state.shared_context = {
+        "input_data": {
+            "plan_section": "",
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "agenda_section": "",
+            "metabolism_section": "",
+        },
+        "has_active_plan": False,
+        "plan_lifecycle": {"timeline_expired": False, "next_review_due": False},
+    }
+    state.node_outputs["training_specialist"] = "sem dados"
+    state.node_outputs["nutrition_specialist"] = "sem dados"
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"plan_status":"discovery_needed","action_status":"needs_user_input",'
+            '"reason":"faltam dados","technical_summary":"Faltam prazo e restricoes.",'
+            '"needs_revision":false,"plan_candidate":"",'
+            '"pending_slots":["timeline","constraints"],"resolved_slots":["goal","availability"],'
+            '"pending_action":{"kind":"plan_discovery","status":"needs_user_input","missing_slots":["timeline","constraints"]},'
+            '"next_owner":"plan_specialist",'
+            '"memory_candidates":[],"event_candidates":[]}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    brain.get_log_callback.return_value = None
+    await runner._node_plan_specialist(state)
+
+    assert state.conversation_state["pending_action"]["kind"] == "plan_discovery"
+    assert state.conversation_state["pending_action"]["missing_slots"] == ["timeline", "constraints"]
+    assert state.specialist_states["plan_specialist"]["next_owner"] == "plan_specialist"
+
+
+@pytest.mark.asyncio
+async def test_plan_specialist_hands_off_materialization_to_training():  # pylint: disable=line-too-long
+    """When plan is active and user wants materialization, hand off to training."""
+    runner, brain = _runner_with_brain()
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="entao cria as rotinas",
+        channel="app",
+        intent="plan",
+    )
+    state.conversation_state = {
+        "active_domain": "plan",
+        "interaction_mode": "execution_request",
+        "primary_owner": "plan_specialist",
+        "pending_action": {
+            "kind": "domain_execution",
+            "status": "needs_user_input",
+            "missing_slots": [],
+        },
+        "last_action_status": "needs_user_input",
+    }
+    state.shared_context = {
+        "input_data": {
+            "plan_section": "active",
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "agenda_section": "",
+            "metabolism_section": "",
+        },
+        "has_active_plan": True,
+        "plan_lifecycle": {"timeline_expired": False, "next_review_due": False},
+    }
+    state.node_outputs["training_specialist"] = "plano tem rotinas definidas"
+    state.node_outputs["nutrition_specialist"] = ""
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"plan_status":"active","action_status":"executed",'
+            '"reason":"plano pronto para materializacao","technical_summary":"Plano ativo com rotinas definidas.",'
+            '"needs_revision":false,"plan_candidate":"materializar rotinas no Hevy",'
+            '"pending_slots":[],"resolved_slots":[],'
+            '"pending_action":{"kind":"domain_execution","status":"needs_user_input","missing_slots":[]},'
+            '"next_owner":"training_specialist",'
+            '"memory_candidates":[],"event_candidates":[]}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    brain.get_log_callback.return_value = None
+    await runner._node_plan_specialist(state)
+    runner._apply_specialist_handoff(state, "plan_specialist")
+
+    assert state.conversation_state["primary_owner"] == "training_specialist"
+    assert state.conversation_state.get("handoff_target", "") == ""
+
+
+@pytest.mark.asyncio
 async def test_training_specialist_parses_structured_output_and_plan_signal():
     runner, brain = _runner_with_brain()
     brain.get_log_callback.return_value = None

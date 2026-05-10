@@ -289,15 +289,34 @@ class ConversationGraphRunner:
                     state.response["technical"] = state.coach_response
                     state.response["final"] = state.final_response
                 else:
-                    if state.intent in {"training", "plan", "multi_domain"}:
+                    primary_owner = state.routing.get("primary_owner", PrimaryOwner.COACH_REPLY.value)
+                    secondary_nodes = state.routing.get("secondary_nodes", [])
+                    has_plan_pressure = (
+                        state.shared_context.get("plan_lifecycle", {}).get("timeline_expired", False)
+                        or state.shared_context.get("plan_lifecycle", {}).get("next_review_due", False)
+                    )
+                    plan_owned = primary_owner == PrimaryOwner.PLAN_SPECIALIST.value
+                    training_owned = primary_owner in {
+                        PrimaryOwner.TRAINING_SPECIALIST.value,
+                        PrimaryOwner.PLAN_SPECIALIST.value,
+                    }
+                    nutrition_owned = primary_owner in {
+                        PrimaryOwner.NUTRITION_SPECIALIST.value,
+                        PrimaryOwner.PLAN_SPECIALIST.value,
+                    }
+                    secondary_training = "training_specialist" in secondary_nodes
+                    secondary_nutrition = "nutrition_specialist" in secondary_nodes
+                    if training_owned or secondary_training:
                         await self._run_node("training_specialist", state)
-                    if state.intent in {"nutrition", "plan", "multi_domain"}:
+                    if nutrition_owned or secondary_nutrition:
                         await self._run_node("nutrition_specialist", state)
-                    await self._run_node("plan_specialist", state)
+                    if plan_owned or has_plan_pressure:
+                        await self._run_node("plan_specialist", state)
+                        self._apply_specialist_handoff(state, "plan_specialist")
                     if state.plan_needs_revision:
-                        if state.intent in {"training", "plan", "multi_domain"}:
+                        if training_owned or secondary_training:
                             await self._run_node("training_specialist", state)
-                        if state.intent in {"nutrition", "plan", "multi_domain"}:
+                        if nutrition_owned or secondary_nutrition:
                             await self._run_node("nutrition_specialist", state)
                     await self._run_node("coach_reply", state)
                 await self._run_node("memory_hub", state)
@@ -690,6 +709,36 @@ class ConversationGraphRunner:
             f"intent={state.intent}; has_active_plan={state.shared_context['has_active_plan']}; "
             f"plan_status={plan_status}; revisao_necessaria={state.plan_needs_revision}; reason={reason}"
         )
+        action_status = str(parsed.get("action_status", "no_action_needed")).strip()
+        next_owner = str(parsed.get("next_owner", "")).strip()
+        pending_slots = parsed.get("pending_slots", [])
+        if not isinstance(pending_slots, list):
+            pending_slots = []
+        pending_action = parsed.get("pending_action", {})
+        if not isinstance(pending_action, dict):
+            pending_action = {}
+        state.conversation_state["last_action_status"] = action_status or "no_action_needed"
+        if pending_action:
+            state.conversation_state["pending_action"] = pending_action
+        elif pending_slots:
+            state.conversation_state["pending_action"] = {
+                "kind": "plan_discovery",
+                "status": "needs_user_input",
+                "missing_slots": pending_slots,
+            }
+        elif plan_status == "active":
+            state.conversation_state["pending_action"] = {
+                "kind": "none",
+                "status": "no_action_needed",
+                "missing_slots": [],
+            }
+        if next_owner and next_owner in {o.value for o in PrimaryOwner}:
+            state.conversation_state["handoff_target"] = next_owner
+        state.specialist_states["plan_specialist"] = {
+            "action_status": action_status,
+            "next_owner": next_owner,
+            "pending_slots": pending_slots,
+        }
         state.shared_context["plan_workspace"] = {
             "intent": state.intent,
             "has_active_plan": state.shared_context["has_active_plan"],
@@ -996,6 +1045,17 @@ class ConversationGraphRunner:
             if value:
                 chunks.append(f"[{node}]\n{value}")
         return "\n\n".join(chunks).strip() or "[none]"
+
+    def _apply_specialist_handoff(self, state: GraphState, node_name: str) -> None:
+        spec = state.specialist_states.get(node_name, {})
+        handoff_target = spec.get("next_owner", "") or ""
+        if not handoff_target or handoff_target not in {o.value for o in PrimaryOwner}:
+            return
+        action_status = spec.get("action_status", "")
+        if action_status == "executed":
+            state.conversation_state["primary_owner"] = handoff_target
+            state.conversation_state["handoff_target"] = ""
+            state.conversation_state["last_action_status"] = "executed"
 
     def _execute_event_intent(
         self,
