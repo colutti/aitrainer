@@ -623,6 +623,11 @@ async def test_training_specialist_receives_transact_and_read_tools():
         "list_hevy_routines",
         "get_hevy_routine_detail",
         "trigger_hevy_import",
+        "create_hevy_routine",
+        "update_hevy_routine",
+        "search_hevy_exercises",
+        "replace_hevy_exercise",
+        "set_routine_rest_and_ranges",
         "get_body_composition",
         "get_body_composition_raw",
     ]
@@ -660,6 +665,11 @@ async def test_training_specialist_receives_transact_and_read_tools():
 
     assert "save_workout" in captured["tools"]
     assert "trigger_hevy_import" in captured["tools"]
+    assert "create_hevy_routine" in captured["tools"]
+    assert "update_hevy_routine" in captured["tools"]
+    assert "search_hevy_exercises" in captured["tools"]
+    assert "replace_hevy_exercise" in captured["tools"]
+    assert "set_routine_rest_and_ranges" in captured["tools"]
 
 
 @pytest.mark.asyncio
