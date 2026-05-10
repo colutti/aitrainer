@@ -17,9 +17,10 @@ from src.api.models.plan import (
 )
 from src.services.plan_service import (
     build_plan_singleton,
-    build_plan_prompt_snapshot,
     format_plan_snapshot,
+    build_plan_prompt_snapshot,
     missing_master_plan_fields,
+    validate_training_program_quality,
 )
 
 now = datetime.now(timezone.utc)
@@ -335,3 +336,76 @@ def test_build_plan_singleton_merges_with_existing_plan():
     assert plan.training_program.frequency_per_week == 4
 
     assert plan.current_summary.active_focus == "intensidade"
+
+
+def test_validate_training_program_quality_passes_full_program():
+    program = {
+        "split_name": "ppl",
+        "frequency_per_week": 6,
+        "session_duration_min": 60,
+        "routines": [
+            {
+                "id": "push",
+                "name": "Push",
+                "exercises": [
+                    {"name": "Supino", "sets": 4, "reps": "6-8", "load_guidance": "RPE 8"},
+                    {"name": "Desenvolvimento", "sets": 3, "reps": "8-10", "load_guidance": "RPE 8"},
+                    {"name": "Crucifixo", "sets": 3, "reps": "10-12", "load_guidance": "RPE 7"},
+                    {"name": "Triceps", "sets": 3, "reps": "12-15", "load_guidance": "RPE 8"},
+                ],
+            },
+        ],
+        "weekly_schedule": [
+            {"day": "monday", "routine_id": "push", "focus": "push", "type": "training"},
+        ],
+    }
+    issues = validate_training_program_quality(program)
+    assert issues == []
+
+
+def test_validate_training_program_quality_rejects_two_exercises_high_frequency():
+    program = {
+        "split_name": "ppl",
+        "frequency_per_week": 6,
+        "session_duration_min": 60,
+        "routines": [
+            {
+                "id": "push",
+                "name": "Push",
+                "exercises": [
+                    {"name": "Supino", "sets": 4, "reps": "6-8", "load_guidance": "RPE 8"},
+                    {"name": "Desenvolvimento", "sets": 3, "reps": "8-10", "load_guidance": "RPE 8"},
+                ],
+            },
+        ],
+        "weekly_schedule": [
+            {"day": "monday", "routine_id": "push", "focus": "push", "type": "training"},
+        ],
+    }
+    issues = validate_training_program_quality(program)
+    assert len(issues) >= 1
+    assert any("2 exercise" in issue for issue in issues)
+
+
+def test_validate_training_program_quality_accepts_two_exercises_low_frequency():
+    """2 exercises is acceptable for low-frequency programs (2-3x/week)."""
+    program = {
+        "split_name": "full_body",
+        "frequency_per_week": 3,
+        "session_duration_min": 45,
+        "routines": [
+            {
+                "id": "fb",
+                "name": "Full Body",
+                "exercises": [
+                    {"name": "Supino", "sets": 3, "reps": "8-10", "load_guidance": "RPE 7"},
+                    {"name": "Agachamento", "sets": 3, "reps": "8-10", "load_guidance": "RPE 7"},
+                ],
+            },
+        ],
+        "weekly_schedule": [
+            {"day": "monday", "routine_id": "fb", "focus": "full_body", "type": "training"},
+        ],
+    }
+    issues = validate_training_program_quality(program)
+    assert issues == []
