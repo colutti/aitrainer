@@ -296,14 +296,8 @@ class ConversationGraphRunner:
                         or state.shared_context.get("plan_lifecycle", {}).get("next_review_due", False)
                     )
                     plan_owned = primary_owner == PrimaryOwner.PLAN_SPECIALIST.value
-                    training_owned = primary_owner in {
-                        PrimaryOwner.TRAINING_SPECIALIST.value,
-                        PrimaryOwner.PLAN_SPECIALIST.value,
-                    }
-                    nutrition_owned = primary_owner in {
-                        PrimaryOwner.NUTRITION_SPECIALIST.value,
-                        PrimaryOwner.PLAN_SPECIALIST.value,
-                    }
+                    training_owned = primary_owner == PrimaryOwner.TRAINING_SPECIALIST.value
+                    nutrition_owned = primary_owner == PrimaryOwner.NUTRITION_SPECIALIST.value
                     secondary_training = "training_specialist" in secondary_nodes
                     secondary_nutrition = "nutrition_specialist" in secondary_nodes
                     if training_owned or secondary_training:

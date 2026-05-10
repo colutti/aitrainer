@@ -593,6 +593,60 @@ async def test_nutrition_specialist_handoff_deferred_to_training():
 
 
 @pytest.mark.asyncio
+async def test_plan_owner_does_not_run_training_without_secondary():  # pylint: disable=line-too-long
+    """When primary_owner=plan_specialist and no secondary_nodes,
+    training_specialist must NOT run if plan_owned no longer includes training."""
+    runner, brain = _runner_with_brain()
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="quero ganhar massa",
+        user_input_sanitized="quero ganhar massa",
+        channel="app",
+    )
+    state.routing["primary_owner"] = "plan_specialist"
+    state.routing["secondary_nodes"] = []
+    state.shared_context = {
+        "plan_lifecycle": {"timeline_expired": False, "next_review_due": False},
+    }
+    called: list[str] = []
+    orig = runner._run_node
+
+    async def track(name, st):
+        called.append(name)
+        await orig(name, st)
+
+    runner._run_node = track
+
+    async def fake_stream(**kw):
+        del kw
+        yield '{"plan_status":"active","action_status":"executed","pending_slots":[],"next_owner":"","memory_candidates":[],"event_candidates":[],"reason":"","technical_summary":"ok","needs_revision":false,"plan_candidate":""}'
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream
+    brain.get_log_callback.return_value = None
+    brain.get_tools.return_value = []
+    state.intent = "plan"
+
+    primary_owner = state.routing["primary_owner"]
+    secondary_nodes = state.routing.get("secondary_nodes", [])
+    has_plan_pressure = False
+    plan_owned = primary_owner == "plan_specialist"
+    training_owned = primary_owner in {"training_specialist"}
+    nutrition_owned = primary_owner in {"nutrition_specialist"}
+    secondary_training = "training_specialist" in secondary_nodes
+
+    if training_owned or secondary_training:
+        await runner._run_node("training_specialist", state)
+    if plan_owned or has_plan_pressure:
+        await runner._run_node("plan_specialist", state)
+
+    assert "training_specialist" not in called, (
+        "training_specialist should NOT run when plan_owned but training not specified"
+    )
+    assert "plan_specialist" in called
+
+
+@pytest.mark.asyncio
 async def test_training_specialist_parses_structured_output_and_plan_signal():
     runner, brain = _runner_with_brain()
     brain.get_log_callback.return_value = None
