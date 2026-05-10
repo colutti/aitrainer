@@ -3,8 +3,6 @@
 Prerequisites: backend running, user exists.
 """
 
-import json
-import time
 import requests
 
 BASE = "http://localhost:8000"
