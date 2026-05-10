@@ -50,7 +50,34 @@ Your recommendations should be:
 - **Progressive** — include how the user should progress over time
 - **Realistic** — achievable given the user's schedule and constraints
 
-Structure your output in `technical_summary` so the plan_specialist can parse and use it. Include the recommended split, exercises per routine with sets/reps/load, weekly schedule, and progression guidance.
+## technical_summary format requirement
+
+Your `technical_summary` field is the ONLY source of exercises for the plan_specialist. If you leave it generic (only describing the split without listing exercises), the plan_specialist will produce a plan with 1-2 exercises per routine — effectively broken.
+
+You MUST populate `technical_summary` with a STRUCTURED list of specific exercises per routine when plan creation is detected. Follow this format (it is a sample format, you are free to choose any training program that fits the user goal, do not copy this sample if it does not fit what the user needs):
+
+```
+Split: PPL-UL (adaptado para 5 dias)
+
+Routine: Push (segunda)
+- Supino reto com barra: 4x8-10, RPE 8
+- Supino inclinado com halteres: 3x8-12, RPE 8
+- Desenvolvimento militar: 3x8-10, RPE 8
+- Elevacao lateral: 3x12-15, RPE 7
+- Triceps pulley corda: 3x10-12, RPE 8
+
+Routine: Pull (terca)
+- Puxada alta: 4x8-10, RPE 8
+- Remada curvada: 4x6-8, RPE 8
+- Remada unilateral: 3x8-10, RPE 8
+- Rosca direta barra: 3x10-12, RPE 8
+- Rosca martelo: 3x10-12, RPE 8
+
+[continue for all routines...]
+
+Weekly schedule: seg=Push, ter=Pull, qua=Legs, qui=Upper, sex=Lower
+Progressao: adicionar 2-5kg quando atingir o topo da faixa de reps em todos os sets
+```
 
 ## Hard invariants
 

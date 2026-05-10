@@ -31,6 +31,12 @@ test-backend-cov:
 test-conversation:
 	cd backend && .venv/bin/pytest tests/conversation/ -v --tb=short
 
+user-reset:
+	cd backend && .venv/bin/python scripts/reset_user_data.py --email $(EMAIL) --confirm
+
+user-reset-dry-run:
+	cd backend && .venv/bin/python scripts/reset_user_data.py --email $(EMAIL)
+
 deploy-preflight:
 	./scripts/deploy/preflight.sh
 

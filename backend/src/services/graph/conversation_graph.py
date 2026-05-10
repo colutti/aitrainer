@@ -666,10 +666,11 @@ class ConversationGraphRunner:
         pending_action = parsed.get("pending_action", {})
         if not isinstance(pending_action, dict):
             pending_action = {}
-        final_text = technical_summary or analysis_text or response
+        coach_text = technical_summary or analysis_text or response
+        plan_text = technical_summary
         state.shared_context["training_analysis"] = {
             "status": domain_status,
-            "text": final_text,
+            "text": plan_text,
             "plan_signal": plan_signal,
         }
         self._merge_persistence_candidates(
@@ -682,7 +683,7 @@ class ConversationGraphRunner:
             "action_status": action_status,
             "action_type": action_type,
         }
-        state.node_outputs["training_specialist"] = final_text
+        state.node_outputs["training_specialist"] = coach_text
 
     async def _node_nutrition_specialist(self, state: GraphState) -> None:
         peer_output = state.node_outputs.get("training_specialist", "")
@@ -703,10 +704,11 @@ class ConversationGraphRunner:
         pending_action = parsed.get("pending_action", {})
         if not isinstance(pending_action, dict):
             pending_action = {}
-        final_text = technical_summary or analysis_text or response
+        coach_text = technical_summary or analysis_text or response
+        plan_text = technical_summary
         state.shared_context["nutrition_analysis"] = {
             "status": domain_status,
-            "text": final_text,
+            "text": plan_text,
             "plan_signal": plan_signal,
         }
         self._merge_persistence_candidates(
@@ -719,7 +721,7 @@ class ConversationGraphRunner:
             "action_status": action_status,
             "action_type": action_type,
         }
-        state.node_outputs["nutrition_specialist"] = final_text
+        state.node_outputs["nutrition_specialist"] = coach_text
 
     async def _node_plan_specialist(self, state: GraphState) -> None:
         active_domain = state.conversation_state.get("active_domain", "general")
