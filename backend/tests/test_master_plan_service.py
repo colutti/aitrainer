@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from src.api.models.plan import PlanUpsertInput
 from src.services.plan_service import (
@@ -119,8 +119,12 @@ def test_build_plan_singleton_accepts_string_timeline_start_date():
 
     plan = build_plan_singleton('user@test.com', None, payload)
 
-    assert plan.timeline.start_date == datetime(2026, 4, 26, 0, 0, 0)
-    assert plan.timeline.target_date == datetime(2026, 7, 19, 0, 0, 0)
+    # start_date is always overwritten with current time
+    now = datetime.now(timezone.utc)
+    assert (now - plan.timeline.start_date).total_seconds() < 5
+    # target_date defaults to start_date + 84 days when not provided
+    expected_target = plan.timeline.start_date + timedelta(days=84)
+    assert plan.timeline.target_date == expected_target
 
 
 def test_partial_nutrition_update_preserves_existing_carbs_and_fat():

@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 from src.api.main import app
 from src.services.auth import verify_token
-from src.core.deps import get_ai_trainer_brain
+from src.core.deps import get_ai_trainer_brain, get_mongo_database
 from src.api.models.user_profile import UserProfile, UserProfileInput
 from src.api.models.sender import Sender
 from src.api.models.chat_history import ChatHistory
@@ -35,6 +35,7 @@ class TestEndpoints(unittest.TestCase):
         Set up the test client before each test.
         """
         self.client = TestClient(app)
+        app.dependency_overrides = {}
 
     @patch("src.api.endpoints.user.verify_id_token")
     def test_login_success(self, mock_verify):
@@ -43,6 +44,9 @@ class TestEndpoints(unittest.TestCase):
         """
         # Arrange
         mock_verify.return_value = {"email": "test@test.com", "email_verified": True}
+        mock_db = MagicMock()
+        mock_db.get_user_profile.return_value = MagicMock(is_demo=False)
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
         # Act
         response = self.client.post(
@@ -52,6 +56,7 @@ class TestEndpoints(unittest.TestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertIn("token", response.json())
+        app.dependency_overrides = {}
 
     @patch("src.api.endpoints.user.verify_id_token")
     def test_login_requires_verified_email(self, mock_verify):
@@ -60,6 +65,8 @@ class TestEndpoints(unittest.TestCase):
             "email": "test@test.com",
             "email_verified": False,
         }
+        mock_db = MagicMock()
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
         response = self.client.post("/user/login", json={"token": "valid_token"})
 
@@ -67,6 +74,7 @@ class TestEndpoints(unittest.TestCase):
         self.assertEqual(
             response.json(), {"detail": "Please verify your email before logging in"}
         )
+        app.dependency_overrides = {}
 
     @patch("src.api.endpoints.user.verify_id_token")
     def test_login_failure(self, mock_verify):
@@ -75,6 +83,8 @@ class TestEndpoints(unittest.TestCase):
         """
         # Arrange
         mock_verify.side_effect = ValueError("Invalid token")
+        mock_db = MagicMock()
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
         # Act
         response = self.client.post(
@@ -84,6 +94,7 @@ class TestEndpoints(unittest.TestCase):
         # Assert
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.json(), {"detail": "Invalid token"})
+        app.dependency_overrides = {}
 
     def test_get_profile_success(self):
         """
@@ -91,8 +102,8 @@ class TestEndpoints(unittest.TestCase):
         """
         # Arrange
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
-        mock_brain = MagicMock()
-        mock_brain.get_user_profile.return_value = UserProfile(
+        mock_db = MagicMock()
+        mock_db.get_user_profile.return_value = UserProfile(
             email="test@test.com",
             gender="Masculino",
             age=25,
@@ -101,7 +112,7 @@ class TestEndpoints(unittest.TestCase):
             goal="Gain muscle",
             goal_type="maintain",
         )
-        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
         # Act
         response = self.client.get(
@@ -121,9 +132,9 @@ class TestEndpoints(unittest.TestCase):
         """
         # Arrange
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
-        mock_brain = MagicMock()
-        mock_brain.get_user_profile.return_value = None
-        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+        mock_db = MagicMock()
+        mock_db.get_user_profile.return_value = None
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
         # Act
         response = self.client.get(
@@ -143,11 +154,9 @@ class TestEndpoints(unittest.TestCase):
         """
         # Arrange
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
-        mock_brain = MagicMock()
-        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
-        mock_brain.save_user_profile.return_value = (
-            None  # Assuming save_user_profile returns None
-        )
+        mock_db = MagicMock()
+        mock_db.get_user_profile.return_value = MagicMock(is_demo=False)
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
         profile_data = UserProfileInput(
             gender="Masculino",
             age=30,
@@ -167,7 +176,7 @@ class TestEndpoints(unittest.TestCase):
         # Assert
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"message": "Profile updated successfully"})
-        mock_brain.save_user_profile.assert_called_once()
+        mock_db.save_user_profile.assert_called_once()
         app.dependency_overrides = {}
 
     def test_update_profile_resets_coaching_data_when_goal_changes(self):
@@ -179,8 +188,8 @@ class TestEndpoints(unittest.TestCase):
         mesmo com nova meta diferente.
         """
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
-        mock_brain = MagicMock()
-        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+        mock_db = MagicMock()
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
         # Existing profile has old goal (0.25) and coaching data stuck at TDEE
         existing_profile = UserProfile(
@@ -195,7 +204,7 @@ class TestEndpoints(unittest.TestCase):
             tdee_last_target=2508,
             tdee_last_check_in="2026-02-18",  # today - blocks recalculation
         )
-        mock_brain.get_user_profile.return_value = existing_profile
+        mock_db.get_user_profile.return_value = existing_profile
 
         # User changes weekly_rate to 0.5 (all required fields must be sent)
         response = self.client.post(
@@ -213,7 +222,7 @@ class TestEndpoints(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         # Must reset coaching check-in so next calculate_tdee uses new goal
-        mock_brain.update_user_profile_fields.assert_called_once_with(
+        mock_db.update_user_profile_fields.assert_called_once_with(
             "test@test.com",
             {"tdee_last_check_in": None, "tdee_last_target": None},
         )
@@ -225,8 +234,8 @@ class TestEndpoints(unittest.TestCase):
         Isso evita interromper check-ins normais por updates de outros campos.
         """
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
-        mock_brain = MagicMock()
-        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+        mock_db = MagicMock()
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
         existing_profile = UserProfile(
             email="test@test.com",
@@ -240,7 +249,7 @@ class TestEndpoints(unittest.TestCase):
             tdee_last_target=2233,
             tdee_last_check_in="2026-02-18",
         )
-        mock_brain.get_user_profile.return_value = existing_profile
+        mock_db.get_user_profile.return_value = existing_profile
 
         # User changes only weight (not goal) - all required fields sent, goal unchanged
         response = self.client.post(
@@ -258,7 +267,7 @@ class TestEndpoints(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         # Should NOT reset coaching data
-        mock_brain.update_user_profile_fields.assert_not_called()
+        mock_db.update_user_profile_fields.assert_not_called()
         app.dependency_overrides = {}
 
     def test_update_profile_unauthenticated(self):
@@ -404,6 +413,9 @@ class TestEndpoints(unittest.TestCase):
         """
         # Arrange
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
+        mock_db = MagicMock()
+        mock_db.get_user_profile.return_value = MagicMock(is_demo=False)
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
         mock_brain = MagicMock()
         # Return an iterator for streaming response
         mock_brain.send_message_ai.return_value = iter(["AI ", "response"])
@@ -440,6 +452,9 @@ class TestEndpoints(unittest.TestCase):
         """
         # Arrange
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
+        mock_db = MagicMock()
+        mock_db.get_user_profile.return_value = MagicMock(is_demo=False)
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
         mock_brain = MagicMock()
         mock_brain.send_message_ai.side_effect = ValueError(
             "User profile not found for email: test@test.com"
@@ -488,6 +503,9 @@ class TestEndpoints(unittest.TestCase):
         """
         # Arrange
         app.dependency_overrides[verify_token] = lambda: "test@test.com"
+        mock_db = MagicMock()
+        mock_db.get_user_profile.return_value = MagicMock(is_demo=False)
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
         mock_brain = MagicMock()
         mock_user = MagicMock()
         mock_user.subscription_plan = "Pro"

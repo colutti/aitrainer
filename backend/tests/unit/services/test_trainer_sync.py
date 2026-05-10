@@ -45,6 +45,7 @@ class TestAITrainerBrainSync(unittest.TestCase):
         with patch("src.services.trainer.settings") as mock_settings:
             mock_settings.MAX_LONG_TERM_MEMORY_MESSAGES = 20
             mock_settings.MAX_SHORT_TERM_MEMORY_MESSAGES = 10
+            mock_settings.AI_TRAINER_THREADPOOL_WORKERS = 4
 
             # Mock get_window_memory to return our mock
             self.mock_conversation_memory = MockConversationMemory()

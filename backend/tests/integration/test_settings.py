@@ -33,7 +33,7 @@ def test_user_settings_operations():
             display_name="Original Name",
             onboarding_completed=True
         )
-        mock_brain.get_user_profile.return_value = mock_profile
+        mock_db.get_user_profile.return_value = mock_profile
         
         response = client.get("/user/profile")
         assert response.status_code == 200
@@ -52,7 +52,7 @@ def test_user_settings_operations():
         update_response = client.post("/user/update_profile", json=update_payload)
         assert update_response.status_code == 200
         assert update_response.json()["message"] == "Profile updated successfully"
-        mock_brain.save_user_profile.assert_called()
+        mock_db.save_user_profile.assert_called()
         
         # 3. Update Identity
         identity_payload = {
@@ -62,7 +62,7 @@ def test_user_settings_operations():
         identity_response = client.post("/user/update_identity", json=identity_payload)
         assert identity_response.status_code == 200
         assert identity_response.json()["message"] == "Identity updated successfully"
-        mock_brain.update_user_profile_fields.assert_called_with(user_email, {"display_name": "Updated Name"})
+        mock_db.update_user_profile_fields.assert_called_with(user_email, {"display_name": "Updated Name"})
         
     finally:
         app.dependency_overrides.clear()

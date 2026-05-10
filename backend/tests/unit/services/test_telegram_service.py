@@ -218,7 +218,7 @@ class TestTelegramService(unittest.IsolatedAsyncioTestCase):
         mock_link.user_email = "user@test.com"
         self.mock_repo.get_link_by_chat_id.return_value = mock_link
         self.mock_brain.get_user_profile.return_value = MagicMock(
-            subscription_plan="Premium"
+            subscription_plan="Pro"
         )
         self.mock_brain.send_message_sync.return_value = "AI Response"
 

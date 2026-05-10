@@ -22,6 +22,10 @@ client = TestClient(app)
 # Fixtures
 @pytest.fixture(autouse=True)
 def clear_dependency_overrides():
+    from src.core.limiter import limiter as _rate_limiter
+    if _rate_limiter:
+        _rate_limiter._storage.reset()
+
     app.dependency_overrides = {}
     mock_db = MagicMock()
     mock_db.is_demo_user.return_value = False

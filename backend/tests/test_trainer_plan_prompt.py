@@ -1,16 +1,77 @@
+from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 import pytest
 
 from src.api.models.plan import (
-    ActivePlan,
-    PlanSnapshot,
-    PlanSnapshotWeightTrend,
-    PlanStatus,
+    NutritionDailyTargets,
+    NutritionStrategy,
+    PlanCurrentSummary,
+    PlanGoal,
+    PlanPromptContext,
+    PlanStrategy,
+    PlanTimeline,
+    TrainingExercise,
+    TrainingProgram,
+    TrainingRoutine,
+    UserPlan,
+    WeeklyScheduleItem,
 )
 from src.api.models.trainer_profile import TrainerProfile
 from src.api.models.user_profile import UserProfile
 from src.services.trainer import AITrainerBrain
+
+
+now = datetime.now(timezone.utc)
+
+
+def make_plan() -> UserPlan:
+    return UserPlan(
+        user_email="test@test.com",
+        title="Plano Atual",
+        goal=PlanGoal(
+            primary="build_muscle",
+            objective_summary="ganhar massa",
+        ),
+        timeline=PlanTimeline(
+            start_date=datetime(2026, 4, 19, tzinfo=timezone.utc),
+            target_date=datetime(2026, 6, 19, tzinfo=timezone.utc),
+            review_cadence="semanal",
+        ),
+        strategy=PlanStrategy(
+            rationale="superavit leve",
+            adaptation_policy="approval_required",
+        ),
+        nutrition_strategy=NutritionStrategy(
+            daily_targets=NutritionDailyTargets(
+                calories=3000, protein_g=180, carbs_g=300, fat_g=90,
+            ),
+        ),
+        training_program=TrainingProgram(
+            split_name="push_pull_legs",
+            frequency_per_week=5,
+            session_duration_min=60,
+            routines=[
+                TrainingRoutine(
+                    id="push_a",
+                    name="Push A",
+                    exercises=[
+                        TrainingExercise(
+                            name="Supino Reto", sets=4, reps="6-8", load_guidance="RPE 8",
+                        ),
+                    ],
+                ),
+            ],
+            weekly_schedule=[
+                WeeklyScheduleItem(day="monday", routine_id="push_a", focus="push"),
+            ],
+        ),
+        current_summary=PlanCurrentSummary(
+            active_focus="consistencia",
+            rationale="executar bloco base",
+            next_review="2026-05-15",
+        ),
+    )
 
 
 @pytest.mark.asyncio
@@ -36,38 +97,7 @@ async def test_send_message_ai_injects_plan_snapshot_into_prompt_builder(monkeyp
     mock_db.get_window_memory.return_value.load_memory_variables.return_value = {
         "chat_history": []
     }
-    mock_db.get_plan.return_value = ActivePlan(
-        user_email="test@test.com",
-        status=PlanStatus.ACTIVE,
-        title="Plano Atual",
-        objective_summary="ganhar massa",
-        start_date="2026-04-19T00:00:00",
-        end_date="2026-06-19T00:00:00",
-        version=1,
-        strategy={
-            "primary_goal": "gain_muscle",
-            "success_criteria": ["volume"],
-            "constraints": [],
-            "coaching_rationale": "superavit leve",
-            "adaptation_policy": "approval_required",
-        },
-        execution={
-            "today_training": {"title": "Push"},
-            "today_nutrition": {"calories": 3000, "protein_target": 180},
-            "upcoming_days": ["Pull"],
-            "active_focus": "consistencia",
-            "current_risks": [],
-            "pending_changes": [],
-        },
-        tracking={
-            "checkpoints": [],
-            "adherence_snapshot": {"training": "ok", "nutrition": "ok"},
-            "progress_snapshot": {"status": "on_track"},
-            "last_ai_assessment": None,
-            "last_user_acknowledgement": None,
-        },
-        governance={"change_reason": None, "approval_request": None},
-    )
+    mock_db.get_plan.return_value = make_plan()
 
     async def mock_stream_with_tools(**_kwargs):
         yield "ok"
@@ -81,7 +111,7 @@ async def test_send_message_ai_injects_plan_snapshot_into_prompt_builder(monkeyp
             "chat_history": [],
             "user_message": "<msg>oi</msg>",
             "agenda_section": "",
-            "plan_section": "Plano ativo: Plano Atual",
+            "plan_section": "Plano mestre ativo: Plano Atual",
             "current_date": "2026-04-19",
         }
     )
@@ -100,19 +130,6 @@ async def test_send_message_ai_injects_plan_snapshot_into_prompt_builder(monkeyp
             )
         ),
     )
-    monkeypatch.setattr(
-        "src.services.trainer.build_plan_snapshot_context",
-        MagicMock(
-            return_value=MagicMock(
-                today_training_context=[],
-                adherence_7d=None,
-                weight_trend_weekly=PlanSnapshotWeightTrend(
-                    value_kg_per_week=-0.2,
-                    source="adaptive_tdee",
-                ),
-            )
-        ),
-    )
 
     chunks = []
     async for chunk in brain.send_message_ai("test@test.com", "oi"):
@@ -121,7 +138,6 @@ async def test_send_message_ai_injects_plan_snapshot_into_prompt_builder(monkeyp
     assert "ok" in "".join(chunks)
     assert build_input_data_spy.call_count == 1
     plan_snapshot = build_input_data_spy.call_args.kwargs.get("plan_snapshot")
-    assert isinstance(plan_snapshot, PlanSnapshot)
+    assert isinstance(plan_snapshot, PlanPromptContext)
     assert plan_snapshot.title == "Plano Atual"
-    assert plan_snapshot.weight_trend_weekly is not None
-    assert plan_snapshot.weight_trend_weekly.value_kg_per_week == -0.2
+    assert plan_snapshot.goal_primary == "build_muscle"

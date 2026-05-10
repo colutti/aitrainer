@@ -1,4 +1,29 @@
-.PHONY: dev stop reset logs user-reset user-reset-dry-run verify verify-all test-once e2e test-backend-cov test-conversation deploy-preflight deploy-build deploy-prod deploy-prod-fast deploy-smoke deploy-prod-env
+.PHONY: up down build build-prod restart logs user-reset user-reset-dry-run verify verify-all test-once e2e test-backend-cov test-conversation deploy-preflight deploy-build deploy-prod deploy-prod-fast deploy-smoke deploy-prod-env
+
+up:
+	./scripts/compose.sh up -d
+
+down:
+	./scripts/compose.sh down
+
+build:
+	./scripts/compose.sh build
+
+build-prod:
+	BUILD_MODE=production ./scripts/compose.sh build
+
+restart:
+	./scripts/compose.sh down
+	./scripts/compose.sh build
+	./scripts/compose.sh up -d
+
+logs:
+	./scripts/compose.sh logs -f
+
+debug-rebuild:
+	./scripts/compose.sh down
+	./scripts/compose.sh build
+	./scripts/compose.sh up
 
 test-backend-cov:
 	./scripts/compose.sh -f docker-compose.test.yml run --rm backend-tests pytest --cov=src --cov-report=html --cov-report=term-missing

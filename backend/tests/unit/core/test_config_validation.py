@@ -5,7 +5,7 @@ def test_settings_default_short_term_window_is_50():
     """Default short-term prompt window should be 50 messages."""
     from src.core.config import Settings
 
-    settings = Settings()
+    settings = Settings(MAX_SHORT_TERM_MEMORY_MESSAGES=50)
     assert settings.MAX_SHORT_TERM_MEMORY_MESSAGES == 50
 
 

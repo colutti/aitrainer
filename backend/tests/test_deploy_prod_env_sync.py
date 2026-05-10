@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 from pathlib import Path
 
+import pytest
+
 
 def test_deploy_prod_env_sync_rejects_placeholder_values(tmp_path: Path) -> None:
+    if not shutil.which("python3") or not shutil.which("git"):
+        pytest.skip("python3 or git not available in this environment")
+
     """Reject placeholder env values before they reach Cloud Run."""
     env_file = tmp_path / "backend.env.prod"
     env_file.write_text("SECRET_KEY=ok\nMONGO_URI=CHANGE_ME_MONGO_URI\n", encoding="utf-8")

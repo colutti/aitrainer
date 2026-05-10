@@ -9,8 +9,7 @@ def test_get_tools_includes_raw_data_tools():
     db = MagicMock()
     llm = MagicMock()
 
-    with patch("src.services.trainer.HistoryCompactor"):
-        brain = AITrainerBrain(database=db, llm_client=llm)
+    brain = AITrainerBrain(database=db, llm_client=llm)
 
     tools = brain.get_tools("test@example.com")
     names = {tool.name for tool in tools}
@@ -27,8 +26,7 @@ def test_get_tools_includes_raw_memories_tool_when_qdrant_is_available():
     llm = MagicMock()
     qdrant = MagicMock()
 
-    with patch("src.services.trainer.HistoryCompactor"):
-        brain = AITrainerBrain(database=db, llm_client=llm, qdrant_client=qdrant)
+    brain = AITrainerBrain(database=db, llm_client=llm, qdrant_client=qdrant)
 
     tools = brain.get_tools("test@example.com")
     names = {tool.name for tool in tools}

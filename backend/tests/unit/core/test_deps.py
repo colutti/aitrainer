@@ -17,7 +17,7 @@ def test_get_qdrant_client_with_url():
 
     with (
         patch("src.core.deps.settings") as mock_settings,
-        patch("src.core.deps.QdrantClient") as mock_qdrant,
+        patch("qdrant_client.QdrantClient") as mock_qdrant,
     ):
         mock_settings.QDRANT_HOST = "https://qdrant.example.com"
         mock_settings.QDRANT_PORT = 6333
@@ -40,7 +40,7 @@ def test_get_qdrant_client_local():
 
     with (
         patch("src.core.deps.settings") as mock_settings,
-        patch("src.core.deps.QdrantClient") as mock_qdrant,
+        patch("qdrant_client.QdrantClient") as mock_qdrant,
     ):
         mock_settings.QDRANT_HOST = "localhost"
         mock_settings.QDRANT_PORT = 6333
@@ -60,7 +60,7 @@ def test_get_llm_client():
     """Test that get_llm_client returns an LLMClient instance."""
     get_llm_client.cache_clear()
 
-    with patch("src.core.deps.LLMClient.from_config") as mock_llm:
+    with patch("src.services.llm_client.LLMClient.from_config") as mock_llm:
         mock_llm.return_value = MagicMock()
 
         client = get_llm_client()
@@ -73,7 +73,7 @@ def test_get_mongo_database():
     """Test that get_mongo_database returns a MongoDatabase instance."""
     get_mongo_database.cache_clear()
 
-    with patch("src.core.deps.MongoDatabase") as mock_mongo:
+    with patch("src.services.database.MongoDatabase") as mock_mongo:
         mock_mongo.return_value = MagicMock()
 
         db = get_mongo_database()
@@ -90,9 +90,9 @@ def test_get_ai_trainer_brain():
     get_ai_trainer_brain.cache_clear()
 
     with (
-        patch("src.core.deps.LLMClient.from_config") as mock_llm,
-        patch("src.core.deps.MongoDatabase") as mock_mongo,
-        patch("src.core.deps.AITrainerBrain") as mock_brain,
+        patch("src.services.llm_client.LLMClient.from_config") as mock_llm,
+        patch("src.services.database.MongoDatabase") as mock_mongo,
+        patch("src.services.trainer.AITrainerBrain") as mock_brain,
     ):
         mock_llm.return_value = MagicMock()
         mock_mongo.return_value = MagicMock()

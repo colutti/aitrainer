@@ -26,10 +26,10 @@ def make_plan() -> UserPlan:
             "preferences": [],
             "current_risks": [],
         },
-        nutrition_strategy={
-            "daily_targets": {"calories": 2200, "protein_g": 180},
-            "adherence_notes": [],
-        },
+    nutrition_strategy={
+        "daily_targets": {"calories": 2200, "protein_g": 180, "carbs_g": 200, "fat_g": 70},
+        "adherence_notes": [],
+    },
         training_program={
             "split_name": "upper_lower",
             "frequency_per_week": 4,

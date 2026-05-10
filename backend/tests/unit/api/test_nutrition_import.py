@@ -16,6 +16,7 @@ def test_import_endpoint_success():
     # Arrange
     app.dependency_overrides[verify_token] = mock_get_current_user
     mock_db = MagicMock()
+    mock_db.get_user_profile.return_value = MagicMock(is_demo=False, subscription_plan="Pro")
     app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     with patch("src.api.endpoints.nutrition.import_nutrition_from_csv") as mock_import:
@@ -51,6 +52,7 @@ def test_import_endpoint_success():
 def test_import_endpoint_invalid_extension():
     app.dependency_overrides[verify_token] = mock_get_current_user
     mock_db = MagicMock()
+    mock_db.get_user_profile.return_value = MagicMock(is_demo=False, subscription_plan="Pro")
     app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     files = {"file": ("test.txt", b"content", "text/plain")}
@@ -68,6 +70,7 @@ def test_import_endpoint_invalid_extension():
 def test_import_service_validation_error():
     app.dependency_overrides[verify_token] = mock_get_current_user
     mock_db = MagicMock()
+    mock_db.get_user_profile.return_value = MagicMock(is_demo=False, subscription_plan="Pro")
     app.dependency_overrides[get_mongo_database] = lambda: mock_db
 
     with patch("src.api.endpoints.nutrition.import_nutrition_from_csv") as mock_import:

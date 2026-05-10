@@ -832,6 +832,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
             input_data["user_images"] = image_payloads
 
         raw_response: list[str] = []
+        stream_buffer = ""
         try:
             async with asyncio.timeout(self.get_llm_stream_timeout_seconds()):
                 async for chunk in self._llm_client.stream_with_tools(
@@ -846,6 +847,10 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
                 ):
                     if isinstance(chunk, str):
                         raw_response.append(chunk)
+                        stream_buffer += chunk
+                        visible, stream_buffer = self.split_stream_visible_text(stream_buffer)
+                        if visible:
+                            yield visible
         except TimeoutError:
             logger.error(
                 "LLM stream timeout for user %s after %ss",
@@ -855,14 +860,14 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
             yield "Error processing request: STREAM_TIMEOUT"
             return
 
-        final_response = self.strip_internal_wrappers("".join(raw_response))
-        if final_response:
-            yield final_response
+        if stream_buffer:
+            if cleaned_tail := self.strip_internal_wrappers(stream_buffer):
+                yield cleaned_tail
 
         await self.finalize_ai_response(
             user_email=user_email,
             user_input=user_input,
-            final_response=final_response,
+            final_response=self.strip_internal_wrappers("".join(raw_response)),
             metadata={
                 "trainer_type": trainer_profile_obj.trainer_type or "atlas",
                 "needs_cycle_reset": needs_cycle_reset,

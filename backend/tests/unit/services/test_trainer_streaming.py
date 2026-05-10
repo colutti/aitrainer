@@ -49,16 +49,18 @@ async def test_send_message_ai_streaming_error(mock_deps):
 
     llm.stream_with_tools.side_effect = error_stream
 
-    with patch("src.services.trainer.AdaptiveTDEEService") as mock_tdee:
-        mock_tdee.return_value.calculate_tdee.return_value = {}
-        # Execute generator
-        gen = trainer.send_message_ai("user@test.com", "Hello")
+    with patch("src.services.trainer.settings") as mock_settings:
+        mock_settings.ENABLE_EXPERIMENTAL_CONVERSATION_GRAPH = False
+        with patch("src.services.trainer.AdaptiveTDEEService") as mock_tdee:
+            mock_tdee.return_value.calculate_tdee.return_value = {}
+            # Execute generator
+            gen = trainer.send_message_ai("user@test.com", "Hello")
 
-        first = await anext(gen)
-        assert first == "First chunk"
-        
-        with pytest.raises(Exception, match="Stream failed"):
-            await anext(gen)
+            first = await anext(gen)
+            assert first == "First chunk"
+            
+            with pytest.raises(Exception, match="Stream failed"):
+                await anext(gen)
 
 
 @pytest.mark.asyncio
@@ -252,16 +254,17 @@ async def test_send_message_ai_yields_timeout_error_and_stops(mock_deps):
     llm.stream_with_tools.side_effect = hanging_stream
 
     chunks = []
-    with patch("src.services.trainer.EventRepository") as mock_repo_cls, patch(
-        "src.services.trainer.AdaptiveTDEEService"
-    ) as mock_tdee:
-        mock_repo_cls.return_value.get_active_events.return_value = []
-        mock_tdee.return_value.calculate_tdee.return_value = {}
-        async for chunk in trainer.send_message_ai(
-            user_email="pro@example.com",
-            user_input="Oi",
-        ):
-            chunks.append(chunk)
+    with patch("src.services.trainer.EventRepository") as mock_repo_cls:
+        with patch("src.services.trainer.AdaptiveTDEEService") as mock_tdee:
+            with patch("src.services.trainer.settings") as mock_settings:
+                mock_settings.ENABLE_EXPERIMENTAL_CONVERSATION_GRAPH = False
+                mock_repo_cls.return_value.get_active_events.return_value = []
+                mock_tdee.return_value.calculate_tdee.return_value = {}
+                async for chunk in trainer.send_message_ai(
+                    user_email="pro@example.com",
+                    user_input="Oi",
+                ):
+                    chunks.append(chunk)
 
     assert chunks == ["Primeiro chunk", "Error processing request: STREAM_TIMEOUT"]
     trainer.finalize_ai_response.assert_not_awaited()
