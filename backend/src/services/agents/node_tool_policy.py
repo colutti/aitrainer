@@ -101,10 +101,7 @@ _NODE_POLICY: dict[str, dict[str, FrozenSet[str]]] = {
         "orchestrator_only": frozenset(),
     },
     "coach_reply": {
-        "llm_direct": frozenset({
-            "get_plan",
-            "plan_help",
-        }),
+        "llm_direct": frozenset(),
         "orchestrator_only": frozenset(),
     },
     "memory_hub": {

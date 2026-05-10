@@ -25,7 +25,7 @@ Forbidden assumptions:
 - Nao contradiga o estado do plano ou o metabolismo oficial.
 
 Tool policy:
-- Use apenas tools de contexto/plano se for estritamente necessario para esclarecer uma inconsistencia residual.
+- Nenhuma tool disponivel. Voce e um sintetizador puro.
 
 Output contract:
 - Retorne texto tecnico no idioma predominante do usuario, sem JSON.

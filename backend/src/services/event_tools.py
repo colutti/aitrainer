@@ -48,20 +48,22 @@ def create_create_event_tool(database: Database, user_email: str):
         recurrence: str = "none",
     ) -> str:
         """
-        Cria um novo evento, plano ou meta para o aluno.
+        Cria um novo evento de agenda (lembrete ou check-in).
 
         Argumentos:
-        - title: Título do evento (ex: "Emagrecer para o verão")
+        - title: Titulo do evento (ex: "Check-in de peso semanal")
         - description: Detalhes adicionais (opcional)
-        - date: Data alvo em YYYY-MM-DD (opcional - se None, é meta sem prazo)
-        - recurrence: "none" | "weekly" | "monthly" (padrão: "none")
+        - date: Data alvo em YYYY-MM-DD (opcional - se None, e lembrete sem prazo)
+        - recurrence: "none" | "weekly" | "monthly" (padrao: "none")
 
         Exemplos:
-        - create_event(title="Emagrecer para o verão", date="2025-12-01")
         - create_event(title="Check-in de peso", recurrence="weekly")
-        - create_event(title="Aumentar consumo de proteína")
+        - create_event(title="Revisao do plano", date="2025-12-01")
 
-        Retorna: String com confirmação e ID do evento
+        IMPORTANTE: Eventos sao lembretes e check-ins, NAO sao o plano mestre.
+        Para criar ou atualizar o plano, use as ferramentas de plano (get_plan, upsert_plan).
+
+        Retorna: String com confirmacao e ID do evento
         """
 
         try:
@@ -110,7 +112,7 @@ def create_list_events_tool(database: Database, user_email: str):
     @tool
     def list_events() -> str:
         """
-        Lista todos os eventos, planos e metas ativas do aluno.
+        Lista todos os eventos de agenda e lembretes ativos do aluno.
 
         Retorna: String formatada com lista de eventos
         """
@@ -159,12 +161,12 @@ def create_delete_event_tool(database: Database, user_email: str):
     @tool
     def delete_event(event_id: str) -> str:
         """
-        Deleta um evento, plano ou meta.
+        Deleta um evento de agenda.
 
         Argumentos:
         - event_id: ID do evento a deletar (ver com list_events)
 
-        Retorna: String com confirmação ou erro
+        Retorna: String com confirmacao ou erro
         """
         try:
             success = repo.delete_event(event_id, user_email)
@@ -207,16 +209,16 @@ def create_update_event_tool(database: Database, user_email: str):
         recurrence: str | None = None,
     ) -> str:
         """
-        Atualiza um evento, plano ou meta existente.
+        Atualiza um evento de agenda existente.
 
         Argumentos:
         - event_id: ID do evento (ver com list_events)
-        - title: Novo título (opcional)
-        - description: Nova descrição (opcional)
+        - title: Novo titulo (opcional)
+        - description: Nova descricao (opcional)
         - date: Nova data em YYYY-MM-DD. Use 'NONE' para remover a data. (opcional)
-        - recurrence: Nova recorrência (opcional)
+        - recurrence: Nova recorrencia (opcional)
 
-        Retorna: String com confirmação ou erro
+        Retorna: String com confirmacao ou erro
         """
         try:
             update_data = {}

@@ -6,10 +6,7 @@
   "temperature": 0.2,
   "max_tokens": 4096,
   "tool_policy": "restricted",
-  "tool_names": [
-    "get_plan",
-    "plan_help"
-  ],
+  "tool_names": [],
   "prompt_file": "backend/src/services/agents/config/prompts/coach_reply.md",
   "response_format": "text",
   "version": "v1",

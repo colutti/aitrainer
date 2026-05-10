@@ -134,10 +134,10 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
     ),
     # Events and planned reminders (persistent agenda for AI)
     "create_event": ToolMetadata(
-        "create_event", ToolMemoryType.MEMORABLE, "Create scheduled event or plan"
+        "create_event", ToolMemoryType.MEMORABLE, "Create scheduled reminder or check-in"
     ),
     "list_events": ToolMetadata(
-        "list_events", ToolMemoryType.EPHEMERAL, "List active events and plans"
+        "list_events", ToolMemoryType.EPHEMERAL, "List active reminders and check-ins"
     ),
     "get_events_raw": ToolMetadata(
         "get_events_raw", ToolMemoryType.EPHEMERAL, "Fetch raw events"
