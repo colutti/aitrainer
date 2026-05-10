@@ -236,13 +236,13 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
       id: 'carbs',
       label: t('plan.labels.carbs'),
       unit: 'g',
-      target: plan.nutrition_targets.carbs_g ?? 0,
+      target: plan.nutrition_targets.carbs_g,
     },
     {
       id: 'fat',
       label: t('plan.labels.fat'),
       unit: 'g',
-      target: plan.nutrition_targets.fat_g ?? 0,
+      target: plan.nutrition_targets.fat_g,
     },
   ].filter((item) => item.target > 0) as RingMetric[];
 
@@ -268,8 +268,8 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
           <span><span className="font-bold uppercase text-text-muted">{t('plan.labels.split')}:</span> {plan.training_program.split_name}</span>
           <span><span className="font-bold uppercase text-text-muted">{t('plan.labels.frequency')}:</span> {plan.training_program.frequency_per_week}x</span>
           <span><span className="font-bold uppercase text-text-muted">{t('plan.labels.session_duration')}:</span> {plan.training_program.session_duration_min}min</span>
-          {plan.training_program.progression_rules?.length > 0 ? (
-            <span><span className="font-bold uppercase text-text-muted">Progressão:</span> {plan.training_program.progression_rules.join('; ')}</span>
+           {plan.training_program.progression_rules.length > 0 ? (
+             <span><span className="font-bold uppercase text-text-muted">{t('plan.labels.progression')}:</span> {plan.training_program.progression_rules.join('; ')}</span>
           ) : null}
         </div>
         {plan.training_program.program_notes ? (
@@ -347,7 +347,7 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
                         <span>{t('plan.labels.rest')}: {exercise.rest_seconds}s</span>
                       ) : null}
                       {exercise.tempo ? (
-                        <span>Tempo: {exercise.tempo}</span>
+                        <span>{t('plan.labels.tempo')}: {exercise.tempo}</span>
                       ) : null}
                     </div>
                     {exercise.coach_notes ? (

@@ -383,6 +383,8 @@
       "rest_day": "No training planned for this day.",
       "rest": "Rest",
       "warmup": "Warm-up",
+      "progression": "Progression",
+      "tempo": "Tempo",
       "primary_goal": "Primary Goal",
       "success_criteria": "Success Criteria"
     },

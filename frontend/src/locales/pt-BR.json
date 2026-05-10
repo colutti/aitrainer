@@ -383,6 +383,8 @@
       "rest_day": "Nenhum treino planejado para este dia.",
       "rest": "Descanso",
       "warmup": "Aquecimento",
+      "progression": "Progressão",
+      "tempo": "Tempo",
       "primary_goal": "Objetivo Principal",
       "success_criteria": "Critérios de Sucesso"
     },
