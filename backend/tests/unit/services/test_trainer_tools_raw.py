@@ -1,6 +1,6 @@
 """Tests for raw data tools registration in AITrainerBrain."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from src.services.trainer import AITrainerBrain
 

@@ -130,9 +130,9 @@ The conversation graph (`backend/src/services/graph/conversation_graph.py`) runs
 |---|---|---|
 | `session_context` | `qwen/qwen3-next-80b-a3b-instruct` | Hydrates turn context and recovers cross-turn `conversation_state` from history. LLM is used only for history sanitization. |
 | `prompt_security` | `google/gemini-2.5-flash-lite` | Detects prompt injection and abuse (NOT product scoping). If blocked, short-circuits to blocked response. |
-| `training_specialist` | `google/gemini-3.1-flash-lite-preview` | Domain specialist for training, workout logging, and exercise routine management. Emits `no_action_needed` when the turn is not about training. |
-| `nutrition_specialist` | `google/gemini-3.1-flash-lite-preview` | Domain specialist for nutrition logging, adherence analysis, and metabolism parameter adjustments. Emits `no_action_needed` when the turn is not about nutrition. |
-| `plan_specialist` | `openai/gpt-oss-120b` | Domain specialist for plan discovery, creation, review, and materialization readiness. Emits `no_action_needed` when the turn does not involve the plan. Uses `provider_sort: "throughput"`. |
+| `training_specialist` | `google/gemini-3.1-flash-lite-preview` | Domain specialist for training, workout logging, exercise routine management, AND **training plan guidance** (exercise selection, sets, reps, split design). Emits `no_action_needed` when the turn is not about training. Populates `technical_summary` with structured training recommendations for plan_specialist. |
+| `nutrition_specialist` | `google/gemini-3.1-flash-lite-preview` | Domain specialist for nutrition logging, adherence analysis, metabolism parameter adjustments, AND **nutrition targets guidance** (calorie/macro calculation, meal strategy). Emits `no_action_needed` when the turn is not about nutrition. Populates `technical_summary` with structured nutrition recommendations for plan_specialist. |
+| `plan_specialist` | `openai/gpt-oss-120b` | **Plan orchestrator** — drives discovery, persists via tools, consumes `training_analysis` and `nutrition_analysis` context blocks for domain content. Does NOT invent exercises, sets, reps, or nutrition targets. Returns `discovery_needed` if domain specialists have not contributed material content. Uses `provider_sort: "throughput"`. |
 | `coach_reply` | `google/gemini-3.1-flash-lite-preview` | **Pure synthesizer** — no tools. Synthesizes specialist outputs into a single coach-voiced response. Ignores no-op specialists. |
 | `memory_hub` | `google/gemini-3.1-flash-lite-preview` | **Residual persistence** — stores durable facts and reminders. Must NOT create events as substitutes for domain operations. |
 
@@ -166,7 +166,14 @@ The `plan_specialist` follows a 5-item discovery checklist (no explicit consent 
 4. Restrições/limitações ("nenhuma" is accepted)
 5. Metabolismo (via `get_metabolism_data` tool)
 
-When all 5 items are present, the plan_specialist calls `get_metabolism_data` → `plan_help` → `upsert_plan` in sequence.
+When all 5 items are present, the plan_specialist:
+1. Calls `get_metabolism_data`
+2. Calls `plan_help` for the payload template
+3. **Checks `training_analysis` and `nutrition_analysis` context blocks** for domain specialist recommendations
+4. Only calls `upsert_plan` if **both** domain specialists contributed material content
+5. If either specialist emitted `no_action_needed`, returns `discovery_needed` instead
+
+The training_specialist provides **training plan guidance** (exercise selection, sets, reps, split) in `technical_summary` when plan creation/review is detected. The nutrition_specialist provides **nutrition targets guidance** (calories, macros, adherence strategy) similarly.
 
 ### OpenRouter provider routing
 

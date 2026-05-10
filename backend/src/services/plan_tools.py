@@ -53,6 +53,7 @@ def _format_missing_fields_with_descriptions(missing_fields: list[str]) -> str:
 
 
 def _minimum_upsert_payload_template() -> str:
+    # pylint: disable=line-too-long
     return dedent(
         """\
         {
@@ -76,33 +77,62 @@ def _minimum_upsert_payload_template() -> str:
           },
           "nutrition_strategy": {
             "daily_targets": {
-              "calories": 2200,
-              "protein_g": 180,
-              "carbs_g": 200,
-              "fat_g": 70
+              "calories": 2100,
+              "protein_g": 160,
+              "carbs_g": 215,
+              "fat_g": 63
             },
             "adherence_notes": []
           },
           "training_program": {
             "split_name": "push_pull_legs",
-            "frequency_per_week": 5,
+            "frequency_per_week": 6,
             "session_duration_min": 60,
             "routines": [
               {
                 "id": "push_a",
                 "name": "Push A",
                 "exercises": [
-                  {
-                    "name": "Supino reto",
-                    "sets": 4,
-                    "reps": "6-8",
-                    "load_guidance": "RPE 8"
-                  }
+                  {"name": "Supino reto com barra", "sets": 4, "reps": "6-8", "load_guidance": "RPE 8"},
+                  {"name": "Supino inclinado com halteres", "sets": 3, "reps": "8-10", "load_guidance": "RPE 8"},
+                  {"name": "Desenvolvimento militar com barra", "sets": 3, "reps": "8-10", "load_guidance": "RPE 8"},
+                  {"name": "Elevacao lateral com halteres", "sets": 3, "reps": "12-15", "load_guidance": "RPE 7"},
+                  {"name": "Triceps corda no pulley", "sets": 3, "reps": "10-12", "load_guidance": "RPE 8"},
+                  {"name": "Triceps frances com barra EZ", "sets": 3, "reps": "10-12", "load_guidance": "RPE 8"}
+                ]
+              },
+              {
+                "id": "pull_a",
+                "name": "Pull A",
+                "exercises": [
+                  {"name": "Puxada alta pela frente", "sets": 4, "reps": "8-10", "load_guidance": "RPE 8"},
+                  {"name": "Remada curvada com barra", "sets": 4, "reps": "6-8", "load_guidance": "RPE 8"},
+                  {"name": "Remada unilateral com halter", "sets": 3, "reps": "8-10", "load_guidance": "RPE 8"},
+                  {"name": "Face pull no pulley", "sets": 3, "reps": "12-15", "load_guidance": "RPE 7"},
+                  {"name": "Rosca direta com barra", "sets": 3, "reps": "10-12", "load_guidance": "RPE 8"},
+                  {"name": "Rosca martelo com halteres", "sets": 3, "reps": "10-12", "load_guidance": "RPE 8"}
+                ]
+              },
+              {
+                "id": "legs_a",
+                "name": "Legs A",
+                "exercises": [
+                  {"name": "Agachamento livre com barra", "sets": 4, "reps": "6-8", "load_guidance": "RPE 8"},
+                  {"name": "Leg press 45 graus", "sets": 3, "reps": "8-10", "load_guidance": "RPE 8"},
+                  {"name": "Cadeira extensora", "sets": 3, "reps": "10-12", "load_guidance": "RPE 8"},
+                  {"name": "Mesa flexora", "sets": 3, "reps": "10-12", "load_guidance": "RPE 8"},
+                  {"name": "Stiff com barra", "sets": 3, "reps": "8-10", "load_guidance": "RPE 7"},
+                  {"name": "Elevacao de panturrilha em pe", "sets": 4, "reps": "12-15", "load_guidance": "RPE 8"}
                 ]
               }
             ],
             "weekly_schedule": [
-              {"day": "monday", "routine_id": "push_a", "focus": "push", "type": "training"}
+              {"day": "monday", "routine_id": "push_a", "focus": "push", "type": "training"},
+              {"day": "tuesday", "routine_id": "pull_a", "focus": "pull", "type": "training"},
+              {"day": "wednesday", "routine_id": "legs_a", "focus": "legs", "type": "training"},
+              {"day": "thursday", "routine_id": "push_a", "focus": "push", "type": "training"},
+              {"day": "friday", "routine_id": "pull_a", "focus": "pull", "type": "training"},
+              {"day": "saturday", "routine_id": "legs_a", "focus": "legs", "type": "training"}
             ]
           },
           "current_summary": {
@@ -206,7 +236,7 @@ def create_upsert_plan_tool(database, user_email: str):
         return None
 
     @tool(args_schema=PlanUpsertInput)
-    # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+    # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals,too-many-return-statements
     def upsert_plan(
         title: str,
         change_reason: str,
@@ -263,7 +293,7 @@ def create_upsert_plan_tool(database, user_email: str):
         latest = database.get_latest_plan(user_email)
         logger.info(
             "upsert_plan nutrition payload: %s",
-            payload.nutrition_strategy.get("daily_targets", {}),
+            payload.nutrition_strategy.get("daily_targets", {}),  # pylint: disable=no-member
         )
 
         # NEW PLAN: validate everything and create from scratch
