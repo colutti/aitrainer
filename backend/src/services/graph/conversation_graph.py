@@ -1085,15 +1085,23 @@ class ConversationGraphRunner:
         return "\n\n".join(chunks).strip() or "[none]"
 
     def _apply_specialist_handoff(self, state: GraphState, node_name: str) -> None:
+        """Apply a handoff from a specialist to the next owner.
+
+        Accepts both plan_specialist's ``next_owner`` contract and
+        training/nutrition's ``handoff_target`` contract.  Valid statuses are
+        ``executed``, ``deferred``, and ``escalate_to_plan``.
+        """
         spec = state.specialist_states.get(node_name, {})
-        handoff_target = spec.get("next_owner", "") or ""
+        handoff_target = spec.get("next_owner") or spec.get("handoff_target") or ""
         if not handoff_target or handoff_target not in {o.value for o in PrimaryOwner}:
             return
         action_status = spec.get("action_status", "")
-        if action_status == "executed":
-            state.conversation_state["primary_owner"] = handoff_target
-            state.conversation_state["handoff_target"] = ""
-            state.conversation_state["last_action_status"] = "executed"
+        if action_status not in {"executed", "deferred", "escalate_to_plan"}:
+            return
+        state.conversation_state["primary_owner"] = handoff_target
+        state.conversation_state["handoff_target"] = ""
+        state.routing["primary_owner"] = handoff_target
+        state.conversation_state["last_action_status"] = action_status
 
     def _execute_event_intent(
         self,

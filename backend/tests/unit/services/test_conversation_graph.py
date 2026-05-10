@@ -507,6 +507,92 @@ async def test_plan_specialist_hands_off_materialization_to_training():  # pylin
 
 
 @pytest.mark.asyncio
+async def test_training_specialist_handoff_escalate_to_plan():
+    """escalate_to_plan with handoff_target=plan_specialist must update ownership."""
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"action_type":"escalate","action_status":"escalate_to_plan",'
+            '"domain_status":"insufficient_data","technical_summary":"Sem split.",'
+            '"missing_inputs":["split_name"],'
+            '"handoff_target":"plan_specialist","handoff_reason":"plano sem programa de treino",'
+            '"pending_action":{"kind":"plan_discovery","status":"needs_user_input","missing_slots":["training_program"]},'
+            '"plan_signal":"plano sem rotinas","memory_candidates":[],"event_candidates":[]}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="cria treino",
+        user_input_sanitized="cria treino",
+        channel="app",
+    )
+    state.conversation_state["primary_owner"] = "training_specialist"
+    state.routing["primary_owner"] = "training_specialist"
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_training_specialist(state)
+    runner._apply_specialist_handoff(state, "training_specialist")
+
+    assert state.conversation_state["primary_owner"] == "plan_specialist"
+
+
+@pytest.mark.asyncio
+async def test_nutrition_specialist_handoff_deferred_to_training():
+    """deferred with handoff_target=training_specialist must update ownership."""
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"action_type":"escalate","action_status":"deferred",'
+            '"domain_status":"insufficient_data","technical_summary":"Isso e treino.",'
+            '"missing_inputs":[],'
+            '"handoff_target":"training_specialist","handoff_reason":"pedido de treino",'
+            '"pending_action":{"kind":"domain_execution","status":"needs_user_input","missing_slots":[]},'
+            '"plan_signal":"","memory_candidates":[],"event_candidates":[]}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="quero treinar peito",
+        user_input_sanitized="quero treinar peito",
+        channel="app",
+    )
+    state.conversation_state["primary_owner"] = "nutrition_specialist"
+    state.routing["primary_owner"] = "nutrition_specialist"
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_nutrition_specialist(state)
+    runner._apply_specialist_handoff(state, "nutrition_specialist")
+
+    assert state.conversation_state["primary_owner"] == "training_specialist"
+
+
+@pytest.mark.asyncio
 async def test_training_specialist_parses_structured_output_and_plan_signal():
     runner, brain = _runner_with_brain()
     brain.get_log_callback.return_value = None
