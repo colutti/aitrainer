@@ -756,6 +756,14 @@ class ConversationGraphRunner:
         nutrition_workspace = state.shared_context.get("nutrition_workspace", {})
         training_proposal_block = self._format_proposal_block("TREINO", training_workspace)
         nutrition_proposal_block = self._format_proposal_block("NUTRICAO", nutrition_workspace)
+        plan_tools = get_node_llm_tools("plan_specialist")
+        training_ready = training_workspace.get("proposal_status") == "ready"
+        has_existing_plan = state.shared_context.get("has_active_plan", False)
+        if not training_ready and not has_existing_plan:
+            plan_tools = {t for t in plan_tools if t != "upsert_plan"}
+            logger.debug(
+                "plan_specialist: upsert_plan stripped — training proposal not ready"
+            )
         coordinator = await self._run_llm_node(
             node_name="plan_specialist",
             state=state,
@@ -764,7 +772,7 @@ class ConversationGraphRunner:
                 f"ANALISE_NUTRICAO:\n{state.node_outputs.get('nutrition_specialist', '')}\n\n"
                 f"{training_proposal_block}{nutrition_proposal_block}"
             ),
-            allowed_tools=get_node_llm_tools("plan_specialist"),
+            allowed_tools=plan_tools,
         )
         parsed = self._parse_json_object(coordinator)
         state.plan_needs_revision = bool(parsed.get("needs_revision", False))

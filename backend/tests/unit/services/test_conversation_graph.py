@@ -1210,7 +1210,10 @@ async def test_plan_specialist_receives_upsert_plan_tools():
             "plan_section": "",
             "agenda_section": "",
             "metabolism_section": "",
-        }
+        },
+        "training_workspace": {"proposal_status": "ready", "proposal": {}},
+        "nutrition_workspace": {"proposal_status": "", "proposal": None},
+        "plan_lifecycle": {"timeline_expired": False, "next_review_due": False},
     }
 
     await runner._node_plan_specialist(state)  # pylint: disable=protected-access
@@ -1886,3 +1889,110 @@ async def test_format_proposal_block_returns_empty_for_no_status():
     workspace = {"proposal_status": ""}
     block = runner._format_proposal_block("TREINO", workspace)
     assert block == ""
+
+
+@pytest.mark.asyncio
+async def test_plan_specialist_missing_upsert_plan_when_training_proposal_pending():
+    """upsert_plan must not be exposed when training proposal is not ready."""
+    runner, brain = _runner_with_brain()
+    captured = {}
+    tool_names = [
+        "get_plan",
+        "upsert_plan",
+        "plan_help",
+        "get_metabolism_data",
+    ]
+    tool_mocks = []
+    for tool_name in tool_names:
+        tool = MagicMock()
+        tool.name = tool_name
+        tool_mocks.append(tool)
+    brain.get_tools.return_value = tool_mocks
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        captured["tools"] = [tool.name for tool in kwargs["tools"]]
+        yield "ok"
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="cria um plano",
+        user_input_sanitized="cria um plano",
+        channel="app",
+    )
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        },
+        "training_workspace": {
+            "proposal_status": "anamnesis_incomplete",
+            "proposal": None,
+            "missing_inputs": ["goal", "experience"],
+        },
+        "nutrition_workspace": {"proposal_status": "", "proposal": None},
+        "plan_lifecycle": {"timeline_expired": False, "next_review_due": False},
+    }
+
+    await runner._node_plan_specialist(state)
+
+    assert "get_plan" in captured["tools"]
+    assert "plan_help" in captured["tools"]
+    assert "upsert_plan" not in captured["tools"]
+
+
+@pytest.mark.asyncio
+async def test_plan_specialist_receives_upsert_plan_when_proposals_ready():
+    """upsert_plan must be available when all required proposals are ready."""
+    runner, brain = _runner_with_brain()
+    captured = {}
+    tool_names = [
+        "get_plan",
+        "upsert_plan",
+        "plan_help",
+    ]
+    tool_mocks = []
+    for tool_name in tool_names:
+        tool = MagicMock()
+        tool.name = tool_name
+        tool_mocks.append(tool)
+    brain.get_tools.return_value = tool_mocks
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        captured["tools"] = [tool.name for tool in kwargs["tools"]]
+        yield "ok"
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="pode criar",
+        user_input_sanitized="pode criar",
+        channel="app",
+    )
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        },
+        "training_workspace": {
+            "proposal_status": "ready",
+            "proposal": {"split": "ppl", "routines": []},
+        },
+        "nutrition_workspace": {"proposal_status": "", "proposal": None},
+        "plan_lifecycle": {"timeline_expired": False, "next_review_due": False},
+    }
+
+    await runner._node_plan_specialist(state)
+
+    assert "get_plan" in captured["tools"]
+    assert "upsert_plan" in captured["tools"]
