@@ -632,7 +632,6 @@ async def test_plan_owner_does_not_run_training_without_secondary():  # pylint: 
     has_plan_pressure = False
     plan_owned = primary_owner == "plan_specialist"
     training_owned = primary_owner in {"training_specialist"}
-    nutrition_owned = primary_owner in {"nutrition_specialist"}
     secondary_training = "training_specialist" in secondary_nodes
 
     if training_owned or secondary_training:
@@ -1541,6 +1540,50 @@ async def test_memory_hub_still_creates_legitimate_check_in_without_pending():
     await runner._node_memory_hub(state)
 
     create_event.invoke.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_memory_hub_processes_multiple_memory_candidates():
+    """memory_hub must process all memory candidates, not just the first."""
+    runner, brain = _runner_with_brain()
+    save_memory = MagicMock()
+    save_memory.name = "save_memory"
+    save_memory.invoke.return_value = "ok"
+    brain.get_tools.return_value = [save_memory]
+    brain.get_log_callback.return_value = None
+
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="prefiro treino curto e tenho lesao no ombro",
+        user_input_sanitized="prefiro treino curto e tenho lesao no ombro",
+        channel="app",
+    )
+    state.conversation_state = {
+        "pending_action": {"kind": "none", "status": "no_action_needed", "missing_slots": []},
+    }
+    state.node_outputs["coach_reply"] = "ok"
+    state.shared_context = {
+        "persistence_candidates": {
+            "memory": [
+                {
+                    "memory_action": "save",
+                    "memory_content": "prefere treinos curtos",
+                    "memory_category": "preference",
+                },
+                {
+                    "memory_action": "save",
+                    "memory_content": "lesao no ombro direito",
+                    "memory_category": "health",
+                },
+            ],
+            "event": [],
+        },
+        "input_data": {"user_locale": "pt-BR"},
+    }
+
+    await runner._node_memory_hub(state)
+
+    assert save_memory.invoke.call_count == 2
 
 
 def test_build_debug_trace_includes_tools_called_per_node():

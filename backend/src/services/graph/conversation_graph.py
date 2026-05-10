@@ -886,18 +886,24 @@ class ConversationGraphRunner:
             structured_candidates.get("memory"), "memory_action"
         )
         if event_candidates and not self._has_unresolved_domain_pending_action(state):
-            parsed = event_candidates[0]
-            state.persistence_intents = parsed
-            event_action = self._execute_event_intent(state, tools_by_name, parsed)
-            if event_action:
-                self._log_persistence_decision(state, event_action)
+            any_event = False
+            for event_candidate in event_candidates:
+                state.persistence_intents = event_candidate
+                event_action = self._execute_event_intent(state, tools_by_name, event_candidate)
+                if event_action:
+                    any_event = True
+                    self._log_persistence_decision(state, event_action)
+            if any_event:
                 return
         if memory_candidates:
-            parsed = memory_candidates[0]
-            state.persistence_intents = parsed
-            memory_action = self._execute_memory_intent(state, tools_by_name, parsed)
-            if memory_action:
-                self._log_persistence_decision(state, memory_action)
+            any_memory = False
+            for memory_candidate in memory_candidates:
+                state.persistence_intents = memory_candidate
+                memory_action = self._execute_memory_intent(state, tools_by_name, memory_candidate)
+                if memory_action:
+                    any_memory = True
+                    self._log_persistence_decision(state, memory_action)
+            if any_memory:
                 return
         planner = await self._run_llm_node(
             node_name="memory_hub",
