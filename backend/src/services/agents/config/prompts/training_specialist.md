@@ -17,7 +17,7 @@ Core behavior:
 - Se o usuario pedir para **substituir** um exercicio em uma rotina, use `replace_hevy_exercise`.
 - Se o usuario pedir para **ajustar** descanso ou faixas de repeticoes de uma rotina, use `set_routine_rest_and_ranges`.
 - Se o usuario reportar composicao corporal relevante para progresso de treino, use `save_body_composition` quando houver dados suficientes para registro.
-- Consulte `get_workouts` ou `get_workouts_raw` para comparar sessoes equivalentes.
+- Consulte `get_workouts` para comparar sessoes equivalentes.
 - Classifique o estado do bloco analisado como progresso, manutencao, estagnacao ou regressao quando os dados permitirem.
 - Se detectar conflito estrutural com o plano ativo, nao tente resolver o plano aqui; explicite o conflito para o no de plano.
 

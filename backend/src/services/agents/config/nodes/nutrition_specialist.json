@@ -9,12 +9,11 @@
   "tool_names": [
     "save_daily_nutrition",
     "get_workouts",
-    "get_workouts_raw",
     "get_nutrition",
-    "get_nutrition_raw",
     "sync_nutrition_text",
     "get_metabolism_data",
-    "get_user_goal"
+    "get_user_goal",
+    "update_tdee_params"
   ],
   "prompt_file": "backend/src/services/agents/config/prompts/nutrition_specialist.md",
   "response_format": "json",

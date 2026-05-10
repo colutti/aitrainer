@@ -16,6 +16,7 @@ from src.core.langsmith import create_graph_run_context, create_node_run_context
 from src.core.logs import logger
 from src.services.adaptive_tdee import AdaptiveTDEEService
 from src.services.agents.config_registry import AgentConfigRegistry
+from src.services.agents.node_tool_policy import get_node_llm_tools
 from src.services.plan_service import build_plan_prompt_snapshot
 from src.repositories.event_repository import EventRepository
 
@@ -628,14 +629,7 @@ class ConversationGraphRunner:
                 f"ANALISE_TREINO:\n{state.node_outputs.get('training_specialist', '')}\n\n"
                 f"ANALISE_NUTRICAO:\n{state.node_outputs.get('nutrition_specialist', '')}"
             ),
-            allowed_tools={
-                "get_plan",
-                "upsert_plan",
-                "plan_help",
-                "get_user_goal",
-                "update_user_goal",
-                "get_metabolism_data",
-            },
+            allowed_tools=get_node_llm_tools("plan_specialist"),
         )
         parsed = self._parse_json_object(coordinator)
         state.plan_needs_revision = bool(parsed.get("needs_revision", False))
@@ -676,22 +670,7 @@ class ConversationGraphRunner:
             node_name="training_specialist",
             state=state,
             extra_context=f"{self._shared_context_payload(state)}{peer_block}",
-            allowed_tools={
-                "save_workout",
-                "get_workouts",
-                "get_workouts_raw",
-                "list_hevy_routines",
-                "get_hevy_routine_detail",
-                "trigger_hevy_import",
-                "create_hevy_routine",
-                "update_hevy_routine",
-                "search_hevy_exercises",
-                "replace_hevy_exercise",
-                "set_routine_rest_and_ranges",
-                "save_body_composition",
-                "get_body_composition",
-                "get_body_composition_raw",
-            },
+            allowed_tools=get_node_llm_tools("training_specialist"),
         )
         parsed = self._parse_json_object(response)
         analysis_text = str(parsed.get("analysis_text", "")).strip()
@@ -717,16 +696,7 @@ class ConversationGraphRunner:
             node_name="nutrition_specialist",
             state=state,
             extra_context=f"{self._shared_context_payload(state)}{peer_block}",
-            allowed_tools={
-                "save_daily_nutrition",
-                "get_workouts",
-                "get_workouts_raw",
-                "get_nutrition",
-                "get_nutrition_raw",
-                "sync_nutrition_text",
-                "get_metabolism_data",
-                "get_user_goal",
-            },
+            allowed_tools=get_node_llm_tools("nutrition_specialist"),
         )
         parsed = self._parse_json_object(response)
         analysis_text = str(parsed.get("analysis_text", "")).strip()
@@ -762,10 +732,7 @@ class ConversationGraphRunner:
             node_name="coach_reply",
             state=state,
             extra_context=specialist_context,
-            allowed_tools={
-                "get_plan",
-                "plan_help",
-            },
+            allowed_tools=get_node_llm_tools("coach_reply"),
         )
         public_text = response
         strip_wrappers = getattr(self._brain, "strip_internal_wrappers", None)

@@ -619,7 +619,6 @@ async def test_training_specialist_receives_transact_and_read_tools():
     tool_names = [
         "save_workout",
         "get_workouts",
-        "get_workouts_raw",
         "list_hevy_routines",
         "get_hevy_routine_detail",
         "trigger_hevy_import",
@@ -629,7 +628,6 @@ async def test_training_specialist_receives_transact_and_read_tools():
         "replace_hevy_exercise",
         "set_routine_rest_and_ranges",
         "get_body_composition",
-        "get_body_composition_raw",
     ]
     tool_mocks = []
     for tool_name in tool_names:
@@ -670,6 +668,163 @@ async def test_training_specialist_receives_transact_and_read_tools():
     assert "search_hevy_exercises" in captured["tools"]
     assert "replace_hevy_exercise" in captured["tools"]
     assert "set_routine_rest_and_ranges" in captured["tools"]
+
+
+@pytest.mark.asyncio
+async def test_nutrition_specialist_receives_metabolism_adjustment_tool():
+    runner, brain = _runner_with_brain()
+    captured = {}
+    tool_names = [
+        "save_daily_nutrition",
+        "get_workouts",
+        "get_nutrition",
+        "sync_nutrition_text",
+        "get_metabolism_data",
+        "get_user_goal",
+        "update_tdee_params",
+    ]
+    tool_mocks = []
+    for tool_name in tool_names:
+        tool = MagicMock()
+        tool.name = tool_name
+        tool_mocks.append(tool)
+    brain.get_tools.return_value = tool_mocks
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        captured["tools"] = [tool.name for tool in kwargs["tools"]]
+        yield "ok"
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="comi 2500 kcal hoje",
+        user_input_sanitized="comi 2500 kcal hoje",
+        channel="app",
+    )
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_nutrition_specialist(state)  # pylint: disable=protected-access
+
+    assert "update_tdee_params" in captured["tools"]
+    assert "get_metabolism_data" in captured["tools"]
+
+
+@pytest.mark.asyncio
+async def test_nutrition_specialist_does_not_receive_raw_or_deprecated():
+    runner, brain = _runner_with_brain()
+    captured = {}
+    tool_names = [
+        "save_daily_nutrition",
+        "get_workouts",
+        "get_nutrition",
+        "sync_nutrition_text",
+        "get_metabolism_data",
+        "get_user_goal",
+        "update_tdee_params",
+        "get_workouts_raw",
+        "get_nutrition_raw",
+        "reset_tdee_tracking",
+    ]
+    tool_mocks = []
+    for tool_name in tool_names:
+        tool = MagicMock()
+        tool.name = tool_name
+        tool_mocks.append(tool)
+    brain.get_tools.return_value = tool_mocks
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        captured["tools"] = [tool.name for tool in kwargs["tools"]]
+        yield "ok"
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="metabolismo esta certo?",
+        user_input_sanitized="metabolismo esta certo?",
+        channel="app",
+    )
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_nutrition_specialist(state)  # pylint: disable=protected-access
+
+    assert "get_workouts_raw" not in captured["tools"]
+    assert "get_nutrition_raw" not in captured["tools"]
+    assert "reset_tdee_tracking" not in captured["tools"]
+
+
+@pytest.mark.asyncio
+async def test_training_specialist_does_not_receive_raw_tools():
+    runner, brain = _runner_with_brain()
+    captured = {}
+    tool_names = [
+        "save_workout",
+        "get_workouts",
+        "list_hevy_routines",
+        "get_hevy_routine_detail",
+        "trigger_hevy_import",
+        "create_hevy_routine",
+        "update_hevy_routine",
+        "search_hevy_exercises",
+        "replace_hevy_exercise",
+        "set_routine_rest_and_ranges",
+        "get_body_composition",
+        "get_workouts_raw",
+        "get_body_composition_raw",
+    ]
+    tool_mocks = []
+    for tool_name in tool_names:
+        tool = MagicMock()
+        tool.name = tool_name
+        tool_mocks.append(tool)
+    brain.get_tools.return_value = tool_mocks
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        captured["tools"] = [tool.name for tool in kwargs["tools"]]
+        yield "ok"
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="como foi meu treino?",
+        user_input_sanitized="como foi meu treino?",
+        channel="app",
+    )
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_training_specialist(state)  # pylint: disable=protected-access
+
+    assert "get_workouts_raw" not in captured["tools"]
+    assert "get_body_composition_raw" not in captured["tools"]
 
 
 @pytest.mark.asyncio

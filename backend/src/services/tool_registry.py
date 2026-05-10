@@ -122,6 +122,16 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
         ToolMemoryType.MEMORABLE,
         "Update TDEE parameters (activity_factor)",
     ),
+    "reset_tdee_tracking": ToolMetadata(
+        "reset_tdee_tracking",
+        ToolMemoryType.MEMORABLE,
+        "Reset TDEE tracking history",
+    ),
+    "sync_nutrition_text": ToolMetadata(
+        "sync_nutrition_text",
+        ToolMemoryType.EPHEMERAL,
+        "Parse macros from free-text nutrition input",
+    ),
     # Events and planned reminders (persistent agenda for AI)
     "create_event": ToolMetadata(
         "create_event", ToolMemoryType.MEMORABLE, "Create scheduled event or plan"

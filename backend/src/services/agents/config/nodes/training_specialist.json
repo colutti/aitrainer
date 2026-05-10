@@ -9,7 +9,6 @@
   "tool_names": [
     "save_workout",
     "get_workouts",
-    "get_workouts_raw",
     "list_hevy_routines",
     "get_hevy_routine_detail",
     "trigger_hevy_import",
@@ -19,8 +18,7 @@
     "replace_hevy_exercise",
     "set_routine_rest_and_ranges",
     "save_body_composition",
-    "get_body_composition",
-    "get_body_composition_raw"
+    "get_body_composition"
   ],
   "prompt_file": "backend/src/services/agents/config/prompts/training_specialist.md",
   "response_format": "json",
