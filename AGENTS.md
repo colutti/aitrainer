@@ -124,32 +124,33 @@ make user-reset EMAIL=... # Reset user data for fresh test state
 
 ## Conversation Graph Nodes
 
-The conversation graph (`backend/src/services/graph/conversation_graph.py`) runs these nodes per turn:
+The conversation graph (`backend/src/services/graph/conversation_graph.py`) runs these nodes per turn in fixed sequential order (all specialists run every turn, self-suppressing with no-op when they have nothing to contribute):
 
 | Node | Model | Role |
 |---|---|---|
-| `session_context` | `qwen/qwen3-next-80b-a3b-instruct` | Hydrates turn context and recovers cross-turn `conversation_state` from history. |
-| `prompt_security` | `google/gemini-2.5-flash-lite` | Detects prompt injection and abuse (NOT product scoping). |
-| `intent_router` | `google/gemini-3.1-flash-lite-preview` | **Turn owner selector** — decides `interaction_mode`, `primary_owner`, and `secondary_nodes`. Uses `conversation_state` to maintain continuity across turns. |
-| `training_specialist` | `google/gemini-3.1-flash-lite-preview` | Domain owner for training, workout logging, and exercise routine management. Returns `action_status` and `handoff_target` for inter-node coordination. |
-| `nutrition_specialist` | `google/gemini-3.1-flash-lite-preview` | Domain owner for nutrition logging, adherence analysis, and metabolism parameter adjustments. Returns `action_status` and `handoff_target`. |
-| `plan_specialist` | `openai/gpt-oss-120b` | **Runs conditionally** (only when `primary_owner==plan_specialist`, handoff from another node, or lifecycle pressure). Owns plan discovery, creation, review, and materialization readiness. Returns `pending_slots`, `next_owner`, and `action_status`. |
-| `coach_reply` | `google/gemini-3.1-flash-lite-preview` | **Pure synthesizer** — no tools. Communicates final state to user. |
+| `session_context` | `qwen/qwen3-next-80b-a3b-instruct` | Hydrates turn context and recovers cross-turn `conversation_state` from history. LLM is used only for history sanitization. |
+| `prompt_security` | `google/gemini-2.5-flash-lite` | Detects prompt injection and abuse (NOT product scoping). If blocked, short-circuits to blocked response. |
+| `training_specialist` | `google/gemini-3.1-flash-lite-preview` | Domain specialist for training, workout logging, and exercise routine management. Emits `no_action_needed` when the turn is not about training. |
+| `nutrition_specialist` | `google/gemini-3.1-flash-lite-preview` | Domain specialist for nutrition logging, adherence analysis, and metabolism parameter adjustments. Emits `no_action_needed` when the turn is not about nutrition. |
+| `plan_specialist` | `openai/gpt-oss-120b` | Domain specialist for plan discovery, creation, review, and materialization readiness. Emits `no_action_needed` when the turn does not involve the plan. Uses `provider_sort: "throughput"`. |
+| `coach_reply` | `google/gemini-3.1-flash-lite-preview` | **Pure synthesizer** — no tools. Synthesizes specialist outputs into a single coach-voiced response. Ignores no-op specialists. |
 | `memory_hub` | `google/gemini-3.1-flash-lite-preview` | **Residual persistence** — stores durable facts and reminders. Must NOT create events as substitutes for domain operations. |
 
 ### Cross-turn conversation state
 
-After each turn, a compact `[GRAPH_STATE_V1]` snapshot is persisted as a SYSTEM message in chat history (`backend/src/services/graph/conversation_contract.py`). This snapshot tracks `interaction_mode`, `primary_owner`, `pending_action`, and `last_action_status`. On the next turn, `session_context` recovers it, `intent_router` uses it for continuity, and specialist nodes reference it for execution context.
+After each turn, a compact `[GRAPH_STATE_V1]` snapshot is persisted as a SYSTEM message in chat history (`backend/src/services/graph/conversation_contract.py`). This snapshot tracks `active_domain`, `pending_action` (resolved by priority from specialist suggestions), and `last_action_status`. On the next turn, `session_context` recovers it and injects it into `conversation_state`, which specialists can read via `context_blocks` for continuity. Old snapshots containing `primary_owner` and `interaction_mode` parse correctly (backward compatible).
 
-### Node ownership model
+### Sequential pipeline model
 
-- `intent_router` is the sole authority on who leads the turn.
-- Each specialist node owns its domain and decides: analyze, execute, escalate, defer.
-- Specialists hand off via structured `handoff_target` fields (not prose).
-- `plan_specialist` no longer runs on every turn — it enters only when explicitly routed or when lifecycle flags demand review.
+- All specialist nodes run every turn in fixed order after `prompt_security` passes.
+- Each specialist decides internally whether to act or emit `no_action_needed`.
+- There is no routing node, no `primary_owner`, no `interaction_mode`, no `secondary_nodes`, and no `handoff_target`.
+- Pending actions are resolved by deterministic priority: `domain_execution` > `plan_discovery` > `plan_review` > `domain_analysis` > `none`.
+- `pending_action` is consolidated between `plan_specialist` and `coach_reply`, before `memory_hub`.
+- `active_domain` is derived from actual specialist contributions after each turn.
+- On blocked turns, execution stops after `prompt_security`; `coach_reply` and `memory_hub` do not run.
 - `coach_reply` has zero tools and zero operational authority.
 - `memory_hub` cannot convert domain actions into calendar events.
-- Event tools (`create_event`, etc.) are strictly for reminders and check-ins, never as substitutes for the master plan.
 
 ### Persona isolation
 

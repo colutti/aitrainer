@@ -9,7 +9,7 @@
   "tool_names": [],
   "prompt_file": "backend/src/services/agents/config/prompts/coach_reply.md",
   "response_format": "text",
-  "version": "v1",
+  "version": "v2",
   "context_blocks": [
     "request",
     "user_locale",

@@ -19,12 +19,10 @@ from src.services.agents.config_registry import AgentConfigRegistry
 from src.services.agents.node_tool_policy import get_node_llm_tools
 from src.services.graph.conversation_contract import (
     ActionStatus,
-    InteractionMode,
-    PrimaryOwner,
     build_snapshot,
     default_conversation_state,
-    merge_pending_action_update,
     parse_latest_snapshot,
+    resolve_pending_action,
 )
 from src.services.plan_service import build_plan_prompt_snapshot
 from src.repositories.event_repository import EventRepository
@@ -63,7 +61,6 @@ class GraphState:
     user_images: Optional[list[dict[str, str]]] = None
     security_status: str = "safe"
     user_input_sanitized: str = ""
-    intent: str = "general"
     shared_context: dict[str, Any] = field(default_factory=dict)
     coach_response: str = ""
     final_response: str = ""
@@ -76,6 +73,7 @@ class GraphState:
     persistence_intents: dict[str, Any] = field(default_factory=dict)
     conversation_state: dict[str, Any] = field(default_factory=default_conversation_state)
     specialist_states: dict[str, dict[str, Any]] = field(default_factory=dict)
+    specialist_pending_actions: dict[str, dict[str, Any]] = field(default_factory=dict)
     request: dict[str, Any] = field(default_factory=dict)
     security: dict[str, Any] = field(default_factory=dict)
     routing: dict[str, Any] = field(default_factory=dict)
@@ -97,7 +95,7 @@ class GraphState:
             "blocked_segments": self.blocked_segments,
         }
         self.routing = {
-            "intent": self.intent,
+            "intent": "general",
         }
         self.response = {
             "technical": self.coach_response,
@@ -116,7 +114,6 @@ class ConversationGraphRunner:
     NODE_ORDER = (
         "session_context",
         "prompt_security",
-        "intent_router",
         "training_specialist",
         "nutrition_specialist",
         "plan_specialist",
@@ -279,54 +276,27 @@ class ConversationGraphRunner:
                 run_name="graph.conversation",
                 metadata=trace_metadata,
             ):
-                for node_name in self.NODE_ORDER[:3]:
+                for node_name in self.NODE_ORDER:
                     await self._run_node(node_name, state)
                     if node_name == "prompt_security" and state.security_status != "safe":
                         break
+                    if node_name == "plan_specialist" and state.security_status == "safe":
+                        self._resolve_pending_actions(state)
 
                 if state.security_status != "safe":
                     state.coach_response = self._blocked_response()
                     state.final_response = state.coach_response
                     state.response["technical"] = state.coach_response
                     state.response["final"] = state.final_response
-                else:
-                    primary_owner = state.routing.get("primary_owner", PrimaryOwner.COACH_REPLY.value)
-                    secondary_nodes = state.routing.get("secondary_nodes", [])
-                    has_plan_pressure = (
-                        state.shared_context.get("plan_lifecycle", {}).get("timeline_expired", False)
-                        or state.shared_context.get("plan_lifecycle", {}).get("next_review_due", False)
-                    )
-                    plan_owned = primary_owner == PrimaryOwner.PLAN_SPECIALIST.value
-                    training_owned = primary_owner == PrimaryOwner.TRAINING_SPECIALIST.value
-                    nutrition_owned = primary_owner == PrimaryOwner.NUTRITION_SPECIALIST.value
-                    secondary_training = "training_specialist" in secondary_nodes
-                    secondary_nutrition = "nutrition_specialist" in secondary_nodes
-                    if training_owned or secondary_training:
-                        await self._run_node("training_specialist", state)
-                        self._apply_specialist_handoff(state, "training_specialist")
-                    if nutrition_owned or secondary_nutrition:
-                        await self._run_node("nutrition_specialist", state)
-                        self._apply_specialist_handoff(state, "nutrition_specialist")
-                    if plan_owned or has_plan_pressure:
-                        await self._run_node("plan_specialist", state)
-                        self._apply_specialist_handoff(state, "plan_specialist")
-                    if state.plan_needs_revision:
-                        if training_owned or secondary_training:
-                            await self._run_node("training_specialist", state)
-                            self._apply_specialist_handoff(state, "training_specialist")
-                        if nutrition_owned or secondary_nutrition:
-                            await self._run_node("nutrition_specialist", state)
-                            self._apply_specialist_handoff(state, "nutrition_specialist")
-                    await self._run_node("coach_reply", state)
-                await self._run_node("memory_hub", state)
+
                 snapshot = build_snapshot(state.conversation_state)
                 self._brain.add_system_message_to_history(state.user_email, snapshot)
                 logger.info(
-                    "graph.turn_completed request_id=%s conversation_id=%s turn_id=%s intent=%s security=%s tools_called=%s persistence_actions=%s",
+                    "graph.turn_completed request_id=%s conversation_id=%s turn_id=%s domain=%s security=%s tools_called=%s persistence_actions=%s",
                     state.request_id,
                     state.conversation_id,
                     state.turn_id,
-                    state.intent,
+                    state.conversation_state.get("active_domain", "general"),
                     state.security_status,
                     state.tools_called,
                     state.persistence_actions,
@@ -360,6 +330,43 @@ class ConversationGraphRunner:
                         graph_error=graph_error,
                     ),
                 )
+
+    def _resolve_pending_actions(self, state: GraphState) -> None:
+        """Merge specialist pending_action suggestions using priority."""
+        merged = resolve_pending_action(state.specialist_pending_actions)
+        last_action = ActionStatus.NO_ACTION_NEEDED.value
+        for node_name in ("training_specialist", "nutrition_specialist", "plan_specialist"):
+            spec = state.specialist_states.get(node_name, {})
+            status = spec.get("action_status", "")
+            if status and status != ActionStatus.NO_ACTION_NEEDED.value:
+                last_action = status
+                break
+        state.conversation_state["pending_action"] = merged
+        state.conversation_state["last_action_status"] = last_action
+        active_domain = self._derive_active_domain(state)
+        state.conversation_state["active_domain"] = active_domain
+        state.routing["intent"] = active_domain
+
+    @staticmethod
+    def _derive_active_domain(state: GraphState) -> str:
+        """Derive active_domain from specialist states for telemetry."""
+        kind = state.conversation_state.get("pending_action", {}).get("kind", "none")
+        if kind in ("plan_discovery", "plan_review"):
+            return "plan"
+        plan_status = state.specialist_states.get("plan_specialist", {}).get("action_status", "")
+        if plan_status and plan_status != ActionStatus.NO_ACTION_NEEDED.value:
+            return "plan"
+        training_status = state.specialist_states.get("training_specialist", {}).get("action_status", "")
+        nutrition_status = state.specialist_states.get("nutrition_specialist", {}).get("action_status", "")
+        training_active = bool(training_status and training_status != ActionStatus.NO_ACTION_NEEDED.value)
+        nutrition_active = bool(nutrition_status and nutrition_status != ActionStatus.NO_ACTION_NEEDED.value)
+        if training_active and nutrition_active:
+            return "multi_domain"
+        if training_active:
+            return "training"
+        if nutrition_active:
+            return "nutrition"
+        return "general"
 
     async def _run_node(self, node_name: str, state: GraphState) -> None:
         cfg = self._registry.get_node_config(node_name)
@@ -461,7 +468,7 @@ class ConversationGraphRunner:
             "started_at": started_at.isoformat(),
             "ended_at": ended_at.isoformat(),
             "duration_ms": int((ended_at - started_at).total_seconds() * 1000),
-            "intent": state.intent,
+            "intent": state.conversation_state.get("active_domain", "general"),
             "security_status": state.security_status,
             "plan_needs_revision": state.plan_needs_revision,
             "tools_called": state.tools_called,
@@ -640,52 +647,82 @@ class ConversationGraphRunner:
             state.request["sanitized_input"] = state.user_input_sanitized
         state.node_outputs["prompt_security"] = "safe"
 
-    async def _node_intent_router(self, state: GraphState) -> None:
-        classifier = await self._run_llm_node(
-            node_name="intent_router",
+    async def _node_training_specialist(self, state: GraphState) -> None:
+        peer_output = state.node_outputs.get("nutrition_specialist", "")
+        peer_block = f"\n\nANALISE_NUTRICAO:\n{peer_output}" if peer_output else ""
+        response = await self._run_llm_node(
+            node_name="training_specialist",
             state=state,
-            allowed_tools=set(),
+            extra_context=f"{self._shared_context_payload(state)}{peer_block}",
+            allowed_tools=get_node_llm_tools("training_specialist"),
         )
-        parsed = self._parse_json_object(classifier)
-        intent = str(parsed.get("intent", "general")).strip().lower()
-        if intent not in {"training", "nutrition", "plan", "multi_domain", "general"}:
-            intent = "general"
-        interaction_mode = str(parsed.get("interaction_mode", "general")).strip().lower()
-        valid_modes = {m.value for m in InteractionMode}
-        if interaction_mode not in valid_modes:
-            interaction_mode = InteractionMode.GENERAL.value
-        primary_owner = str(parsed.get("primary_owner", "coach_reply")).strip().lower()
-        valid_owners = {o.value for o in PrimaryOwner}
-        if primary_owner not in valid_owners:
-            primary_owner = PrimaryOwner.COACH_REPLY.value
-        secondary_nodes = parsed.get("secondary_nodes", [])
-        if not isinstance(secondary_nodes, list):
-            secondary_nodes = []
-        pending_action_update = parsed.get("pending_action_update", {})
-        if not isinstance(pending_action_update, dict):
-            pending_action_update = {}
-        state.intent = intent
-        state.routing["intent"] = intent
-        state.routing["reason"] = str(parsed.get("reason", "")).strip()
-        state.routing["interaction_mode"] = interaction_mode
-        state.routing["primary_owner"] = primary_owner
-        state.routing["secondary_nodes"] = secondary_nodes
-        state.conversation_state["active_domain"] = intent
-        state.conversation_state["interaction_mode"] = interaction_mode
-        state.conversation_state["primary_owner"] = primary_owner
-        if interaction_mode == InteractionMode.GENERAL.value:
-            state.conversation_state["pending_action"] = {
-                "kind": "none",
-                "status": ActionStatus.NO_ACTION_NEEDED.value,
-                "missing_slots": [],
-            }
-        state.conversation_state = merge_pending_action_update(
-            state.conversation_state, pending_action_update
+        parsed = self._parse_json_object(response)
+        technical_summary = str(parsed.get("technical_summary", "")).strip()
+        analysis_text = str(parsed.get("analysis_text", "")).strip()
+        domain_status = str(parsed.get("domain_status", "generated")).strip() or "generated"
+        plan_signal = str(parsed.get("plan_signal", "")).strip()
+        action_status = str(parsed.get("action_status", "no_action_needed")).strip()
+        action_type = str(parsed.get("action_type", "analyze")).strip()
+        pending_action = parsed.get("pending_action", {})
+        if not isinstance(pending_action, dict):
+            pending_action = {}
+        final_text = technical_summary or analysis_text or response
+        state.shared_context["training_analysis"] = {
+            "status": domain_status,
+            "text": final_text,
+            "plan_signal": plan_signal,
+        }
+        self._merge_persistence_candidates(
+            state,
+            memory_candidates=parsed.get("memory_candidates"),
+            event_candidates=parsed.get("event_candidates"),
         )
-        state.node_outputs["intent_router"] = f"{intent}|{interaction_mode}|{primary_owner}"
+        state.specialist_pending_actions["training_specialist"] = pending_action
+        state.specialist_states["training_specialist"] = {
+            "action_status": action_status,
+            "action_type": action_type,
+        }
+        state.node_outputs["training_specialist"] = final_text
+
+    async def _node_nutrition_specialist(self, state: GraphState) -> None:
+        peer_output = state.node_outputs.get("training_specialist", "")
+        peer_block = f"\n\nANALISE_TREINO:\n{peer_output}" if peer_output else ""
+        response = await self._run_llm_node(
+            node_name="nutrition_specialist",
+            state=state,
+            extra_context=f"{self._shared_context_payload(state)}{peer_block}",
+            allowed_tools=get_node_llm_tools("nutrition_specialist"),
+        )
+        parsed = self._parse_json_object(response)
+        technical_summary = str(parsed.get("technical_summary", "")).strip()
+        analysis_text = str(parsed.get("analysis_text", "")).strip()
+        domain_status = str(parsed.get("domain_status", "generated")).strip() or "generated"
+        plan_signal = str(parsed.get("plan_signal", "")).strip()
+        action_status = str(parsed.get("action_status", "no_action_needed")).strip()
+        action_type = str(parsed.get("action_type", "analyze")).strip()
+        pending_action = parsed.get("pending_action", {})
+        if not isinstance(pending_action, dict):
+            pending_action = {}
+        final_text = technical_summary or analysis_text or response
+        state.shared_context["nutrition_analysis"] = {
+            "status": domain_status,
+            "text": final_text,
+            "plan_signal": plan_signal,
+        }
+        self._merge_persistence_candidates(
+            state,
+            memory_candidates=parsed.get("memory_candidates"),
+            event_candidates=parsed.get("event_candidates"),
+        )
+        state.specialist_pending_actions["nutrition_specialist"] = pending_action
+        state.specialist_states["nutrition_specialist"] = {
+            "action_status": action_status,
+            "action_type": action_type,
+        }
+        state.node_outputs["nutrition_specialist"] = final_text
 
     async def _node_plan_specialist(self, state: GraphState) -> None:
-        state.shared_context["plan_specialist_note"] = f"intent={state.intent}"
+        active_domain = state.conversation_state.get("active_domain", "general")
         input_data = state.shared_context.get("input_data", {})
         plan_section = input_data.get("plan_section", "")
         state.shared_context["has_active_plan"] = bool(plan_section)
@@ -711,41 +748,23 @@ class ConversationGraphRunner:
         )
         state.node_outputs["plan_specialist"] = technical_summary or (
             "Objetivo: gerenciar ciclo de vida do plano e consistencia entre treino e nutricao. "
-            f"intent={state.intent}; has_active_plan={state.shared_context['has_active_plan']}; "
+            f"has_active_plan={state.shared_context['has_active_plan']}; "
             f"plan_status={plan_status}; revisao_necessaria={state.plan_needs_revision}; reason={reason}"
         )
         action_status = str(parsed.get("action_status", "no_action_needed")).strip()
-        next_owner = str(parsed.get("next_owner", "")).strip()
         pending_slots = parsed.get("pending_slots", [])
         if not isinstance(pending_slots, list):
             pending_slots = []
         pending_action = parsed.get("pending_action", {})
         if not isinstance(pending_action, dict):
             pending_action = {}
-        state.conversation_state["last_action_status"] = action_status or "no_action_needed"
-        if pending_action:
-            state.conversation_state["pending_action"] = pending_action
-        elif pending_slots:
-            state.conversation_state["pending_action"] = {
-                "kind": "plan_discovery",
-                "status": "needs_user_input",
-                "missing_slots": pending_slots,
-            }
-        elif plan_status == "active":
-            state.conversation_state["pending_action"] = {
-                "kind": "none",
-                "status": "no_action_needed",
-                "missing_slots": [],
-            }
-        if next_owner and next_owner in {o.value for o in PrimaryOwner}:
-            state.conversation_state["handoff_target"] = next_owner
+        state.specialist_pending_actions["plan_specialist"] = pending_action
         state.specialist_states["plan_specialist"] = {
             "action_status": action_status,
-            "next_owner": next_owner,
             "pending_slots": pending_slots,
         }
         state.shared_context["plan_workspace"] = {
-            "intent": state.intent,
+            "active_domain": active_domain,
             "has_active_plan": state.shared_context["has_active_plan"],
             "plan_status": plan_status,
             "needs_revision": state.plan_needs_revision,
@@ -759,92 +778,6 @@ class ConversationGraphRunner:
                 state.node_outputs.get("nutrition_specialist", ""), 280
             ),
         }
-
-    async def _node_training_specialist(self, state: GraphState) -> None:
-        peer_output = state.node_outputs.get("nutrition_specialist", "")
-        peer_block = f"\n\nANALISE_NUTRICAO:\n{peer_output}" if peer_output else ""
-        response = await self._run_llm_node(
-            node_name="training_specialist",
-            state=state,
-            extra_context=f"{self._shared_context_payload(state)}{peer_block}",
-            allowed_tools=get_node_llm_tools("training_specialist"),
-        )
-        parsed = self._parse_json_object(response)
-        technical_summary = str(parsed.get("technical_summary", "")).strip()
-        analysis_text = str(parsed.get("analysis_text", "")).strip()
-        domain_status = str(parsed.get("domain_status", "generated")).strip() or "generated"
-        plan_signal = str(parsed.get("plan_signal", "")).strip()
-        action_status = str(parsed.get("action_status", "no_action_needed")).strip()
-        action_type = str(parsed.get("action_type", "analyze")).strip()
-        handoff_target = str(parsed.get("handoff_target", "")).strip()
-        handoff_reason = str(parsed.get("handoff_reason", "")).strip()
-        pending_action = parsed.get("pending_action", {})
-        if not isinstance(pending_action, dict):
-            pending_action = {}
-        final_text = technical_summary or analysis_text or response
-        state.shared_context["training_analysis"] = {
-            "status": domain_status,
-            "text": final_text,
-            "plan_signal": plan_signal,
-        }
-        self._merge_persistence_candidates(
-            state,
-            memory_candidates=parsed.get("memory_candidates"),
-            event_candidates=parsed.get("event_candidates"),
-        )
-        state.conversation_state["last_action_status"] = action_status
-        if pending_action:
-            state.conversation_state["pending_action"] = pending_action
-        state.specialist_states["training_specialist"] = {
-            "action_status": action_status,
-            "action_type": action_type,
-            "handoff_target": handoff_target,
-            "handoff_reason": handoff_reason,
-        }
-        state.node_outputs["training_specialist"] = final_text
-
-    async def _node_nutrition_specialist(self, state: GraphState) -> None:
-        peer_output = state.node_outputs.get("training_specialist", "")
-        peer_block = f"\n\nANALISE_TREINO:\n{peer_output}" if peer_output else ""
-        response = await self._run_llm_node(
-            node_name="nutrition_specialist",
-            state=state,
-            extra_context=f"{self._shared_context_payload(state)}{peer_block}",
-            allowed_tools=get_node_llm_tools("nutrition_specialist"),
-        )
-        parsed = self._parse_json_object(response)
-        technical_summary = str(parsed.get("technical_summary", "")).strip()
-        analysis_text = str(parsed.get("analysis_text", "")).strip()
-        domain_status = str(parsed.get("domain_status", "generated")).strip() or "generated"
-        plan_signal = str(parsed.get("plan_signal", "")).strip()
-        action_status = str(parsed.get("action_status", "no_action_needed")).strip()
-        action_type = str(parsed.get("action_type", "analyze")).strip()
-        handoff_target = str(parsed.get("handoff_target", "")).strip()
-        handoff_reason = str(parsed.get("handoff_reason", "")).strip()
-        pending_action = parsed.get("pending_action", {})
-        if not isinstance(pending_action, dict):
-            pending_action = {}
-        final_text = technical_summary or analysis_text or response
-        state.shared_context["nutrition_analysis"] = {
-            "status": domain_status,
-            "text": final_text,
-            "plan_signal": plan_signal,
-        }
-        self._merge_persistence_candidates(
-            state,
-            memory_candidates=parsed.get("memory_candidates"),
-            event_candidates=parsed.get("event_candidates"),
-        )
-        state.conversation_state["last_action_status"] = action_status
-        if pending_action:
-            state.conversation_state["pending_action"] = pending_action
-        state.specialist_states["nutrition_specialist"] = {
-            "action_status": action_status,
-            "action_type": action_type,
-            "handoff_target": handoff_target,
-            "handoff_reason": handoff_reason,
-        }
-        state.node_outputs["nutrition_specialist"] = final_text
 
     async def _node_coach_reply(self, state: GraphState) -> None:
         if state.security_status != "safe":
@@ -1101,25 +1034,6 @@ class ConversationGraphRunner:
             and pa.get("kind") == "domain_execution"
             and pa.get("status") != "no_action_needed"
         )
-
-    def _apply_specialist_handoff(self, state: GraphState, node_name: str) -> None:
-        """Apply a handoff from a specialist to the next owner.
-
-        Accepts both plan_specialist's ``next_owner`` contract and
-        training/nutrition's ``handoff_target`` contract.  Valid statuses are
-        ``executed``, ``deferred``, and ``escalate_to_plan``.
-        """
-        spec = state.specialist_states.get(node_name, {})
-        handoff_target = spec.get("next_owner") or spec.get("handoff_target") or ""
-        if not handoff_target or handoff_target not in {o.value for o in PrimaryOwner}:
-            return
-        action_status = spec.get("action_status", "")
-        if action_status not in {"executed", "deferred", "escalate_to_plan"}:
-            return
-        state.conversation_state["primary_owner"] = handoff_target
-        state.conversation_state["handoff_target"] = ""
-        state.routing["primary_owner"] = handoff_target
-        state.conversation_state["last_action_status"] = action_status
 
     def _execute_event_intent(
         self,

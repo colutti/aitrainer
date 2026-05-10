@@ -1,8 +1,11 @@
 """Cross-turn conversation state contract.
 
-Defines enums for interaction mode, primary owner, pending-action shape, and
-helpers to serialize/parse compact state snapshots persisted as SYSTEM messages
+Defines enums for action status, pending-action kind, and helpers to
+serialize/parse compact state snapshots persisted as SYSTEM messages
 in chat history.
+
+In the sequential graph model, every specialist node runs every turn.
+The contract tracks continuity (pending actions), not routing (ownership).
 """
 
 from __future__ import annotations
@@ -12,34 +15,11 @@ import re
 from enum import Enum
 
 
-class InteractionMode(Enum):
-    """What kind of conversation turn this is."""
-
-    GENERAL = "general"
-    DOMAIN_ANALYSIS = "domain_analysis"
-    PLAN_DISCOVERY = "plan_discovery"
-    PLAN_REVIEW = "plan_review"
-    SLOT_ANSWER = "slot_answer"
-    EXECUTION_REQUEST = "execution_request"
-    CLARIFICATION = "clarification"
-
-
-class PrimaryOwner(Enum):
-    """Which node should lead the turn."""
-
-    TRAINING_SPECIALIST = "training_specialist"
-    NUTRITION_SPECIALIST = "nutrition_specialist"
-    PLAN_SPECIALIST = "plan_specialist"
-    COACH_REPLY = "coach_reply"
-
-
 class ActionStatus(Enum):
     """Outcome of the action a node attempted."""
 
     EXECUTED = "executed"
     NEEDS_USER_INPUT = "needs_user_input"
-    DEFERRED = "deferred"
-    ESCALATE_TO_PLAN = "escalate_to_plan"
     NO_ACTION_NEEDED = "no_action_needed"
 
 
@@ -52,6 +32,14 @@ class PendingActionKind(Enum):
     DOMAIN_ANALYSIS = "domain_analysis"
     NONE = "none"
 
+
+PENDING_ACTION_PRIORITY: list[str] = [
+    PendingActionKind.DOMAIN_EXECUTION.value,
+    PendingActionKind.PLAN_DISCOVERY.value,
+    PendingActionKind.PLAN_REVIEW.value,
+    PendingActionKind.DOMAIN_ANALYSIS.value,
+    PendingActionKind.NONE.value,
+]
 
 _SNAPSHOT_MARKER = "[GRAPH_STATE_V1]"
 _SNAPSHOT_JSON_RE = re.compile(
@@ -118,8 +106,6 @@ def default_conversation_state() -> dict:
     """Return a safe empty conversation state."""
     return {
         "active_domain": "general",
-        "interaction_mode": InteractionMode.GENERAL.value,
-        "primary_owner": PrimaryOwner.COACH_REPLY.value,
         "pending_action": {
             "kind": PendingActionKind.NONE.value,
             "status": ActionStatus.NO_ACTION_NEEDED.value,
@@ -130,7 +116,7 @@ def default_conversation_state() -> dict:
 
 
 def merge_pending_action_update(base: dict, update: dict | None) -> dict:
-    """Merge a router/specialist pending-action update into the current state."""
+    """Merge a specialist pending-action update into the current state."""
     if not update or not isinstance(update, dict):
         return base
     pending = dict(base.get("pending_action", {}))
@@ -139,3 +125,30 @@ def merge_pending_action_update(base: dict, update: dict | None) -> dict:
             pending[key] = update[key]
     base["pending_action"] = pending
     return base
+
+
+def resolve_pending_action(suggestions: dict[str, dict]) -> dict:
+    """Pick the highest-priority pending_action from specialist suggestions.
+
+    Each key is a node name and each value is the pending_action dict
+    suggested by that node.  Returns the merged winning suggestion or
+    a default no-action dict.
+    """
+    best_action: dict | None = None
+    best_priority = len(PENDING_ACTION_PRIORITY)
+    for suggestion in suggestions.values():
+        kind = suggestion.get("kind", PendingActionKind.NONE.value)
+        try:
+            priority = PENDING_ACTION_PRIORITY.index(kind)
+        except ValueError:
+            priority = len(PENDING_ACTION_PRIORITY)
+        if priority < best_priority:
+            best_priority = priority
+            best_action = suggestion
+    if best_action is not None:
+        return dict(best_action)
+    return {
+        "kind": PendingActionKind.NONE.value,
+        "status": ActionStatus.NO_ACTION_NEEDED.value,
+        "missing_slots": [],
+    }

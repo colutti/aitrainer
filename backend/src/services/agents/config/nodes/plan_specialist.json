@@ -16,7 +16,7 @@
   ],
   "prompt_file": "backend/src/services/agents/config/prompts/plan_specialist.md",
   "response_format": "json",
-  "version": "v1",
+  "version": "v2",
   "provider_sort": "throughput",
   "context_blocks": [
     "request",
@@ -25,12 +25,14 @@
     "training_analysis",
     "nutrition_analysis",
     "metabolism",
-    "history_summary_neutral"
+    "history_summary_neutral",
+    "plan_lifecycle",
+    "conversation_state"
   ],
   "peer_inputs": [
     "training_specialist",
     "nutrition_specialist"
   ],
   "persona_mode": "none",
-  "output_contract": "json(plan_status,action_status,reason,technical_summary,needs_revision,plan_candidate,pending_slots,resolved_slots,pending_action,next_owner,memory_candidates,event_candidates)"
+  "output_contract": "json(plan_status,action_status,reason,technical_summary,needs_revision,plan_candidate,pending_slots,resolved_slots,pending_action,memory_candidates,event_candidates)"
 }

@@ -133,7 +133,7 @@ class TestNodeToolPolicy:
         assert tp.replaces == "reset_tdee_tracking"
 
     def test_context_free_nodes_have_no_tools(self):
-        context_free = {"session_context", "prompt_security", "intent_router"}
+        context_free = {"session_context", "prompt_security"}
         for node_name in context_free:
             assert get_node_llm_tools(node_name) == set(), (
                 f"Node '{node_name}' should have no LLM tools"

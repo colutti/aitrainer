@@ -56,10 +56,6 @@ _NODE_POLICY: dict[str, dict[str, FrozenSet[str]]] = {
         "llm_direct": frozenset(),
         "orchestrator_only": frozenset(),
     },
-    "intent_router": {
-        "llm_direct": frozenset(),
-        "orchestrator_only": frozenset(),
-    },
     "training_specialist": {
         "llm_direct": frozenset({
             "save_workout",

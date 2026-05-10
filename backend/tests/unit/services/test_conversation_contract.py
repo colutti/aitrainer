@@ -2,13 +2,12 @@
 
 from src.services.graph.conversation_contract import (
     ActionStatus,
-    InteractionMode,
     PendingActionKind,
-    PrimaryOwner,
     build_snapshot,
     default_conversation_state,
     merge_pending_action_update,
     parse_latest_snapshot,
+    resolve_pending_action,
 )
 
 
@@ -16,8 +15,6 @@ class TestSnapshotPersistence:
     def test_build_and_parse_roundtrip(self):
         state = {
             "active_domain": "plan",
-            "interaction_mode": InteractionMode.PLAN_DISCOVERY.value,
-            "primary_owner": PrimaryOwner.PLAN_SPECIALIST.value,
             "pending_action": {
                 "kind": PendingActionKind.PLAN_DISCOVERY.value,
                 "status": ActionStatus.NEEDS_USER_INPUT.value,
@@ -44,8 +41,6 @@ class TestSnapshotPersistence:
         older = build_snapshot(
             {
                 "active_domain": "training",
-                "interaction_mode": InteractionMode.DOMAIN_ANALYSIS.value,
-                "primary_owner": PrimaryOwner.TRAINING_SPECIALIST.value,
                 "pending_action": {
                     "kind": PendingActionKind.NONE.value,
                     "status": ActionStatus.NO_ACTION_NEEDED.value,
@@ -57,8 +52,6 @@ class TestSnapshotPersistence:
         newer = build_snapshot(
             {
                 "active_domain": "plan",
-                "interaction_mode": InteractionMode.PLAN_DISCOVERY.value,
-                "primary_owner": PrimaryOwner.PLAN_SPECIALIST.value,
                 "pending_action": {
                     "kind": PendingActionKind.PLAN_DISCOVERY.value,
                     "status": ActionStatus.NEEDS_USER_INPUT.value,
@@ -75,8 +68,6 @@ class TestSnapshotPersistence:
         snapshot = build_snapshot(
             {
                 "active_domain": "plan",
-                "interaction_mode": InteractionMode.PLAN_DISCOVERY.value,
-                "primary_owner": PrimaryOwner.PLAN_SPECIALIST.value,
                 "pending_action": {
                     "kind": PendingActionKind.PLAN_DISCOVERY.value,
                     "status": ActionStatus.NEEDS_USER_INPUT.value,
@@ -92,13 +83,33 @@ class TestSnapshotPersistence:
     def test_parse_handles_empty_list(self):
         assert parse_latest_snapshot([]) is None
 
+    def test_parse_backward_compat_with_old_owner_fields(self):
+        """Old snapshots with primary_owner/interaction_mode still parse correctly."""
+        state = {
+            "active_domain": "training",
+            "primary_owner": "training_specialist",
+            "interaction_mode": "domain_analysis",
+            "pending_action": {
+                "kind": PendingActionKind.DOMAIN_EXECUTION.value,
+                "status": ActionStatus.EXECUTED.value,
+                "missing_slots": [],
+            },
+            "last_action_status": ActionStatus.EXECUTED.value,
+        }
+        snapshot = build_snapshot(state)
+        parsed = parse_latest_snapshot([snapshot])
+        assert parsed is not None
+        assert parsed["active_domain"] == "training"
+        assert parsed["pending_action"]["kind"] == PendingActionKind.DOMAIN_EXECUTION.value
+
 
 class TestDefaultState:
     def test_default_is_valid(self):
         state = default_conversation_state()
         assert state["active_domain"] == "general"
-        assert state["interaction_mode"] == InteractionMode.GENERAL.value
         assert state["pending_action"]["kind"] == PendingActionKind.NONE.value
+        assert state["pending_action"]["status"] == ActionStatus.NO_ACTION_NEEDED.value
+        assert state["last_action_status"] == ActionStatus.NO_ACTION_NEEDED.value
 
 
 class TestPendingActionMerge:
@@ -144,7 +155,6 @@ class TestPendingActionMerge:
     def test_merge_preserves_non_pending_fields(self):
         base = {
             "active_domain": "plan",
-            "interaction_mode": InteractionMode.PLAN_DISCOVERY.value,
             "pending_action": {
                 "kind": PendingActionKind.PLAN_DISCOVERY.value,
                 "status": ActionStatus.NEEDS_USER_INPUT.value,
@@ -154,11 +164,9 @@ class TestPendingActionMerge:
         update = {"missing_slots": ["goal", "availability"]}
         result = merge_pending_action_update(base, update)
         assert result["active_domain"] == "plan"
-        assert result["interaction_mode"] == InteractionMode.PLAN_DISCOVERY.value
         assert result["pending_action"]["missing_slots"] == ["goal", "availability"]
 
     def test_merge_resets_pending_action_when_kind_is_none(self):
-        """An update with kind='none' must clear the pending action entirely."""
         base = {
             "active_domain": "plan",
             "pending_action": {
@@ -179,23 +187,93 @@ class TestPendingActionMerge:
 
 
 class TestEnumValues:
-    def test_interaction_modes_cover_expected_conversation_types(self):
-        values = {m.value for m in InteractionMode}
-        assert "general" in values
-        assert "plan_discovery" in values
-        assert "execution_request" in values
-        assert "slot_answer" in values
-
     def test_action_statuses_cover_expected_outcomes(self):
         values = {s.value for s in ActionStatus}
         assert "executed" in values
         assert "needs_user_input" in values
-        assert "escalate_to_plan" in values
         assert "no_action_needed" in values
 
-    def test_primary_owners_cover_all_conversational_nodes(self):
-        values = {o.value for o in PrimaryOwner}
-        assert "training_specialist" in values
-        assert "nutrition_specialist" in values
-        assert "plan_specialist" in values
-        assert "coach_reply" in values
+    def test_pending_action_kinds_cover_expected_categories(self):
+        values = {k.value for k in PendingActionKind}
+        assert "plan_discovery" in values
+        assert "plan_review" in values
+        assert "domain_execution" in values
+        assert "domain_analysis" in values
+        assert "none" in values
+
+
+class TestResolvePendingAction:
+    def test_picks_domain_execution_over_none(self):
+        suggestions = {
+            "training_specialist": {
+                "kind": PendingActionKind.DOMAIN_EXECUTION.value,
+                "status": ActionStatus.NEEDS_USER_INPUT.value,
+                "missing_slots": [],
+            },
+            "nutrition_specialist": {
+                "kind": PendingActionKind.NONE.value,
+                "status": ActionStatus.NO_ACTION_NEEDED.value,
+                "missing_slots": [],
+            },
+        }
+        result = resolve_pending_action(suggestions)
+        assert result["kind"] == PendingActionKind.DOMAIN_EXECUTION.value
+
+    def test_picks_plan_discovery_over_domain_analysis(self):
+        suggestions = {
+            "nutrition_specialist": {
+                "kind": PendingActionKind.DOMAIN_ANALYSIS.value,
+                "status": ActionStatus.NO_ACTION_NEEDED.value,
+                "missing_slots": [],
+            },
+            "plan_specialist": {
+                "kind": PendingActionKind.PLAN_DISCOVERY.value,
+                "status": ActionStatus.NEEDS_USER_INPUT.value,
+                "missing_slots": ["goal"],
+            },
+        }
+        result = resolve_pending_action(suggestions)
+        assert result["kind"] == PendingActionKind.PLAN_DISCOVERY.value
+        assert result["missing_slots"] == ["goal"]
+
+    def test_defaults_to_no_action_when_all_none(self):
+        suggestions = {
+            "training_specialist": {
+                "kind": PendingActionKind.NONE.value,
+                "status": ActionStatus.NO_ACTION_NEEDED.value,
+                "missing_slots": [],
+            },
+            "nutrition_specialist": {
+                "kind": PendingActionKind.NONE.value,
+                "status": ActionStatus.NO_ACTION_NEEDED.value,
+                "missing_slots": [],
+            },
+            "plan_specialist": {
+                "kind": PendingActionKind.NONE.value,
+                "status": ActionStatus.NO_ACTION_NEEDED.value,
+                "missing_slots": [],
+            },
+        }
+        result = resolve_pending_action(suggestions)
+        assert result["kind"] == PendingActionKind.NONE.value
+
+    def test_defaults_to_no_action_on_empty(self):
+        result = resolve_pending_action({})
+        assert result["kind"] == PendingActionKind.NONE.value
+        assert result["status"] == ActionStatus.NO_ACTION_NEEDED.value
+
+    def test_picks_domain_execution_over_plan_discovery(self):
+        suggestions = {
+            "training_specialist": {
+                "kind": PendingActionKind.DOMAIN_EXECUTION.value,
+                "status": ActionStatus.NEEDS_USER_INPUT.value,
+                "missing_slots": [],
+            },
+            "plan_specialist": {
+                "kind": PendingActionKind.PLAN_DISCOVERY.value,
+                "status": ActionStatus.NEEDS_USER_INPUT.value,
+                "missing_slots": ["goal"],
+            },
+        }
+        result = resolve_pending_action(suggestions)
+        assert result["kind"] == PendingActionKind.DOMAIN_EXECUTION.value

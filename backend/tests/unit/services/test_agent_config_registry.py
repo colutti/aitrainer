@@ -8,7 +8,7 @@ from src.services.agents.config_registry import AgentConfigRegistry
 def test_registry_loads_node_configs():
     registry = AgentConfigRegistry("src/services/agents/config")
     configs = registry.list_node_configs()
-    assert len(configs) >= 8
+    assert len(configs) >= 7
     names = {cfg.node_name for cfg in configs}
     assert "plan_specialist" in names
     assert "prompt_security" in names
@@ -61,14 +61,12 @@ def test_node_contract_defaults_match_runtime_design():
     training = registry.get_node_config("training_specialist")
     plan = registry.get_node_config("plan_specialist")
     nutrition = registry.get_node_config("nutrition_specialist")
-    intent_router = registry.get_node_config("intent_router")
     memory_hub = registry.get_node_config("memory_hub")
 
     assert coach.persona_mode == "final_only"
     assert training.persona_mode == "none"
     assert nutrition.persona_mode == "none"
     assert plan.persona_mode == "none"
-    assert intent_router.persona_mode == "none"
     assert security.persona_mode == "none"
     assert memory_hub.persona_mode == "none"
     assert "trainer_persona" in coach.context_blocks
@@ -99,6 +97,9 @@ def test_node_contract_defaults_match_runtime_design():
     assert "context_summary" not in training.prompt_text.lower()
     assert "context_summary" not in nutrition.prompt_text.lower()
     assert "context_summary" not in plan.prompt_text.lower()
+    assert "conversation_state" in training.context_blocks
+    assert "conversation_state" in nutrition.context_blocks
+    assert "conversation_state" in plan.context_blocks
 
 
 def test_prompt_texts_encode_node_responsibilities():
@@ -106,28 +107,19 @@ def test_prompt_texts_encode_node_responsibilities():
     training = registry.get_node_config("training_specialist")
     nutrition = registry.get_node_config("nutrition_specialist")
     plan = registry.get_node_config("plan_specialist")
-    intent_router = registry.get_node_config("intent_router")
     coach = registry.get_node_config("coach_reply")
 
-    assert "save_workout" in training.prompt_text
-    assert "history_summary_neutral" in training.prompt_text.lower()
-    assert "save_daily_nutrition" in nutrition.prompt_text
-    assert "history_summary_neutral" in nutrition.prompt_text.lower()
+    assert "TrainingSpecialistNode" in training.prompt_text
+    assert "no_action_needed" in training.prompt_text
+    assert "NutritionSpecialistNode" in nutrition.prompt_text
+    assert "no_action_needed" in nutrition.prompt_text
+    assert "PlanSpecialistNode" in plan.prompt_text
     assert "upsert_plan" in plan.prompt_text
-    assert "upsert_plan" in plan.prompt_text
-    assert "chame `upsert_plan`" in plan.prompt_text.lower()
+    assert "no_action_needed" in plan.prompt_text
     assert "history_summary" not in coach.prompt_text
-    assert "history summary" in coach.prompt_text.lower()
-    assert "multi_domain" in intent_router.prompt_text
-    assert "Treinei costas hoje e comi 2400 kcal" in intent_router.prompt_text
-    assert "persona ativa" in coach.prompt_text or "persona" in coach.prompt_text
-    assert "idioma predominante" in coach.prompt_text
-    assert "voz de entrenador" in coach.prompt_text
-    assert "soar nativa" in coach.prompt_text
-    assert "texto corrido e natural" in coach.prompt_text
-    assert "Nao use rotulos de secao" in coach.prompt_text
-    assert "monstro" in coach.prompt_text
-    assert "e nois" in coach.prompt_text
+    assert "CoachReplyNode" in coach.prompt_text
+    assert "no_action_needed" in coach.prompt_text
+    assert "persona" in coach.prompt_text.lower()
     assert coach.temperature == 0.2
 
 
