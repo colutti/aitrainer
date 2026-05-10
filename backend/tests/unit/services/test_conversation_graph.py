@@ -230,6 +230,72 @@ async def test_prompt_security_allows_normal_fitness_coaching():
 
 
 @pytest.mark.asyncio
+async def test_prompt_security_allows_general_greeting():
+    """Greetings like 'oi' must be safe, not blocked out_of_scope."""
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield '{"status":"safe","reason":"greeting","sanitized":"oi"}'
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="oi",
+        user_input_sanitized="oi",
+        channel="app",
+    )
+    await runner._node_prompt_security(state)  # pylint: disable=protected-access
+    assert state.security_status == "safe"
+
+
+@pytest.mark.asyncio
+async def test_prompt_security_allows_product_question():
+    """Product questions like 'como funciona o app?' must be safe."""
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield '{"status":"safe","reason":"product_question","sanitized":"como funciona o app?"}'
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="como funciona o app?",
+        user_input_sanitized="como funciona o app?",
+        channel="app",
+    )
+    await runner._node_prompt_security(state)  # pylint: disable=protected-access
+    assert state.security_status == "safe"
+
+
+@pytest.mark.asyncio
+async def test_prompt_security_allows_benign_meta_followup():
+    """Benign clarification like 'o que voce ja anotou?' must be safe."""
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield '{"status":"safe","reason":"clarification","sanitized":"o que voce ja anotou?"}'
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="o que voce ja anotou?",
+        user_input_sanitized="o que voce ja anotou?",
+        channel="app",
+    )
+    await runner._node_prompt_security(state)  # pylint: disable=protected-access
+    assert state.security_status == "safe"
+
+
+@pytest.mark.asyncio
 async def test_intent_router_detects_multi_domain():
     runner, brain = _runner_with_brain()
     state = GraphState(
