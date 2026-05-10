@@ -33,7 +33,34 @@ def valid_payload() -> dict:
                     'id': 'upper_a',
                     'name': 'Upper A',
                     'exercises': [
-                        {'name': 'Supino', 'sets': 4, 'reps': '6-8', 'load_guidance': 'RPE 8'}
+                        {
+                            'name': 'Supino',
+                            'sets': 4,
+                            'reps': '6-8',
+                            'load_guidance': 'RPE 8',
+                            'rest_seconds': 90,
+                        },
+                        {
+                            'name': 'Remada curvada',
+                            'sets': 4,
+                            'reps': '8-10',
+                            'load_guidance': 'RPE 8',
+                            'rest_seconds': 90,
+                        },
+                        {
+                            'name': 'Desenvolvimento',
+                            'sets': 3,
+                            'reps': '8-10',
+                            'load_guidance': 'RPE 8',
+                            'rest_seconds': 90,
+                        },
+                        {
+                            'name': 'Rosca direta',
+                            'sets': 3,
+                            'reps': '10-12',
+                            'load_guidance': 'RPE 8',
+                            'rest_seconds': 60,
+                        },
                     ],
                 }
             ],

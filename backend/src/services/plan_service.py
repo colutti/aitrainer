@@ -250,6 +250,49 @@ def _aware_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def validate_training_program_quality(program: dict) -> list[str]:
+    """Validate that a training program proposal meets minimum quality standards.
+
+    Returns a list of quality issues (empty = pass).
+    Evaluates completeness and coherence, not arbitrary exercise counts.
+    """
+    issues: list[str] = []
+    routines = program.get("routines", [])
+    if not isinstance(routines, list) or len(routines) == 0:
+        issues.append("training_program must have at least one routine")
+        return issues
+
+    frequency = program.get("frequency_per_week", 0)
+    has_schedule = bool(program.get("weekly_schedule"))
+
+    for idx, routine in enumerate(routines):
+        if not isinstance(routine, dict):
+            continue
+        exercises = routine.get("exercises", [])
+        if not isinstance(exercises, list) or len(exercises) == 0:
+            issues.append(f"routine[{idx}] has no exercises")
+            continue
+        all_minimal = all(
+            not ex.get("load_guidance")
+            or not ex.get("reps")
+            or not ex.get("sets")
+            for ex in exercises
+        )
+        if all_minimal:
+            issues.append(
+                f"routine[{idx}] '{routine.get('name', '')}' has exercises "
+                f"missing load_guidance, reps, or sets"
+            )
+        if frequency >= 4 and len(exercises) <= 1:
+            issues.append(
+                f"routine[{idx}] '{routine.get('name', '')}' has only "
+                f"{len(exercises)} exercise(s) for a {frequency}x/week program"
+            )
+    if not has_schedule:
+        issues.append("training_program missing weekly_schedule")
+    return issues
+
+
 def build_plan_singleton(
     user_email: str,
     latest_plan: UserPlan | None,

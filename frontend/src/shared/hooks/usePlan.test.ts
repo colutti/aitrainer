@@ -38,6 +38,8 @@ const mockPlan: Plan = {
     split_name: 'upper_lower',
     frequency_per_week: 4,
     session_duration_min: 55,
+    progression_rules: [],
+    review_triggers: [],
     weekly_schedule: [{ day: 'monday', routine_id: 'upper_a', focus: 'upper', type: 'training' }],
     routines: [{ id: 'upper_a', name: 'Upper A', exercises: [{ name: 'Supino', sets: 4, reps: '6-8', load_guidance: 'RPE 8' }] }],
   },
@@ -93,6 +95,8 @@ describe('usePlanStore', () => {
         split_name: 'upper_lower',
         frequency_per_week: 4,
         session_duration_min: 50,
+        progression_rules: [],
+        review_triggers: [],
         weekly_schedule: [{ day: 'monday', routine_id: 'upper_a', focus: 'upper', type: 'training' }],
         routines: [
           {

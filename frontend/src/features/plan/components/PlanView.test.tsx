@@ -47,6 +47,9 @@ const mockPlan: Plan = {
     split_name: 'push_pull_legs',
     frequency_per_week: 5,
     session_duration_min: 60,
+    program_notes: 'PPL foco em hipertrofia',
+    progression_rules: [],
+    review_triggers: [],
     weekly_schedule: [
       { day: 'monday', routine_id: 'push_a', focus: 'push', type: 'training' },
       { day: 'tuesday', routine_id: 'pull_a', focus: 'pull', type: 'training' },

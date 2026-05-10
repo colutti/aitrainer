@@ -60,16 +60,11 @@ _NODE_POLICY: dict[str, dict[str, FrozenSet[str]]] = {
         "llm_direct": frozenset({
             "save_workout",
             "get_workouts",
-            "list_hevy_routines",
-            "get_hevy_routine_detail",
-            "trigger_hevy_import",
-            "create_hevy_routine",
-            "update_hevy_routine",
-            "search_hevy_exercises",
-            "replace_hevy_exercise",
-            "set_routine_rest_and_ranges",
             "save_body_composition",
             "get_body_composition",
+            "get_plan",
+            "get_user_goal",
+            "get_metabolism_data",
         }),
         "orchestrator_only": frozenset(),
     },
@@ -410,6 +405,33 @@ def get_node_orchestrator_tools(node_name: str) -> set[str]:
 def get_node_all_tools(node_name: str) -> set[str]:
     """Return all tools (LLM + orchestrator) that a node may use."""
     return get_node_llm_tools(node_name) | get_node_orchestrator_tools(node_name)
+
+
+HEVY_TOOL_NAMES = frozenset({
+    "list_hevy_routines",
+    "get_hevy_routine_detail",
+    "trigger_hevy_import",
+    "create_hevy_routine",
+    "update_hevy_routine",
+    "search_hevy_exercises",
+    "replace_hevy_exercise",
+    "set_routine_rest_and_ranges",
+})
+
+
+def get_hevy_tool_names() -> frozenset[str]:
+    """Return the set of Hevy integration tool names.
+
+    These tools are conditionally exposed based on user's Hevy connection status
+    and whether the conversation explicitly involves Hevy integration topics.
+    They are NOT part of the default tool set for any conversational node.
+    """
+    return HEVY_TOOL_NAMES
+
+
+def is_hevy_tool(tool_name: str) -> bool:
+    """Check if a tool name is a Hevy integration tool."""
+    return tool_name in HEVY_TOOL_NAMES
 
 
 def is_conversational_tool(tool_name: str) -> bool:

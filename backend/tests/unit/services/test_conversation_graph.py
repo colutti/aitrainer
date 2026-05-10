@@ -903,12 +903,60 @@ async def test_training_specialist_receives_transact_and_read_tools():
     await runner._node_training_specialist(state)  # pylint: disable=protected-access
 
     assert "save_workout" in captured["tools"]
+    assert "get_body_composition" in captured["tools"]
+    assert "trigger_hevy_import" not in captured["tools"]
+    assert "create_hevy_routine" not in captured["tools"]
+
+
+@pytest.mark.asyncio
+async def test_training_specialist_receives_hevy_tools_when_input_mentions_hevy():
+    runner, brain = _runner_with_brain()
+    captured = {}
+    tool_names = [
+        "save_workout",
+        "get_workouts",
+        "list_hevy_routines",
+        "get_hevy_routine_detail",
+        "trigger_hevy_import",
+        "create_hevy_routine",
+        "get_body_composition",
+    ]
+    tool_mocks = []
+    for tool_name in tool_names:
+        tool = MagicMock()
+        tool.name = tool_name
+        tool_mocks.append(tool)
+    brain.get_tools.return_value = tool_mocks
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        captured["tools"] = [tool.name for tool in kwargs["tools"]]
+        yield "ok"
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="quero sincronizar meu hevy",
+        user_input_sanitized="quero sincronizar meu hevy",
+        channel="app",
+    )
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_training_specialist(state)
+
+    assert "save_workout" in captured["tools"]
+    assert "list_hevy_routines" in captured["tools"]
     assert "trigger_hevy_import" in captured["tools"]
-    assert "create_hevy_routine" in captured["tools"]
-    assert "update_hevy_routine" in captured["tools"]
-    assert "search_hevy_exercises" in captured["tools"]
-    assert "replace_hevy_exercise" in captured["tools"]
-    assert "set_routine_rest_and_ranges" in captured["tools"]
+    assert "get_body_composition" in captured["tools"]
 
 
 @pytest.mark.asyncio

@@ -46,15 +46,23 @@ interface BackendPlanPayload {
     split_name?: string;
     frequency_per_week?: number;
     session_duration_min?: number;
+    program_notes?: string;
+    progression_rules?: string[];
+    review_triggers?: string[];
     routines?: {
       id?: string;
       name?: string;
       objective?: string;
+      warmup?: string;
+      notes?: string;
       exercises?: {
         name?: string;
         sets?: number;
         reps?: string;
         load_guidance?: string;
+        rest_seconds?: number;
+        tempo?: string;
+        coach_notes?: string;
       }[];
     }[];
     weekly_schedule?: {
@@ -122,15 +130,23 @@ function mapBackendToPlan(payload: BackendPlanPayload): Plan {
       split_name: payload.training_program?.split_name ?? 'Nao definido',
       frequency_per_week: payload.training_program?.frequency_per_week ?? 0,
       session_duration_min: payload.training_program?.session_duration_min ?? 0,
+      program_notes: payload.training_program?.program_notes,
+      progression_rules: payload.training_program?.progression_rules ?? [],
+      review_triggers: payload.training_program?.review_triggers ?? [],
       routines: (payload.training_program?.routines ?? []).map((routine, index) => ({
         id: routine.id ?? `routine-${String(index + 1)}`,
         name: routine.name ?? `Rotina ${String(index + 1)}`,
         objective: routine.objective,
+        warmup: routine.warmup,
+        notes: routine.notes,
         exercises: (routine.exercises ?? []).map((exercise) => ({
           name: exercise.name ?? 'Exercicio',
           sets: exercise.sets ?? 0,
           reps: exercise.reps ?? '-',
           load_guidance: exercise.load_guidance ?? '-',
+          rest_seconds: exercise.rest_seconds,
+          tempo: exercise.tempo,
+          coach_notes: exercise.coach_notes,
         })),
       })),
       weekly_schedule: (payload.training_program?.weekly_schedule ?? []).map((item) => ({

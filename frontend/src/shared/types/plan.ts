@@ -30,12 +30,17 @@ export interface PlanRoutineExercise {
   sets: number;
   reps: string;
   load_guidance: string;
+  rest_seconds?: number;
+  tempo?: string;
+  coach_notes?: string;
 }
 
 export interface PlanRoutine {
   id: string;
   name: string;
   objective?: string;
+  warmup?: string;
+  notes?: string;
   exercises: PlanRoutineExercise[];
 }
 
@@ -55,17 +60,22 @@ export interface PlanCheckpoint {
   evidence: string[];
 }
 
+export interface PlanTrainingProgram {
+  split_name: string;
+  frequency_per_week: number;
+  session_duration_min: number;
+  program_notes?: string;
+  progression_rules: string[];
+  review_triggers: string[];
+  routines: PlanRoutine[];
+  weekly_schedule: PlanWeeklyScheduleItem[];
+}
+
 export interface Plan {
   overview: PlanOverview;
   strategy: PlanStrategyView;
   nutrition_targets: PlanNutritionTargets;
   adherence_notes: string[];
-  training_program: {
-    split_name: string;
-    frequency_per_week: number;
-    session_duration_min: number;
-    routines: PlanRoutine[];
-    weekly_schedule: PlanWeeklyScheduleItem[];
-  };
+  training_program: PlanTrainingProgram;
   latest_checkpoint: PlanCheckpoint | null;
 }

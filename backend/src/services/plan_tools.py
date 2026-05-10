@@ -14,6 +14,7 @@ from src.services.plan_service import (
     format_plan_snapshot,
     build_plan_prompt_snapshot,
     missing_master_plan_fields,
+    validate_training_program_quality,
 )
 
 
@@ -56,61 +57,158 @@ def _minimum_upsert_payload_template() -> str:
     return dedent(
         """\
         {
-          "title": "Plano Mestre Recomp",
+          "title": "Plano Mestre Ganho de Massa - 6x PPL",
           "change_reason": "initial_plan",
           "goal": {
-            "primary": "lose_fat",
-            "objective_summary": "Chegar a 15% de gordura corporal ate o verao",
-            "success_criteria": ["aderencia >= 80%", "perda de gordura sustentavel"]
+            "primary": "build_muscle",
+            "objective_summary": "Ganhar massa muscular em 3 meses com treino 6x/semana PPL",
+            "success_criteria": ["aderencia >= 80%", "progressao de carga semanal", "peso corporal +1.5kg/mes"]
           },
           "timeline": {
-            "target_date": "2026-09-01T00:00:00",
-            "review_cadence": "quinzenal"
+            "target_date": "2026-08-10T00:00:00",
+            "review_cadence": "semanal"
           },
           "strategy": {
-            "rationale": "Deficit moderado com progressao de forca",
-            "adaptation_policy": "ajustes por evidencia",
+            "rationale": "Superavit calorico com alta frequencia e volume progressivo para hipertrofia",
+            "adaptation_policy": "revisoes semanais para ajustar carga e volume",
             "constraints": [],
-            "preferences": [],
+            "preferences": ["treino a noite", "gosta de agachamento"],
             "current_risks": []
           },
           "nutrition_strategy": {
             "daily_targets": {
-              "calories": 2200,
-              "protein_g": 180,
-              "carbs_g": 200,
-              "fat_g": 70
+              "calories": 2800,
+              "protein_g": 150,
+              "carbs_g": 370,
+              "fat_g": 80
             },
             "adherence_notes": []
           },
           "training_program": {
             "split_name": "push_pull_legs",
-            "frequency_per_week": 5,
+            "frequency_per_week": 6,
             "session_duration_min": 60,
+            "program_notes": "PPL classico com foco em progressao de carga semanal",
+            "progression_rules": ["adicionar 2kg nos exercicios base quando fizer 2 reps extras na faixa alvo"],
+            "review_triggers": ["estagnacao por 2 semanas seguidas", "dor ou desconforto articular", "falta de 3+ sessoes na semana"],
             "routines": [
               {
-                "id": "push_a",
-                "name": "Push A",
+                "id": "push",
+                "name": "Push",
+                "objective": "empurrar",
+                "warmup": "5min aquecimento geral, 2 series de aproximacao no supino",
+                "notes": "Foco em forma no desenvolvimento",
                 "exercises": [
                   {
                     "name": "Supino reto",
                     "sets": 4,
                     "reps": "6-8",
-                    "load_guidance": "RPE 8"
+                    "load_guidance": "RPE 8",
+                    "rest_seconds": 90,
+                    "tempo": "3-0-1-0",
+                    "coach_notes": "escapulas retraidas, cotovelos 45 graus"
+                  },
+                  {
+                    "name": "Desenvolvimento militar",
+                    "sets": 3,
+                    "reps": "8-10",
+                    "load_guidance": "RPE 8",
+                    "rest_seconds": 90,
+                    "coach_notes": "nao arquear lombar, cotovelo na linha do ombro"
+                  },
+                  {
+                    "name": "Crucifixo reto",
+                    "sets": 3,
+                    "reps": "10-12",
+                    "load_guidance": "RPE 7",
+                    "rest_seconds": 60
+                  },
+                  {
+                    "name": "Triceps pulley",
+                    "sets": 3,
+                    "reps": "12-15",
+                    "load_guidance": "RPE 8",
+                    "rest_seconds": 60
+                  }
+                ]
+              },
+              {
+                "id": "pull",
+                "name": "Pull",
+                "objective": "puxar",
+                "warmup": "5min alongamento dinâmico, 2 series leves de remada",
+                "notes": "priorizar contraçao escapular",
+                "exercises": [
+                  {
+                    "name": "Remada curvada",
+                    "sets": 4,
+                    "reps": "6-8",
+                    "load_guidance": "RPE 8",
+                    "rest_seconds": 90,
+                    "coach_notes": "tronco a 45 graus, puxar na direcao do umbigo"
+                  },
+                  {
+                    "name": "Puxada alta na polia",
+                    "sets": 3,
+                    "reps": "8-10",
+                    "load_guidance": "RPE 8",
+                    "rest_seconds": 90
+                  },
+                  {
+                    "name": "Rosca direta",
+                    "sets": 3,
+                    "reps": "10-12",
+                    "load_guidance": "RPE 8",
+                    "rest_seconds": 60
+                  }
+                ]
+              },
+              {
+                "id": "legs",
+                "name": "Legs",
+                "objective": "pernas",
+                "warmup": "5min bike, 2 series de aproximacao no agachamento",
+                "exercises": [
+                  {
+                    "name": "Agachamento livre",
+                    "sets": 4,
+                    "reps": "6-8",
+                    "load_guidance": "RPE 8",
+                    "rest_seconds": 120,
+                    "coach_notes": "quadril para tras, joelho acompanha o pe"
+                  },
+                  {
+                    "name": "Leg press",
+                    "sets": 3,
+                    "reps": "10-12",
+                    "load_guidance": "RPE 8",
+                    "rest_seconds": 90
+                  },
+                  {
+                    "name": "Extensora",
+                    "sets": 3,
+                    "reps": "12-15",
+                    "load_guidance": "RPE 8",
+                    "rest_seconds": 60
                   }
                 ]
               }
             ],
             "weekly_schedule": [
-              {"day": "monday", "routine_id": "push_a", "focus": "push", "type": "training"}
+              {"day": "monday", "routine_id": "push", "focus": "push", "type": "training"},
+              {"day": "tuesday", "routine_id": "pull", "focus": "pull", "type": "training"},
+              {"day": "wednesday", "routine_id": "legs", "focus": "legs", "type": "training"},
+              {"day": "thursday", "routine_id": "push", "focus": "push", "type": "training"},
+              {"day": "friday", "routine_id": "pull", "focus": "pull", "type": "training"},
+              {"day": "saturday", "routine_id": "legs", "focus": "legs", "type": "training"}
             ]
           },
           "current_summary": {
-            "active_focus": "consistencia",
-            "rationale": "executar bloco base por 2 semanas",
+            "active_focus": "ganho de massa",
+            "rationale": "alta frequencia e volume para hipertrofia",
             "key_risks": [],
             "last_review": null,
-            "next_review": "2026-09-15"
+            "next_review": "2026-05-17T00:00:00"
           },
           "checkpoints": []
         }"""
@@ -126,20 +224,24 @@ def create_plan_help_tool(_database, _user_email: str):
 
         Use esta tool para relembrar o fluxo completo de criacao de plano,
         incluindo quais dados coletar antes de chamar upsert_plan.
+
+        IMPORTANTE: Voce e o plan manager. Nao invente treinos ou dietas.
+        O training_program e nutrition_strategy devem vir das propostas
+        dos especialistas de dominio, nao da sua criacao propria.
         """
         return (
             "# Plan Tools Help\n\n"
             "## Fluxo obrigatorio\n"
-            "1. Discovery: colete do usuario objetivo, prazo, disponibilidade semanal, "
-            "restricoes e preferencias.\n"
-            "2. Consulte get_metabolism_data antes de definir macros.\n"
-            "3. Monte o payload COMPLETO com todos os campos obrigatorios.\n"
-            "4. Chame upsert_plan UMA VEZ com o payload completo.\n\n"
+            "1. Aguarde a propostas de treino do training_specialist e de nutricao "
+            "do nutrition_specialist.\n"
+            "2. Consolide as propostas recebidas.\n"
+            "3. Verifique coerencia entre treino, nutricao e timeline.\n"
+            "4. Monte o payload COMPLETO com todos os campos obrigatorios.\n"
+            "5. Chame upsert_plan UMA VEZ com o payload completo.\n\n"
             "## Quando NAO chamar upsert_plan\n"
-            "- Se o usuario nao informou objetivo principal, prazo/meta com data alvo, "
-            "disponibilidade semanal (dias e minutos), ou restricoes relevantes.\n"
-            "- Se voce nao tem dados metabolicos (chame get_metabolism_data primeiro).\n"
-            "- Se esta em fase de discovery: retorne plan_status='discovery_needed'.\n"
+            "- Se as propostas de treino ou nutricao ainda nao estao prontas "
+            "(proposal_status != 'ready').\n"
+            "- Se falta coerencia entre treino e nutricao.\n"
             "- Se upsert_plan retornou ERRO_UPSERT_PLAN_INCOMPLETO: NAO tente novamente "
             "no mesmo turno. Retorne plan_status='discovery_needed' e liste o que falta.\n\n"
             "## Regras\n"
@@ -150,8 +252,13 @@ def create_plan_help_tool(_database, _user_email: str):
             "- Nao repetir upsert_plan com payload igual no mesmo turno.\n"
             "- Para ATUALIZAR: envie o payload COMPLETO com todos os campos. "
             "O sistema faz merge automatico com o plano existente.\n"
-            "- Para mudar SOMENTE nutricao: envie training_program com split_name e "
-            "routines contendo apenas id+name. O sistema preserva exercises existentes.\n\n"
+            "- Para mudar SOMENTE nutricao: envie training_program com os campos de programa.\n\n"
+            "## IMPORTANTE: Qualidade do training_program\n"
+            "- Cada rotina deve ter exercicios suficientes para uma sessao produtiva "
+            "(tipicamente 4-8 dependendo do split e frequencia).\n"
+            "- Cada exercicio precisa de rest_seconds e coach_notes para ser util.\n"
+            "- Inclua program_notes, progression_rules e review_triggers.\n"
+            "- Nao crie rotinas com 2 exercicios apenas — isso nao e um treino completo.\n\n"
             "## Payload minimo recomendado\n"
             f"{_minimum_upsert_payload_template()}\n\n"
             "## Ferramentas\n"
@@ -284,6 +391,22 @@ def create_upsert_plan_tool(database, user_email: str):
                     "perguntas ao usuario.\n"
                     "Consulte plan_help para ver o payload minimo completo."
                 )
+            quality_issues = validate_training_program_quality(payload.training_program)
+            if quality_issues:
+                logger.warning(
+                    "upsert_plan REJECTED quality: %s", quality_issues,
+                )
+                return (
+                    "ERRO_UPSERT_PLAN_INCOMPLETO: programa de treino abaixo"
+                    " do minimo de qualidade:\n"
+                    + "\n".join(f"- {issue}" for issue in quality_issues)
+                    + "\n\n"
+                    "PLANO_NAO_SALVO. Nao afirme que salvou/ativou o plano.\n"
+                    "ACAO: Retorne plan_status=discovery_needed e liste as"
+                    " correcoes em technical_summary para que o"
+                    " training_specialist ajuste a proposta.\n"
+                    "Consulte plan_help para ver um exemplo completo."
+                )
             try:
                 plan = build_plan_singleton(user_email, None, payload)
                 plan_id = database.save_plan(plan)
@@ -330,6 +453,20 @@ def create_upsert_plan_tool(database, user_email: str):
                 "Retorne plan_status='update_failed' e liste em technical_summary quais "
                 "informacoes adicionais sao necessarias. "
                 "Consulte plan_help para ver o payload minimo completo."
+            )
+        quality_issues = validate_training_program_quality(payload.training_program)
+        if quality_issues:
+            logger.warning(
+                "upsert_plan REJECTED quality on update: %s", quality_issues,
+            )
+            return (
+                "ERRO_UPSERT_PLAN_INCOMPLETO: programa de treino abaixo"
+                " do minimo de qualidade:\n"
+                + "\n".join(f"- {issue}" for issue in quality_issues)
+                + "\n\n"
+                "PLANO_NAO_SALVO. Nao afirme que salvou/ativou o plano.\n"
+                "ACAO: Retorne plan_status='update_failed' e liste"
+                " correcoes em technical_summary."
             )
         try:
             plan = build_plan_singleton(user_email, latest, payload)

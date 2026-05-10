@@ -261,6 +261,20 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
         locale={i18n.language}
       />
 
+      <PremiumCard className="border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] px-5 py-3">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs font-medium text-text-secondary md:text-sm">
+          <span><span className="font-bold uppercase text-text-muted">{t('plan.labels.split')}:</span> {plan.training_program.split_name}</span>
+          <span><span className="font-bold uppercase text-text-muted">{t('plan.labels.frequency')}:</span> {plan.training_program.frequency_per_week}x</span>
+          <span><span className="font-bold uppercase text-text-muted">{t('plan.labels.session_duration')}:</span> {plan.training_program.session_duration_min}min</span>
+          {plan.training_program.progression_rules?.length > 0 ? (
+            <span><span className="font-bold uppercase text-text-muted">Progressão:</span> {plan.training_program.progression_rules.join('; ')}</span>
+          ) : null}
+        </div>
+        {plan.training_program.program_notes ? (
+          <p className="mt-1 text-xs font-medium text-text-muted">{plan.training_program.program_notes}</p>
+        ) : null}
+      </PremiumCard>
+
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <PremiumCard className="space-y-4 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5">
           <h3 className="text-sm font-bold uppercase tracking-wide text-text-primary">{t('plan.sections.daily_routine')}</h3>
@@ -306,23 +320,37 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
               })}
             </div>
           </div>
+          {selectedRoutine?.warmup ? (
+            <div className="rounded-[var(--radius-lg)] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-3 text-xs font-medium text-text-secondary">
+              <span className="font-bold uppercase text-text-muted">{t('plan.labels.warmup')}:</span> {selectedRoutine.warmup}
+            </div>
+          ) : null}
           <div className="grid grid-cols-1 gap-3 xl:grid-cols-2" data-testid="plan-weekly-exercises">
             {selectedRoutine?.exercises.length ? (
               selectedRoutine.exercises.map((exercise) => (
-                <div key={`${selectedDay}-${exercise.name}`} className="flex items-center gap-4 rounded-[var(--radius-lg)] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">
+                <div key={`${selectedDay}-${exercise.name}`} className="flex items-start gap-4 rounded-[var(--radius-lg)] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">
                   <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-[color:var(--color-outline)] bg-[color:var(--color-surface-container)] text-text-secondary">
                     <Dumbbell size={22} />
                   </div>
-                  <div className="space-y-1">
+                  <div className="min-w-0 flex-1 space-y-1">
                     <p className="text-base font-semibold text-text-primary md:text-lg">{exercise.name}</p>
-                    <div className="flex flex-wrap gap-4 text-xs font-medium text-text-secondary md:text-sm">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium text-text-secondary md:text-sm">
                       <span>
                         {t('plan.labels.sets_reps')}: {exercise.sets} x {exercise.reps}
                       </span>
                       <span>
                         {t('plan.labels.rpe')}: {exercise.load_guidance}
                       </span>
+                      {exercise.rest_seconds ? (
+                        <span>{t('plan.labels.rest')}: {exercise.rest_seconds}s</span>
+                      ) : null}
+                      {exercise.tempo ? (
+                        <span>Tempo: {exercise.tempo}</span>
+                      ) : null}
                     </div>
+                    {exercise.coach_notes ? (
+                      <p className="mt-1 text-xs italic text-text-muted">{exercise.coach_notes}</p>
+                    ) : null}
                   </div>
                 </div>
               ))

@@ -16,7 +16,7 @@ from src.core.langsmith import create_graph_run_context, create_node_run_context
 from src.core.logs import logger
 from src.services.adaptive_tdee import AdaptiveTDEEService
 from src.services.agents.config_registry import AgentConfigRegistry
-from src.services.agents.node_tool_policy import get_node_llm_tools
+from src.services.agents.node_tool_policy import get_hevy_tool_names, get_node_llm_tools
 from src.services.graph.conversation_contract import (
     ActionStatus,
     build_snapshot,
@@ -666,11 +666,23 @@ class ConversationGraphRunner:
         pending_action = parsed.get("pending_action", {})
         if not isinstance(pending_action, dict):
             pending_action = {}
+        training_proposal = parsed.get("training_proposal")
+        proposal_status = str(parsed.get("proposal_status", "")).strip()
+        change_request = parsed.get("change_request")
+        missing_inputs = parsed.get("missing_inputs", [])
+        if not isinstance(missing_inputs, list):
+            missing_inputs = []
         final_text = technical_summary or analysis_text or response
         state.shared_context["training_analysis"] = {
             "status": domain_status,
             "text": final_text,
             "plan_signal": plan_signal,
+        }
+        state.shared_context["training_workspace"] = {
+            "proposal": training_proposal if isinstance(training_proposal, dict) else None,
+            "proposal_status": proposal_status,
+            "change_request": change_request if isinstance(change_request, dict) else None,
+            "missing_inputs": missing_inputs,
         }
         self._merge_persistence_candidates(
             state,
@@ -681,6 +693,7 @@ class ConversationGraphRunner:
         state.specialist_states["training_specialist"] = {
             "action_status": action_status,
             "action_type": action_type,
+            "proposal_status": proposal_status,
         }
         state.node_outputs["training_specialist"] = final_text
 
@@ -703,11 +716,23 @@ class ConversationGraphRunner:
         pending_action = parsed.get("pending_action", {})
         if not isinstance(pending_action, dict):
             pending_action = {}
+        nutrition_proposal = parsed.get("nutrition_proposal")
+        proposal_status = str(parsed.get("proposal_status", "")).strip()
+        change_request = parsed.get("change_request")
+        missing_inputs = parsed.get("missing_inputs", [])
+        if not isinstance(missing_inputs, list):
+            missing_inputs = []
         final_text = technical_summary or analysis_text or response
         state.shared_context["nutrition_analysis"] = {
             "status": domain_status,
             "text": final_text,
             "plan_signal": plan_signal,
+        }
+        state.shared_context["nutrition_workspace"] = {
+            "proposal": nutrition_proposal if isinstance(nutrition_proposal, dict) else None,
+            "proposal_status": proposal_status,
+            "change_request": change_request if isinstance(change_request, dict) else None,
+            "missing_inputs": missing_inputs,
         }
         self._merge_persistence_candidates(
             state,
@@ -718,6 +743,7 @@ class ConversationGraphRunner:
         state.specialist_states["nutrition_specialist"] = {
             "action_status": action_status,
             "action_type": action_type,
+            "proposal_status": proposal_status,
         }
         state.node_outputs["nutrition_specialist"] = final_text
 
@@ -726,12 +752,17 @@ class ConversationGraphRunner:
         input_data = state.shared_context.get("input_data", {})
         plan_section = input_data.get("plan_section", "")
         state.shared_context["has_active_plan"] = bool(plan_section)
+        training_workspace = state.shared_context.get("training_workspace", {})
+        nutrition_workspace = state.shared_context.get("nutrition_workspace", {})
+        training_proposal_block = self._format_proposal_block("TREINO", training_workspace)
+        nutrition_proposal_block = self._format_proposal_block("NUTRICAO", nutrition_workspace)
         coordinator = await self._run_llm_node(
             node_name="plan_specialist",
             state=state,
             extra_context=(
                 f"ANALISE_TREINO:\n{state.node_outputs.get('training_specialist', '')}\n\n"
-                f"ANALISE_NUTRICAO:\n{state.node_outputs.get('nutrition_specialist', '')}"
+                f"ANALISE_NUTRICAO:\n{state.node_outputs.get('nutrition_specialist', '')}\n\n"
+                f"{training_proposal_block}{nutrition_proposal_block}"
             ),
             allowed_tools=get_node_llm_tools("plan_specialist"),
         )
@@ -777,6 +808,8 @@ class ConversationGraphRunner:
             "nutrition_preview": self._truncate(
                 state.node_outputs.get("nutrition_specialist", ""), 280
             ),
+            "training_proposal_status": training_workspace.get("proposal_status", ""),
+            "nutrition_proposal_status": nutrition_workspace.get("proposal_status", ""),
         }
 
     async def _node_coach_reply(self, state: GraphState) -> None:
@@ -918,6 +951,11 @@ class ConversationGraphRunner:
         }
         configured_tools = set(cfg.tool_names or [])
         effective_tools = allowed_tools & configured_tools if configured_tools else allowed_tools
+        if node_name == "training_specialist":
+            hevy_keywords = ["hevy", "sincroniz", "sync", "import", "export"]
+            input_lower = (state.user_input_raw + " " + state.user_input_sanitized).lower()
+            if any(kw in input_lower for kw in hevy_keywords):
+                effective_tools |= get_hevy_tool_names()
         tools = [t for t in self._brain.get_tools(state.user_email) if t.name in effective_tools]
         chunks: list[str] = []
         async for chunk in self._brain._llm_client.stream_with_tools(  # pylint: disable=protected-access
@@ -1024,6 +1062,24 @@ class ConversationGraphRunner:
             if value:
                 chunks.append(f"[{node}]\n{value}")
         return "\n\n".join(chunks).strip() or "[none]"
+
+    @staticmethod
+    def _format_proposal_block(domain_name: str, workspace: dict) -> str:
+        """Format a proposal workspace dict into a readable context block."""
+        status = workspace.get("proposal_status", "")
+        if not status:
+            return ""
+        lines = [f"\nPROPOSTA_{domain_name}_STATUS: {status}"]
+        missing = workspace.get("missing_inputs", [])
+        if missing:
+            lines.append(f"MISSING_{domain_name}_INPUTS: {', '.join(str(m) for m in missing)}")
+        change = workspace.get("change_request")
+        if change and isinstance(change, dict):
+            lines.append(f"CHANGE_REQUEST_{domain_name}_REASON: {change.get('reason', 'N/A')}")
+        proposal = workspace.get("proposal")
+        if proposal and isinstance(proposal, dict):
+            lines.append(f"PROPOSTA_{domain_name}_SUMMARY: {proposal.get('summary', str(proposal)[:200])}")
+        return "\n".join(lines)
 
     @staticmethod
     def _has_unresolved_domain_pending_action(state: GraphState) -> bool:

@@ -381,6 +381,8 @@
       "sets_reps": "Series x Reps",
       "rpe": "RPE",
       "rest_day": "No hay entrenamiento planificado para este día.",
+      "rest": "Descanso",
+      "warmup": "Calentamiento",
       "primary_goal": "Objetivo Principal",
       "success_criteria": "Criterios de Éxito"
     },

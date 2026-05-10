@@ -16,7 +16,7 @@
   ],
   "prompt_file": "backend/src/services/agents/config/prompts/plan_specialist.md",
   "response_format": "json",
-  "version": "v2",
+  "version": "v3",
   "provider_sort": "throughput",
   "context_blocks": [
     "request",

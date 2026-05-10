@@ -130,10 +130,10 @@ The conversation graph (`backend/src/services/graph/conversation_graph.py`) runs
 |---|---|---|
 | `session_context` | `qwen/qwen3-next-80b-a3b-instruct` | Hydrates turn context and recovers cross-turn `conversation_state` from history. LLM is used only for history sanitization. |
 | `prompt_security` | `google/gemini-2.5-flash-lite` | Detects prompt injection and abuse (NOT product scoping). If blocked, short-circuits to blocked response. |
-| `training_specialist` | `google/gemini-3.1-flash-lite-preview` | Domain specialist for training, workout logging, and exercise routine management. Emits `no_action_needed` when the turn is not about training. |
-| `nutrition_specialist` | `google/gemini-3.1-flash-lite-preview` | Domain specialist for nutrition logging, adherence analysis, and metabolism parameter adjustments. Emits `no_action_needed` when the turn is not about nutrition. |
-| `plan_specialist` | `openai/gpt-oss-120b` | Domain specialist for plan discovery, creation, review, and materialization readiness. Emits `no_action_needed` when the turn does not involve the plan. Uses `provider_sort: "throughput"`. |
-| `coach_reply` | `google/gemini-3.1-flash-lite-preview` | **Pure synthesizer** — no tools. Synthesizes specialist outputs into a single coach-voiced response. Ignores no-op specialists. |
+| `training_specialist` | `google/gemini-3.1-flash-lite-preview` | **Training programmer.** Owns anamnesis, exercise prescription, progression, and daily training operations. Produces `training_proposal` for plan consolidation. Does NOT persist structural plan changes. Signal changes via `change_request`. Never mentions Hevy as limitation or excuse. |
+| `nutrition_specialist` | `google/gemini-3.1-flash-lite-preview` | **Nutrition programmer.** Owns nutrition strategy, macro targets, adherence analysis. Produces `nutrition_proposal` for plan consolidation. Does NOT persist structural plan changes. |
+| `plan_specialist` | `openai/gpt-oss-120b` | **Plan manager / PM.** Consolidates proposals from training and nutrition, controls timeline, checkpoints, and review cadence. Only node that persists the official plan via `upsert_plan`. Does NOT invent training programs or nutrition targets — those come from domain specialists. Uses `provider_sort: "throughput"`. |
+| `coach_reply` | `google/gemini-3.1-flash-lite-preview` | **Pure synthesizer** — no tools. Synthesizes specialist outputs into a single coach-voiced response. Ignores no-op specialists. Never mentions Hevy, external integrations, or internal tools unless the user explicitly asked about them. |
 | `memory_hub` | `google/gemini-3.1-flash-lite-preview` | **Residual persistence** — stores durable facts and reminders. Must NOT create events as substitutes for domain operations. |
 
 ### Cross-turn conversation state
@@ -158,15 +158,36 @@ Specialist nodes (training, nutrition, plan) operate in `persona_mode: "none"` a
 
 ### Plan creation flow
 
-The `plan_specialist` follows a 5-item discovery checklist (no explicit consent required):
+The `plan_specialist` coordinates the plan lifecycle by consolidating proposals from domain specialists:
 
-1. Objetivo principal (ex: ganhar massa, perder gordura)
-2. Prazo/meta (date or approximate deadline)
-3. Disponibilidade semanal (days + minutes per session) - combines info across turns
-4. Restrições/limitações ("nenhuma" is accepted)
-5. Metabolismo (via `get_metabolism_data` tool)
+1. Training specialist conducts complete anamnesis with the user (goal, availability, experience, equipment, limitations, preferences, history, recovery)
+2. Training specialist produces a structured `training_proposal` with exercise prescription, warmup, progression rules, and coaching notes
+3. Nutrition specialist produces a `nutrition_proposal` with macro targets and adherence strategy (when applicable)
+4. Plan specialist waits for proposals from all required domains (`proposal_status: ready`)
+5. Plan specialist validates coherence between proposals, sets timeline and checkpoints
+6. Plan specialist calls `upsert_plan` ONLY when all proposals are ready and coherent
+7. After activation, domain specialists continue logging daily operations directly
+8. For structural changes, domain specialists send `change_request`; plan specialist consolidates and persists
 
-When all 5 items are present, the plan_specialist calls `get_metabolism_data` → `plan_help` → `upsert_plan` in sequence.
+The training specialist collects (anamnesis):
+- Training goal
+- Weekly frequency and session duration
+- Training experience and training age
+- Equipment and environment
+- Limitations, pain points, contraindicated movements ("none" is accepted)
+- Exercise preferences and dislikes
+- Recent training history (via `get_workouts`)
+- Perceived recovery (sleep, stress, fatigue)
+
+When all items are present, the training specialist produces a `training_proposal`. When no training-specific anamnesis is needed, the training specialist signals `proposal_status: not_applicable` or `no_action_needed`.
+
+### Hevy integration policy
+
+Hevy tools are NOT part of the default tool set for any conversational node. They are conditionally exposed at runtime only when:
+- The user has Hevy integration enabled on their account
+- AND the current conversation turn explicitly involves Hevy-related topics (sync, import, export, Hevy routines)
+
+The coach reply node is explicitly instructed to NEVER mention Hevy, external integrations, or internal tools as limitations, excuses, or feature suggestions — unless the user explicitly asked about them. The training program must be fully visible and usable in-app without any external dependency.
 
 ### OpenRouter provider routing
 

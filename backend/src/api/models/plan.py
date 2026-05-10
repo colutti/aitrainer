@@ -66,6 +66,8 @@ class TrainingExercise(BaseModel):
     reps: str = Field(..., min_length=1)
     load_guidance: str = Field(..., min_length=1)
     rest_seconds: int | None = Field(default=None, gt=0)
+    tempo: str | None = Field(default=None, description="Tempo cadence (ex: 3-0-1-0)")
+    coach_notes: str | None = Field(default=None, description="Coaching cues and execution tips")
     notes: str | None = None
 
 
@@ -75,6 +77,8 @@ class TrainingRoutine(BaseModel):
     id: str = Field(..., min_length=1)
     name: str = Field(..., min_length=1)
     objective: str | None = None
+    warmup: str | None = Field(default=None, description="Warm-up instructions")
+    notes: str | None = Field(default=None, description="Routine-level coaching notes")
     exercises: list[TrainingExercise] = Field(..., min_length=1)
 
 
@@ -100,6 +104,17 @@ class TrainingProgram(BaseModel):
     split_name: str = Field(..., min_length=1)
     frequency_per_week: int = Field(..., gt=0)
     session_duration_min: int = Field(..., gt=0)
+    program_notes: str | None = Field(
+        default=None, description="Overall program rationale and guidance"
+    )
+    progression_rules: list[str] = Field(
+        default_factory=list,
+        description="How to progress (load, reps, volume)",
+    )
+    review_triggers: list[str] = Field(
+        default_factory=list,
+        description="Conditions triggering plan review",
+    )
     routines: list[TrainingRoutine] = Field(..., min_length=1)
     weekly_schedule: list[WeeklyScheduleItem] = Field(..., min_length=1)
 
