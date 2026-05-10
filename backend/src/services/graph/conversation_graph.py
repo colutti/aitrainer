@@ -758,10 +758,20 @@ class ConversationGraphRunner:
         nutrition_proposal_block = self._format_proposal_block("NUTRICAO", nutrition_workspace)
         plan_tools = get_node_llm_tools("plan_specialist")
         training_ready = training_workspace.get("proposal_status") == "ready"
-        if not training_ready:
+        nutrition_status = str(nutrition_workspace.get("proposal_status", "")).strip()
+        nutrition_pending = nutrition_status not in {
+            "",
+            "ready",
+            "not_applicable",
+            "no_action_needed",
+        }
+        if not training_ready or nutrition_pending:
             plan_tools = {t for t in plan_tools if t != "upsert_plan"}
             logger.debug(
-                "plan_specialist: upsert_plan stripped — training proposal not ready"
+                "plan_specialist: upsert_plan stripped — pending domain proposal "
+                "(training_ready=%s, nutrition_status=%s)",
+                training_ready,
+                nutrition_status,
             )
         coordinator = await self._run_llm_node(
             node_name="plan_specialist",

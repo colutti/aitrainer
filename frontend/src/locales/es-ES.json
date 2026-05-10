@@ -393,7 +393,8 @@
       "build_muscle": "Ganar masa muscular",
       "recomposition": "Recomposición corporal",
       "performance": "Rendimiento",
-      "maintain": "Mantenimiento"
+      "maintain": "Mantenimiento",
+      "unknown": "No definido"
     },
     "empty": {
       "title": "No se encontró un plan",

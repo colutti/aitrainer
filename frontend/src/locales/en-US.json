@@ -393,7 +393,8 @@
       "build_muscle": "Build muscle",
       "recomposition": "Body recomposition",
       "performance": "Performance",
-      "maintain": "Maintenance"
+      "maintain": "Maintenance",
+      "unknown": "Not defined"
     },
     "empty": {
       "title": "No plan found",

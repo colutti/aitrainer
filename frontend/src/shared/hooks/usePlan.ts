@@ -109,7 +109,7 @@ function mapBackendToPlan(payload: BackendPlanPayload): Plan {
     performance: 'plan.goal_labels.performance',
     maintain: 'plan.goal_labels.maintain',
   };
-  const primaryGoalKey = goalLabelMap[primaryGoalRaw] ?? primaryGoalRaw;
+  const primaryGoalKey = goalLabelMap[primaryGoalRaw] ?? 'plan.goal_labels.unknown';
 
   return {
     overview: {

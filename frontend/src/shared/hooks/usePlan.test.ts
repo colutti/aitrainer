@@ -133,6 +133,32 @@ describe('usePlanStore', () => {
     expect(state.plan?.latest_checkpoint?.decision).toBe('continuar');
   });
 
+  it('falls back to unknown goal label when backend goal is missing', async () => {
+    vi.mocked(httpClient).mockResolvedValue({
+      id: 'plan-backend-2',
+      title: 'Plano Sem Goal',
+      timeline: {
+        start_date: '2026-04-01T00:00:00Z',
+        target_date: '2026-06-01T00:00:00Z',
+        review_cadence: 'semanal',
+      },
+      training_program: {
+        split_name: 'upper_lower',
+        frequency_per_week: 4,
+        session_duration_min: 50,
+        progression_rules: [],
+        review_triggers: [],
+        weekly_schedule: [{ day: 'monday', routine_id: 'upper_a', focus: 'upper', type: 'training' }],
+        routines: [{ id: 'upper_a', name: 'Upper A', exercises: [{ name: 'Supino', sets: 4, reps: '6-8', load_guidance: 'RPE 8' }] }],
+      },
+    });
+
+    await usePlanStore.getState().fetchPlan();
+
+    const state = usePlanStore.getState();
+    expect(state.plan?.overview.primary_goal).toBe('plan.goal_labels.unknown');
+  });
+
   it('handles empty plan response', async () => {
     vi.mocked(httpClient).mockResolvedValue(undefined);
 
