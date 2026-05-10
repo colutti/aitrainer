@@ -64,7 +64,7 @@ class TrainingExercise(BaseModel):
     name: str = Field(..., min_length=1)
     sets: int = Field(..., gt=0)
     reps: str = Field(..., min_length=1)
-    load_guidance: str = Field(..., min_length=1)
+    load_guidance: str = Field(default="RPE 7-8")
     rest_seconds: int | None = Field(default=None, gt=0)
     notes: str | None = None
 

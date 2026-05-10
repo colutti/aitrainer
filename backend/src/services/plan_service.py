@@ -149,7 +149,7 @@ def missing_master_plan_fields(
                             f"training_program.routines[{index}].exercises[{ex_index}].{field}"
                             for field in _missing_required_fields(
                                 exercise,
-                                ("name", "sets", "reps", "load_guidance"),
+                                ("name", "sets", "reps"),
                             )
                         ]
                     )
