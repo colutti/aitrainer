@@ -17,6 +17,11 @@ from src.core.logs import logger
 from src.services.adaptive_tdee import AdaptiveTDEEService
 from src.services.agents.config_registry import AgentConfigRegistry
 from src.services.agents.node_tool_policy import get_node_llm_tools
+from src.services.graph.conversation_contract import (
+    build_snapshot,
+    default_conversation_state,
+    parse_latest_snapshot,
+)
 from src.services.plan_service import build_plan_prompt_snapshot
 from src.repositories.event_repository import EventRepository
 
@@ -65,6 +70,8 @@ class GraphState:
     node_metadata: dict[str, dict[str, Any]] = field(default_factory=dict)
     plan_needs_revision: bool = False
     persistence_intents: dict[str, Any] = field(default_factory=dict)
+    conversation_state: dict[str, Any] = field(default_factory=default_conversation_state)
+    specialist_states: dict[str, dict[str, Any]] = field(default_factory=dict)
     request: dict[str, Any] = field(default_factory=dict)
     security: dict[str, Any] = field(default_factory=dict)
     routing: dict[str, Any] = field(default_factory=dict)
@@ -291,6 +298,8 @@ class ConversationGraphRunner:
                             await self._run_node("nutrition_specialist", state)
                     await self._run_node("coach_reply", state)
                 await self._run_node("memory_hub", state)
+                snapshot = build_snapshot(state.conversation_state)
+                self._brain.add_system_message_to_history(state.user_email, snapshot)
                 logger.info(
                     "graph.turn_completed request_id=%s conversation_id=%s turn_id=%s intent=%s security=%s tools_called=%s persistence_actions=%s",
                     state.request_id,
@@ -464,6 +473,14 @@ class ConversationGraphRunner:
                 {},
             )
         ).get("chat_history", [])
+        raw_system_msgs = [
+            str(msg.content)
+            for msg in history_payload
+            if getattr(msg, "type", None) == "system"
+        ]
+        previous_state = parse_latest_snapshot(raw_system_msgs)
+        if previous_state:
+            state.conversation_state = previous_state
         input_data = self._brain.prompt_builder.build_input_data(
             profile=profile,
             trainer_profile_summary=trainer_profile.get_trainer_profile_summary(),
@@ -932,6 +949,9 @@ class ConversationGraphRunner:
             "coach_response": str(state.coach_response),
             "security_result": str(state.security_status),
             "persistence_intents": str(state.persistence_intents),
+            "conversation_state": json.dumps(
+                state.conversation_state, ensure_ascii=True, sort_keys=True
+            ),
         }
 
     def _resolve_node_context(self, cfg, state: GraphState) -> str:
