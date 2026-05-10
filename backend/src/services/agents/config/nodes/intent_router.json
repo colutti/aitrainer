@@ -9,9 +9,10 @@
   "tool_names": [],
   "prompt_file": "backend/src/services/agents/config/prompts/intent_router.md",
   "response_format": "text",
-  "version": "v1",
+  "version": "v2",
   "context_blocks": [
-    "request"
+    "request",
+    "history_summary_neutral"
   ],
   "peer_inputs": [],
   "persona_mode": "none",

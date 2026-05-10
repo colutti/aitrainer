@@ -1012,3 +1012,118 @@ async def test_run_llm_node_omits_persona_restriction_when_final_only():
         allowed_tools=set(),
     )
     assert "PERSONA_RESTRICTION" not in captured.get("system_msg", "")
+
+
+@pytest.mark.asyncio
+async def test_intent_router_classifies_training_followup_with_short_message():
+    """Follow-ups like 'mas eu ja treino ha 1 ano' must be training, not general."""
+    runner, brain = _runner_with_brain()
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="mas eu ja treino ha 1 ano",
+        user_input_sanitized="mas eu ja treino ha 1 ano",
+        channel="app",
+    )
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield '{"intent":"training","reason":"experiencia de treino"}'
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    brain.get_log_callback.return_value = None
+    await runner._node_intent_router(state)  # pylint: disable=protected-access
+    assert state.intent == "training"
+    assert state.routing["intent"] == "training"
+
+
+@pytest.mark.asyncio
+async def test_intent_router_classifies_exercise_followup():
+    """Questions about exercise choices must be training, not general."""
+    runner, brain = _runner_with_brain()
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="por que nao colocar isolados?",
+        user_input_sanitized="por que nao colocar isolados?",
+        channel="app",
+    )
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield '{"intent":"training","reason":"duvida sobre escolha de exercicios"}'
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    brain.get_log_callback.return_value = None
+    await runner._node_intent_router(state)  # pylint: disable=protected-access
+    assert state.intent == "training"
+    assert state.routing["intent"] == "training"
+
+
+@pytest.mark.asyncio
+async def test_intent_router_invalid_intent_falls_back_to_general():
+    """Unrecognized intents from the LLM must fall back to general."""
+    runner, brain = _runner_with_brain()
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="oi",
+        user_input_sanitized="oi",
+        channel="app",
+    )
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield '{"intent":"invalid_fake_intent","reason":"does not exist"}'
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    brain.get_log_callback.return_value = None
+    await runner._node_intent_router(state)  # pylint: disable=protected-access
+    assert state.intent == "general"
+
+
+@pytest.mark.asyncio
+async def test_intent_router_routing_reason_is_preserved():
+    """Intent routing must include the classifier reason for observability."""
+    runner, brain = _runner_with_brain()
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="quero ganhar massa",
+        user_input_sanitized="quero ganhar massa",
+        channel="app",
+    )
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield '{"intent":"plan","reason":"definicao de objetivo principal"}'
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    brain.get_log_callback.return_value = None
+    await runner._node_intent_router(state)  # pylint: disable=protected-access
+    assert state.routing["reason"] == "definicao de objetivo principal"
+
+
+@pytest.mark.asyncio
+async def test_intent_router_history_context_injected_into_llm():
+    """history_summary_neutral must be passed to the LLM when in context_blocks."""
+    runner, brain = _runner_with_brain()
+    captured = {}
+
+    async def fake_stream_with_tools(**kwargs):
+        captured["system"] = kwargs["prompt_template"].messages[0].prompt.template
+        yield '{"intent":"training","reason":"follow-up"}'
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    brain.get_log_callback.return_value = None
+
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="mas eu ja treino ha 1 ano",
+        user_input_sanitized="mas eu ja treino ha 1 ano",
+        channel="app",
+    )
+    state.shared_context = {
+        "input_data": {"user_locale": "pt-BR"},
+        "history_summary_neutral": "User perguntou sobre treino; coach respondeu com plano de exercicios",
+    }
+
+    await runner._node_intent_router(state)  # pylint: disable=protected-access
+    assert "history_summary_neutral" in captured["system"]
