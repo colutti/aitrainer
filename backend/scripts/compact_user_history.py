@@ -26,7 +26,8 @@ else:
 from src.services.database import MongoDatabase  # noqa: E402
 from src.services.history_compactor import HistoryCompactor  # noqa: E402
 from src.core.logs import logger  # noqa: E402
-from src.services.llm_client import LLMClient  # noqa: E402
+from src.core.config import settings  # noqa: E402
+from src.services.llm_client import OpenRouterClient  # noqa: E402
 
 
 async def compact_user_retroactively(user_email: str):
@@ -37,7 +38,10 @@ async def compact_user_retroactively(user_email: str):
     try:
         # Initialize dependencies
         db = MongoDatabase()
-        llm_client = LLMClient.from_config()
+        llm_client = OpenRouterClient(
+            api_key=settings.OPENROUTER_API_KEY,
+            base_url=settings.OPENROUTER_BASE_URL,
+        )
         compactor = HistoryCompactor(db, llm_client)
 
         # Get user profile

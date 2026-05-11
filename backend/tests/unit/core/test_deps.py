@@ -57,16 +57,24 @@ def test_get_qdrant_client_local():
 
 
 def test_get_llm_client():
-    """Test that get_llm_client returns an LLMClient instance."""
+    """Test that get_llm_client returns an OpenRouterClient instance."""
     get_llm_client.cache_clear()
 
-    with patch("src.services.llm_client.LLMClient.from_config") as mock_llm:
-        mock_llm.return_value = MagicMock()
+    with (
+        patch("src.services.llm_client.OpenRouterClient") as mock_cls,
+        patch("src.core.deps.settings") as mock_settings,
+    ):
+        mock_settings.OPENROUTER_API_KEY = "or-key"
+        mock_settings.OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+        mock_cls.return_value = MagicMock()
 
         client = get_llm_client()
 
         assert client is not None
-        mock_llm.assert_called_once()
+        mock_cls.assert_called_once_with(
+            api_key="or-key",
+            base_url="https://openrouter.ai/api/v1",
+        )
 
 
 def test_get_mongo_database():
@@ -90,10 +98,13 @@ def test_get_ai_trainer_brain():
     get_ai_trainer_brain.cache_clear()
 
     with (
-        patch("src.services.llm_client.LLMClient.from_config") as mock_llm,
+        patch("src.services.llm_client.OpenRouterClient") as mock_llm,
         patch("src.services.database.MongoDatabase") as mock_mongo,
         patch("src.services.trainer.AITrainerBrain") as mock_brain,
+        patch("src.core.deps.settings") as mock_settings,
     ):
+        mock_settings.OPENROUTER_API_KEY = "or-key"
+        mock_settings.OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
         mock_llm.return_value = MagicMock()
         mock_mongo.return_value = MagicMock()
         mock_brain.return_value = MagicMock()

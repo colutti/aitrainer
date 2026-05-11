@@ -43,11 +43,14 @@ def get_qdrant_client() -> QdrantClient:
 @functools.lru_cache()
 def get_llm_client() -> LLMClient:
     """
-    Returns the configured LLM client (OpenRouter).
+    Returns the OpenRouter LLM client.
     """
-    from src.services.llm_client import LLMClient  # pylint: disable=import-outside-toplevel
+    from src.services.llm_client import OpenRouterClient  # pylint: disable=import-outside-toplevel
 
-    return LLMClient.from_config()
+    return OpenRouterClient(
+        api_key=settings.OPENROUTER_API_KEY,
+        base_url=settings.OPENROUTER_BASE_URL,
+    )
 
 
 @functools.lru_cache()

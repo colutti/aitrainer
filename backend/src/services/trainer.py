@@ -82,13 +82,10 @@ from src.services.plan_tools import (
     create_get_plan_tool,
     create_upsert_plan_tool,
 )
-from src.repositories.event_repository import EventRepository
 from src.services.memory_service import (
     get_memories_paginated as paginate_memories,
     add_memory as service_add_memory,
 )
-from src.services.plan_service import build_plan_prompt_snapshot
-from src.services.adaptive_tdee import AdaptiveTDEEService
 from src.services.agents.config_registry import AgentConfigRegistry
 from src.services.graph.conversation_graph import ConversationGraphRunner
 from src.core.logs import logger
@@ -720,8 +717,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
         turn_id: str | None = None,
     ):
         """
-        Generates LLM response using the latest chat window only.
-        This function assumes one chat session per user (user_email is used as session_id).
+        Generates LLM response using the conversation graph.
 
         Args:
             user_email (str): The user's email, also used as session ID.
@@ -731,151 +727,15 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
             str: Individual chunks of the AI trainer's response.
         """
         logger.info("Generating workout stream for user: %s", user_email)
-        if settings.ENABLE_EXPERIMENTAL_CONVERSATION_GRAPH:
-            try:
-                async for chunk in self._graph_runner.run_stream(
-                    user_email=user_email,
-                    user_input=user_input,
-                    is_telegram=bool((message_options or {}).get("is_telegram", False)),
-                    user_images=(message_options or {}).get("image_payloads"),
-                    background_tasks=background_tasks,
-                    turn_id=turn_id,
-                ):
-                    yield chunk
-                return
-            except Exception as graph_err:  # pylint: disable=broad-exception-caught
-                logger.error("Graph runtime failed, fallback to legacy flow: %s", graph_err)
-                if turn_id and self.is_graph_debug_enabled():
-                    channel = (
-                        "telegram"
-                        if bool((message_options or {}).get("is_telegram", False))
-                        else "app"
-                    )
-                    self.store_graph_debug_trace(
-                        turn_id,
-                        {
-                            "user_email": user_email,
-                            "request_id": "",
-                            "conversation_id": user_email,
-                            "turn_id": turn_id,
-                            "channel": channel,
-                            "status": "error",
-                            "error": str(graph_err),
-                            "started_at": None,
-                            "ended_at": None,
-                            "duration_ms": None,
-                            "intent": "general",
-                            "security_status": "unknown",
-                            "plan_needs_revision": False,
-                            "tools_called": [],
-                            "persistence_actions": [],
-                            "final_response": "",
-                            "coach_response": "",
-                            "node_outputs": {},
-                            "nodes": [],
-                        },
-                    )
-
-        image_payloads = (message_options or {}).get("image_payloads")
-
-        # 1. Retrieve profiles (sequentially to avoid redundant DB calls and plan mismatch)
-        profile = await asyncio.wrap_future(
-            self._executor.submit(self.get_or_create_user_profile, user_email)
-        )
-        trainer_profile_obj = await asyncio.wrap_future(
-            self._executor.submit(
-                self.get_or_create_trainer_profile, user_email, profile
-            )
-        )
-
-        # 2. Check limits
-        needs_cycle_reset = self.check_message_limits(profile)
-
-        # 3. Memory & History
-        metabolism_data = await asyncio.to_thread(
-            AdaptiveTDEEService(self._database).calculate_tdee,
-            user_email,
-        )
-        plan = await asyncio.to_thread(self._database.get_plan, user_email)
-        enriched_plan_snapshot = None
-        if plan is not None:
-            enriched_plan_snapshot = build_plan_prompt_snapshot(plan)
-
-        # 4. Build input data
-        input_data = self.prompt_builder.build_input_data(
-            profile=profile,
-            trainer_profile_summary=trainer_profile_obj.get_trainer_profile_summary(),
-            user_profile_summary=profile.get_profile_summary(),
-            formatted_history_msgs=self.format_history_as_messages(
-                (
-                    await asyncio.to_thread(
-                        self._database.get_window_memory(
-                            session_id=user_email,
-                            k=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
-                        ).load_memory_variables,
-                        {},
-                    )
-                ).get("chat_history", [])
-            ),
-            user_input=user_input,
-            current_date=datetime.now().strftime("%Y-%m-%d"),
-            agenda_events=await asyncio.to_thread(
-                EventRepository(self._database.database).get_active_events, user_email
-            ),
-            plan_snapshot=enriched_plan_snapshot,
-            metabolism_data=metabolism_data,
-        )
-        input_data["user_locale"] = (
-            trainer_profile_obj.preferred_language or "pt-BR"
-        )
-        if image_payloads:
-            input_data["user_images"] = image_payloads
-
-        raw_response: list[str] = []
-        stream_buffer = ""
-        try:
-            async with asyncio.timeout(self.get_llm_stream_timeout_seconds()):
-                async for chunk in self._llm_client.stream_with_tools(
-                    prompt_template=self.prompt_builder.get_prompt_template(
-                        input_data,
-                        bool((message_options or {}).get("is_telegram", False)),
-                    ),
-                    input_data=input_data,
-                    tools=self.get_tools(user_email),
-                    user_email=user_email,
-                    log_callback=self.get_log_callback(background_tasks),
-                ):
-                    if isinstance(chunk, str):
-                        raw_response.append(chunk)
-                        stream_buffer += chunk
-                        visible, stream_buffer = self.split_stream_visible_text(stream_buffer)
-                        if visible:
-                            yield visible
-        except TimeoutError:
-            logger.error(
-                "LLM stream timeout for user %s after %ss",
-                user_email,
-                self.get_llm_stream_timeout_seconds(),
-            )
-            yield "Error processing request: STREAM_TIMEOUT"
-            return
-
-        if stream_buffer:
-            if cleaned_tail := self.strip_internal_wrappers(stream_buffer):
-                yield cleaned_tail
-
-        await self.finalize_ai_response(
+        async for chunk in self._graph_runner.run_stream(
             user_email=user_email,
             user_input=user_input,
-            final_response=self.strip_internal_wrappers("".join(raw_response)),
-            metadata={
-                "trainer_type": trainer_profile_obj.trainer_type or "atlas",
-                "needs_cycle_reset": needs_cycle_reset,
-                "background_tasks": background_tasks,
-                "log_callback": self.get_log_callback(background_tasks),
-                "user_images": image_payloads,
-            },
-        )
+            is_telegram=bool((message_options or {}).get("is_telegram", False)),
+            user_images=(message_options or {}).get("image_payloads"),
+            background_tasks=background_tasks,
+            turn_id=turn_id,
+        ):
+            yield chunk
 
     async def finalize_ai_response(
         self,
