@@ -47,6 +47,8 @@ _SNAPSHOT_JSON_RE = re.compile(
     re.DOTALL,
 )
 
+_SUMMARY_MARKER = "[CONVERSATION_SUMMARY_V1]"
+
 
 def _extract_json_at_position(text: str, start_pos: int) -> str | None:
     """Extract a complete JSON object from `text` starting at `start_pos`."""
@@ -99,6 +101,22 @@ def parse_latest_snapshot(raw_system_messages: list[str]) -> dict | None:
                     return payload
             except json.JSONDecodeError:
                 continue
+    return None
+
+
+def build_conversation_summary(summary_text: str) -> str:
+    """Serialize a conversation summary to a SYSTEM-suitable string."""
+    return f"{_SUMMARY_MARKER} {summary_text.strip()}"
+
+
+def parse_latest_summary(raw_system_messages: list[str]) -> str | None:
+    """Return the latest conversation summary from system messages, or None."""
+    for msg in reversed(raw_system_messages):
+        if _SUMMARY_MARKER in msg:
+            idx = msg.index(_SUMMARY_MARKER)
+            content = msg[idx + len(_SUMMARY_MARKER):].strip()
+            if content:
+                return content
     return None
 
 

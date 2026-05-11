@@ -18,6 +18,7 @@ import { MessageBubble } from './MessageBubble';
 export interface ChatViewProps {
   messages: ChatMessage[];
   isStreaming: boolean;
+  streamingStatus: string | null;
   isLoading: boolean;
   hasMore: boolean;
   error: string | null;
@@ -69,6 +70,7 @@ const MessageList = memo(function MessageList({
 export function ChatView({
   messages,
   isStreaming,
+  streamingStatus,
   isLoading,
   hasMore,
   error,
@@ -99,6 +101,7 @@ export function ChatView({
     maxSizeMb: maxImageSizeMb,
   });
   const imageHelperAriaLabel = t('chat.image_upload.helper_aria');
+  const typingLabel = streamingStatus != null ? ('chat.status.' + streamingStatus) : 'chat.typing';
   const trainerName = trainer?.name ?? t('chat.default_trainer_name');
   const { isReadOnly: isDemoUser } = useDemoMode(userInfo);
   const normalizedLocale = i18n.language.toLowerCase();
@@ -299,14 +302,14 @@ export function ChatView({
             )}
 
             {isStreaming && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#09090b]/80 border border-[color:var(--color-outline-variant)] mb-4 w-fit">
+              <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-[#09090b]/80 border border-[color:var(--color-outline-variant)] mb-4 w-fit">
                 <div className="flex gap-1">
                   <span className="w-1 h-1 bg-zinc-300 rounded-full animate-bounce [animation-duration:0.6s]" />
                   <span className="w-1 h-1 bg-zinc-300 rounded-full animate-bounce [animation-duration:0.6s] [animation-delay:0.2s]" />
                   <span className="w-1 h-1 bg-zinc-300 rounded-full animate-bounce [animation-duration:0.6s] [animation-delay:0.4s]" />
                 </div>
                 <span className="text-[10px] font-semibold text-text-muted uppercase tracking-[0.05em]">
-                  {t('chat.typing', { name: trainerName })}
+                  {t(typingLabel, { name: trainerName })}
                 </span>
               </div>
             )}

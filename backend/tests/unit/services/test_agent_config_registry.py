@@ -126,7 +126,7 @@ def test_prompt_texts_encode_node_responsibilities():
 def test_session_context_config():
     registry = AgentConfigRegistry("src/services/agents/config")
     cfg = registry.get_node_config("session_context")
-    assert cfg.model_name == "qwen/qwen3-next-80b-a3b-instruct"
+    assert cfg.model_name == "openai/gpt-oss-120b"
     assert cfg.temperature == 0.0
     assert cfg.top_p == 1.0
     assert cfg.frequency_penalty == 0.0

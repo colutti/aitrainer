@@ -18,6 +18,7 @@ export default function ChatPage() {
   const {
     messages,
     isStreaming,
+    streamingStatus,
     error,
     fetchHistory,
     sendMessage,
@@ -119,6 +120,7 @@ export default function ChatPage() {
       <ChatView
         messages={messages}
         isStreaming={isStreaming}
+        streamingStatus={streamingStatus}
         isLoading={isLoading}
         hasMore={hasMore}
         error={error}
