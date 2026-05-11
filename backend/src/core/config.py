@@ -93,7 +93,6 @@ class Settings(BaseSettings):
     LLM_AGENT_RECURSION_LIMIT: int = Field(default=20)
     AI_TRAINER_THREADPOOL_WORKERS: int = Field(default=4)
     WARMUP_AI_ON_STARTUP: bool = Field(default=False)
-    ENABLE_EXPERIMENTAL_CONVERSATION_GRAPH: bool = Field(default=True)
     ALLOWED_ORIGINS: str | list[str] = Field(default="*")
     LOG_LEVEL: str = "INFO"
     RATE_LIMIT_LOGIN: str = "5/minute"
@@ -130,8 +129,6 @@ class Settings(BaseSettings):
     # ====== OPENROUTER ======
     OPENROUTER_API_KEY: str = ""
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
-    OPENROUTER_CHAT_MODEL: str = ""
-    OPENROUTER_PROMPT_PRESET: str = ""
     OPENROUTER_EMBED_MODEL: str = "openai/text-embedding-3-small"
     OPENROUTER_EMBED_DIMENSIONS: int = 768
     PROMPT_CONTEXT_CONTRACT_VERSION: str = "prompt_context_v1"

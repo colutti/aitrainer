@@ -5,8 +5,6 @@ Tests for the AITrainerBrain service.
 import unittest
 from unittest.mock import MagicMock, patch
 
-from src.api.models.user_profile import UserProfile
-from src.api.models.trainer_profile import TrainerProfile
 from src.api.models.chat_history import ChatHistory
 from src.api.models.sender import Sender
 from src.services.trainer import AITrainerBrain
@@ -37,9 +35,6 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         )
         self.mock_db.get_plan.return_value = None
 
-        # Need to mock _llm attribute for the summarization LLM
-        self.mock_llm._llm = MagicMock()
-
         self.settings_patcher = patch("src.services.trainer.settings")
         mock_settings = self.settings_patcher.start()
         self.addCleanup(self.settings_patcher.stop)
@@ -47,8 +42,6 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         mock_settings.MAX_SHORT_TERM_MEMORY_MESSAGES = 10
         mock_settings.AI_TRAINER_THREADPOOL_WORKERS = 4
         mock_settings.LANGSMITH_ENVIRONMENT = "dev"
-        mock_settings.ENABLE_EXPERIMENTAL_CONVERSATION_GRAPH = False
-
         # Mock get_window_memory to return our mock
         self.mock_conversation_memory = MockConversationMemory()
         self.mock_db.get_window_memory.return_value = self.mock_conversation_memory
@@ -56,6 +49,13 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         self.brain = AITrainerBrain(
             database=self.mock_db, llm_client=self.mock_llm
         )
+
+        # Mock graph runner for all tests that call send_message_ai
+        async def _mock_run_stream(**kwargs):
+            yield "Mock graph response"
+
+        self.brain._graph_runner.run_stream = _mock_run_stream
+
         self.brain.get_tools = MagicMock(return_value=[])
         self.brain.prompt_builder.build_input_data = MagicMock(
             return_value={
@@ -71,51 +71,13 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         )
         self.brain.prompt_builder.get_prompt_template = MagicMock(return_value=MagicMock())
 
-        self.tdee_patcher = patch("src.services.trainer.AdaptiveTDEEService")
-        mock_tdee_cls = self.tdee_patcher.start()
-        self.addCleanup(self.tdee_patcher.stop)
-        mock_tdee_cls.return_value.calculate_tdee.return_value = {
-            "tdee": 2400,
-            "daily_target": 2200,
-            "goal_type": "maintain",
-            "goal_weekly_rate": 0.0,
-            "confidence": "medium",
-            "macro_targets": {"protein_g": 160, "carbs_g": 180, "fat_g": 60},
-        }
-
-        self.event_repo_patcher = patch("src.services.trainer.EventRepository")
-        mock_event_repo_cls = self.event_repo_patcher.start()
-        self.addCleanup(self.event_repo_patcher.stop)
-        mock_event_repo_cls.return_value.get_active_events.return_value = []
-
     async def test_send_message_ai_success(self):
         """
-        Test send_message_ai with a successful response.
+        Test send_message_ai delegates to graph runner.
         """
         # Arrange
         user_email = "test@test.com"
         user_input = "Hello"
-
-        user_profile = UserProfile(
-            email=user_email,
-            gender="Masculino",
-            age=25,
-            weight=70,
-            height=175,
-            goal="Muscle gain",
-            goal_type="gain",
-            weekly_rate=0.5,
-        )
-        trainer_profile = TrainerProfile(user_email=user_email, trainer_type="atlas")
-        self.mock_db.get_user_profile.return_value = user_profile
-        self.mock_db.get_trainer_profile.return_value = trainer_profile
-        # Memory search removed with Mem0
-        
-        # Mock async iterator for stream_with_tools
-        async def mock_stream(*args, **kwargs):
-            yield "Test response"
-            
-        self.mock_llm.stream_with_tools = mock_stream
 
         # Act
         response_chunks = []
@@ -126,32 +88,15 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         response = "".join(response_chunks)
 
         # Assert
-        self.assertEqual(response, "Test response")
-        self.mock_db.get_user_profile.assert_called_once_with(user_email)
-        self.mock_db.get_trainer_profile.assert_called_once_with(user_email)
-        self.mock_db.get_window_memory.assert_called_once()
-        # POC: Memory injection removed, AI now manages memories via tools
-        # No automatic memory retrieval happens
-        # Memory search removed with Mem0
+        self.assertEqual(response, "Mock graph response")
 
     async def test_send_message_ai_no_user_profile(self):
         """
-        Test send_message_ai creates default user profile when not found.
+        Test send_message_ai delegates to graph runner when no profile.
         """
         # Arrange
         user_email = "test@test.com"
         user_input = "Hello"
-
-        self.mock_db.get_user_profile.return_value = None
-        # Should return a default trainer profile to proceed
-        self.mock_db.get_trainer_profile.return_value = TrainerProfile(
-            user_email=user_email, trainer_type="atlas"
-        )
-        # Memory search removed with Mem0
-        
-        async def mock_stream(*args, **kwargs):
-            yield "Response"
-        self.mock_llm.stream_with_tools = mock_stream
 
         # Act
         response_chunks = []
@@ -162,36 +107,15 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         response = "".join(response_chunks)
 
         # Assert
-        self.assertEqual(response, "Response")
-        # Verify save_user_profile was called to create the default profile
-        self.mock_db.save_user_profile.assert_called_once()
+        self.assertEqual(response, "Mock graph response")
 
     async def test_send_message_ai_no_trainer_profile(self):
         """
-        Test send_message_ai creates default trainer profile when not found.
+        Test send_message_ai delegates to graph runner when no trainer profile.
         """
         # Arrange
         user_email = "test@test.com"
         user_input = "Hello"
-
-        user_profile = UserProfile(
-            email=user_email,
-            gender="Masculino",
-            age=25,
-            weight=70,
-            height=175,
-            goal="Muscle gain",
-            goal_type="gain",
-            weekly_rate=0.5,
-        )
-
-        self.mock_db.get_user_profile.return_value = user_profile
-        self.mock_db.get_trainer_profile.return_value = None
-        # Memory search removed with Mem0
-        
-        async def mock_stream(*args, **kwargs):
-            yield "Response"
-        self.mock_llm.stream_with_tools = mock_stream
 
         # Act
         response_chunks = []
@@ -202,9 +126,7 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         response = "".join(response_chunks)
 
         # Assert
-        self.assertEqual(response, "Response")
-        # Verify save_trainer_profile was called to create the default profile
-        self.mock_db.save_trainer_profile.assert_called_once()
+        self.assertEqual(response, "Mock graph response")
 
     def test_get_chat_history_sanitizes_only_trainer_internal_tags(self):
         """
