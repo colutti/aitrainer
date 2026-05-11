@@ -57,10 +57,15 @@ describe('useChatStore', () => {
     const messageText = 'Hello AI';
     const streamResponse = 'Hello User';
     
-    // Create a mock stream
+    // Create a mock stream with SSE format
+    const statusEvent1 = 'data: {"type": "status", "node": "session_context"}\n\n';
+    const statusEvent2 = 'data: {"type": "status", "node": "training_specialist"}\n\n';
+    const responseEvent = `data: {"type": "response", "text": "${streamResponse}"}\n\n`;
     const stream = new ReadableStream({
       start(controller) {
-        controller.enqueue(new TextEncoder().encode(streamResponse));
+        controller.enqueue(new TextEncoder().encode(statusEvent1));
+        controller.enqueue(new TextEncoder().encode(statusEvent2));
+        controller.enqueue(new TextEncoder().encode(responseEvent));
         controller.close();
       }
     });

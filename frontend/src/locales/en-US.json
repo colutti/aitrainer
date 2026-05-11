@@ -398,6 +398,15 @@
   },
   "chat": {
     "typing": "Typing...",
+    "status": {
+      "session_context": "Analyzing context...",
+      "prompt_security": "Checking security...",
+      "training_specialist": "Analyzing training...",
+      "nutrition_specialist": "Analyzing nutrition...",
+      "plan_specialist": "Checking plan...",
+      "coach_reply": "Building response...",
+      "memory_hub": "Saving data..."
+    },
     "input_placeholder": "Talk to your trainer...",
     "online_now": "Online now",
     "start_conversation": "Start conversation",

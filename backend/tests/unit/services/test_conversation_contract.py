@@ -3,9 +3,11 @@
 from src.services.graph.conversation_contract import (
     ActionStatus,
     PendingActionKind,
+    build_conversation_summary,
     build_snapshot,
     default_conversation_state,
     merge_pending_action_update,
+    parse_latest_summary,
     parse_latest_snapshot,
     resolve_pending_action,
 )
@@ -277,3 +279,32 @@ class TestResolvePendingAction:
         }
         result = resolve_pending_action(suggestions)
         assert result["kind"] == PendingActionKind.DOMAIN_EXECUTION.value
+
+
+class TestConversationSummary:
+    def test_build_and_parse_roundtrip(self):
+        summary_text = "Usuario busca hipertrofia. Treinos FB 5x/semana."
+        built = build_conversation_summary(summary_text)
+        assert built.startswith("[CONVERSATION_SUMMARY_V1]")
+        parsed = parse_latest_summary([built])
+        assert parsed == summary_text
+
+    def test_parse_returns_none_for_no_summary(self):
+        assert parse_latest_summary(["hello world"]) is None
+        assert parse_latest_summary(["[GRAPH_STATE_V1] {}"]) is None
+
+    def test_parse_picks_latest_when_multiple(self):
+        old = build_conversation_summary("old summary")
+        new = build_conversation_summary("new summary")
+        parsed = parse_latest_summary([old, new])
+        assert parsed == "new summary"
+
+    def test_parse_ignores_non_summary_messages(self):
+        summary = build_conversation_summary("current summary")
+        msgs = ["[GRAPH_STATE_V1] {}", "regular message", summary]
+        parsed = parse_latest_summary(msgs)
+        assert parsed == "current summary"
+
+    def test_parse_handles_empty_content(self):
+        assert parse_latest_summary(["[CONVERSATION_SUMMARY_V1]"]) is None
+        assert parse_latest_summary(["[CONVERSATION_SUMMARY_V1] "]) is None

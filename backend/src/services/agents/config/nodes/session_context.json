@@ -2,20 +2,21 @@
   "node_name": "session_context",
   "enabled": true,
   "model_provider": "openrouter",
-  "model_name": "qwen/qwen3-next-80b-a3b-instruct",
+  "model_name": "openai/gpt-oss-120b",
   "temperature": 0.0,
-  "max_tokens": 8192,
+  "max_tokens": 4096,
   "top_p": 1.0,
   "frequency_penalty": 0.0,
+  "provider_sort": "throughput",
   "tool_policy": "restricted",
   "tool_names": [],
   "prompt_file": "backend/src/services/agents/config/prompts/session_context.md",
   "response_format": "text",
-  "version": "v2",
+  "version": "v3",
   "context_blocks": [
     "history_summary"
   ],
   "peer_inputs": [],
   "persona_mode": "none",
-  "output_contract": "Retorne APENAS o historico sanitizado, sem explicacoes ou comentarios adicionais."
+  "output_contract": "Retorne APENAS o historico sanitizado, sem explicacoes ou comentarios adicionais. Almeje 60-80% do comprimento original para mensagens do treinador."
 }

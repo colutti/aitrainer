@@ -27,5 +27,6 @@
     "plan_specialist"
   ],
   "persona_mode": "final_only",
-  "output_contract": "text"
+  "output_contract": "text",
+  "provider_sort": "throughput"
 }

@@ -19,8 +19,10 @@ from src.services.agents.config_registry import AgentConfigRegistry
 from src.services.agents.node_tool_policy import get_node_llm_tools
 from src.services.graph.conversation_contract import (
     ActionStatus,
+    build_conversation_summary,
     build_snapshot,
     default_conversation_state,
+    parse_latest_summary,
     parse_latest_snapshot,
     resolve_pending_action,
 )
@@ -277,6 +279,7 @@ class ConversationGraphRunner:
                 metadata=trace_metadata,
             ):
                 for node_name in self.NODE_ORDER:
+                    yield f"data: {json.dumps({'type': 'status', 'node': node_name})}\n\n"
                     await self._run_node(node_name, state)
                     if node_name == "prompt_security" and state.security_status != "safe":
                         break
@@ -302,7 +305,7 @@ class ConversationGraphRunner:
                     state.persistence_actions,
                 )
 
-                yield state.final_response
+                yield f"data: {json.dumps({'type': 'response', 'text': state.final_response})}\n\n"
 
                 await self._brain.finalize_ai_response(
                     user_email=user_email,
@@ -496,7 +499,7 @@ class ConversationGraphRunner:
         history_payload = (
             await asyncio.to_thread(
                 self._brain.database.get_window_memory(
-                    session_id=state.user_email, k=50
+                    session_id=state.user_email, k=12
                 ).load_memory_variables,
                 {},
             )
@@ -509,6 +512,7 @@ class ConversationGraphRunner:
         previous_state = parse_latest_snapshot(raw_system_msgs)
         if previous_state:
             state.conversation_state = previous_state
+        conversation_summary = parse_latest_summary(raw_system_msgs)
         input_data = self._brain.prompt_builder.build_input_data(
             profile=profile,
             trainer_profile_summary=trainer_profile.get_trainer_profile_summary(),
@@ -571,6 +575,7 @@ class ConversationGraphRunner:
         state.shared_context["metabolism_section"] = input_data.get("metabolism_section", "")
         raw_history = input_data.get("formatted_history", "")
         state.shared_context["history_summary"] = raw_history
+        state.shared_context["conversation_summary"] = conversation_summary or ""
         if raw_history:
             try:
                 cleaned = await self._run_llm_node(
@@ -578,22 +583,37 @@ class ConversationGraphRunner:
                     state=state,
                     allowed_tools=set(),
                 )
-                if len(cleaned) <= 10:
-                    logger.info("history_sanitize.fallback_too_short chars_in=%d chars_out=%d ratio=%.2f",
-                                len(raw_history), len(cleaned),
-                                len(cleaned) / max(len(raw_history), 1))
+                clean_len = len(cleaned)
+                fallback_threshold = max(10, int(len(raw_history) * 0.2))
+                if clean_len <= fallback_threshold:
+                    logger.info(
+                        "history_sanitize.fallback_too_short chars_in=%d chars_out=%d ratio=%.2f",
+                        len(raw_history), clean_len,
+                        clean_len / max(len(raw_history), 1),
+                    )
                     cleaned = raw_history
                 else:
                     logger.info(
                         "history_sanitize.completed chars_in=%d chars_out=%d",
-                        len(raw_history), len(cleaned),
+                        len(raw_history), clean_len,
                     )
+                if conversation_summary:
+                    cleaned = f"[CONVERSATION_SUMMARY]\n{conversation_summary}\n\n[RECENT_MESSAGES]\n{cleaned}"
                 state.shared_context["history_summary_neutral"] = cleaned
             except Exception:  # pylint: disable=broad-exception-caught
                 logger.warning("history_sanitize.fallback_raw", exc_info=True)
-                state.shared_context["history_summary_neutral"] = raw_history
+                neutral = raw_history
+                if conversation_summary:
+                    neutral = f"[CONVERSATION_SUMMARY]\n{conversation_summary}\n\n[RECENT_MESSAGES]\n{raw_history}"
+                state.shared_context["history_summary_neutral"] = neutral
         else:
             state.shared_context["history_summary_neutral"] = raw_history
+
+        if conversation_summary and state.shared_context["history_summary"]:
+            state.shared_context["history_summary"] = (
+                f"[CONVERSATION_SUMMARY]\n{conversation_summary}\n\n"
+                f"[RECENT_MESSAGES]\n{state.shared_context['history_summary']}"
+            )
         state.shared_context["plan_lifecycle"] = plan_lifecycle
         state.shared_context["persistence_candidates"] = {"memory": [], "event": []}
         state.request["sanitized_input"] = state.user_input_sanitized
@@ -852,6 +872,16 @@ class ConversationGraphRunner:
         )
         parsed = self._parse_json_object(planner)
         state.persistence_intents = parsed
+
+        summary_update = parsed.get("summary_update") if isinstance(parsed, dict) else None
+        if summary_update and isinstance(summary_update, str) and len(summary_update.strip()) > 10:
+            snapshot = build_conversation_summary(summary_update)
+            self._brain.add_system_message_to_history(state.user_email, snapshot)
+            logger.info(
+                "graph.summary_updated request_id=%s chars=%d",
+                state.request_id, len(summary_update),
+            )
+
         if not self._has_unresolved_domain_pending_action(state):
             event_action = self._execute_event_intent(state, tools_by_name, parsed)
             if event_action:
@@ -998,6 +1028,7 @@ class ConversationGraphRunner:
                     state.shared_context.get("history_summary", ""),
                 )
             ),
+            "conversation_summary": str(state.shared_context.get("conversation_summary", "")),
             "training_analysis": str(state.node_outputs.get("training_specialist", "")),
             "nutrition_analysis": str(state.node_outputs.get("nutrition_specialist", "")),
             "plan_workspace": str(state.shared_context.get("plan_workspace", "")),

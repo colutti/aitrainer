@@ -15,5 +15,6 @@
   ],
   "peer_inputs": [],
   "persona_mode": "none",
-  "output_contract": "json(status,reason,sanitized)"
+  "output_contract": "json(status,reason,sanitized)",
+  "provider_sort": "throughput"
 }

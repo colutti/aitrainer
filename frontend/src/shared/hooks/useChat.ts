@@ -8,6 +8,7 @@ interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
   isStreaming: boolean;
+  streamingStatus: string | null;
   error: string | null;
   hasMore: boolean;
   debugTrace: ChatGraphTrace | null;
@@ -26,7 +27,7 @@ interface ChatActions {
 type ChatStore = ChatState & ChatActions;
 
 const AUTH_TOKEN_KEY = 'auth_token';
-const CHAT_STREAM_TIMEOUT_MS = 130_000;
+const CHAT_STREAM_TIMEOUT_MS = 200_000;
 let historyInFlight: Promise<void> | null = null;
 let loadMoreInFlight: Promise<void> | null = null;
 
@@ -39,6 +40,7 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
   messages: [],
   isLoading: false,
   isStreaming: false,
+  streamingStatus: null,
   error: null,
   hasMore: true,
   debugTrace: null,
@@ -224,34 +226,81 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
         timestamp: new Date().toISOString(),
       };
 
-      set((state) => ({ 
-        messages: [...state.messages, aiMessage] 
+      set((state) => ({
+        messages: [...state.messages, aiMessage],
+        streamingStatus: 'session_context',
       }));
 
       const decoder = new TextDecoder();
       let accumulatedText = '';
+      let buffer = '';
 
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        accumulatedText += decoder.decode(value, { stream: true });
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
 
-        set((state) => {
-          const newMessages = [...state.messages];
-          const lastIndex = newMessages.length - 1;
-          const existing = newMessages[lastIndex];
-          if (existing) {
-            newMessages[lastIndex] = {
-              ...existing,
-              text: accumulatedText,
-              sender: existing.sender
-            };
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const raw: unknown = JSON.parse(line.slice(6));
+              if (typeof raw !== 'object' || raw === null) {
+                throw new Error('invalid event');
+              }
+              const event = raw as { type: string; node?: string; text?: string };
+              if (event.type === 'status' && event.node) {
+                set({ streamingStatus: event.node });
+              } else if (event.type === 'response' && event.text != null) {
+                accumulatedText = event.text;
+                set((state) => {
+                  const newMessages = [...state.messages];
+                  const lastIndex = newMessages.length - 1;
+                  const existing = newMessages[lastIndex];
+                  if (existing) {
+                    newMessages[lastIndex] = {
+                      ...existing,
+                      text: accumulatedText,
+                    };
+                  }
+                  return { messages: newMessages };
+                });
+              }
+            } catch {
+              accumulatedText += line.slice(6);
+              set((state) => {
+                const newMessages = [...state.messages];
+                const lastIndex = newMessages.length - 1;
+                const existing = newMessages[lastIndex];
+                if (existing) {
+                  newMessages[lastIndex] = {
+                    ...existing,
+                    text: accumulatedText,
+                  };
+                }
+                return { messages: newMessages };
+              });
+            }
+          } else {
+            accumulatedText += line;
+            set((state) => {
+              const newMessages = [...state.messages];
+              const lastIndex = newMessages.length - 1;
+              const existing = newMessages[lastIndex];
+              if (existing) {
+                newMessages[lastIndex] = {
+                  ...existing,
+                  text: accumulatedText,
+                };
+              }
+              return { messages: newMessages };
+            });
           }
-          return { messages: newMessages };
-        });
+        }
       }
-      set({ isStreaming: false });
+      set({ isStreaming: false, streamingStatus: null });
       if (import.meta.env.DEV && graphTurnId) {
         await _get().fetchDebugTrace(graphTurnId);
       }
@@ -283,6 +332,7 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
       
       set({ 
         isStreaming: false, 
+        streamingStatus: null,
         error: errorMessage,
         debugTraceError: null,
       });
@@ -304,6 +354,7 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
       messages: [],
       isLoading: false,
       isStreaming: false,
+      streamingStatus: null,
       error: null,
       hasMore: true,
       debugTrace: null,

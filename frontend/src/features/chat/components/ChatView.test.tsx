@@ -31,6 +31,7 @@ const mockProps = {
     { id: '2', sender: 'Student' as const, text: 'Oi', timestamp: '2024-01-01T10:01:00Z' }
   ],
   isStreaming: false,
+  streamingStatus: null,
   isLoading: false,
   hasMore: false,
   error: null,
