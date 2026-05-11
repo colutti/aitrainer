@@ -9,6 +9,7 @@
   "tool_names": [
     "save_workout",
     "get_workouts",
+    "get_plan_training_program",
     "list_hevy_routines",
     "get_hevy_routine_detail",
     "trigger_hevy_import",

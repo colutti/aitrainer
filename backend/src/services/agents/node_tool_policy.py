@@ -60,6 +60,7 @@ _NODE_POLICY: dict[str, dict[str, FrozenSet[str]]] = {
         "llm_direct": frozenset({
             "save_workout",
             "get_workouts",
+            "get_plan_training_program",
             "list_hevy_routines",
             "get_hevy_routine_detail",
             "trigger_hevy_import",
@@ -286,6 +287,13 @@ TOOL_EXPOSURE_POLICY: dict[str, ToolPolicy] = {
         exposure_mode=ExposureMode.NON_CONVERSATIONAL,
         description="Reset TDEE tracking history",
         replaced_by="update_tdee_params",
+    ),
+    "get_plan_training_program": ToolPolicy(
+        name="get_plan_training_program",
+        domain="plan",
+        exposure_class=ExposureClass.CONVERSATIONAL,
+        exposure_mode=ExposureMode.LLM_DIRECT,
+        description="Fetch only the training program (routines, exercises, schedule) from the plan",
     ),
     "get_plan": ToolPolicy(
         name="get_plan",

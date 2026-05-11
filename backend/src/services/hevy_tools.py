@@ -13,7 +13,9 @@ def create_list_hevy_routines_tool(hevy_service, database, user_email: str):
     async def list_hevy_routines(page: int = 1, page_size: int = 10) -> str:
         """
         Lista as rotinas de treino do aluno no Hevy.
-        Use quando o aluno perguntar "quais são minhas rotinas" ou "mostre meus treinos salvos".
+        Use apenas quando o usuario estiver perguntando sobre dados do Hevy especificamente
+        (rotinas importadas ou criadas no Hevy). Para consultar o treino salvo no plano mestre,
+        use get_plan_training_program.
         """
         profile = database.get_user_profile(user_email)
         if not profile or not profile.hevy_enabled or not profile.hevy_api_key:
