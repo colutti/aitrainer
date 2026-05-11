@@ -1580,8 +1580,11 @@ async def test_run_stream_safe_turn_runs_each_node_once():
     for node in ConversationGraphRunner.NODE_ORDER:
         assert counts[node] == 1, f"{node} executou {counts[node]} vezes"
 
-    assert len(results) == 1
-    assert results[0] == "resposta do coach"
+    expected_chunks = (
+        [f'data: {{"type": "status", "node": "{n}"}}\n\n' for n in ConversationGraphRunner.NODE_ORDER]
+        + ['data: {"type": "response", "text": "resposta do coach"}\n\n']
+    )
+    assert results == expected_chunks
     assert brain.add_system_message_to_history.called
 
 
@@ -1620,8 +1623,10 @@ async def test_run_stream_blocked_turn_skips_specialists_and_memory():
         results.append(chunk)
 
     assert executed == ["session_context", "prompt_security"]
-    assert len(results) == 1
-    assert "Nao posso revelar" in results[0]
+    assert len(results) == 3
+    assert results[0] == 'data: {"type": "status", "node": "session_context"}\n\n'
+    assert results[1] == 'data: {"type": "status", "node": "prompt_security"}\n\n'
+    assert "Nao posso revelar" in results[2]
     assert "coach_reply" not in executed
     assert "memory_hub" not in executed
 
