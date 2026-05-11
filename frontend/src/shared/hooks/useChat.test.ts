@@ -264,4 +264,144 @@ describe('useChatStore', () => {
     const state = useChatStore.getState();
     expect(state.messages).toEqual([]);
   });
+
+  it('should never leak data: framing into rendered text when chunks are split across reads', async () => {
+    const streamResponse = 'Resposta normal com acentuação';
+    const statusEvent = 'event: status\ndata: {"type":"status","node":"session_context"}\n\n';
+    const responseEvent = `event: response\ndata: {"type":"response","text":"${streamResponse}"}\n\n`;
+
+    // Simulate chunked transport: each part is a partial read
+    const chunks = [
+      new TextEncoder().encode(statusEvent.slice(0, 20)),
+      new TextEncoder().encode(statusEvent.slice(20)),
+      new TextEncoder().encode(responseEvent.slice(0, 15)),
+      new TextEncoder().encode(responseEvent.slice(15)),
+    ];
+
+    let chunkIndex = 0;
+    const stream = new ReadableStream({
+      pull(controller) {
+        if (chunkIndex < chunks.length) {
+          controller.enqueue(chunks[chunkIndex]);
+          chunkIndex += 1;
+        } else {
+          controller.close();
+        }
+      },
+    });
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      body: { getReader: () => stream.getReader() },
+    });
+
+    await useChatStore.getState().sendMessage('teste');
+
+    const state = useChatStore.getState();
+    expect(state.messages).toHaveLength(2);
+    const aiText = state.messages[1]?.text ?? '';
+    expect(aiText).toBe(streamResponse);
+    expect(aiText).not.toContain('data:');
+    expect(aiText).not.toContain('event:');
+  });
+
+  it('should handle CRLF line endings in SSE stream', async () => {
+    const streamResponse = 'Resposta com CRLF';
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(
+          'event: status\r\ndata: {"type":"status","node":"session_context"}\r\n\r\n'
+          + `event: response\r\ndata: {"type":"response","text":"${streamResponse}"}\r\n\r\n`
+        ));
+        controller.close();
+      }
+    });
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      body: { getReader: () => stream.getReader() },
+    });
+
+    await useChatStore.getState().sendMessage('teste');
+
+    const state = useChatStore.getState();
+    const aiText = state.messages[1]?.text ?? '';
+    expect(aiText).toBe(streamResponse);
+    expect(aiText).not.toContain('data:');
+  });
+
+  it('should ignore malformed JSON payloads without leaking into visible text', async () => {
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(
+          'event: status\ndata: not-json!!\n\n'
+          + 'event: response\ndata: {"type":"response","text":"boa resposta"}\n\n'
+        ));
+        controller.close();
+      }
+    });
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      body: { getReader: () => stream.getReader() },
+    });
+
+    await useChatStore.getState().sendMessage('teste');
+
+    const state = useChatStore.getState();
+    const aiText = state.messages[1]?.text ?? '';
+    expect(aiText).toBe('boa resposta');
+    expect(aiText).not.toContain('not-json');
+    expect(aiText).not.toContain('data:');
+  });
+
+  it('should handle stream with only status events (no response)', async () => {
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(
+          'event: status\ndata: {"type":"status","node":"session_context"}\n\n'
+          + 'event: status\ndata: {"type":"status","node":"training_specialist"}\n\n'
+        ));
+        controller.close();
+      }
+    });
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      body: { getReader: () => stream.getReader() },
+    });
+
+    await useChatStore.getState().sendMessage('teste');
+
+    const state = useChatStore.getState();
+    const aiText = state.messages[1]?.text ?? '';
+    expect(aiText).toBe('');
+    // Should not contain any framing
+    expect(aiText).not.toContain('data:');
+  });
+
+  it('should not show escaped Unicode in rendered text', async () => {
+    const escapedPayload = '{"type":"response","text":"Boa\\u0027monstro\\u0021"}';
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(
+          `event: response\ndata: ${escapedPayload}\n\n`
+        ));
+        controller.close();
+      }
+    });
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      body: { getReader: () => stream.getReader() },
+    });
+
+    await useChatStore.getState().sendMessage('teste');
+
+    const state = useChatStore.getState();
+    const aiText = state.messages[1]?.text ?? '';
+    expect(aiText).not.toContain('\\\\u00');
+    expect(aiText).not.toContain('\\u00');
+    expect(aiText).not.toContain('data:');
+  });
 });

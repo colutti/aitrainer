@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from typing import Annotated, TYPE_CHECKING
 from uuid import uuid4
 
@@ -22,6 +23,13 @@ if TYPE_CHECKING:
 router = APIRouter()
 
 CurrentUser = Annotated[str, Depends(verify_token)]
+
+
+async def _serialize_sse(events):
+    """Serialize structured events into SSE frames."""
+    async for event in events:
+        event_type = event.get("type", "message")
+        yield f"event: {event_type}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n"
 
 
 @router.get("/history")
@@ -103,7 +111,7 @@ async def message_ai(
             turn_id=turn_id,
         )
         return StreamingResponse(
-            response_generator,
+            _serialize_sse(response_generator),
             media_type="text/event-stream",
             headers={
                 "X-Accel-Buffering": "no",

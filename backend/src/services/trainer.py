@@ -833,8 +833,8 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
                     "image_payloads": image_payloads,
                 },
             ):
-                if isinstance(chunk, str):
-                    response_parts.append(chunk)
+                if isinstance(chunk, dict) and chunk.get("type") == "response":
+                    response_parts.append(chunk["text"])
 
             return "".join(response_parts)
 
@@ -885,8 +885,8 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
             background_tasks=None,  # Sem BackgroundTasks (não envia para SSE)
             message_options={"is_telegram": False},  # Resposta detalhada
         ):
-            if isinstance(chunk, str):
-                response_parts.append(chunk)
+            if isinstance(chunk, dict) and chunk.get("type") == "response":
+                response_parts.append(chunk["text"])
 
         response = "".join(response_parts)
 

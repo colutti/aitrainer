@@ -152,10 +152,9 @@ def test_message_ai_success():
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_brain = MagicMock()
 
-    def mock_generator():
-        yield "Hello, "
-        yield "this is "
-        yield "your trainer!"
+    async def mock_generator():
+        yield {"type": "status", "node": "session_context"}
+        yield {"type": "response", "text": "Hello, this is your trainer!"}
 
     mock_brain.send_message_ai.return_value = mock_generator()
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
@@ -174,9 +173,12 @@ def test_message_ai_success():
     assert response.headers["content-type"] == "text/event-stream; charset=utf-8"
     assert response.headers["X-Graph-Turn-Id"]
 
-    # Streaming response - read chunks
     content = response.text
     assert len(content) > 0
+    assert "event: status" in content
+    assert "event: response" in content
+    assert 'data: {"type": "status", "node": "session_context"}' in content
+    assert 'data: {"type": "response", "text": "Hello, this is your trainer!"}' in content
 
     app.dependency_overrides = {}
 
@@ -249,10 +251,13 @@ def test_message_ai_empty_message():
     """Test sending empty message."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_brain = MagicMock()
-    mock_brain.send_message_ai.return_value = (x for x in ["Response"])
+    async def mock_generator():
+        yield {"type": "response", "text": "Response"}
+    mock_brain.send_message_ai.return_value = mock_generator()
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
     payload = {
+
         "user_message": ""
     }
 
@@ -285,7 +290,9 @@ def test_message_ai_long_message():
     """Test sending a very long message."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_brain = MagicMock()
-    mock_brain.send_message_ai.return_value = (x for x in ["Response"])
+    async def mock_generator():
+        yield {"type": "response", "text": "Response"}
+    mock_brain.send_message_ai.return_value = mock_generator()
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
     # Create message with 5000+ characters
@@ -336,7 +343,9 @@ def test_message_ai_special_characters():
     """Test message containing special characters and Unicode."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_brain = MagicMock()
-    mock_brain.send_message_ai.return_value = (x for x in ["OK"])
+    async def mock_generator():
+        yield {"type": "response", "text": "OK"}
+    mock_brain.send_message_ai.return_value = mock_generator()
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
     payload = {

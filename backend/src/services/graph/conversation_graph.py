@@ -279,7 +279,7 @@ class ConversationGraphRunner:
                 metadata=trace_metadata,
             ):
                 for node_name in self.NODE_ORDER:
-                    yield f"data: {json.dumps({'type': 'status', 'node': node_name})}\n\n"
+                    yield {"type": "status", "node": node_name}
                     await self._run_node(node_name, state)
                     if node_name == "prompt_security" and state.security_status != "safe":
                         break
@@ -305,7 +305,7 @@ class ConversationGraphRunner:
                     state.persistence_actions,
                 )
 
-                yield f"data: {json.dumps({'type': 'response', 'text': state.final_response})}\n\n"
+                yield {"type": "response", "text": state.final_response}
 
                 await self._brain.finalize_ai_response(
                     user_email=user_email,

@@ -232,44 +232,44 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
       }));
 
       const decoder = new TextDecoder();
-      let accumulatedText = '';
       let buffer = '';
+      let accumulatedText = '';
 
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const raw: unknown = JSON.parse(line.slice(6));
-              if (typeof raw !== 'object' || raw === null) {
-                throw new Error('invalid event');
-              }
-              const event = raw as { type: string; node?: string; text?: string };
-              if (event.type === 'status' && event.node) {
-                set({ streamingStatus: event.node });
-              } else if (event.type === 'response' && event.text != null) {
-                accumulatedText = event.text;
-                set((state) => {
-                  const newMessages = [...state.messages];
-                  const lastIndex = newMessages.length - 1;
-                  const existing = newMessages[lastIndex];
-                  if (existing) {
-                    newMessages[lastIndex] = {
-                      ...existing,
-                      text: accumulatedText,
-                    };
-                  }
-                  return { messages: newMessages };
-                });
-              }
-            } catch {
-              accumulatedText += line.slice(6);
+        for (;;) {
+          // Normalize line endings so we always split on \n\n
+          buffer = buffer.replace(/\r\n/g, '\n');
+
+          const eventEnd = buffer.indexOf('\n\n');
+          if (eventEnd === -1) break;
+
+          const rawEvent = buffer.slice(0, eventEnd);
+          buffer = buffer.slice(eventEnd + 2);
+
+          const lines = rawEvent.split('\n');
+          let dataPayload = '';
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              dataPayload += line.slice(6);
+            }
+          }
+
+          if (!dataPayload) continue;
+
+          try {
+            const raw: unknown = JSON.parse(dataPayload);
+            if (typeof raw !== 'object' || raw === null) continue;
+            const event = raw as { type: string; node?: string; text?: string };
+            if (event.type === 'status' && event.node) {
+              set({ streamingStatus: event.node });
+            } else if (event.type === 'response' && event.text != null) {
+              accumulatedText = event.text;
               set((state) => {
                 const newMessages = [...state.messages];
                 const lastIndex = newMessages.length - 1;
@@ -283,20 +283,8 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
                 return { messages: newMessages };
               });
             }
-          } else {
-            accumulatedText += line;
-            set((state) => {
-              const newMessages = [...state.messages];
-              const lastIndex = newMessages.length - 1;
-              const existing = newMessages[lastIndex];
-              if (existing) {
-                newMessages[lastIndex] = {
-                  ...existing,
-                  text: accumulatedText,
-                };
-              }
-              return { messages: newMessages };
-            });
+          } catch {
+            // Ignore invalid JSON payloads — never leak raw data into visible text
           }
         }
       }
