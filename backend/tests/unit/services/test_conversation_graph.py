@@ -912,6 +912,53 @@ async def test_training_specialist_receives_transact_and_read_tools():
 
 
 @pytest.mark.asyncio
+async def test_training_specialist_receives_get_plan_training_program():
+    """training_specialist must have access to get_plan_training_program tool."""
+    runner, brain = _runner_with_brain()
+    captured = {}
+    tool_names = [
+        "save_workout",
+        "get_workouts",
+        "get_plan_training_program",
+        "list_hevy_routines",
+        "get_body_composition",
+    ]
+    tool_mocks = []
+    for tool_name in tool_names:
+        tool = MagicMock()
+        tool.name = tool_name
+        tool_mocks.append(tool)
+    brain.get_tools.return_value = tool_mocks
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        captured["tools"] = [tool.name for tool in kwargs["tools"]]
+        yield "ok"
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="qual e meu treino?",
+        user_input_sanitized="qual e meu treino?",
+        channel="app",
+    )
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_training_specialist(state)  # pylint: disable=protected-access
+
+    assert "get_plan_training_program" in captured["tools"]
+
+
+@pytest.mark.asyncio
 async def test_nutrition_specialist_receives_metabolism_adjustment_tool():
     runner, brain = _runner_with_brain()
     captured = {}

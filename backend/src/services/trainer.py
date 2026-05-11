@@ -82,6 +82,9 @@ from src.services.plan_tools import (
     create_get_plan_tool,
     create_upsert_plan_tool,
 )
+from src.services.plan_training_tools import (
+    create_get_plan_training_program_tool,
+)
 from src.services.memory_service import (
     get_memories_paginated as paginate_memories,
     add_memory as service_add_memory,
@@ -634,6 +637,8 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
         """
         Creates and returns a list of tools available to the AI.
         """
+        profile = self._database.get_user_profile(user_email)
+        hevy_enabled = bool(profile and profile.hevy_enabled and profile.hevy_api_key)
         hevy_service = HevyService(workout_repository=self._database.workouts_repo)
 
         tools = [
@@ -650,19 +655,6 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
             create_save_composition_tool(self._database, user_email),
             create_get_composition_tool(self._database, user_email),
             create_get_body_composition_raw_tool(self._database, user_email),
-            # Hevy
-            create_list_hevy_routines_tool(hevy_service, self._database, user_email),
-            create_create_hevy_routine_tool(hevy_service, self._database, user_email),
-            create_update_hevy_routine_tool(hevy_service, self._database, user_email),
-            create_search_hevy_exercises_tool(hevy_service, self._database, user_email),
-            create_replace_hevy_exercise_tool(hevy_service, self._database, user_email),
-            create_get_hevy_routine_detail_tool(
-                hevy_service, self._database, user_email
-            ),
-            create_set_routine_rest_and_ranges_tool(
-                hevy_service, self._database, user_email
-            ),
-            create_trigger_hevy_import_tool(hevy_service, self._database, user_email),
             # User Goals
             create_get_user_goal_tool(self._database, user_email),
             create_update_user_goal_tool(self._database, user_email),
@@ -671,11 +663,30 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
             create_get_metabolism_tool(self._database, user_email),
             create_update_tdee_params_tool(self._database, user_email),
             create_reset_tdee_tracking_tool(self._database, user_email),
-            # Plan
+            # Plan - read + write
             create_get_plan_tool(self._database, user_email),
             create_upsert_plan_tool(self._database, user_email),
             create_plan_help_tool(self._database, user_email),
+            # Plan training program (read-only, domain-specific)
+            create_get_plan_training_program_tool(self._database, user_email),
         ]
+
+        # Hevy tools: only expose when user has Hevy integration enabled
+        if hevy_enabled:
+            tools.extend([
+                create_list_hevy_routines_tool(hevy_service, self._database, user_email),
+                create_create_hevy_routine_tool(hevy_service, self._database, user_email),
+                create_update_hevy_routine_tool(hevy_service, self._database, user_email),
+                create_search_hevy_exercises_tool(hevy_service, self._database, user_email),
+                create_replace_hevy_exercise_tool(hevy_service, self._database, user_email),
+                create_get_hevy_routine_detail_tool(
+                    hevy_service, self._database, user_email
+                ),
+                create_set_routine_rest_and_ranges_tool(
+                    hevy_service, self._database, user_email
+                ),
+                create_trigger_hevy_import_tool(hevy_service, self._database, user_email),
+            ])
 
         if self._qdrant_client is not None:
             tools.extend(

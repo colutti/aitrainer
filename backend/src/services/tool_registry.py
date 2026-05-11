@@ -152,6 +152,11 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
         "update_event", ToolMemoryType.MEMORABLE, "Update scheduled event"
     ),
     # Central plan tools
+    "get_plan_training_program": ToolMetadata(
+        "get_plan_training_program",
+        ToolMemoryType.EPHEMERAL,
+        "Fetch training program from plan",
+    ),
     "get_plan": ToolMetadata(
         "get_plan", ToolMemoryType.EPHEMERAL, "Fetch singleton plan"
     ),
