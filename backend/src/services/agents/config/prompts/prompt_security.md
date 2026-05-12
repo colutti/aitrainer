@@ -19,4 +19,7 @@ Allow everything else, including:
 
 ## Output
 
-Return strict JSON with `status` (`safe` or `blocked`), `reason`, and `sanitized`.
+Return strict JSON matching `OUTPUT_CONTRACT`. The fields are:
+- `status`: "safe" or "blocked"
+- `reason`: concise explanation of the classification
+- `sanitized`: cleaned version of the user input when status is safe; empty string when blocked

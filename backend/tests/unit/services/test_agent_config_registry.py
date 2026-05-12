@@ -264,6 +264,18 @@ def test_prompt_texts_encode_node_responsibilities():
     assert coach.temperature == 0.2
 
 
+def test_prompt_security_has_structured_output():
+    """prompt_security must use strict json_schema."""
+    registry = AgentConfigRegistry("src/services/agents/config")
+    cfg = registry.get_node_config("prompt_security")
+    assert cfg.model_name == "google/gemini-2.5-flash-lite"
+    assert cfg.temperature == 0.0
+    assert cfg.max_tokens >= 1024
+    assert isinstance(cfg.response_format, dict)
+    assert cfg.response_format["type"] == "json_schema"
+    assert cfg.provider_sort == "throughput"
+
+
 def test_session_context_config():
     registry = AgentConfigRegistry("src/services/agents/config")
     cfg = registry.get_node_config("session_context")

@@ -8,8 +8,24 @@
   "tool_policy": "restricted",
   "tool_names": [],
   "prompt_file": "backend/src/services/agents/config/prompts/prompt_security.md",
-  "response_format": "text",
-  "version": "v1",
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "prompt_security_output",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {"type": "string"},
+          "reason": {"type": "string"},
+          "sanitized": {"type": "string"}
+        },
+        "required": ["status", "reason", "sanitized"]
+      }
+    }
+  },
+  "version": "v2",
   "context_blocks": [
     "request"
   ],
