@@ -27,7 +27,9 @@ class NodeConfig:
     tool_policy: str
     tool_names: list[str]
     prompt_file: str
-    response_format: str
+    response_format: str | dict[str, Any]
+    reasoning: dict[str, Any] | None
+    parallel_tool_calls: bool | None
     version: str
     context_blocks: list[str]
     peer_inputs: list[str]
@@ -95,6 +97,9 @@ class AgentConfigRegistry:
             config_hash = hashlib.sha256(
                 json.dumps(raw, sort_keys=True).encode("utf-8")
             ).hexdigest()[:16]
+            raw_response_format = payload.get("response_format", "text")
+            reasoning_raw = payload.get("reasoning")
+            parallel_tool_calls_raw = payload.get("parallel_tool_calls")
             cfg = NodeConfig(
                 node_name=str(payload["node_name"]),
                 enabled=bool(payload.get("enabled", True)),
@@ -108,7 +113,16 @@ class AgentConfigRegistry:
             tool_policy=str(payload.get("tool_policy", "restricted")),
                 tool_names=[str(name) for name in payload.get("tool_names", [])],
                 prompt_file=str(prompt_path),
-                response_format=str(payload.get("response_format", "text")),
+                response_format=(
+                    raw_response_format if isinstance(raw_response_format, dict)
+                    else str(raw_response_format)
+                ),
+                reasoning=reasoning_raw if isinstance(reasoning_raw, dict) else None,
+                parallel_tool_calls=(
+                    parallel_tool_calls_raw
+                    if isinstance(parallel_tool_calls_raw, bool)
+                    else None
+                ),
                 version=str(payload.get("version", "v1")),
                 context_blocks=[str(item) for item in context_blocks],
                 peer_inputs=[str(item) for item in peer_inputs],

@@ -7,6 +7,7 @@ import warnings
 import time
 import asyncio
 import hashlib
+import json
 from typing import AsyncGenerator, Any
 from langchain_core.messages import AIMessage, ToolMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
@@ -79,7 +80,11 @@ class LLMClient:
         top_p: float | None = None,
         frequency_penalty: float | None = None,
         provider_sort: str | None = None,
+        max_tokens: int | None = None,
+        reasoning: dict[str, Any] | None = None,
+        parallel_tool_calls: bool | None = None,
     ):
+        # pylint: disable=too-many-arguments,too-many-positional-arguments
         """Return an LLM runnable for a specific node. Must be overridden."""
         raise NotImplementedError("Subclasses must implement _llm_for_node")
 
@@ -95,10 +100,14 @@ class LLMClient:
         top_p: float | None = None,
         frequency_penalty: float | None = None,
         provider_sort: str | None = None,
+        max_tokens: int | None = None,
+        reasoning: dict[str, Any] | None = None,
+        parallel_tool_calls: bool | None = None,
+        response_format: str | dict[str, Any] | None = None,
         run_name: str = "chat.tools",
         mode: str = "tools",
     ) -> AsyncGenerator[str | dict, None]:
-        # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals,too-many-branches,too-many-statements
+        # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals,too-many-branches,too-many-statements,too-many-nested-blocks
 
         """
         Invokes the LLM with tool support using LangGraph's ReAct agent.
@@ -164,8 +173,14 @@ class LLMClient:
                 top_p=top_p,
                 frequency_penalty=frequency_penalty,
                 provider_sort=provider_sort,
+                max_tokens=max_tokens,
+                reasoning=reasoning,
+                parallel_tool_calls=parallel_tool_calls,
             )
-            agent: Any = create_agent(request_llm, tools)
+            agent_kwargs: dict[str, Any] = {}
+            if response_format is not None:
+                agent_kwargs["response_format"] = response_format
+            agent: Any = create_agent(request_llm, tools, **agent_kwargs)
             from src.core.config import settings  # pylint: disable=import-outside-toplevel
             config: RunnableConfig = build_runnable_config(
                 run_name=run_name,
@@ -174,6 +189,40 @@ class LLMClient:
                 input_data=input_data,
                 recursion_limit=int(settings.LLM_AGENT_RECURSION_LIMIT),
             )
+            if response_format is not None:
+                result = await agent.ainvoke({"messages": messages}, config=config)
+                final_messages = result.get("messages", []) if isinstance(result, dict) else []
+                structured_response = (
+                    result.get("structured_response") if isinstance(result, dict) else None
+                )
+                for event in final_messages:
+                    if not usage_metadata_captured and isinstance(event, AIMessage):
+                        usage_metadata_captured, usage_metadata = self._capture_metadata(
+                            event, source="LangGraphStructured"
+                        )
+                        runtime_metadata = self._extract_runtime_metadata(event)
+
+                    if isinstance(event, ToolMessage):
+                        tools_called.append(str(event.name or "unknown"))
+                        create_tool_run_span(
+                            tool_name=str(event.name or "unknown"),
+                            content=event.content,
+                            tool_call_id=event.tool_call_id,
+                        )
+                        yield {
+                            "type": "tool_result",
+                            "content": event.content,
+                            "tool_name": str(event.name or "unknown"),
+                            "tool_call_id": event.tool_call_id,
+                        }
+                if structured_response is not None:
+                    yield json.dumps(structured_response, ensure_ascii=True)
+                else:
+                    for event in final_messages:
+                        if isinstance(event, AIMessage) and event.content:
+                            for block in self._yield_content_blocks(event.content):
+                                yield block
+                return
             async for event in self._iter_agent_events(
                 agent=agent, messages=messages, config=config
             ):
@@ -381,7 +430,11 @@ class OpenRouterClient(LLMClient):
         top_p: float | None = None,
         frequency_penalty: float | None = None,
         provider_sort: str | None = None,
+        max_tokens: int | None = None,
+        reasoning: dict[str, Any] | None = None,
+        parallel_tool_calls: bool | None = None,
     ):
+        # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
         """Return an OpenRouter client for a specific graph node."""
         from langchain_openai import ChatOpenAI  # pylint: disable=import-outside-toplevel
         from pydantic import SecretStr  # pylint: disable=import-outside-toplevel
@@ -399,6 +452,15 @@ class OpenRouterClient(LLMClient):
             kwargs["top_p"] = top_p
         if frequency_penalty is not None:
             kwargs["frequency_penalty"] = frequency_penalty
+        if max_tokens is not None:
+            kwargs["max_tokens"] = max_tokens
+        if reasoning is not None:
+            kwargs["reasoning"] = reasoning
+        model_kw: dict[str, Any] = {}
+        if parallel_tool_calls is not None:
+            model_kw["parallel_tool_calls"] = parallel_tool_calls
+        if model_kw:
+            kwargs["model_kwargs"] = model_kw
         extra: dict[str, Any] = {}
         if provider_sort:
             extra["provider"] = {"sort": provider_sort}

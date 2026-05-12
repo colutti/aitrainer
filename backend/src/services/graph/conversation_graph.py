@@ -667,6 +667,44 @@ class ConversationGraphRunner:
             state.request["sanitized_input"] = state.user_input_sanitized
         state.node_outputs["prompt_security"] = "safe"
 
+    @staticmethod
+    def _is_training_plan_context(state: GraphState) -> bool:
+        conversation_state = state.conversation_state or {}
+        active_domain = conversation_state.get("active_domain", "")
+        if active_domain == "plan":
+            return True
+        pending_action = conversation_state.get("pending_action", {})
+        if isinstance(pending_action, dict):
+            kind = pending_action.get("kind", "")
+            if kind in ("plan_discovery", "plan_review"):
+                return True
+        return False
+
+    @staticmethod
+    def _has_material_training_summary(text: str) -> bool:
+        if not text or not text.strip():
+            return False
+        text_lower = text.lower()
+        has_routine = "routine:" in text_lower or "rotina:" in text_lower
+        has_progression = "progression" in text_lower or "progressão" in text_lower or "progressive" in text_lower
+        has_effort = "rpe" in text_lower or "rir" in text_lower or "effort" in text_lower or "esforço" in text_lower
+        has_sets_reps = "x" in text_lower and ("rep" in text_lower or "reps" in text_lower or "repetições" in text_lower)
+        exercise_like_lines = [
+            line for line in text.splitlines()
+            if line.strip().startswith("-")
+            and any(
+                token in line.lower()
+                for token in ["x", "rpe", "rir", "rest", "descanso"]
+            )
+        ]
+        return (
+            has_routine
+            and has_progression
+            and has_effort
+            and has_sets_reps
+            and len(exercise_like_lines) >= 4
+        )
+
     async def _node_training_specialist(self, state: GraphState) -> None:
         peer_output = state.node_outputs.get("nutrition_specialist", "")
         peer_block = f"\n\nANALISE_NUTRICAO:\n{peer_output}" if peer_output else ""
@@ -683,15 +721,30 @@ class ConversationGraphRunner:
         plan_signal = str(parsed.get("plan_signal", "")).strip()
         action_status = str(parsed.get("action_status", "no_action_needed")).strip()
         action_type = str(parsed.get("action_type", "analyze")).strip()
+        missing_inputs = parsed.get("missing_inputs", [])
+        if not isinstance(missing_inputs, list):
+            missing_inputs = []
         pending_action = parsed.get("pending_action", {})
         if not isinstance(pending_action, dict):
-            pending_action = {}
+            pending_action = {
+                "kind": "none",
+                "status": "no_action_needed",
+                "missing_slots": [],
+            }
+        is_plan_context = self._is_training_plan_context(state)
         coach_text = technical_summary or analysis_text or response
         plan_text = technical_summary
+        if is_plan_context and not self._has_material_training_summary(technical_summary):
+            if not plan_signal:
+                plan_signal = "insufficient_training_detail"
+            domain_status = "insufficient_detail"
+            plan_text = ""
         state.shared_context["training_analysis"] = {
             "status": domain_status,
             "text": plan_text,
             "plan_signal": plan_signal,
+            "missing_inputs": missing_inputs,
+            "action_status": action_status,
         }
         self._merge_persistence_candidates(
             state,
@@ -721,6 +774,9 @@ class ConversationGraphRunner:
         plan_signal = str(parsed.get("plan_signal", "")).strip()
         action_status = str(parsed.get("action_status", "no_action_needed")).strip()
         action_type = str(parsed.get("action_type", "analyze")).strip()
+        missing_inputs = parsed.get("missing_inputs", [])
+        if not isinstance(missing_inputs, list):
+            missing_inputs = []
         pending_action = parsed.get("pending_action", {})
         if not isinstance(pending_action, dict):
             pending_action = {}
@@ -730,6 +786,8 @@ class ConversationGraphRunner:
             "status": domain_status,
             "text": plan_text,
             "plan_signal": plan_signal,
+            "missing_inputs": missing_inputs,
+            "action_status": action_status,
         }
         self._merge_persistence_candidates(
             state,
@@ -752,8 +810,8 @@ class ConversationGraphRunner:
             node_name="plan_specialist",
             state=state,
             extra_context=(
-                f"ANALISE_TREINO:\n{state.node_outputs.get('training_specialist', '')}\n\n"
-                f"ANALISE_NUTRICAO:\n{state.node_outputs.get('nutrition_specialist', '')}"
+                f"ANALISE_TREINO:\n{json.dumps(state.shared_context.get('training_analysis', {}), ensure_ascii=True, sort_keys=True)}\n\n"
+                f"ANALISE_NUTRICAO:\n{json.dumps(state.shared_context.get('nutrition_analysis', {}), ensure_ascii=True, sort_keys=True)}"
             ),
             allowed_tools=get_node_llm_tools("plan_specialist"),
         )
@@ -952,6 +1010,9 @@ class ConversationGraphRunner:
         effective_tools = allowed_tools & configured_tools if configured_tools else allowed_tools
         tools = [t for t in self._brain.get_tools(state.user_email) if t.name in effective_tools]
         chunks: list[str] = []
+        response_format_arg = (
+            cfg.response_format if isinstance(cfg.response_format, dict) else None
+        )
         async for chunk in self._brain._llm_client.stream_with_tools(  # pylint: disable=protected-access
             prompt_template=prompt,
             input_data=input_data,
@@ -963,6 +1024,10 @@ class ConversationGraphRunner:
             top_p=cfg.top_p,
             frequency_penalty=cfg.frequency_penalty,
             provider_sort=cfg.provider_sort,
+            max_tokens=cfg.max_tokens,
+            reasoning=cfg.reasoning,
+            parallel_tool_calls=cfg.parallel_tool_calls,
+            response_format=response_format_arg,
             run_name=f"graph.{node_name}",
             mode=f"graph:{node_name}",
         ):
@@ -1029,8 +1094,16 @@ class ConversationGraphRunner:
                 )
             ),
             "conversation_summary": str(state.shared_context.get("conversation_summary", "")),
-            "training_analysis": str(state.node_outputs.get("training_specialist", "")),
-            "nutrition_analysis": str(state.node_outputs.get("nutrition_specialist", "")),
+            "training_analysis": json.dumps(
+                state.shared_context.get("training_analysis", {}),
+                ensure_ascii=True,
+                sort_keys=True,
+            ),
+            "nutrition_analysis": json.dumps(
+                state.shared_context.get("nutrition_analysis", {}),
+                ensure_ascii=True,
+                sort_keys=True,
+            ),
             "plan_workspace": str(state.shared_context.get("plan_workspace", "")),
             "plan_lifecycle": str(state.shared_context.get("plan_lifecycle", {})),
             "coach_response": str(state.coach_response),

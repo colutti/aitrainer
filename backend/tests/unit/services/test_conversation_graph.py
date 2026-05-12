@@ -619,6 +619,151 @@ async def test_training_specialist_returns_executed_for_direct_action():
     assert state.specialist_states["training_specialist"]["action_type"] == "execute_routine"
 
 
+@pytest.mark.asyncio
+async def test_training_specialist_insufficient_summary_in_plan_context():
+    """In plan context, a weak technical_summary must be marked insufficient."""
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"action_type":"analyze","action_status":"executed",'
+            '"domain_status":"progress","technical_summary":"Faca treino de forca 3x por semana.",'
+            '"missing_inputs":[],"plan_signal":"",'
+            '"pending_action":{"kind":"plan_discovery","status":"needs_user_input","missing_slots":["goal"]},'
+            '"memory_candidates":[],"event_candidates":[]}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="quero um plano",
+        user_input_sanitized="quero um plano",
+        channel="app",
+    )
+    state.conversation_state = {
+        "active_domain": "plan",
+        "pending_action": {"kind": "plan_discovery", "status": "needs_user_input", "missing_slots": ["goal"]},
+    }
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_training_specialist(state)
+
+    assert state.shared_context["training_analysis"]["status"] == "insufficient_detail"
+    assert state.shared_context["training_analysis"]["text"] == ""
+    assert state.shared_context["training_analysis"]["plan_signal"] == "insufficient_training_detail"
+    assert state.node_outputs["training_specialist"] == "Faca treino de forca 3x por semana."
+
+
+@pytest.mark.asyncio
+async def test_training_specialist_material_summary_in_plan_context():
+    """In plan context, a dense technical_summary must pass validation."""
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"action_type":"analyze","action_status":"executed",'
+            '"domain_status":"progress","technical_summary":"Training objective: hypertrophy\\n'
+            'Context used: 36y male, 3x/week, full gym\\n'
+            'Assumptions: recovery is adequate\\n'
+            'Decision rationale: 3x full body to match availability\\n'
+            'Why this fits: user has limited days but wants maximum frequency\\n'
+            'Routine: Full Body A\\n- Squat: 3x8, RPE 7, rest 90s\\n- Bench: 3x10, RPE 7, rest 90s\\n'
+            '- Row: 3x10, RPE 7, rest 90s\\n- Lateral Raise: 3x15, RPE 6, rest 60s\\n'
+            '- Tricep Pushdown: 3x12, RPE 7, rest 60s\\n'
+            'Routine: Full Body B\\n- Deadlift: 3x6, RPE 7, rest 120s\\n'
+            '- OHP: 3x8, RPE 7, rest 90s\\n- Pull Up: 3x8, RPE 7, rest 90s\\n'
+            '- Curl: 3x12, RPE 7, rest 60s\\n'
+            'Progression: add 2.5kg when all sets hit target reps\\n'
+            'Fatigue management: deload week every 6th week\\n'
+            'Safety: no concerns",'
+            '"missing_inputs":[],"plan_signal":"",'
+            '"pending_action":{"kind":"none","status":"no_action_needed","missing_slots":[]},'
+            '"memory_candidates":[],"event_candidates":[]}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="quero montar o treino",
+        user_input_sanitized="quero montar o treino",
+        channel="app",
+    )
+    state.conversation_state = {
+        "active_domain": "plan",
+        "pending_action": {"kind": "plan_discovery", "status": "needs_user_input", "missing_slots": ["goal"]},
+    }
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_training_specialist(state)
+
+    assert state.shared_context["training_analysis"]["status"] == "progress"
+    assert "Training objective: hypertrophy" in state.shared_context["training_analysis"]["text"]
+    assert state.shared_context["training_analysis"]["plan_signal"] == ""
+
+
+@pytest.mark.asyncio
+async def test_training_specialist_short_summary_outside_plan_context():
+    """Outside plan context, even a short summary must not be blocked."""
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"action_type":"analyze","action_status":"executed",'
+            '"domain_status":"progress","technical_summary":"Bom progresso em carga e volume.",'
+            '"missing_inputs":[],"plan_signal":"",'
+            '"pending_action":{"kind":"none","status":"no_action_needed","missing_slots":[]},'
+            '"memory_candidates":[],"event_candidates":[]}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="treinei hoje",
+        user_input_sanitized="treinei hoje",
+        channel="app",
+    )
+    state.conversation_state = {"active_domain": "training", "pending_action": {"kind": "none", "status": "no_action_needed", "missing_slots": []}}
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_training_specialist(state)
+
+    assert state.shared_context["training_analysis"]["status"] == "progress"
+    assert state.shared_context["training_analysis"]["text"] == "Bom progresso em carga e volume."
+    assert "insufficient" not in state.shared_context["training_analysis"]["status"]
+
 
 @pytest.mark.asyncio
 async def test_memory_hub_prefers_structured_candidates_before_llm():
@@ -1536,6 +1681,23 @@ def test_build_context_catalog_includes_history_summary_neutral():
     assert "monstro" in catalog["history_summary"]
     assert "monstro" not in catalog["history_summary_neutral"]
     assert "Vamos treinar" in catalog["history_summary_neutral"]
+
+
+def test_build_context_catalog_uses_structured_training_analysis():
+    runner, _brain = _runner_with_brain()
+    state = GraphState(user_email="a@b.com", user_input_raw="teste", channel="app")
+    state.shared_context = {
+        "training_analysis": {
+            "status": "insufficient_detail",
+            "text": "",
+            "plan_signal": "insufficient_training_detail",
+            "missing_inputs": ["goal"],
+            "action_status": "needs_user_input",
+        }
+    }
+    catalog = runner._build_context_catalog(state)  # pylint: disable=protected-access
+    assert '"status": "insufficient_detail"' in catalog["training_analysis"]
+    assert '"missing_inputs": ["goal"]' in catalog["training_analysis"]
 
 
 @pytest.mark.asyncio

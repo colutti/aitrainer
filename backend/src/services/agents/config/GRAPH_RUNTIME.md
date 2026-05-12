@@ -135,7 +135,20 @@ Contrato de saida:
 
 Modelo default:
 
-- `google/gemini-3.1-flash-lite-preview`
+- `google/gemini-3-flash-preview`
+- `temperature: 0.2`
+- `max_tokens: 6144`
+- `reasoning: { effort: "low", exclude: true }`
+- `parallel_tool_calls: false`
+- `provider_sort: "throughput"`
+- `response_format`: json_schema estrito com `pending_action` como objeto e `memory_candidates`/`event_candidates` como arrays de objetos tipados
+
+Notas de configuracao:
+
+- `reasoning` com `effort: "low"` melhora consistencia sem aumentar latencia excessivamente
+- `parallel_tool_calls: false` evita chamadas de ferramentas fora de ordem ou desnecessarias
+- `max_tokens: 6144` garante espaco para `technical_summary` completo em planos de 4-5 dias
+- O schema JSON do output força campos tipados especificos em vez de `"json"` generico
 
 ### `nutrition_specialist`
 
@@ -338,7 +351,7 @@ para planejar a acao.
 |---|---|
 | `session_context` | `qwen/qwen3-next-80b-a3b-instruct` (apenas sanitizacao de historico) |
 | `prompt_security` | `google/gemini-2.5-flash-lite` |
-| `training_specialist` | `google/gemini-3.1-flash-lite-preview` |
+| `training_specialist` | `google/gemini-3-flash-preview` (`reasoning: low`, `parallel_tool_calls: false`, `max_tokens: 6144`, `temperature: 0.2`) |
 | `nutrition_specialist` | `google/gemini-3.1-flash-lite-preview` |
 | `plan_specialist` | `openai/gpt-oss-120b` (`provider_sort: "throughput"`) |
 | `coach_reply` | `google/gemini-3.1-flash-lite-preview` |

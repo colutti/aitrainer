@@ -1,6 +1,7 @@
 import unittest
 import asyncio
-from unittest.mock import MagicMock, patch
+from typing import Any
+from unittest.mock import AsyncMock, MagicMock, patch
 from src.services.llm_client import LLMClient, OpenRouterClient
 from langchain_core.messages import AIMessage
 
@@ -19,6 +20,9 @@ class _TestLLMClient(LLMClient):
         top_p: float | None = None,
         frequency_penalty: float | None = None,
         provider_sort: str | None = None,
+        max_tokens: int | None = None,
+        reasoning: dict[str, Any] | None = None,
+        parallel_tool_calls: bool | None = None,
     ):
         llm = self.mock_llm
         if user_email:
@@ -218,6 +222,93 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(kwargs["model"], "google/gemini-2.5-flash-lite")
             self.assertEqual(kwargs["base_url"], "https://openrouter.ai/api/v1")
             self.assertEqual(kwargs["temperature"], 0.5)
+
+    def test_openrouter_receives_max_tokens_reasoning_and_parallel_tool_calls(self):
+        """OpenRouter client must accept max_tokens, reasoning, parallel_tool_calls."""
+        with patch("langchain_openai.ChatOpenAI") as mock_cls:
+            client = OpenRouterClient(
+                api_key="or-key",
+                base_url="https://openrouter.ai/api/v1",
+            )
+            client._llm_for_node(
+                model_override="google/gemini-3-flash-preview",
+                user_email="test@test.com",
+                temperature=0.2,
+                max_tokens=6144,
+                reasoning={"effort": "low", "exclude": True},
+                parallel_tool_calls=False,
+            )
+            mock_cls.assert_called_once()
+            kwargs = mock_cls.call_args.kwargs
+            self.assertEqual(kwargs["model"], "google/gemini-3-flash-preview")
+            self.assertEqual(kwargs["temperature"], 0.2)
+            self.assertEqual(kwargs.get("max_tokens"), 6144)
+            self.assertEqual(kwargs.get("reasoning"), {"effort": "low", "exclude": True})
+            model_kw = kwargs.get("model_kwargs", {})
+            self.assertIsNotNone(model_kw)
+            self.assertEqual(model_kw.get("parallel_tool_calls"), False)
+
+    @patch("src.services.llm_client.create_agent")
+    async def test_stream_with_tools_passes_response_format(self, mock_create_agent):
+        """stream_with_tools should pass response_format to create_agent."""
+        client = _TestLLMClient()
+        mock_agent = MagicMock()
+        mock_create_agent.return_value = mock_agent
+
+        async def mock_astream(*args, **kwargs):
+            yield (AIMessage(content="Hello"), "meta")
+
+        mock_agent.astream = mock_astream
+        prompt = MagicMock()
+        prompt.format_messages.return_value = []
+
+        results = []
+        async for chunk in client.stream_with_tools(
+            prompt, {}, [], model_override="test-model",
+            response_format={"type": "json_schema", "json_schema": {"name": "test", "strict": True, "schema": {"type": "object"}}},
+        ):
+            results.append(chunk)
+
+        mock_create_agent.assert_called_once()
+        _, call_kwargs = mock_create_agent.call_args
+        self.assertIn("response_format", call_kwargs)
+        self.assertEqual(call_kwargs["response_format"]["type"], "json_schema")
+
+    @patch("src.services.llm_client.create_agent")
+    async def test_stream_with_tools_uses_structured_response_from_ainvoke(self, mock_create_agent):
+        """When response_format is provided, structured_response must be returned."""
+        client = _TestLLMClient()
+        mock_agent = MagicMock()
+        mock_agent.ainvoke = AsyncMock(
+            return_value={
+                "messages": [AIMessage(content="")],
+                "structured_response": {"status": "ok"},
+            }
+        )
+        mock_create_agent.return_value = mock_agent
+
+        prompt = MagicMock()
+        prompt.format_messages.return_value = []
+
+        results = []
+        async for chunk in client.stream_with_tools(
+            prompt,
+            {},
+            [],
+            model_override="test-model",
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "test",
+                    "strict": True,
+                    "schema": {"type": "object"},
+                },
+            },
+        ):
+            results.append(chunk)
+
+        mock_agent.ainvoke.assert_called_once()
+        self.assertEqual(results[0], '{"status": "ok"}')
 
 
 if __name__ == "__main__":

@@ -1,5 +1,7 @@
 """Tests for file-backed agent config registry."""
 
+import json
+
 import pytest
 
 from src.services.agents.config_registry import AgentConfigRegistry
@@ -32,6 +34,124 @@ def test_registry_exposes_context_contract_fields():
     assert "plan_specialist" in cfg.peer_inputs
     assert cfg.persona_mode == "final_only"
     assert cfg.output_contract == "text"
+
+
+def test_training_specialist_has_updated_model_and_config():
+    """training_specialist must use the new model and extended config fields."""
+    registry = AgentConfigRegistry("src/services/agents/config")
+    cfg = registry.get_node_config("training_specialist")
+    assert cfg.model_name == "google/gemini-3-flash-preview"
+    assert cfg.temperature == 0.2
+    assert cfg.max_tokens >= 6144
+    assert cfg.reasoning == {"effort": "low", "exclude": True}
+    assert cfg.parallel_tool_calls is False
+    assert cfg.provider_sort == "throughput"
+
+
+def test_node_config_handles_dict_response_format(tmp_path):
+    """response_format as dict must be preserved, not stringified."""
+    base = tmp_path / "config"
+    (base / "nodes").mkdir(parents=True)
+    (base / "prompts").mkdir(parents=True)
+    (base / "prompts" / "x.md").write_text("prompt", encoding="utf-8")
+    schema = {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "test_output",
+            "strict": True,
+            "schema": {"type": "object", "properties": {"status": {"type": "string"}}, "required": ["status"]}
+        }
+    }
+    (base / "nodes" / "x.json").write_text(
+        json.dumps({
+            "node_name": "x",
+            "enabled": True,
+            "model_provider": "openrouter",
+            "model_name": "openai/gpt-4.1-nano",
+            "temperature": 0,
+            "max_tokens": 256,
+            "tool_policy": "restricted",
+            "tool_names": [],
+            "prompt_file": str(base / "prompts" / "x.md"),
+            "response_format": schema,
+            "version": "v1",
+            "context_blocks": ["request"],
+            "peer_inputs": [],
+            "persona_mode": "none",
+            "output_contract": "text"
+        }),
+        encoding="utf-8",
+    )
+    registry = AgentConfigRegistry(base)
+    cfg = registry.get_node_config("x")
+    assert isinstance(cfg.response_format, dict)
+    assert cfg.response_format["type"] == "json_schema"
+
+
+def test_node_config_handles_reasoning_and_parallel_tools(tmp_path):
+    """reasoning and parallel_tool_calls must be preserved as-is."""
+    base = tmp_path / "config"
+    (base / "nodes").mkdir(parents=True)
+    (base / "prompts").mkdir(parents=True)
+    (base / "prompts" / "x.md").write_text("prompt", encoding="utf-8")
+    (base / "nodes" / "x.json").write_text(
+        json.dumps({
+            "node_name": "x",
+            "enabled": True,
+            "model_provider": "openrouter",
+            "model_name": "x",
+            "temperature": 0,
+            "max_tokens": 256,
+            "tool_policy": "restricted",
+            "tool_names": [],
+            "prompt_file": str(base / "prompts" / "x.md"),
+            "response_format": "json",
+            "reasoning": {"effort": "low", "exclude": True},
+            "parallel_tool_calls": False,
+            "version": "v1",
+            "context_blocks": ["request"],
+            "peer_inputs": [],
+            "persona_mode": "none",
+            "output_contract": "text"
+        }),
+        encoding="utf-8",
+    )
+    registry = AgentConfigRegistry(base)
+    cfg = registry.get_node_config("x")
+    assert cfg.reasoning == {"effort": "low", "exclude": True}
+    assert cfg.parallel_tool_calls is False
+
+
+def test_node_config_rejects_invalid_reasoning(tmp_path):
+    """reasoning must be None if payload value is not a dict."""
+    base = tmp_path / "config"
+    (base / "nodes").mkdir(parents=True)
+    (base / "prompts").mkdir(parents=True)
+    (base / "prompts" / "x.md").write_text("prompt", encoding="utf-8")
+    (base / "nodes" / "x.json").write_text(
+        json.dumps({
+            "node_name": "x",
+            "enabled": True,
+            "model_provider": "openrouter",
+            "model_name": "x",
+            "temperature": 0,
+            "max_tokens": 256,
+            "tool_policy": "restricted",
+            "tool_names": [],
+            "prompt_file": str(base / "prompts" / "x.md"),
+            "response_format": "text",
+            "reasoning": "invalid",
+            "version": "v1",
+            "context_blocks": ["request"],
+            "peer_inputs": [],
+            "persona_mode": "none",
+            "output_contract": "text"
+        }),
+        encoding="utf-8",
+    )
+    registry = AgentConfigRegistry(base)
+    cfg = registry.get_node_config("x")
+    assert cfg.reasoning is None
 
 
 def test_registry_rejects_invalid_persona_mode(tmp_path):
@@ -84,7 +204,7 @@ def test_node_contract_defaults_match_runtime_design():
     assert security.context_blocks == ["request"]
     assert security.model_name == "google/gemini-2.5-flash-lite"
     assert "trainer_persona" not in training.context_blocks
-    assert training.model_name == "google/gemini-3.1-flash-lite-preview"
+    assert training.model_name == "google/gemini-3-flash-preview"
     assert "save_workout" in training.tool_names
     assert "save_daily_nutrition" in nutrition.tool_names
     assert nutrition.model_name == "google/gemini-3.1-flash-lite-preview"
