@@ -305,6 +305,18 @@ def test_plan_specialist_outputs_technical_summary_not_user_reply():
     assert "context_summary" not in cfg.context_blocks
 
 
+def test_memory_hub_has_structured_output_and_config():
+    """memory_hub must use strict json_schema."""
+    registry = AgentConfigRegistry("src/services/agents/config")
+    cfg = registry.get_node_config("memory_hub")
+    assert cfg.model_name == "google/gemini-3.1-flash-lite-preview"
+    assert cfg.temperature == 0.0
+    assert cfg.max_tokens >= 2048
+    assert isinstance(cfg.response_format, dict)
+    assert cfg.response_format["type"] == "json_schema"
+    assert cfg.provider_sort == "throughput"
+
+
 def test_memory_hub_receives_coach_reply_as_peer_input():
     registry = AgentConfigRegistry("src/services/agents/config")
     cfg = registry.get_node_config("memory_hub")

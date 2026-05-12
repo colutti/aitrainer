@@ -47,17 +47,29 @@ Include a `summary_update` field in your JSON output with the updated summary te
 
 If no update is needed, omit `summary_update` or set it to null.
 
+## Output Quality Checklist
+
+Before returning JSON, verify:
+- `event_action` is one of: create, update, delete, none
+- `memory_action` is one of: save, update, delete, none
+- `summary_update` is in Portuguese when conversation is in Portuguese
+- `summary_update` is 200-500 characters when updating
+- `event_date` is omitted if no concrete ISO date is available and recurrence is used
+- `reason` explains the decision concisely
+- No field has speculative values that cannot be inferred from context
+
 ## Hard invariants
 
 - NEVER create events or memories as substitutes for domain actions that belong to training, nutrition, or plan specialists
 - If `conversation_state.pending_action` indicates an unresolved domain execution, do NOT create related events
 - Do not produce coaching responses to the user
 - Do not invent memory IDs, event IDs, or dates that cannot be inferred from context
+- Do not return null or empty strings for required fields — use empty string or omit optional fields instead
 
 ## Tool policy
 
-Return structured persistence intent. Do not call tools directly in your output.
+Return structured persistence intent matching OUTPUT_CONTRACT. Do not call tools directly in your output.
 
 ## Output
 
-Return strict JSON with `event_action`, `memory_action`, `summary_update`, `reason`, and auxiliary fields as needed. When an event is recurring, use `event_recurrence` and omit `event_date` unless a concrete ISO date exists.
+Return strict JSON matching OUTPUT_CONTRACT. When an event is recurring, use `event_recurrence` and omit `event_date` unless a concrete ISO date exists.

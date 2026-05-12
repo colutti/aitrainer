@@ -17,7 +17,32 @@
     "delete_memory"
   ],
   "prompt_file": "backend/src/services/agents/config/prompts/memory_hub.md",
-  "response_format": "text",
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "memory_hub_output",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "event_action": {"type": "string"},
+          "event_title": {"type": "string"},
+          "event_date": {"type": "string"},
+          "event_id": {"type": "string"},
+          "event_recurrence": {"type": "string"},
+          "recurrence": {"type": "string"},
+          "memory_action": {"type": "string"},
+          "memory_content": {"type": "string"},
+          "memory_id": {"type": "string"},
+          "memory_category": {"type": "string"},
+          "summary_update": {"type": "string"},
+          "reason": {"type": "string"}
+        },
+        "required": ["reason"]
+      }
+    }
+  },
   "version": "v3",
   "context_blocks": [
     "request",
