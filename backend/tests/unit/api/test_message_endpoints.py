@@ -175,8 +175,6 @@ def test_message_ai_success():
 
     content = response.text
     assert len(content) > 0
-    assert "event: status" in content
-    assert "event: response" in content
     assert 'data: {"type": "status", "node": "session_context"}' in content
     assert 'data: {"type": "response", "text": "Hello, this is your trainer!"}' in content
 

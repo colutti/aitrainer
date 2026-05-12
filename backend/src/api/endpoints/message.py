@@ -28,8 +28,7 @@ CurrentUser = Annotated[str, Depends(verify_token)]
 async def _serialize_sse(events):
     """Serialize structured events into SSE frames."""
     async for event in events:
-        event_type = event.get("type", "message")
-        yield f"event: {event_type}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
 
 
 @router.get("/history")
