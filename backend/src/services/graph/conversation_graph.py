@@ -758,6 +758,39 @@ class ConversationGraphRunner:
         }
         state.node_outputs["training_specialist"] = coach_text
 
+    @staticmethod
+    def _is_nutrition_plan_context(state: GraphState) -> bool:
+        conversation_state = state.conversation_state or {}
+        active_domain = conversation_state.get("active_domain", "")
+        if active_domain == "plan":
+            return True
+        pending_action = conversation_state.get("pending_action", {})
+        if isinstance(pending_action, dict):
+            kind = pending_action.get("kind", "")
+            if kind in ("plan_discovery", "plan_review"):
+                return True
+        return False
+
+    @staticmethod
+    def _has_material_nutrition_summary(text: str) -> bool:
+        if not text or not text.strip():
+            return False
+        text_lower = text.lower()
+        has_objective = "nutrition objective" in text_lower or "objetivo nutricional" in text_lower
+        has_context = "context used" in text_lower or "contexto usado" in text_lower
+        has_rationale = "decision rationale" in text_lower or "racional" in text_lower
+        has_fit = "why this fits" in text_lower or "por que isso serve" in text_lower
+        has_target_strategy = "target strategy" in text_lower or "estratégia de metas" in text_lower
+        has_adherence = "adherence strategy" in text_lower or "estratégia de aderência" in text_lower
+        return (
+            has_objective
+            and has_context
+            and has_rationale
+            and has_fit
+            and has_target_strategy
+            and has_adherence
+        )
+
     async def _node_nutrition_specialist(self, state: GraphState) -> None:
         peer_output = state.node_outputs.get("training_specialist", "")
         peer_block = f"\n\nANALISE_TREINO:\n{peer_output}" if peer_output else ""
@@ -779,9 +812,19 @@ class ConversationGraphRunner:
             missing_inputs = []
         pending_action = parsed.get("pending_action", {})
         if not isinstance(pending_action, dict):
-            pending_action = {}
+            pending_action = {
+                "kind": "none",
+                "status": "no_action_needed",
+                "missing_slots": [],
+            }
+        is_plan_context = self._is_nutrition_plan_context(state)
         coach_text = technical_summary or analysis_text or response
         plan_text = technical_summary
+        if is_plan_context and not self._has_material_nutrition_summary(technical_summary):
+            if not plan_signal:
+                plan_signal = "insufficient_nutrition_detail"
+            domain_status = "insufficient_detail"
+            plan_text = ""
         state.shared_context["nutrition_analysis"] = {
             "status": domain_status,
             "text": plan_text,

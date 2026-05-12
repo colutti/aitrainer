@@ -766,6 +766,163 @@ async def test_training_specialist_short_summary_outside_plan_context():
 
 
 @pytest.mark.asyncio
+async def test_nutrition_specialist_insufficient_targets_in_plan_context():
+    """In plan context, weak nutrition targets must be marked insufficient."""
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"action_type":"analyze","action_status":"executed",'
+            '"domain_status":"progress","technical_summary":"Coma melhor e bata a proteina.",'
+            '"missing_inputs":[],"plan_signal":"",'
+            '"pending_action":{"kind":"plan_discovery","status":"needs_user_input","missing_slots":[]},'
+            '"memory_candidates":[],"event_candidates":[]}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="quero definir metas",
+        user_input_sanitized="quero definir metas",
+        channel="app",
+    )
+    state.conversation_state = {
+        "active_domain": "plan",
+        "pending_action": {"kind": "plan_discovery", "status": "needs_user_input", "missing_slots": ["goal"]},
+    }
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_nutrition_specialist(state)
+
+    assert state.shared_context["nutrition_analysis"]["status"] == "insufficient_detail"
+    assert state.shared_context["nutrition_analysis"]["text"] == ""
+    assert state.shared_context["nutrition_analysis"]["plan_signal"] == "insufficient_nutrition_detail"
+    assert state.node_outputs["nutrition_specialist"] == "Coma melhor e bata a proteina."
+
+
+@pytest.mark.asyncio
+async def test_nutrition_specialist_material_targets_in_plan_context():
+    """In plan context, dense nutrition targets must pass validation."""
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"action_type":"analyze","action_status":"executed",'
+            '"domain_status":"progress","technical_summary":"Nutrition objective: muscle gain maintenance\\n'
+            'Context used: 36y male, 2400 kcal TDEE, 3x/week training\\n'
+            'Key constraints: no restrictions\\n'
+            'Assumptions: meals 4-5x/day\\n'
+            'Decision rationale: surplus of 200 kcal for slow gain\\n'
+            'Why this fits: user has consistent routine and adequate digestion\\n'
+            'Target strategy: 2600 kcal, 170g protein, 320g carbs, 60g fat\\n'
+            'Adherence strategy: flexible macros, weekly average",'
+            '"missing_inputs":[],"plan_signal":"",'
+            '"pending_action":{"kind":"none","status":"no_action_needed","missing_slots":[]},'
+            '"memory_candidates":[],"event_candidates":[]}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="quero montar dieta",
+        user_input_sanitized="quero montar dieta",
+        channel="app",
+    )
+    state.conversation_state = {
+        "active_domain": "plan",
+        "pending_action": {"kind": "plan_discovery", "status": "needs_user_input", "missing_slots": ["goal"]},
+    }
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_nutrition_specialist(state)
+
+    assert state.shared_context["nutrition_analysis"]["status"] == "progress"
+    assert "Nutrition objective" in state.shared_context["nutrition_analysis"]["text"]
+    assert state.shared_context["nutrition_analysis"]["plan_signal"] == ""
+
+
+@pytest.mark.asyncio
+async def test_nutrition_specialist_short_analysis_outside_plan_context():
+    """Outside plan context, a short nutrition analysis must not be blocked."""
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"action_type":"analyze","action_status":"executed",'
+            '"domain_status":"progress","technical_summary":"Aderencia baixa nos ultimos 3 dias.",'
+            '"missing_inputs":[],"plan_signal":"",'
+            '"pending_action":{"kind":"none","status":"no_action_needed","missing_slots":[]},'
+            '"memory_candidates":[],"event_candidates":[]}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="comi 2500 hoje",
+        user_input_sanitized="comi 2500 hoje",
+        channel="app",
+    )
+    state.conversation_state = {"active_domain": "nutrition", "pending_action": {"kind": "none", "status": "no_action_needed", "missing_slots": []}}
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_nutrition_specialist(state)
+
+    assert state.shared_context["nutrition_analysis"]["status"] == "progress"
+    assert state.shared_context["nutrition_analysis"]["text"] == "Aderencia baixa nos ultimos 3 dias."
+    assert "insufficient" not in state.shared_context["nutrition_analysis"]["status"]
+
+
+def test_build_context_catalog_uses_structured_nutrition_analysis():
+    runner, _brain = _runner_with_brain()
+    state = GraphState(user_email="a@b.com", user_input_raw="teste", channel="app")
+    state.shared_context = {
+        "nutrition_analysis": {
+            "status": "insufficient_detail",
+            "text": "",
+            "plan_signal": "insufficient_nutrition_detail",
+            "missing_inputs": ["body_metrics"],
+            "action_status": "needs_user_input",
+        }
+    }
+    catalog = runner._build_context_catalog(state)
+    assert '"status": "insufficient_detail"' in catalog["nutrition_analysis"]
+    assert '"missing_inputs": ["body_metrics"]' in catalog["nutrition_analysis"]
+
+
+@pytest.mark.asyncio
 async def test_memory_hub_prefers_structured_candidates_before_llm():
     runner, brain = _runner_with_brain()
     create_event = MagicMock()

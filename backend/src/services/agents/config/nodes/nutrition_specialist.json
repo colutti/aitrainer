@@ -2,9 +2,14 @@
   "node_name": "nutrition_specialist",
   "enabled": true,
   "model_provider": "openrouter",
-  "model_name": "google/gemini-3.1-flash-lite-preview",
-  "temperature": 0.1,
-  "max_tokens": 4096,
+  "model_name": "google/gemini-3-flash-preview",
+  "temperature": 0.2,
+  "max_tokens": 6144,
+  "reasoning": {
+    "effort": "low",
+    "exclude": true
+  },
+  "parallel_tool_calls": false,
   "tool_policy": "restricted",
   "tool_names": [
     "save_daily_nutrition",
@@ -16,7 +21,73 @@
     "update_tdee_params"
   ],
   "prompt_file": "backend/src/services/agents/config/prompts/nutrition_specialist.md",
-  "response_format": "json",
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "nutrition_specialist_output",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "action_type": {"type": "string"},
+          "action_status": {"type": "string"},
+          "domain_status": {"type": "string"},
+          "technical_summary": {"type": "string"},
+          "missing_inputs": {"type": "array", "items": {"type": "string"}},
+          "plan_signal": {"type": "string"},
+          "pending_action": {
+            "type": "object",
+            "properties": {
+              "kind": {"type": "string"},
+              "status": {"type": "string"},
+              "missing_slots": {"type": "array", "items": {"type": "string"}}
+            },
+            "required": ["kind", "status", "missing_slots"],
+            "additionalProperties": false
+          },
+          "memory_candidates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "memory_action": {"type": "string"},
+                "memory_content": {"type": "string"},
+                "memory_category": {"type": "string"}
+              },
+              "required": ["memory_action", "memory_content", "memory_category"],
+              "additionalProperties": false
+            }
+          },
+          "event_candidates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "event_action": {"type": "string"},
+                "event_title": {"type": "string"},
+                "event_date": {"type": "string"},
+                "recurrence": {"type": "string"}
+              },
+              "required": ["event_action", "event_title", "event_date"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "action_type",
+          "action_status",
+          "domain_status",
+          "technical_summary",
+          "missing_inputs",
+          "plan_signal",
+          "pending_action",
+          "memory_candidates",
+          "event_candidates"
+        ]
+      }
+    }
+  },
   "version": "v2",
   "context_blocks": [
     "request",

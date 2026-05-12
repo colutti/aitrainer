@@ -185,7 +185,20 @@ Contrato de saida:
 
 Modelo default:
 
-- `google/gemini-3.1-flash-lite-preview`
+- `google/gemini-3-flash-preview`
+- `temperature: 0.2`
+- `max_tokens: 6144`
+- `reasoning: { effort: "low", exclude: true }`
+- `parallel_tool_calls: false`
+- `provider_sort: "throughput"`
+- `response_format`: json_schema estrito (mesmo shape do `training_specialist`)
+
+Regras de operacao:
+
+- **Dois modos internos**: analise operacional (logging, aderencia, historico) e prescricao detalhada (calorias, macros, ajuste metabolico)
+- **Prescricao detalhada** exige contexto suficiente. Sem ele, o no nao improvisa numeros
+- **Ajuste metabolico** (`update_tdee_params`) so com evidencia sustentada, nao por flutuacao de curto prazo
+- **Racional obrigatorio**: sempre que houver recomendacao material, o `technical_summary` deve conter objetivo, contexto, racional, por que serve ao usuario, estrategia de metas e estrategia de aderencia
 
 ### `plan_specialist`
 

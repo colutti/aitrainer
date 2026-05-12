@@ -36,6 +36,20 @@ def test_registry_exposes_context_contract_fields():
     assert cfg.output_contract == "text"
 
 
+def test_nutrition_specialist_has_updated_model_and_config():
+    """nutrition_specialist must use the new model and extended config fields."""
+    registry = AgentConfigRegistry("src/services/agents/config")
+    cfg = registry.get_node_config("nutrition_specialist")
+    assert cfg.model_name == "google/gemini-3-flash-preview"
+    assert cfg.temperature == 0.2
+    assert cfg.max_tokens >= 6144
+    assert cfg.reasoning == {"effort": "low", "exclude": True}
+    assert cfg.parallel_tool_calls is False
+    assert cfg.provider_sort == "throughput"
+    assert isinstance(cfg.response_format, dict)
+    assert cfg.response_format["type"] == "json_schema"
+
+
 def test_training_specialist_has_updated_model_and_config():
     """training_specialist must use the new model and extended config fields."""
     registry = AgentConfigRegistry("src/services/agents/config")
@@ -207,7 +221,7 @@ def test_node_contract_defaults_match_runtime_design():
     assert training.model_name == "google/gemini-3-flash-preview"
     assert "save_workout" in training.tool_names
     assert "save_daily_nutrition" in nutrition.tool_names
-    assert nutrition.model_name == "google/gemini-3.1-flash-lite-preview"
+    assert nutrition.model_name == "google/gemini-3-flash-preview"
     assert "upsert_plan" in plan.tool_names
     assert "training_analysis" in plan.context_blocks
     assert plan.model_name == "openai/gpt-oss-120b"
@@ -233,6 +247,7 @@ def test_prompt_texts_encode_node_responsibilities():
     assert "no_action_needed" in training.prompt_text
     assert "NutritionSpecialistNode" in nutrition.prompt_text
     assert "no_action_needed" in nutrition.prompt_text
+    assert "sufficient for material nutrition guidance" in nutrition.prompt_text
     assert "PlanSpecialistNode" in plan.prompt_text
     assert "upsert_plan" in plan.prompt_text
     assert "no_action_needed" in plan.prompt_text
