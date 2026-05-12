@@ -759,6 +759,27 @@ class ConversationGraphRunner:
         state.node_outputs["training_specialist"] = coach_text
 
     @staticmethod
+    def _has_material_plan_summary(text: str) -> bool:
+        if not text or not text.strip():
+            return False
+        if len(text.strip()) < 30:
+            return False
+        text_lower = text.lower()
+        has_decision = any(
+            token in text_lower
+            for token in [
+                "plan decision", "decisão", "created", "criado",
+                "discovery", "descoberta", "persisted", "persistido",
+                "specialist", "especialista",
+            ]
+        )
+        has_blockers = any(
+            token in text_lower
+            for token in ["blocker", "bloqueador", "next action", "próximo"]
+        )
+        return has_decision or has_blockers
+
+    @staticmethod
     def _is_nutrition_plan_context(state: GraphState) -> bool:
         conversation_state = state.conversation_state or {}
         active_domain = conversation_state.get("active_domain", "")
@@ -864,6 +885,28 @@ class ConversationGraphRunner:
         reason = str(parsed.get("reason", "")).strip()
         plan_candidate = str(parsed.get("plan_candidate", "")).strip()
         technical_summary = str(parsed.get("technical_summary", "")).strip()
+        action_status = str(parsed.get("action_status", "no_action_needed")).strip()
+        pending_slots = parsed.get("pending_slots", [])
+        if not isinstance(pending_slots, list):
+            pending_slots = []
+        resolved_slots = parsed.get("resolved_slots", [])
+        if not isinstance(resolved_slots, list):
+            resolved_slots = []
+        pending_action = parsed.get("pending_action", {})
+        if not isinstance(pending_action, dict):
+            pending_action = {
+                "kind": "none",
+                "status": "no_action_needed",
+                "missing_slots": [],
+            }
+        is_claiming_success = (
+            plan_status in ("active", "created")
+            and action_status == "executed"
+        )
+        if is_claiming_success and not self._has_material_plan_summary(technical_summary):
+            plan_status = "discovery_needed"
+            action_status = "needs_user_input"
+            technical_summary = "Plano reivindicou conclusao mas o sumario tecnico e insuficiente. Discovery necessario."
         self._merge_persistence_candidates(
             state,
             memory_candidates=parsed.get("memory_candidates"),
@@ -874,13 +917,6 @@ class ConversationGraphRunner:
             f"has_active_plan={state.shared_context['has_active_plan']}; "
             f"plan_status={plan_status}; revisao_necessaria={state.plan_needs_revision}; reason={reason}"
         )
-        action_status = str(parsed.get("action_status", "no_action_needed")).strip()
-        pending_slots = parsed.get("pending_slots", [])
-        if not isinstance(pending_slots, list):
-            pending_slots = []
-        pending_action = parsed.get("pending_action", {})
-        if not isinstance(pending_action, dict):
-            pending_action = {}
         state.specialist_pending_actions["plan_specialist"] = pending_action
         state.specialist_states["plan_specialist"] = {
             "action_status": action_status,

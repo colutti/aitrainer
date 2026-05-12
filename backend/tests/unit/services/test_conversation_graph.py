@@ -1469,7 +1469,143 @@ async def test_plan_specialist_receives_upsert_plan_tools():
 
 
 @pytest.mark.asyncio
-async def test_coach_reply_receives_trainer_persona_in_final_synthesis():
+async def test_plan_specialist_weak_summary_on_active_plan():
+    """When plan_specialist claims active/executed with weak summary, must downgrade."""
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+    brain.get_tools.return_value = []
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"plan_status":"active","action_status":"executed",'
+            '"reason":"plano criado","technical_summary":"Ok.",'
+            '"needs_revision":false,"plan_candidate":"",'
+            '"pending_slots":[],"resolved_slots":[],'
+            '"pending_action":{"kind":"none","status":"no_action_needed","missing_slots":[]},'
+            '"memory_candidates":[],"event_candidates":[]}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="plano pronto",
+        user_input_sanitized="plano pronto",
+        channel="app",
+    )
+    state.conversation_state = {
+        "active_domain": "plan",
+        "pending_action": {"kind": "plan_discovery", "status": "needs_user_input", "missing_slots": []},
+    }
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_plan_specialist(state)
+
+    assert state.shared_context["plan_workspace"]["plan_status"] in ("discovery_needed", "active")
+    assert "Ok." not in state.node_outputs["plan_specialist"]
+
+
+@pytest.mark.asyncio
+async def test_plan_specialist_material_summary_on_active_plan():
+    """When plan_specialist claims active/executed with material summary, pass through."""
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+    brain.get_tools.return_value = []
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"plan_status":"active","action_status":"executed",'
+            '"reason":"plano criado",'
+            '"technical_summary":"Plan decision: training program created. Discovery: all items complete. '
+            'Specialist contributions: training recommended full body 3x, nutrition set 2600 kcal. '
+            'Blockers: none. Next action: start training.",'
+            '"needs_revision":false,"plan_candidate":"",'
+            '"pending_slots":[],"resolved_slots":[],'
+            '"pending_action":{"kind":"none","status":"no_action_needed","missing_slots":[]},'
+            '"memory_candidates":[],"event_candidates":[]}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="plano pronto",
+        user_input_sanitized="plano pronto",
+        channel="app",
+    )
+    state.conversation_state = {
+        "active_domain": "plan",
+        "pending_action": {"kind": "plan_discovery", "status": "needs_user_input", "missing_slots": []},
+    }
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_plan_specialist(state)
+
+    assert state.shared_context["plan_workspace"]["plan_status"] == "active"
+    assert "Plan decision:" in state.node_outputs["plan_specialist"]
+
+
+@pytest.mark.asyncio
+async def test_plan_specialist_normalizes_non_dict_pending_action():
+    """Non-dict pending_action must be normalized safely."""
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+    brain.get_tools.return_value = []
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"plan_status":"discovery_needed","action_status":"needs_user_input",'
+            '"reason":"faltam dados","technical_summary":"Faltam dados.",'
+            '"needs_revision":false,"plan_candidate":"",'
+            '"pending_slots":["goal"],"resolved_slots":[],'
+            '"pending_action":"invalid_string_not_a_dict",'
+            '"memory_candidates":[],"event_candidates":[]}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="preciso de plano",
+        user_input_sanitized="preciso de plano",
+        channel="app",
+    )
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_plan_specialist(state)
+
+    pa = state.specialist_pending_actions["plan_specialist"]
+    assert isinstance(pa, dict)
+    assert pa.get("kind") == "none"
+    assert pa.get("status") == "no_action_needed"
+    assert pa.get("missing_slots") == []
     runner, brain = _runner_with_brain()
     captured = {}
 
