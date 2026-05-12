@@ -1747,6 +1747,35 @@ async def test_coach_reply_returns_natural_flowing_text():
 
 
 @pytest.mark.asyncio
+async def test_coach_reply_prompt_contains_anti_hallucination_guardrails():
+    """coach_reply prompt must include invariants that prevent common hallucinations."""
+    runner, brain = _runner_with_brain()
+    captured = {}
+
+    async def fake_stream_with_tools(**kwargs):
+        captured["system"] = kwargs["prompt_template"].messages[0].prompt.template
+        yield "ok"
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    brain.get_log_callback.return_value = None
+    brain.strip_internal_wrappers = None
+
+    state = GraphState(user_email="a@b.com", user_input_raw="test", user_input_sanitized="test", channel="app")
+    state.shared_context = {"input_data": {"user_locale": "en-US"}}
+    state.node_outputs["plan_specialist"] = "discovery needed"
+
+    await runner._node_coach_reply(state)
+
+    prompt = captured.get("system", "")
+    assert "Never fabricate" in prompt
+    assert "do NOT fabricate" in prompt
+    assert "discovery_needed" in prompt
+    assert "needs_revision" in prompt
+    assert "invent explanations" in prompt
+    assert "No tools available" in prompt
+
+
+@pytest.mark.asyncio
 async def test_memory_hub_converts_weekly_follow_up_into_recurring_event():
     runner, brain = _runner_with_brain()
     list_events = MagicMock()
