@@ -89,11 +89,12 @@ Responsabilidade:
 Detalhes:
 
 - ha um filtro deterministico por regex antes da LLM
-- o no completa a classificacao em JSON (`safe` ou `blocked`)
+- o no completa a classificacao em JSON com schema estrito (`status`, `reason`, `sanitized`)
 
 Modelo default:
 
 - `google/gemini-2.5-flash-lite`
+- `response_format`: json_schema estrito com campos `status`, `reason`, `sanitized`
 
 ### `training_specialist`
 
@@ -221,7 +222,7 @@ Tools principais:
 - `update_user_goal`
 - `get_metabolism_data`
 
-Contrato de saida:
+Contrato de saida (schema estrito):
 
 - `plan_status`
 - `action_status`
@@ -238,6 +239,19 @@ Contrato de saida:
 Modelo default:
 
 - `openai/gpt-oss-120b` (com `provider_sort: "throughput"`)
+- `temperature: 0.1`
+- `max_tokens: 6144`
+- `reasoning: { effort: "low", exclude: true }`
+- `parallel_tool_calls: false`
+- `response_format`: json_schema estrito com `pending_action` como objeto tipado e validacao de `technical_summary` material
+
+Notas de configuracao:
+
+- `reasoning` com `effort: "low"` melhora consistencia sem aumentar latencia excessivamente
+- `parallel_tool_calls: false` evita chamadas de ferramentas fora de ordem
+- `max_tokens: 6144` garante espaco para `technical_summary` completo em planos complexos
+- O schema JSON do output forc,a campos tipados especificos, como nos especialistas de dominio
+- Runtime valida coerencia entre `plan_status`, `action_status` e `technical_summary`: se `active`/`created` + `executed` for claims mas `technical_summary` for insuficiente, o runtime rebaixa `plan_status` para `discovery_needed`
 
 ### `coach_reply`
 
@@ -280,6 +294,7 @@ Escopo:
 Modelo default:
 
 - `google/gemini-3.1-flash-lite-preview`
+- `response_format`: json_schema estrito com campos `event_action`, `memory_action`, `summary_update`, `reason` e auxiliares
 
 ## Fluxo de dados
 
@@ -360,15 +375,15 @@ para planejar a acao.
 
 ## Modelos atuais por no
 
-| No | Modelo |
-|---|---|
-| `session_context` | `qwen/qwen3-next-80b-a3b-instruct` (apenas sanitizacao de historico) |
-| `prompt_security` | `google/gemini-2.5-flash-lite` |
-| `training_specialist` | `google/gemini-3-flash-preview` (`reasoning: low`, `parallel_tool_calls: false`, `max_tokens: 6144`, `temperature: 0.2`) |
-| `nutrition_specialist` | `google/gemini-3.1-flash-lite-preview` |
-| `plan_specialist` | `openai/gpt-oss-120b` (`provider_sort: "throughput"`) |
-| `coach_reply` | `google/gemini-3.1-flash-lite-preview` |
-| `memory_hub` | `google/gemini-3.1-flash-lite-preview` |
+| No | Modelo | Destaques de configuracao |
+|---|---|---|---|
+| `session_context` | `openai/gpt-oss-120b` | `temperature: 0.0`, sanitizacao de historico apenas |
+| `prompt_security` | `google/gemini-2.5-flash-lite` | `temperature: 0.0`, json_schema estrito (`status`, `reason`, `sanitized`) |
+| `training_specialist` | `google/gemini-3-flash-preview` | `reasoning: low`, `parallel_tool_calls: false`, `max_tokens: 6144`, `temperature: 0.2`, json_schema estrito |
+| `nutrition_specialist` | `google/gemini-3-flash-preview` | `reasoning: low`, `parallel_tool_calls: false`, `max_tokens: 6144`, `temperature: 0.2`, json_schema estrito |
+| `plan_specialist` | `openai/gpt-oss-120b` | `reasoning: low`, `parallel_tool_calls: false`, `max_tokens: 6144`, `temperature: 0.1`, json_schema estrito, `provider_sort: throughput` |
+| `coach_reply` | `google/gemini-3.1-flash-lite-preview` | `temperature: 0.2`, sintetizador textual (sem schema), invariantes anti-alucinacao |
+| `memory_hub` | `google/gemini-3.1-flash-lite-preview` | `temperature: 0.0`, json_schema estrito (`event_action`, `memory_action`, `summary_update`, `reason`) |
 
 ## Estado cross-turn
 
