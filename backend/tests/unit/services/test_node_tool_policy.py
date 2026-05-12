@@ -170,6 +170,49 @@ class TestToolPolicyConsistency:
                     )
 
 
+class TestHevyIsolation:
+    """Verify Hevy tools are ONLY exposed to training_specialist."""
+
+    _HEVY_TOOLS = frozenset({
+        "list_hevy_routines",
+        "get_hevy_routine_detail",
+        "trigger_hevy_import",
+        "create_hevy_routine",
+        "update_hevy_routine",
+        "search_hevy_exercises",
+        "replace_hevy_exercise",
+        "set_routine_rest_and_ranges",
+    })
+
+    def test_training_specialist_exposes_all_hevy_tools(self):
+        policy_tools = get_node_all_tools("training_specialist")
+        for tool in self._HEVY_TOOLS:
+            assert tool in policy_tools, (
+                f"Hevy tool '{tool}' missing from training_specialist policy"
+            )
+
+    def test_nutrition_specialist_has_no_hevy_tools(self):
+        policy_tools = get_node_all_tools("nutrition_specialist")
+        leaked = policy_tools & self._HEVY_TOOLS
+        assert not leaked, (
+            f"Hevy tools leaked into nutrition_specialist: {leaked}"
+        )
+
+    def test_plan_specialist_has_no_hevy_tools(self):
+        policy_tools = get_node_all_tools("plan_specialist")
+        leaked = policy_tools & self._HEVY_TOOLS
+        assert not leaked, (
+            f"Hevy tools leaked into plan_specialist: {leaked}"
+        )
+
+    def test_coach_reply_has_no_hevy_tools(self):
+        policy_tools = get_node_all_tools("coach_reply")
+        leaked = policy_tools & self._HEVY_TOOLS
+        assert not leaked, (
+            f"Hevy tools leaked into coach_reply: {leaked}"
+        )
+
+
 class TestNodeJsonAlignment:
     """Verify node JSON tool_names match canonical policy."""
 

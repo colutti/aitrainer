@@ -79,6 +79,9 @@ class LLMClient:
         top_p: float | None = None,
         frequency_penalty: float | None = None,
         provider_sort: str | None = None,
+        max_tokens: int | None = None,
+        reasoning: dict[str, Any] | None = None,
+        parallel_tool_calls: bool | None = None,
     ):
         """Return an LLM runnable for a specific node. Must be overridden."""
         raise NotImplementedError("Subclasses must implement _llm_for_node")
@@ -95,6 +98,10 @@ class LLMClient:
         top_p: float | None = None,
         frequency_penalty: float | None = None,
         provider_sort: str | None = None,
+        max_tokens: int | None = None,
+        reasoning: dict[str, Any] | None = None,
+        parallel_tool_calls: bool | None = None,
+        response_format: str | dict[str, Any] | None = None,
         run_name: str = "chat.tools",
         mode: str = "tools",
     ) -> AsyncGenerator[str | dict, None]:
@@ -164,8 +171,14 @@ class LLMClient:
                 top_p=top_p,
                 frequency_penalty=frequency_penalty,
                 provider_sort=provider_sort,
+                max_tokens=max_tokens,
+                reasoning=reasoning,
+                parallel_tool_calls=parallel_tool_calls,
             )
-            agent: Any = create_agent(request_llm, tools)
+            agent_kwargs: dict[str, Any] = {}
+            if response_format is not None:
+                agent_kwargs["response_format"] = response_format
+            agent: Any = create_agent(request_llm, tools, **agent_kwargs)
             from src.core.config import settings  # pylint: disable=import-outside-toplevel
             config: RunnableConfig = build_runnable_config(
                 run_name=run_name,
@@ -381,6 +394,9 @@ class OpenRouterClient(LLMClient):
         top_p: float | None = None,
         frequency_penalty: float | None = None,
         provider_sort: str | None = None,
+        max_tokens: int | None = None,
+        reasoning: dict[str, Any] | None = None,
+        parallel_tool_calls: bool | None = None,
     ):
         """Return an OpenRouter client for a specific graph node."""
         from langchain_openai import ChatOpenAI  # pylint: disable=import-outside-toplevel
@@ -399,6 +415,15 @@ class OpenRouterClient(LLMClient):
             kwargs["top_p"] = top_p
         if frequency_penalty is not None:
             kwargs["frequency_penalty"] = frequency_penalty
+        if max_tokens is not None:
+            kwargs["max_tokens"] = max_tokens
+        if reasoning is not None:
+            kwargs["reasoning"] = reasoning
+        model_kw: dict[str, Any] = {}
+        if parallel_tool_calls is not None:
+            model_kw["parallel_tool_calls"] = parallel_tool_calls
+        if model_kw:
+            kwargs["model_kwargs"] = model_kw
         extra: dict[str, Any] = {}
         if provider_sort:
             extra["provider"] = {"sort": provider_sort}
