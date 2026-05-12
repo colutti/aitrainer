@@ -277,6 +277,20 @@ def test_coach_reply_has_no_context_summary_in_context_blocks():
     assert "plan_workspace" in cfg.context_blocks
 
 
+def test_plan_specialist_has_hardened_config():
+    """plan_specialist must use strict json_schema and extended config fields."""
+    registry = AgentConfigRegistry("src/services/agents/config")
+    cfg = registry.get_node_config("plan_specialist")
+    assert cfg.model_name == "openai/gpt-oss-120b"
+    assert cfg.temperature == 0.1
+    assert cfg.max_tokens >= 4096
+    assert cfg.reasoning == {"effort": "low", "exclude": True}
+    assert cfg.parallel_tool_calls is False
+    assert cfg.provider_sort == "throughput"
+    assert isinstance(cfg.response_format, dict)
+    assert cfg.response_format["type"] == "json_schema"
+
+
 def test_plan_specialist_outputs_technical_summary_not_user_reply():
     registry = AgentConfigRegistry("src/services/agents/config")
     cfg = registry.get_node_config("plan_specialist")

@@ -4,7 +4,12 @@
   "model_provider": "openrouter",
   "model_name": "openai/gpt-oss-120b",
   "temperature": 0.1,
-  "max_tokens": 4096,
+  "max_tokens": 6144,
+  "reasoning": {
+    "effort": "low",
+    "exclude": true
+  },
+  "parallel_tool_calls": false,
   "tool_policy": "restricted",
   "tool_names": [
     "get_plan",
@@ -15,7 +20,77 @@
     "get_metabolism_data"
   ],
   "prompt_file": "backend/src/services/agents/config/prompts/plan_specialist.md",
-  "response_format": "json",
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "plan_specialist_output",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "plan_status": {"type": "string"},
+          "action_status": {"type": "string"},
+          "reason": {"type": "string"},
+          "technical_summary": {"type": "string"},
+          "needs_revision": {"type": "boolean"},
+          "plan_candidate": {"type": "string"},
+          "pending_slots": {"type": "array", "items": {"type": "string"}},
+          "resolved_slots": {"type": "array", "items": {"type": "string"}},
+          "pending_action": {
+            "type": "object",
+            "properties": {
+              "kind": {"type": "string"},
+              "status": {"type": "string"},
+              "missing_slots": {"type": "array", "items": {"type": "string"}}
+            },
+            "required": ["kind", "status", "missing_slots"],
+            "additionalProperties": false
+          },
+          "memory_candidates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "memory_action": {"type": "string"},
+                "memory_content": {"type": "string"},
+                "memory_category": {"type": "string"}
+              },
+              "required": ["memory_action", "memory_content", "memory_category"],
+              "additionalProperties": false
+            }
+          },
+          "event_candidates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "event_action": {"type": "string"},
+                "event_title": {"type": "string"},
+                "event_date": {"type": "string"},
+                "recurrence": {"type": "string"}
+              },
+              "required": ["event_action", "event_title", "event_date"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "plan_status",
+          "action_status",
+          "reason",
+          "technical_summary",
+          "needs_revision",
+          "plan_candidate",
+          "pending_slots",
+          "resolved_slots",
+          "pending_action",
+          "memory_candidates",
+          "event_candidates"
+        ]
+      }
+    }
+  },
   "version": "v2",
   "provider_sort": "throughput",
   "context_blocks": [
