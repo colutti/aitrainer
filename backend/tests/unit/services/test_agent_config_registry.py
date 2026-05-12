@@ -251,6 +251,12 @@ def test_prompt_texts_encode_node_responsibilities():
     assert "PlanSpecialistNode" in plan.prompt_text
     assert "upsert_plan" in plan.prompt_text
     assert "no_action_needed" in plan.prompt_text
+    assert "Two Operational Modes" in plan.prompt_text
+    assert "Sufficiency Rule" in plan.prompt_text
+    assert "Field Relationships" in plan.prompt_text
+    assert "Output Quality Rejection Checklist" in plan.prompt_text
+    assert "Discovery Checklist" in plan.prompt_text
+    assert "Plan Creation Sequence" in plan.prompt_text
     assert "history_summary" not in coach.prompt_text
     assert "CoachReplyNode" in coach.prompt_text
     assert "no_action_needed" in coach.prompt_text
