@@ -22,6 +22,37 @@ export interface ChatGraphNodeTrace {
   config_version?: string | null;
   model?: string | null;
   tools_called?: string[];
+  temperature?: number | null;
+  max_tokens?: number | null;
+  top_p?: number | null;
+  frequency_penalty?: number | null;
+  provider_sort?: string | null;
+  tool_policy?: string | null;
+  tool_names?: string[];
+  parallel_tool_calls?: boolean | null;
+  reasoning?: Record<string, unknown> | null;
+  context_blocks?: string[];
+  peer_inputs?: string[];
+  output_contract?: string;
+  resolved_input?: string;
+  resolved_context?: string;
+  resolved_peer_outputs?: string;
+  raw_output?: string;
+  structured_output?: Record<string, unknown> | null;
+  state_before?: Record<string, unknown> | null;
+  state_after?: Record<string, unknown> | null;
+  state_diff?: Record<string, unknown> | null;
+  specialist_state?: Record<string, unknown> | null;
+  pending_action?: Record<string, unknown> | null;
+}
+
+export interface ChatGraphTraceTimelineSummary {
+  slowest_node: string | null;
+  largest_output_node: string | null;
+  largest_output_chars: number | null;
+  nodes_with_state_changes: string[];
+  nodes_with_pending_actions: string[];
+  interrupted_at: string | null;
 }
 
 export interface ChatGraphTrace {
@@ -44,6 +75,12 @@ export interface ChatGraphTrace {
   technical_response: string;
   node_outputs: Record<string, string>;
   nodes: ChatGraphNodeTrace[];
+  graph_error?: string | null;
+  request_payload_sanitized?: string;
+  conversation_state_before?: Record<string, unknown>;
+  conversation_state_after?: Record<string, unknown>;
+  pending_action_resolution?: Record<string, unknown>;
+  timeline_summary?: ChatGraphTraceTimelineSummary;
 }
 
 export interface MessageImagePayload {

@@ -7,6 +7,7 @@ import LoginPage from './features/auth/LoginPage';
 import ResetPasswordPage from './features/auth/ResetPasswordPage';
 import BodyPage from './features/body/BodyPage';
 import NutritionPage from './features/body/NutritionPage';
+import ChatDebugPage from './features/chat/ChatDebugPage';
 import ChatPage from './features/chat/ChatPage';
 import DashboardPage from './features/dashboard/DashboardPage';
 import LandingPage from './features/landing/LandingPage';
@@ -82,6 +83,7 @@ export function AppRoutes() {
           <Route path="body/weight" element={<Navigate to="/dashboard/body" replace />} />
           <Route path="body/nutrition" element={<Navigate to="/dashboard/nutrition" replace />} />
           <Route path="chat" element={<ChatPage />} />
+          <Route path="chat/debug/:turnId" element={<ChatDebugPage />} />
           
           {/* Settings Sub-routes */}
           <Route path="settings" element={<SettingsPage />}>

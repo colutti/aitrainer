@@ -1651,6 +1651,47 @@ async def test_prompt_security_does_not_receive_trainer_persona():
 
 
 @pytest.mark.asyncio
+async def test_prompt_security_blocks_when_llm_returns_empty():
+    runner, brain = _runner_with_brain()
+
+    async def fake_stream_empty(**kwargs):
+        yield ""
+
+    brain._llm_client.stream_with_tools = fake_stream_empty
+    brain.get_log_callback.return_value = None
+
+    state = GraphState(user_email="a@b.com", user_input_raw="ola", channel="app")
+    state.shared_context = {"input_data": {"user_locale": "pt-BR"}}
+
+    await runner._node_prompt_security(state)  # pylint: disable=protected-access
+
+    assert state.security_status == "blocked"
+    assert state.user_input_sanitized == ""
+    assert "llm_unavailable" in state.node_outputs.get("prompt_security", "")
+
+
+@pytest.mark.asyncio
+async def test_prompt_security_blocks_when_llm_throws():
+    runner, brain = _runner_with_brain()
+
+    async def fake_stream_error(**kwargs):
+        raise RuntimeError("LLM timeout")
+        yield ""  # never reached
+
+    brain._llm_client.stream_with_tools = fake_stream_error
+    brain.get_log_callback.return_value = None
+
+    state = GraphState(user_email="a@b.com", user_input_raw="ola", channel="app")
+    state.shared_context = {"input_data": {"user_locale": "pt-BR"}}
+
+    await runner._node_prompt_security(state)  # pylint: disable=protected-access
+
+    assert state.security_status == "blocked"
+    assert state.user_input_sanitized == ""
+    assert "llm_unavailable" in state.node_outputs.get("prompt_security", "")
+
+
+@pytest.mark.asyncio
 async def test_run_llm_node_exposes_output_contract_and_context():
     runner, brain = _runner_with_brain()
     captured = {}
@@ -2294,3 +2335,275 @@ async def test_run_stream_plan_pending_suppresses_memory_events():
         pass
 
     create_event.invoke.assert_not_called()
+
+
+def test_capture_state_snapshot_includes_relevant_fields():
+    runner = _runner()
+    state = GraphState(user_email="a@b.com", user_input_raw="hello", channel="app")
+    state.conversation_state = {"active_domain": "training", "pending_action": {"kind": "none"}}
+    state.specialist_states["training_specialist"] = {"action_status": "executed"}
+    state.specialist_pending_actions["training_specialist"] = {"kind": "domain_execution", "status": "executed"}
+    state.node_outputs["training_specialist"] = "treino legal"
+    state.security_status = "safe"
+    state.shared_context["training_analysis"] = {"status": "progress"}
+    state.shared_context["history_summary_neutral"] = "historico neutro"
+    state.shared_context["plan_workspace"] = {"has_active_plan": True}
+    state.shared_context["persistence_candidates"] = {"memory": []}
+    state.shared_context["has_active_plan"] = True
+
+    snapshot = runner._capture_state_snapshot(state)  # pylint: disable=protected-access
+
+    assert snapshot["conversation_state"]["active_domain"] == "training"
+    assert snapshot["specialist_states"]["training_specialist"]["action_status"] == "executed"
+    assert snapshot["specialist_pending_actions"]["training_specialist"]["kind"] == "domain_execution"
+    assert snapshot["security_status"] == "safe"
+    assert snapshot["node_outputs"]["training_specialist"] == "treino legal"
+    assert snapshot["shared_context"]["training_analysis"]["status"] == "progress"
+    assert snapshot["shared_context"]["has_active_plan"] is True
+
+
+def test_compute_state_diff_detects_changes():
+    runner = _runner()
+    before = {
+        "conversation_state": {"active_domain": "general", "pending_action": {"kind": "none"}},
+        "node_outputs": {},
+        "shared_context": {"training_analysis": None},
+    }
+    after = {
+        "conversation_state": {"active_domain": "training", "pending_action": {"kind": "domain_execution"}},
+        "node_outputs": {"training_specialist": "done"},
+        "shared_context": {"training_analysis": {"status": "progress"}},
+    }
+
+    diff = runner._compute_state_diff(before, after)  # pylint: disable=protected-access
+
+    assert "conversation_state" in diff["changed"]
+    assert "node_outputs" in diff["changed"]
+    assert "shared_context" in diff["changed"]
+    assert diff["changed"]["conversation_state"]["before"]["active_domain"] == "general"
+    assert diff["changed"]["conversation_state"]["after"]["active_domain"] == "training"
+
+
+def test_compute_state_diff_handles_added_and_removed():
+    runner = _runner()
+    before = {"tools_called": ["search_memory"]}
+    after = {"tools_called": ["search_memory", "update_memory"], "plan_needs_revision": True}
+
+    diff = runner._compute_state_diff(before, after)  # pylint: disable=protected-access
+
+    assert "plan_needs_revision" in diff["added"]
+    assert diff["added"]["plan_needs_revision"] is True
+
+
+def test_try_parse_json_returns_parsed_object():
+    runner = _runner()
+    result = runner._try_parse_json('{"technical_summary": "ok", "status": "done"}')
+    assert result is not None
+    assert result["technical_summary"] == "ok"
+
+
+def test_try_parse_json_returns_none_for_plain_text():
+    runner = _runner()
+    assert runner._try_parse_json("Apenas um texto normal") is None
+
+
+def test_try_parse_json_returns_none_for_empty():
+    runner = _runner()
+    assert runner._try_parse_json("") is None
+
+
+def test_build_timeline_summary_identifies_slowest_and_largest():
+    runner = _runner()
+    state = GraphState(user_email="a@b.com", user_input_raw="hello", channel="app")
+    state.node_metadata["session_context"] = {"status": "completed", "duration_ms": 100, "raw_output": ""}
+    state.node_metadata["training_specialist"] = {"status": "completed", "duration_ms": 2000, "raw_output": "x" * 5000}
+    state.node_metadata["plan_specialist"] = {"status": "completed", "duration_ms": 500, "raw_output": "short"}
+
+    summary = runner._build_timeline_summary(state)  # pylint: disable=protected-access
+
+    assert summary["slowest_node"] == "training_specialist"
+    assert summary["largest_output_node"] == "training_specialist"
+
+
+def test_build_timeline_summary_identifies_interrupted():
+    runner = _runner()
+    state = GraphState(user_email="a@b.com", user_input_raw="hello", channel="app")
+    state.node_metadata["session_context"] = {"status": "completed", "duration_ms": 100}
+    state.node_metadata["prompt_security"] = {"status": "failed", "duration_ms": 50}
+
+    summary = runner._build_timeline_summary(state)  # pylint: disable=protected-access
+
+    assert summary["interrupted_at"] == "prompt_security"
+
+
+@pytest.mark.asyncio
+async def test_run_node_enriches_metadata_with_config_and_inputs():
+    runner = _runner()
+    state = GraphState(user_email="a@b.com", user_input_raw="hello", channel="app")
+    state.request["sanitized_input"] = "hello"
+    state.shared_context.setdefault("input_data", {})
+    state.shared_context["input_data"].setdefault("user_locale", "pt-BR")
+    state.shared_context["input_data"].setdefault("runtime_context_json", "{}")
+    state.shared_context["input_data"].setdefault("plan_section", "")
+    state.shared_context["input_data"].setdefault("agenda_section", "")
+    state.shared_context["input_data"].setdefault("metabolism_section", "")
+    state.shared_context["persistence_candidates"] = {"memory": [], "event": []}
+    state.shared_context["plan_lifecycle"] = {"timeline_expired": False}
+
+    cfg = runner._registry.get_node_config("session_context")  # pylint: disable=protected-access
+
+    meta = {
+        "config_hash": cfg.config_hash,
+        "config_version": cfg.version,
+        "model": cfg.model_name,
+        "temperature": cfg.temperature,
+        "max_tokens": cfg.max_tokens,
+        "top_p": cfg.top_p,
+        "frequency_penalty": cfg.frequency_penalty,
+        "provider_sort": cfg.provider_sort,
+        "tool_policy": cfg.tool_policy,
+        "tool_names": list(cfg.tool_names),
+        "parallel_tool_calls": cfg.parallel_tool_calls,
+        "reasoning": cfg.reasoning,
+        "context_blocks": list(cfg.context_blocks),
+        "peer_inputs": list(cfg.peer_inputs),
+        "output_contract": cfg.output_contract,
+        "resolved_input": state.request.get("sanitized_input", ""),
+        "resolved_context": runner._resolve_node_context(cfg, state),  # pylint: disable=protected-access
+        "resolved_peer_outputs": runner._resolve_peer_inputs(cfg, state),  # pylint: disable=protected-access
+        "state_before": runner._capture_state_snapshot(state),  # pylint: disable=protected-access
+        "state_after": runner._capture_state_snapshot(state),  # pylint: disable=protected-access
+        "state_diff": {"added": {}, "changed": {}, "removed": {}},
+        "raw_output": "",
+        "structured_output": None,
+        "specialist_state": None,
+        "pending_action": None,
+        "started_at": "now",
+        "completed_at": "then",
+        "duration_ms": 100,
+        "status": "completed",
+    }
+
+    assert "config_hash" in meta
+    assert "config_version" in meta
+    assert "model" in meta
+    assert "temperature" in meta
+    assert "max_tokens" in meta
+    assert "context_blocks" in meta
+    assert "peer_inputs" in meta
+    assert "resolved_input" in meta
+    assert "resolved_context" in meta
+    assert "resolved_peer_outputs" in meta
+    assert "state_before" in meta
+    assert "state_after" in meta
+    assert "state_diff" in meta
+    assert "raw_output" in meta
+    assert isinstance(meta["duration_ms"], int)
+    assert meta["status"] == "completed"
+
+
+def test_build_debug_trace_includes_enriched_global_fields():
+    runner = _runner()
+    state = GraphState(user_email="a@b.com", user_input_raw="hello", channel="app")
+    state.conversation_state = {"active_domain": "training"}
+    state.tools_called = ["get_plan"]
+    state.final_response = "ok"
+    state.coach_response = "ok"
+
+    trace = runner._build_debug_trace(
+        state=state,
+        started_at=datetime.utcnow(),
+        ended_at=datetime.utcnow(),
+        graph_error=None,
+        conversation_state_before={"active_domain": "general"},
+    )
+
+    assert "graph_error" in trace
+    assert trace["graph_error"] is None
+    assert "request_payload_sanitized" in trace
+    assert "conversation_state_before" in trace
+    assert "conversation_state_after" in trace
+    assert trace["conversation_state_before"]["active_domain"] == "general"
+    assert trace["conversation_state_after"]["active_domain"] == "training"
+    assert "pending_action_resolution" in trace
+    assert "timeline_summary" in trace
+
+
+def test_build_debug_trace_node_has_runtime_config_fields():
+    runner = _runner()
+    state = GraphState(user_email="a@b.com", user_input_raw="hello", channel="app")
+    state.node_metadata["session_context"] = {
+        "status": "completed",
+        "temperature": 0.2,
+        "max_tokens": 4096,
+        "top_p": 0.9,
+        "frequency_penalty": 0.0,
+        "provider_sort": "price",
+        "tool_policy": "restricted",
+        "tool_names": [],
+        "parallel_tool_calls": False,
+        "reasoning": None,
+        "context_blocks": [],
+        "peer_inputs": [],
+        "output_contract": "",
+        "resolved_input": "hello",
+        "resolved_context": "[context]",
+        "resolved_peer_outputs": "[none]",
+        "raw_output": "",
+        "structured_output": None,
+        "state_before": {},
+        "state_after": {},
+        "state_diff": {},
+        "specialist_state": None,
+        "pending_action": None,
+    }
+
+    trace = runner._build_debug_trace(
+        state=state,
+        started_at=datetime.utcnow(),
+        ended_at=datetime.utcnow(),
+        graph_error=None,
+    )
+
+    node = trace["nodes"][0]
+    assert node["temperature"] == 0.2
+    assert node["max_tokens"] == 4096
+    assert node["resolved_input"] == "hello"
+    assert node["resolved_context"] == "[context]"
+
+
+def test_run_node_captures_specialist_state_and_pending_action():
+    runner = _runner()
+    state = GraphState(user_email="a@b.com", user_input_raw="treino", channel="app")
+    state.specialist_states["training_specialist"] = {"action_status": "executed", "action_type": "analyze"}
+    state.specialist_pending_actions["training_specialist"] = {"kind": "domain_execution", "status": "executed"}
+
+    snapshot = runner._capture_state_snapshot(state)  # pylint: disable=protected-access
+
+    assert snapshot["specialist_states"]["training_specialist"]["action_status"] == "executed"
+    assert snapshot["specialist_pending_actions"]["training_specialist"]["kind"] == "domain_execution"
+
+
+def test_run_node_state_diff_captures_changes():
+    runner = _runner()
+    before = {
+        "conversation_state": {"active_domain": "general"},
+        "node_outputs": {},
+        "tools_called": [],
+        "shared_context": {},
+    }
+    after = {
+        "conversation_state": {"active_domain": "training"},
+        "node_outputs": {"training_specialist": "done"},
+        "tools_called": ["get_plan"],
+        "shared_context": {"training_analysis": {"status": "progress"}},
+    }
+
+    diff = runner._compute_state_diff(before, after)  # pylint: disable=protected-access
+
+    assert isinstance(diff, dict)
+    assert "added" in diff
+    assert "changed" in diff
+    assert "removed" in diff
+    assert diff["changed"]["conversation_state"]["before"]["active_domain"] == "general"
+    assert diff["changed"]["conversation_state"]["after"]["active_domain"] == "training"

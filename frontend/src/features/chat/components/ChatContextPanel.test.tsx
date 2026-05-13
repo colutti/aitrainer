@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { ChatContextPanel } from './ChatContextPanel';
@@ -28,8 +28,46 @@ vi.mock('react-i18next', () => ({
       if (key === 'chat.debug.duration_total') return 'Tempo total';
       if (key === 'chat.debug.security') return 'Segurança';
       if (key === 'chat.debug.revision') return 'Precisa revisão';
-      if (key === 'common.yes') return 'Sim';
-      if (key === 'common.no') return 'Não';
+      if (key === 'chat.debug.status.failed') return 'Falhou';
+      if (key === 'chat.debug.status.skipped_disabled') return 'Pulado';
+      if (key === 'chat.debug.status.error') return 'Erro';
+      if (key === 'chat.debug.status.success') return 'Sucesso';
+      if (key === 'chat.debug.tab_summary') return 'Resumo';
+      if (key === 'chat.debug.tab_input') return 'Entrada';
+      if (key === 'chat.debug.tab_output') return 'Saída';
+      if (key === 'chat.debug.tab_diff') return 'Diff';
+      if (key === 'chat.debug.tab_config') return 'Config';
+      if (key === 'chat.debug.specialist_state') return 'Estado especialista';
+      if (key === 'chat.debug.pending_action') return 'Ação pendente';
+      if (key === 'chat.debug.status') return 'Status';
+      if (key === 'chat.debug.duration') return 'Duração';
+      if (key === 'chat.debug.model') return 'Modelo';
+      if (key === 'chat.debug.config_hash') return 'Config hash';
+      if (key === 'chat.debug.config_version') return 'Config versão';
+      if (key === 'chat.debug.temperature') return 'Temperatura';
+      if (key === 'chat.debug.max_tokens') return 'Max tokens';
+      if (key === 'chat.debug.top_p') return 'Top p';
+      if (key === 'chat.debug.frequency_penalty') return 'Penalidade frequência';
+      if (key === 'chat.debug.provider_sort') return 'Provider sort';
+      if (key === 'chat.debug.tool_policy') return 'Tool policy';
+      if (key === 'chat.debug.resolved_input') return 'Entrada';
+      if (key === 'chat.debug.resolved_context') return 'Contexto';
+      if (key === 'chat.debug.resolved_peer_outputs') return 'Peers';
+      if (key === 'chat.debug.output_preview') return 'Preview';
+      if (key === 'chat.debug.raw_output') return 'Saída bruta';
+      if (key === 'chat.debug.structured_output') return 'Saída estruturada';
+      if (key === 'chat.debug.context_blocks') return 'Blocos de contexto';
+      if (key === 'chat.debug.peer_inputs') return 'Entradas de pares';
+      if (key === 'chat.debug.reasoning') return 'Raciocínio';
+      if (key === 'chat.debug.diff_added') return 'Adicionado';
+      if (key === 'chat.debug.diff_changed') return 'Alterado';
+      if (key === 'chat.debug.diff_removed') return 'Removido';
+      if (key === 'chat.debug.no_diff') return 'Sem diff';
+      if (key === 'chat.debug.no_changes') return 'Sem mudanças';
+      if (key === 'chat.debug.copy_trace') return 'Copiar';
+      if (key === 'chat.debug.request_id') return 'Request ID';
+      if (key === 'chat.debug.turn_id') return 'Turn ID';
+      if (key === 'chat.debug.graph_error') return 'Erro do grafo';
       return key;
     },
   }),
@@ -96,7 +134,7 @@ describe('ChatContextPanel', () => {
     expect(screen.getByText('Não chamado')).toBeInTheDocument();
   });
 
-  it('renders tool labels per node', () => {
+  it('renders tool labels when node is expanded', () => {
     const debugTrace = {
       user_email: 'a@b.com',
       request_id: 'r1',
@@ -120,6 +158,8 @@ describe('ChatContextPanel', () => {
       ],
     };
     render(<ChatContextPanel {...baseProps} debugTrace={debugTrace} />);
+
+    fireEvent.click(screen.getByText('memory_hub'));
 
     expect(screen.getByText('save_memory')).toBeInTheDocument();
     expect(screen.getByText('update_memory')).toBeInTheDocument();

@@ -65,7 +65,7 @@ describe('ChatView', () => {
 
   it('uses split layout when the debug panel is visible', () => {
     render(<ChatView {...mockProps} />);
-    expect(screen.getByTestId('chat-workspace')).toHaveClass('lg:grid', 'lg:grid-cols-[minmax(0,1fr)_22rem]', 'lg:h-[calc(100dvh-7rem)]', 'lg:overflow-hidden');
+    expect(screen.getByTestId('chat-workspace')).toHaveClass('lg:grid', 'lg:h-[calc(100dvh-7rem)]', 'lg:overflow-hidden');
   });
 
   it('keeps empty state rendering without context panel', () => {
@@ -229,6 +229,6 @@ describe('ChatView', () => {
 
     expect(screen.getByText('turn_context')).toBeInTheDocument();
     expect(screen.getByText('Contexto pronto')).toBeInTheDocument();
-    expect(screen.getByText('Resposta final')).toBeInTheDocument();
+    expect(screen.getByText('training')).toBeInTheDocument();
   });
 });

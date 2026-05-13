@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 import json
 import re
 from dataclasses import dataclass, field
@@ -70,6 +71,7 @@ class GraphState:
     persistence_actions: list[str] = field(default_factory=list)
     blocked_segments: list[str] = field(default_factory=list)
     node_outputs: dict[str, str] = field(default_factory=dict)
+    last_raw_outputs: dict[str, str] = field(default_factory=dict)
     node_metadata: dict[str, dict[str, Any]] = field(default_factory=dict)
     plan_needs_revision: bool = False
     persistence_intents: dict[str, Any] = field(default_factory=dict)
@@ -263,6 +265,7 @@ class ConversationGraphRunner:
             turn_id=turn_id or str(uuid4()),
         )
         state.request["sanitized_input"] = user_input
+        conversation_state_before = copy.deepcopy(state.conversation_state)
 
         trace_metadata = {
             "request_id": state.request_id,
@@ -331,6 +334,7 @@ class ConversationGraphRunner:
                         started_at=started_at,
                         ended_at=datetime.utcnow(),
                         graph_error=graph_error,
+                        conversation_state_before=conversation_state_before,
                     ),
                 )
 
@@ -382,10 +386,37 @@ class ConversationGraphRunner:
             "turn_id": state.turn_id,
         }
         node_started_at = datetime.utcnow()
+
+        runtime_config = {
+            "temperature": cfg.temperature,
+            "max_tokens": cfg.max_tokens,
+            "top_p": cfg.top_p,
+            "frequency_penalty": cfg.frequency_penalty,
+            "provider_sort": cfg.provider_sort,
+            "tool_policy": cfg.tool_policy,
+            "tool_names": list(cfg.tool_names),
+            "parallel_tool_calls": cfg.parallel_tool_calls,
+            "reasoning": cfg.reasoning,
+            "context_blocks": list(cfg.context_blocks),
+            "peer_inputs": list(cfg.peer_inputs),
+            "output_contract": cfg.output_contract,
+        }
+
+        resolved_ctx = self._resolve_node_context(cfg, state)
+        resolved_peers = self._resolve_peer_inputs(cfg, state)
+        resolved_data = {
+            "resolved_input": state.request.get("sanitized_input", state.user_input_raw),
+            "resolved_context": self._truncate(resolved_ctx, 4000),
+            "resolved_peer_outputs": self._truncate(resolved_peers, 4000),
+        }
+
         state.node_metadata[node_name] = {
             **base_meta,
+            **runtime_config,
+            **resolved_data,
             "started_at": node_started_at.isoformat(),
         }
+
         if not cfg.enabled:
             state.node_metadata[node_name]["status"] = "skipped_disabled"
             node_completed_at = datetime.utcnow()
@@ -400,12 +431,16 @@ class ConversationGraphRunner:
                 state.request_id,
             )
             return
+
         logger.info(
             "graph.node_started node=%s cfg=%s request_id=%s",
             node_name,
             cfg.config_hash,
             state.request_id,
         )
+
+        state.node_metadata[node_name]["state_before"] = self._capture_state_snapshot(state)
+
         node = getattr(self, f"_node_{node_name}")
         try:
             with create_node_run_context(node_name=node_name, metadata=base_meta):
@@ -423,16 +458,127 @@ class ConversationGraphRunner:
             state.node_metadata[node_name]["error"] = str(exc)
             raise
         finally:
+            state_after = self._capture_state_snapshot(state)
+            state_before_snap = state.node_metadata[node_name].get("state_before", {})
+            state.node_metadata[node_name]["state_after"] = state_after
+            state.node_metadata[node_name]["state_diff"] = self._compute_state_diff(
+                state_before_snap,
+                state_after,
+            )
+            raw = state.last_raw_outputs.get(node_name, "")
+            state.node_metadata[node_name]["raw_output"] = self._truncate(raw, 8000) if raw else ""
+            state.node_metadata[node_name]["structured_output"] = self._try_parse_json(raw)
+            if node_name in state.specialist_states:
+                state.node_metadata[node_name]["specialist_state"] = copy.deepcopy(
+                    state.specialist_states[node_name]
+                )
+            if node_name in state.specialist_pending_actions:
+                state.node_metadata[node_name]["pending_action"] = copy.deepcopy(
+                    state.specialist_pending_actions[node_name]
+                )
             node_completed_at = datetime.utcnow()
             state.node_metadata[node_name]["completed_at"] = node_completed_at.isoformat()
             state.node_metadata[node_name]["duration_ms"] = int(
                 (node_completed_at - node_started_at).total_seconds() * 1000
             )
+
         logger.info(
             "graph.node_completed node=%s request_id=%s",
             node_name,
             state.request_id,
         )
+
+    @staticmethod
+    def _capture_state_snapshot(state: GraphState) -> dict[str, Any]:
+        snapshot_keys = [
+            "conversation_state",
+            "specialist_states",
+            "specialist_pending_actions",
+            "tools_called",
+            "persistence_actions",
+            "plan_needs_revision",
+            "security_status",
+            "response",
+            "node_outputs",
+        ]
+        result: dict[str, Any] = {}
+        for key in snapshot_keys:
+            result[key] = copy.deepcopy(getattr(state, key, None))
+        shared_keys = [
+            "training_analysis", "nutrition_analysis", "plan_workspace",
+            "persistence_candidates", "has_active_plan", "history_summary_neutral",
+        ]
+        result["shared_context"] = {
+            k: copy.deepcopy(state.shared_context.get(k, None))
+            for k in shared_keys
+        }
+        return result
+
+    @staticmethod
+    def _compute_state_diff(before: dict, after: dict) -> dict[str, Any]:
+        diff: dict[str, Any] = {"added": {}, "removed": {}, "changed": {}}
+        all_keys = set(before) | set(after)
+        for key in all_keys:
+            if key not in before:
+                diff["added"][key] = copy.deepcopy(after.get(key))
+            elif key not in after:
+                diff["removed"][key] = copy.deepcopy(before.get(key))
+            elif before.get(key) != after.get(key):
+                diff["changed"][key] = {
+                    "before": copy.deepcopy(before.get(key)),
+                    "after": copy.deepcopy(after.get(key)),
+                }
+        return diff
+
+    @staticmethod
+    def _try_parse_json(text: str) -> Any | None:
+        if not text or not text.strip():
+            return None
+        stripped = text.strip()
+        if not stripped.startswith(("{", "[")):
+            return None
+        try:
+            return json.loads(stripped)
+        except (json.JSONDecodeError, ValueError):
+            return None
+
+    def _build_timeline_summary(self, state: GraphState) -> dict:
+        slowest = None
+        largest = None
+        state_changed_nodes: list[str] = []
+        pending_nodes: list[str] = []
+        interrupted_at: str | None = None
+        max_duration: float = -1
+        max_output_len: int = -1
+        for node_name in self.NODE_ORDER:
+            meta = state.node_metadata.get(node_name, {})
+            status = meta.get("status", "")
+            duration = meta.get("duration_ms")
+            if isinstance(duration, (int, float)) and duration > max_duration:
+                max_duration = duration
+                slowest = node_name
+            raw_text = meta.get("raw_output", "")
+            if isinstance(raw_text, str) and len(raw_text) > max_output_len:
+                max_output_len = len(raw_text)
+                largest = node_name
+            state_diff = meta.get("state_diff", {})
+            if isinstance(state_diff, dict) and (
+                state_diff.get("added") or state_diff.get("changed") or state_diff.get("removed")
+            ):
+                state_changed_nodes.append(node_name)
+            pa = meta.get("pending_action", {})
+            if isinstance(pa, dict) and pa.get("kind") not in (None, "none", ""):
+                pending_nodes.append(node_name)
+            if status == "failed" and interrupted_at is None:
+                interrupted_at = node_name
+        return {
+            "slowest_node": slowest,
+            "largest_output_node": largest,
+            "largest_output_chars": max_output_len if max_output_len > 0 else None,
+            "nodes_with_state_changes": state_changed_nodes,
+            "nodes_with_pending_actions": pending_nodes,
+            "interrupted_at": interrupted_at,
+        }
 
     def _build_debug_trace(
         self,
@@ -441,25 +587,47 @@ class ConversationGraphRunner:
         started_at: datetime,
         ended_at: datetime,
         graph_error: str | None,
+        conversation_state_before: dict | None = None,
     ) -> dict[str, Any]:
         nodes: list[dict[str, Any]] = []
         for node_name in self.NODE_ORDER:
             meta = dict(state.node_metadata.get(node_name, {}))
-            nodes.append(
-                {
-                    "node_name": node_name,
-                    "status": meta.get("status", "pending"),
-                    "started_at": meta.get("started_at"),
-                    "completed_at": meta.get("completed_at"),
-                    "duration_ms": meta.get("duration_ms"),
-                    "output_preview": meta.get("output_preview", ""),
-                    "error": meta.get("error"),
-                    "config_hash": meta.get("config_hash"),
-                    "config_version": meta.get("config_version"),
-                    "model": meta.get("model"),
-                    "tools_called": meta.get("tools_called", []),
-                }
-            )
+            node_entry: dict[str, Any] = {
+                "node_name": node_name,
+                "status": meta.get("status", "pending"),
+                "started_at": meta.get("started_at"),
+                "completed_at": meta.get("completed_at"),
+                "duration_ms": meta.get("duration_ms"),
+                "output_preview": meta.get("output_preview", ""),
+                "error": meta.get("error"),
+                "config_hash": meta.get("config_hash"),
+                "config_version": meta.get("config_version"),
+                "model": meta.get("model"),
+                "tools_called": meta.get("tools_called", []),
+                "temperature": meta.get("temperature"),
+                "max_tokens": meta.get("max_tokens"),
+                "top_p": meta.get("top_p"),
+                "frequency_penalty": meta.get("frequency_penalty"),
+                "provider_sort": meta.get("provider_sort"),
+                "tool_policy": meta.get("tool_policy"),
+                "tool_names": meta.get("tool_names", []),
+                "parallel_tool_calls": meta.get("parallel_tool_calls"),
+                "reasoning": meta.get("reasoning"),
+                "context_blocks": meta.get("context_blocks", []),
+                "peer_inputs": meta.get("peer_inputs", []),
+                "output_contract": meta.get("output_contract", ""),
+                "resolved_input": meta.get("resolved_input", ""),
+                "resolved_context": meta.get("resolved_context", ""),
+                "resolved_peer_outputs": meta.get("resolved_peer_outputs", ""),
+                "raw_output": meta.get("raw_output", ""),
+                "structured_output": meta.get("structured_output"),
+                "state_before": meta.get("state_before"),
+                "state_after": meta.get("state_after"),
+                "state_diff": meta.get("state_diff"),
+                "specialist_state": meta.get("specialist_state"),
+                "pending_action": meta.get("pending_action"),
+            }
+            nodes.append(node_entry)
         return {
             "user_email": state.user_email,
             "request_id": state.request_id,
@@ -480,6 +648,12 @@ class ConversationGraphRunner:
             "technical_response": state.coach_response,
             "node_outputs": state.node_outputs,
             "nodes": nodes,
+            "graph_error": graph_error,
+            "request_payload_sanitized": state.request.get("sanitized_input", ""),
+            "conversation_state_before": conversation_state_before or {},
+            "conversation_state_after": copy.deepcopy(state.conversation_state),
+            "pending_action_resolution": state.conversation_state.get("pending_action", {}),
+            "timeline_summary": self._build_timeline_summary(state),
         }
 
     async def _node_session_context(self, state: GraphState) -> None:
@@ -634,16 +808,47 @@ class ConversationGraphRunner:
                     pattern,
                 )
                 return
-        classifier = await self._run_llm_node(
-            node_name="prompt_security",
-            state=state,
-            allowed_tools=set(),
-            message_override=state.user_input_raw,
-        )
+
+        classifier = ""
+        try:
+            classifier = await self._run_llm_node(
+                node_name="prompt_security",
+                state=state,
+                allowed_tools=set(),
+                message_override=state.user_input_raw,
+            )
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.warning(
+                "graph.prompt_security_llm_failed request_id=%s turn_id=%s",
+                state.request_id,
+                state.turn_id,
+                exc_info=True,
+            )
+
+        if not classifier or not classifier.strip():
+            state.security_status = "blocked"
+            state.user_input_sanitized = ""
+            state.blocked_segments.append("llm_unavailable")
+            state.node_outputs["prompt_security"] = "blocked:llm_unavailable"
+            logger.warning(
+                "graph.prompt_security_blocked request_id=%s turn_id=%s reason=llm_unavailable",
+                state.request_id,
+                state.turn_id,
+            )
+            return
+
         parsed = self._parse_json_object(classifier)
         status = str(parsed.get("status", "safe")).lower()
         if status not in {"safe", "blocked"}:
             status = "safe"
+
+        if not parsed or (status == "safe" and not str(parsed.get("sanitized", "")).strip()):
+            logger.warning(
+                "graph.prompt_security_empty_parsed request_id=%s turn_id=%s using_raw",
+                state.request_id,
+                state.turn_id,
+            )
+
         state.security_status = status
         state.security["status"] = status
         sanitized = str(parsed.get("sanitized", state.user_input_raw)).strip()
@@ -1116,7 +1321,9 @@ class ConversationGraphRunner:
                 tool_name = str(chunk.get("tool_name", "unknown"))
                 state.tools_called.append(tool_name)
                 state.node_metadata.setdefault(node_name, {}).setdefault("tools_called", []).append(tool_name)
-        return "".join(chunks).strip() or state.user_input_sanitized
+        raw_response = "".join(chunks).strip() or state.user_input_sanitized
+        state.last_raw_outputs[node_name] = raw_response
+        return raw_response
 
     @staticmethod
     def _normalize_candidates(
