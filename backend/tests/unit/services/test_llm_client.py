@@ -250,7 +250,7 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
 
     @patch("src.services.llm_client.create_agent")
     async def test_stream_with_tools_passes_response_format(self, mock_create_agent):
-        """stream_with_tools should pass response_format to create_agent."""
+        """stream_with_tools should pass response_format to create_agent when tools are present."""
         client = _TestLLMClient()
         mock_agent = MagicMock()
         mock_create_agent.return_value = mock_agent
@@ -264,7 +264,7 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
 
         results = []
         async for chunk in client.stream_with_tools(
-            prompt, {}, [], model_override="test-model",
+            prompt, {}, [MagicMock()], model_override="test-model",
             response_format={"type": "json_schema", "json_schema": {"name": "test", "strict": True, "schema": {"type": "object"}}},
         ):
             results.append(chunk)
@@ -276,7 +276,7 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
 
     @patch("src.services.llm_client.create_agent")
     async def test_stream_with_tools_uses_structured_response_from_ainvoke(self, mock_create_agent):
-        """When response_format is provided, structured_response must be returned."""
+        """When response_format is provided with tools, structured_response is returned via agent."""
         client = _TestLLMClient()
         mock_agent = MagicMock()
         mock_agent.ainvoke = AsyncMock(
@@ -294,7 +294,7 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
         async for chunk in client.stream_with_tools(
             prompt,
             {},
-            [],
+            [MagicMock()],
             model_override="test-model",
             response_format={
                 "type": "json_schema",
@@ -309,6 +309,72 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
 
         mock_agent.ainvoke.assert_called_once()
         self.assertEqual(results[0], '{"status": "ok"}')
+
+    async def test_direct_structured_bypasses_agent_when_no_tools(self):
+        """When tools=[], response_format is set, use direct LLM call without create_agent.
+
+        Regression test: prompt_security node uses json_schema strict with no tools.
+        create_agent with empty tools + response_format triggers GRAPH_RECURSION_LIMIT.
+        The direct path avoids the agent loop entirely.
+        """
+        with patch("src.services.llm_client.create_agent") as mock_create_agent:
+            client = _TestLLMClient()
+            mock_llm = client.mock_llm
+            expected_content = '{"status":"safe","reason":"ok","sanitized":"hello"}'
+            mock_llm.ainvoke = AsyncMock(
+                return_value=AIMessage(content=expected_content)
+            )
+
+            mock_llm.bind.return_value = mock_llm
+            prompt = MagicMock()
+            prompt.format_messages.return_value = []
+
+            results = []
+            async for chunk in client.stream_with_tools(
+                prompt,
+                {},
+                [],
+                model_override="test-model",
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "test",
+                        "strict": True,
+                        "schema": {"type": "object"},
+                    },
+                },
+            ):
+                results.append(chunk)
+
+            mock_create_agent.assert_not_called()
+            self.assertEqual(results[0], expected_content)
+            self.assertTrue(
+                any(isinstance(item, dict) and item.get("type") == "tools_summary"
+                    for item in results)
+            )
+
+    async def test_direct_structured_yields_error_on_failure(self):
+        """Direct structured path must yield user-facing error on LLM failure."""
+        with patch("src.services.llm_client.create_agent") as mock_create_agent:
+            client = _TestLLMClient()
+            mock_llm = client.mock_llm
+            mock_llm.bind.return_value = mock_llm
+            mock_llm.ainvoke = AsyncMock(side_effect=RuntimeError("LLM down"))
+            prompt = MagicMock()
+            prompt.format_messages.return_value = []
+
+            results = []
+            async for chunk in client.stream_with_tools(
+                prompt,
+                {"user_locale": "pt-BR"},
+                [],
+                model_override="test-model",
+                response_format={"type": "json_schema", "json_schema": {"name": "test", "strict": True, "schema": {"type": "object"}}},
+            ):
+                results.append(chunk)
+
+            mock_create_agent.assert_not_called()
+            self.assertEqual(results[0], client.USER_FACING_ERROR_MESSAGES["pt-BR"])
 
 
 if __name__ == "__main__":
