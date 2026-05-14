@@ -177,10 +177,7 @@ class LLMClient:
                 reasoning=reasoning,
                 parallel_tool_calls=parallel_tool_calls,
             )
-            agent_kwargs: dict[str, Any] = {}
-            if response_format is not None:
-                agent_kwargs["response_format"] = response_format
-            agent: Any = create_agent(request_llm, tools, **agent_kwargs)
+
             from src.core.config import settings  # pylint: disable=import-outside-toplevel
             config: RunnableConfig = build_runnable_config(
                 run_name=run_name,
@@ -189,6 +186,37 @@ class LLMClient:
                 input_data=input_data,
                 recursion_limit=int(settings.LLM_AGENT_RECURSION_LIMIT),
             )
+
+            # Direct structured invocation for nodes with response_format but
+            # no tools. Bypasses agent loop to avoid GRAPH_RECURSION_LIMIT
+            # when tools=[], e.g., prompt_security with json_schema strict.
+            if not tools and response_format is not None:
+                try:
+                    llm_with_format = request_llm.bind(response_format=response_format)
+                    result = await llm_with_format.ainvoke(messages, config=config)
+                    if isinstance(result, AIMessage):
+                        usage_metadata_captured, usage_metadata = self._capture_metadata(
+                            result, source="DirectStructured"
+                        )
+                        runtime_metadata = self._extract_runtime_metadata(result)
+                        if result.content:
+                            for block in self._yield_content_blocks(result.content):
+                                yield block
+                except Exception as exc:  # pylint: disable=broad-exception-caught
+                    logger.error(
+                        "Error in direct structured LLM call: %s sha=%s",
+                        exc,
+                        hashlib.sha256(user_message.encode("utf-8")).hexdigest()[:12],
+                    )
+                    yield self.get_user_facing_error_message(
+                        input_data.get("user_locale")
+                    )
+                return
+
+            agent_kwargs: dict[str, Any] = {}
+            if response_format is not None:
+                agent_kwargs["response_format"] = response_format
+            agent: Any = create_agent(request_llm, tools, **agent_kwargs)
             if response_format is not None:
                 result = await agent.ainvoke({"messages": messages}, config=config)
                 final_messages = result.get("messages", []) if isinstance(result, dict) else []
