@@ -8,26 +8,20 @@ import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
 import type { UserInfo } from '../../../shared/hooks/useAuth';
 import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { PREMIUM_UI } from '../../../shared/styles/ui-variants';
-import type { ChatGraphTrace, ChatMessage, MessageImagePayload } from '../../../shared/types/chat';
+import type { ChatMessage, MessageImagePayload } from '../../../shared/types/chat';
 import type { TrainerCard } from '../../../shared/types/settings';
 import { cn } from '../../../shared/utils/cn';
 
-import { ChatContextPanel } from './ChatContextPanel';
-import { ChatDebugOverlay } from './debug/ChatDebugOverlay';
-import { useChatDebugInspectorState } from './debug/useChatDebugInspectorState';
 import { MessageBubble } from './MessageBubble';
 
 export interface ChatViewProps {
   messages: ChatMessage[];
   isStreaming: boolean;
-  streamingStatus: string | null;
   isLoading: boolean;
   hasMore: boolean;
   error: string | null;
   trainer: TrainerCard | null;
   userInfo: UserInfo | null;
-  debugTrace?: ChatGraphTrace | null;
-  debugTraceError?: string | null;
   initialInputValue?: string;
   onSend: (text: string, images?: MessageImagePayload[]) => void | Promise<void>;
   onScroll: (e: React.UIEvent<HTMLDivElement>) => void;
@@ -72,14 +66,11 @@ const MessageList = memo(function MessageList({
 export function ChatView({
   messages,
   isStreaming,
-  streamingStatus,
   isLoading,
   hasMore,
   error,
   trainer,
   userInfo,
-  debugTrace,
-  debugTraceError,
   initialInputValue = '',
   onSend,
   onScroll,
@@ -103,12 +94,10 @@ export function ChatView({
     maxSizeMb: maxImageSizeMb,
   });
   const imageHelperAriaLabel = t('chat.image_upload.helper_aria');
-  const typingLabel = streamingStatus != null ? ('chat.status.' + streamingStatus) : 'chat.typing';
+  const typingLabel = 'chat.typing';
   const trainerName = trainer?.name ?? t('chat.default_trainer_name');
   const { isReadOnly: isDemoUser } = useDemoMode(userInfo);
   const normalizedLocale = i18n.language.toLowerCase();
-  const showDebugPanel = import.meta.env.DEV;
-  const inspectorState = useChatDebugInspectorState();
 
   useEffect(() => {
     setInputValue(initialInputValue);
@@ -245,15 +234,14 @@ export function ChatView({
       data-testid="chat-workspace"
       className={cn(
         'h-full min-h-0 bg-[color:var(--color-background)]',
-        showDebugPanel && 'lg:grid lg:h-[calc(100dvh-7rem)] lg:overflow-hidden',
+        'lg:h-[calc(100dvh-7rem)]',
       )}
-      style={showDebugPanel ? { gridTemplateColumns: `minmax(0,1fr) ${inspectorState.sidebarWidth.toString()}px` } : undefined}
     >
       <section
         data-testid="chat-conversation-column"
         className={cn(
           'flex min-h-0 h-full flex-col',
-          showDebugPanel && 'lg:border-r lg:border-[color:var(--color-outline-variant)] lg:overflow-hidden',
+          'lg:overflow-hidden',
         )}
       >
         <div
@@ -464,58 +452,6 @@ export function ChatView({
           </div>
         </div>
       </section>
-      {showDebugPanel && (
-        <aside className="hidden min-h-0 lg:block lg:h-full relative" style={{ width: `${inspectorState.sidebarWidth.toString()}px` }}>
-          <div className="h-full min-h-0 overflow-y-scroll [scrollbar-gutter:stable] custom-scrollbar border-l border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-lowest)]">
-            <ChatContextPanel
-              trainerName={trainerName}
-              trainerId={trainer?.trainer_id ?? null}
-              isStreaming={isStreaming}
-              messageCount={messages.length}
-              debugTrace={debugTrace ?? null}
-              debugTraceError={debugTraceError ?? null}
-              showDebugPanel={showDebugPanel}
-              onMaximize={() => { inspectorState.setShowOverlay(true); }}
-            />
-          </div>
-          {/* Resize handle */}
-          <div
-            className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-[color:var(--color-primary)]/30 active:bg-[color:var(--color-primary)]/50 transition-colors"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              const startX = e.clientX;
-              const startWidth = inspectorState.sidebarWidth;
-              const onMove = (ev: MouseEvent) => {
-                const newWidth = startWidth - (ev.clientX - startX);
-                const clamped = Math.max(320, Math.min(900, newWidth));
-                inspectorState.setSidebarWidth(clamped);
-              };
-              const onUp = () => {
-                document.removeEventListener('mousemove', onMove);
-                document.removeEventListener('mouseup', onUp);
-              };
-              document.addEventListener('mousemove', onMove);
-              document.addEventListener('mouseup', onUp);
-            }}
-          />
-        </aside>
-      )}
-      {showDebugPanel && (
-        <ChatDebugOverlay
-          open={inspectorState.showOverlay}
-          onClose={() => { inspectorState.setShowOverlay(false); }}
-          debugTrace={debugTrace ?? null}
-          debugTraceError={debugTraceError ?? null}
-          isStreaming={isStreaming}
-          expandedNode={inspectorState.expandedNode}
-          showRawTrace={inspectorState.showRawTrace}
-          activeTab={inspectorState.activeTab}
-          onToggleNode={inspectorState.toggleNode}
-          onToggleRawTrace={inspectorState.toggleRawTrace}
-          onTabChange={inspectorState.setActiveTab}
-          turnId={debugTrace?.turn_id}
-        />
-      )}
     </div>
   );
 }

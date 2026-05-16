@@ -236,13 +236,13 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
       id: 'carbs',
       label: t('plan.labels.carbs'),
       unit: 'g',
-      target: plan.nutrition_targets.carbs_g ?? 0,
+      target: plan.nutrition_targets.carbs_g,
     },
     {
       id: 'fat',
       label: t('plan.labels.fat'),
       unit: 'g',
-      target: plan.nutrition_targets.fat_g ?? 0,
+      target: plan.nutrition_targets.fat_g,
     },
   ].filter((item) => item.target > 0) as RingMetric[];
 

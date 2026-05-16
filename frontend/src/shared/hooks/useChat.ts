@@ -2,17 +2,14 @@ import i18next from 'i18next';
 import { create } from 'zustand';
 
 import { httpClient, API_BASE_URL } from '../api/http-client';
-import type { ChatGraphTrace, ChatMessage, MessageImagePayload } from '../types/chat';
+import type { ChatMessage, MessageImagePayload } from '../types/chat';
 
 interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
   isStreaming: boolean;
-  streamingStatus: string | null;
   error: string | null;
   hasMore: boolean;
-  debugTrace: ChatGraphTrace | null;
-  debugTraceError: string | null;
 }
 
 interface ChatActions {
@@ -21,7 +18,6 @@ interface ChatActions {
   sendMessage: (text: string, images?: MessageImagePayload[]) => Promise<void>;
   clearHistory: () => void;
   reset: () => void;
-  fetchDebugTrace: (turnId: string) => Promise<void>;
 }
 
 type ChatStore = ChatState & ChatActions;
@@ -31,55 +27,44 @@ const CHAT_STREAM_TIMEOUT_MS = 200_000;
 let historyInFlight: Promise<void> | null = null;
 let loadMoreInFlight: Promise<void> | null = null;
 
-/**
- * Chat store using Zustand
- * 
- * Manages chat history and real-time message streaming with the AI trainer.
- */
 export const useChatStore = create<ChatStore>((set, _get) => ({
   messages: [],
   isLoading: false,
   isStreaming: false,
-  streamingStatus: null,
   error: null,
   hasMore: true,
-  debugTrace: null,
-  debugTraceError: null,
 
   fetchHistory: async () => {
     if (historyInFlight) return historyInFlight;
     historyInFlight = (async () => {
-    set({ isLoading: true, error: null, hasMore: true });
-    try {
-      // Initial fetch: limit 20, offset 0
-      const messages = await httpClient<ChatMessage[]>('/message/history?limit=20&offset=0');
-      
-      if (messages && messages.length > 0) {
-        // If we received fewer than requested, we reached the end
-        const hasMore = messages.length === 20;
-        set({ messages, isLoading: false, hasMore });
-      } else {
-        // Welcome message if zero history
-        set({ 
-          messages: [{
-            text: i18next.t('chat.welcome_message', 'Bem-vindo ao FityQ! Eu sou seu treinador e parceiro nessa jornada. Para montarmos o plano perfeito para você, me conte: Qual é a sua maior dificuldade para manter o foco hoje? Quantos dias na semana você pretende treinar? Estou pronto para começar!'),
-            sender: 'Trainer',
-            timestamp: new Date().toISOString()
-          }], 
+      set({ isLoading: true, error: null, hasMore: true });
+      try {
+        const messages = await httpClient<ChatMessage[]>('/message/history?limit=20&offset=0');
+
+        if (messages && messages.length > 0) {
+          const hasMore = messages.length === 20;
+          set({ messages, isLoading: false, hasMore });
+        } else {
+          set({
+            messages: [{
+              text: i18next.t('chat.welcome_message', 'Bem-vindo ao FityQ! Eu sou seu treinador e parceiro nessa jornada. Para montarmos o plano perfeito para você, me conte: Qual é a sua maior dificuldade para manter o foco hoje? Quantos dias na semana você pretende treinar? Estou pronto para começar!'),
+              sender: 'Trainer',
+              timestamp: new Date().toISOString(),
+            }],
+            isLoading: false,
+            hasMore: false,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching chat history:', error);
+        set({
           isLoading: false,
-          hasMore: false
+          error: 'Falha ao carregar histórico de mensagens.',
+          hasMore: false,
         });
+      } finally {
+        historyInFlight = null;
       }
-    } catch (error) {
-      console.error('Error fetching chat history:', error);
-      set({ 
-        isLoading: false, 
-        error: 'Falha ao carregar histórico de mensagens.',
-        hasMore: false
-      });
-    } finally {
-      historyInFlight = null;
-    }
     })();
     return historyInFlight;
   },
@@ -91,26 +76,22 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
     loadMoreInFlight = (async () => {
       set({ isLoading: true });
       try {
-      const currentCount = state.messages.length;
-      const limit = 20;
-      
-      // Filter out local-only welcome message if needed, but usually it's overwritten
-      // Simplification: offset = currentCount
-      
-      const newMessages = await httpClient<ChatMessage[]>(`/message/history?limit=${limit.toString()}&offset=${currentCount.toString()}`);
-      
-      if (newMessages && newMessages.length > 0) {
-        set((state) => ({
-          messages: [...newMessages, ...state.messages],
-          isLoading: false,
-          hasMore: newMessages.length === limit
-        }));
-      } else {
-        set({ isLoading: false, hasMore: false });
-      }
+        const currentCount = state.messages.length;
+        const limit = 20;
+        const newMessages = await httpClient<ChatMessage[]>(`/message/history?limit=${limit.toString()}&offset=${currentCount.toString()}`);
+
+        if (newMessages && newMessages.length > 0) {
+          set((innerState) => ({
+            messages: [...newMessages, ...innerState.messages],
+            isLoading: false,
+            hasMore: newMessages.length === limit,
+          }));
+        } else {
+          set({ isLoading: false, hasMore: false });
+        }
       } catch (error) {
-      console.error('Error loading more history:', error);
-      set({ isLoading: false, hasMore: false }); // Don't block UI with error, just stop trying
+        console.error('Error loading more history:', error);
+        set({ isLoading: false, hasMore: false });
       } finally {
         loadMoreInFlight = null;
       }
@@ -126,12 +107,10 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
       timestamp: new Date().toISOString(),
     };
 
-    set((state) => ({ 
+    set((state) => ({
       messages: [...state.messages, userMessage],
       isStreaming: true,
       error: null,
-      debugTrace: null,
-      debugTraceError: null,
     }));
 
     let timeoutId: number | null = null;
@@ -147,7 +126,7 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : '',
+          Authorization: token ? `Bearer ${token}` : '',
           'X-User-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
         },
         body: JSON.stringify({
@@ -158,8 +137,6 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
           })),
         }),
       });
-      const responseHeaders = response.headers as Headers | { get?: (name: string) => string | null } | undefined;
-      const graphTurnId = responseHeaders?.get?.('X-Graph-Turn-Id') ?? null;
 
       if (!response.ok) {
         if (response.status === 422) {
@@ -210,7 +187,7 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
                 'TOO_MANY_IMAGES',
               ].includes(e.message)
             ) {
-               throw e;
+              throw e;
             }
           }
         }
@@ -225,73 +202,27 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
         sender: 'Trainer',
         timestamp: new Date().toISOString(),
       };
-
-      set((state) => ({
-        messages: [...state.messages, aiMessage],
-        streamingStatus: 'session_context',
-      }));
+      set((state) => ({ messages: [...state.messages, aiMessage] }));
 
       const decoder = new TextDecoder();
-      let buffer = '';
       let accumulatedText = '';
 
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        buffer += decoder.decode(value, { stream: true });
-
-        for (;;) {
-          // Normalize line endings so we always split on \n\n
-          buffer = buffer.replace(/\r\n/g, '\n');
-
-          const eventEnd = buffer.indexOf('\n\n');
-          if (eventEnd === -1) break;
-
-          const rawEvent = buffer.slice(0, eventEnd);
-          buffer = buffer.slice(eventEnd + 2);
-
-          const lines = rawEvent.split('\n');
-          let dataPayload = '';
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              dataPayload += line.slice(6);
-            }
+        accumulatedText += decoder.decode(value, { stream: true });
+        set((state) => {
+          const newMessages = [...state.messages];
+          const lastIndex = newMessages.length - 1;
+          const existing = newMessages[lastIndex];
+          if (existing) {
+            newMessages[lastIndex] = { ...existing, text: accumulatedText };
           }
-
-          if (!dataPayload) continue;
-
-          try {
-            const raw: unknown = JSON.parse(dataPayload);
-            if (typeof raw !== 'object' || raw === null) continue;
-            const event = raw as { type: string; node?: string; text?: string };
-            if (event.type === 'status' && event.node) {
-              set({ streamingStatus: event.node });
-            } else if (event.type === 'response' && event.text != null) {
-              accumulatedText = event.text;
-              set((state) => {
-                const newMessages = [...state.messages];
-                const lastIndex = newMessages.length - 1;
-                const existing = newMessages[lastIndex];
-                if (existing) {
-                  newMessages[lastIndex] = {
-                    ...existing,
-                    text: accumulatedText,
-                  };
-                }
-                return { messages: newMessages };
-              });
-            }
-          } catch {
-            // Ignore invalid JSON payloads — never leak raw data into visible text
-          }
-        }
+          return { messages: newMessages };
+        });
       }
-      set({ isStreaming: false, streamingStatus: null });
-      if (import.meta.env.DEV && graphTurnId) {
-        await _get().fetchDebugTrace(graphTurnId);
-      }
+      set({ isStreaming: false });
     } catch (error) {
       console.error('Error sending message:', error);
       let errorMessage = 'Ocorreu um problema ao enviar sua mensagem.';
@@ -299,7 +230,7 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
       if (error instanceof DOMException && error.name === 'AbortError') {
         errorMessage = 'A resposta demorou demais. Tente novamente.';
       }
-      
+
       if (error instanceof Error && error.message === 'LIMIT_EXCEEDED') {
         errorMessage = 'Você atingiu o limite de mensagens do seu plano. Atualize sua assinatura ou aguarde o próximo mês.';
       } else if (error instanceof Error && (error.message === 'TRIAL_EXPIRED' || error.message === 'DAILY_LIMIT_REACHED')) {
@@ -317,12 +248,10 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
       } else if (error instanceof Error && error.message === 'VALIDATION_ERROR') {
         errorMessage = 'VALIDATION_ERROR';
       }
-      
-      set({ 
-        isStreaming: false, 
-        streamingStatus: null,
+
+      set({
+        isStreaming: false,
         error: errorMessage,
-        debugTraceError: null,
       });
     } finally {
       if (timeoutId) {
@@ -332,7 +261,7 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
   },
 
   clearHistory: () => {
-    set({ messages: [], debugTrace: null, debugTraceError: null });
+    set({ messages: [] });
   },
 
   reset: () => {
@@ -342,28 +271,8 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
       messages: [],
       isLoading: false,
       isStreaming: false,
-      streamingStatus: null,
       error: null,
       hasMore: true,
-      debugTrace: null,
-      debugTraceError: null,
     });
-  },
-
-  fetchDebugTrace: async (turnId: string) => {
-    if (!import.meta.env.DEV || !turnId) return;
-    try {
-      const trace = await httpClient<ChatGraphTrace>(`/message/debug/turn/${turnId}`);
-      set({ debugTrace: trace ?? null, debugTraceError: null });
-    } catch (traceError) {
-      console.error('Error loading graph debug trace:', traceError);
-      set({
-        debugTrace: null,
-        debugTraceError: i18next.t(
-          'chat.debug.load_error',
-          'Falha ao carregar o trace da última resposta.',
-        ),
-      });
-    }
   },
 }));

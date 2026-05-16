@@ -19,7 +19,6 @@ from src.api.endpoints import (
     admin_users,
     admin_prompts,
     admin_tokens,
-    admin_agent_configs,
 )
 
 # Load environment variables
@@ -174,7 +173,6 @@ app.include_router(admin_analytics.router)
 app.include_router(admin_users.router)
 app.include_router(admin_prompts.router)
 app.include_router(admin_tokens.router)
-app.include_router(admin_agent_configs.router)
 
 @app.get("/health")
 async def health_check():

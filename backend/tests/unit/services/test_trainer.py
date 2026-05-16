@@ -1,138 +1,125 @@
-"""
-Tests for the AITrainerBrain service.
-"""
+"""Tests for the AITrainerBrain service."""
 
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.api.models.chat_history import ChatHistory
 from src.api.models.sender import Sender
+from src.api.models.trainer_profile import TrainerProfile
+from src.api.models.user_profile import UserProfile
 from src.services.trainer import AITrainerBrain
 
 
 class MockConversationMemory:
-    """Mock for ConversationSummaryBufferMemory that returns empty chat history."""
+    """Mock memory object used by get_window_memory."""
 
-    def load_memory_variables(self, inputs):
+    def load_memory_variables(self, _inputs):
         return {"chat_history": []}
-
-    def save_context(self, inputs, outputs):
-        pass
 
 
 class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
-    """Unit tests for the AITrainerBrain class."""
+    """Unit tests for AITrainerBrain."""
 
     def setUp(self):
-        """Set up test fixtures."""
         self.mock_db = MagicMock()
         self.mock_llm = MagicMock()
 
-        # Mock get_conversation_memory to return our mock
-        self.mock_conversation_memory = MockConversationMemory()
-        self.mock_db.get_conversation_memory.return_value = (
-            self.mock_conversation_memory
-        )
-        self.mock_db.get_plan.return_value = None
-
         self.settings_patcher = patch("src.services.trainer.settings")
+        self.to_thread_patcher = patch(
+            "src.services.trainer.asyncio.to_thread",
+            new=AsyncMock(side_effect=lambda func, *args, **kwargs: func(*args, **kwargs)),
+        )
         mock_settings = self.settings_patcher.start()
+        self.to_thread_patcher.start()
         self.addCleanup(self.settings_patcher.stop)
+        self.addCleanup(self.to_thread_patcher.stop)
         mock_settings.MAX_LONG_TERM_MEMORY_MESSAGES = 20
         mock_settings.MAX_SHORT_TERM_MEMORY_MESSAGES = 10
         mock_settings.AI_TRAINER_THREADPOOL_WORKERS = 4
-        mock_settings.LANGSMITH_ENVIRONMENT = "dev"
-        # Mock get_window_memory to return our mock
-        self.mock_conversation_memory = MockConversationMemory()
-        self.mock_db.get_window_memory.return_value = self.mock_conversation_memory
+        mock_settings.OPENROUTER_CHAT_MODEL = "google/gemini-3-flash-preview"
+        mock_settings.LLM_STREAM_TIMEOUT_SECONDS = 120
 
-        self.brain = AITrainerBrain(
-            database=self.mock_db, llm_client=self.mock_llm
+        profile = UserProfile(
+            email="test@test.com",
+            gender="Masculino",
+            age=30,
+            weight=80,
+            height=175,
+            goal="ganhar massa",
+            goal_type="gain",
+            weekly_rate=0.5,
         )
+        trainer_profile = TrainerProfile(user_email="test@test.com", trainer_type="atlas")
+        trainer_profile.preferred_language = "pt-BR"
 
-        # Mock graph runner for all tests that call send_message_ai
-        async def _mock_run_stream(**kwargs):
-            yield "Mock graph response"
+        self.mock_db.get_user_profile.return_value = profile
+        self.mock_db.get_trainer_profile.return_value = trainer_profile
+        self.mock_db.get_window_memory.return_value = MockConversationMemory()
+        self.mock_db.get_plan.return_value = None
 
-        self.brain._graph_runner.run_stream = _mock_run_stream
-
+        self.brain = AITrainerBrain(database=self.mock_db, llm_client=self.mock_llm)
+        self.tdee_patcher = patch(
+            "src.services.trainer.AdaptiveTDEEService.calculate_tdee",
+            return_value={
+                "tdee": 2200,
+                "daily_target": 2000,
+                "calories": 2000,
+                "protein_g": 150,
+                "carbs_g": 200,
+                "fat_g": 60,
+            },
+        )
+        self.events_patcher = patch(
+            "src.services.trainer.EventRepository.get_active_events",
+            return_value=[],
+        )
+        self.tdee_patcher.start()
+        self.events_patcher.start()
+        self.addCleanup(self.tdee_patcher.stop)
+        self.addCleanup(self.events_patcher.stop)
         self.brain.get_tools = MagicMock(return_value=[])
+        self.brain.check_message_limits = MagicMock(return_value=False)
         self.brain.prompt_builder.build_input_data = MagicMock(
             return_value={
-                "user_profile": "perfil",
-                "trainer_profile": "treinador",
-                "formatted_history": "",
-                "current_date": "2026-05-01",
-                "agenda_section": "",
-                "plan_section": "",
-                "metabolism_section": "",
-                "runtime_context": {"session": {"channel": "app"}, "plan": {}},
+                "chat_history": [],
+                "user_message": "<msg>oi</msg>",
+                "runtime_context": {"session": {"channel": "app"}},
             }
         )
         self.brain.prompt_builder.get_prompt_template = MagicMock(return_value=MagicMock())
 
-    async def test_send_message_ai_success(self):
-        """
-        Test send_message_ai delegates to graph runner.
-        """
-        # Arrange
-        user_email = "test@test.com"
-        user_input = "Hello"
+    async def test_send_message_ai_streams_text_from_llm(self):
+        """send_message_ai should stream plain text chunks in legacy single-model flow."""
 
-        # Act
-        response_chunks = []
-        async for chunk in self.brain.send_message_ai(
-            user_email, user_input, background_tasks=None
-        ):
-            response_chunks.append(chunk)
-        response = "".join(response_chunks)
+        async def _stream_with_tools(**_kwargs):
+            yield "resposta "
+            yield "final"
 
-        # Assert
-        self.assertEqual(response, "Mock graph response")
+        self.mock_llm.stream_with_tools = _stream_with_tools
 
-    async def test_send_message_ai_no_user_profile(self):
-        """
-        Test send_message_ai delegates to graph runner when no profile.
-        """
-        # Arrange
-        user_email = "test@test.com"
-        user_input = "Hello"
+        chunks = []
+        async for chunk in self.brain.send_message_ai("test@test.com", "oi"):
+            chunks.append(chunk)
 
-        # Act
-        response_chunks = []
-        async for chunk in self.brain.send_message_ai(
-            user_email, user_input, background_tasks=None
-        ):
-            response_chunks.append(chunk)
-        response = "".join(response_chunks)
+        self.assertEqual("".join(chunks), "resposta final")
+        self.brain._executor.shutdown(wait=True, cancel_futures=True)
 
-        # Assert
-        self.assertEqual(response, "Mock graph response")
+    async def test_send_message_ai_uses_configured_chat_model(self):
+        """send_message_ai must call stream_with_tools with OPENROUTER_CHAT_MODEL."""
+        captured = {}
 
-    async def test_send_message_ai_no_trainer_profile(self):
-        """
-        Test send_message_ai delegates to graph runner when no trainer profile.
-        """
-        # Arrange
-        user_email = "test@test.com"
-        user_input = "Hello"
+        async def _stream_with_tools(**kwargs):
+            captured.update(kwargs)
+            yield "ok"
 
-        # Act
-        response_chunks = []
-        async for chunk in self.brain.send_message_ai(
-            user_email, user_input, background_tasks=None
-        ):
-            response_chunks.append(chunk)
-        response = "".join(response_chunks)
+        self.mock_llm.stream_with_tools = _stream_with_tools
+        async for _ in self.brain.send_message_ai("test@test.com", "oi"):
+            pass
 
-        # Assert
-        self.assertEqual(response, "Mock graph response")
+        self.assertEqual(captured["model_override"], "google/gemini-3-flash-preview")
+        self.brain._executor.shutdown(wait=True, cancel_futures=True)
 
     def test_get_chat_history_sanitizes_only_trainer_internal_tags(self):
-        """
-        Trainer messages from old history should have only protocol wrappers removed.
-        Student content must remain unchanged.
-        """
         user_email = "test@test.com"
         self.mock_db.get_chat_history.return_value = [
             ChatHistory(
@@ -151,54 +138,6 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
 
         assert messages[0].text == "Resposta antiga"
         assert messages[1].text == 'Dados do usuário: <msg data="arquivo.csv">linha 1</msg>'
-
-    @patch("src.services.trainer.settings")
-    def test_graph_debug_trace_roundtrip_is_dev_only(self, mock_settings):
-        mock_settings.LANGSMITH_ENVIRONMENT = "dev"
-
-        trace = {
-            "user_email": "test@test.com",
-            "request_id": "req-1",
-            "conversation_id": "test@test.com",
-            "turn_id": "turn-1",
-            "channel": "app",
-            "status": "success",
-            "error": None,
-            "started_at": "2026-05-01T10:00:00.000Z",
-            "ended_at": "2026-05-01T10:00:01.000Z",
-            "duration_ms": 1000,
-            "intent": "general",
-            "security_status": "safe",
-            "plan_needs_revision": False,
-            "tools_called": [],
-            "persistence_actions": [],
-            "final_response": "ok",
-            "technical_response": "ok",
-            "node_outputs": {},
-            "nodes": [],
-        }
-
-        self.brain.store_graph_debug_trace("turn-1", trace)
-        stored = self.brain.get_graph_debug_trace("turn-1", "test@test.com")
-        assert stored is not None
-        assert stored["turn_id"] == "turn-1"
-        assert stored["status"] == "success"
-        assert self.brain.get_graph_debug_trace("turn-1", "other@test.com") is None
-
-    @patch("src.services.trainer.settings")
-    def test_graph_debug_trace_disabled_outside_dev(self, mock_settings):
-        mock_settings.LANGSMITH_ENVIRONMENT = "prod"
-
-        self.brain.store_graph_debug_trace(
-            "turn-1",
-            {
-                "user_email": "test@test.com",
-                "turn_id": "turn-1",
-                "status": "success",
-                "nodes": [],
-            },
-        )
-        assert self.brain.get_graph_debug_trace("turn-1", "test@test.com") is None
 
 
 if __name__ == "__main__":

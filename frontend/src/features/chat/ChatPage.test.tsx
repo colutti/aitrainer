@@ -29,8 +29,6 @@ describe('ChatPage', () => {
     loadMore: mockLoadMore,
     hasMore: false,
     isLoading: false,
-    debugTrace: null,
-    debugTraceError: null,
   };
 
   const defaultSettingsStore = {
@@ -71,28 +69,19 @@ describe('ChatPage', () => {
     expect(mockFetchAvailable).toHaveBeenCalled();
   });
 
-  it('should render default trainer name when trainer not found', () => {
+  it('renders chat layout even when trainer data is missing', () => {
     vi.mocked(useSettingsStore).mockReturnValue({
-        ...defaultSettingsStore,
-        trainer: null,
-        availableTrainers: []
+      ...defaultSettingsStore,
+      trainer: null,
+      availableTrainers: [],
     });
     render(
       <MemoryRouter>
         <ChatPage />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
-    expect(screen.getAllByText('Treinador AI').length).toBeGreaterThan(0);
-  });
-
-  it('renders resolved trainer name in chat header', () => {
-    render(
-      <MemoryRouter>
-        <ChatPage />
-      </MemoryRouter>
-    );
-
-    expect(screen.getByRole('heading', { name: 'Marcus' })).toBeInTheDocument();
+    expect(screen.getByTestId('conversation-screen')).toBeInTheDocument();
+    expect(screen.getByText(/Começar conversa/i)).toBeInTheDocument();
   });
 
   it('should handle message submission', () => {

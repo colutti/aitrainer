@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import hashlib
-import json
 from typing import Annotated, TYPE_CHECKING
-from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from fastapi.responses import StreamingResponse
@@ -23,13 +21,6 @@ if TYPE_CHECKING:
 router = APIRouter()
 
 CurrentUser = Annotated[str, Depends(verify_token)]
-
-
-async def _serialize_sse(events):
-    """Serialize structured events into SSE frames."""
-    async for event in events:
-        yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
-
 
 @router.get("/history")
 def get_history(
@@ -82,7 +73,6 @@ async def message_ai(
             logger.info("Updating timezone for %s to %s", user_email, tz)
             brain.update_user_profile_fields(user_email, {"timezone": tz})
     try:
-        turn_id = str(uuid4())
         # Pre-flight limits check to avoid StreamingResponse generator crash
         profile = brain.get_or_create_user_profile(user_email)
         brain.check_message_limits(profile)
@@ -107,34 +97,16 @@ async def message_ai(
                     else None
                 ),
             },
-            turn_id=turn_id,
         )
         return StreamingResponse(
-            _serialize_sse(response_generator),
+            response_generator,
             media_type="text/event-stream",
             headers={
                 "X-Accel-Buffering": "no",
                 "Cache-Control": "no-cache",
                 "Connection": "keep-alive",
-                "X-Graph-Turn-Id": turn_id,
             },
         )
     except ValueError as e:
         logger.error("Error processing message for user %s: %s", user_email, e)
         raise HTTPException(status_code=404, detail=str(e)) from e
-
-
-@router.get("/debug/turn/{turn_id}")
-def get_graph_debug_trace(
-    turn_id: str,
-    user_email: CurrentUser,
-    brain: "AITrainerBrain" = Depends(get_ai_trainer_brain),
-) -> dict:
-    """Return the latest graph execution trace for a turn in dev only."""
-    if not brain.is_graph_debug_enabled():
-        raise HTTPException(status_code=404, detail="DEBUG_TRACE_NOT_AVAILABLE")
-
-    trace = brain.get_graph_debug_trace(turn_id, user_email)
-    if trace is None:
-        raise HTTPException(status_code=404, detail="DEBUG_TRACE_NOT_AVAILABLE")
-    return trace

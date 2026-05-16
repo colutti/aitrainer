@@ -4,10 +4,7 @@ This module contains the AI trainer brain, which is responsible for interacting 
 # pylint: disable=too-many-lines
 
 import asyncio
-import copy
 import re
-from collections import OrderedDict
-from threading import Lock
 from typing import Optional, TYPE_CHECKING
 from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor
@@ -89,8 +86,9 @@ from src.services.memory_service import (
     get_memories_paginated as paginate_memories,
     add_memory as service_add_memory,
 )
-from src.services.agents.config_registry import AgentConfigRegistry
-from src.services.graph.conversation_graph import ConversationGraphRunner
+from src.services.plan_service import build_plan_prompt_snapshot
+from src.services.adaptive_tdee import AdaptiveTDEEService
+from src.repositories.event_repository import EventRepository
 from src.core.logs import logger
 from src.api.models.chat_history import ChatHistory
 from src.api.models.user_profile import UserProfile
@@ -120,14 +118,9 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
         self._llm_client: LLMClient = llm_client
         self._qdrant_client = qdrant_client
         self.prompt_builder = PromptBuilder()
-        self._agent_registry = AgentConfigRegistry("src/services/agents/config")
-        self._graph_runner = ConversationGraphRunner(self, self._agent_registry)
         self._executor = ThreadPoolExecutor(
             max_workers=settings.AI_TRAINER_THREADPOOL_WORKERS
         )
-        self._graph_debug_traces: "OrderedDict[str, dict]" = OrderedDict()
-        self._graph_debug_lock = Lock()
-        self._graph_debug_limit = 20
 
     def calculate_effective_limits(
         self, profile: UserProfile, plan
@@ -215,33 +208,6 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
     def database(self) -> MongoDatabase:
         """Returns the database instance."""
         return self._database
-
-    @staticmethod
-    def is_graph_debug_enabled() -> bool:
-        """Returns True only in the development runtime."""
-        return settings.LANGSMITH_ENVIRONMENT.lower() == "dev"
-
-    def store_graph_debug_trace(self, turn_id: str, trace: dict) -> None:
-        """Store the latest graph trace for later inspection in dev."""
-        if not self.is_graph_debug_enabled():
-            return
-        payload = copy.deepcopy(trace)
-        payload["turn_id"] = turn_id
-        with self._graph_debug_lock:
-            self._graph_debug_traces[turn_id] = payload
-            self._graph_debug_traces.move_to_end(turn_id)
-            while len(self._graph_debug_traces) > self._graph_debug_limit:
-                self._graph_debug_traces.popitem(last=False)
-
-    def get_graph_debug_trace(self, turn_id: str, user_email: str) -> dict | None:
-        """Return a stored trace if debug mode is enabled and ownership matches."""
-        if not self.is_graph_debug_enabled():
-            return None
-        with self._graph_debug_lock:
-            trace = self._graph_debug_traces.get(turn_id)
-            if trace is None or trace.get("user_email") != user_email:
-                return None
-            return copy.deepcopy(trace)
 
     def log_prompt_in_background(
         self,
@@ -725,10 +691,10 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
         user_input: str,
         background_tasks: Optional[BackgroundTasks] = None,
         message_options: dict | None = None,
-        turn_id: str | None = None,
     ):
         """
-        Generates LLM response using the conversation graph.
+        Generates LLM response using the latest chat window only.
+        This function assumes one chat session per user (user_email is used as session_id).
 
         Args:
             user_email (str): The user's email, also used as session ID.
@@ -738,15 +704,105 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
             str: Individual chunks of the AI trainer's response.
         """
         logger.info("Generating workout stream for user: %s", user_email)
-        async for chunk in self._graph_runner.run_stream(
+        image_payloads = (message_options or {}).get("image_payloads")
+
+        profile = await asyncio.wrap_future(
+            self._executor.submit(self.get_or_create_user_profile, user_email)
+        )
+        trainer_profile_obj = await asyncio.wrap_future(
+            self._executor.submit(
+                self.get_or_create_trainer_profile, user_email, profile
+            )
+        )
+
+        needs_cycle_reset = self.check_message_limits(profile)
+
+        metabolism_data = await asyncio.to_thread(
+            AdaptiveTDEEService(self._database).calculate_tdee,
+            user_email,
+        )
+        plan = await asyncio.to_thread(self._database.get_plan, user_email)
+        enriched_plan_snapshot = build_plan_prompt_snapshot(plan) if plan else None
+
+        input_data = self.prompt_builder.build_input_data(
+            profile=profile,
+            trainer_profile_summary=trainer_profile_obj.get_trainer_profile_summary(),
+            user_profile_summary=profile.get_profile_summary(),
+            formatted_history_msgs=self.format_history_as_messages(
+                (
+                    await asyncio.to_thread(
+                        self._database.get_window_memory(
+                            session_id=user_email,
+                            k=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
+                        ).load_memory_variables,
+                        {},
+                    )
+                ).get("chat_history", [])
+            ),
+            user_input=user_input,
+            current_date=datetime.now().strftime("%Y-%m-%d"),
+            agenda_events=await asyncio.to_thread(
+                EventRepository(self._database.database).get_active_events, user_email
+            ),
+            plan_snapshot=enriched_plan_snapshot,
+            metabolism_data=metabolism_data,
+        )
+        input_data["user_locale"] = trainer_profile_obj.preferred_language or "pt-BR"
+        if image_payloads:
+            input_data["user_images"] = image_payloads
+
+        raw_response: list[str] = []
+        stream_buffer = ""
+        try:
+            async with asyncio.timeout(self.get_llm_stream_timeout_seconds()):
+                async for chunk in self._llm_client.stream_with_tools(
+                    prompt_template=self.prompt_builder.get_prompt_template(
+                        input_data,
+                        bool((message_options or {}).get("is_telegram", False)),
+                    ),
+                    input_data=input_data,
+                    tools=self.get_tools(user_email),
+                    model_override=settings.OPENROUTER_CHAT_MODEL,
+                    user_email=user_email,
+                    log_callback=self.get_log_callback(background_tasks),
+                    temperature=0.2,
+                    max_tokens=6144,
+                    provider_sort="throughput",
+                    reasoning={"effort": "low", "exclude": True},
+                ):
+                    if not isinstance(chunk, str):
+                        continue
+                    raw_response.append(chunk)
+                    stream_buffer += chunk
+                    visible, stream_buffer = self.split_stream_visible_text(stream_buffer)
+                    if visible:
+                        yield visible
+        except TimeoutError:
+            logger.error(
+                "LLM stream timeout for user %s after %ss",
+                user_email,
+                self.get_llm_stream_timeout_seconds(),
+            )
+            yield "Error processing request: STREAM_TIMEOUT"
+            return
+
+        if stream_buffer:
+            cleaned_tail = self.strip_internal_wrappers(stream_buffer)
+            if cleaned_tail:
+                yield cleaned_tail
+
+        await self.finalize_ai_response(
             user_email=user_email,
             user_input=user_input,
-            is_telegram=bool((message_options or {}).get("is_telegram", False)),
-            user_images=(message_options or {}).get("image_payloads"),
-            background_tasks=background_tasks,
-            turn_id=turn_id,
-        ):
-            yield chunk
+            final_response=self.strip_internal_wrappers("".join(raw_response)),
+            metadata={
+                "trainer_type": trainer_profile_obj.trainer_type or "atlas",
+                "needs_cycle_reset": needs_cycle_reset,
+                "background_tasks": background_tasks,
+                "log_callback": self.get_log_callback(background_tasks),
+                "user_images": image_payloads,
+            },
+        )
 
     async def finalize_ai_response(
         self,
@@ -833,8 +889,8 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
                     "image_payloads": image_payloads,
                 },
             ):
-                if isinstance(chunk, dict) and chunk.get("type") == "response":
-                    response_parts.append(chunk["text"])
+                if isinstance(chunk, str):
+                    response_parts.append(chunk)
 
             return "".join(response_parts)
 
@@ -885,8 +941,8 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
             background_tasks=None,  # Sem BackgroundTasks (não envia para SSE)
             message_options={"is_telegram": False},  # Resposta detalhada
         ):
-            if isinstance(chunk, dict) and chunk.get("type") == "response":
-                response_parts.append(chunk["text"])
+            if isinstance(chunk, str):
+                response_parts.append(chunk)
 
         response = "".join(response_parts)
 

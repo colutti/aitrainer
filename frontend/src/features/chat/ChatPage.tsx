@@ -18,15 +18,12 @@ export default function ChatPage() {
   const {
     messages,
     isStreaming,
-    streamingStatus,
     error,
     fetchHistory,
     sendMessage,
     loadMore,
     hasMore,
     isLoading,
-    debugTrace,
-    debugTraceError,
   } = useChatStore();
   const { trainer, availableTrainers, fetchTrainer, fetchAvailableTrainers } = useSettingsStore();
   const { userInfo } = useAuthStore();
@@ -120,14 +117,11 @@ export default function ChatPage() {
       <ChatView
         messages={messages}
         isStreaming={isStreaming}
-        streamingStatus={streamingStatus}
         isLoading={isLoading}
         hasMore={hasMore}
         error={error}
         trainer={currentTrainer}
         userInfo={userInfo}
-        debugTrace={debugTrace}
-        debugTraceError={debugTraceError}
         initialInputValue={draftSeed}
         onSend={handleSend}
         onScroll={handleScroll}

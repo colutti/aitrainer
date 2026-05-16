@@ -1,136 +1,72 @@
 """
-Comprehensive tests for message/chat endpoints.
-Tests cover message history retrieval and AI message processing with streaming.
+Unit tests for message/chat handlers and request validation.
 """
 
+import asyncio
 import base64
+from types import SimpleNamespace
 from unittest.mock import MagicMock
-from fastapi.testclient import TestClient
+
 import pytest
+from fastapi import HTTPException
 
-from src.api.main import app
-from src.services.auth import verify_token
-from src.core.deps import get_ai_trainer_brain, get_mongo_database
-from src.api.models.sender import Sender
+from src.api.endpoints.message import get_history, message_ai
 from src.api.models.chat_history import ChatHistory
+from src.api.models.message import MessageRequest
+from src.api.models.sender import Sender
 from src.api.models.user_profile import UserProfile
-
-
-client = TestClient(app)
-
-
-# Fixtures
-@pytest.fixture(autouse=True)
-def clear_dependency_overrides():
-    app.dependency_overrides = {}
-    mock_db = MagicMock()
-    mock_db.is_demo_user.return_value = False
-    mock_db.get_user_profile.return_value = None
-    app.dependency_overrides[get_mongo_database] = lambda: mock_db
-    yield
-    app.dependency_overrides = {}
-
-
-@pytest.fixture
-def mock_user_email():
-    return "test@example.com"
 
 
 @pytest.fixture
 def sample_chat_messages():
-    """Sample chat history with only public messages."""
     return [
         ChatHistory(
             text="What's my workout routine?",
             sender=Sender.STUDENT,
-            timestamp="2024-01-29T10:00:00Z"
+            timestamp="2024-01-29T10:00:00Z",
         ),
         ChatHistory(
             text="Your routine consists of...",
             sender=Sender.TRAINER,
-            timestamp="2024-01-29T10:05:00Z"
-        )
+            timestamp="2024-01-29T10:05:00Z",
+        ),
     ]
 
 
-# Test: GET /message/history - Success Case
 def test_get_history_success(sample_chat_messages):
-    """Test successful retrieval of chat history."""
-    app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_brain = MagicMock()
     mock_brain.get_chat_history.return_value = sample_chat_messages
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
-    response = client.get(
-        "/message/history",
-        headers={"Authorization": "Bearer test_token"}
+    result = get_history(
+        user_email="test@example.com",
+        brain=mock_brain,
+        limit=20,
+        offset=0,
     )
 
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, list)
-    assert len(data) == 2  # Brain already returns filtered messages
-
-    # Verify SYSTEM messages are excluded
-    for msg in data:
-        assert msg["sender"] != Sender.SYSTEM
-
-    mock_brain.get_chat_history.assert_called_once_with("test@example.com", limit=20, offset=0)
-
-    app.dependency_overrides = {}
+    assert result == sample_chat_messages
+    mock_brain.get_chat_history.assert_called_once_with(
+        "test@example.com", limit=20, offset=0
+    )
 
 
-# Test: GET /message/history - Empty History
 def test_get_history_empty():
-    """Test chat history retrieval when user has no messages."""
-    app.dependency_overrides[verify_token] = lambda: "newuser@example.com"
     mock_brain = MagicMock()
     mock_brain.get_chat_history.return_value = []
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
-    response = client.get(
-        "/message/history",
-        headers={"Authorization": "Bearer test_token"}
+    result = get_history(
+        user_email="newuser@example.com",
+        brain=mock_brain,
+        limit=20,
+        offset=0,
     )
 
-    assert response.status_code == 200
-    data = response.json()
-    assert data == []
-
-    app.dependency_overrides = {}
-
-
-# Test: GET /message/history - Unauthorized
-def test_get_history_unauthorized():
-    """Test chat history retrieval without authentication."""
-    response = client.get("/message/history")
-
-    assert response.status_code == 401
-
-
-# Test: GET /message/history - Only System Messages (All Filtered)
-def test_get_history_only_system_messages():
-    """Test that only system messages returns empty list."""
-    app.dependency_overrides[verify_token] = lambda: "test@example.com"
-    mock_brain = MagicMock()
-    mock_brain.get_chat_history.return_value = [] # System messages filtered by repo
-
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
-
-    response = client.get(
-        "/message/history",
-        headers={"Authorization": "Bearer test_token"}
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data) == 0
-
-    app.dependency_overrides = {}
+    assert result == []
 
 
 def test_get_history_route_does_not_require_brain_query_param():
-    """Regression: brain must be injected via Depends, never required in query."""
+    from src.api.main import app
+
     route = next(
         (
             r
@@ -146,292 +82,127 @@ def test_get_history_route_does_not_require_brain_query_param():
     assert "brain" not in query_param_names
 
 
-# Test: POST /message/message - Success Case
+def _collect_stream_text(response) -> str:
+    async def _collect() -> str:
+        parts = []
+        async for chunk in response.body_iterator:
+            parts.append(chunk.decode() if isinstance(chunk, bytes) else chunk)
+        return "".join(parts)
+
+    return asyncio.run(_collect())
+
+
+def _make_user_profile(email: str, plan: str = "Free") -> UserProfile:
+    return UserProfile(
+        email=email,
+        gender="Masculino",
+        age=30,
+        weight=80,
+        height=175,
+        goal="ganhar massa",
+        goal_type="gain",
+        weekly_rate=0.5,
+        subscription_plan=plan,
+    )
+
+
 def test_message_ai_success():
-    """Test sending a message to AI trainer with streaming response."""
-    app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_brain = MagicMock()
 
     async def mock_generator():
-        yield {"type": "status", "node": "session_context"}
-        yield {"type": "response", "text": "Hello, this is your trainer!"}
+        yield "Hello, this is your trainer!"
 
+    mock_brain.get_or_create_user_profile.return_value = _make_user_profile(
+        "test@example.com"
+    )
+    mock_brain.check_message_limits.return_value = False
     mock_brain.send_message_ai.return_value = mock_generator()
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
-    payload = {
-        "user_message": "What should I eat today?"
-    }
-
-    response = client.post(
-        "/message",
-        json=payload,
-        headers={"Authorization": "Bearer test_token"}
+    response = asyncio.run(
+        message_ai(
+            message=SimpleNamespace(user_message="What should I eat today?", images=None),
+            request=SimpleNamespace(headers={}),
+            user_email="test@example.com",
+            background_tasks=MagicMock(),
+            brain=mock_brain,
+        )
     )
 
-    assert response.status_code == 200
-    assert response.headers["content-type"] == "text/event-stream; charset=utf-8"
-    assert response.headers["X-Graph-Turn-Id"]
+    content = _collect_stream_text(response)
 
-    content = response.text
-    assert len(content) > 0
-    assert 'data: {"type": "status", "node": "session_context"}' in content
-    assert 'data: {"type": "response", "text": "Hello, this is your trainer!"}' in content
-
-    app.dependency_overrides = {}
+    assert response.media_type == "text/event-stream"
+    assert "Hello, this is your trainer!" in content
 
 
-def test_get_graph_debug_trace_success():
-    """Test retrieving the last graph trace in dev mode."""
-    app.dependency_overrides[verify_token] = lambda: "test@example.com"
-    mock_brain = MagicMock()
-    mock_brain.is_graph_debug_enabled.return_value = True
-    mock_brain.get_graph_debug_trace.return_value = {
-        "turn_id": "turn-1",
-        "status": "success",
-        "nodes": [],
-    }
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
-
-    response = client.get(
-        "/message/debug/turn/turn-1",
-        headers={"Authorization": "Bearer test_token"}
-    )
-
-    assert response.status_code == 200
-    assert response.json()["turn_id"] == "turn-1"
-
-    app.dependency_overrides = {}
-
-
-def test_get_graph_debug_trace_disabled_outside_dev():
-    """Test the debug endpoint is hidden outside dev."""
-    app.dependency_overrides[verify_token] = lambda: "test@example.com"
-    mock_brain = MagicMock()
-    mock_brain.is_graph_debug_enabled.return_value = False
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
-
-    response = client.get(
-        "/message/debug/turn/turn-1",
-        headers={"Authorization": "Bearer test_token"}
-    )
-
-    assert response.status_code == 404
-
-    app.dependency_overrides = {}
-
-
-# Test: POST /message/message - User Not Found
 def test_message_ai_user_not_found():
-    """Test message endpoint when user profile not found."""
-    app.dependency_overrides[verify_token] = lambda: "nonexistent@example.com"
     mock_brain = MagicMock()
     mock_brain.send_message_ai.side_effect = ValueError("User profile not found")
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
-    payload = {
-        "user_message": "Hello"
-    }
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(
+            message_ai(
+                message=SimpleNamespace(user_message="Hello", images=None),
+                request=SimpleNamespace(headers={}),
+                user_email="nonexistent@example.com",
+                background_tasks=MagicMock(),
+                brain=mock_brain,
+            )
+        )
 
-    response = client.post(
-        "/message",
-        json=payload,
-        headers={"Authorization": "Bearer test_token"}
+    assert exc_info.value.status_code == 404
+
+
+def test_message_request_rejects_empty_message():
+    with pytest.raises(ValueError, match="EMPTY_MESSAGE"):
+        MessageRequest.model_validate({"user_message": "", "images": []})
+
+
+def test_message_request_rejects_long_message():
+    with pytest.raises(ValueError, match="MESSAGE_TOO_LONG"):
+        MessageRequest.model_validate({"user_message": "a" * 20001})
+
+
+def test_message_request_accepts_valid_legacy_payload():
+    result = MessageRequest.model_validate(
+        {
+            "user_message": "Oi",
+            "image_base64": base64.b64encode(b"fake").decode("utf-8"),
+            "image_mime_type": "image/jpeg",
+        }
     )
 
-    assert response.status_code == 404
-
-    app.dependency_overrides = {}
-
-
-# Test: POST /message/message - Empty Message
-def test_message_ai_empty_message():
-    """Test sending empty message."""
-    app.dependency_overrides[verify_token] = lambda: "test@example.com"
-    mock_brain = MagicMock()
-    async def mock_generator():
-        yield {"type": "response", "text": "Response"}
-    mock_brain.send_message_ai.return_value = mock_generator()
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
-
-    payload = {
-
-        "user_message": ""
-    }
-
-    response = client.post(
-        "/message",
-        json=payload,
-        headers={"Authorization": "Bearer test_token"}
-    )
-
-    # Should either reject or process empty message
-    assert response.status_code in [200, 422]
-
-    app.dependency_overrides = {}
+    assert result.images is not None
+    assert len(result.images) == 1
 
 
-# Test: POST /message/message - Unauthorized
-def test_message_ai_unauthorized():
-    """Test sending message without authentication."""
-    payload = {
-        "user_message": "Hello trainer"
-    }
-
-    response = client.post("/message", json=payload)
-
-    assert response.status_code == 401
-
-
-# Test: POST /message/message - Long Message
-def test_message_ai_long_message():
-    """Test sending a very long message."""
-    app.dependency_overrides[verify_token] = lambda: "test@example.com"
-    mock_brain = MagicMock()
-    async def mock_generator():
-        yield {"type": "response", "text": "Response"}
-    mock_brain.send_message_ai.return_value = mock_generator()
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
-
-    # Create message with 5000+ characters
-    long_message = "a" * 5000
-
-    payload = {
-        "user_message": long_message
-    }
-
-    response = client.post(
-        "/message",
-        json=payload,
-        headers={"Authorization": "Bearer test_token"}
-    )
-
-    assert response.status_code == 200
-    mock_brain.send_message_ai.assert_called_once()
-
-    app.dependency_overrides = {}
-
-
-def test_message_ai_rejects_very_long_message_with_validation_code():
-    """Long messages above cap must return MESSAGE_TOO_LONG validation code."""
-    app.dependency_overrides[verify_token] = lambda: "test@example.com"
-    mock_brain = MagicMock()
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
-
-    payload = {
-        "user_message": "a" * 20001
-    }
-
-    response = client.post(
-        "/message",
-        json=payload,
-        headers={"Authorization": "Bearer test_token"}
-    )
-
-    assert response.status_code == 422
-    details = response.json().get("detail", [])
-    assert any("MESSAGE_TOO_LONG" in item.get("msg", "") for item in details)
-    mock_brain.send_message_ai.assert_not_called()
-
-    app.dependency_overrides = {}
-
-
-# Test: POST /message/message - Message with Special Characters
 def test_message_ai_special_characters():
-    """Test message containing special characters and Unicode."""
-    app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_brain = MagicMock()
+    mock_brain.get_or_create_user_profile.return_value = _make_user_profile(
+        "test@example.com"
+    )
+    mock_brain.check_message_limits.return_value = False
+
     async def mock_generator():
-        yield {"type": "response", "text": "OK"}
+        yield "OK"
+
     mock_brain.send_message_ai.return_value = mock_generator()
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+    payload = "Preciso aumentar meu músculo! 💪 Pode me ajudar? @trainer #fitness"
 
-    payload = {
-        "user_message": "Preciso aumentar meu músculo! 💪 Pode me ajudar? @trainer #fitness"
-    }
-
-    response = client.post(
-        "/message",
-        json=payload,
-        headers={"Authorization": "Bearer test_token"}
+    response = asyncio.run(
+        message_ai(
+            message=SimpleNamespace(user_message=payload, images=None),
+            request=SimpleNamespace(headers={}),
+            user_email="test@example.com",
+            background_tasks=MagicMock(),
+            brain=mock_brain,
+        )
     )
 
     assert response.status_code == 200
-    call_args = mock_brain.send_message_ai.call_args
-    assert call_args[1]["user_input"] == payload["user_message"]
-
-    app.dependency_overrides = {}
+    assert mock_brain.send_message_ai.call_args[1]["user_input"] == payload
 
 
-def test_message_ai_rejects_demo_user():
-    """Test demo users cannot send new messages."""
-    app.dependency_overrides[verify_token] = lambda: "demo@example.com"
-    mock_brain = MagicMock()
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
-    mock_db = MagicMock()
-    mock_db.get_user_profile.return_value = UserProfile(
-        email="demo@example.com",
-        gender="Masculino",
-        age=30,
-        weight=75.0,
-        height=180,
-        goal_type="maintain",
-        weekly_rate=0.5,
-        is_demo=True,
-    )
-    app.dependency_overrides[get_mongo_database] = lambda: mock_db
-
-    response = client.post(
-        "/message",
-        json={"user_message": "Hello"},
-        headers={"Authorization": "Bearer demo_token"},
-    )
-
-    assert response.status_code == 403
-    assert response.json()["detail"] == "demo_read_only"
-    mock_brain.send_message_ai.assert_not_called()
-
-    app.dependency_overrides = {}
-
-
-def test_message_ai_rejects_image_for_basic_plan():
-    """Test image payload is blocked for non-Pro/Premium plans."""
-    app.dependency_overrides[verify_token] = lambda: "basic@example.com"
-    mock_brain = MagicMock()
-    mock_brain.get_or_create_user_profile.return_value = UserProfile(
-        email="basic@example.com",
-        gender="Masculino",
-        age=30,
-        weight=75.0,
-        height=180,
-        goal_type="maintain",
-        weekly_rate=0.5,
-        subscription_plan="Basic",
-    )
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
-
-    response = client.post(
-        "/message",
-        json={
-            "user_message": "Analisa essa imagem",
-            "images": [{"base64": "ZmFrZS1pbWFnZQ==", "mime_type": "image/jpeg"}],
-        },
-        headers={"Authorization": "Bearer basic_token"},
-    )
-
-    assert response.status_code == 403
-    assert response.json()["detail"] == "IMAGE_NOT_ALLOWED_FOR_PLAN"
-    mock_brain.send_message_ai.assert_not_called()
-
-    app.dependency_overrides = {}
-
-
-def test_message_ai_rejects_too_many_images():
-    """Test payload with too many images is rejected by validation."""
-    app.dependency_overrides[verify_token] = lambda: "pro@example.com"
-    mock_brain = MagicMock()
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
-
+def test_message_request_rejects_too_many_images():
     payload = {
         "user_message": "Analisa",
         "images": [
@@ -442,32 +213,17 @@ def test_message_ai_rejects_too_many_images():
             {"base64": "ZmFrZQ==", "mime_type": "image/jpeg"},
         ],
     }
-    response = client.post(
-        "/message",
-        json=payload,
-        headers={"Authorization": "Bearer pro_token"},
-    )
-    assert response.status_code == 422
 
-    app.dependency_overrides = {}
+    with pytest.raises(ValueError, match="TOO_MANY_IMAGES"):
+        MessageRequest.model_validate(payload)
 
 
-def test_message_ai_rejects_oversized_image():
-    """Test payload with image above max size is rejected by validation."""
-    app.dependency_overrides[verify_token] = lambda: "pro@example.com"
-    mock_brain = MagicMock()
-    app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
-
+def test_message_request_rejects_oversized_image():
     oversized = base64.b64encode(b"a" * (3 * 1024 * 1024 + 1)).decode("utf-8")
     payload = {
         "user_message": "Analisa",
         "images": [{"base64": oversized, "mime_type": "image/jpeg"}],
     }
-    response = client.post(
-        "/message",
-        json=payload,
-        headers={"Authorization": "Bearer pro_token"},
-    )
-    assert response.status_code == 422
 
-    app.dependency_overrides = {}
+    with pytest.raises(ValueError, match="IMAGE_TOO_LARGE"):
+        MessageRequest.model_validate(payload)

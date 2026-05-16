@@ -14,4 +14,3 @@ api.log*
 tests
 artifacts
 *.md
-!src/services/agents/config/prompts/*.md

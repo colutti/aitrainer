@@ -14,6 +14,7 @@ from typing import Any
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from src.core.logs import logger
 from src.core.config import settings
+from src.prompts.prompt_template import PROMPT_TEMPLATE
 from src.services.plan_service import format_plan_snapshot
 
 
@@ -259,8 +260,9 @@ class PromptBuilder:
             runtime_context, ensure_ascii=True, sort_keys=True
         )
 
-        # 4. Build messages with MessagesPlaceholder for history
-        messages: list[Any] = [("system", PromptBuilder.RUNTIME_CONTEXT_PROMPT)]
+        # Build messages with a full local system prompt plus runtime context payload.
+        messages: list[Any] = [("system", PROMPT_TEMPLATE)]
+        messages.append(("system", PromptBuilder.RUNTIME_CONTEXT_PROMPT))
         messages.append(MessagesPlaceholder(variable_name="chat_history"))
         messages.append(("human", "{user_message}"))
 
