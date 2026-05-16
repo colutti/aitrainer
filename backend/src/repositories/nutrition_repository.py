@@ -12,7 +12,7 @@ from src.api.models.nutrition_log import NutritionLog, NutritionWithId
 from src.api.models.nutrition_stats import NutritionStats, DailyMacros
 from src.repositories.base import BaseRepository
 from src.repositories.plan_repository import PlanRepository
-from src.services.macro_resolver import resolve_macro_targets
+from src.services.macro_resolver import resolve_macro_targets_for_plan
 
 
 class NutritionRepository(BaseRepository):
@@ -81,18 +81,13 @@ class NutritionRepository(BaseRepository):
         log.date = log_date
 
         data = log.model_dump()
-        data["user_email"] = user_email
 
-        result = self.collection.replace_one(
-            {"_id": ObjectId(log_id), "user_email": user_email},
-            data
+        return self.replace_user_owned_log(
+            document_id=log_id,
+            user_email=user_email,
+            data=data,
+            log_name="Nutrition log",
         )
-        updated = result.matched_count > 0
-        if updated:
-            self.logger.info("Nutrition log %s updated for user %s", log_id, user_email)
-        else:
-            self.logger.warning("Nutrition log %s not found for update", log_id)
-        return updated
 
     def delete_log(self, log_id: str) -> bool:
         """
@@ -242,23 +237,10 @@ class NutritionRepository(BaseRepository):
     ) -> tuple[dict, str]:
         """Resolve effective macro targets from plan or TDEE fallback."""
         plan = PlanRepository(self._database).get_plan(user_email)
-        plan_daily_targets = None
-        if plan and plan.nutrition_strategy and plan.nutrition_strategy.daily_targets:
-            plan_daily_targets = plan.nutrition_strategy.daily_targets.model_dump(
-                exclude_none=True
-            )
-
-        resolved = resolve_macro_targets(
+        return resolve_macro_targets_for_plan(
             tdee_macros=period_stats.get("macro_targets"),
-            plan_daily_targets=plan_daily_targets,
+            plan=plan,
         )
-
-        macro_dict = {
-            "protein": resolved["protein"] or 0,
-            "carbs": resolved["carbs"] or 0,
-            "fat": resolved["fat"] or 0,
-        }
-        return macro_dict, resolved.get("source", "fallback")
 
     # pylint: disable=too-many-locals
     def get_stats(self, user_email: str, tdee_service=None) -> NutritionStats:

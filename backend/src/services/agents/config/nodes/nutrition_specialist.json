@@ -31,9 +31,22 @@
         "additionalProperties": false,
         "properties": {
           "action_type": {"type": "string"},
-          "action_status": {"type": "string"},
+          "action_status": {"type": "string", "enum": ["executed", "failed", "needs_user_input", "no_action_needed"]},
           "domain_status": {"type": "string"},
-          "technical_summary": {"type": "string"},
+          "public_message": {"type": "string"},
+          "internal_analysis": {"type": "string"},
+          "operation_result": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "attempted": {"type": "boolean"},
+              "succeeded": {"type": "boolean"},
+              "tool_name": {"type": "string"},
+              "error_code": {"type": "string"},
+              "evidence": {"type": "string"}
+            },
+            "required": ["attempted", "succeeded", "tool_name", "error_code", "evidence"]
+          },
           "missing_inputs": {"type": "array", "items": {"type": "string"}},
           "plan_signal": {"type": "string"},
           "pending_action": {
@@ -78,7 +91,9 @@
           "action_type",
           "action_status",
           "domain_status",
-          "technical_summary",
+          "public_message",
+          "internal_analysis",
+          "operation_result",
           "missing_inputs",
           "plan_signal",
           "pending_action",
@@ -88,7 +103,7 @@
       }
     }
   },
-  "version": "v2",
+  "version": "v3",
   "context_blocks": [
     "request",
     "user_profile",
@@ -102,6 +117,6 @@
     "training_specialist"
   ],
   "persona_mode": "none",
-  "output_contract": "json(action_type,action_status,domain_status,technical_summary,missing_inputs,plan_signal,pending_action,memory_candidates,event_candidates)",
+  "output_contract": "json(action_type,action_status,domain_status,public_message,internal_analysis,missing_inputs,plan_signal,operation_result,pending_action,memory_candidates,event_candidates)",
   "provider_sort": "throughput"
 }

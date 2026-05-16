@@ -40,7 +40,7 @@ def make_payload() -> PlanUpsertInput:
         },
         training_program={
             'split_name': 'push_pull_legs',
-            'frequency_per_week': 5,
+            'frequency_per_week': 1,
             'session_duration_min': 60,
             'routines': [
                 {
@@ -127,6 +127,22 @@ def test_build_plan_singleton_accepts_string_timeline_start_date():
     assert plan.timeline.target_date == expected_target
 
 
+def test_build_plan_singleton_coerces_existing_naive_start_date_before_update():
+    payload = make_payload()
+    existing = build_plan_singleton('user@test.com', None, payload)
+    existing.timeline.start_date = datetime(2026, 5, 1, 0, 0, 0)
+    update = make_payload()
+    update.timeline = {
+        'target_date': datetime(2026, 9, 1, tzinfo=timezone.utc),
+        'review_cadence': 'quinzenal',
+    }
+
+    result = build_plan_singleton('user@test.com', existing, update)
+
+    assert result.timeline.start_date.tzinfo is not None
+    assert result.timeline.target_date.tzinfo is not None
+
+
 def test_partial_nutrition_update_preserves_existing_carbs_and_fat():
     """When trainer updates only protein_g, existing carbs_g and fat_g are preserved."""
     full_payload = make_payload()
@@ -157,7 +173,7 @@ def test_partial_nutrition_update_preserves_existing_carbs_and_fat():
         },
         training_program={
             'split_name': 'push_pull_legs',
-            'frequency_per_week': 5,
+            'frequency_per_week': 1,
             'session_duration_min': 60,
             'routines': [
                 {
@@ -227,7 +243,7 @@ def test_partial_training_update_preserves_existing_exercises():
         },
         training_program={
             'split_name': 'push_pull_legs',
-            'frequency_per_week': 5,
+            'frequency_per_week': 1,
             'session_duration_min': 60,
             'routines': [
                 {

@@ -130,11 +130,11 @@ The conversation graph (`backend/src/services/graph/conversation_graph.py`) runs
 |---|---|---|
 | `session_context` | `qwen/qwen3-next-80b-a3b-instruct` | Hydrates turn context and recovers cross-turn `conversation_state` from history. LLM is used only for history sanitization. |
 | `prompt_security` | `google/gemini-2.5-flash-lite` | Detects prompt injection and abuse (NOT product scoping). If blocked, short-circuits to blocked response. Uses `json_schema` strict (`status`, `reason`, `sanitized`). |
-| `training_specialist` | `google/gemini-3-flash-preview` | Technical specialist for training analysis, progress tracking, workout logging, and training plan guidance (exercise selection, sets, reps, split design). Uses `reasoning: low` for structured decision-making. Emits `no_action_needed` when the turn is not about training. Always produces a `technical_summary` with objective, rationale, personalization justification, and progression logic when contributing material content. Does not prescribe detailed plans when data is insufficient — signals `insufficient_detail` instead. Hevy tools are exclusive to this node. |
-| `nutrition_specialist` | `google/gemini-3-flash-preview` | Technical specialist for nutrition analysis, adherence evaluation, metabolism interpretation, logging, and nutrition target guidance. Uses `reasoning: low` for structured decision-making. Emits `no_action_needed` when the turn is not about nutrition. Always produces a `technical_summary` with objective, rationale, personalization justification, target strategy, and adherence logic when contributing material content. Does not prescribe detailed targets when data is insufficient — signals `insufficient_detail` instead. |
-| `plan_specialist` | `openai/gpt-oss-120b` | **Plan orchestrator** — drives discovery, persists via tools, consumes `training_analysis` and `nutrition_analysis` context blocks for domain content. Does NOT invent exercises, sets, reps, or nutrition targets. Returns `discovery_needed` if domain specialists have not contributed material content. Uses `provider_sort: "throughput"`. Uses `json_schema` strict, `reasoning: low`, `parallel_tool_calls: false`. Runtime validates material `technical_summary` coherence. |
-| `coach_reply` | `google/gemini-3.1-flash-lite-preview` | **Pure synthesizer** — no tools. Synthesizes specialist outputs into a single coach-voiced response. Ignores no-op specialists. |
-| `memory_hub` | `google/gemini-3.1-flash-lite-preview` | **Residual persistence** — stores durable facts and reminders. Must NOT create events as substitutes for domain operations. Uses `json_schema` strict for persistence intents. |
+| `training_specialist` | `google/gemini-3-flash-preview` | Technical specialist for training analysis, progress tracking, workout logging, and training plan guidance. Uses `reasoning: low`, no trainer persona, and strict JSON with `public_message`, `internal_analysis`, and `operation_result`. Hevy tools are exclusive to this node. |
+| `nutrition_specialist` | `google/gemini-3-flash-preview` | Technical specialist for nutrition analysis, adherence evaluation, metabolism interpretation, logging, and nutrition target guidance. Uses `reasoning: low`, no trainer persona, and strict JSON with `public_message`, `internal_analysis`, and `operation_result`. |
+| `plan_specialist` | `openai/gpt-oss-120b` | **Plan orchestrator** — drives discovery, persists via tools, consumes `training_analysis` and `nutrition_analysis` for domain content. Does NOT invent exercises, sets, reps, nutrition targets, or success status. Uses `provider_sort: "throughput"`, strict JSON, `reasoning: low`, `parallel_tool_calls: false`, and fails closed on unsuccessful `operation_result`. |
+| `coach_reply` | `google/gemini-3.1-flash-lite-preview` | **Pure spokesperson** — no tools. Receives `coach_handoff` and persona, rewrites only tone/transitions, and cannot add facts or success claims. |
+| `memory_hub` | `google/gemini-3.1-flash-lite-preview` | **Residual persistence** — reads structured specialist results and persistence candidates, not coach prose. Failed material operations block memory, event, and summary writes. |
 
 ### Cross-turn conversation state
 
@@ -151,6 +151,8 @@ After each turn, a compact `[GRAPH_STATE_V1]` snapshot is persisted as a SYSTEM 
 - On blocked turns, execution stops after `prompt_security`; `coach_reply` and `memory_hub` do not run.
 - `coach_reply` has zero tools and zero operational authority.
 - `memory_hub` cannot convert domain actions into calendar events.
+- `coach_handoff` is the only factual specialist channel into `coach_reply`.
+- `memory_hub` uses `specialist_results` as factual evidence and never uses coach prose for persistence.
 
 ### Persona isolation
 
@@ -173,7 +175,7 @@ When all 5 items are present, the plan_specialist:
 4. Only calls `upsert_plan` if **both** domain specialists contributed material content
 5. If either specialist emitted `no_action_needed`, returns `discovery_needed` instead
 
-The training_specialist provides **training plan guidance** (exercise selection, sets, reps, split) in `technical_summary` when plan creation/review is detected. The nutrition_specialist provides **nutrition targets guidance** (calories, macros, adherence strategy) similarly.
+The training_specialist provides **training plan guidance** (exercise selection, sets, reps, split) in `internal_analysis` when plan creation/review is detected. The nutrition_specialist provides **nutrition targets guidance** (calories, macros, adherence strategy) similarly. User-facing text belongs in `public_message`.
 
 ### OpenRouter provider routing
 

@@ -47,7 +47,7 @@ def make_plan() -> UserPlan:
         ),
         training_program=TrainingProgram(
             split_name="push_pull_legs",
-            frequency_per_week=5,
+            frequency_per_week=1,
             session_duration_min=60,
             routines=[
                 TrainingRoutine(
@@ -135,7 +135,7 @@ def test_upsert_plan_creates_new_plan():
         },
         "training_program": {
             "split_name": "push_pull_legs",
-            "frequency_per_week": 5,
+            "frequency_per_week": 1,
             "session_duration_min": 60,
             "routines": [
                 {
@@ -277,7 +277,7 @@ def test_upsert_plan_updates_existing_plan():
         },
         "training_program": {
             "split_name": "upper_lower",
-            "frequency_per_week": 4,
+            "frequency_per_week": 1,
             "session_duration_min": 50,
             "routines": [
                 {
@@ -303,5 +303,63 @@ def test_upsert_plan_updates_existing_plan():
         response = client.post("/plan/upsert", json=payload)
         assert response.status_code == 200
         assert response.json()["id"] == "plan_2"
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_upsert_plan_rejects_malformed_schedule_item_with_422():
+    mock_db = MagicMock()
+    mock_db.get_latest_plan.return_value = make_plan()
+
+    app.dependency_overrides[verify_token] = lambda: "test@example.com"
+    app.dependency_overrides[get_mongo_database] = lambda: mock_db
+
+    payload = {
+        "title": "Plano Atualizado",
+        "change_reason": "review",
+        "goal": {"primary": "lose_fat", "objective_summary": "Definir"},
+        "timeline": {
+            "target_date": "2026-12-01T00:00:00",
+            "review_cadence": "mensal",
+        },
+        "strategy": {
+            "rationale": "Deficit mais agressivo",
+            "adaptation_policy": "ajustar quinzenalmente",
+        },
+        "nutrition_strategy": {
+            "daily_targets": {
+                "calories": 2000,
+                "protein_g": 160,
+                "carbs_g": 180,
+                "fat_g": 60,
+            },
+        },
+        "training_program": {
+            "split_name": "upper_lower",
+            "frequency_per_week": 1,
+            "session_duration_min": 50,
+            "routines": [
+                {
+                    "id": "push_a",
+                    "name": "Push A",
+                    "exercises": [
+                        {"name": "Supino Inclinado", "sets": 4, "reps": "8-10", "load_guidance": "RPE 8"},
+                    ],
+                }
+            ],
+            "weekly_schedule": [
+                {"day": "monday", "routine_id": "push_a"},
+            ],
+        },
+        "current_summary": {
+            "active_focus": "intensidade",
+            "rationale": "aumentar volume progressivo",
+            "next_review": "2026-07-01",
+        },
+    }
+
+    try:
+        response = client.post("/plan/upsert", json=payload)
+        assert response.status_code == 422
     finally:
         app.dependency_overrides.clear()

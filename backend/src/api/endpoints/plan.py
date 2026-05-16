@@ -3,7 +3,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from src.api.models.plan import UserPlan, PlanUpsertInput
 from src.core.demo_access import WritableCurrentUser
@@ -44,7 +44,7 @@ def upsert_plan(
 ) -> UpsertPlanResponse:
     """Create or update singleton plan."""
     latest = db.get_latest_plan(user_email)
-    missing_fields = missing_master_plan_fields(payload)
+    missing_fields = missing_master_plan_fields(payload, latest)
     if missing_fields:
         missing_list = ", ".join(missing_fields)
         raise HTTPException(
@@ -52,6 +52,9 @@ def upsert_plan(
             detail=f"Plano incompleto. Campos obrigatorios ausentes: {missing_list}",
         )
 
-    plan = build_plan_singleton(user_email, latest, payload)
+    try:
+        plan = build_plan_singleton(user_email, latest, payload)
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     plan_id = db.save_plan(plan)
     return UpsertPlanResponse(id=plan_id)

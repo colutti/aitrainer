@@ -192,6 +192,7 @@ class TestEnumValues:
     def test_action_statuses_cover_expected_outcomes(self):
         values = {s.value for s in ActionStatus}
         assert "executed" in values
+        assert "failed" in values
         assert "needs_user_input" in values
         assert "no_action_needed" in values
 

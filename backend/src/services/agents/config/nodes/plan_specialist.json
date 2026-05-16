@@ -29,20 +29,36 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "plan_status": {"type": "string"},
-          "action_status": {"type": "string"},
-          "reason": {"type": "string"},
-          "technical_summary": {"type": "string"},
-          "needs_revision": {"type": "boolean"},
-          "plan_candidate": {"type": "string"},
-          "pending_slots": {"type": "array", "items": {"type": "string"}},
-          "resolved_slots": {"type": "array", "items": {"type": "string"}},
+          "plan_status": { "type": "string" },
+          "action_status": { "type": "string", "enum": ["executed", "failed", "needs_user_input", "no_action_needed"] },
+          "reason": { "type": "string" },
+          "public_message": { "type": "string" },
+          "internal_analysis": { "type": "string" },
+          "needs_revision": { "type": "boolean" },
+          "plan_candidate": { "type": "string" },
+          "pending_slots": { "type": "array", "items": { "type": "string" } },
+          "resolved_slots": { "type": "array", "items": { "type": "string" } },
+          "operation_result": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "attempted": { "type": "boolean" },
+              "succeeded": { "type": "boolean" },
+              "tool_name": { "type": "string" },
+              "error_code": { "type": "string" },
+              "evidence": { "type": "string" }
+            },
+            "required": ["attempted", "succeeded", "tool_name", "error_code", "evidence"]
+          },
           "pending_action": {
             "type": "object",
             "properties": {
-              "kind": {"type": "string"},
-              "status": {"type": "string"},
-              "missing_slots": {"type": "array", "items": {"type": "string"}}
+              "kind": { "type": "string" },
+              "status": { "type": "string" },
+              "missing_slots": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
             },
             "required": ["kind", "status", "missing_slots"],
             "additionalProperties": false
@@ -52,11 +68,15 @@
             "items": {
               "type": "object",
               "properties": {
-                "memory_action": {"type": "string"},
-                "memory_content": {"type": "string"},
-                "memory_category": {"type": "string"}
+                "memory_action": { "type": "string" },
+                "memory_content": { "type": "string" },
+                "memory_category": { "type": "string" }
               },
-              "required": ["memory_action", "memory_content", "memory_category"],
+              "required": [
+                "memory_action",
+                "memory_content",
+                "memory_category"
+              ],
               "additionalProperties": false
             }
           },
@@ -65,10 +85,10 @@
             "items": {
               "type": "object",
               "properties": {
-                "event_action": {"type": "string"},
-                "event_title": {"type": "string"},
-                "event_date": {"type": "string"},
-                "recurrence": {"type": "string"}
+                "event_action": { "type": "string" },
+                "event_title": { "type": "string" },
+                "event_date": { "type": "string" },
+                "recurrence": { "type": "string" }
               },
               "required": ["event_action", "event_title", "event_date"],
               "additionalProperties": false
@@ -79,11 +99,13 @@
           "plan_status",
           "action_status",
           "reason",
-          "technical_summary",
+          "public_message",
+          "internal_analysis",
           "needs_revision",
           "plan_candidate",
           "pending_slots",
           "resolved_slots",
+          "operation_result",
           "pending_action",
           "memory_candidates",
           "event_candidates"
@@ -91,7 +113,7 @@
       }
     }
   },
-  "version": "v2",
+  "version": "v3",
   "provider_sort": "throughput",
   "context_blocks": [
     "request",
@@ -104,10 +126,7 @@
     "plan_lifecycle",
     "conversation_state"
   ],
-  "peer_inputs": [
-    "training_specialist",
-    "nutrition_specialist"
-  ],
+  "peer_inputs": ["training_specialist", "nutrition_specialist"],
   "persona_mode": "none",
-  "output_contract": "json(plan_status,action_status,reason,technical_summary,needs_revision,plan_candidate,pending_slots,resolved_slots,pending_action,memory_candidates,event_candidates)"
+  "output_contract": "json(plan_status,action_status,reason,public_message,internal_analysis,needs_revision,plan_candidate,pending_slots,resolved_slots,operation_result,pending_action,memory_candidates,event_candidates)"
 }

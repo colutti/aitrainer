@@ -6,6 +6,7 @@ from src.services.hevy_tools import (
     create_search_hevy_exercises_tool,
     create_create_hevy_routine_tool,
     create_list_hevy_routines_tool,
+    create_update_hevy_routine_tool,
     create_replace_hevy_exercise_tool,
     create_get_hevy_routine_detail_tool,
     create_set_routine_rest_and_ranges_tool,
@@ -232,6 +233,156 @@ class TestCreateHevyRoutine:
 
         assert "obrigatório" in result.lower() or "título" in result.lower()
 
+
+class TestListHevyRoutinesMetadata:
+    @pytest.mark.asyncio
+    async def test_list_routines_includes_ids_and_page_context(self, mock_hevy_service, mock_database):
+        profile = MagicMock()
+        profile.hevy_enabled = True
+        profile.hevy_api_key = "api_key"
+        mock_database.get_user_profile.return_value = profile
+
+        routine = MagicMock()
+        routine.id = "routine-123"
+        routine.title = "Push A"
+        routine.notes = None
+        routine.exercises = [MagicMock(title="Bench Press", exercise_template_id="EX001")]
+
+        response = MagicMock()
+        response.routines = [routine]
+        response.page = 1
+        response.page_count = 2
+        mock_hevy_service.get_routines.return_value = response
+
+        tool = create_list_hevy_routines_tool(
+            mock_hevy_service, mock_database, "user@test.com"
+        )
+
+        result = await tool.ainvoke({"page": 1, "page_size": 10})
+
+        assert "ID: `routine-123`" in result
+        assert "Página 1/2" in result
+
+
+class TestUpdateHevyRoutine:
+    @pytest.mark.asyncio
+    async def test_update_routine_rejects_partial_exercise_replacement_without_explicit_flag(
+        self, mock_hevy_service, mock_database
+    ):
+        profile = MagicMock()
+        profile.hevy_enabled = True
+        profile.hevy_api_key = "api_key"
+        mock_database.get_user_profile.return_value = profile
+
+        first_page = MagicMock()
+        first_page.routines = [MagicMock(id="routine-1", title="Push A")]
+        first_page.page_count = 1
+        mock_hevy_service.get_all_routines = AsyncMock(return_value=first_page.routines)
+
+        current = MagicMock()
+        current.id = "routine-1"
+        current.title = "Push A"
+        current.notes = "old"
+        current.exercises = [
+            MagicMock(exercise_template_id="EX001", title="Bench", sets=[MagicMock(type="normal", reps=10, weight_kg=80)]),
+            MagicMock(exercise_template_id="EX002", title="Fly", sets=[MagicMock(type="normal", reps=12, weight_kg=20)]),
+        ]
+        mock_hevy_service.get_routine_by_id = AsyncMock(return_value=current)
+        mock_hevy_service.update_routine = AsyncMock()
+
+        tool = create_update_hevy_routine_tool(
+            mock_hevy_service, mock_database, "user@test.com"
+        )
+
+        result = await tool.ainvoke(
+            {
+                "routine_title": "Push A",
+                "exercises": [
+                    {
+                        "exercise_template_id": "EX001",
+                        "sets": [{"type": "normal", "reps": 10, "weight_kg": 80}],
+                    }
+                ],
+            }
+        )
+
+        assert "lista completa" in result.lower() or "estrutural" in result.lower()
+        mock_hevy_service.update_routine.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_update_routine_rejects_same_length_structural_replacement_without_flag(
+        self, mock_hevy_service, mock_database
+    ):
+        profile = MagicMock()
+        profile.hevy_enabled = True
+        profile.hevy_api_key = "api_key"
+        mock_database.get_user_profile.return_value = profile
+
+        mock_hevy_service.get_all_routines = AsyncMock(
+            return_value=[MagicMock(id="routine-1", title="Push A")]
+        )
+
+        current = MagicMock()
+        current.id = "routine-1"
+        current.title = "Push A"
+        current.notes = "old"
+        current.exercises = [
+            MagicMock(exercise_template_id="EX001", title="Bench", sets=[MagicMock(type="normal", reps=10, weight_kg=80)]),
+            MagicMock(exercise_template_id="EX002", title="Fly", sets=[MagicMock(type="normal", reps=12, weight_kg=20)]),
+        ]
+        mock_hevy_service.get_routine_by_id = AsyncMock(return_value=current)
+        mock_hevy_service.update_routine = AsyncMock()
+
+        tool = create_update_hevy_routine_tool(
+            mock_hevy_service, mock_database, "user@test.com"
+        )
+
+        result = await tool.ainvoke(
+            {
+                "routine_title": "Push A",
+                "exercises": [
+                    {
+                        "exercise_template_id": "EX003",
+                        "sets": [{"type": "normal", "reps": 10, "weight_kg": 80}],
+                    },
+                    {
+                        "exercise_template_id": "EX004",
+                        "sets": [{"type": "normal", "reps": 12, "weight_kg": 20}],
+                    },
+                ],
+            }
+        )
+
+        assert "rebuild" in result.lower() or "estrutural" in result.lower()
+        mock_hevy_service.update_routine.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_get_routine_detail_searches_across_all_pages(self, mock_hevy_service, mock_database):
+        profile = MagicMock()
+        profile.hevy_enabled = True
+        profile.hevy_api_key = "api_key"
+        mock_database.get_user_profile.return_value = profile
+
+        page_two_routine = MagicMock()
+        page_two_routine.id = "routine-2"
+        page_two_routine.title = "Target Routine"
+        page_two_routine.notes = "notes"
+        page_two_routine.exercises = []
+
+        mock_hevy_service.get_all_routines = AsyncMock(
+            return_value=[MagicMock(id="routine-1", title="Push A"), page_two_routine]
+        )
+        mock_hevy_service.get_routine_by_id = AsyncMock(return_value=page_two_routine)
+
+        tool = create_get_hevy_routine_detail_tool(
+            mock_hevy_service, mock_database, "user@test.com"
+        )
+
+        result = await tool.ainvoke({"routine_title_or_id": "Target Routine"})
+
+        assert "Target Routine" in result
+        mock_hevy_service.get_all_routines.assert_awaited_once()
+
     @pytest.mark.asyncio
     async def test_create_routine_integration_disabled(self, mock_hevy_service, mock_database):
         """Test creation fails when integration disabled."""
@@ -409,6 +560,36 @@ class TestReplaceHevyExercise:
 
         # Should indicate success
         assert "substituído" in result.lower() or "sucesso" in result.lower() or "atualizado" in result.lower()
+
+    @pytest.mark.asyncio
+    async def test_replace_exercise_rejects_ambiguous_title_match(self, mock_hevy_service, mock_database):
+        profile = MagicMock()
+        profile.hevy_enabled = True
+        profile.hevy_api_key = "api_key"
+        mock_database.get_user_profile.return_value = profile
+
+        routine = MagicMock(id="R001", title="Push Day")
+        routine.exercises = [
+            MagicMock(id="EXE001", exercise_template_id="EX001", title="Bench Press", notes=""),
+            MagicMock(id="EXE002", exercise_template_id="EX002", title="Incline Bench Press", notes=""),
+        ]
+
+        mock_hevy_service.get_all_routines = AsyncMock(return_value=[routine])
+        mock_hevy_service.get_routine_by_id = AsyncMock(return_value=routine)
+        mock_hevy_service.update_routine = AsyncMock()
+
+        tool = create_replace_hevy_exercise_tool(
+            mock_hevy_service, mock_database, "user@test.com"
+        )
+
+        result = await tool.ainvoke({
+            "routine_title": "Push Day",
+            "old_exercise_name_or_id": "bench press",
+            "new_exercise_id": "EX003",
+        })
+
+        assert "ambíguo" in result.lower() or "ambiguo" in result.lower()
+        mock_hevy_service.update_routine.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_replace_exercise_not_found(self, mock_hevy_service, mock_database):

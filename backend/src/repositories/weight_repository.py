@@ -3,7 +3,6 @@ This module contains the repository for weight logs.
 """
 
 from datetime import datetime, date
-from bson import ObjectId
 import pymongo
 from pymongo.database import Database
 
@@ -58,18 +57,13 @@ class WeightRepository(BaseRepository):
         log_datetime = datetime(log.date.year, log.date.month, log.date.day)
         data = log.model_dump(exclude_none=True)
         data["date"] = log_datetime
-        data["user_email"] = user_email
 
-        result = self.collection.replace_one(
-            {"_id": ObjectId(log_id), "user_email": user_email},
-            data
+        return self.replace_user_owned_log(
+            document_id=log_id,
+            user_email=user_email,
+            data=data,
+            log_name="Weight log",
         )
-        updated = result.matched_count > 0
-        if updated:
-            self.logger.info("Weight log %s updated for user %s", log_id, user_email)
-        else:
-            self.logger.warning("Weight log %s not found for update", log_id)
-        return updated
 
     def delete_log(self, user_email: str, log_date: date) -> bool:
         """

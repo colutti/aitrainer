@@ -1,5 +1,6 @@
 """Tests for conversation graph node behavior."""
 
+import json
 from datetime import datetime
 
 import pytest
@@ -595,6 +596,7 @@ async def test_training_specialist_returns_executed_for_direct_action():
             '"pending_action":{"kind":"none","status":"no_action_needed","missing_slots":[]},'
             '"plan_signal":"","memory_candidates":[],"event_candidates":[]}'
         )
+        yield {"type": "tool_result", "tool_name": "create_hevy_routine"}
         yield {"type": "tools_summary", "tools_called": []}
 
     brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
@@ -617,6 +619,45 @@ async def test_training_specialist_returns_executed_for_direct_action():
     await runner._node_training_specialist(state)  # pylint: disable=protected-access
     assert state.specialist_states["training_specialist"]["action_status"] == "executed"
     assert state.specialist_states["training_specialist"]["action_type"] == "execute_routine"
+
+
+@pytest.mark.asyncio
+async def test_training_specialist_downgrades_executed_action_without_tool_calls():
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield (
+            '{"action_type":"execute_routine","action_status":"executed",'
+            '"domain_status":"progress","technical_summary":"Rotina criada com sucesso.",'
+            '"missing_inputs":[],"handoff_target":"","handoff_reason":"",'
+            '"pending_action":{"kind":"none","status":"no_action_needed","missing_slots":[]},'
+            '"plan_signal":"","memory_candidates":[],"event_candidates":[]}'
+        )
+        yield {"type": "tools_summary", "tools_called": []}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="cria a rotina full body",
+        user_input_sanitized="cria a rotina full body",
+        channel="app",
+    )
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "",
+            "agenda_section": "",
+            "metabolism_section": "",
+        }
+    }
+
+    await runner._node_training_specialist(state)  # pylint: disable=protected-access
+
+    assert state.specialist_states["training_specialist"]["action_status"] == "failed"
+    assert "nenhuma tool" in state.node_outputs["training_specialist"].lower() or "sem evidência" in state.node_outputs["training_specialist"].lower() or "sem evidencia" in state.node_outputs["training_specialist"].lower()
 
 
 @pytest.mark.asyncio
@@ -662,7 +703,7 @@ async def test_training_specialist_insufficient_summary_in_plan_context():
     assert state.shared_context["training_analysis"]["status"] == "insufficient_detail"
     assert state.shared_context["training_analysis"]["text"] == ""
     assert state.shared_context["training_analysis"]["plan_signal"] == "insufficient_training_detail"
-    assert state.node_outputs["training_specialist"] == "Faca treino de forca 3x por semana."
+    assert "insuficiente" in state.coach_handoff[0]["public_message"].lower()
 
 
 @pytest.mark.asyncio
@@ -721,6 +762,102 @@ async def test_training_specialist_material_summary_in_plan_context():
     assert state.shared_context["training_analysis"]["status"] == "progress"
     assert "Training objective: hypertrophy" in state.shared_context["training_analysis"]["text"]
     assert state.shared_context["training_analysis"]["plan_signal"] == ""
+
+
+@pytest.mark.asyncio
+async def test_training_specialist_preserves_structured_plan_payload_for_planner():
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield json.dumps(
+            {
+                "action_type": "update_plan",
+                "action_status": "success",
+                "domain_status": "plan_updated",
+                "public_message": (
+                    "Entendido. Substitui a Puxada Alta pela Barra Fixa no seu treino de Pull."
+                ),
+                "internal_analysis": (
+                    "Exercise replacement recommendation for the active Pull routine.\n"
+                    "Routine: Pull\n"
+                    "Objective: maintain hypertrophy focus while replacing vertical pull pattern.\n"
+                    "Context used: active plan exercise slot, current split, previous prescription 4x8-10 RPE 8.\n"
+                    "Decision rationale: Barra Fixa is a harder closed-chain alternative and should start with lower set count.\n"
+                    "Prescription:\n"
+                    "- Barra Fixa: 3x falha tecnica, RPE 9, rest 120s\n"
+                    "Progression: add reps before adding external load.\n"
+                    "Fatigue management: keep remaining Pull exercises unchanged this microcycle.\n"
+                    "Safety assumptions: full range, controlled eccentric."
+                ),
+                "missing_inputs": [],
+                "plan_signal": "training_program_update",
+                "plan_payload": {
+                    "change_type": "exercise_replacement",
+                    "routine_name": "Pull",
+                    "old_exercise": "Puxada Alta",
+                    "new_exercise": {
+                        "name": "Barra Fixa",
+                        "sets": 3,
+                        "reps": "Falha tecnica",
+                        "rpe": 9,
+                        "rest": "120s",
+                        "notes": "Foco em amplitude total e controle na descida.",
+                    },
+                },
+                "operation_result": {
+                    "attempted": True,
+                    "succeeded": True,
+                    "tool_name": "get_plan_training_program",
+                    "error_code": "",
+                    "evidence": "READ_PLAN_OK",
+                },
+                "pending_action": {
+                    "kind": "none",
+                    "status": "no_action_needed",
+                    "missing_slots": [],
+                },
+                "memory_candidates": [],
+                "event_candidates": [],
+            }
+        )
+        yield {"type": "tools_summary", "tools_called": ["get_plan_training_program"]}
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="troca puxada por barra",
+        user_input_sanitized="troca puxada por barra",
+        channel="app",
+    )
+    state.conversation_state = {
+        "active_domain": "plan",
+        "pending_action": {"kind": "plan_review", "status": "needs_user_input", "missing_slots": []},
+    }
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "plano ativo",
+            "agenda_section": "",
+            "metabolism_section": "",
+        },
+        "plan_lifecycle": {},
+    }
+
+    await runner._node_training_specialist(state)
+
+    assert state.specialist_results["training_specialist"]["action_status"] == "executed"
+    assert state.shared_context["training_analysis"]["status"] == "generated"
+    assert state.shared_context["training_analysis"]["plan_signal"] == "training_program_update"
+    assert state.shared_context["training_analysis"]["plan_payload"]["routine_name"] == "Pull"
+    assert (
+        state.shared_context["training_analysis"]["plan_payload"]["new_exercise"]["name"]
+        == "Barra Fixa"
+    )
+    assert "Substitui a Puxada Alta" not in state.specialist_results["training_specialist"]["public_message"]
+    assert "Exercise replacement recommendation" in state.node_outputs["training_specialist"]
 
 
 @pytest.mark.asyncio
@@ -808,7 +945,7 @@ async def test_nutrition_specialist_insufficient_targets_in_plan_context():
     assert state.shared_context["nutrition_analysis"]["status"] == "insufficient_detail"
     assert state.shared_context["nutrition_analysis"]["text"] == ""
     assert state.shared_context["nutrition_analysis"]["plan_signal"] == "insufficient_nutrition_detail"
-    assert state.node_outputs["nutrition_specialist"] == "Coma melhor e bata a proteina."
+    assert "insuficiente" in state.coach_handoff[0]["public_message"].lower()
 
 
 @pytest.mark.asyncio
@@ -1482,6 +1619,7 @@ async def test_plan_specialist_weak_summary_on_active_plan():
             '"reason":"plano criado","technical_summary":"Ok.",'
             '"needs_revision":false,"plan_candidate":"",'
             '"pending_slots":[],"resolved_slots":[],'
+            '"operation_result":{"attempted":true,"succeeded":true,"tool_name":"upsert_plan","error_code":"","evidence":"PLANO_SALVO"},'
             '"pending_action":{"kind":"none","status":"no_action_needed","missing_slots":[]},'
             '"memory_candidates":[],"event_candidates":[]}'
         )
@@ -1531,6 +1669,7 @@ async def test_plan_specialist_material_summary_on_active_plan():
             'Blockers: none. Next action: start training.",'
             '"needs_revision":false,"plan_candidate":"",'
             '"pending_slots":[],"resolved_slots":[],'
+            '"operation_result":{"attempted":true,"succeeded":true,"tool_name":"upsert_plan","error_code":"","evidence":"PLANO_SALVO"},'
             '"pending_action":{"kind":"none","status":"no_action_needed","missing_slots":[]},'
             '"memory_candidates":[],"event_candidates":[]}'
         )
@@ -2607,3 +2746,642 @@ def test_run_node_state_diff_captures_changes():
     assert "removed" in diff
     assert diff["changed"]["conversation_state"]["before"]["active_domain"] == "general"
     assert diff["changed"]["conversation_state"]["after"]["active_domain"] == "training"
+
+
+def test_record_specialist_result_populates_state_and_debug_snapshot():
+    runner = _runner()
+    state = GraphState(user_email="a@b.com", user_input_raw="treino", channel="app")
+    parsed = {
+        "action_type": "plan_update",
+        "action_status": "failed",
+        "public_message": "Nao consegui salvar a troca no plano.",
+        "internal_analysis": "Upsert failed after exercise replacement request.",
+        "missing_inputs": [],
+        "operation_result": {
+            "attempted": True,
+            "succeeded": False,
+            "tool_name": "upsert_plan",
+            "error_code": "ERRO_UPSERT_PLAN_PERSISTENCIA",
+            "evidence": "PLANO_NAO_SALVO",
+        },
+    }
+
+    result = runner._record_specialist_result(  # pylint: disable=protected-access
+        state,
+        "plan_specialist",
+        parsed,
+        "update_failed",
+        "plan_update",
+        {"kind": "plan_review", "status": "needs_user_input", "missing_slots": []},
+    )
+    runner._append_coach_handoff(  # pylint: disable=protected-access
+        state,
+        "plan_specialist",
+        "PLANO",
+        result,
+    )
+    state.node_metadata["plan_specialist"] = {
+        "status": "completed",
+        "specialist_result": result,
+    }
+
+    snapshot = runner._capture_state_snapshot(state)  # pylint: disable=protected-access
+    trace = runner._build_debug_trace(  # pylint: disable=protected-access
+        state=state,
+        started_at=datetime.utcnow(),
+        ended_at=datetime.utcnow(),
+        graph_error=None,
+    )
+
+    assert snapshot["specialist_results"]["plan_specialist"]["action_status"] == "failed"
+    assert snapshot["coach_handoff"][0]["public_message"].startswith("Nao consegui")
+    assert trace["specialist_results"]["plan_specialist"]["operation_result"]["succeeded"] is False
+    assert trace["coach_handoff"][0]["operation_result"]["tool_name"] == "upsert_plan"
+
+
+def test_failed_material_operation_detects_failed_upsert():
+    runner = _runner()
+    state = GraphState(user_email="a@b.com", user_input_raw="plano", channel="app")
+    state.specialist_results["plan_specialist"] = {
+        "operation_result": {
+            "attempted": True,
+            "succeeded": False,
+            "tool_name": "upsert_plan",
+            "error_code": "ERRO_UPSERT_PLAN_PERSISTENCIA",
+            "evidence": "PLANO_NAO_SALVO",
+        }
+    }
+
+    assert runner._has_failed_material_operation(state) is True  # pylint: disable=protected-access
+
+
+def test_noop_specialist_does_not_add_coach_handoff():
+    runner = _runner()
+    state = GraphState(user_email="a@b.com", user_input_raw="ola", channel="app")
+    result = {
+        "action_status": "no_action_needed",
+        "public_message": "",
+        "operation_result": runner._default_operation_result(),  # pylint: disable=protected-access
+    }
+
+    runner._append_coach_handoff(  # pylint: disable=protected-access
+        state,
+        "training_specialist",
+        "TREINO",
+        result,
+    )
+
+    assert state.coach_handoff == []
+
+
+@pytest.mark.asyncio
+async def test_coach_uses_structured_handoff_only():
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+    brain.strip_internal_wrappers = None
+    captured = {}
+
+    async def fake_stream_with_tools(**kwargs):
+        captured["user_message"] = kwargs["input_data"]["user_message"]
+        yield "Nao consegui salvar a troca no plano."
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="troca puxada por barra",
+        user_input_sanitized="troca puxada por barra",
+        channel="app",
+    )
+    state.shared_context = {"input_data": {"user_locale": "pt-BR"}}
+    state.coach_handoff.append(
+        {
+            "source": "plan_specialist",
+            "label": "PLANO",
+            "action_status": "failed",
+            "public_message": "Nao consegui salvar a troca no plano.",
+            "operation_result": {
+                "attempted": True,
+                "succeeded": False,
+                "tool_name": "upsert_plan",
+                "error_code": "ERRO_UPSERT_PLAN_PERSISTENCIA",
+                "evidence": "PLANO_NAO_SALVO",
+            },
+        }
+    )
+    state.node_outputs["plan_specialist"] = "internal_analysis: troca detalhada de exercicio"
+
+    await runner._node_coach_reply(state)  # pylint: disable=protected-access
+
+    assert "Nao consegui salvar a troca no plano." in captured["user_message"]
+    assert "internal_analysis" not in captured["user_message"]
+    assert "troca detalhada de exercicio" not in captured["user_message"]
+
+
+@pytest.mark.asyncio
+async def test_memory_hub_blocks_summary_update_when_plan_operation_failed():
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+    state = GraphState(user_email="a@b.com", user_input_raw="plano", channel="app")
+    state.specialist_results["plan_specialist"] = {
+        "operation_result": {
+            "attempted": True,
+            "succeeded": False,
+            "tool_name": "upsert_plan",
+            "error_code": "ERRO_UPSERT_PLAN_PERSISTENCIA",
+            "evidence": "PLANO_NAO_SALVO",
+        }
+    }
+
+    await runner._node_memory_hub(state)  # pylint: disable=protected-access
+
+    assert state.node_outputs["memory_hub"] == "blocked_failed_operation"
+    brain.add_system_message_to_history.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_plan_failure_sets_update_failed_and_failed_action_status():
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield json.dumps(
+            {
+                "plan_status": "updated",
+                "action_status": "executed",
+                "reason": "upsert_plan failed",
+                "public_message": "",
+                "internal_analysis": "Tried to update plan.",
+                "needs_revision": False,
+                "plan_candidate": "",
+                "pending_slots": [],
+                "resolved_slots": [],
+                "operation_result": {
+                    "attempted": True,
+                    "succeeded": False,
+                    "tool_name": "upsert_plan",
+                    "error_code": "ERRO_UPSERT_PLAN_PERSISTENCIA",
+                    "evidence": "PLANO_NAO_SALVO",
+                },
+                "pending_action": {"kind": "none", "status": "no_action_needed", "missing_slots": []},
+                "memory_candidates": [],
+                "event_candidates": [],
+            }
+        )
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="troca puxada alta por barra",
+        user_input_sanitized="troca puxada alta por barra",
+        channel="app",
+    )
+    state.shared_context = {
+        "input_data": {"user_locale": "pt-BR", "plan_section": "plano ativo"},
+        "training_analysis": {"status": "progress", "plan_signal": "training_program_update", "text": "material"},
+        "nutrition_analysis": {"status": "no_action_needed", "text": ""},
+        "plan_lifecycle": {},
+    }
+
+    await runner._node_plan_specialist(state)  # pylint: disable=protected-access
+
+    assert state.shared_context["plan_workspace"]["plan_status"] == "update_failed"
+    assert state.specialist_results["plan_specialist"]["action_status"] == "failed"
+    assert state.specialist_pending_actions["plan_specialist"]["kind"] == "plan_review"
+
+
+@pytest.mark.asyncio
+async def test_plan_tool_result_failure_overrides_missing_operation_result():
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield {
+            "type": "tool_result",
+            "tool_name": "upsert_plan",
+            "content": "ERRO_UPSERT_PLAN_PERSISTENCIA: PLANO_NAO_SALVO",
+        }
+        yield json.dumps(
+            {
+                "plan_status": "updated",
+                "action_status": "executed",
+                "reason": "training update requested",
+                "public_message": "Plano atualizado.",
+                "internal_analysis": "Plan decision: training update requested for exercise replacement.",
+                "needs_revision": False,
+                "plan_candidate": "",
+                "pending_slots": [],
+                "resolved_slots": [],
+                "operation_result": runner._default_operation_result(),  # pylint: disable=protected-access
+                "pending_action": {"kind": "none", "status": "no_action_needed", "missing_slots": []},
+                "memory_candidates": [],
+                "event_candidates": [],
+            }
+        )
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="troca puxada alta por barra",
+        user_input_sanitized="troca puxada alta por barra",
+        channel="app",
+    )
+    state.shared_context = {
+        "input_data": {"user_locale": "pt-BR", "plan_section": "plano ativo"},
+        "training_analysis": {
+            "status": "generated",
+            "plan_signal": "training_program_update",
+            "text": "material",
+        },
+        "nutrition_analysis": {"status": "no_action_needed", "text": ""},
+        "plan_lifecycle": {},
+    }
+
+    await runner._node_plan_specialist(state)  # pylint: disable=protected-access
+    await runner._node_memory_hub(state)  # pylint: disable=protected-access
+
+    operation_result = state.specialist_results["plan_specialist"]["operation_result"]
+    assert state.shared_context["plan_workspace"]["plan_status"] == "update_failed"
+    assert operation_result["attempted"] is True
+    assert operation_result["succeeded"] is False
+    assert operation_result["error_code"] == "ERRO_UPSERT_PLAN_PERSISTENCIA"
+    assert state.node_outputs["memory_hub"] == "blocked_failed_operation"
+    brain.add_system_message_to_history.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_failed_plan_upsert_cannot_become_coach_success_or_memory_summary():
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+    brain.get_or_create_user_profile.return_value = MagicMock()
+    brain.get_or_create_trainer_profile.return_value = MagicMock()
+    brain.check_message_limits.return_value = False
+    brain.finalize_ai_response = AsyncMock()
+    brain.strip_internal_wrappers = None
+
+    async def fake_stream_with_tools(**kwargs):
+        node = kwargs["input_data"]["node_name"]
+        if node == "training_specialist":
+            yield json.dumps(
+                {
+                    "action_type": "analyze_plan_change",
+                    "action_status": "executed",
+                    "domain_status": "generated",
+                    "public_message": "",
+                    "internal_analysis": "Training change request: replace Puxada Alta with Barra Fixa in Pull.",
+                    "missing_inputs": [],
+                    "plan_signal": "training_program_update",
+                    "operation_result": runner._default_operation_result(),  # pylint: disable=protected-access
+                    "pending_action": {"kind": "none", "status": "no_action_needed", "missing_slots": []},
+                    "memory_candidates": [],
+                    "event_candidates": [],
+                }
+            )
+        elif node == "nutrition_specialist":
+            yield json.dumps(
+                {
+                    "action_type": "analyze",
+                    "action_status": "no_action_needed",
+                    "domain_status": "no_action_needed",
+                    "public_message": "",
+                    "internal_analysis": "",
+                    "missing_inputs": [],
+                    "plan_signal": "",
+                    "operation_result": runner._default_operation_result(),  # pylint: disable=protected-access
+                    "pending_action": {"kind": "none", "status": "no_action_needed", "missing_slots": []},
+                    "memory_candidates": [],
+                    "event_candidates": [],
+                }
+            )
+        elif node == "plan_specialist":
+            yield json.dumps(
+                {
+                    "plan_status": "update_failed",
+                    "action_status": "failed",
+                    "reason": "upsert_plan failed",
+                    "public_message": "Nao consegui salvar a troca no plano. A persistencia do plano falhou.",
+                    "internal_analysis": "Plan update attempted; upsert_plan returned ERRO_UPSERT_PLAN_PERSISTENCIA.",
+                    "needs_revision": False,
+                    "plan_candidate": "",
+                    "pending_slots": [],
+                    "resolved_slots": [],
+                    "operation_result": {
+                        "attempted": True,
+                        "succeeded": False,
+                        "tool_name": "upsert_plan",
+                        "error_code": "ERRO_UPSERT_PLAN_PERSISTENCIA",
+                        "evidence": "PLANO_NAO_SALVO",
+                    },
+                    "pending_action": {"kind": "plan_review", "status": "needs_user_input", "missing_slots": []},
+                    "memory_candidates": [],
+                    "event_candidates": [],
+                }
+            )
+        elif node == "coach_reply":
+            assert "Nao consegui salvar" in kwargs["input_data"]["user_message"]
+            assert "Plano atualizado" not in kwargs["input_data"]["user_message"]
+            yield "Nao consegui salvar a troca no plano. A persistencia falhou."
+        elif node == "memory_hub":
+            raise AssertionError("memory_hub LLM should not run after failed material operation")
+        else:
+            yield "ok"
+
+    async def fake_run_node(node_name, state):
+        if node_name == "session_context":
+            state.shared_context = {
+                "input_data": {
+                    "user_locale": "pt-BR",
+                    "runtime_context_json": "{}",
+                    "plan_section": "plano ativo",
+                    "agenda_section": "",
+                    "metabolism_section": "",
+                },
+                "persistence_candidates": {"memory": [], "event": []},
+                "plan_lifecycle": {},
+            }
+            state.node_outputs[node_name] = "hydrated"
+            return
+        await getattr(runner, f"_node_{node_name}")(state)
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    runner._run_node = fake_run_node
+
+    responses = []
+    async for event in runner.run_stream(
+        user_email="a@b.com",
+        user_input="troca Puxada alta por barra nos treinos",
+        is_telegram=False,
+        user_images=None,
+        background_tasks=None,
+    ):
+        if event["type"] == "response":
+            responses.append(event["text"])
+
+    final = responses[-1]
+    assert "Nao consegui salvar" in final
+    forbidden = ["alteração feita", "alteracao feita", "plano atualizado", "pronto", "salvo com sucesso"]
+    assert all(term not in final.lower() for term in forbidden)
+    brain.add_system_message_to_history.assert_called_once()
+
+
+def test_missing_extract_coach_say_regression():
+    assert not hasattr(ConversationGraphRunner, "_extract_coach_say")
+
+
+def test_failed_specialist_sets_last_action_status_failed():
+    runner = _runner()
+    state = GraphState(user_email="a@b.com", user_input_raw="plano", channel="app")
+    state.specialist_states["training_specialist"] = {"action_status": "executed"}
+    state.specialist_states["plan_specialist"] = {"action_status": "failed"}
+    state.specialist_pending_actions["plan_specialist"] = {
+        "kind": "plan_review",
+        "status": "needs_user_input",
+        "missing_slots": [],
+    }
+
+    runner._resolve_pending_actions(state)  # pylint: disable=protected-access
+
+    assert state.conversation_state["last_action_status"] == "failed"
+    assert state.conversation_state["pending_action"]["kind"] == "plan_review"
+
+
+def test_resolve_pending_actions_filters_specialist_owned_technical_slots():
+    runner = _runner()
+    state = GraphState(user_email="a@b.com", user_input_raw="plano", channel="app")
+    state.specialist_states["training_specialist"] = {"action_status": "needs_user_input"}
+    state.specialist_pending_actions["training_specialist"] = {
+        "kind": "plan_review",
+        "status": "needs_user_input",
+        "missing_slots": ["exercise_sets", "exercise_reps", "load_guidance"],
+    }
+
+    runner._resolve_pending_actions(state)  # pylint: disable=protected-access
+
+    assert state.conversation_state["pending_action"]["kind"] == "none"
+    assert state.conversation_state["pending_action"]["missing_slots"] == []
+
+
+def test_sanitize_conversation_state_payload_clears_invalid_technical_pending_action():
+    runner = _runner()
+
+    sanitized = runner._sanitize_conversation_state_payload(  # pylint: disable=protected-access
+        {
+            "active_domain": "plan",
+            "last_action_status": "needs_user_input",
+            "pending_action": {
+                "kind": "plan_review",
+                "status": "needs_user_input",
+                "missing_slots": ["exercise_sets", "exercise_reps", "load_guidance"],
+            },
+        }
+    )
+
+    assert sanitized["pending_action"]["kind"] == "none"
+    assert sanitized["pending_action"]["missing_slots"] == []
+    assert sanitized["last_action_status"] == "no_action_needed"
+
+
+@pytest.mark.asyncio
+async def test_training_specialist_fails_closed_after_invalid_technical_question_retry():
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+    call_count = 0
+
+    async def fake_stream_with_tools(**kwargs):
+        nonlocal call_count
+        del kwargs
+        call_count += 1
+        yield json.dumps(
+            {
+                "action_type": "analyze_plan_change",
+                "action_status": "needs_user_input",
+                "domain_status": "generated",
+                "public_message": "Me diga series e repeticoes.",
+                "internal_analysis": "",
+                "missing_inputs": ["exercise_sets", "exercise_reps", "load_guidance"],
+                "plan_signal": "training_program_update",
+                "operation_result": runner._default_operation_result(),  # pylint: disable=protected-access
+                "pending_action": {
+                    "kind": "plan_review",
+                    "status": "needs_user_input",
+                    "missing_slots": ["exercise_sets", "exercise_reps", "load_guidance"],
+                },
+                "memory_candidates": [],
+                "event_candidates": [],
+            }
+        )
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="troca puxada por barra",
+        user_input_sanitized="troca puxada por barra",
+        channel="app",
+    )
+    state.conversation_state = {
+        "active_domain": "plan",
+        "pending_action": {"kind": "plan_review", "status": "needs_user_input", "missing_slots": []},
+    }
+    state.shared_context = {
+        "input_data": {
+            "user_locale": "pt-BR",
+            "runtime_context_json": "{}",
+            "plan_section": "plano ativo",
+            "agenda_section": "",
+            "metabolism_section": "",
+        },
+        "plan_lifecycle": {},
+    }
+
+    await runner._node_training_specialist(state)  # pylint: disable=protected-access
+
+    assert call_count == 2
+    assert state.specialist_results["training_specialist"]["action_status"] == "failed"
+    assert state.specialist_results["training_specialist"]["domain_status"] == "specialist_role_violation"
+    assert state.specialist_pending_actions["training_specialist"]["kind"] == "none"
+    assert state.shared_context["training_analysis"]["status"] == "specialist_role_violation"
+    assert state.coach_handoff == []
+
+
+@pytest.mark.asyncio
+async def test_plan_specialist_rejects_specialist_role_violation_without_user_question():
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield json.dumps(
+            {
+                "plan_status": "updated",
+                "action_status": "needs_user_input",
+                "reason": "training update requested",
+                "public_message": "Me diga as series.",
+                "internal_analysis": "Planner mirrored specialist question.",
+                "needs_revision": False,
+                "plan_candidate": "",
+                "pending_slots": ["exercise_sets", "exercise_reps", "load_guidance"],
+                "resolved_slots": [],
+                "operation_result": runner._default_operation_result(),  # pylint: disable=protected-access
+                "pending_action": {
+                    "kind": "plan_review",
+                    "status": "needs_user_input",
+                    "missing_slots": ["exercise_sets", "exercise_reps", "load_guidance"],
+                },
+                "memory_candidates": [],
+                "event_candidates": [],
+            }
+        )
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(
+        user_email="a@b.com",
+        user_input_raw="troca treino",
+        user_input_sanitized="troca treino",
+        channel="app",
+    )
+    state.shared_context = {
+        "input_data": {"user_locale": "pt-BR", "plan_section": "plano ativo"},
+        "training_analysis": {"status": "specialist_role_violation", "text": ""},
+        "nutrition_analysis": {"status": "no_action_needed", "text": ""},
+        "plan_lifecycle": {},
+    }
+
+    await runner._node_plan_specialist(state)  # pylint: disable=protected-access
+
+    assert state.shared_context["plan_workspace"]["plan_status"] == "update_failed"
+    assert state.specialist_results["plan_specialist"]["action_status"] == "failed"
+    assert state.specialist_pending_actions["plan_specialist"]["kind"] == "none"
+    assert state.coach_handoff == []
+
+
+@pytest.mark.asyncio
+async def test_single_domain_training_update_requires_training_material():
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield json.dumps(
+            {
+                "plan_status": "updated",
+                "action_status": "executed",
+                "reason": "training update requested",
+                "public_message": "Plano atualizado.",
+                "internal_analysis": "Plan decision: training update requested for exercise replacement. Blockers: none.",
+                "needs_revision": False,
+                "plan_candidate": "",
+                "pending_slots": [],
+                "resolved_slots": [],
+                "operation_result": {
+                    "attempted": True,
+                    "succeeded": True,
+                    "tool_name": "upsert_plan",
+                    "error_code": "",
+                    "evidence": "PLANO_SALVO",
+                },
+                "pending_action": {"kind": "none", "status": "no_action_needed", "missing_slots": []},
+                "memory_candidates": [],
+                "event_candidates": [],
+            }
+        )
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(user_email="a@b.com", user_input_raw="troca treino", user_input_sanitized="troca treino", channel="app")
+    state.shared_context = {
+        "input_data": {"user_locale": "pt-BR", "plan_section": "plano ativo"},
+        "training_analysis": {"status": "no_action_needed", "text": ""},
+        "nutrition_analysis": {"status": "no_action_needed", "text": ""},
+        "plan_lifecycle": {},
+    }
+
+    await runner._node_plan_specialist(state)  # pylint: disable=protected-access
+
+    assert state.shared_context["plan_workspace"]["plan_status"] == "discovery_needed"
+    assert state.specialist_results["plan_specialist"]["action_status"] == "needs_user_input"
+
+
+@pytest.mark.asyncio
+async def test_single_domain_training_update_allows_nutrition_noop():
+    runner, brain = _runner_with_brain()
+    brain.get_log_callback.return_value = None
+
+    async def fake_stream_with_tools(**kwargs):
+        del kwargs
+        yield json.dumps(
+            {
+                "plan_status": "updated",
+                "action_status": "executed",
+                "reason": "training update requested",
+                "public_message": "Plano atualizado.",
+                "internal_analysis": "Plan decision: training update requested for exercise replacement. Blockers: none.",
+                "needs_revision": False,
+                "plan_candidate": "",
+                "pending_slots": [],
+                "resolved_slots": [],
+                "operation_result": {
+                    "attempted": True,
+                    "succeeded": True,
+                    "tool_name": "upsert_plan",
+                    "error_code": "",
+                    "evidence": "PLANO_SALVO",
+                },
+                "pending_action": {"kind": "none", "status": "no_action_needed", "missing_slots": []},
+                "memory_candidates": [],
+                "event_candidates": [],
+            }
+        )
+
+    brain._llm_client.stream_with_tools = fake_stream_with_tools  # pylint: disable=protected-access
+    state = GraphState(user_email="a@b.com", user_input_raw="troca treino", user_input_sanitized="troca treino", channel="app")
+    state.shared_context = {
+        "input_data": {"user_locale": "pt-BR", "plan_section": "plano ativo"},
+        "training_analysis": {"status": "generated", "text": "material training analysis"},
+        "nutrition_analysis": {"status": "no_action_needed", "text": ""},
+        "plan_lifecycle": {},
+    }
+
+    await runner._node_plan_specialist(state)  # pylint: disable=protected-access
+
+    assert state.shared_context["plan_workspace"]["plan_status"] == "updated"
+    assert state.specialist_results["plan_specialist"]["action_status"] == "executed"

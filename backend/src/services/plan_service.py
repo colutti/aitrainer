@@ -38,6 +38,81 @@ def _missing_required_fields(payload: dict, required_fields: tuple[str, ...]) ->
     return missing
 
 
+def _prefixed_missing_fields(
+    section_name: str, payload: dict, required_fields: tuple[str, ...]
+) -> list[str]:
+    return [
+        f"{section_name}.{field}"
+        for field in _missing_required_fields(payload, required_fields)
+    ]
+
+
+def _existing_daily_targets(latest_plan: UserPlan | None) -> dict:
+    if not latest_plan or not latest_plan.nutrition_strategy:
+        return {}
+    daily_targets = latest_plan.nutrition_strategy.daily_targets
+    if not daily_targets:
+        return {}
+    return daily_targets.model_dump(exclude_none=True)
+
+
+def _merge_missing_values(base: dict, existing: dict) -> dict:
+    merged = dict(base)
+    for key, value in existing.items():
+        if key not in merged or merged.get(key) is None:
+            merged[key] = value
+    return merged
+
+
+def _existing_routine_map(latest_plan: UserPlan | None) -> dict:
+    if not latest_plan or not latest_plan.training_program:
+        return {}
+    routines = latest_plan.training_program.routines or []
+    return {routine.id: routine.model_dump() for routine in routines}
+
+
+def _missing_exercise_fields(
+    exercises: list, routine_index: int,
+) -> list[str]:
+    missing: list[str] = []
+    for ex_index, exercise in enumerate(exercises):
+        if not isinstance(exercise, dict):
+            missing.append(f"training_program.routines[{routine_index}].exercises[{ex_index}]")
+            continue
+        missing.extend(
+            [
+                f"training_program.routines[{routine_index}].exercises[{ex_index}].{field}"
+                for field in _missing_required_fields(exercise, ("name", "sets", "reps"))
+            ]
+        )
+    return missing
+
+
+def _missing_routine_fields(routines: list, existing_routines: dict) -> list[str]:
+    missing: list[str] = []
+    for index, routine in enumerate(routines):
+        if not isinstance(routine, dict):
+            missing.append(f"training_program.routines[{index}]")
+            continue
+
+        merged_routine = _merge_missing_values(
+            routine,
+            existing_routines.get(routine.get("id"), {}),
+        )
+        missing.extend(
+            [
+                f"training_program.routines[{index}].{field}"
+                for field in _missing_required_fields(
+                    merged_routine, ("id", "name", "exercises")
+                )
+            ]
+        )
+        exercises = merged_routine.get("exercises", [])
+        if isinstance(exercises, list):
+            missing.extend(_missing_exercise_fields(exercises, index))
+    return missing
+
+
 def missing_master_plan_fields(
     payload: PlanUpsertInput, latest_plan: UserPlan | None = None
 ) -> list[str]:
@@ -47,118 +122,86 @@ def missing_master_plan_fields(
     are filled from the existing plan so that partial updates are accepted.
     """
 
+    existing_goal = (
+        latest_plan.goal.model_dump() if latest_plan and latest_plan.goal else {}
+    )
+    existing_timeline = (
+        latest_plan.timeline.model_dump() if latest_plan and latest_plan.timeline else {}
+    )
+    existing_strategy = (
+        latest_plan.strategy.model_dump() if latest_plan and latest_plan.strategy else {}
+    )
+    existing_summary = (
+        latest_plan.current_summary.model_dump()
+        if latest_plan and latest_plan.current_summary
+        else {}
+    )
+    existing_program = (
+        latest_plan.training_program.model_dump()
+        if latest_plan and latest_plan.training_program
+        else {}
+    )
+
     missing: list[str] = []
     missing.extend(
-        [
-            f"goal.{field}"
-            for field in _missing_required_fields(payload.goal, REQUIRED_GOAL_FIELDS)
-        ]
+        _prefixed_missing_fields(
+            "goal",
+            _merge_missing_values(payload.goal or {}, existing_goal),
+            REQUIRED_GOAL_FIELDS,
+        )
     )
     missing.extend(
-        [
-            f"timeline.{field}"
-            for field in _missing_required_fields(
-                payload.timeline, REQUIRED_TIMELINE_FIELDS
-            )
-        ]
+        _prefixed_missing_fields(
+            "timeline",
+            _merge_missing_values(payload.timeline or {}, existing_timeline),
+            REQUIRED_TIMELINE_FIELDS,
+        )
     )
     missing.extend(
-        [
-            f"strategy.{field}"
-            for field in _missing_required_fields(
-                payload.strategy, REQUIRED_STRATEGY_FIELDS
-            )
-        ]
+        _prefixed_missing_fields(
+            "strategy",
+            _merge_missing_values(payload.strategy or {}, existing_strategy),
+            REQUIRED_STRATEGY_FIELDS,
+        )
     )
 
     nutrition_targets = payload.nutrition_strategy.get("daily_targets", {})
     if not isinstance(nutrition_targets, dict):
         missing.append("nutrition_strategy.daily_targets")
     else:
-        # Merge with existing plan targets so partial updates are valid
-        merged_targets: dict = dict(nutrition_targets)
-        if (
-            latest_plan
-            and latest_plan.nutrition_strategy
-            and latest_plan.nutrition_strategy.daily_targets
-        ):
-            existing = latest_plan.nutrition_strategy.daily_targets.model_dump(
-                exclude_none=True
-            )
-            for key, value in existing.items():
-                if key not in merged_targets or merged_targets.get(key) is None:
-                    merged_targets[key] = value
-
+        merged_targets = _merge_missing_values(
+            nutrition_targets, _existing_daily_targets(latest_plan)
+        )
         missing.extend(
-            [
-                f"nutrition_strategy.daily_targets.{field}"
-                for field in _missing_required_fields(
-                    merged_targets,
-                    REQUIRED_NUTRITION_TARGET_FIELDS,
-                )
-            ]
+            _prefixed_missing_fields(
+                "nutrition_strategy.daily_targets",
+                merged_targets,
+                REQUIRED_NUTRITION_TARGET_FIELDS,
+            )
         )
 
-    # training_program validation: fill missing from existing plan
-    existing_routines: dict = {}
-    if (
-        latest_plan
-        and latest_plan.training_program
-        and latest_plan.training_program.routines
-    ):
-        existing_routines = {
-            r.id: r.model_dump() for r in latest_plan.training_program.routines
-        }
+    existing_routines = _existing_routine_map(latest_plan)
 
+    merged_program = _merge_missing_values(
+        payload.training_program or {}, existing_program
+    )
     missing.extend(
-        [
-            f"training_program.{field}"
-            for field in _missing_required_fields(payload.training_program, REQUIRED_PROGRAM_FIELDS)
-        ]
+        _prefixed_missing_fields(
+            "training_program", merged_program, REQUIRED_PROGRAM_FIELDS
+        )
     )
 
-    if isinstance(payload.training_program.get("routines"), list):
-        for index, routine in enumerate(payload.training_program["routines"]):
-            if not isinstance(routine, dict):
-                missing.append(f"training_program.routines[{index}]")
-                continue
-
-            # Fill missing fields from existing plan
-            merged_routine = dict(routine)
-            if routine.get("id") in existing_routines:
-                for key, value in existing_routines[routine["id"]].items():
-                    if key not in merged_routine or merged_routine.get(key) is None:
-                        merged_routine[key] = value
-
-            missing.extend(
-                [
-                    f"training_program.routines[{index}].{field}"
-                    for field in _missing_required_fields(merged_routine, ("id", "name", "exercises"))
-                ]
-            )
-            exercises = merged_routine.get("exercises", [])
-            if isinstance(exercises, list):
-                for ex_index, exercise in enumerate(exercises):
-                    if not isinstance(exercise, dict):
-                        missing.append(
-                            f"training_program.routines[{index}].exercises[{ex_index}]"
-                        )
-                        continue
-                    missing.extend(
-                        [
-                            f"training_program.routines[{index}].exercises[{ex_index}].{field}"
-                            for field in _missing_required_fields(
-                                exercise,
-                                ("name", "sets", "reps"),
-                            )
-                        ]
-                    )
+    if isinstance(merged_program.get("routines"), list):
+        missing.extend(
+            _missing_routine_fields(merged_program["routines"], existing_routines)
+        )
 
     missing.extend(
-        [
-            f"current_summary.{field}"
-            for field in _missing_required_fields(payload.current_summary, REQUIRED_SUMMARY_FIELDS)
-        ]
+        _prefixed_missing_fields(
+            "current_summary",
+            _merge_missing_values(payload.current_summary or {}, existing_summary),
+            REQUIRED_SUMMARY_FIELDS,
+        )
     )
 
     return sorted(set(missing))
@@ -178,26 +221,96 @@ def _merge_nutrition_strategy(
     return merged
 
 
+def _merge_routines(latest_dict: dict, payload_routines: list) -> list:
+    latest_routines = {r["id"]: r for r in latest_dict.get("routines", [])}
+    merged_routines = []
+    seen_routine_ids: set[str] = set()
+
+    for payload_routine in payload_routines:
+        routine_id = payload_routine.get("id") if isinstance(payload_routine, dict) else None
+        if routine_id in latest_routines:
+            full = dict(latest_routines[routine_id])
+            full.update({k: v for k, v in payload_routine.items() if v is not None})
+            merged_routines.append(full)
+            seen_routine_ids.add(routine_id)
+            continue
+        merged_routines.append(payload_routine)
+        if routine_id:
+            seen_routine_ids.add(routine_id)
+
+    for existing in latest_dict.get("routines", []):
+        routine_id = existing.get("id")
+        if routine_id and routine_id not in seen_routine_ids:
+            merged_routines.append(existing)
+
+    return merged_routines
+
+
+def _merge_weekly_schedule(latest_dict: dict, payload_schedule: list) -> list:
+    merged_schedule = []
+    seen_schedule_keys = set()
+
+    for item in payload_schedule:
+        if isinstance(item, dict):
+            seen_schedule_keys.add((item.get("day"), item.get("type", "training")))
+        merged_schedule.append(item)
+
+    for existing in latest_dict.get("weekly_schedule", []):
+        key = (existing.get("day"), existing.get("type", "training"))
+        if key not in seen_schedule_keys:
+            merged_schedule.append(existing)
+
+    return merged_schedule
+
+
+def _normalize_training_program_ids(program: dict) -> dict:
+    """Coerce routine identifiers from LLM/tool payloads to strings."""
+    normalized = dict(program)
+    routines = normalized.get("routines")
+    if isinstance(routines, list):
+        normalized["routines"] = [
+            {
+                **routine,
+                "id": str(routine["id"]) if routine.get("id") is not None else routine.get("id"),
+            }
+            if isinstance(routine, dict)
+            else routine
+            for routine in routines
+        ]
+
+    schedule = normalized.get("weekly_schedule")
+    if isinstance(schedule, list):
+        normalized["weekly_schedule"] = [
+            {
+                **item,
+                "routine_id": (
+                    str(item["routine_id"])
+                    if item.get("routine_id") is not None
+                    else item.get("routine_id")
+                ),
+            }
+            if isinstance(item, dict)
+            else item
+            for item in schedule
+        ]
+    return normalized
+
+
 def _merge_training_program(latest, payload: dict) -> dict:
-    """Deep-merge training program, preserving existing routine exercises."""
+    """Deep-merge training program while preserving omitted routines and schedule items."""
+    payload = _normalize_training_program_ids(payload)
     latest_dict = latest.model_dump()
     merged = {**latest_dict, **payload}
 
-    # Deep merge routines: preserve exercises from existing routines
-    latest_routines = {r["id"]: r for r in latest_dict.get("routines", [])}
     payload_routines = payload.get("routines", [])
     if isinstance(payload_routines, list):
-        merged_routines = []
-        for pr in payload_routines:
-            if isinstance(pr, dict) and pr.get("id") in latest_routines:
-                full = dict(latest_routines[pr["id"]])
-                full.update({k: v for k, v in pr.items() if v is not None})
-                merged_routines.append(full)
-            else:
-                merged_routines.append(pr)
-        merged["routines"] = merged_routines
+        merged["routines"] = _merge_routines(latest_dict, payload_routines)
 
-    return merged
+    payload_schedule = payload.get("weekly_schedule", [])
+    if isinstance(payload_schedule, list):
+        merged["weekly_schedule"] = _merge_weekly_schedule(latest_dict, payload_schedule)
+
+    return _normalize_training_program_ids(merged)
 
 
 def _merge_plan_sections(latest_plan: UserPlan | None, payload: PlanUpsertInput) -> dict:
@@ -207,7 +320,7 @@ def _merge_plan_sections(latest_plan: UserPlan | None, payload: PlanUpsertInput)
             "timeline": payload.timeline,
             "strategy": payload.strategy,
             "nutrition_strategy": payload.nutrition_strategy,
-            "training_program": payload.training_program,
+            "training_program": _normalize_training_program_ids(payload.training_program),
             "current_summary": payload.current_summary,
             "checkpoints": payload.checkpoints,
         }
@@ -232,16 +345,16 @@ def _merge_plan_sections(latest_plan: UserPlan | None, payload: PlanUpsertInput)
 
 
 def _coerce_datetime(value: datetime | str) -> datetime:
-    """Normalize timeline values that may arrive as ISO strings."""
+    """Normalize timeline values to UTC-aware datetimes."""
     if isinstance(value, str):
         result = datetime.fromisoformat(value.replace("Z", "+00:00"))
         if result.tzinfo is None:
-            result = result.astimezone()
-        return result
+            return result.replace(tzinfo=timezone.utc)
+        return result.astimezone(timezone.utc)
     if isinstance(value, datetime):
         if value.tzinfo is None:
-            return value.astimezone()
-        return value
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
     raise TypeError(f"invalid datetime value type: {type(value).__name__}")
 
 
@@ -261,14 +374,18 @@ def build_plan_singleton(
     merged = _merge_plan_sections(latest_plan, payload)
 
     timeline_data = dict(merged["timeline"])
-    timeline_data["start_date"] = now
+    if latest_plan is None:
+        start = now
+    else:
+        start = _coerce_datetime(latest_plan.timeline.start_date)
+    timeline_data["start_date"] = start
     if "target_date" in timeline_data and timeline_data["target_date"] is not None:
         target = _coerce_datetime(timeline_data["target_date"])
-        timeline_data["target_date"] = max(target, now)
+        timeline_data["target_date"] = max(target, start)
     else:
-        timeline_data["target_date"] = timeline_data["start_date"] + timedelta(days=84)
+        timeline_data["target_date"] = start + timedelta(days=84)
 
-    return UserPlan(
+    plan = UserPlan(
         user_email=user_email,
         title=payload.title,
         goal=merged["goal"],
@@ -280,6 +397,9 @@ def build_plan_singleton(
         current_summary=merged["current_summary"],
         change_reason=payload.change_reason,
     )
+    if latest_plan is not None:
+        plan.created_at = latest_plan.created_at
+    return plan
 
 
 def build_plan_prompt_snapshot(plan: UserPlan | None) -> PlanPromptContext | None:

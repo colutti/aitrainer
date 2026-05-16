@@ -107,11 +107,26 @@ class TrainingProgram(BaseModel):
     def validate_schedule_references(self):
         """Every training day must reference an existing routine id."""
         routine_ids = {routine.id for routine in self.routines}
+        training_day_keys: set[tuple[str, str]] = set()
+        training_days = 0
         for item in self.weekly_schedule:
             if item.type == "training" and item.routine_id not in routine_ids:
                 raise ValueError(
                     f"weekly_schedule references unknown routine_id '{item.routine_id}'"
                 )
+            if item.type == "training":
+                training_days += 1
+                key = (item.day, item.type)
+                if key in training_day_keys:
+                    raise ValueError(
+                        "weekly_schedule contains duplicate training assignment "
+                        f"for day '{item.day}'"
+                    )
+                training_day_keys.add(key)
+        if training_days != self.frequency_per_week:
+            raise ValueError(
+                "frequency_per_week must match the number of training items in weekly_schedule"
+            )
         return self
 
 

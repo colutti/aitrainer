@@ -19,6 +19,7 @@ class ActionStatus(Enum):
     """Outcome of the action a node attempted."""
 
     EXECUTED = "executed"
+    FAILED = "failed"
     NEEDS_USER_INPUT = "needs_user_input"
     NO_ACTION_NEEDED = "no_action_needed"
 

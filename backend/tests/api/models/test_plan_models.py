@@ -138,7 +138,7 @@ def test_training_program_requires_routines_and_schedule():
     schedule = [WeeklyScheduleItem(day="monday", routine_id="push_a", focus="push")]
     program = TrainingProgram(
         split_name="push_pull_legs",
-        frequency_per_week=5,
+        frequency_per_week=1,
         session_duration_min=60,
         routines=routines,
         weekly_schedule=schedule,
@@ -154,6 +154,40 @@ def test_training_program_rejects_unknown_routine_id_in_schedule():
         TrainingProgram(
             split_name="push_pull_legs",
             frequency_per_week=4,
+            session_duration_min=60,
+            routines=routines,
+            weekly_schedule=schedule,
+        )
+
+
+def test_training_program_rejects_duplicate_training_day_assignments():
+    exercises = [TrainingExercise(name="Supino", sets=3, reps="8-10", load_guidance="RPE 7")]
+    routines = [TrainingRoutine(id="push_a", name="Push A", exercises=exercises)]
+    schedule = [
+        WeeklyScheduleItem(day="monday", routine_id="push_a", focus="push"),
+        WeeklyScheduleItem(day="monday", routine_id="push_a", focus="push"),
+    ]
+    with pytest.raises(ValidationError):
+        TrainingProgram(
+            split_name="push_pull_legs",
+            frequency_per_week=1,
+            session_duration_min=60,
+            routines=routines,
+            weekly_schedule=schedule,
+        )
+
+
+def test_training_program_rejects_frequency_mismatch_with_training_days():
+    exercises = [TrainingExercise(name="Supino", sets=3, reps="8-10", load_guidance="RPE 7")]
+    routines = [TrainingRoutine(id="push_a", name="Push A", exercises=exercises)]
+    schedule = [
+        WeeklyScheduleItem(day="monday", routine_id="push_a", focus="push"),
+        WeeklyScheduleItem(day="wednesday", routine_id="push_a", focus="push"),
+    ]
+    with pytest.raises(ValidationError):
+        TrainingProgram(
+            split_name="push_pull_legs",
+            frequency_per_week=1,
             session_duration_min=60,
             routines=routines,
             weekly_schedule=schedule,
@@ -200,7 +234,7 @@ def test_plan_upsert_input_requires_all_top_level_fields():
         },
         training_program={
             "split_name": "push_pull_legs",
-            "frequency_per_week": 5,
+            "frequency_per_week": 1,
             "session_duration_min": 60,
             "routines": [
                 {
@@ -241,9 +275,9 @@ def test_user_plan_constructs_full_singleton_payload():
                 calories=3000, protein_g=180, carbs_g=300, fat_g=90
             ),
         ),
-        training_program=TrainingProgram(
-            split_name="upper_lower",
-            frequency_per_week=4,
+            training_program=TrainingProgram(
+                split_name="upper_lower",
+                frequency_per_week=1,
             session_duration_min=60,
             routines=[
                 TrainingRoutine(
@@ -307,9 +341,9 @@ def test_user_plan_with_id_uses_validation_alias():
                 calories=2000, protein_g=150, carbs_g=150, fat_g=60,
             ),
         ),
-        training_program=TrainingProgram(
-            split_name="full_body",
-            frequency_per_week=3,
+            training_program=TrainingProgram(
+                split_name="full_body",
+                frequency_per_week=1,
             session_duration_min=45,
             routines=[
                 TrainingRoutine(

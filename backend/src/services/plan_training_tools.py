@@ -9,8 +9,10 @@ from pydantic import BaseModel, Field
 class PlanTrainingInput(BaseModel):
     """Input schema for get_plan_training_program."""
 
-    format: str = Field(
+    output_format: str = Field(
         default="text",
+        alias="format",
+        serialization_alias="format",
         description="Formato de saída: 'text' para legível ou 'json' para estruturado",
     )
 
@@ -19,7 +21,7 @@ def create_get_plan_training_program_tool(database, user_email: str):
     """Returns only the training program section from the user's plan."""
 
     @tool(args_schema=PlanTrainingInput)
-    def get_plan_training_program(format: str = "text") -> str:
+    def get_plan_training_program(output_format: str = "text") -> str:
         """Retorna o programa de treino salvo no plano mestre do usuario.
         Use esta ferramenta quando o usuario perguntar sobre:
         - "qual e o meu treino/rotina"
@@ -34,7 +36,7 @@ def create_get_plan_training_program_tool(database, user_email: str):
         if plan is None:
             return "Nenhum programa de treino salvo no plano."
         tp = plan.training_program
-        if format == "json":
+        if output_format == "json":
             return json.dumps(tp.model_dump(), ensure_ascii=False, indent=2)
         lines = []
         lines.append(f"Split: {tp.split_name}")

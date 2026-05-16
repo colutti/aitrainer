@@ -54,3 +54,30 @@ def resolve_macro_targets(
         "fat": None,
         "source": "none",
     }
+
+
+def get_plan_daily_targets(plan) -> dict[str, Any] | None:
+    """Extract daily targets from a plan-like object when available."""
+    if not plan or not getattr(plan, "nutrition_strategy", None):
+        return None
+    daily_targets = getattr(plan.nutrition_strategy, "daily_targets", None)
+    if not daily_targets:
+        return None
+    return daily_targets.model_dump(exclude_none=True)
+
+
+def resolve_macro_targets_for_plan(
+    tdee_macros: dict[str, int] | None,
+    plan,
+) -> tuple[dict[str, int], str]:
+    """Resolve macro targets and normalize the response shape for callers."""
+    resolved = resolve_macro_targets(
+        tdee_macros=tdee_macros,
+        plan_daily_targets=get_plan_daily_targets(plan),
+    )
+    macro_dict = {
+        "protein": resolved["protein"] or 0,
+        "carbs": resolved["carbs"] or 0,
+        "fat": resolved["fat"] or 0,
+    }
+    return macro_dict, resolved.get("source", "fallback")

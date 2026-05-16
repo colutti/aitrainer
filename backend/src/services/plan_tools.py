@@ -255,9 +255,9 @@ def create_upsert_plan_tool(database, user_email: str):
         disponibilidade semanal (dias e duracao), restricoes, estrategia, metas nutricionais
         e programa de treino completo (rotinas + agenda semanal).
 
-        Se faltam dados do usuario, NAO chame esta tool. Retorne plan_status='discovery_needed'
-        e descreva em technical_summary quais informacoes faltam. O coach_reply vai transformar
-        isso em perguntas ao usuario.
+        Se faltam dados do usuario, NAO chame esta tool. Retorne plan_status='discovery_needed',
+        use internal_analysis para explicar quais informacoes faltam e public_message para
+        perguntar ao usuario somente o proximo bloqueio.
 
         Sempre chame get_metabolism_data ANTES de definir metas nutricionais numericas.
         """
@@ -309,9 +309,9 @@ def create_upsert_plan_tool(database, user_email: str):
                     f"{discovery_list}\n\n"
                     "PLANO_NAO_SALVO. Nao afirme que salvou/ativou o plano.\n"
                     "ACAO: NAO tente chamar upsert_plan novamente neste turno. "
-                    "RETORNE plan_status=discovery_needed e liste em technical_summary "
-                    "que faltam para completar o plano. O coach_reply vai transformar isso em "
-                    "perguntas ao usuario.\n"
+                    "RETORNE plan_status=discovery_needed, liste em internal_analysis "
+                    "o que falta para completar o plano e use public_message para a "
+                    "proxima pergunta ao usuario.\n"
                     "Consulte plan_help para ver o payload minimo completo."
                 )
             try:
@@ -357,8 +357,9 @@ def create_upsert_plan_tool(database, user_email: str):
                 f"{discovery_list}\n\n"
                 "PLANO_NAO_SALVO. Nao afirme que salvou/ativou o plano.\n"
                 "ACAO: NAO tente chamar upsert_plan novamente neste turno. "
-                "Retorne plan_status='update_failed' e liste em technical_summary quais "
-                "informacoes adicionais sao necessarias. "
+                "Retorne plan_status='update_failed', liste em internal_analysis quais "
+                "informacoes adicionais sao necessarias e use public_message para a "
+                "proxima pergunta ao usuario. "
                 "Consulte plan_help para ver o payload minimo completo."
             )
         try:

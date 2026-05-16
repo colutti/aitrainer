@@ -8,6 +8,50 @@ from src.core.logs import logger
 from src.api.models.routine import HevyRoutine, HevyRoutineExercise
 
 
+async def _get_all_routines(hevy_service, api_key: str):
+    get_all = getattr(hevy_service, "get_all_routines", None)
+    if callable(get_all):
+        try:
+            return await get_all(api_key)
+        except TypeError:
+            logger.debug("Falling back to paginated get_routines in _get_all_routines")
+
+    all_routines = []
+    page = 1
+    while page <= 100:
+        response = await hevy_service.get_routines(api_key, page=page, page_size=10)
+        if not response or not response.routines:
+            break
+        all_routines.extend(response.routines)
+        page_count = getattr(response, "page_count", page)
+        if not isinstance(page_count, int):
+            page_count = page
+        if page >= page_count:
+            break
+        page += 1
+
+    return all_routines
+
+
+def _match_routine(routines, routine_title_or_id: str):
+    normalized = routine_title_or_id.lower().strip()
+    fuzzy_match = None
+
+    for routine in routines:
+        if routine.id == routine_title_or_id:
+            return routine
+        if routine.title and routine.title.lower().strip() == normalized:
+            return routine
+
+    for routine in routines:
+        if routine.title and normalized in routine.title.lower():
+            if fuzzy_match is not None:
+                return None
+            fuzzy_match = routine
+
+    return fuzzy_match
+
+
 def create_list_hevy_routines_tool(hevy_service, database, user_email: str):
     @tool
     async def list_hevy_routines(page: int = 1, page_size: int = 10) -> str:
@@ -35,9 +79,14 @@ def create_list_hevy_routines_tool(hevy_service, database, user_email: str):
             logger.info(
                 "[list_hevy_routines] Found %d routines", len(response.routines)
             )
-            result = f"Encontrei {len(response.routines)} rotinas (Página {response.page}/{response.page_count}):\n\n"
+            result = (
+                f"Encontrei {len(response.routines)} rotinas nesta página "
+                f"(Página {response.page}/{response.page_count}). "
+                "Use o ID da rotina quando quiser revisar ou editar com segurança:\n\n"
+            )
             for i, r in enumerate(response.routines, 1):
                 result += f"{i}. **{r.title}**\n"
+                result += f"   ID: `{r.id}`\n"
                 if r.notes:
                     result += f"   Notas: {r.notes}\n"
                 # Show exercise titles if available, otherwise IDs
@@ -240,6 +289,7 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
         new_title: str | None = None,
         exercises: list[dict] | None = None,
         notes: str | None = None,
+        allow_structure_rebuild: bool = False,
     ) -> str:
         """
         Atualiza uma rotina existente no Hevy.
@@ -249,11 +299,13 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
             new_title: Novo título (opcional)
             exercises: Lista COMPLETA de exercícios (opcional). Use para mudar a estrutura, ordem, reps ou adicionar notas específicas de cada exercício.
             notes: Descrição GERAL da rotina (opcional). NÃO use para descrever exercícios individuais.
+            allow_structure_rebuild: Use `true` apenas quando quiser substituir estruturalmente a lista de exercícios.
 
         IMPORTANTE:
         - Para mudar QUALQUER coisa nos exercícios (reps, ordem, incluir notas de execução), você DEVE enviar a lista `exercises` completa.
         - O campo `notes` aqui é apenas para a descrição que aparece no topo da rotina no Hevy.
         - `exercises` substitui toda a lista atual. Mantenha os exercícios existentes se quiser apenas adicionar um novo.
+        - Se a nova lista tiver quantidade diferente da atual, a atualização é bloqueada por padrão. Use `allow_structure_rebuild=true` apenas para rebuilds estruturais intencionais.
         """
         if not routine_title:
             return "Título da rotina é obrigatório para atualização."
@@ -274,20 +326,7 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
         )
 
         try:
-            # Buscar rotinas paginadas (limite da API é 10 por página)
-            # Vamos tentar encontrar nas primeiras 5 páginas (50 rotinas)
-            all_routines = []
-            for p in range(1, 6):
-                logger.info("Fetching routines from Hevy (page=%d, page_size=10)", p)
-                response = await hevy_service.get_routines(
-                    profile.hevy_api_key, page=p, page_size=10
-                )
-                if response and response.routines:
-                    all_routines.extend(response.routines)
-                    if p >= response.page_count:
-                        break
-                else:
-                    break
+            all_routines = await _get_all_routines(hevy_service, profile.hevy_api_key)
 
             if not all_routines:
                 key_masked = (
@@ -302,27 +341,13 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
                 )
                 return "Nenhuma rotina encontrada na sua conta do Hevy. Certifique-se de que você criou rotinas no aplicativo Hevy antes de tentar atualizá-las."
 
-            # Procurar rotina por título (case-insensitive match)
-            target_routine = None
-            routine_title_lower = routine_title.lower().strip()
-
             logger.info(
                 "Searching for routine '%s' among %d routines",
                 routine_title,
                 len(all_routines),
             )
 
-            for r in all_routines:
-                if r.title.lower().strip() == routine_title_lower:
-                    target_routine = r
-                    break
-
-            if not target_routine:
-                # Tentar match parcial fuzzy
-                for r in all_routines:
-                    if routine_title_lower in r.title.lower():
-                        target_routine = r
-                        break
+            target_routine = _match_routine(all_routines, routine_title)
 
             if not target_routine:
                 available_titles = [r.title for r in all_routines[:5]]
@@ -345,6 +370,35 @@ def create_update_hevy_routine_tool(hevy_service, database, user_email: str):
             if notes is not None:
                 current.notes = notes
             if exercises:
+                current_exercises = current.exercises or []
+                current_template_ids = [
+                    ex.exercise_template_id for ex in current_exercises
+                    if getattr(ex, "exercise_template_id", None)
+                ]
+                new_template_ids = [
+                    ex.get("exercise_template_id") for ex in exercises
+                    if ex.get("exercise_template_id")
+                ]
+                if (
+                    len(current_exercises) != len(exercises)
+                    and not allow_structure_rebuild
+                ):
+                    return (
+                        "Atualização estrutural bloqueada: para alterar a quantidade de exercícios, "
+                        "envie a lista completa e defina `allow_structure_rebuild=true`. "
+                        "Para trocar um único exercício, use `replace_hevy_exercise`."
+                    )
+                if (
+                    current_template_ids
+                    and new_template_ids
+                    and current_template_ids != new_template_ids
+                    and not allow_structure_rebuild
+                ):
+                    return (
+                        "Atualização estrutural bloqueada: a ordem ou identidade dos exercícios mudou. "
+                        "Use `replace_hevy_exercise` para trocas pontuais ou `allow_structure_rebuild=true` "
+                        "para rebuild estrutural explícito."
+                    )
                 logger.info(
                     "Assigning %d new exercises to routine '%s'",
                     len(exercises),
@@ -412,30 +466,8 @@ def create_replace_hevy_exercise_tool(hevy_service, database, user_email: str):
 
         try:
             # 1. Buscar a rotina
-            target_routine = None
-            # Tentar buscar nas primeiras páginas
-            for p in range(1, 6):
-                response = await hevy_service.get_routines(
-                    profile.hevy_api_key, page=p, page_size=10
-                )
-                if not response or not response.routines:
-                    break
-
-                # Exact match first
-                for r in response.routines:
-                    if r.title.lower().strip() == routine_title.lower().strip():
-                        target_routine = r
-                        break
-                if target_routine:
-                    break
-
-                # Fuzzy match second
-                for r in response.routines:
-                    if routine_title.lower() in r.title.lower():
-                        target_routine = r
-                        break
-                if target_routine:
-                    break
+            all_routines = await _get_all_routines(hevy_service, profile.hevy_api_key)
+            target_routine = _match_routine(all_routines, routine_title)
 
             if not target_routine:
                 return f"Rotina '{routine_title}' não encontrada."
@@ -452,6 +484,7 @@ def create_replace_hevy_exercise_tool(hevy_service, database, user_email: str):
             exercises_list = current.exercises
 
             target_old = old_exercise_name_or_id.lower().strip()
+            ambiguous_title_matches = []
 
             for ex in exercises_list:
                 # Check by ID
@@ -467,9 +500,18 @@ def create_replace_hevy_exercise_tool(hevy_service, database, user_email: str):
                 if ex.title and (
                     target_old in ex.title.lower() or ex.title.lower() in target_old
                 ):
-                    ex.exercise_template_id = new_exercise_id
-                    found = True
-                    break
+                    ambiguous_title_matches.append(ex)
+
+            if not found and len(ambiguous_title_matches) > 1:
+                names = [ex.title for ex in ambiguous_title_matches if ex.title]
+                return (
+                    f"Exercício '{old_exercise_name_or_id}' é ambíguo na rotina '{current.title}'. "
+                    f"Correspondências: {', '.join(names)}. Use o nome exato ou o ID do exercício."
+                )
+
+            if not found and len(ambiguous_title_matches) == 1:
+                ambiguous_title_matches[0].exercise_template_id = new_exercise_id
+                found = True
 
             if not found:
                 current_names = [e.title for e in exercises_list if e.title]
@@ -524,34 +566,19 @@ def create_get_hevy_routine_detail_tool(hevy_service, database, user_email: str)
 
             # First, fetch all routines to find the matching one
             logger.debug("[get_hevy_routine_detail] Fetching all routines...")
-            routines_resp = await hevy_service.get_routines(
-                profile.hevy_api_key, page=1, page_size=50
-            )
+            all_routines = await _get_all_routines(hevy_service, profile.hevy_api_key)
 
-            if not routines_resp or not routines_resp.routines:
+            if not all_routines:
                 logger.warning("[get_hevy_routine_detail] No routines found in Hevy")
-                return "Nenhuma rotina encontrada no Hevy."
+                return f"Rotina '{routine_title_or_id}' não encontrada."
 
             logger.debug(
                 "[get_hevy_routine_detail] Found %d routines",
-                len(routines_resp.routines),
+                len(all_routines),
             )
 
             # Find routine by title or ID
-            target_routine = None
-            search_key = routine_title_or_id.lower()
-
-            for r in routines_resp.routines:
-                if r.id == routine_title_or_id or (
-                    r.title and r.title.lower() == search_key
-                ):
-                    target_routine = r
-                    logger.debug(
-                        "[get_hevy_routine_detail] Found matching routine: %s (ID: %s)",
-                        r.title,
-                        r.id,
-                    )
-                    break
+            target_routine = _match_routine(all_routines, routine_title_or_id)
 
             if not target_routine:
                 logger.warning(
@@ -682,24 +709,14 @@ def create_set_routine_rest_and_ranges_tool(hevy_service, database, user_email: 
             logger.debug(
                 "[set_routine_rest_and_ranges] Fetching all routines to find match..."
             )
-            routines_resp = await hevy_service.get_routines(
-                profile.hevy_api_key, page=1, page_size=50
-            )
+            all_routines = await _get_all_routines(hevy_service, profile.hevy_api_key)
 
-            if not routines_resp or not routines_resp.routines:
+            if not all_routines:
                 logger.warning("[set_routine_rest_and_ranges] No routines found")
-                return "Nenhuma rotina encontrada no Hevy."
+                return f"Rotina '{routine_title_or_id}' não encontrada."
 
             # Find routine
-            target_routine = None
-            search_key = routine_title_or_id.lower()
-
-            for r in routines_resp.routines:
-                if r.id == routine_title_or_id or (
-                    r.title and r.title.lower() == search_key
-                ):
-                    target_routine = r
-                    break
+            target_routine = _match_routine(all_routines, routine_title_or_id)
 
             if not target_routine:
                 logger.warning(

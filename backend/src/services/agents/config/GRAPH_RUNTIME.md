@@ -1,26 +1,6 @@
-# Conversation Graph Runtime
+# Graph Runtime
 
-Esta documentacao descreve o runtime atual do LangGraph usado no chat principal.
-Ela complementa os manifests em `nodes/*.json`, os prompts em `prompts/*.md`
-e o codigo em `backend/src/services/graph/conversation_graph.py`.
-
-## Objetivo
-
-Substituir o fluxo monolitico por uma orquestracao explicita, auditavel e
-com contratos claros entre nos.
-
-Principios:
-
-- cada no tem um papel unico e delimitado
-- prompts ficam versionados no repositorio
-- contexto e peer inputs sao injetados por allowlist
-- persistencia relevante e executada de forma deterministica no runtime
-- o plano e tratado como nucleo do produto
-- a persona do entrenador fica apenas no `coach_reply`; os demais nos recebem contexto tecnico, nao voz/persona
-
-## Ordem de execucao
-
-Ordem fixa do grafo (todos os nos executam uma unica vez por turno, em ordem estritamente linear):
+The conversation graph runs one fixed sequential pipeline:
 
 1. `session_context`
 2. `prompt_security`
@@ -30,405 +10,85 @@ Ordem fixa do grafo (todos os nos executam uma unica vez por turno, em ordem est
 6. `coach_reply`
 7. `memory_hub`
 
-Regras de execucao:
+All specialists run every safe turn and self-suppress with `no_action_needed` when they have no contribution.
 
-- A ordem de execucao e a fonte unica de verdade. Nao ha chamadas extras de `coach_reply`
-  ou `memory_hub` fora do loop.
-- Todos os nos especialistas rodam em toda mensagem que passe por `prompt_security`.
-- Se `prompt_security` bloquear a mensagem, o fluxo e interrompido antes de `training_specialist`.
-  `coach_reply` e `memory_hub` nao executam e nao geram efeito colateral.
-- Cada especialista decide internamente se age ou emite no-op (`action_status: no_action_needed`).
-- `coach_reply` sintetiza as saidas nao-vazias dos especialistas em uma unica resposta ao usuario.
-- `memory_hub` roda por ultimo para registrar memoria e agenda sem alterar a resposta final.
+## Specialist Contract
 
-### Resolucao de pending_action
+Analytical nodes return strict JSON with separate public and internal channels:
 
-Apos os tres especialistas e antes do `coach_reply`, o runtime resolve
-`specialist_pending_actions` em um unico `pending_action` usando prioridade
-deterministica:
+```json
+{
+  "action_status": "executed | failed | needs_user_input | no_action_needed",
+  "public_message": "user-facing message or empty string",
+  "internal_analysis": "technical peer-only analysis",
+  "operation_result": {
+    "attempted": false,
+    "succeeded": false,
+    "tool_name": "",
+    "error_code": "",
+    "evidence": ""
+  }
+}
+```
 
-1. `domain_execution` (maior prioridade)
-2. `plan_discovery`
-3. `plan_review`
-4. `domain_analysis`
-5. `none` (sem acao pendente)
+Rules:
 
-O vencedor e escrito em `state.conversation_state["pending_action"]`.
-Isso substitui o antigo modelo de roteamento por `primary_owner`.
+- No-op: `public_message=""`, `internal_analysis=""`, `operation_result.attempted=false`.
+- Needs input: `public_message` asks only the next blocking question, and only for a fact genuinely external to the system.
+- Successful tool action: `action_status=executed`, `operation_result.succeeded=true`.
+- Failed tool action: `action_status=failed`, `operation_result.succeeded=false`, and `public_message` says the action was not completed.
+- Internal technical content flows through `internal_analysis`, not through the user-facing channel.
 
-## O que cada no faz
+Specialists are technical authorities by default. They must decide domain-owned parameters from context, history, active plan, and tools whenever possible. Asking the user is an exception, not a neutral fallback.
 
-### `session_context`
+Valid user questions are limited to external facts the system cannot infer, such as a new injury, equipment limitation, preference, deadline, or availability change. Invalid user questions include specialist-owned technical parameters such as training sets, rep ranges, load guidance, or nutrition macro targets when the system already has enough context to decide.
 
-Responsabilidade:
+The runtime records each normalized specialist result in `GraphState.specialist_results` and appends non-empty public messages to `GraphState.coach_handoff`.
 
-- hidratar contexto deterministico do turno em codigo (sem LLM)
-- carregar perfil do usuario e do entrenador
-- carregar agenda, metabolismo, historico e plano ativo
-- produzir `runtime_context_json`
-- derivar sinais objetivos do ciclo de vida do plano
-- recuperar `conversation_state` do turno anterior (snapshot persistido como SYSTEM message)
+## Coach Contract
 
-Saidas relevantes:
+`coach_reply` has no tools and no operational authority. It receives `coach_handoff` plus persona context. It does not receive raw `training_analysis`, `nutrition_analysis`, `active_plan`, or `metabolism` as factual inputs.
 
-- `shared_context.input_data`
-- `shared_context.plan_lifecycle`
-- `shared_context.conversation_state` (restaurado do historico)
+The coach may rewrite tone and transitions only. It cannot add facts, numbers, recommendations, plan status, tool outcomes, or success claims. Failed operations must remain failed.
 
-Este no usa LLM apenas para sanitizar o historico (`history_summary_neutral`).
-Seu output principal e `state.node_outputs["session_context"] = "hydrated"`.
+## Memory Contract
 
-### `prompt_security`
-
-Responsabilidade:
-
-- bloquear ou sanitizar tentativas de prompt injection
-- impedir leak de instrucoes internas
-- manter o fluxo dentro do escopo permitido
-
-Detalhes:
-
-- ha um filtro deterministico por regex antes da LLM
-- o no completa a classificacao em JSON com schema estrito (`status`, `reason`, `sanitized`)
-
-Modelo default:
-
-- `google/gemini-2.5-flash-lite`
-- `response_format`: json_schema estrito com campos `status`, `reason`, `sanitized`
-
-### `training_specialist`
-
-Responsabilidade:
-
-- analisar e registrar treino
-- comparar sessoes equivalentes
-- classificar progresso
-- emitir conflito estrutural de plano quando houver
-- se a mensagem nao for sobre treino, emitir `action_status: no_action_needed` e texto vazio
-- nao recebe a persona do treinador; opera em linguagem tecnica
+`memory_hub` reads `specialist_results` and `persistence_candidates`, not coach prose. `coach_response` and `coach_reply` are not factual sources for persistence.
 
-Tools principais:
-
-- `save_workout`
-- `get_workouts`
-- `list_hevy_routines`
-- `get_hevy_routine_detail`
-- `trigger_hevy_import`
-- `create_hevy_routine`
-- `update_hevy_routine`
-- `search_hevy_exercises`
-- `replace_hevy_exercise`
-- `set_routine_rest_and_ranges`
-- `save_body_composition`
-- `get_body_composition`
-
-Contrato de saida:
-
-- `action_type`
-- `action_status` (`executed`, `needs_user_input`, `no_action_needed`)
-- `domain_status`
-- `technical_summary`
-- `missing_inputs`
-- `plan_signal`
-- `pending_action` (dict com `kind`, `status`, `missing_slots`)
-- `memory_candidates`
-- `event_candidates`
-
-Modelo default:
-
-- `google/gemini-3-flash-preview`
-- `temperature: 0.2`
-- `max_tokens: 6144`
-- `reasoning: { effort: "low", exclude: true }`
-- `parallel_tool_calls: false`
-- `provider_sort: "throughput"`
-- `response_format`: json_schema estrito com `pending_action` como objeto e `memory_candidates`/`event_candidates` como arrays de objetos tipados
-
-Notas de configuracao:
-
-- `reasoning` com `effort: "low"` melhora consistencia sem aumentar latencia excessivamente
-- `parallel_tool_calls: false` evita chamadas de ferramentas fora de ordem ou desnecessarias
-- `max_tokens: 6144` garante espaco para `technical_summary` completo em planos de 4-5 dias
-- O schema JSON do output força campos tipados especificos em vez de `"json"` generico
-
-### `nutrition_specialist`
-
-Responsabilidade:
-
-- analisar e registrar nutricao
-- comparar ingestao com metas oficiais
-- validar numeros contra metabolismo oficial
-- emitir conflito estrutural de plano quando houver
-- se a mensagem nao for sobre nutricao, emitir `action_status: no_action_needed` e texto vazio
-- nao recebe a persona do treinador; opera em linguagem tecnica
-
-Tools principais:
-
-- `save_daily_nutrition`
-- `get_workouts`
-- `get_nutrition`
-- `sync_nutrition_text`
-- `get_metabolism_data`
-- `get_user_goal`
-- `update_tdee_params`
-
-Contrato de saida:
-
-- `action_type`
-- `action_status` (`executed`, `needs_user_input`, `no_action_needed`)
-- `domain_status`
-- `technical_summary`
-- `missing_inputs`
-- `plan_signal`
-- `pending_action` (dict com `kind`, `status`, `missing_slots`)
-- `memory_candidates`
-- `event_candidates`
-
-Modelo default:
-
-- `google/gemini-3-flash-preview`
-- `temperature: 0.2`
-- `max_tokens: 6144`
-- `reasoning: { effort: "low", exclude: true }`
-- `parallel_tool_calls: false`
-- `provider_sort: "throughput"`
-- `response_format`: json_schema estrito (mesmo shape do `training_specialist`)
+If any material operation has `operation_result.attempted=true` and `operation_result.succeeded=false`, the runtime blocks memory, event, and summary writes for the turn.
 
-Regras de operacao:
+## Plan Rules
 
-- **Dois modos internos**: analise operacional (logging, aderencia, historico) e prescricao detalhada (calorias, macros, ajuste metabolico)
-- **Prescricao detalhada** exige contexto suficiente. Sem ele, o no nao improvisa numeros
-- **Ajuste metabolico** (`update_tdee_params`) so com evidencia sustentada, nao por flutuacao de curto prazo
-- **Racional obrigatorio**: sempre que houver recomendacao material, o `technical_summary` deve conter objetivo, contexto, racional, por que serve ao usuario, estrategia de metas e estrategia de aderencia
+`plan_specialist` uses `openai/gpt-oss-120b`, `temperature: 0.1`, `reasoning: low`, `provider_sort: throughput`, `parallel_tool_calls: false`, and plan-only tools.
 
-### `plan_specialist`
+For plan work:
 
-Responsabilidade:
+- Single-domain training update requires material `training_analysis`; nutrition no-op is acceptable.
+- Single-domain nutrition update requires material `nutrition_analysis`; training no-op is acceptable.
+- Full plan creation requires material training and nutrition analyses.
+- `plan_specialist` must not normalize specialist-owned technical indecision into legitimate user discovery.
+- `public_message` may say a plan was created, saved, or updated only when `operation_result.succeeded=true` for `upsert_plan`.
+- `ERRO_UPSERT_PLAN_*` forces `plan_status=update_failed`, `action_status=failed`, and `pending_action.kind=plan_review`.
 
-- dono do ciclo de vida do plano
-- discovery quando nao existe plano
-- revisao quando treino/nutricao pedem ajuste estrutural
-- renovacao quando o plano vence ou o objetivo foi atingido
-- persistencia real do plano
-- se a mensagem nao envolve plano ou revisao, emitir `action_status: no_action_needed` e texto minimo
-- nao recebe a persona do treinador; decide o plano em linguagem tecnica
+## Model Matrix
 
-Tools principais:
+| Node | Model | Temperature | Tools | Context |
+|---|---:|---:|---|---|
+| `session_context` | `qwen/qwen3-next-80b-a3b-instruct` | `0.0` | none | neutral history sanitation |
+| `prompt_security` | `google/gemini-2.5-flash-lite` | `0.0` | none | request only |
+| `training_specialist` | `google/gemini-3-flash-preview` | `0.2` | training/Hevy only | no trainer persona |
+| `nutrition_specialist` | `google/gemini-3-flash-preview` | `0.2` | nutrition only | no trainer persona |
+| `plan_specialist` | `openai/gpt-oss-120b` | `0.1` | plan only | training/nutrition analysis |
+| `coach_reply` | `google/gemini-3.1-flash-lite-preview` | `0.2` | none | `coach_handoff` and persona |
+| `memory_hub` | `google/gemini-3.1-flash-lite-preview` | `0.0` | orchestrator-only | specialist results, candidates |
 
-- `get_plan`
-- `upsert_plan`
-- `plan_help`
-- `get_user_goal`
-- `update_user_goal`
-- `get_metabolism_data`
+## Debug Trace
 
-Contrato de saida (schema estrito):
+Graph debug traces include:
 
-- `plan_status`
-- `action_status`
-- `reason`
-- `technical_summary` (texto tecnico interno, sem vocativo ou tom de coaching)
-- `needs_revision`
-- `plan_candidate`
-- `pending_slots`
-- `resolved_slots`
-- `pending_action` (dict com `kind`, `status`, `missing_slots`)
-- `memory_candidates`
-- `event_candidates`
-
-Modelo default:
-
-- `openai/gpt-oss-120b` (com `provider_sort: "throughput"`)
-- `temperature: 0.1`
-- `max_tokens: 6144`
-- `reasoning: { effort: "low", exclude: true }`
-- `parallel_tool_calls: false`
-- `response_format`: json_schema estrito com `pending_action` como objeto tipado e validacao de `technical_summary` material
-
-Notas de configuracao:
+- top-level `specialist_results`
+- top-level `coach_handoff`
+- per-node `specialist_result`
+- state snapshots containing `specialist_results` and `coach_handoff`
 
-- `reasoning` com `effort: "low"` melhora consistencia sem aumentar latencia excessivamente
-- `parallel_tool_calls: false` evita chamadas de ferramentas fora de ordem
-- `max_tokens: 6144` garante espaco para `technical_summary` completo em planos complexos
-- O schema JSON do output forc,a campos tipados especificos, como nos especialistas de dominio
-- Runtime valida coerencia entre `plan_status`, `action_status` e `technical_summary`: se `active`/`created` + `executed` for claims mas `technical_summary` for insuficiente, o runtime rebaixa `plan_status` para `discovery_needed`
-
-### `coach_reply`
-
-Responsabilidade:
-
-- sintetizar treino, nutricao e plano em uma unica resposta final
-- preservar coerencia tecnica
-- aplicar a persona do entrenador sem mudar a semantica
-- responder no idioma predominante da mensagem do usuario com voz nativa, sem traducao literal nem importacao de bordoes do portugues
-- adaptar tambem os rotulos das secoes finais ao idioma escolhido
-- ignorar saidas de especialistas que emitiram no-op
-
-Importante:
-
-- este no substituiu o antigo `general_conversation`
-- estilo e persona foram fundidos aqui para economizar uma passada completa de LLM
-- nao possui tools e nao tem autoridade operacional
-
-Modelo default:
-
-- `google/gemini-3.1-flash-lite-preview`
-
-### `memory_hub`
-
-Responsabilidade:
-
-- decidir e executar memoria/agenda quando isso melhora turnos futuros
-
-Politica de execucao:
-
-- primeiro consome `persistence_candidates` estruturados vindos dos nos anteriores
-- so recorre a LLM quando nao ha candidatos estruturados suficientes
-- executa a acao em codigo com checagem de deduplicacao
-
-Escopo:
-
-- memoria duravel
-- agenda e follow-up
-
-Modelo default:
-
-- `google/gemini-3.1-flash-lite-preview`
-- `response_format`: json_schema estrito com campos `event_action`, `memory_action`, `summary_update`, `reason` e auxiliares
-
-## Fluxo de dados
-
-### Estado compartilhado
-
-O `GraphState` carrega:
-
-- `request`
-- `security`
-- `routing`
-- `shared_context`
-- `node_outputs`
-- `node_metadata`
-- `tools_called`
-- `persistence_actions`
-- `coach_response`
-- `final_response`
-- `specialist_pending_actions` (dict[str, dict] — cada especialista sugere um `pending_action`)
-- `specialist_states` (dict[str, dict] — `action_status` e `action_type` por no)
-- `conversation_state` (dict — `pending_action`, `last_action_status`, `active_domain`)
-
-### Catalogo de contexto
-
-Antes de cada chamada de LLM, o runtime monta um catalogo com blocos como:
-
-- `request`
-- `user_profile`
-- `trainer_identity`
-- `trainer_persona`
-- `agenda`
-- `active_plan`
-- `metabolism`
-- `history_summary`
-- `history_summary_neutral`
-- `training_analysis`
-- `nutrition_analysis`
-- `plan_workspace`
-- `plan_lifecycle`
-- `coach_response`
-- `conversation_state` (JSON serializado do estado cross-turn)
-- `security_result`
-
-Cada no recebe apenas os blocos listados em seu manifesto `context_blocks`.
-
-### Peer inputs
-
-Os outputs textuais de outros nos entram em `PEER_INPUTS` somente quando o
-manifesto do no atual lista esses peers em `peer_inputs`.
-
-## Fluxo de persistencia
-
-Existem dois niveis de persistencia:
-
-### Persistencia de dominio
-
-Executada pelo proprio no especialista:
-
-- treino: `save_workout`, `save_body_composition`
-- nutricao: `save_daily_nutrition`
-- plano: `upsert_plan`, `update_user_goal`
-
-### Persistencia de memoria e agenda
-
-Executada no `memory_hub`:
-
-- `search_memory`, `save_memory`, `update_memory`, `delete_memory`
-- `list_events`, `create_event`, `update_event`, `delete_event`
-
-O runtime prioriza candidatos estruturados:
-
-- `memory_candidates`
-- `event_candidates`
-
-Para eventos recorrentes, o runtime usa `event_recurrence` quando disponivel e so envia `date` para a tool quando houver uma data ISO concreta.
-
-Se nenhum candidato valido existir, o `memory_hub` usa sua propria LLM
-para planejar a acao.
-
-## Modelos atuais por no
-
-| No | Modelo | Destaques de configuracao |
-|---|---|---|---|
-| `session_context` | `openai/gpt-oss-120b` | `temperature: 0.0`, sanitizacao de historico apenas |
-| `prompt_security` | `google/gemini-2.5-flash-lite` | `temperature: 0.0`, json_schema estrito (`status`, `reason`, `sanitized`) |
-| `training_specialist` | `google/gemini-3-flash-preview` | `reasoning: low`, `parallel_tool_calls: false`, `max_tokens: 6144`, `temperature: 0.2`, json_schema estrito |
-| `nutrition_specialist` | `google/gemini-3-flash-preview` | `reasoning: low`, `parallel_tool_calls: false`, `max_tokens: 6144`, `temperature: 0.2`, json_schema estrito |
-| `plan_specialist` | `openai/gpt-oss-120b` | `reasoning: low`, `parallel_tool_calls: false`, `max_tokens: 6144`, `temperature: 0.1`, json_schema estrito, `provider_sort: throughput` |
-| `coach_reply` | `google/gemini-3.1-flash-lite-preview` | `temperature: 0.2`, sintetizador textual (sem schema), invariantes anti-alucinacao |
-| `memory_hub` | `google/gemini-3.1-flash-lite-preview` | `temperature: 0.0`, json_schema estrito (`event_action`, `memory_action`, `summary_update`, `reason`) |
-
-## Estado cross-turn
-
-Apos cada turno, um snapshot `[GRAPH_STATE_V1]` e persistido como SYSTEM message no historico de chat (`conversation_contract.py`). O snapshot contem:
-
-- `active_domain` (derivado deterministicamente apos os especialistas executarem)
-- `pending_action` (resolvido por prioridade pelos especialistas)
-- `last_action_status`
-
-`active_domain` e derivado apos `plan_specialist`, durante `_resolve_pending_actions()`:
-- Se `pending_action.kind` for `plan_discovery`/`plan_review` -> `plan`
-- Se `plan_specialist` atuou materialmente -> `plan`
-- Se `training_specialist` e `nutrition_specialist` atuaram -> `multi_domain`
-- Se so `training_specialist` atuou -> `training`
-- Se so `nutrition_specialist` atuou -> `nutrition`
-- Se nenhum atuou -> `general`
-
-No turno seguinte, `session_context` recupera o snapshot e o injeta em
-`state.conversation_state`. Cada especialista pode ler `conversation_state`
-via `context_blocks` para manter continuidade. Nao ha mais `primary_owner`,
-`interaction_mode`, ou `secondary_nodes`.
-
-Snapshots antigos que contenham `primary_owner` e `interaction_mode` ainda
-sao parseados com sucesso (backward compatible).
-
-## Onde editar
-
-- manifests: `backend/src/services/agents/config/nodes/*.json`
-- prompts: `backend/src/services/agents/config/prompts/*.md`
-- runtime: `backend/src/services/graph/conversation_graph.py`
-- contrato de estado: `backend/src/services/graph/conversation_contract.py`
-- contrato de contexto: `backend/src/services/PROMPT_CONTEXT.md`
-
-## Como validar
-
-Minimo recomendado:
-
-1. `cd backend && .venv/bin/pytest tests/unit/services/test_agent_config_registry.py tests/unit/services/test_conversation_graph.py tests/unit/services/test_conversation_contract.py tests/unit/services/test_node_tool_policy.py tests/unit/core/test_experimental_graph_flag.py`
-2. `cd backend && .venv/bin/ruff check src tests`
-3. `cd backend && .venv/bin/pylint src`
-
-Validacao manual importante:
-
-- inspecionar traces `graph.*`
-- confirmar ordem real dos nos (linear, sem saltos condicionais)
-- confirmar tools chamadas por no
-- confirmar que `coach_reply` ja entrega a resposta final sem segunda passada
-- confirmar que especialistas sem acao relevante emitem `no_action_needed`
+These fields are the source of truth for verifying whether a tool action was attempted, succeeded, failed, or withheld from the coach and memory layers.

@@ -26,7 +26,7 @@ def valid_payload() -> dict:
         },
         'training_program': {
             'split_name': 'upper_lower',
-            'frequency_per_week': 4,
+            'frequency_per_week': 1,
             'session_duration_min': 55,
             'routines': [
                 {

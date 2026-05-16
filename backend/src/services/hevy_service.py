@@ -395,6 +395,25 @@ class HevyService:
                 logger.error("Failed to fetch routines: %s", e)
                 return None
 
+    async def get_all_routines(self, api_key: str, max_pages: int = 100) -> list[HevyRoutine]:
+        """Fetch all visible routines from Hevy across paginated responses."""
+        all_routines: list[HevyRoutine] = []
+        page = 1
+
+        while page <= max_pages:
+            response = await self.get_routines(api_key, page=page, page_size=10)
+            if not response or not response.routines:
+                break
+            all_routines.extend(response.routines)
+            if page >= response.page_count:
+                break
+            page += 1
+
+        if page > max_pages:
+            logger.warning("get_all_routines hit safeguard page limit: %d", max_pages)
+
+        return all_routines
+
     async def get_routine_by_id(
         self, api_key: str, routine_id: str
     ) -> Optional[HevyRoutine]:

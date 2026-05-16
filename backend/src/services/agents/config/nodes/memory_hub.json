@@ -46,17 +46,11 @@
   "version": "v3",
   "context_blocks": [
     "request",
-    "coach_response",
-    "training_analysis",
-    "nutrition_analysis",
-    "plan_workspace",
+    "specialist_results",
+    "persistence_candidates",
     "conversation_summary"
   ],
-  "peer_inputs": [
-    "coach_reply",
-    "training_specialist",
-    "nutrition_specialist"
-  ],
+  "peer_inputs": [],
   "persona_mode": "none",
   "output_contract": "json(event_action,memory_action,summary_update,reason,...)",
   "provider_sort": "throughput"

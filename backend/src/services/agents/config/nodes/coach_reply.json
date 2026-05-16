@@ -13,19 +13,11 @@
   "context_blocks": [
     "request",
     "user_locale",
+    "coach_handoff",
     "trainer_persona",
-    "history_summary",
-    "training_analysis",
-    "nutrition_analysis",
-    "plan_workspace",
-    "active_plan",
-    "metabolism"
+    "history_summary"
   ],
-  "peer_inputs": [
-    "training_specialist",
-    "nutrition_specialist",
-    "plan_specialist"
-  ],
+  "peer_inputs": [],
   "persona_mode": "final_only",
   "output_contract": "text",
   "provider_sort": "throughput"

@@ -48,6 +48,52 @@ _EVENT_LINE_PATTERN = re.compile(
     r"- \*\*(?P<title>.+?)\*\* \((?P<id>[a-f0-9-]{8,})\)\n\s+📅 (?P<date>[^\n|]+)",
     re.IGNORECASE,
 )
+_TRAINING_SPECIALIST_OWNED_SLOTS = {
+    "exercise_sets",
+    "exercise_reps",
+    "load_guidance",
+    "rest_guidance",
+    "progression_scheme",
+}
+_NUTRITION_SPECIALIST_OWNED_SLOTS = {
+    "calories",
+    "protein_target",
+    "carb_target",
+    "fat_target",
+    "macro_split",
+    "adherence_strategy",
+}
+_SPECIALIST_DELEGATION_PATTERNS = [
+    r"\bdecid[ea]\s+voce\b",
+    r"\bdecide\s+voce\b",
+    r"\bvoc[eê]\s+[ée]\s+meu\s+treinador\b",
+    r"\bfaz\s+do\s+jeito\s+que\s+voc[eê]\s+achar\s+melhor\b",
+    r"\bdo\s+what\s+you\s+think\s+is\s+best\b",
+    r"\byou\s+are\s+my\s+trainer\b",
+]
+_ACTION_STATUS_ALIASES = {
+    "success": ActionStatus.EXECUTED.value,
+    "succeeded": ActionStatus.EXECUTED.value,
+    "complete": ActionStatus.EXECUTED.value,
+    "completed": ActionStatus.EXECUTED.value,
+    "error": ActionStatus.FAILED.value,
+}
+_TRAINING_PERSISTENCE_STATUS_TOKENS = {
+    "plan_updated",
+    "updated",
+    "routine_updated",
+    "training_program_updated",
+}
+_TRAINING_PERSISTENCE_TEXT_PATTERNS = [
+    r"\bsubstitu[íi]\b",
+    r"\batualizei\b",
+    r"\btroquei\b",
+    r"\bsalvei\b",
+    r"\bpersisti\b",
+    r"\breplacei\b",
+    r"\bupdated\b",
+    r"\bsaved\b",
+]
 
 
 @dataclass
@@ -78,6 +124,8 @@ class GraphState:
     conversation_state: dict[str, Any] = field(default_factory=default_conversation_state)
     specialist_states: dict[str, dict[str, Any]] = field(default_factory=dict)
     specialist_pending_actions: dict[str, dict[str, Any]] = field(default_factory=dict)
+    specialist_results: dict[str, dict[str, Any]] = field(default_factory=dict)
+    coach_handoff: list[dict[str, Any]] = field(default_factory=list)
     request: dict[str, Any] = field(default_factory=dict)
     security: dict[str, Any] = field(default_factory=dict)
     routing: dict[str, Any] = field(default_factory=dict)
@@ -109,6 +157,8 @@ class GraphState:
             "tools_called": self.tools_called,
             "node_outcomes": self.node_metadata,
             "node_outputs": self.node_outputs,
+            "specialist_results": self.specialist_results,
+            "coach_handoff": self.coach_handoff,
         }
 
 
@@ -341,18 +391,85 @@ class ConversationGraphRunner:
     def _resolve_pending_actions(self, state: GraphState) -> None:
         """Merge specialist pending_action suggestions using priority."""
         merged = resolve_pending_action(state.specialist_pending_actions)
+        merged = self._sanitize_pending_action_payload(merged)
         last_action = ActionStatus.NO_ACTION_NEEDED.value
+        observed_statuses: list[str] = []
         for node_name in ("training_specialist", "nutrition_specialist", "plan_specialist"):
             spec = state.specialist_states.get(node_name, {})
             status = spec.get("action_status", "")
-            if status and status != ActionStatus.NO_ACTION_NEEDED.value:
-                last_action = status
-                break
+            if status:
+                observed_statuses.append(status)
+        if ActionStatus.FAILED.value in observed_statuses:
+            last_action = ActionStatus.FAILED.value
+        elif ActionStatus.EXECUTED.value in observed_statuses:
+            last_action = ActionStatus.EXECUTED.value
+        elif ActionStatus.NEEDS_USER_INPUT.value in observed_statuses:
+            last_action = ActionStatus.NEEDS_USER_INPUT.value
         state.conversation_state["pending_action"] = merged
         state.conversation_state["last_action_status"] = last_action
         active_domain = self._derive_active_domain(state)
         state.conversation_state["active_domain"] = active_domain
         state.routing["intent"] = active_domain
+
+    @staticmethod
+    def _specialist_owned_slots(domain: str) -> set[str]:
+        if domain == "training":
+            return set(_TRAINING_SPECIALIST_OWNED_SLOTS)
+        if domain == "nutrition":
+            return set(_NUTRITION_SPECIALIST_OWNED_SLOTS)
+        return set()
+
+    @classmethod
+    def _are_only_specialist_owned_slots(
+        cls,
+        domain: str,
+        slots: list[str],
+    ) -> bool:
+        normalized = [str(slot).strip() for slot in slots if str(slot).strip()]
+        if not normalized:
+            return False
+        owned = cls._specialist_owned_slots(domain)
+        return all(slot in owned for slot in normalized)
+
+    @classmethod
+    def _sanitize_pending_action_payload(cls, pending_action: dict[str, Any]) -> dict[str, Any]:
+        sanitized = cls._normalize_pending_action(pending_action)
+        slots = sanitized.get("missing_slots", [])
+        if (
+            sanitized.get("kind") == "plan_review"
+            and (
+                cls._are_only_specialist_owned_slots("training", slots)
+                or cls._are_only_specialist_owned_slots("nutrition", slots)
+            )
+        ):
+            return {
+                "kind": "none",
+                "status": "no_action_needed",
+                "missing_slots": [],
+            }
+        return sanitized
+
+    @classmethod
+    def _sanitize_conversation_state_payload(cls, payload: dict[str, Any] | None) -> dict[str, Any]:
+        if not isinstance(payload, dict):
+            return default_conversation_state()
+        sanitized = copy.deepcopy(payload)
+        pending_action = cls._sanitize_pending_action_payload(
+            sanitized.get("pending_action", {})
+        )
+        sanitized["pending_action"] = pending_action
+        if pending_action.get("kind") == "none":
+            last_action = str(sanitized.get("last_action_status", "")).strip()
+            if last_action == ActionStatus.NEEDS_USER_INPUT.value:
+                sanitized["last_action_status"] = ActionStatus.NO_ACTION_NEEDED.value
+        if not sanitized.get("active_domain"):
+            sanitized["active_domain"] = "general"
+        return sanitized
+
+    @staticmethod
+    def _user_delegated_specialist_decision(message: str) -> bool:
+        lowered = message.lower()
+        return any(re.search(pattern, lowered) for pattern in _SPECIALIST_DELEGATION_PATTERNS)
 
     @staticmethod
     def _derive_active_domain(state: GraphState) -> str:
@@ -476,6 +593,10 @@ class ConversationGraphRunner:
                 state.node_metadata[node_name]["pending_action"] = copy.deepcopy(
                     state.specialist_pending_actions[node_name]
                 )
+            if node_name in state.specialist_results:
+                state.node_metadata[node_name]["specialist_result"] = copy.deepcopy(
+                    state.specialist_results[node_name]
+                )
             node_completed_at = datetime.utcnow()
             state.node_metadata[node_name]["completed_at"] = node_completed_at.isoformat()
             state.node_metadata[node_name]["duration_ms"] = int(
@@ -494,6 +615,8 @@ class ConversationGraphRunner:
             "conversation_state",
             "specialist_states",
             "specialist_pending_actions",
+            "specialist_results",
+            "coach_handoff",
             "tools_called",
             "persistence_actions",
             "plan_needs_revision",
@@ -541,6 +664,242 @@ class ConversationGraphRunner:
             return json.loads(stripped)
         except (json.JSONDecodeError, ValueError):
             return None
+
+    @staticmethod
+    def _default_operation_result() -> dict[str, Any]:
+        return {
+            "attempted": False,
+            "succeeded": False,
+            "tool_name": "",
+            "error_code": "",
+            "evidence": "",
+        }
+
+    @classmethod
+    def _normalize_operation_result(cls, raw: Any) -> dict[str, Any]:
+        result = cls._default_operation_result()
+        if isinstance(raw, dict):
+            result["attempted"] = bool(raw.get("attempted", False))
+            result["succeeded"] = bool(raw.get("succeeded", False))
+            result["tool_name"] = str(
+                raw.get("tool_name", raw.get("action_name", ""))
+            ).strip()
+            result["error_code"] = str(raw.get("error_code", "")).strip()
+            result["evidence"] = str(
+                raw.get("evidence", raw.get("details", ""))
+            ).strip()
+        return result
+
+    @staticmethod
+    def _normalize_action_status(raw: Any) -> tuple[str, bool]:
+        status = str(raw or "").strip().lower()
+        allowed = {
+            ActionStatus.EXECUTED.value,
+            ActionStatus.FAILED.value,
+            ActionStatus.NEEDS_USER_INPUT.value,
+            ActionStatus.NO_ACTION_NEEDED.value,
+        }
+        if status in allowed:
+            return status, False
+        alias = _ACTION_STATUS_ALIASES.get(status)
+        if alias:
+            return alias, True
+        return ActionStatus.FAILED.value, True
+
+    @staticmethod
+    def _normalize_plan_payload(raw: Any) -> dict[str, Any]:
+        if not isinstance(raw, dict):
+            return {}
+        return copy.deepcopy(raw)
+
+    @classmethod
+    def _extract_plan_signal_and_payload(cls, parsed: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+        raw_signal = parsed.get("plan_signal", "")
+        if isinstance(raw_signal, dict):
+            signal = str(raw_signal.get("type", "")).strip()
+            payload = cls._normalize_plan_payload(raw_signal.get("payload"))
+            return signal, payload
+        signal = str(raw_signal).strip()
+        payload = cls._normalize_plan_payload(parsed.get("plan_payload"))
+        return signal, payload
+
+    @staticmethod
+    def _has_structured_training_plan_payload(payload: dict[str, Any]) -> bool:
+        if not isinstance(payload, dict) or not payload:
+            return False
+        change_type = str(payload.get("change_type", "")).strip().lower()
+        if change_type == "exercise_replacement":
+            routine_name = str(payload.get("routine_name", "")).strip()
+            old_exercise = str(payload.get("old_exercise", "")).strip()
+            new_exercise = payload.get("new_exercise", {})
+            if not isinstance(new_exercise, dict):
+                return False
+            new_name = str(new_exercise.get("name", "")).strip()
+            sets = new_exercise.get("sets")
+            reps = str(new_exercise.get("reps", "")).strip()
+            effort = str(new_exercise.get("rpe", new_exercise.get("rir", ""))).strip()
+            rest = str(new_exercise.get("rest", "")).strip()
+            return bool(
+                routine_name and old_exercise and new_name and sets and reps and (effort or rest)
+            )
+        return False
+
+    @staticmethod
+    def _training_claimed_plan_persistence(
+        domain_status: str,
+        public_message: str,
+        internal_analysis: str,
+        operation_result: dict[str, Any],
+    ) -> bool:
+        tool_name = str(operation_result.get("tool_name", "")).strip().lower()
+        if tool_name == "upsert_plan":
+            return False
+        if domain_status.strip().lower() in _TRAINING_PERSISTENCE_STATUS_TOKENS:
+            return True
+        text = " ".join([public_message, internal_analysis]).lower()
+        return any(re.search(pattern, text) for pattern in _TRAINING_PERSISTENCE_TEXT_PATTERNS)
+
+    @staticmethod
+    def _operation_result_from_tool_results(
+        state: GraphState,
+        node_name: str,
+        tool_name: str,
+    ) -> dict[str, Any] | None:
+        tool_results = state.node_metadata.get(node_name, {}).get("tool_results", [])
+        if not isinstance(tool_results, list):
+            return None
+        matching = [
+            result
+            for result in tool_results
+            if isinstance(result, dict) and result.get("tool_name") == tool_name
+        ]
+        if not matching:
+            return None
+
+        last_result = matching[-1]
+        content = str(last_result.get("content", ""))
+        status = str(last_result.get("status", "")).strip().lower()
+        error_match = re.search(r"\bERRO_[A-Z0-9_]+\b", content)
+        error_code = error_match.group(0) if error_match else ""
+        evidence = ""
+        if "PLANO_NAO_SALVO" in content:
+            evidence = "PLANO_NAO_SALVO"
+        elif error_code:
+            evidence = "TOOL_ERROR"
+
+        failed = bool(error_code or evidence == "PLANO_NAO_SALVO" or status in {"error", "failed"})
+        succeeded = "PLANO_SALVO" in content or status in {"success", "succeeded", "ok"}
+        if not failed and not succeeded:
+            return None
+        return {
+            "attempted": True,
+            "succeeded": succeeded and not failed,
+            "tool_name": tool_name,
+            "error_code": error_code,
+            "evidence": evidence or ("PLANO_SALVO" if succeeded else ""),
+        }
+
+    @staticmethod
+    def _normalize_pending_action(raw: Any) -> dict[str, Any]:
+        if isinstance(raw, dict):
+            missing_slots = raw.get("missing_slots", [])
+            if not isinstance(missing_slots, list):
+                missing_slots = []
+            return {
+                "kind": str(raw.get("kind", "none")).strip() or "none",
+                "status": str(raw.get("status", "no_action_needed")).strip() or "no_action_needed",
+                "missing_slots": [str(item) for item in missing_slots],
+            }
+        return {
+            "kind": "none",
+            "status": "no_action_needed",
+            "missing_slots": [],
+        }
+
+    @classmethod
+    def _record_specialist_result(
+        cls,
+        state: GraphState,
+        node_name: str,
+        parsed: dict[str, Any],
+        domain_status: str,
+        plan_signal: str,
+        pending_action: dict[str, Any],
+    ) -> dict[str, Any]:
+        missing_inputs = parsed.get("missing_inputs", parsed.get("pending_slots", []))
+        if not isinstance(missing_inputs, list):
+            missing_inputs = []
+        action_status = str(parsed.get("action_status", "no_action_needed")).strip() or "no_action_needed"
+        action_type = str(parsed.get("action_type", parsed.get("plan_status", "analyze"))).strip() or "analyze"
+        public_message = str(parsed.get("public_message", "")).strip()
+        internal_analysis = str(
+            parsed.get(
+                "internal_analysis",
+                parsed.get("technical_summary", parsed.get("analysis_text", "")),
+            )
+        ).strip()
+        operation_result = cls._normalize_operation_result(parsed.get("operation_result"))
+        if (
+            action_status == ActionStatus.EXECUTED.value
+            and operation_result["attempted"]
+            and not operation_result["succeeded"]
+        ):
+            action_status = ActionStatus.FAILED.value
+            if not public_message:
+                public_message = "Nao consegui concluir a acao solicitada; ela nao foi salva."
+        result = {
+            "node_name": node_name,
+            "action_status": action_status,
+            "action_type": action_type,
+            "domain_status": domain_status,
+            "public_message": public_message,
+            "internal_analysis": internal_analysis,
+            "missing_inputs": [str(item) for item in missing_inputs],
+            "plan_signal": plan_signal,
+            "plan_payload": copy.deepcopy(parsed.get("plan_payload", {}))
+            if isinstance(parsed.get("plan_payload"), dict)
+            else {},
+            "pending_action": pending_action,
+            "operation_result": operation_result,
+        }
+        state.specialist_results[node_name] = result
+        state.specialist_states[node_name] = {
+            "action_status": action_status,
+            "action_type": action_type,
+        }
+        state.specialist_pending_actions[node_name] = pending_action
+        return result
+
+    @staticmethod
+    def _append_coach_handoff(
+        state: GraphState,
+        node_name: str,
+        label: str,
+        result: dict[str, Any],
+    ) -> None:
+        public_message = str(result.get("public_message", "")).strip()
+        if not public_message:
+            return
+        state.coach_handoff.append(
+            {
+                "source": node_name,
+                "label": label,
+                "action_status": result.get("action_status", ""),
+                "public_message": public_message,
+                "operation_result": result.get(
+                    "operation_result",
+                    ConversationGraphRunner._default_operation_result(),
+                ),
+            }
+        )
+
+    @staticmethod
+    def _has_failed_material_operation(state: GraphState) -> bool:
+        return any(
+            result.get("operation_result", {}).get("attempted") is True
+            and result.get("operation_result", {}).get("succeeded") is False
+            for result in state.specialist_results.values()
+        )
 
     def _build_timeline_summary(self, state: GraphState) -> dict:
         slowest = None
@@ -625,6 +984,7 @@ class ConversationGraphRunner:
                 "state_after": meta.get("state_after"),
                 "state_diff": meta.get("state_diff"),
                 "specialist_state": meta.get("specialist_state"),
+                "specialist_result": meta.get("specialist_result"),
                 "pending_action": meta.get("pending_action"),
             }
             nodes.append(node_entry)
@@ -647,6 +1007,8 @@ class ConversationGraphRunner:
             "final_response": state.final_response,
             "technical_response": state.coach_response,
             "node_outputs": state.node_outputs,
+            "specialist_results": copy.deepcopy(state.specialist_results),
+            "coach_handoff": copy.deepcopy(state.coach_handoff),
             "nodes": nodes,
             "graph_error": graph_error,
             "request_payload_sanitized": state.request.get("sanitized_input", ""),
@@ -685,7 +1047,26 @@ class ConversationGraphRunner:
         ]
         previous_state = parse_latest_snapshot(raw_system_msgs)
         if previous_state:
-            state.conversation_state = previous_state
+            state.conversation_state = self._sanitize_conversation_state_payload(previous_state)
+        if self._user_delegated_specialist_decision(
+            state.user_input_sanitized or state.user_input_raw
+        ):
+            state.conversation_state = self._sanitize_conversation_state_payload(
+                state.conversation_state
+            )
+            pending_action = state.conversation_state.get("pending_action", {})
+            slots = pending_action.get("missing_slots", []) if isinstance(pending_action, dict) else []
+            if (
+                self._are_only_specialist_owned_slots("training", slots)
+                or self._are_only_specialist_owned_slots("nutrition", slots)
+            ):
+                state.conversation_state["pending_action"] = {
+                    "kind": "none",
+                    "status": "no_action_needed",
+                    "missing_slots": [],
+                }
+                if state.conversation_state.get("last_action_status") == ActionStatus.NEEDS_USER_INPUT.value:
+                    state.conversation_state["last_action_status"] = ActionStatus.NO_ACTION_NEEDED.value
         conversation_summary = parse_latest_summary(raw_system_msgs)
         input_data = self._brain.prompt_builder.build_input_data(
             profile=profile,
@@ -913,41 +1294,171 @@ class ConversationGraphRunner:
     async def _node_training_specialist(self, state: GraphState) -> None:
         peer_output = state.node_outputs.get("nutrition_specialist", "")
         peer_block = f"\n\nANALISE_NUTRICAO:\n{peer_output}" if peer_output else ""
+        base_extra_context = f"{self._shared_context_payload(state)}{peer_block}"
         response = await self._run_llm_node(
             node_name="training_specialist",
             state=state,
-            extra_context=f"{self._shared_context_payload(state)}{peer_block}",
+            extra_context=base_extra_context,
             allowed_tools=get_node_llm_tools("training_specialist"),
         )
         parsed = self._parse_json_object(response)
-        technical_summary = str(parsed.get("technical_summary", "")).strip()
-        analysis_text = str(parsed.get("analysis_text", "")).strip()
         domain_status = str(parsed.get("domain_status", "generated")).strip() or "generated"
-        plan_signal = str(parsed.get("plan_signal", "")).strip()
-        action_status = str(parsed.get("action_status", "no_action_needed")).strip()
+        plan_signal, plan_payload = self._extract_plan_signal_and_payload(parsed)
+        action_status, action_status_normalized = self._normalize_action_status(
+            parsed.get("action_status", "no_action_needed")
+        )
         action_type = str(parsed.get("action_type", "analyze")).strip()
+        public_message = str(parsed.get("public_message", "")).strip()
+        internal_analysis = str(
+            parsed.get(
+                "internal_analysis",
+                parsed.get("technical_summary", parsed.get("analysis_text", "")),
+            )
+        ).strip()
+        operation_result = self._normalize_operation_result(parsed.get("operation_result"))
+        is_plan_context = self._is_training_plan_context(state)
+        if action_status_normalized and action_status == ActionStatus.FAILED.value and not public_message:
+            public_message = "A saida do especialista de treino ficou invalida para este contrato."
+        if is_plan_context and self._training_claimed_plan_persistence(
+            domain_status,
+            public_message,
+            internal_analysis,
+            operation_result,
+        ):
+            if domain_status.lower() in _TRAINING_PERSISTENCE_STATUS_TOKENS:
+                domain_status = "generated"
+            if action_type.lower() in {"update_plan", "plan_update"}:
+                action_type = "analyze_plan_change"
+            public_message = ""
         missing_inputs = parsed.get("missing_inputs", [])
         if not isinstance(missing_inputs, list):
             missing_inputs = []
-        pending_action = parsed.get("pending_action", {})
-        if not isinstance(pending_action, dict):
+        pending_action = self._normalize_pending_action(parsed.get("pending_action"))
+        invalid_specialist_owned_question = (
+            action_status == ActionStatus.NEEDS_USER_INPUT.value
+            and self._are_only_specialist_owned_slots(
+                "training",
+                pending_action.get("missing_slots", missing_inputs) or missing_inputs,
+            )
+        )
+        if invalid_specialist_owned_question and self._is_training_plan_context(state):
+            retry_response = await self._run_llm_node(
+                node_name="training_specialist",
+                state=state,
+                extra_context=(
+                    f"{base_extra_context}\n\n"
+                    "RUNTIME_CORRECTION:\n"
+                    "Your previous output asked the user for specialist-owned training parameters. "
+                    "This is invalid. Decide sets, reps, load guidance, rest guidance, and progression "
+                    "yourself from the active plan, history, and tool context. Return material "
+                    "internal_analysis and do not ask the user for those parameters."
+                ),
+                allowed_tools=get_node_llm_tools("training_specialist"),
+            )
+            retry_parsed = self._parse_json_object(retry_response)
+            if retry_parsed:
+                parsed = retry_parsed
+                domain_status = str(parsed.get("domain_status", "generated")).strip() or "generated"
+                plan_signal, plan_payload = self._extract_plan_signal_and_payload(parsed)
+                action_status, action_status_normalized = self._normalize_action_status(
+                    parsed.get("action_status", "no_action_needed")
+                )
+                action_type = str(parsed.get("action_type", "analyze")).strip()
+                public_message = str(parsed.get("public_message", "")).strip()
+                internal_analysis = str(
+                    parsed.get(
+                        "internal_analysis",
+                        parsed.get("technical_summary", parsed.get("analysis_text", "")),
+                    )
+                ).strip()
+                operation_result = self._normalize_operation_result(parsed.get("operation_result"))
+                if action_status_normalized and action_status == ActionStatus.FAILED.value and not public_message:
+                    public_message = "A saida do especialista de treino ficou invalida para este contrato."
+                if is_plan_context and self._training_claimed_plan_persistence(
+                    domain_status,
+                    public_message,
+                    internal_analysis,
+                    operation_result,
+                ):
+                    if domain_status.lower() in _TRAINING_PERSISTENCE_STATUS_TOKENS:
+                        domain_status = "generated"
+                    if action_type.lower() in {"update_plan", "plan_update"}:
+                        action_type = "analyze_plan_change"
+                    public_message = ""
+                missing_inputs = parsed.get("missing_inputs", [])
+                if not isinstance(missing_inputs, list):
+                    missing_inputs = []
+                pending_action = self._normalize_pending_action(parsed.get("pending_action"))
+            invalid_specialist_owned_question = (
+                action_status == ActionStatus.NEEDS_USER_INPUT.value
+                and self._are_only_specialist_owned_slots(
+                    "training",
+                    pending_action.get("missing_slots", missing_inputs) or missing_inputs,
+                )
+            )
+        tools_called = state.node_metadata.get("training_specialist", {}).get("tools_called", [])
+        if (
+            action_type == "execute_routine"
+            and action_status == "executed"
+            and not tools_called
+        ):
+            action_status = "failed"
+            domain_status = "insufficient_detail"
+            plan_signal = plan_signal or "missing_execution_evidence"
+            operation_result = {
+                "attempted": True,
+                "succeeded": False,
+                "tool_name": "",
+                "error_code": "MISSING_TOOL_EVIDENCE",
+                "evidence": "NO_TOOL_CALL_RECORDED",
+            }
+            public_message = public_message or (
+                "Nao consegui criar ou atualizar a rotina porque nenhuma ferramenta confirmou a acao."
+            )
+            internal_analysis = (
+                "Ação de treino declarou execução sem evidência de tool neste turno. "
+                "Confirmação adicional é necessária."
+            )
+        if invalid_specialist_owned_question:
+            action_status = ActionStatus.FAILED.value
+            domain_status = "specialist_role_violation"
+            plan_signal = plan_signal or "specialist_role_violation"
+            public_message = ""
+            internal_analysis = (
+                "Training specialist requested specialist-owned technical parameters from the "
+                "user during plan review. This violates decision ownership."
+            )
+            missing_inputs = []
+            plan_payload = {}
             pending_action = {
                 "kind": "none",
                 "status": "no_action_needed",
                 "missing_slots": [],
             }
-        is_plan_context = self._is_training_plan_context(state)
-        coach_text = technical_summary or analysis_text or response
-        plan_text = technical_summary
-        if is_plan_context and not self._has_material_training_summary(technical_summary):
+        plan_text = internal_analysis
+        if (
+            is_plan_context
+            and domain_status != "specialist_role_violation"
+            and not (
+                self._has_material_training_summary(internal_analysis)
+                or self._has_structured_training_plan_payload(plan_payload)
+            )
+        ):
             if not plan_signal:
                 plan_signal = "insufficient_training_detail"
             domain_status = "insufficient_detail"
             plan_text = ""
+            internal_analysis = ""
+            plan_payload = {}
+            if action_status != "no_action_needed":
+                public_message = public_message or (
+                    "A contribuicao de treino ainda esta insuficiente para criar ou revisar o plano com seguranca."
+                )
         state.shared_context["training_analysis"] = {
             "status": domain_status,
             "text": plan_text,
             "plan_signal": plan_signal,
+            "plan_payload": copy.deepcopy(plan_payload),
             "missing_inputs": missing_inputs,
             "action_status": action_status,
         }
@@ -956,12 +1467,22 @@ class ConversationGraphRunner:
             memory_candidates=parsed.get("memory_candidates"),
             event_candidates=parsed.get("event_candidates"),
         )
-        state.specialist_pending_actions["training_specialist"] = pending_action
-        state.specialist_states["training_specialist"] = {
-            "action_status": action_status,
-            "action_type": action_type,
-        }
-        state.node_outputs["training_specialist"] = coach_text
+        parsed["action_status"] = action_status
+        parsed["action_type"] = action_type
+        parsed["public_message"] = public_message
+        parsed["internal_analysis"] = internal_analysis
+        parsed["plan_payload"] = copy.deepcopy(plan_payload)
+        parsed["operation_result"] = operation_result
+        result = self._record_specialist_result(
+            state,
+            "training_specialist",
+            parsed,
+            domain_status,
+            plan_signal,
+            pending_action,
+        )
+        self._append_coach_handoff(state, "training_specialist", "TREINO", result)
+        state.node_outputs["training_specialist"] = internal_analysis
 
     @staticmethod
     def _has_material_plan_summary(text: str) -> bool:
@@ -1027,30 +1548,69 @@ class ConversationGraphRunner:
             allowed_tools=get_node_llm_tools("nutrition_specialist"),
         )
         parsed = self._parse_json_object(response)
-        technical_summary = str(parsed.get("technical_summary", "")).strip()
-        analysis_text = str(parsed.get("analysis_text", "")).strip()
         domain_status = str(parsed.get("domain_status", "generated")).strip() or "generated"
         plan_signal = str(parsed.get("plan_signal", "")).strip()
         action_status = str(parsed.get("action_status", "no_action_needed")).strip()
         action_type = str(parsed.get("action_type", "analyze")).strip()
+        public_message = str(parsed.get("public_message", "")).strip()
+        internal_analysis = str(
+            parsed.get(
+                "internal_analysis",
+                parsed.get("technical_summary", parsed.get("analysis_text", "")),
+            )
+        ).strip()
+        operation_result = self._normalize_operation_result(parsed.get("operation_result"))
         missing_inputs = parsed.get("missing_inputs", [])
         if not isinstance(missing_inputs, list):
             missing_inputs = []
-        pending_action = parsed.get("pending_action", {})
-        if not isinstance(pending_action, dict):
+        pending_action = self._normalize_pending_action(parsed.get("pending_action"))
+        invalid_specialist_owned_question = (
+            action_status == ActionStatus.NEEDS_USER_INPUT.value
+            and self._are_only_specialist_owned_slots(
+                "nutrition",
+                pending_action.get("missing_slots", missing_inputs) or missing_inputs,
+            )
+        )
+        if (
+            action_status == "executed"
+            and operation_result["attempted"]
+            and not operation_result["succeeded"]
+        ):
+            action_status = "failed"
+            public_message = public_message or (
+                "Nao consegui ajustar ou salvar a informacao nutricional solicitada."
+            )
+        if invalid_specialist_owned_question:
+            action_status = ActionStatus.FAILED.value
+            domain_status = "specialist_role_violation"
+            plan_signal = plan_signal or "specialist_role_violation"
+            public_message = ""
+            internal_analysis = (
+                "Nutrition specialist requested specialist-owned technical parameters from "
+                "the user. This violates decision ownership."
+            )
+            missing_inputs = []
             pending_action = {
                 "kind": "none",
                 "status": "no_action_needed",
                 "missing_slots": [],
             }
         is_plan_context = self._is_nutrition_plan_context(state)
-        coach_text = technical_summary or analysis_text or response
-        plan_text = technical_summary
-        if is_plan_context and not self._has_material_nutrition_summary(technical_summary):
+        plan_text = internal_analysis
+        if (
+            is_plan_context
+            and domain_status != "specialist_role_violation"
+            and not self._has_material_nutrition_summary(internal_analysis)
+        ):
             if not plan_signal:
                 plan_signal = "insufficient_nutrition_detail"
             domain_status = "insufficient_detail"
             plan_text = ""
+            internal_analysis = ""
+            if action_status != "no_action_needed":
+                public_message = public_message or (
+                    "A contribuicao de nutricao ainda esta insuficiente para criar ou revisar o plano com seguranca."
+                )
         state.shared_context["nutrition_analysis"] = {
             "status": domain_status,
             "text": plan_text,
@@ -1063,12 +1623,21 @@ class ConversationGraphRunner:
             memory_candidates=parsed.get("memory_candidates"),
             event_candidates=parsed.get("event_candidates"),
         )
-        state.specialist_pending_actions["nutrition_specialist"] = pending_action
-        state.specialist_states["nutrition_specialist"] = {
-            "action_status": action_status,
-            "action_type": action_type,
-        }
-        state.node_outputs["nutrition_specialist"] = coach_text
+        parsed["action_status"] = action_status
+        parsed["action_type"] = action_type
+        parsed["public_message"] = public_message
+        parsed["internal_analysis"] = internal_analysis
+        parsed["operation_result"] = operation_result
+        result = self._record_specialist_result(
+            state,
+            "nutrition_specialist",
+            parsed,
+            domain_status,
+            plan_signal,
+            pending_action,
+        )
+        self._append_coach_handoff(state, "nutrition_specialist", "NUTRICAO", result)
+        state.node_outputs["nutrition_specialist"] = internal_analysis
 
     async def _node_plan_specialist(self, state: GraphState) -> None:
         active_domain = state.conversation_state.get("active_domain", "general")
@@ -1089,7 +1658,21 @@ class ConversationGraphRunner:
         plan_status = str(parsed.get("plan_status", "")).strip()
         reason = str(parsed.get("reason", "")).strip()
         plan_candidate = str(parsed.get("plan_candidate", "")).strip()
-        technical_summary = str(parsed.get("technical_summary", "")).strip()
+        public_message = str(parsed.get("public_message", "")).strip()
+        internal_analysis = str(
+            parsed.get("internal_analysis", parsed.get("technical_summary", ""))
+        ).strip()
+        operation_result = self._normalize_operation_result(parsed.get("operation_result"))
+        tool_operation_result = self._operation_result_from_tool_results(
+            state,
+            "plan_specialist",
+            "upsert_plan",
+        )
+        if tool_operation_result is not None and (
+            not tool_operation_result["succeeded"]
+            or not operation_result["attempted"]
+        ):
+            operation_result = tool_operation_result
         action_status = str(parsed.get("action_status", "no_action_needed")).strip()
         pending_slots = parsed.get("pending_slots", [])
         if not isinstance(pending_slots, list):
@@ -1097,36 +1680,110 @@ class ConversationGraphRunner:
         resolved_slots = parsed.get("resolved_slots", [])
         if not isinstance(resolved_slots, list):
             resolved_slots = []
-        pending_action = parsed.get("pending_action", {})
-        if not isinstance(pending_action, dict):
+        pending_action = self._normalize_pending_action(parsed.get("pending_action"))
+        if (
+            plan_status in ("active", "created", "updated")
+            and action_status == "executed"
+            and not operation_result.get("succeeded")
+        ):
+            plan_status = "update_failed"
+            action_status = "failed"
+            public_message = public_message or (
+                "Nao consegui salvar a atualizacao do plano."
+            )
+        if str(operation_result.get("error_code", "")).startswith("ERRO_UPSERT_PLAN_"):
+            plan_status = "update_failed"
+            action_status = "failed"
+            pending_action = {
+                "kind": "plan_review",
+                "status": "needs_user_input",
+                "missing_slots": pending_action.get("missing_slots", []),
+            }
+        is_claiming_success = (
+            plan_status in ("active", "created", "updated")
+            and action_status == "executed"
+        )
+        if is_claiming_success and not self._has_material_plan_summary(internal_analysis):
+            plan_status = "discovery_needed"
+            action_status = "needs_user_input"
+            internal_analysis = (
+                "Plano reivindicou conclusao mas a analise interna e insuficiente. "
+                "Discovery necessario."
+            )
+            public_message = public_message or (
+                "Ainda falta informacao para concluir a atualizacao do plano com seguranca."
+            )
+        training_analysis = state.shared_context.get("training_analysis", {})
+        nutrition_analysis = state.shared_context.get("nutrition_analysis", {})
+        training_status = str(training_analysis.get("status", "")).strip()
+        nutrition_status = str(nutrition_analysis.get("status", "")).strip()
+        training_role_violation = training_status == "specialist_role_violation"
+        nutrition_role_violation = nutrition_status == "specialist_role_violation"
+        training_material = training_status not in ("", "no_action_needed", "insufficient_detail")
+        nutrition_material = nutrition_status not in ("", "no_action_needed", "insufficient_detail")
+        plan_signal = "plan_update"
+        combined_text = " ".join(
+            [
+                str(training_analysis.get("plan_signal", "")),
+                str(nutrition_analysis.get("plan_signal", "")),
+                reason,
+                internal_analysis,
+                plan_candidate,
+            ]
+        ).lower()
+        full_plan_creation = plan_status in ("active", "created") and "creation" in combined_text
+        training_only_update = (
+            plan_status in ("active", "updated")
+            and ("training" in combined_text or "treino" in combined_text)
+            and not ("nutrition" in combined_text or "nutri" in combined_text)
+        )
+        nutrition_only_update = (
+            plan_status in ("active", "updated")
+            and ("nutrition" in combined_text or "nutri" in combined_text)
+            and not ("training" in combined_text or "treino" in combined_text)
+        )
+        if training_role_violation or nutrition_role_violation:
+            plan_status = "update_failed"
+            action_status = "failed"
+            pending_slots = []
             pending_action = {
                 "kind": "none",
                 "status": "no_action_needed",
                 "missing_slots": [],
             }
-        is_claiming_success = (
-            plan_status in ("active", "created")
-            and action_status == "executed"
-        )
-        if is_claiming_success and not self._has_material_plan_summary(technical_summary):
+            public_message = ""
+            internal_analysis = (
+                "A specialist delegated a specialist-owned technical decision back to the user. "
+                "The runtime rejected that pending action."
+            )
+        elif full_plan_creation and (not training_material or not nutrition_material):
             plan_status = "discovery_needed"
             action_status = "needs_user_input"
-            technical_summary = "Plano reivindicou conclusao mas o sumario tecnico e insuficiente. Discovery necessario."
+            public_message = public_message or (
+                "Ainda preciso de contribuicoes materiais de treino e nutricao para criar o plano."
+            )
+        elif training_only_update and not training_material:
+            plan_status = "discovery_needed"
+            action_status = "needs_user_input"
+            public_message = public_message or (
+                "Ainda preciso de uma analise material de treino para atualizar essa parte do plano."
+            )
+        elif nutrition_only_update and not nutrition_material:
+            plan_status = "discovery_needed"
+            action_status = "needs_user_input"
+            public_message = public_message or (
+                "Ainda preciso de uma analise material de nutricao para atualizar essa parte do plano."
+            )
         self._merge_persistence_candidates(
             state,
             memory_candidates=parsed.get("memory_candidates"),
             event_candidates=parsed.get("event_candidates"),
         )
-        state.node_outputs["plan_specialist"] = technical_summary or (
+        state.node_outputs["plan_specialist"] = internal_analysis or (
             "Objetivo: gerenciar ciclo de vida do plano e consistencia entre treino e nutricao. "
             f"has_active_plan={state.shared_context['has_active_plan']}; "
             f"plan_status={plan_status}; revisao_necessaria={state.plan_needs_revision}; reason={reason}"
         )
-        state.specialist_pending_actions["plan_specialist"] = pending_action
-        state.specialist_states["plan_specialist"] = {
-            "action_status": action_status,
-            "pending_slots": pending_slots,
-        }
         state.shared_context["plan_workspace"] = {
             "active_domain": active_domain,
             "has_active_plan": state.shared_context["has_active_plan"],
@@ -1134,6 +1791,9 @@ class ConversationGraphRunner:
             "needs_revision": state.plan_needs_revision,
             "reason": reason,
             "plan_candidate": plan_candidate,
+            "operation_result": operation_result,
+            "public_message": public_message,
+            "internal_analysis": internal_analysis,
             "lifecycle": state.shared_context.get("plan_lifecycle", {}),
             "training_preview": self._truncate(
                 state.node_outputs.get("training_specialist", ""), 280
@@ -1142,20 +1802,54 @@ class ConversationGraphRunner:
                 state.node_outputs.get("nutrition_specialist", ""), 280
             ),
         }
+        parsed["action_status"] = action_status
+        parsed["action_type"] = plan_status or "plan"
+        parsed["public_message"] = public_message
+        parsed["internal_analysis"] = internal_analysis
+        parsed["operation_result"] = operation_result
+        parsed["missing_inputs"] = pending_slots
+        result = self._record_specialist_result(
+            state,
+            "plan_specialist",
+            parsed,
+            plan_status,
+            plan_signal,
+            pending_action,
+        )
+        state.specialist_states["plan_specialist"]["pending_slots"] = pending_slots
+        self._append_coach_handoff(state, "plan_specialist", "PLANO", result)
 
     async def _node_coach_reply(self, state: GraphState) -> None:
         if state.security_status != "safe":
             state.coach_response = self._blocked_response()
             state.node_outputs["coach_reply"] = state.coach_response
             return
-        specialist_context = "\n\n".join(
-            [
-                self._shared_context_payload(state),
-                state.node_outputs.get("training_specialist", ""),
-                state.node_outputs.get("nutrition_specialist", ""),
-                state.node_outputs.get("plan_specialist", ""),
-            ]
-        ).strip()
+
+        sanitized_handoff = [
+            item
+            for item in state.coach_handoff
+            if not (
+                item.get("action_status") == ActionStatus.FAILED.value
+                and not str(item.get("public_message", "")).strip()
+            )
+        ]
+
+        handoff_payload: dict[str, Any] = {
+            "coach_handoff": sanitized_handoff,
+            "rules": {
+                "use_only_public_message": True,
+                "do_not_add_success_claims": True,
+                "failed_operations_must_remain_failed": True,
+            },
+        }
+        if not sanitized_handoff:
+            handoff_payload = {"coach_handoff": [], "no_specialist_action": True}
+        specialist_context = json.dumps(
+            handoff_payload,
+            ensure_ascii=True,
+            sort_keys=True,
+        )
+
         response = await self._run_llm_node(
             node_name="coach_reply",
             state=state,
@@ -1174,6 +1868,10 @@ class ConversationGraphRunner:
 
     async def _node_memory_hub(self, state: GraphState) -> None:
         action_detail = "no_action"
+        if self._has_failed_material_operation(state):
+            state.node_outputs["memory_hub"] = "blocked_failed_operation"
+            self._log_persistence_decision(state, "blocked_failed_operation")
+            return
         tools_by_name = {tool.name: tool for tool in self._brain.get_tools(state.user_email)}
         structured_candidates = dict(state.shared_context.get("persistence_candidates") or {})
         event_candidates = self._normalize_candidates(
@@ -1206,9 +1904,10 @@ class ConversationGraphRunner:
             node_name="memory_hub",
             state=state,
             extra_context=(
-                f"ANALISE_TECNICA:\n{state.coach_response}\n\n"
-                f"ANALISE_TREINO:\n{state.node_outputs.get('training_specialist', '')}\n\n"
-                f"ANALISE_NUTRICAO:\n{state.node_outputs.get('nutrition_specialist', '')}"
+                "SPECIALIST_RESULTS_JSON:\n"
+                f"{json.dumps(state.specialist_results, ensure_ascii=True, sort_keys=True)}\n\n"
+                "PERSISTENCE_CANDIDATES_JSON:\n"
+                f"{json.dumps(state.shared_context.get('persistence_candidates', {}), ensure_ascii=True, sort_keys=True)}"
             ),
             allowed_tools=set(),
         )
@@ -1320,7 +2019,18 @@ class ConversationGraphRunner:
             elif isinstance(chunk, dict) and chunk.get("type") == "tool_result":
                 tool_name = str(chunk.get("tool_name", "unknown"))
                 state.tools_called.append(tool_name)
-                state.node_metadata.setdefault(node_name, {}).setdefault("tools_called", []).append(tool_name)
+                metadata = state.node_metadata.setdefault(node_name, {})
+                metadata.setdefault("tools_called", []).append(tool_name)
+                metadata.setdefault("tool_results", []).append(
+                    {
+                        "tool_name": tool_name,
+                        "status": str(chunk.get("status", "")).strip(),
+                        "content": self._truncate(
+                            str(chunk.get("content", chunk.get("result", ""))),
+                            4000,
+                        ),
+                    }
+                )
         raw_response = "".join(chunks).strip() or state.user_input_sanitized
         state.last_raw_outputs[node_name] = raw_response
         return raw_response
@@ -1392,9 +2102,20 @@ class ConversationGraphRunner:
             ),
             "plan_workspace": str(state.shared_context.get("plan_workspace", "")),
             "plan_lifecycle": str(state.shared_context.get("plan_lifecycle", {})),
+            "specialist_results": json.dumps(
+                state.specialist_results, ensure_ascii=True, sort_keys=True
+            ),
+            "coach_handoff": json.dumps(
+                state.coach_handoff, ensure_ascii=True, sort_keys=True
+            ),
             "coach_response": str(state.coach_response),
             "security_result": str(state.security_status),
             "persistence_intents": str(state.persistence_intents),
+            "persistence_candidates": json.dumps(
+                state.shared_context.get("persistence_candidates", {}),
+                ensure_ascii=True,
+                sort_keys=True,
+            ),
             "conversation_state": json.dumps(
                 state.conversation_state, ensure_ascii=True, sort_keys=True
             ),
@@ -1577,12 +2298,16 @@ class ConversationGraphRunner:
         plan_section = str(input_data.get("plan_section", ""))
         agenda_section = str(input_data.get("agenda_section", ""))
         metabolism_section = str(input_data.get("metabolism_section", ""))
+        plan_workspace = state.shared_context.get("plan_workspace", {})
         payload = (
             f"RUNTIME_CONTEXT_JSON:\n{self._truncate(runtime_json, 4000)}\n\n"
             f"PLAN_SECTION:\n{self._truncate(plan_section, 1200)}\n\n"
             f"AGENDA_SECTION:\n{self._truncate(agenda_section, 1200)}\n\n"
             f"METABOLISM_SECTION:\n{self._truncate(metabolism_section, 1200)}\n\n"
-            f"PLAN_LIFECYCLE:\n{state.shared_context.get('plan_lifecycle', {})}"
+            f"PLAN_LIFECYCLE:\n{state.shared_context.get('plan_lifecycle', {})}\n\n"
+            f"PLAN_WORKSPACE:\nplan_status={plan_workspace.get('plan_status', '')} "
+            f"needs_revision={plan_workspace.get('needs_revision', False)} "
+            f"reason={plan_workspace.get('reason', '')}"
         )
         return payload
 
