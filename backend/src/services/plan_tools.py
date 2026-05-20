@@ -206,12 +206,14 @@ def create_get_plan_tool(database, user_email: str):
 
     return get_plan
 
-
+# pylint: disable=too-many-statements
 def create_upsert_plan_tool(database, user_email: str):
     """Creates or updates singleton plan."""
 
     call_count = 0
     last_payload_hash: str | None = None
+    retry_blocked = False
+    retry_block_reason = ""
 
     def _run_loop_guards(payload_for_hash: dict) -> str | None:
         nonlocal call_count, last_payload_hash
@@ -235,8 +237,13 @@ def create_upsert_plan_tool(database, user_email: str):
         last_payload_hash = payload_hash
         return None
 
+    def _mark_retry_blocked(reason: str) -> None:
+        nonlocal retry_blocked, retry_block_reason
+        retry_blocked = True
+        retry_block_reason = reason
+
     @tool(args_schema=PlanUpsertInput)
-    # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals,too-many-return-statements
+    # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals,too-many-return-statements,too-many-statements
     def upsert_plan(
         title: str,
         change_reason: str,
@@ -261,6 +268,13 @@ def create_upsert_plan_tool(database, user_email: str):
 
         Sempre chame get_metabolism_data ANTES de definir metas nutricionais numericas.
         """
+        if retry_blocked:
+            return (
+                "ERRO_UPSERT_PLAN_RETRY_BLOQUEADO: houve falha anterior de persistencia "
+                f"neste turno ({retry_block_reason}). PLANO_NAO_SALVO. "
+                "Nao tente novamente agora; retome no proximo turno com payload corrigido."
+            )
+
         logger.info("upsert_plan called for user: %s", user_email)
         payload_hash_source = {
             "title": title,
@@ -303,6 +317,7 @@ def create_upsert_plan_tool(database, user_email: str):
                 logger.warning(
                     "upsert_plan REJECTED incomplete: %s", missing_fields,
                 )
+                _mark_retry_blocked("incompleto")
                 discovery_list = _format_missing_fields_with_descriptions(missing_fields)
                 return (
                     "ERRO_UPSERT_PLAN_INCOMPLETO: faltam campos obrigatorios:\n"
@@ -329,6 +344,7 @@ def create_upsert_plan_tool(database, user_email: str):
                     user_email,
                     exc,
                 )
+                _mark_retry_blocked("estrutura_invalida")
                 validation_issues = ", ".join(
                     ".".join(str(part) for part in err["loc"]) for err in exc.errors()
                 )
@@ -340,6 +356,7 @@ def create_upsert_plan_tool(database, user_email: str):
                 )
             except Exception as exc:  # pylint: disable=broad-exception-caught
                 logger.error("upsert_plan failed for user %s: %s", user_email, exc, exc_info=True)
+                _mark_retry_blocked("persistencia")
                 return (
                     "ERRO_UPSERT_PLAN_PERSISTENCIA: falha ao salvar no banco. "
                     "PLANO_NAO_SALVO. Nao afirme que salvou/ativou o plano."
@@ -351,6 +368,7 @@ def create_upsert_plan_tool(database, user_email: str):
             logger.warning(
                 "upsert_plan REJECTED incomplete: %s", missing_fields,
             )
+            _mark_retry_blocked("incompleto")
             discovery_list = _format_missing_fields_with_descriptions(missing_fields)
             return (
                 "ERRO_UPSERT_PLAN_INCOMPLETO: faltam campos obrigatorios:\n"
@@ -371,8 +389,25 @@ def create_upsert_plan_tool(database, user_email: str):
                 f"SUCESSO_UPSERT_PLAN: Plano salvo com sucesso. ID: {plan_id}.\n"
                 f"{format_plan_snapshot(snapshot)}"
             )
+        except ValidationError as exc:
+            logger.warning(
+                "upsert_plan invalid structure for user %s: %s",
+                user_email,
+                exc,
+            )
+            _mark_retry_blocked("estrutura_invalida")
+            validation_issues = ", ".join(
+                ".".join(str(part) for part in err["loc"]) for err in exc.errors()
+            )
+            return (
+                "ERRO_UPSERT_PLAN_ESTRUTURA_INVALIDA: "
+                "estrutura do plano invalida para persistencia. "
+                "PLANO_NAO_SALVO. Campos/locais invalidos: "
+                f"{validation_issues}"
+            )
         except Exception as exc:  # pylint: disable=broad-exception-caught
             logger.error("upsert_plan failed for user %s: %s", user_email, exc, exc_info=True)
+            _mark_retry_blocked("persistencia")
             return (
                 "ERRO_UPSERT_PLAN_PERSISTENCIA: falha ao salvar no banco. "
                 "PLANO_NAO_SALVO. Nao afirme que salvou/ativou o plano."

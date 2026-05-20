@@ -24,8 +24,15 @@ type ChatStore = ChatState & ChatActions;
 
 const AUTH_TOKEN_KEY = 'auth_token';
 const CHAT_STREAM_TIMEOUT_MS = 200_000;
+const CHAT_HISTORY_SYNC_RETRIES = 5;
+const CHAT_HISTORY_SYNC_DELAY_MS = 500;
 let historyInFlight: Promise<void> | null = null;
 let loadMoreInFlight: Promise<void> | null = null;
+
+const sleep = async (ms: number): Promise<void> =>
+  new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
 
 export const useChatStore = create<ChatStore>((set, _get) => ({
   messages: [],
@@ -223,6 +230,28 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
         });
       }
       set({ isStreaming: false });
+
+      if (!accumulatedText.trim()) {
+        const expectedCount = _get().messages.length;
+        for (let attempt = 0; attempt < CHAT_HISTORY_SYNC_RETRIES; attempt += 1) {
+          await sleep(CHAT_HISTORY_SYNC_DELAY_MS);
+
+          try {
+            const messages = await httpClient<ChatMessage[]>('/message/history?limit=20&offset=0');
+            if (messages && messages.length >= expectedCount) {
+              set({
+                messages,
+                isLoading: false,
+                error: null,
+                hasMore: messages.length === 20,
+              });
+              break;
+            }
+          } catch (syncError) {
+            console.error('Error syncing chat history after streaming:', syncError);
+          }
+        }
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       let errorMessage = 'Ocorreu um problema ao enviar sua mensagem.';

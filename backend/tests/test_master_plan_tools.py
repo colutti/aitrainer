@@ -182,3 +182,21 @@ def test_upsert_plan_rejects_schedule_with_unknown_routine_reference():
     assert 'ERRO_UPSERT_PLAN_ESTRUTURA_INVALIDA' in result
     assert 'PLANO_NAO_SALVO' in result
     db.save_plan.assert_not_called()
+
+
+def test_upsert_plan_blocks_retry_after_structure_error_in_same_turn():
+    db = MagicMock()
+    db.get_latest_plan.return_value = None
+    tool = create_upsert_plan_tool(db, 'user@test.com')
+
+    payload = valid_payload()
+    payload['training_program']['weekly_schedule'] = [
+        {'day': 'monday', 'routine_id': 'inexistente', 'focus': 'upper', 'type': 'training'}
+    ]
+
+    first = tool.invoke(payload)
+    second = tool.invoke(valid_payload())
+
+    assert 'ERRO_UPSERT_PLAN_ESTRUTURA_INVALIDA' in first
+    assert 'ERRO_UPSERT_PLAN_RETRY_BLOQUEADO' in second
+    db.save_plan.assert_not_called()

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
 import { httpClient } from '../api/http-client';
 
@@ -15,7 +15,12 @@ global.fetch = mockFetch;
 describe('useChatStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useRealTimers();
     useChatStore.getState().reset();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('has initial state', () => {
@@ -69,6 +74,36 @@ describe('useChatStore', () => {
     expect(finalState.isStreaming).toBe(false);
     expect(finalState.messages).toHaveLength(2);
     expect(finalState.messages[1]?.text).toContain(streamResponse);
+  });
+
+  it('syncs chat history after a blank stream so the final response appears without refresh', async () => {
+    vi.useFakeTimers();
+
+    const emptyStream = new ReadableStream({
+      start(controller) {
+        controller.close();
+      },
+    });
+
+    const syncedHistory = [
+      { text: 'Hello AI', sender: 'Student', timestamp: '2024-01-01T10:00:00Z' },
+      { text: 'Hello User', sender: 'Trainer', timestamp: '2024-01-01T10:00:01Z' },
+    ];
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      body: { getReader: () => emptyStream.getReader() },
+    });
+    vi.mocked(httpClient).mockResolvedValueOnce(syncedHistory);
+
+    const sendPromise = useChatStore.getState().sendMessage('Hello AI');
+    await vi.advanceTimersByTimeAsync(500);
+    await sendPromise;
+
+    const finalState = useChatStore.getState();
+    expect(finalState.isStreaming).toBe(false);
+    expect(finalState.messages).toEqual(syncedHistory);
+    expect(httpClient).toHaveBeenCalledWith('/message/history?limit=20&offset=0');
   });
 
   it('handles send message error', async () => {

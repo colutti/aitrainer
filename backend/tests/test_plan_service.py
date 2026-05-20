@@ -222,6 +222,87 @@ def test_build_plan_singleton_creates_valid_plan_from_upsert_input():
     assert plan.training_program.routines[0].id == "fb_a"
 
 
+def test_build_plan_singleton_normalizes_numeric_and_list_reps():
+    payload = PlanUpsertInput(
+        title="Plano Reps",
+        change_reason="goal_change",
+        goal={"primary": "lose_fat", "objective_summary": "Recomposicao"},
+        timeline={"target_date": "2026-10-01T00:00:00+00:00", "review_cadence": "semanal"},
+        strategy={"rationale": "ok", "adaptation_policy": "ok"},
+        nutrition_strategy={
+            "daily_targets": {"calories": 2200, "protein_g": 170, "carbs_g": 220, "fat_g": 65}
+        },
+        training_program={
+            "split_name": "full_body",
+            "frequency_per_week": 1,
+            "session_duration_min": 50,
+            "routines": [
+                {
+                    "id": "fb_a",
+                    "name": "Full Body A",
+                    "exercises": [
+                        {"name": "Supino", "sets": 4, "reps": 12, "load_guidance": "RPE 8"},
+                        {"name": "Remada", "sets": 3, "reps": [12, 10, 8], "load_guidance": "RPE 8"},
+                    ],
+                }
+            ],
+            "weekly_schedule": [{"day": "monday", "routine_id": "fb_a", "focus": "full_body"}],
+        },
+        current_summary={
+            "active_focus": "execucao",
+            "rationale": "normalizar reps",
+            "next_review": "2026-10-08",
+        },
+    )
+
+    plan = build_plan_singleton("user@test.com", None, payload)
+    exercises = plan.training_program.routines[0].exercises
+
+    assert exercises[0].reps == "12"
+    assert exercises[1].reps == "12/10/8"
+
+
+def test_build_plan_singleton_normalizes_weekdays_and_schedule_type_to_canonical():
+    payload = PlanUpsertInput(
+        title="Plano Dias",
+        change_reason="goal_change",
+        goal={"primary": "lose_fat", "objective_summary": "Recomposicao"},
+        timeline={"target_date": "2026-10-01T00:00:00+00:00", "review_cadence": "semanal"},
+        strategy={"rationale": "ok", "adaptation_policy": "ok"},
+        nutrition_strategy={
+            "daily_targets": {"calories": 2200, "protein_g": 170, "carbs_g": 220, "fat_g": 65}
+        },
+        training_program={
+            "split_name": "full_body",
+            "frequency_per_week": 3,
+            "session_duration_min": 50,
+            "routines": [
+                {
+                    "id": "fb_a",
+                    "name": "Full Body A",
+                    "exercises": [{"name": "Supino", "sets": 4, "reps": "12", "load_guidance": "RPE 8"}],
+                }
+            ],
+            "weekly_schedule": [
+                {"day": "Segunda-feira", "routine_id": "fb_a", "focus": "full_body", "type": "strength"},
+                {"day": "martes", "routine_id": "fb_a", "focus": "full_body", "type": "hypertrophy"},
+                {"day": "quarta", "routine_id": "fb_a", "focus": "full_body", "type": "whatever"},
+            ],
+        },
+        current_summary={
+            "active_focus": "execucao",
+            "rationale": "normalizar dias",
+            "next_review": "2026-10-08",
+        },
+    )
+
+    plan = build_plan_singleton("user@test.com", make_plan(), payload)
+    schedule = plan.training_program.weekly_schedule
+
+    assert [item.day for item in schedule] == ["monday", "tuesday", "wednesday"]
+    assert all(item.type == "training" for item in schedule)
+
+
 def test_missing_master_plan_fields_returns_all_when_empty_payload():
     payload = PlanUpsertInput(
         title="Plano Vazio",
@@ -504,3 +585,184 @@ def test_build_plan_singleton_preserves_created_at_and_start_date_on_update():
 
     assert plan.created_at == original_created_at
     assert plan.timeline.start_date == original_start_date
+
+
+def test_build_plan_singleton_accepts_rest_days_with_placeholder_routine_id():
+    payload = PlanUpsertInput(
+        title="Plano Atualizado",
+        change_reason="review",
+        goal={"primary": "build_muscle", "objective_summary": "Ganhar massa com mais foco"},
+        timeline={
+            "target_date": "2026-12-01T00:00:00+00:00",
+            "review_cadence": "mensal",
+        },
+        strategy={
+            "rationale": "manter consistencia com descanso estruturado",
+            "adaptation_policy": "ajustar quinzenal",
+        },
+        nutrition_strategy={
+            "daily_targets": {
+                "calories": 3000,
+                "protein_g": 180,
+                "carbs_g": 320,
+                "fat_g": 80,
+            },
+        },
+        training_program={
+            "split_name": "upper_lower",
+            "frequency_per_week": 1,
+            "session_duration_min": 60,
+            "routines": [
+                {
+                    "id": "upper_a",
+                    "name": "Upper A",
+                    "exercises": [
+                        {
+                            "name": "Supino Reto",
+                            "sets": 4,
+                            "reps": "6-8",
+                            "load_guidance": "RPE 8",
+                        },
+                    ],
+                },
+            ],
+            "weekly_schedule": [
+                {"day": "monday", "routine_id": "upper_a", "focus": "upper", "type": "training"},
+                {"day": "tuesday", "routine_id": "none", "focus": "off", "type": "off"},
+            ],
+        },
+        current_summary={
+            "active_focus": "consistencia",
+            "rationale": "preservar recuperacao",
+            "next_review": "2026-07-01",
+        },
+    )
+
+    plan = build_plan_singleton("user@test.com", None, payload)
+
+    assert len(plan.training_program.weekly_schedule) == 2
+    assert plan.training_program.weekly_schedule[1].type == "off"
+    assert plan.training_program.weekly_schedule[1].routine_id is None
+
+
+def test_build_plan_singleton_accepts_off_descanso_label_as_rest_day():
+    payload = PlanUpsertInput(
+        title="Plano Atualizado",
+        change_reason="review",
+        goal={"primary": "build_muscle", "objective_summary": "Ganhar massa com mais foco"},
+        timeline={
+            "target_date": "2026-12-01T00:00:00+00:00",
+            "review_cadence": "mensal",
+        },
+        strategy={
+            "rationale": "organizar descanso",
+            "adaptation_policy": "ajustar quinzenal",
+        },
+        nutrition_strategy={
+            "daily_targets": {
+                "calories": 3000,
+                "protein_g": 180,
+                "carbs_g": 320,
+                "fat_g": 80,
+            },
+        },
+        training_program={
+            "split_name": "upper_lower",
+            "frequency_per_week": 1,
+            "session_duration_min": 60,
+            "routines": [
+                {
+                    "id": "upper_a",
+                    "name": "Upper A",
+                    "exercises": [
+                        {
+                            "name": "Supino Reto",
+                            "sets": 4,
+                            "reps": "6-8",
+                            "load_guidance": "RPE 8",
+                        },
+                    ],
+                },
+            ],
+            "weekly_schedule": [
+                {"day": "monday", "routine_id": "upper_a", "focus": "upper", "type": "training"},
+                {
+                    "day": "tuesday",
+                    "routine_id": "none",
+                    "focus": "descanso",
+                    "type": "OFF (Descanso)",
+                },
+            ],
+        },
+        current_summary={
+            "active_focus": "consistencia",
+            "rationale": "preservar recuperacao",
+            "next_review": "2026-07-01",
+        },
+    )
+
+    plan = build_plan_singleton("user@test.com", None, payload)
+
+    assert len(plan.training_program.weekly_schedule) == 2
+    assert plan.training_program.weekly_schedule[1].type == "off"
+    assert plan.training_program.weekly_schedule[1].routine_id is None
+
+
+def test_build_plan_singleton_infers_rest_day_from_focus_and_placeholder_routine():
+    payload = PlanUpsertInput(
+        title="Plano Atualizado",
+        change_reason="review",
+        goal={"primary": "build_muscle", "objective_summary": "Ganhar massa com mais foco"},
+        timeline={
+            "target_date": "2026-12-01T00:00:00+00:00",
+            "review_cadence": "mensal",
+        },
+        strategy={
+            "rationale": "organizar descanso",
+            "adaptation_policy": "ajustar quinzenal",
+        },
+        nutrition_strategy={
+            "daily_targets": {
+                "calories": 3000,
+                "protein_g": 180,
+                "carbs_g": 320,
+                "fat_g": 80,
+            },
+        },
+        training_program={
+            "split_name": "upper_lower",
+            "frequency_per_week": 1,
+            "session_duration_min": 60,
+            "routines": [
+                {
+                    "id": "upper_a",
+                    "name": "Upper A",
+                    "exercises": [
+                        {
+                            "name": "Supino Reto",
+                            "sets": 4,
+                            "reps": "6-8",
+                            "load_guidance": "RPE 8",
+                        },
+                    ],
+                },
+            ],
+            "weekly_schedule": [
+                {"day": "monday", "routine_id": "upper_a", "focus": "upper"},
+                {"day": "tuesday", "routine_id": "none", "focus": "OFF (Descanso)"},
+            ],
+        },
+        current_summary={
+            "active_focus": "consistencia",
+            "rationale": "preservar recuperacao",
+            "next_review": "2026-07-01",
+        },
+    )
+
+    plan = build_plan_singleton("user@test.com", None, payload)
+
+    assert len(plan.training_program.weekly_schedule) == 2
+    assert plan.training_program.weekly_schedule[0].type == "training"
+    assert plan.training_program.weekly_schedule[1].type == "off"
+    assert plan.training_program.weekly_schedule[1].routine_id is None
+    assert plan.training_program.frequency_per_week == 1

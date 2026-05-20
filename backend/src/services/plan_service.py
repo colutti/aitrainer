@@ -9,6 +9,50 @@ from src.api.models.plan import (
     UserPlan,
 )
 
+CANONICAL_WEEKDAY_MAP = {
+    "monday": "monday",
+    "mon": "monday",
+    "segunda": "monday",
+    "segunda-feira": "monday",
+    "lunes": "monday",
+    "tuesday": "tuesday",
+    "tue": "tuesday",
+    "terca": "tuesday",
+    "terça": "tuesday",
+    "terca-feira": "tuesday",
+    "terça-feira": "tuesday",
+    "martes": "tuesday",
+    "wednesday": "wednesday",
+    "wed": "wednesday",
+    "quarta": "wednesday",
+    "quarta-feira": "wednesday",
+    "miercoles": "wednesday",
+    "miércoles": "wednesday",
+    "thursday": "thursday",
+    "thu": "thursday",
+    "quinta": "thursday",
+    "quinta-feira": "thursday",
+    "jueves": "thursday",
+    "friday": "friday",
+    "fri": "friday",
+    "sexta": "friday",
+    "sexta-feira": "friday",
+    "viernes": "friday",
+    "saturday": "saturday",
+    "sat": "saturday",
+    "sabado": "saturday",
+    "sábado": "saturday",
+    "sabado-feira": "saturday",
+    "sábado-feira": "saturday",
+    "sábadofeira": "saturday",
+    "sabadofeira": "saturday",
+    "sábado feira": "saturday",
+    "sabado feira": "saturday",
+    "sunday": "sunday",
+    "sun": "sunday",
+    "domingo": "sunday",
+}
+
 REQUIRED_GOAL_FIELDS = ("primary", "objective_summary")
 REQUIRED_TIMELINE_FIELDS = ("target_date", "review_cadence")
 REQUIRED_STRATEGY_FIELDS = ("rationale", "adaptation_policy")
@@ -263,6 +307,26 @@ def _merge_weekly_schedule(latest_dict: dict, payload_schedule: list) -> list:
     return merged_schedule
 
 
+def _normalize_weekday(value: str) -> str:
+    normalized = (
+        value.strip()
+        .lower()
+        .replace("ç", "c")
+        .replace("á", "a")
+        .replace("à", "a")
+        .replace("â", "a")
+        .replace("ã", "a")
+        .replace("é", "e")
+        .replace("ê", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ô", "o")
+        .replace("õ", "o")
+        .replace("ú", "u")
+    )
+    return CANONICAL_WEEKDAY_MAP.get(normalized, value)
+
+
 def _normalize_training_program_ids(program: dict) -> dict:
     """Coerce routine identifiers from LLM/tool payloads to strings."""
     normalized = dict(program)
@@ -280,15 +344,48 @@ def _normalize_training_program_ids(program: dict) -> dict:
 
     schedule = normalized.get("weekly_schedule")
     if isinstance(schedule, list):
-        normalized["weekly_schedule"] = [
-            {
+        non_training_type_tokens = ("rest", "off", "recovery", "descanso")
+        placeholder_routine_ids = {"", "none", "null", "nil", "n/a", "na"}
+        non_training_focus_tokens = ("rest", "off", "recovery", "descanso")
+
+        def _normalize_schedule_item(item: dict) -> dict:
+            normalized_type = item.get("type")
+            if isinstance(normalized_type, str):
+                normalized_type = normalized_type.strip().lower()
+            else:
+                normalized_type = "training"
+            is_non_training = any(token in normalized_type for token in non_training_type_tokens)
+            normalized_type = "off" if is_non_training else "training"
+
+            normalized_routine_id = item.get("routine_id")
+            if normalized_routine_id is not None:
+                normalized_routine_id = str(normalized_routine_id)
+                normalized_routine_id_clean = normalized_routine_id.strip().lower()
+                if normalized_routine_id_clean in placeholder_routine_ids:
+                    normalized_routine_id = None
+
+            focus = item.get("focus")
+            if isinstance(focus, str):
+                normalized_focus = focus.strip().lower()
+                if any(token in normalized_focus for token in non_training_focus_tokens):
+                    normalized_type = "off"
+
+            if normalized_routine_id is None:
+                normalized_type = "off"
+
+            return {
                 **item,
-                "routine_id": (
-                    str(item["routine_id"])
-                    if item.get("routine_id") is not None
-                    else item.get("routine_id")
+                "day": (
+                    _normalize_weekday(item["day"])
+                    if isinstance(item.get("day"), str)
+                    else item.get("day")
                 ),
+                "routine_id": normalized_routine_id,
+                "type": normalized_type,
             }
+
+        normalized["weekly_schedule"] = [
+            _normalize_schedule_item(item)
             if isinstance(item, dict)
             else item
             for item in schedule
@@ -296,9 +393,47 @@ def _normalize_training_program_ids(program: dict) -> dict:
     return normalized
 
 
+def _normalize_exercise_reps(program: dict) -> dict:
+    """Coerce exercise reps values into the schema-required string format."""
+    normalized = dict(program)
+    routines = normalized.get("routines")
+    if not isinstance(routines, list):
+        return normalized
+
+    normalized_routines = []
+    for routine in routines:
+        if not isinstance(routine, dict):
+            normalized_routines.append(routine)
+            continue
+
+        exercises = routine.get("exercises")
+        if not isinstance(exercises, list):
+            normalized_routines.append(routine)
+            continue
+
+        normalized_exercises = []
+        for exercise in exercises:
+            if not isinstance(exercise, dict):
+                normalized_exercises.append(exercise)
+                continue
+
+            reps = exercise.get("reps")
+            if isinstance(reps, list):
+                reps = "/".join(str(item) for item in reps if item is not None)
+            elif reps is not None and not isinstance(reps, str):
+                reps = str(reps)
+
+            normalized_exercises.append({**exercise, "reps": reps})
+
+        normalized_routines.append({**routine, "exercises": normalized_exercises})
+
+    normalized["routines"] = normalized_routines
+    return normalized
+
+
 def _merge_training_program(latest, payload: dict) -> dict:
     """Deep-merge training program while preserving omitted routines and schedule items."""
-    payload = _normalize_training_program_ids(payload)
+    payload = _normalize_exercise_reps(_normalize_training_program_ids(payload))
     latest_dict = latest.model_dump()
     merged = {**latest_dict, **payload}
 
@@ -310,7 +445,16 @@ def _merge_training_program(latest, payload: dict) -> dict:
     if isinstance(payload_schedule, list):
         merged["weekly_schedule"] = _merge_weekly_schedule(latest_dict, payload_schedule)
 
-    return _normalize_training_program_ids(merged)
+    normalized_program = _normalize_exercise_reps(_normalize_training_program_ids(merged))
+    schedule = normalized_program.get("weekly_schedule")
+    if isinstance(schedule, list):
+        training_days = sum(
+            1
+            for item in schedule
+            if isinstance(item, dict) and item.get("type") == "training"
+        )
+        normalized_program["frequency_per_week"] = training_days
+    return normalized_program
 
 
 def _merge_plan_sections(latest_plan: UserPlan | None, payload: PlanUpsertInput) -> dict:
@@ -320,7 +464,9 @@ def _merge_plan_sections(latest_plan: UserPlan | None, payload: PlanUpsertInput)
             "timeline": payload.timeline,
             "strategy": payload.strategy,
             "nutrition_strategy": payload.nutrition_strategy,
-            "training_program": _normalize_training_program_ids(payload.training_program),
+            "training_program": _normalize_exercise_reps(
+                _normalize_training_program_ids(payload.training_program)
+            ),
             "current_summary": payload.current_summary,
             "checkpoints": payload.checkpoints,
         }

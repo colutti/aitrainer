@@ -22,6 +22,8 @@ interface WeightLogCardProps {
  */
 export function WeightLogCard({ log, isReadOnly = false, onDelete, onEdit, onClick }: WeightLogCardProps) {
   const { t } = useTranslation();
+  const muscleMassValue = log.muscle_mass_kg ?? log.muscle_mass_pct;
+  const muscleMassUnit = log.muscle_mass_kg != null ? 'kg' : '%';
   
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -65,8 +67,8 @@ export function WeightLogCard({ log, isReadOnly = false, onDelete, onEdit, onCli
         },
         {
           label: t('body.weight.muscle_mass').split(' ')[0],
-          value: log.muscle_mass_kg ? (
-            <span className="text-sm font-semibold text-text-primary tabular-nums">{log.muscle_mass_kg.toFixed(1)}<span className="text-[10px] ml-0.5 opacity-50">kg</span></span>
+          value: muscleMassValue != null ? (
+            <span className="text-sm font-semibold text-text-primary tabular-nums">{muscleMassValue.toFixed(1)}<span className="text-[10px] ml-0.5 opacity-50">{muscleMassUnit}</span></span>
           ) : <div className="w-4 h-0.5 bg-[color:var(--color-surface-container)] rounded-full mt-2" />,
           valueClassName: 'text-sm font-semibold text-text-primary tabular-nums',
         },

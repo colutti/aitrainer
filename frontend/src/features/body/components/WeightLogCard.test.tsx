@@ -54,4 +54,9 @@ describe('WeightLogCard', () => {
     fireEvent.click(screen.getByTestId('weight-log-card'));
     expect(onClick).toHaveBeenCalledWith(mockLog);
   });
+
+  it('should render muscle mass from percent when kg is missing', () => {
+    render(<WeightLogCard log={{ ...mockLog, muscle_mass_kg: undefined, muscle_mass_pct: 42.1 }} />);
+    expect(screen.getByText(/42\.1/)).toHaveTextContent('42.1%');
+  });
 });
