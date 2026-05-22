@@ -7,8 +7,12 @@ from .auth import LoginRequest
 from .message import MessageRequest
 from .chat_history import ChatHistory
 from .plan import (
+    PlanCreateInput,
+    PlanDiscoveryState,
+    PlanDiscoveryUpdateInput,
     PlanPromptContext,
-    PlanUpsertInput,
+    PlanReviewInput,
+    PlanSectionUpdateInput,
     UserPlan,
     UserPlanWithId,
 )
@@ -22,8 +26,12 @@ __all__ = [
     "LoginRequest",
     "MessageRequest",
     "ChatHistory",
+    "PlanCreateInput",
+    "PlanDiscoveryState",
+    "PlanDiscoveryUpdateInput",
     "PlanPromptContext",
-    "PlanUpsertInput",
+    "PlanReviewInput",
+    "PlanSectionUpdateInput",
     "UserPlan",
     "UserPlanWithId",
 ]

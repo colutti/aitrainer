@@ -154,7 +154,7 @@ class PromptBuilder:
         # Format agenda section
         agenda_section = PromptBuilder._format_agenda_section(agenda_events or [])
         plan_section = format_plan_snapshot(plan_snapshot)
-        has_active_plan = plan_snapshot is not None
+        has_active_plan = plan_snapshot.status == "ACTIVE_PLAN"
         metabolism_section = PromptBuilder._format_metabolism_section(metabolism_data)
         raw_user_name = getattr(profile, "display_name", None)
         user_name = raw_user_name if isinstance(raw_user_name, str) and raw_user_name else "Aluno"

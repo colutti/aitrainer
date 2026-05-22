@@ -151,8 +151,28 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
     "get_plan": ToolMetadata(
         "get_plan", ToolMemoryType.EPHEMERAL, "Fetch singleton plan"
     ),
-    "upsert_plan": ToolMetadata(
-        "upsert_plan", ToolMemoryType.MEMORABLE, "Create or update singleton plan"
+    "get_plan_status": ToolMetadata(
+        "get_plan_status", ToolMemoryType.EPHEMERAL, "Fetch plan lifecycle status"
+    ),
+    "update_plan_discovery": ToolMetadata(
+        "update_plan_discovery",
+        ToolMemoryType.MEMORABLE,
+        "Persist plan discovery answers",
+    ),
+    "create_plan_from_discovery": ToolMetadata(
+        "create_plan_from_discovery",
+        ToolMemoryType.MEMORABLE,
+        "Create the first active plan from completed discovery",
+    ),
+    "update_plan_section": ToolMetadata(
+        "update_plan_section",
+        ToolMemoryType.MEMORABLE,
+        "Update one typed section of the active plan",
+    ),
+    "record_plan_review": ToolMetadata(
+        "record_plan_review",
+        ToolMemoryType.MEMORABLE,
+        "Record a structured plan review",
     ),
     "plan_help": ToolMetadata(
         "plan_help",

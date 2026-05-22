@@ -1,47 +1,62 @@
 """Tests for the get_plan_training_program tool."""
 
-from datetime import datetime, timezone
+from datetime import date
 from unittest.mock import MagicMock
 
 from src.api.models.plan import (
+    ConflictRule,
+    IntensityPrescription,
     NutritionDailyTargets,
-    NutritionStrategy,
-    PlanCurrentSummary,
+    PlanAlignment,
+    PlanCreateInput,
     PlanGoal,
-    PlanStrategy,
+    PlanNutrition,
     PlanTimeline,
+    PlanTracking,
+    PlanUserContext,
+    ProgressMarker,
+    ProgressionRule,
+    RepRange,
+    SuccessMetric,
     TrainingExercise,
-    TrainingProgram,
+    PlanTraining,
     TrainingRoutine,
-    UserPlan,
     WeeklyScheduleItem,
 )
+from src.services.plan_service import build_plan_from_create_input
 from src.services.plan_training_tools import create_get_plan_training_program_tool
 
 
-def make_plan_with_training() -> UserPlan:
-    return UserPlan(
-        user_email="test@test.com",
+def make_plan_with_training():
+    payload = PlanCreateInput(
         title="Plano Mestre",
         goal=PlanGoal(
-            primary="build_muscle",
-            objective_summary="Ganhar massa",
+            primary_goal="muscle_gain",
+            outcome_summary="Ganhar massa",
+            success_metrics=[
+                SuccessMetric(
+                    metric_name="peso",
+                    target_value=75,
+                    unit="kg",
+                    direction="increase",
+                    deadline=date(2026, 8, 10),
+                )
+            ],
         ),
         timeline=PlanTimeline(
-            start_date=datetime(2026, 4, 19, tzinfo=timezone.utc),
-            target_date=datetime(2026, 8, 10, tzinfo=timezone.utc),
-            review_cadence="semanal",
+            start_date=date(2026, 4, 19),
+            target_date=date(2026, 8, 10),
+            review_cadence_days=7,
+            current_phase="acumulacao",
         ),
-        strategy=PlanStrategy(
-            rationale="superavit leve",
-            adaptation_policy="approval_required",
+        user_context=PlanUserContext(
+            training_days_available=["monday", "tuesday"],
+            session_duration_min=60,
+            constraints=["nenhuma"],
+            preferences=["academia"],
+            available_equipment=["barra"],
         ),
-        nutrition_strategy=NutritionStrategy(
-            daily_targets=NutritionDailyTargets(
-                calories=2600, protein_g=160, carbs_g=315, fat_g=75,
-            ),
-        ),
-        training_program=TrainingProgram(
+        training=PlanTraining(
             split_name="PPL-UL",
             frequency_per_week=2,
             session_duration_min=60,
@@ -51,12 +66,28 @@ def make_plan_with_training() -> UserPlan:
                     name="Push",
                     exercises=[
                         TrainingExercise(
-                            name="Supino reto com barra", sets=4, reps="8-10",
-                            load_guidance="RPE 8",
+                            name="Supino reto com barra",
+                            sets=4,
+                            rep_range=RepRange(min_reps=8, max_reps=10),
+                            intensity=IntensityPrescription(prescription_type="rpe", target="RPE 8"),
+                            progression_rule=ProgressionRule(
+                                method="double_progression",
+                                increase_when="bater topo da faixa",
+                                hold_when="ficar no meio da faixa",
+                                deload_when="regredir por 2 semanas",
+                            ),
                         ),
                         TrainingExercise(
-                            name="Elevacao lateral", sets=3, reps="12-15",
-                            load_guidance="RPE 7",
+                            name="Elevacao lateral",
+                            sets=3,
+                            rep_range=RepRange(min_reps=12, max_reps=15),
+                            intensity=IntensityPrescription(prescription_type="rpe", target="RPE 7"),
+                            progression_rule=ProgressionRule(
+                                method="volume_progression",
+                                increase_when="completar volume",
+                                hold_when="fadiga moderada",
+                                deload_when="fadiga alta",
+                            ),
                         ),
                     ],
                 ),
@@ -65,8 +96,16 @@ def make_plan_with_training() -> UserPlan:
                     name="Pull",
                     exercises=[
                         TrainingExercise(
-                            name="Puxada alta", sets=4, reps="8-10",
-                            load_guidance="RPE 8",
+                            name="Puxada alta",
+                            sets=4,
+                            rep_range=RepRange(min_reps=8, max_reps=10),
+                            intensity=IntensityPrescription(prescription_type="rpe", target="RPE 8"),
+                            progression_rule=ProgressionRule(
+                                method="double_progression",
+                                increase_when="bater topo da faixa",
+                                hold_when="ficar no meio da faixa",
+                                deload_when="regredir por 2 semanas",
+                            ),
                         ),
                     ],
                 ),
@@ -76,19 +115,34 @@ def make_plan_with_training() -> UserPlan:
                 WeeklyScheduleItem(day="tuesday", routine_id="pull", focus="pull", type="training"),
             ],
         ),
-        current_summary=PlanCurrentSummary(
-            active_focus="consistencia",
-            rationale="executar bloco base",
-            next_review="2026-05-15",
+        nutrition=PlanNutrition(
+            daily_targets=NutritionDailyTargets(
+                calories_kcal=2600,
+                protein_g=160,
+                carbs_g=315,
+                fat_g=75,
+            ),
+            strategy="superavit leve",
+            adherence_target_pct=85,
+        ),
+        alignment=PlanAlignment(
+            training_nutrition_rationale="Superavit leve para hipertrofia.",
+            energy_strategy="surplus",
+            recovery_assumptions=["dormir 7h"],
+            conflict_rules=[ConflictRule(trigger="queda de performance", action="revisar recuperacao")],
+        ),
+        tracking=PlanTracking(
+            workout_adherence_target_pct=85,
+            nutrition_adherence_target_pct=80,
+            progress_markers=[ProgressMarker(name="carga", source="workouts", target_summary="subir")],
+            review_questions=["Tudo coerente?"],
         ),
     )
+    return build_plan_from_create_input("test@test.com", payload)
 
 
 class TestGetPlanTrainingProgram:
-    """Tests for the get_plan_training_program tool."""
-
     def test_returns_training_program_when_plan_exists(self):
-        """Should return formatted training program when user has a plan."""
         mock_db = MagicMock()
         mock_db.get_plan.return_value = make_plan_with_training()
         tool = create_get_plan_training_program_tool(mock_db, "test@test.com")
@@ -105,7 +159,6 @@ class TestGetPlanTrainingProgram:
         assert "Terca" in result
 
     def test_returns_fallback_when_no_plan(self):
-        """Should return fallback message when user has no plan."""
         mock_db = MagicMock()
         mock_db.get_plan.return_value = None
         tool = create_get_plan_training_program_tool(mock_db, "test@test.com")
@@ -115,7 +168,6 @@ class TestGetPlanTrainingProgram:
         assert "Nenhum programa de treino salvo no plano" in result
 
     def test_returns_json_when_format_json(self):
-        """Should return JSON when format='json'."""
         mock_db = MagicMock()
         mock_db.get_plan.return_value = make_plan_with_training()
         tool = create_get_plan_training_program_tool(mock_db, "test@test.com")
@@ -123,16 +175,15 @@ class TestGetPlanTrainingProgram:
         result = tool.invoke({"format": "json"})
 
         import json
+
         data = json.loads(result)
         assert data["split_name"] == "PPL-UL"
         assert len(data["routines"]) == 2
         assert data["routines"][0]["name"] == "Push"
         assert data["routines"][0]["exercises"][0]["name"] == "Supino reto com barra"
-        # Should NOT include nutrition or goal data
-        assert "nutrition_strategy" not in data
+        assert "nutrition" not in data
 
     def test_does_not_expose_nutrition_or_goal_data(self):
-        """Should not return nutrition, goal, strategy or other non-training fields."""
         mock_db = MagicMock()
         mock_db.get_plan.return_value = make_plan_with_training()
         tool = create_get_plan_training_program_tool(mock_db, "test@test.com")
@@ -140,16 +191,14 @@ class TestGetPlanTrainingProgram:
         result = tool.invoke({"format": "json"})
 
         import json
+
         data = json.loads(result)
         assert "goal" not in data
-        assert "nutrition_strategy" not in data
-        assert "strategy" not in data
-        assert "checkpoints" not in data
+        assert "nutrition" not in data
+        assert "alignment" not in data
         assert "timeline" not in data
-        assert "current_summary" not in data
 
     def test_invoke_uses_database(self):
-        """Should call database.get_plan with correct user_email."""
         mock_db = MagicMock()
         mock_db.get_plan.return_value = None
         tool = create_get_plan_training_program_tool(mock_db, "user@test.com")

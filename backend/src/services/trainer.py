@@ -70,9 +70,13 @@ from src.services.raw_data_tools import (
     create_get_memories_raw_tool,
 )
 from src.services.plan_tools import (
+    create_create_plan_from_discovery_tool,
+    create_get_plan_status_tool,
     create_plan_help_tool,
     create_get_plan_tool,
-    create_upsert_plan_tool,
+    create_record_plan_review_tool,
+    create_update_plan_discovery_tool,
+    create_update_plan_section_tool,
 )
 from src.services.plan_training_tools import (
     create_get_plan_training_program_tool,
@@ -81,7 +85,7 @@ from src.services.memory_service import (
     get_memories_paginated as paginate_memories,
     add_memory as service_add_memory,
 )
-from src.services.plan_service import build_plan_prompt_snapshot
+from src.services.plan_service import build_plan_prompt_snapshot, build_progress_snapshot
 from src.services.adaptive_tdee import AdaptiveTDEEService
 from src.repositories.event_repository import EventRepository
 from src.core.logs import logger
@@ -622,7 +626,11 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
             create_reset_tdee_tracking_tool(self._database, user_email),
             # Plan - read + write
             create_get_plan_tool(self._database, user_email),
-            create_upsert_plan_tool(self._database, user_email),
+            create_get_plan_status_tool(self._database, user_email),
+            create_update_plan_discovery_tool(self._database, user_email),
+            create_create_plan_from_discovery_tool(self._database, user_email),
+            create_update_plan_section_tool(self._database, user_email),
+            create_record_plan_review_tool(self._database, user_email),
             create_plan_help_tool(self._database, user_email),
             # Plan training program (read-only, domain-specific)
             create_get_plan_training_program_tool(self._database, user_email),
@@ -713,7 +721,13 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
             user_email,
         )
         plan = await asyncio.to_thread(self._database.get_plan, user_email)
-        enriched_plan_snapshot = build_plan_prompt_snapshot(plan) if plan else None
+        discovery = await asyncio.to_thread(self._database.get_plan_discovery, user_email)
+        progress = (
+            await asyncio.to_thread(build_progress_snapshot, plan, self._database)
+            if plan
+            else None
+        )
+        enriched_plan_snapshot = build_plan_prompt_snapshot(plan, discovery, progress)
 
         input_data = self.prompt_builder.build_input_data(
             profile=profile,

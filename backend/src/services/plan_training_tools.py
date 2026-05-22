@@ -1,4 +1,4 @@
-"""Read-only tool for fetching the training program from the singleton plan."""
+"""Read-only tool for fetching the training section from the active plan."""
 
 import json
 
@@ -18,11 +18,11 @@ class PlanTrainingInput(BaseModel):
 
 
 def create_get_plan_training_program_tool(database, user_email: str):
-    """Returns only the training program section from the user's plan."""
+    """Returns only the training section from the user's plan."""
 
     @tool(args_schema=PlanTrainingInput)
     def get_plan_training_program(output_format: str = "text") -> str:
-        """Retorna o programa de treino salvo no plano mestre do usuario.
+        """Retorna a secao de treino salva no plano ativo do usuario.
         Use esta ferramenta quando o usuario perguntar sobre:
         - "qual e o meu treino/rotina"
         - "quais sao os exercicios do meu treino"
@@ -35,7 +35,7 @@ def create_get_plan_training_program_tool(database, user_email: str):
         plan = database.get_plan(user_email)
         if plan is None:
             return "Nenhum programa de treino salvo no plano."
-        tp = plan.training_program
+        tp = plan.training
         if output_format == "json":
             return json.dumps(tp.model_dump(), ensure_ascii=False, indent=2)
         lines = []
@@ -47,8 +47,8 @@ def create_get_plan_training_program_tool(database, user_email: str):
         for r in tp.routines:
             lines.append(f"--- {r.name} ---")
             for ex in r.exercises:
-                reps = ex.reps or ""
-                load = ex.load_guidance or ""
+                reps = f"{ex.rep_range.min_reps}-{ex.rep_range.max_reps}"
+                load = ex.intensity.target or ""
                 notes = ex.notes or ""
                 extra = f" - {load}" if load else ""
                 extra += f" ({notes})" if notes else ""

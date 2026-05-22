@@ -1,10 +1,10 @@
 from unittest.mock import MagicMock
 
-from src.services.prompt_builder import PromptBuilder
 from src.api.models.plan import PlanPromptContext
+from src.services.prompt_builder import PromptBuilder
 
 
-def _base_input(plan_snapshot=None):
+def _base_input(plan_snapshot: PlanPromptContext):
     profile = MagicMock()
     profile.display_name = "Rafa"
     profile.timezone = "Europe/Madrid"
@@ -20,34 +20,40 @@ def _base_input(plan_snapshot=None):
     )
 
 
-def test_prompt_builder_injects_plan_section_when_snapshot_exists():
+def test_prompt_builder_injects_active_plan_context():
     snapshot = PlanPromptContext(
-        title="Plano Atual",
-        goal_primary="ganhar massa",
-        objective_summary="Ganhar massa",
-        timeline_window="2026-04-19 a 2026-06-19",
-        review_cadence="semanal",
-        strategy_rationale="progressao",
-        constraints=["viagem quinta"],
-        preferences=[],
-        nutrition_targets={"calories": 3000, "protein_g": 180},
-        training_split="Push/Pull/Legs",
-        weekly_schedule=[{"day": "segunda", "routine_id": "push", "focus": "peito"}],
-        routines=[{"id": "push", "name": "Push", "exercises": []}],
-        current_summary={"active_focus": "consistencia", "next_review": "2026-04-26"},
-        latest_checkpoint={"summary": "aderencia boa"},
+        status="ACTIVE_PLAN",
+        schema_version="plan_v2",
+        active_plan={
+            "title": "Plano Atual",
+            "goal": {"primary_goal": "muscle_gain", "outcome_summary": "Ganhar massa"},
+            "training": {"split_name": "Push/Pull/Legs"},
+        },
+        discovery={},
+        progress_summary={},
     )
 
     input_data = _base_input(snapshot)
     rendered = PromptBuilder.get_prompt_template(input_data).format(**input_data)
 
     assert '"plan"' in rendered
-    assert "Push" in rendered
+    assert "ACTIVE_PLAN" in rendered
+    assert "Push/Pull/Legs" in rendered
 
 
-def test_prompt_builder_removes_plan_section_when_snapshot_missing():
-    input_data = _base_input(None)
+def test_prompt_builder_injects_discovery_context_without_active_plan():
+    snapshot = PlanPromptContext(
+        status="NO_PLAN",
+        schema_version=None,
+        active_plan={},
+        discovery={"missing_fields": ["goal_primary", "target_date"]},
+        progress_summary={},
+    )
+
+    input_data = _base_input(snapshot)
     rendered = PromptBuilder.get_prompt_template(input_data).format(**input_data)
 
     assert '"plan"' in rendered
-    assert "Nenhum plano mestre registrado." in rendered
+    assert "START_OR_CONTINUE_DISCOVERY" in rendered
+    assert "objetivo principal" in rendered
+    assert "`update_plan_discovery` antes de responder" in rendered

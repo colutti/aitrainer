@@ -1,768 +1,382 @@
-from datetime import datetime, timezone
+from datetime import date
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from src.api.models.plan import (
+    ConflictRule,
+    ExternalRoutineBinding,
+    IntensityPrescription,
     NutritionDailyTargets,
-    NutritionStrategy,
-    PlanCurrentSummary,
+    PlanAlignment,
+    PlanCreateInput,
+    PlanDiscoveryUpdateInput,
     PlanGoal,
-    PlanPromptContext,
-    PlanStrategy,
+    PlanReviewInput,
+    PlanSectionUpdateInput,
     PlanTimeline,
-    PlanUpsertInput,
+    PlanTracking,
+    PlanUserContext,
+    ProgressMarker,
+    ProgressionRule,
+    RepRange,
+    SuccessMetric,
     TrainingExercise,
-    TrainingProgram,
+    PlanTraining,
     TrainingRoutine,
-    UserPlan,
     WeeklyScheduleItem,
 )
 from src.services.plan_service import (
-    build_plan_singleton,
+    apply_discovery_update,
+    build_plan_from_create_input,
     build_plan_prompt_snapshot,
+    build_plan_view_model,
+    build_progress_snapshot,
+    build_review_record,
     format_plan_snapshot,
-    missing_master_plan_fields,
+    merge_plan_section,
+    missing_discovery_fields,
 )
+from src.api.models.routine import HevyRoutine, HevyRoutineExercise
+from src.services.plan_hevy_sync import HevySyncError, sync_training_with_hevy_if_needed
 
-now = datetime.now(timezone.utc)
 
-
-def make_plan() -> UserPlan:
-    return UserPlan(
-        user_email="user@test.com",
-        title="Plano Atual",
+def make_create_input() -> PlanCreateInput:
+    return PlanCreateInput(
+        title="Plano Mestre",
         goal=PlanGoal(
-            primary="build_muscle",
-            objective_summary="Ganhar massa com controle de gordura",
-            success_criteria=["volume em alta"],
+            primary_goal="muscle_gain",
+            outcome_summary="Ganhar massa com superavit controlado",
+            success_metrics=[
+                SuccessMetric(
+                    metric_name="peso",
+                    target_value=75,
+                    unit="kg",
+                    direction="increase",
+                    deadline=date(2026, 8, 1),
+                )
+            ],
         ),
         timeline=PlanTimeline(
-            start_date=datetime(2026, 4, 19, tzinfo=timezone.utc),
-            target_date=datetime(2026, 6, 19, tzinfo=timezone.utc),
-            review_cadence="quinzenal",
+            start_date=date(2026, 5, 1),
+            target_date=date(2026, 8, 1),
+            review_cadence_days=7,
+            current_phase="acumulacao",
         ),
-        strategy=PlanStrategy(
-            rationale="superavit leve com progressao de carga",
-            adaptation_policy="ajustar macros por evidencia semanal",
-            constraints=["viagem quinta"],
+        user_context=PlanUserContext(
+            training_days_available=["monday", "wednesday", "friday"],
+            session_duration_min=60,
+            constraints=["nenhuma"],
             preferences=["academia"],
-            current_risks=["sono irregular"],
+            available_equipment=["barra"],
         ),
-        nutrition_strategy=NutritionStrategy(
-            daily_targets=NutritionDailyTargets(
-                calories=3000, protein_g=180, carbs_g=300, fat_g=90,
-            ),
-        ),
-        training_program=TrainingProgram(
-            split_name="push_pull_legs",
-            frequency_per_week=2,
+        training=PlanTraining(
+            split_name="upper_lower",
+            frequency_per_week=1,
             session_duration_min=60,
             routines=[
                 TrainingRoutine(
-                    id="push_a",
-                    name="Push A",
+                    id="upper_a",
+                    name="Upper A",
                     exercises=[
                         TrainingExercise(
-                            name="Supino Reto", sets=4, reps="6-8", load_guidance="RPE 8",
+                            name="Supino Reto",
+                            sets=4,
+                            rep_range=RepRange(min_reps=6, max_reps=8),
+                            intensity=IntensityPrescription(
+                                prescription_type="rpe",
+                                target="8",
+                            ),
+                            progression_rule=ProgressionRule(
+                                method="double_progression",
+                                increase_when="bater o topo da faixa",
+                                hold_when="ficar no meio da faixa",
+                                deload_when="regredir por 2 semanas",
+                            ),
                         ),
                     ],
-                ),
-                TrainingRoutine(
-                    id="pull_a",
-                    name="Pull A",
-                    exercises=[
-                        TrainingExercise(
-                            name="Remada Curvada", sets=4, reps="8-10", load_guidance="RPE 8",
-                        ),
-                    ],
-                ),
+                )
             ],
             weekly_schedule=[
-                WeeklyScheduleItem(day="monday", routine_id="push_a", focus="push"),
-                WeeklyScheduleItem(day="tuesday", routine_id="pull_a", focus="pull"),
+                WeeklyScheduleItem(
+                    day="monday",
+                    routine_id="upper_a",
+                    focus="peito",
+                    type="training",
+                )
             ],
         ),
-        current_summary=PlanCurrentSummary(
-            active_focus="consistencia",
-            rationale="executar bloco base por 2 semanas",
-            next_review="2026-05-15",
+        nutrition={
+            "daily_targets": NutritionDailyTargets(
+                calories_kcal=2600,
+                protein_g=160,
+                carbs_g=315,
+                fat_g=75,
+            ),
+            "strategy": "superavit leve",
+            "adherence_target_pct": 85,
+        },
+        alignment=PlanAlignment(
+            training_nutrition_rationale="Superavit leve para hipertrofia.",
+            energy_strategy="surplus",
+            recovery_assumptions=["dormir 7h"],
+            conflict_rules=[
+                ConflictRule(
+                    trigger="queda de performance",
+                    action="revisar recuperacao",
+                )
+            ],
         ),
-        checkpoints=[],
+        tracking=PlanTracking(
+            workout_adherence_target_pct=85,
+            nutrition_adherence_target_pct=80,
+            progress_markers=[
+                ProgressMarker(
+                    name="carga no supino",
+                    source="workouts",
+                    target_summary="subir carga ou reps",
+                )
+            ],
+            review_questions=["A recuperacao esta coerente?"],
+        ),
     )
 
 
-def test_build_plan_prompt_snapshot_returns_none_when_missing_plan():
-    assert build_plan_prompt_snapshot(None) is None
-
-
-def test_build_plan_prompt_snapshot_compacts_active_plan():
-    snapshot = build_plan_prompt_snapshot(make_plan())
-
-    assert snapshot is not None
-    assert snapshot.title == "Plano Atual"
-    assert snapshot.goal_primary == "build_muscle"
-    assert snapshot.objective_summary == "Ganhar massa com controle de gordura"
-    assert "2026-04-19" in snapshot.timeline_window
-    assert "2026-06-19" in snapshot.timeline_window
-    assert snapshot.review_cadence == "quinzenal"
-    assert snapshot.strategy_rationale == "superavit leve com progressao de carga"
-    assert snapshot.constraints == ["viagem quinta"]
-    assert snapshot.preferences == ["academia"]
-    assert snapshot.nutrition_targets["calories"] == 3000
-    assert snapshot.training_split == "push_pull_legs"
-    assert len(snapshot.weekly_schedule) == 2
-    assert len(snapshot.routines) == 2
-
-
-def test_format_plan_snapshot_creates_prompt_ready_block():
-    snapshot = build_plan_prompt_snapshot(make_plan())
-    content = format_plan_snapshot(snapshot)
-
-    assert "Plano mestre ativo" in content
-    assert "build_muscle" in content
-    assert "Ganhar massa com controle de gordura" in content
-    assert "push_pull_legs" in content
-    assert "3000 kcal" in content
-    assert "viagem quinta" in content
-
-
-def test_format_plan_snapshot_handles_none():
-    content = format_plan_snapshot(None)
-    assert "Nenhum plano mestre registrado" in content
-
-
-def test_format_plan_snapshot_handles_empty_constraints():
-    snapshot = PlanPromptContext(
-        title="Plano Simples",
-        goal_primary="lose_fat",
-        objective_summary="Definir",
-        timeline_window="2026-04 a 2026-07",
-        review_cadence="semanal",
-        strategy_rationale="deficit",
-        training_split="full_body",
+def test_discovery_update_tracks_missing_fields():
+    discovery = apply_discovery_update(
+        "user@test.com",
+        None,
+        PlanDiscoveryUpdateInput(goal_primary="muscle_gain", goal_summary="Ganhar massa"),
     )
-    content = format_plan_snapshot(snapshot)
-    assert "sem restricoes" in content
+
+    assert "target_date" in discovery.missing_fields
+    assert "goal_primary" not in discovery.missing_fields
 
 
-def test_format_plan_snapshot_handles_missing_nutrition_targets():
-    snapshot = PlanPromptContext(
-        title="Plano sem Nutri",
-        goal_primary="build_muscle",
-        objective_summary="Crescer",
-        timeline_window="2026-04 a 2026-07",
-        review_cadence="semanal",
-        strategy_rationale="superavit",
-        nutrition_targets={},
-        training_split="upper_lower",
-    )
-    content = format_plan_snapshot(snapshot)
-    assert "nao definidas" in content
+def test_build_plan_from_create_input_sets_active_contract():
+    plan = build_plan_from_create_input("user@test.com", make_create_input())
+
+    assert plan.schema_version == "plan_v2"
+    assert plan.training.split_name == "upper_lower"
 
 
-def test_build_plan_singleton_creates_valid_plan_from_upsert_input():
-    payload = PlanUpsertInput(
-        title="Plano Inicial",
-        change_reason="initial_plan",
-        goal={"primary": "lose_fat", "objective_summary": "Recomposicao corporal"},
-        timeline={
-            "target_date": "2026-09-01T00:00:00+00:00",
-            "review_cadence": "quinzenal",
-        },
-        strategy={
-            "rationale": "Deficit moderado com foco em forca",
-            "adaptation_policy": "ajustar por evidencia semanal",
-            "constraints": ["rotina corrida"],
-            "preferences": ["academia"],
-            "current_risks": [],
-        },
-        nutrition_strategy={
-            "daily_targets": {
-                "calories": 2400,
-                "protein_g": 180,
-                "carbs_g": 200,
-                "fat_g": 70,
+def test_merge_plan_section_updates_typed_section():
+    plan = build_plan_from_create_input("user@test.com", make_create_input())
+    updated = merge_plan_section(
+        plan,
+        PlanSectionUpdateInput(
+            section="nutrition",
+            nutrition={
+                "daily_targets": {
+                    "calories_kcal": 2800,
+                    "protein_g": 160,
+                    "carbs_g": 340,
+                    "fat_g": 80,
+                },
+                "strategy": "superavit moderado",
+                "adherence_target_pct": 85,
             },
-        },
-        training_program={
-            "split_name": "full_body",
-            "frequency_per_week": 1,
-            "session_duration_min": 45,
-            "routines": [
-                {
-                    "id": "fb_a",
-                    "name": "Full Body A",
-                    "exercises": [
-                        {
-                            "name": "Agachamento",
-                            "sets": 4,
-                            "reps": "6-8",
-                            "load_guidance": "RPE 8",
-                        },
-                    ],
+        ),
+    )
+
+    assert updated.nutrition.daily_targets.calories_kcal == 2800
+
+
+def test_build_plan_prompt_snapshot_handles_no_plan():
+    snapshot = build_plan_prompt_snapshot(None, None, None)
+    text = format_plan_snapshot(snapshot)
+
+    assert snapshot.status == "NO_PLAN"
+    assert "START_OR_CONTINUE_DISCOVERY" in text
+
+
+def test_build_progress_snapshot_marks_missing_execution_data():
+    plan = build_plan_from_create_input("user@test.com", make_create_input())
+    database = MagicMock()
+    database.get_workout_logs.return_value = []
+    database.get_nutrition_stats.return_value = MagicMock(total_logs=0)
+    database.get_weight_logs.return_value = []
+
+    progress = build_progress_snapshot(plan, database)
+
+    assert progress.training_adherence.status == "insufficient_data"
+    assert progress.nutrition_adherence.status == "insufficient_data"
+
+
+def test_build_plan_view_model_returns_discovery_view():
+    discovery = apply_discovery_update(
+        "user@test.com",
+        None,
+        PlanDiscoveryUpdateInput(goal_primary="muscle_gain"),
+    )
+
+    view = build_plan_view_model(None, discovery, None)
+
+    assert view.status == "DISCOVERY_IN_PROGRESS"
+    assert view.discovery is not None
+
+
+def test_build_plan_view_model_includes_weekly_schedule_for_active_plan():
+    plan = build_plan_from_create_input("user@test.com", make_create_input())
+    view = build_plan_view_model(plan, None, None)
+
+    assert view.status == "ACTIVE_PLAN"
+    assert view.active_plan is not None
+    assert len(view.active_plan.weekly_schedule) == 7
+    assert any(item.is_today for item in view.active_plan.weekly_schedule)
+    assert {item.day for item in view.active_plan.weekly_schedule} == {
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+    }
+    assert view.active_plan.weekly_schedule[0].exercise_names == ["Supino Reto"]
+
+
+def test_build_review_record_preserves_evidence():
+    review = build_review_record(
+        PlanReviewInput(
+            summary="Aderencia forte",
+            decision="manter estrategia",
+            evidence_summary=["3 treinos completos"],
+        )
+    )
+
+    assert review.evidence_summary == ["3 treinos completos"]
+
+
+def test_missing_discovery_fields_when_all_data_absent():
+    assert "goal_primary" in missing_discovery_fields(None)
+
+
+def test_sync_training_with_hevy_updates_bound_routine_and_enriches_exercise_ids(monkeypatch):
+    current_plan = build_plan_from_create_input("user@test.com", make_create_input())
+    base_routine = current_plan.training.routines[0]
+    bound_routine = base_routine.model_copy(
+        update={
+            "external_bindings": [
+                ExternalRoutineBinding(
+                    provider="hevy",
+                    external_routine_id="hevy_routine_1",
+                    external_routine_name="Upper A",
+                )
+            ]
+        }
+    )
+    current_plan = current_plan.model_copy(
+        update={
+            "training": current_plan.training.model_copy(update={"routines": [bound_routine]})
+        }
+    )
+    updated_plan = current_plan.model_copy(
+        update={
+            "training": current_plan.training.model_copy(
+                update={
+                    "routines": [
+                        bound_routine.model_copy(
+                            update={
+                                "exercises": [
+                                    bound_routine.exercises[0].model_copy(
+                                        update={"rest_seconds": 120}
+                                    )
+                                ]
+                            }
+                        )
+                    ]
                 }
-            ],
-            "weekly_schedule": [
-                {"day": "monday", "routine_id": "fb_a", "focus": "full_body"},
-            ],
-        },
-        current_summary={
-            "active_focus": "consistencia",
-            "rationale": "executar bloco inicial",
-            "next_review": "2026-05-15",
-        },
+            )
+        }
     )
 
-    plan = build_plan_singleton("user@test.com", None, payload)
+    database = MagicMock()
+    database.get_user_profile.return_value = MagicMock(
+        hevy_enabled=True,
+        hevy_api_key="key",
+    )
+    database.workouts_repo = MagicMock()
 
-    assert plan.user_email == "user@test.com"
-    assert plan.title == "Plano Inicial"
-    assert plan.goal.primary == "lose_fat"
-    assert plan.change_reason == "initial_plan"
-    assert plan.timeline.target_date >= datetime.now(timezone.utc)
-    assert plan.nutrition_strategy.daily_targets.calories == 2400
-    assert plan.training_program.routines[0].id == "fb_a"
+    current_hevy_routine = HevyRoutine(
+        id="hevy_routine_1",
+        title="Upper A",
+        exercises=[
+            HevyRoutineExercise(
+                exercise_template_id="tpl_supino",
+                title="Supino Reto",
+                sets=[],
+            )
+        ],
+    )
+    synced_hevy_routine = HevyRoutine(
+        id="hevy_routine_1",
+        title="Upper A",
+        exercises=current_hevy_routine.exercises,
+    )
+
+    hevy_service = MagicMock()
+    hevy_service.get_routine_by_id = AsyncMock(return_value=current_hevy_routine)
+    hevy_service.update_routine = AsyncMock(return_value=synced_hevy_routine)
+    monkeypatch.setattr(
+        "src.services.plan_hevy_sync.HevyService",
+        MagicMock(return_value=hevy_service),
+    )
+
+    synced_plan = sync_training_with_hevy_if_needed(
+        database=database,
+        user_email="user@test.com",
+        current_plan=current_plan,
+        updated_plan=updated_plan,
+    )
+
+    synced_exercise = synced_plan.training.routines[0].exercises[0]
+    assert synced_exercise.external_exercise_template_id == "tpl_supino"
+    assert (
+        synced_plan.training.routines[0].external_bindings[0].external_routine_name
+        == "Upper A"
+    )
 
 
-def test_build_plan_singleton_normalizes_numeric_and_list_reps():
-    payload = PlanUpsertInput(
-        title="Plano Reps",
-        change_reason="goal_change",
-        goal={"primary": "lose_fat", "objective_summary": "Recomposicao"},
-        timeline={"target_date": "2026-10-01T00:00:00+00:00", "review_cadence": "semanal"},
-        strategy={"rationale": "ok", "adaptation_policy": "ok"},
-        nutrition_strategy={
-            "daily_targets": {"calories": 2200, "protein_g": 170, "carbs_g": 220, "fat_g": 65}
-        },
-        training_program={
-            "split_name": "full_body",
-            "frequency_per_week": 1,
-            "session_duration_min": 50,
-            "routines": [
-                {
-                    "id": "fb_a",
-                    "name": "Full Body A",
-                    "exercises": [
-                        {"name": "Supino", "sets": 4, "reps": 12, "load_guidance": "RPE 8"},
-                        {"name": "Remada", "sets": 3, "reps": [12, 10, 8], "load_guidance": "RPE 8"},
-                    ],
+def test_sync_training_with_hevy_raises_when_bound_routine_removed():
+    current_plan = build_plan_from_create_input("user@test.com", make_create_input())
+    base_routine = current_plan.training.routines[0]
+    bound_routine = base_routine.model_copy(
+        update={
+            "external_bindings": [
+                ExternalRoutineBinding(
+                    provider="hevy",
+                    external_routine_id="hevy_routine_1",
+                )
+            ]
+        }
+    )
+    current_plan = current_plan.model_copy(
+        update={
+            "training": current_plan.training.model_copy(update={"routines": [bound_routine]})
+        }
+    )
+    updated_plan = current_plan.model_copy(
+        update={
+            "training": current_plan.training.model_copy(
+                update={
+                    "routines": []
                 }
-            ],
-            "weekly_schedule": [{"day": "monday", "routine_id": "fb_a", "focus": "full_body"}],
-        },
-        current_summary={
-            "active_focus": "execucao",
-            "rationale": "normalizar reps",
-            "next_review": "2026-10-08",
-        },
+            )
+        }
     )
 
-    plan = build_plan_singleton("user@test.com", None, payload)
-    exercises = plan.training_program.routines[0].exercises
-
-    assert exercises[0].reps == "12"
-    assert exercises[1].reps == "12/10/8"
-
-
-def test_build_plan_singleton_normalizes_weekdays_and_schedule_type_to_canonical():
-    payload = PlanUpsertInput(
-        title="Plano Dias",
-        change_reason="goal_change",
-        goal={"primary": "lose_fat", "objective_summary": "Recomposicao"},
-        timeline={"target_date": "2026-10-01T00:00:00+00:00", "review_cadence": "semanal"},
-        strategy={"rationale": "ok", "adaptation_policy": "ok"},
-        nutrition_strategy={
-            "daily_targets": {"calories": 2200, "protein_g": 170, "carbs_g": 220, "fat_g": 65}
-        },
-        training_program={
-            "split_name": "full_body",
-            "frequency_per_week": 3,
-            "session_duration_min": 50,
-            "routines": [
-                {
-                    "id": "fb_a",
-                    "name": "Full Body A",
-                    "exercises": [{"name": "Supino", "sets": 4, "reps": "12", "load_guidance": "RPE 8"}],
-                }
-            ],
-            "weekly_schedule": [
-                {"day": "Segunda-feira", "routine_id": "fb_a", "focus": "full_body", "type": "strength"},
-                {"day": "martes", "routine_id": "fb_a", "focus": "full_body", "type": "hypertrophy"},
-                {"day": "quarta", "routine_id": "fb_a", "focus": "full_body", "type": "whatever"},
-            ],
-        },
-        current_summary={
-            "active_focus": "execucao",
-            "rationale": "normalizar dias",
-            "next_review": "2026-10-08",
-        },
+    database = MagicMock()
+    database.get_user_profile.return_value = MagicMock(
+        hevy_enabled=True,
+        hevy_api_key="key",
     )
+    database.workouts_repo = MagicMock()
 
-    plan = build_plan_singleton("user@test.com", make_plan(), payload)
-    schedule = plan.training_program.weekly_schedule
-
-    assert [item.day for item in schedule] == ["monday", "tuesday", "wednesday"]
-    assert all(item.type == "training" for item in schedule)
-
-
-def test_missing_master_plan_fields_returns_all_when_empty_payload():
-    payload = PlanUpsertInput(
-        title="Plano Vazio",
-        goal={},
-        timeline={},
-        strategy={},
-        nutrition_strategy={},
-        training_program={},
-        current_summary={},
-    )
-    missing = missing_master_plan_fields(payload)
-    assert len(missing) > 0
-    assert "goal.primary" in missing
-    assert "timeline.target_date" in missing
-    assert "strategy.rationale" in missing
-    assert "current_summary.active_focus" in missing
-
-
-def test_missing_master_plan_fields_merges_from_existing_plan():
-    payload = PlanUpsertInput(
-        title="Plano Parcial",
-        goal={"primary": "lose_fat"},
-        timeline={"target_date": "2026-09-01T00:00:00+00:00"},
-        strategy={"rationale": "ok"},
-        nutrition_strategy={
-            "daily_targets": {
-                "calories": 2000,
-                "protein_g": 150,
-            },
-        },
-        training_program={
-            "split_name": "full_body",
-            "routines": [
-                {
-                    "id": "fb_a",
-                    "name": "Full Body A",
-                    "exercises": [
-                        {"name": "Supino", "sets": 3, "reps": "8-10", "load_guidance": "RPE 7"},
-                    ],
-                },
-            ],
-        },
-        current_summary={
-            "active_focus": "inicio",
-        },
-    )
-
-    existing_plan = make_plan()
-    missing = missing_master_plan_fields(payload, existing_plan)
-
-    assert missing == []
-
-
-def test_build_plan_singleton_merges_with_existing_plan():
-    payload = PlanUpsertInput(
-        title="Plano Atualizado",
-        change_reason="review",
-        goal={"primary": "lose_fat", "objective_summary": "Definir mais"},
-        timeline={
-            "target_date": "2026-12-01T00:00:00+00:00",
-            "review_cadence": "mensal",
-        },
-        strategy={
-            "rationale": "Deficit agressivo",
-            "adaptation_policy": "ajustar quinzenal",
-        },
-        nutrition_strategy={
-            "daily_targets": {
-                "calories": 2200,
-            },
-        },
-        training_program={
-            "split_name": "upper_lower",
-            "frequency_per_week": 2,
-            "session_duration_min": 50,
-            "routines": [
-                {
-                    "id": "push_a",
-                    "name": "Push A",
-                    "exercises": [
-                        {"name": "Desenvolvimento", "sets": 4, "reps": "8-10", "load_guidance": "RPE 8"},
-                    ],
-                },
-            ],
-            "weekly_schedule": [
-                {"day": "monday", "routine_id": "push_a", "focus": "push"},
-            ],
-        },
-        current_summary={
-            "active_focus": "intensidade",
-            "rationale": "aumentar volume",
-            "next_review": "2026-07-01",
-        },
-    )
-
-    existing = make_plan()
-    plan = build_plan_singleton("user@test.com", existing, payload)
-
-    assert plan.title == "Plano Atualizado"
-    assert plan.goal.primary == "lose_fat"
-    assert plan.goal.objective_summary == "Definir mais"
-
-    assert plan.strategy.rationale == "Deficit agressivo"
-
-    assert plan.nutrition_strategy.daily_targets.calories == 2200
-
-    assert plan.training_program.split_name == "upper_lower"
-    assert plan.training_program.frequency_per_week == 2
-
-    assert plan.current_summary.active_focus == "intensidade"
-
-
-def test_build_plan_singleton_preserves_omitted_routines_and_schedule_on_update():
-    payload = PlanUpsertInput(
-        title="Plano Atualizado",
-        change_reason="review",
-        goal={"primary": "build_muscle", "objective_summary": "Ganhar massa com mais foco"},
-        timeline={
-            "target_date": "2026-12-01T00:00:00+00:00",
-            "review_cadence": "mensal",
-        },
-        strategy={
-            "rationale": "superavit com foco no treino A",
-            "adaptation_policy": "ajustar quinzenal",
-        },
-        nutrition_strategy={
-            "daily_targets": {
-                "calories": 3050,
-            },
-        },
-        training_program={
-            "split_name": "push_pull_legs",
-            "frequency_per_week": 2,
-            "session_duration_min": 60,
-            "routines": [
-                {
-                    "id": "push_a",
-                    "name": "Push A",
-                    "exercises": [
-                        {
-                            "name": "Supino Inclinado",
-                            "sets": 4,
-                            "reps": "8-10",
-                            "load_guidance": "RPE 8",
-                        },
-                    ],
-                },
-            ],
-            "weekly_schedule": [
-                {"day": "monday", "routine_id": "push_a", "focus": "push"},
-            ],
-        },
-        current_summary={
-            "active_focus": "intensidade",
-            "rationale": "aumentar volume",
-            "next_review": "2026-07-01",
-        },
-    )
-
-    existing = make_plan()
-    plan = build_plan_singleton("user@test.com", existing, payload)
-
-    assert [routine.id for routine in plan.training_program.routines] == [
-        "push_a",
-        "pull_a",
-    ]
-    assert plan.training_program.routines[0].exercises[0].name == "Supino Inclinado"
-    assert plan.training_program.routines[1].exercises[0].name == "Remada Curvada"
-    assert [(item.day, item.routine_id) for item in plan.training_program.weekly_schedule] == [
-        ("monday", "push_a"),
-        ("tuesday", "pull_a"),
-    ]
-
-
-def test_build_plan_singleton_coerces_numeric_routine_ids_from_llm_payload():
-    payload = PlanUpsertInput(
-        title="Plano Atualizado",
-        change_reason="exercise_swap",
-        goal={"primary": "build_muscle", "objective_summary": "Ganhar massa com mais foco"},
-        timeline={
-            "target_date": "2026-12-01T00:00:00+00:00",
-            "review_cadence": "mensal",
-        },
-        strategy={
-            "rationale": "substituir exercicio de costas",
-            "adaptation_policy": "ajustar por evidencia semanal",
-        },
-        nutrition_strategy={
-            "daily_targets": {
-                "calories": 3050,
-            },
-        },
-        training_program={
-            "split_name": "push_pull_legs",
-            "frequency_per_week": 2,
-            "session_duration_min": 60,
-            "routines": [
-                {
-                    "id": 1,
-                    "name": "Pull A",
-                    "exercises": [
-                        {
-                            "name": "Barra Fixa",
-                            "sets": 4,
-                            "reps": "6-10",
-                            "load_guidance": "RPE 8",
-                        },
-                    ],
-                },
-            ],
-            "weekly_schedule": [
-                {"day": "tuesday", "routine_id": 1, "focus": "pull"},
-            ],
-        },
-        current_summary={
-            "active_focus": "costas",
-            "rationale": "substituir puxada alta por barra fixa",
-            "next_review": "2026-07-01",
-        },
-    )
-
-    plan = build_plan_singleton("user@test.com", make_plan(), payload)
-
-    assert plan.training_program.routines[0].id == "1"
-    assert plan.training_program.weekly_schedule[0].routine_id == "1"
-
-
-def test_build_plan_singleton_preserves_created_at_and_start_date_on_update():
-    payload = PlanUpsertInput(
-        title="Plano Atualizado",
-        change_reason="review",
-        goal={"primary": "build_muscle", "objective_summary": "Ganhar massa com mais foco"},
-        timeline={
-            "target_date": "2026-12-01T00:00:00+00:00",
-            "review_cadence": "mensal",
-        },
-        strategy={
-            "rationale": "superavit com foco no treino A",
-            "adaptation_policy": "ajustar quinzenal",
-        },
-        nutrition_strategy={
-            "daily_targets": {
-                "calories": 3050,
-            },
-        },
-        training_program={
-            "split_name": "push_pull_legs",
-            "frequency_per_week": 2,
-            "session_duration_min": 60,
-            "routines": [
-                {
-                    "id": "push_a",
-                    "name": "Push A",
-                    "exercises": [
-                        {
-                            "name": "Supino Inclinado",
-                            "sets": 4,
-                            "reps": "8-10",
-                            "load_guidance": "RPE 8",
-                        },
-                    ],
-                },
-            ],
-            "weekly_schedule": [
-                {"day": "monday", "routine_id": "push_a", "focus": "push"},
-            ],
-        },
-        current_summary={
-            "active_focus": "intensidade",
-            "rationale": "aumentar volume",
-            "next_review": "2026-07-01",
-        },
-    )
-
-    existing = make_plan()
-    original_created_at = existing.created_at
-    original_start_date = existing.timeline.start_date
-
-    plan = build_plan_singleton("user@test.com", existing, payload)
-
-    assert plan.created_at == original_created_at
-    assert plan.timeline.start_date == original_start_date
-
-
-def test_build_plan_singleton_accepts_rest_days_with_placeholder_routine_id():
-    payload = PlanUpsertInput(
-        title="Plano Atualizado",
-        change_reason="review",
-        goal={"primary": "build_muscle", "objective_summary": "Ganhar massa com mais foco"},
-        timeline={
-            "target_date": "2026-12-01T00:00:00+00:00",
-            "review_cadence": "mensal",
-        },
-        strategy={
-            "rationale": "manter consistencia com descanso estruturado",
-            "adaptation_policy": "ajustar quinzenal",
-        },
-        nutrition_strategy={
-            "daily_targets": {
-                "calories": 3000,
-                "protein_g": 180,
-                "carbs_g": 320,
-                "fat_g": 80,
-            },
-        },
-        training_program={
-            "split_name": "upper_lower",
-            "frequency_per_week": 1,
-            "session_duration_min": 60,
-            "routines": [
-                {
-                    "id": "upper_a",
-                    "name": "Upper A",
-                    "exercises": [
-                        {
-                            "name": "Supino Reto",
-                            "sets": 4,
-                            "reps": "6-8",
-                            "load_guidance": "RPE 8",
-                        },
-                    ],
-                },
-            ],
-            "weekly_schedule": [
-                {"day": "monday", "routine_id": "upper_a", "focus": "upper", "type": "training"},
-                {"day": "tuesday", "routine_id": "none", "focus": "off", "type": "off"},
-            ],
-        },
-        current_summary={
-            "active_focus": "consistencia",
-            "rationale": "preservar recuperacao",
-            "next_review": "2026-07-01",
-        },
-    )
-
-    plan = build_plan_singleton("user@test.com", None, payload)
-
-    assert len(plan.training_program.weekly_schedule) == 2
-    assert plan.training_program.weekly_schedule[1].type == "off"
-    assert plan.training_program.weekly_schedule[1].routine_id is None
-
-
-def test_build_plan_singleton_accepts_off_descanso_label_as_rest_day():
-    payload = PlanUpsertInput(
-        title="Plano Atualizado",
-        change_reason="review",
-        goal={"primary": "build_muscle", "objective_summary": "Ganhar massa com mais foco"},
-        timeline={
-            "target_date": "2026-12-01T00:00:00+00:00",
-            "review_cadence": "mensal",
-        },
-        strategy={
-            "rationale": "organizar descanso",
-            "adaptation_policy": "ajustar quinzenal",
-        },
-        nutrition_strategy={
-            "daily_targets": {
-                "calories": 3000,
-                "protein_g": 180,
-                "carbs_g": 320,
-                "fat_g": 80,
-            },
-        },
-        training_program={
-            "split_name": "upper_lower",
-            "frequency_per_week": 1,
-            "session_duration_min": 60,
-            "routines": [
-                {
-                    "id": "upper_a",
-                    "name": "Upper A",
-                    "exercises": [
-                        {
-                            "name": "Supino Reto",
-                            "sets": 4,
-                            "reps": "6-8",
-                            "load_guidance": "RPE 8",
-                        },
-                    ],
-                },
-            ],
-            "weekly_schedule": [
-                {"day": "monday", "routine_id": "upper_a", "focus": "upper", "type": "training"},
-                {
-                    "day": "tuesday",
-                    "routine_id": "none",
-                    "focus": "descanso",
-                    "type": "OFF (Descanso)",
-                },
-            ],
-        },
-        current_summary={
-            "active_focus": "consistencia",
-            "rationale": "preservar recuperacao",
-            "next_review": "2026-07-01",
-        },
-    )
-
-    plan = build_plan_singleton("user@test.com", None, payload)
-
-    assert len(plan.training_program.weekly_schedule) == 2
-    assert plan.training_program.weekly_schedule[1].type == "off"
-    assert plan.training_program.weekly_schedule[1].routine_id is None
-
-
-def test_build_plan_singleton_infers_rest_day_from_focus_and_placeholder_routine():
-    payload = PlanUpsertInput(
-        title="Plano Atualizado",
-        change_reason="review",
-        goal={"primary": "build_muscle", "objective_summary": "Ganhar massa com mais foco"},
-        timeline={
-            "target_date": "2026-12-01T00:00:00+00:00",
-            "review_cadence": "mensal",
-        },
-        strategy={
-            "rationale": "organizar descanso",
-            "adaptation_policy": "ajustar quinzenal",
-        },
-        nutrition_strategy={
-            "daily_targets": {
-                "calories": 3000,
-                "protein_g": 180,
-                "carbs_g": 320,
-                "fat_g": 80,
-            },
-        },
-        training_program={
-            "split_name": "upper_lower",
-            "frequency_per_week": 1,
-            "session_duration_min": 60,
-            "routines": [
-                {
-                    "id": "upper_a",
-                    "name": "Upper A",
-                    "exercises": [
-                        {
-                            "name": "Supino Reto",
-                            "sets": 4,
-                            "reps": "6-8",
-                            "load_guidance": "RPE 8",
-                        },
-                    ],
-                },
-            ],
-            "weekly_schedule": [
-                {"day": "monday", "routine_id": "upper_a", "focus": "upper"},
-                {"day": "tuesday", "routine_id": "none", "focus": "OFF (Descanso)"},
-            ],
-        },
-        current_summary={
-            "active_focus": "consistencia",
-            "rationale": "preservar recuperacao",
-            "next_review": "2026-07-01",
-        },
-    )
-
-    plan = build_plan_singleton("user@test.com", None, payload)
-
-    assert len(plan.training_program.weekly_schedule) == 2
-    assert plan.training_program.weekly_schedule[0].type == "training"
-    assert plan.training_program.weekly_schedule[1].type == "off"
-    assert plan.training_program.weekly_schedule[1].routine_id is None
-    assert plan.training_program.frequency_per_week == 1
+    with pytest.raises(HevySyncError):
+        sync_training_with_hevy_if_needed(
+            database=database,
+            user_email="user@test.com",
+            current_plan=current_plan,
+            updated_plan=updated_plan,
+        )

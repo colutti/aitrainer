@@ -344,13 +344,16 @@
     "sections": {
       "overview": "Visão geral do plano",
       "daily_routine": "Rotina do Dia",
+      "discovery": "Discovery do plano",
       "nutrition_strategy": "Estratégia Nutricional",
       "strategy": "Estratégia",
       "nutrition_targets": "Metas nutricionais",
       "training_program": "Programa de treino",
       "weekly_schedule": "Agenda semanal",
       "routines": "Rotinas",
-      "latest_checkpoint": "Última revisão"
+      "latest_checkpoint": "Última revisão",
+      "progress": "Progresso",
+      "conflicts": "Conflitos"
     },
     "labels": {
       "review_cadence": "Cadência de revisão",
@@ -381,8 +384,21 @@
       "sets_reps": "Séries x Reps",
       "rpe": "RPE",
       "rest_day": "Nenhum treino planejado para este dia.",
+      "rest_day_short": "Descanso",
+      "today": "Hoje",
       "primary_goal": "Objetivo Principal",
-      "success_criteria": "Critérios de Sucesso"
+      "success_criteria": "Critérios de Sucesso",
+      "collected_fields": "Dados já coletados",
+      "missing_fields": "Dados que ainda faltam"
+    },
+    "days": {
+      "monday": "Segunda",
+      "tuesday": "Terça",
+      "wednesday": "Quarta",
+      "thursday": "Quinta",
+      "friday": "Sexta",
+      "saturday": "Sábado",
+      "sunday": "Domingo"
     },
     "empty": {
       "title": "Nenhum plano encontrado",
@@ -394,6 +410,9 @@
       "empty": "Ainda não há revisão registrada para este plano.",
       "decision": "Decisão",
       "next_focus": "Próximo foco"
+    },
+    "progress": {
+      "empty": "Ainda não há dados suficientes para avaliar progresso."
     }
   },
   "chat": {

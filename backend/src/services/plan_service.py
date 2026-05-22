@@ -1,634 +1,427 @@
-"""Plan domain service helpers for master plan orchestration and prompt context."""
+"""Plan V2 service helpers for discovery, prompt context and view models."""
 
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone
 
 from src.api.models.plan import (
-    NutritionStrategy,
+    ActivePlanView,
+    CANONICAL_WEEKDAYS,
+    DiscoveryView,
+    PlanConflict,
+    PlanCreateInput,
+    PlanDiscoveryState,
+    PlanProgressSnapshot,
     PlanPromptContext,
-    PlanUpsertInput,
+    PlanReview,
+    PlanReviewInput,
+    PlanSectionUpdateInput,
+    PlanViewModel,
+    ProgressMetric,
+    WeeklyScheduleView,
+    TodayTrainingView,
     UserPlan,
 )
 
-CANONICAL_WEEKDAY_MAP = {
-    "monday": "monday",
-    "mon": "monday",
-    "segunda": "monday",
-    "segunda-feira": "monday",
-    "lunes": "monday",
-    "tuesday": "tuesday",
-    "tue": "tuesday",
-    "terca": "tuesday",
-    "terça": "tuesday",
-    "terca-feira": "tuesday",
-    "terça-feira": "tuesday",
-    "martes": "tuesday",
-    "wednesday": "wednesday",
-    "wed": "wednesday",
-    "quarta": "wednesday",
-    "quarta-feira": "wednesday",
-    "miercoles": "wednesday",
-    "miércoles": "wednesday",
-    "thursday": "thursday",
-    "thu": "thursday",
-    "quinta": "thursday",
-    "quinta-feira": "thursday",
-    "jueves": "thursday",
-    "friday": "friday",
-    "fri": "friday",
-    "sexta": "friday",
-    "sexta-feira": "friday",
-    "viernes": "friday",
-    "saturday": "saturday",
-    "sat": "saturday",
-    "sabado": "saturday",
-    "sábado": "saturday",
-    "sabado-feira": "saturday",
-    "sábado-feira": "saturday",
-    "sábadofeira": "saturday",
-    "sabadofeira": "saturday",
-    "sábado feira": "saturday",
-    "sabado feira": "saturday",
-    "sunday": "sunday",
-    "sun": "sunday",
-    "domingo": "sunday",
+
+DISCOVERY_FIELD_LABELS = {
+    "goal_primary": "objetivo principal",
+    "goal_summary": "resumo do objetivo",
+    "target_date": "data alvo",
+    "training_days_available": "dias disponiveis para treino",
+    "session_duration_min": "duracao da sessao",
+    "constraints": "restricoes ou limitacoes",
+    "preferences": "preferencias relevantes",
+    "available_equipment": "equipamentos disponiveis",
+    "metabolism_confirmed": "dados metabolicos oficiais",
 }
 
-REQUIRED_GOAL_FIELDS = ("primary", "objective_summary")
-REQUIRED_TIMELINE_FIELDS = ("target_date", "review_cadence")
-REQUIRED_STRATEGY_FIELDS = ("rationale", "adaptation_policy")
-REQUIRED_SUMMARY_FIELDS = ("active_focus", "rationale", "next_review")
-REQUIRED_NUTRITION_TARGET_FIELDS = ("calories", "protein_g", "carbs_g", "fat_g")
-REQUIRED_PROGRAM_FIELDS = (
-    "split_name",
-    "frequency_per_week",
-    "session_duration_min",
-    "routines",
-    "weekly_schedule",
-)
 
-
-def _missing_required_fields(payload: dict, required_fields: tuple[str, ...]) -> list[str]:
-    missing: list[str] = []
-    for field in required_fields:
-        value = payload.get(field)
-        if value is None:
-            missing.append(field)
-            continue
-        if isinstance(value, str) and not value.strip():
-            missing.append(field)
-            continue
-        if isinstance(value, list) and len(value) == 0:
-            missing.append(field)
-    return missing
-
-
-def _prefixed_missing_fields(
-    section_name: str, payload: dict, required_fields: tuple[str, ...]
-) -> list[str]:
-    return [
-        f"{section_name}.{field}"
-        for field in _missing_required_fields(payload, required_fields)
-    ]
-
-
-def _existing_daily_targets(latest_plan: UserPlan | None) -> dict:
-    if not latest_plan or not latest_plan.nutrition_strategy:
-        return {}
-    daily_targets = latest_plan.nutrition_strategy.daily_targets
-    if not daily_targets:
-        return {}
-    return daily_targets.model_dump(exclude_none=True)
-
-
-def _merge_missing_values(base: dict, existing: dict) -> dict:
-    merged = dict(base)
-    for key, value in existing.items():
-        if key not in merged or merged.get(key) is None:
-            merged[key] = value
-    return merged
-
-
-def _existing_routine_map(latest_plan: UserPlan | None) -> dict:
-    if not latest_plan or not latest_plan.training_program:
-        return {}
-    routines = latest_plan.training_program.routines or []
-    return {routine.id: routine.model_dump() for routine in routines}
-
-
-def _missing_exercise_fields(
-    exercises: list, routine_index: int,
-) -> list[str]:
-    missing: list[str] = []
-    for ex_index, exercise in enumerate(exercises):
-        if not isinstance(exercise, dict):
-            missing.append(f"training_program.routines[{routine_index}].exercises[{ex_index}]")
-            continue
-        missing.extend(
-            [
-                f"training_program.routines[{routine_index}].exercises[{ex_index}].{field}"
-                for field in _missing_required_fields(exercise, ("name", "sets", "reps"))
-            ]
-        )
-    return missing
-
-
-def _missing_routine_fields(routines: list, existing_routines: dict) -> list[str]:
-    missing: list[str] = []
-    for index, routine in enumerate(routines):
-        if not isinstance(routine, dict):
-            missing.append(f"training_program.routines[{index}]")
-            continue
-
-        merged_routine = _merge_missing_values(
-            routine,
-            existing_routines.get(routine.get("id"), {}),
-        )
-        missing.extend(
-            [
-                f"training_program.routines[{index}].{field}"
-                for field in _missing_required_fields(
-                    merged_routine, ("id", "name", "exercises")
-                )
-            ]
-        )
-        exercises = merged_routine.get("exercises", [])
-        if isinstance(exercises, list):
-            missing.extend(_missing_exercise_fields(exercises, index))
-    return missing
-
-
-def missing_master_plan_fields(
-    payload: PlanUpsertInput, latest_plan: UserPlan | None = None
-) -> list[str]:
-    """Validate required minimal fields for creation/update payload.
-
-    When a latest_plan exists, fields missing from the payload
-    are filled from the existing plan so that partial updates are accepted.
-    """
-
-    existing_goal = (
-        latest_plan.goal.model_dump() if latest_plan and latest_plan.goal else {}
-    )
-    existing_timeline = (
-        latest_plan.timeline.model_dump() if latest_plan and latest_plan.timeline else {}
-    )
-    existing_strategy = (
-        latest_plan.strategy.model_dump() if latest_plan and latest_plan.strategy else {}
-    )
-    existing_summary = (
-        latest_plan.current_summary.model_dump()
-        if latest_plan and latest_plan.current_summary
-        else {}
-    )
-    existing_program = (
-        latest_plan.training_program.model_dump()
-        if latest_plan and latest_plan.training_program
-        else {}
-    )
-
-    missing: list[str] = []
-    missing.extend(
-        _prefixed_missing_fields(
-            "goal",
-            _merge_missing_values(payload.goal or {}, existing_goal),
-            REQUIRED_GOAL_FIELDS,
-        )
-    )
-    missing.extend(
-        _prefixed_missing_fields(
-            "timeline",
-            _merge_missing_values(payload.timeline or {}, existing_timeline),
-            REQUIRED_TIMELINE_FIELDS,
-        )
-    )
-    missing.extend(
-        _prefixed_missing_fields(
-            "strategy",
-            _merge_missing_values(payload.strategy or {}, existing_strategy),
-            REQUIRED_STRATEGY_FIELDS,
-        )
-    )
-
-    nutrition_targets = payload.nutrition_strategy.get("daily_targets", {})
-    if not isinstance(nutrition_targets, dict):
-        missing.append("nutrition_strategy.daily_targets")
-    else:
-        merged_targets = _merge_missing_values(
-            nutrition_targets, _existing_daily_targets(latest_plan)
-        )
-        missing.extend(
-            _prefixed_missing_fields(
-                "nutrition_strategy.daily_targets",
-                merged_targets,
-                REQUIRED_NUTRITION_TARGET_FIELDS,
-            )
-        )
-
-    existing_routines = _existing_routine_map(latest_plan)
-
-    merged_program = _merge_missing_values(
-        payload.training_program or {}, existing_program
-    )
-    missing.extend(
-        _prefixed_missing_fields(
-            "training_program", merged_program, REQUIRED_PROGRAM_FIELDS
-        )
-    )
-
-    if isinstance(merged_program.get("routines"), list):
-        missing.extend(
-            _missing_routine_fields(merged_program["routines"], existing_routines)
-        )
-
-    missing.extend(
-        _prefixed_missing_fields(
-            "current_summary",
-            _merge_missing_values(payload.current_summary or {}, existing_summary),
-            REQUIRED_SUMMARY_FIELDS,
-        )
-    )
-
-    return sorted(set(missing))
-
-
-def _merge_nutrition_strategy(
-    latest: NutritionStrategy, payload: dict
-) -> dict:
-    """Deep-merge nutrition strategy, preserving existing daily_target fields."""
-    latest_dict = latest.model_dump()
-    merged = {**latest_dict, **payload}
-    # Deep merge daily_targets so partial updates keep existing carbs_g/fat_g
-    latest_targets = latest_dict.get("daily_targets") or {}
-    payload_targets = payload.get("daily_targets") or {}
-    if isinstance(latest_targets, dict) and isinstance(payload_targets, dict):
-        merged["daily_targets"] = {**latest_targets, **payload_targets}
-    return merged
-
-
-def _merge_routines(latest_dict: dict, payload_routines: list) -> list:
-    latest_routines = {r["id"]: r for r in latest_dict.get("routines", [])}
-    merged_routines = []
-    seen_routine_ids: set[str] = set()
-
-    for payload_routine in payload_routines:
-        routine_id = payload_routine.get("id") if isinstance(payload_routine, dict) else None
-        if routine_id in latest_routines:
-            full = dict(latest_routines[routine_id])
-            full.update({k: v for k, v in payload_routine.items() if v is not None})
-            merged_routines.append(full)
-            seen_routine_ids.add(routine_id)
-            continue
-        merged_routines.append(payload_routine)
-        if routine_id:
-            seen_routine_ids.add(routine_id)
-
-    for existing in latest_dict.get("routines", []):
-        routine_id = existing.get("id")
-        if routine_id and routine_id not in seen_routine_ids:
-            merged_routines.append(existing)
-
-    return merged_routines
-
-
-def _merge_weekly_schedule(latest_dict: dict, payload_schedule: list) -> list:
-    merged_schedule = []
-    seen_schedule_keys = set()
-
-    for item in payload_schedule:
-        if isinstance(item, dict):
-            seen_schedule_keys.add((item.get("day"), item.get("type", "training")))
-        merged_schedule.append(item)
-
-    for existing in latest_dict.get("weekly_schedule", []):
-        key = (existing.get("day"), existing.get("type", "training"))
-        if key not in seen_schedule_keys:
-            merged_schedule.append(existing)
-
-    return merged_schedule
-
-
-def _normalize_weekday(value: str) -> str:
-    normalized = (
-        value.strip()
-        .lower()
-        .replace("ç", "c")
-        .replace("á", "a")
-        .replace("à", "a")
-        .replace("â", "a")
-        .replace("ã", "a")
-        .replace("é", "e")
-        .replace("ê", "e")
-        .replace("í", "i")
-        .replace("ó", "o")
-        .replace("ô", "o")
-        .replace("õ", "o")
-        .replace("ú", "u")
-    )
-    return CANONICAL_WEEKDAY_MAP.get(normalized, value)
-
-
-def _normalize_training_program_ids(program: dict) -> dict:
-    """Coerce routine identifiers from LLM/tool payloads to strings."""
-    normalized = dict(program)
-    routines = normalized.get("routines")
-    if isinstance(routines, list):
-        normalized["routines"] = [
-            {
-                **routine,
-                "id": str(routine["id"]) if routine.get("id") is not None else routine.get("id"),
-            }
-            if isinstance(routine, dict)
-            else routine
-            for routine in routines
-        ]
-
-    schedule = normalized.get("weekly_schedule")
-    if isinstance(schedule, list):
-        non_training_type_tokens = ("rest", "off", "recovery", "descanso")
-        placeholder_routine_ids = {"", "none", "null", "nil", "n/a", "na"}
-        non_training_focus_tokens = ("rest", "off", "recovery", "descanso")
-
-        def _normalize_schedule_item(item: dict) -> dict:
-            normalized_type = item.get("type")
-            if isinstance(normalized_type, str):
-                normalized_type = normalized_type.strip().lower()
-            else:
-                normalized_type = "training"
-            is_non_training = any(token in normalized_type for token in non_training_type_tokens)
-            normalized_type = "off" if is_non_training else "training"
-
-            normalized_routine_id = item.get("routine_id")
-            if normalized_routine_id is not None:
-                normalized_routine_id = str(normalized_routine_id)
-                normalized_routine_id_clean = normalized_routine_id.strip().lower()
-                if normalized_routine_id_clean in placeholder_routine_ids:
-                    normalized_routine_id = None
-
-            focus = item.get("focus")
-            if isinstance(focus, str):
-                normalized_focus = focus.strip().lower()
-                if any(token in normalized_focus for token in non_training_focus_tokens):
-                    normalized_type = "off"
-
-            if normalized_routine_id is None:
-                normalized_type = "off"
-
-            return {
-                **item,
-                "day": (
-                    _normalize_weekday(item["day"])
-                    if isinstance(item.get("day"), str)
-                    else item.get("day")
-                ),
-                "routine_id": normalized_routine_id,
-                "type": normalized_type,
-            }
-
-        normalized["weekly_schedule"] = [
-            _normalize_schedule_item(item)
-            if isinstance(item, dict)
-            else item
-            for item in schedule
-        ]
-    return normalized
-
-
-def _normalize_exercise_reps(program: dict) -> dict:
-    """Coerce exercise reps values into the schema-required string format."""
-    normalized = dict(program)
-    routines = normalized.get("routines")
-    if not isinstance(routines, list):
-        return normalized
-
-    normalized_routines = []
-    for routine in routines:
-        if not isinstance(routine, dict):
-            normalized_routines.append(routine)
-            continue
-
-        exercises = routine.get("exercises")
-        if not isinstance(exercises, list):
-            normalized_routines.append(routine)
-            continue
-
-        normalized_exercises = []
-        for exercise in exercises:
-            if not isinstance(exercise, dict):
-                normalized_exercises.append(exercise)
-                continue
-
-            reps = exercise.get("reps")
-            if isinstance(reps, list):
-                reps = "/".join(str(item) for item in reps if item is not None)
-            elif reps is not None and not isinstance(reps, str):
-                reps = str(reps)
-
-            normalized_exercises.append({**exercise, "reps": reps})
-
-        normalized_routines.append({**routine, "exercises": normalized_exercises})
-
-    normalized["routines"] = normalized_routines
-    return normalized
-
-
-def _merge_training_program(latest, payload: dict) -> dict:
-    """Deep-merge training program while preserving omitted routines and schedule items."""
-    payload = _normalize_exercise_reps(_normalize_training_program_ids(payload))
-    latest_dict = latest.model_dump()
-    merged = {**latest_dict, **payload}
-
-    payload_routines = payload.get("routines", [])
-    if isinstance(payload_routines, list):
-        merged["routines"] = _merge_routines(latest_dict, payload_routines)
-
-    payload_schedule = payload.get("weekly_schedule", [])
-    if isinstance(payload_schedule, list):
-        merged["weekly_schedule"] = _merge_weekly_schedule(latest_dict, payload_schedule)
-
-    normalized_program = _normalize_exercise_reps(_normalize_training_program_ids(merged))
-    schedule = normalized_program.get("weekly_schedule")
-    if isinstance(schedule, list):
-        training_days = sum(
-            1
-            for item in schedule
-            if isinstance(item, dict) and item.get("type") == "training"
-        )
-        normalized_program["frequency_per_week"] = training_days
-    return normalized_program
-
-
-def _merge_plan_sections(latest_plan: UserPlan | None, payload: PlanUpsertInput) -> dict:
-    if latest_plan is None:
-        return {
-            "goal": payload.goal,
-            "timeline": payload.timeline,
-            "strategy": payload.strategy,
-            "nutrition_strategy": payload.nutrition_strategy,
-            "training_program": _normalize_exercise_reps(
-                _normalize_training_program_ids(payload.training_program)
-            ),
-            "current_summary": payload.current_summary,
-            "checkpoints": payload.checkpoints,
-        }
-
-    merged = {
-        "goal": {**latest_plan.goal.model_dump(), **payload.goal},
-        "timeline": {**latest_plan.timeline.model_dump(), **payload.timeline},
-        "strategy": {**latest_plan.strategy.model_dump(), **payload.strategy},
-        "nutrition_strategy": _merge_nutrition_strategy(
-            latest_plan.nutrition_strategy, payload.nutrition_strategy
-        ),
-        "training_program": _merge_training_program(
-            latest_plan.training_program, payload.training_program
-        ),
-        "current_summary": {
-            **latest_plan.current_summary.model_dump(),
-            **payload.current_summary,
-        },
-        "checkpoints": payload.checkpoints if payload.checkpoints else latest_plan.checkpoints,
-    }
-    return merged
-
-
-def _coerce_datetime(value: datetime | str) -> datetime:
-    """Normalize timeline values to UTC-aware datetimes."""
-    if isinstance(value, str):
-        result = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        if result.tzinfo is None:
-            return result.replace(tzinfo=timezone.utc)
-        return result.astimezone(timezone.utc)
-    if isinstance(value, datetime):
-        if value.tzinfo is None:
-            return value.replace(tzinfo=timezone.utc)
-        return value.astimezone(timezone.utc)
-    raise TypeError(f"invalid datetime value type: {type(value).__name__}")
-
-
-def _aware_now() -> datetime:
-    """Return current UTC time as an offset-aware datetime."""
+def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def build_plan_singleton(
+def _ensure_date(value: date | datetime | None) -> date | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    return value
+
+
+def missing_discovery_fields(discovery: PlanDiscoveryState | None) -> list[str]:
+    """Return the required discovery fields that are still missing."""
+    if discovery is None:
+        return list(DISCOVERY_FIELD_LABELS)
+
+    missing: list[str] = []
+    if discovery.goal_primary is None:
+        missing.append("goal_primary")
+    if not discovery.goal_summary:
+        missing.append("goal_summary")
+    if discovery.target_date is None:
+        missing.append("target_date")
+    if not discovery.training_days_available:
+        missing.append("training_days_available")
+    if discovery.session_duration_min is None:
+        missing.append("session_duration_min")
+    if discovery.constraints == []:
+        missing.append("constraints")
+    if discovery.preferences == []:
+        missing.append("preferences")
+    if discovery.available_equipment == []:
+        missing.append("available_equipment")
+    if not discovery.metabolism_confirmed:
+        missing.append("metabolism_confirmed")
+    return missing
+
+
+def apply_discovery_update(
     user_email: str,
-    latest_plan: UserPlan | None,
-    payload: PlanUpsertInput,
+    current: PlanDiscoveryState | None,
+    payload,
+) -> PlanDiscoveryState:
+    """Merge a discovery update into the persisted draft."""
+    base = current.model_dump() if current is not None else {"user_email": user_email}
+    updates = payload.model_dump(exclude_none=True)
+    merged = {**base, **updates, "user_email": user_email}
+    discovery = PlanDiscoveryState(**merged)
+    discovery.updated_at = _utc_now()
+    discovery.missing_fields = missing_discovery_fields(discovery)
+    discovery.confidence = {
+        field: (
+            "missing"
+            if field in discovery.missing_fields
+            else "user_provided"
+        )
+        for field in DISCOVERY_FIELD_LABELS
+    }
+    return discovery
+
+
+def build_plan_from_create_input(
+    user_email: str,
+    payload: PlanCreateInput,
+    created_from: str = "discovery",
 ) -> UserPlan:
-    """Build singleton master plan payload."""
-
-    now = _aware_now()
-    merged = _merge_plan_sections(latest_plan, payload)
-
-    timeline_data = dict(merged["timeline"])
-    if latest_plan is None:
-        start = now
-    else:
-        start = _coerce_datetime(latest_plan.timeline.start_date)
-    timeline_data["start_date"] = start
-    if "target_date" in timeline_data and timeline_data["target_date"] is not None:
-        target = _coerce_datetime(timeline_data["target_date"])
-        timeline_data["target_date"] = max(target, start)
-    else:
-        timeline_data["target_date"] = start + timedelta(days=84)
-
-    plan = UserPlan(
+    """Build a fresh active plan from a validated create payload."""
+    now = _utc_now()
+    return UserPlan(
         user_email=user_email,
         title=payload.title,
-        goal=merged["goal"],
-        timeline=timeline_data,
-        strategy=merged["strategy"],
-        nutrition_strategy=merged["nutrition_strategy"],
-        training_program=merged["training_program"],
-        checkpoints=merged["checkpoints"],
-        current_summary=merged["current_summary"],
-        change_reason=payload.change_reason,
+        goal=payload.goal,
+        timeline=payload.timeline,
+        user_context=payload.user_context,
+        training=payload.training,
+        nutrition=payload.nutrition,
+        alignment=payload.alignment,
+        tracking=payload.tracking,
+        created_from=created_from,  # type: ignore[arg-type]
+        review_reason=payload.review_reason,
+        data_confidence=payload.data_confidence,
+        last_material_change_at=now,
+        created_at=now,
+        updated_at=now,
     )
-    if latest_plan is not None:
-        plan.created_at = latest_plan.created_at
-    return plan
 
 
-def build_plan_prompt_snapshot(plan: UserPlan | None) -> PlanPromptContext | None:
-    """Build structured full snapshot from active plan payload."""
+def merge_plan_section(plan: UserPlan, payload: PlanSectionUpdateInput) -> UserPlan:
+    """Apply a typed section update and return a fresh validated plan."""
+    plan_dict = plan.model_dump()
+    section = payload.section
+    section_payload = getattr(payload, section)
+    if section_payload is None:
+        raise ValueError(f"missing payload for section '{section}'")
+
+    plan_dict[section] = section_payload.model_dump()
+    plan_dict["updated_at"] = _utc_now()
+    plan_dict["last_material_change_at"] = _utc_now()
+    plan_dict["review_reason"] = payload.review_reason
+    return UserPlan(**plan_dict)
+
+
+def build_review_record(payload: PlanReviewInput) -> PlanReview:
+    """Convert review input into a stored review object."""
+    return PlanReview(
+        summary=payload.summary,
+        decision=payload.decision,
+        changes_made=payload.changes_made,
+        next_review_at=payload.next_review_at,
+        evidence_summary=payload.evidence_summary,
+    )
+
+
+def attach_review(plan: UserPlan, review: PlanReview) -> UserPlan:
+    """Append a review to the plan history and promote it to latest review."""
+    plan_dict = plan.model_dump()
+    history = plan.review_history + [review]
+    plan_dict["review_history"] = [item.model_dump() for item in history]
+    plan_dict["latest_review"] = review.model_dump()
+    plan_dict["updated_at"] = _utc_now()
+    return UserPlan(**plan_dict)
+
+
+def build_plan_prompt_snapshot(
+    plan: UserPlan | None,
+    discovery: PlanDiscoveryState | None = None,
+    progress: PlanProgressSnapshot | None = None,
+) -> PlanPromptContext:
+    """Build structured prompt context from active plan or discovery."""
     if plan is None:
-        return None
-
-    latest_checkpoint = plan.checkpoints[-1].model_dump() if plan.checkpoints else None
-
-    return PlanPromptContext(
-        title=plan.title,
-        goal_primary=plan.goal.primary,
-        objective_summary=plan.goal.objective_summary,
-        timeline_window=(
-            f"{plan.timeline.start_date.strftime('%Y-%m-%d')} a "
-            f"{plan.timeline.target_date.strftime('%Y-%m-%d')}"
-        ),
-        review_cadence=plan.timeline.review_cadence,
-        strategy_rationale=plan.strategy.rationale,
-        constraints=plan.strategy.constraints,
-        preferences=plan.strategy.preferences,
-        nutrition_targets=plan.nutrition_strategy.daily_targets.model_dump(
-            exclude_none=True
-        ),
-        training_split=plan.training_program.split_name,
-        weekly_schedule=[item.model_dump() for item in plan.training_program.weekly_schedule],
-        routines=[item.model_dump() for item in plan.training_program.routines],
-        current_summary=plan.current_summary.model_dump(exclude_none=True),
-        latest_checkpoint=latest_checkpoint,
-        metric_targets=(
-            plan.goal.metric_targets.model_dump(exclude_none=True)
-            if plan.goal.metric_targets
-            else {}
-        ),
-    )
-
-
-def format_plan_snapshot(snapshot: PlanPromptContext | None) -> str:
-    """Format structured snapshot as readable prompt block."""
-    if snapshot is None:
-        return (
-            "Nenhum plano mestre registrado.\n"
-            "Acao obrigatoria imediata: inicie discovery e insista na criacao do plano "
-            "mestre (objetivo, prazo, estrategia, nutricao e programa semanal)."
+        missing = missing_discovery_fields(discovery)
+        return PlanPromptContext(
+            status="DISCOVERY_IN_PROGRESS" if discovery else "NO_PLAN",
+            discovery={
+                "missing_fields": missing,
+                "collected_fields": [
+                    field
+                    for field in DISCOVERY_FIELD_LABELS
+                    if field not in missing
+                ],
+            },
         )
 
-    constraints = (
-        ", ".join(snapshot.constraints) if snapshot.constraints else "sem restricoes"
+    active_plan = {
+        "title": plan.title,
+        "goal": plan.goal.model_dump(),
+        "timeline": plan.timeline.model_dump(),
+        "user_context": plan.user_context.model_dump(),
+        "training": plan.training.model_dump(),
+        "nutrition": plan.nutrition.model_dump(),
+        "alignment": plan.alignment.model_dump(),
+        "tracking": plan.tracking.model_dump(),
+        "latest_review": (
+            plan.latest_review.model_dump(exclude_none=True)
+            if plan.latest_review
+            else None
+        ),
+    }
+    return PlanPromptContext(
+        status="ACTIVE_PLAN",
+        schema_version=plan.schema_version,
+        active_plan=active_plan,
+        progress_summary=progress.model_dump(exclude_none=True) if progress else {},
     )
-    preferences = (
-        ", ".join(snapshot.preferences)
-        if snapshot.preferences
-        else "sem preferencias declaradas"
-    )
-    routines_count = len(snapshot.routines)
-    schedule_count = len(snapshot.weekly_schedule)
-    latest_checkpoint = snapshot.latest_checkpoint or {}
 
-    nt = snapshot.nutrition_targets
-    nutrition_str = (
-        f"{nt.get('calories', '?')} kcal, "
-        f"{nt.get('protein_g', '?')}g proteina, "
-        f"{nt.get('carbs_g', '?')}g carboidratos, "
-        f"{nt.get('fat_g', '?')}g gordura"
-        if nt
-        else "nao definidas"
-    )
 
+def format_plan_snapshot(snapshot: PlanPromptContext) -> str:
+    """Render a prompt-safe plan context block."""
+    if snapshot.status != "ACTIVE_PLAN":
+        missing = snapshot.discovery.get("missing_fields", [])
+        missing_label = ", ".join(
+            DISCOVERY_FIELD_LABELS.get(field, field) for field in missing
+        )
+        return (
+            "PLAN_CONTEXT:\n"
+            f"status: {snapshot.status}\n"
+            "required_action: START_OR_CONTINUE_DISCOVERY\n"
+            f"missing_fields: {missing_label or 'nenhum'}"
+        )
+
+    plan = snapshot.active_plan
     return (
-        "Plano mestre ativo (fonte primaria):\n"
-        f"- Titulo: {snapshot.title}\n"
-        f"- Objetivo principal: {snapshot.goal_primary}\n"
-        f"- Objetivo resumido: {snapshot.objective_summary}\n"
-        f"- Janela do plano: {snapshot.timeline_window}\n"
-        f"- Cadencia de revisao: {snapshot.review_cadence}\n"
-        f"- Racional estrategico: {snapshot.strategy_rationale}\n"
-        f"- Restricoes: {constraints}\n"
-        f"- Preferencias: {preferences}\n"
-        f"- Metas nutricionais diarias (FONTES PRIMARIAS, sobrepoe algoritmo): {nutrition_str}\n"
-        f"- Split de treino: {snapshot.training_split}\n"
-        f"- Rotinas no programa: {routines_count}\n"
-        f"- Itens na agenda semanal: {schedule_count}\n"
-        f"- Resumo atual: {snapshot.current_summary}\n"
-        f"- Metas metricas: {snapshot.metric_targets or 'nao definidas'}\n"
-        f"- Ultimo checkpoint: {latest_checkpoint}"
+        "PLAN_CONTEXT:\n"
+        f"status: {snapshot.status}\n"
+        f"schema_version: {snapshot.schema_version}\n"
+        f"title: {plan.get('title')}\n"
+        f"goal: {plan.get('goal', {}).get('outcome_summary')}\n"
+        f"timeline: {plan.get('timeline', {}).get('start_date')} -> "
+        f"{plan.get('timeline', {}).get('target_date')}\n"
+        f"training_split: {plan.get('training', {}).get('split_name')}\n"
+        f"nutrition_targets: {plan.get('nutrition', {}).get('daily_targets')}\n"
+        f"latest_review: {plan.get('latest_review')}"
+    )
+
+
+def _derive_next_discovery_prompt(missing_fields: list[str]) -> str:
+    if not missing_fields:
+        return "Discovery completo. O proximo passo e criar o plano."
+    next_field = missing_fields[0]
+    return f"Coletar: {DISCOVERY_FIELD_LABELS.get(next_field, next_field)}."
+
+
+def _find_today_training(plan: UserPlan) -> TodayTrainingView:
+    today_index = datetime.now().weekday()
+    today = CANONICAL_WEEKDAYS[today_index]
+    item = next((entry for entry in plan.training.weekly_schedule if entry.day == today), None)
+    if item is None or item.type == "off":
+        return TodayTrainingView(
+            day=today,
+            focus="recuperacao",
+            exercise_names=[],
+            is_rest_day=True,
+        )
+
+    routine = next(
+        (candidate for candidate in plan.training.routines if candidate.id == item.routine_id),
+        None,
+    )
+    return TodayTrainingView(
+        day=today,
+        routine_name=routine.name if routine else None,
+        focus=item.focus,
+        exercise_names=[exercise.name for exercise in routine.exercises] if routine else [],
+        is_rest_day=False,
+    )
+
+
+def _build_weekly_schedule(plan: UserPlan) -> list[WeeklyScheduleView]:
+    today_index = datetime.now().weekday()
+    today = CANONICAL_WEEKDAYS[today_index]
+    routines_by_id = {routine.id: routine for routine in plan.training.routines}
+
+    schedule_by_day = {entry.day: entry for entry in plan.training.weekly_schedule}
+    schedule: list[WeeklyScheduleView] = []
+    for day in CANONICAL_WEEKDAYS:
+        item = schedule_by_day.get(day)
+        if item is None:
+            schedule.append(
+                WeeklyScheduleView(
+                    day=day,
+                    focus="recuperacao",
+                    exercise_names=[],
+                    is_rest_day=True,
+                    is_today=day == today,
+                )
+            )
+            continue
+
+        routine = routines_by_id.get(item.routine_id) if item.routine_id else None
+        schedule.append(
+                WeeklyScheduleView(
+                    day=day,
+                    routine_name=routine.name if routine else None,
+                    focus=item.focus,
+                    exercise_names=[exercise.name for exercise in routine.exercises] if routine else [],
+                    is_rest_day=item.type == "off" or routine is None,
+                    is_today=day == today,
+                )
+            )
+
+    return schedule
+
+
+def build_progress_snapshot(plan: UserPlan, database) -> PlanProgressSnapshot:
+    """Compute a pragmatic progress snapshot from the data already stored."""
+    workouts = database.get_workout_logs(plan.user_email, limit=30)
+    nutrition_stats = database.get_nutrition_stats(plan.user_email)
+    weight_logs = database.get_weight_logs(plan.user_email, limit=30)
+
+    if workouts:
+        training_metric = ProgressMetric(
+            status="on_track" if len(workouts) >= 1 else "insufficient_data",
+            details=f"{len(workouts)} treino(s) registrado(s) recentemente.",
+        )
+        progression_status = "maintaining"
+    else:
+        training_metric = ProgressMetric(
+            status="insufficient_data",
+            details="Sem treinos registrados recentemente.",
+        )
+        progression_status = "insufficient_data"
+
+    if nutrition_stats.total_logs > 0:
+        nutrition_metric = ProgressMetric(
+            status="on_track",
+            details=f"{nutrition_stats.total_logs} log(s) nutricionais registrados.",
+        )
+    else:
+        nutrition_metric = ProgressMetric(
+            status="insufficient_data",
+            details="Sem logs nutricionais suficientes.",
+        )
+
+    body_trend_status = "aligned" if len(weight_logs) >= 2 else "insufficient_data"
+
+    conflicts: list[PlanConflict] = []
+    if plan.goal.primary_goal == "muscle_gain" and plan.alignment.energy_strategy == "deficit":
+        conflicts.append(
+            PlanConflict(
+                kind="goal_energy_mismatch",
+                message="Objetivo de ganho muscular conflita com estrategia energetica em deficit.",
+            )
+        )
+    if (
+        plan.goal.primary_goal == "fat_loss"
+        and plan.alignment.energy_strategy == "surplus"
+    ):
+        conflicts.append(
+            PlanConflict(
+                kind="goal_energy_mismatch",
+                message=(
+                    "Objetivo de perda de gordura conflita com estrategia "
+                    "energetica em superavit."
+                ),
+            )
+        )
+
+    evidence_summary = [training_metric.details, nutrition_metric.details]
+    if len(weight_logs) < 2:
+        evidence_summary.append("Sem historico corporal suficiente para avaliar tendencia.")
+
+    return PlanProgressSnapshot(
+        plan_id=plan.id or "active-plan",
+        training_adherence=training_metric,
+        nutrition_adherence=nutrition_metric,
+        progression_status=progression_status,
+        body_trend_status=body_trend_status,  # type: ignore[arg-type]
+        conflicts=conflicts,
+        recommended_review=bool(conflicts),
+        evidence_summary=evidence_summary,
+    )
+
+
+def build_plan_view_model(
+    plan: UserPlan | None,
+    discovery: PlanDiscoveryState | None,
+    progress: PlanProgressSnapshot | None = None,
+) -> PlanViewModel:
+    """Build the view model consumed by the plan tab."""
+    if plan is None:
+        missing = missing_discovery_fields(discovery)
+        collected = [
+            field for field in DISCOVERY_FIELD_LABELS if field not in missing
+        ]
+        return PlanViewModel(
+            status="DISCOVERY_IN_PROGRESS" if discovery else "NO_PLAN",
+            generic_response_notice=(
+                "Sem plano ativo, a IA deve tratar qualquer orientacao como generica "
+                "e conduzir discovery ate conseguir criar um plano real."
+            ),
+            discovery=DiscoveryView(
+                missing_fields=missing,
+                collected_fields=collected,
+                next_prompt=_derive_next_discovery_prompt(missing),
+            ),
+            progress=None,
+            active_plan=None,
+        )
+
+    latest_review_summary = plan.latest_review.summary if plan.latest_review else None
+    success_metrics = [
+        f"{metric.metric_name}: {metric.target_value} {metric.unit}".strip()
+        for metric in plan.goal.success_metrics
+    ]
+    next_review_at = (
+        plan.latest_review.next_review_at
+        if plan.latest_review and plan.latest_review.next_review_at
+        else _ensure_date(plan.created_at)
+    )
+    return PlanViewModel(
+        status="ACTIVE_PLAN",
+        generic_response_notice=(
+            "Plano ativo no sistema. Use este plano como fonte primaria."
+        ),
+        active_plan=ActivePlanView(
+            title=plan.title,
+            goal_summary=plan.goal.outcome_summary,
+            success_metrics=success_metrics,
+            training_split=plan.training.split_name,
+            weekly_schedule=_build_weekly_schedule(plan),
+            today_training=_find_today_training(plan),
+            nutrition_targets=plan.nutrition.daily_targets,
+            current_risks=plan.alignment.recovery_assumptions,
+            next_review_at=next_review_at,
+            latest_review_summary=latest_review_summary,
+        ),
+        discovery=None,
+        progress=progress,
     )

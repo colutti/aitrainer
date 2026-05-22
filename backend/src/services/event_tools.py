@@ -61,7 +61,8 @@ def create_create_event_tool(database: Database, user_email: str):
         - create_event(title="Revisao do plano", date="2025-12-01")
 
         IMPORTANTE: Eventos sao lembretes e check-ins, NAO sao o plano mestre.
-        Para criar ou atualizar o plano, use as ferramentas de plano (get_plan, upsert_plan).
+        Para criar ou atualizar o plano, use as ferramentas de plano
+        (get_plan_status, update_plan_discovery, create_plan_from_discovery, update_plan_section).
 
         Retorna: String com confirmacao e ID do evento
         """

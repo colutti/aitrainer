@@ -30,6 +30,7 @@ MONGO_COLLECTIONS = [
     ("events", "user_email"),
     ("prompt_logs", "user_email"),
     ("plans", "user_email"),
+    ("plan_discovery_states", "user_email"),
     ("invites", "email"),
     ("telegram_links", "user_email"),
     ("telegram_codes", "user_email"),
@@ -139,9 +140,9 @@ def _reset_user_counters(mongo_uri: str, db_name: str, email: str):
         }}
     )
     if result.modified_count:
-        print(f"  🗑️  users: reset message counters (daily=0, monthly=0) and upgraded to Basic")
+        print("  🗑️  users: reset message counters (daily=0, monthly=0) and upgraded to Basic")
     elif result.matched_count:
-        print(f"  ✓  users: counters already zero or plan already Basic")
+        print("  ✓  users: counters already zero or plan already Basic")
     else:
         print(f"  ⚠️  users: user {email} not found")
     client.close()
@@ -187,9 +188,9 @@ def main():
 
     print()
     print("  Data to DELETE (keeps users/account):")
-    print(f"  -) users collection: KEPT (login preserved)")
-    print(f"  -) users counters: RESET (messages_sent=0, plan=Basic)")
-    print(f"  -) token_blocklist: KEPT (not user-specific)")
+    print("  -) users collection: KEPT (login preserved)")
+    print("  -) users counters: RESET (messages_sent=0, plan=Basic)")
+    print("  -) token_blocklist: KEPT (not user-specific)")
     for coll, field in MONGO_COLLECTIONS:
         print(f"  -) {coll}: DELETE where {field} = {email}")
     print(f"  -) qdrant.{QDRANT_COLLECTION}: DELETE where {QDRANT_PAYLOAD_FIELD} = {email}")
@@ -219,7 +220,7 @@ def main():
     if qdrant_result is not None:
         print(f"        Qdrant:  {qdrant_result} points deleted.")
     else:
-        print(f"        Qdrant:  skipped (error)")
+        print("        Qdrant:  skipped (error)")
 
     print()
     print("  ✓ User data reset complete. Login preserved.")

@@ -58,12 +58,22 @@ def resolve_macro_targets(
 
 def get_plan_daily_targets(plan) -> dict[str, Any] | None:
     """Extract daily targets from a plan-like object when available."""
-    if not plan or not getattr(plan, "nutrition_strategy", None):
+    if not plan:
         return None
-    daily_targets = getattr(plan.nutrition_strategy, "daily_targets", None)
+
+    nutrition_block = getattr(plan, "nutrition", None)
+    if nutrition_block is None:
+        nutrition_block = getattr(plan, "nutrition_strategy", None)
+    if nutrition_block is None:
+        return None
+
+    daily_targets = getattr(nutrition_block, "daily_targets", None)
     if not daily_targets:
         return None
-    return daily_targets.model_dump(exclude_none=True)
+    dumped = daily_targets.model_dump(exclude_none=True)
+    if "calories_kcal" in dumped and "calories" not in dumped:
+        dumped["calories"] = dumped["calories_kcal"]
+    return dumped
 
 
 def resolve_macro_targets_for_plan(

@@ -1,110 +1,210 @@
-"""Pydantic models for the singleton master plan domain."""
+"""Pydantic models for the plan V2 domain."""
 
-from datetime import datetime
-from typing import Any
+from datetime import date, datetime, timezone
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from bson import ObjectId
+from pydantic import BaseModel, ConfigDict, Field, BeforeValidator, model_validator
+
+
+CANONICAL_WEEKDAYS = (
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+)
+
+CANONICAL_PLAN_SECTIONS = (
+    "goal",
+    "timeline",
+    "user_context",
+    "training",
+    "nutrition",
+    "alignment",
+    "tracking",
+)
+
+Weekday = Literal[
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+]
+
+PrimaryGoal = Literal[
+    "fat_loss",
+    "muscle_gain",
+    "recomposition",
+    "performance",
+    "health",
+]
+
+PlanLifecycleStatus = Literal[
+    "NO_PLAN",
+    "DISCOVERY_IN_PROGRESS",
+    "ACTIVE_PLAN",
+]
+
+PlanSectionName = Literal[
+    "goal",
+    "timeline",
+    "user_context",
+    "training",
+    "nutrition",
+    "alignment",
+    "tracking",
+]
+
+
+def validate_object_id(value: Any) -> str:
+    """Convert ObjectId-like values into strings for API responses."""
+    if isinstance(value, ObjectId):
+        return str(value)
+    return str(value)
+
+
+class SuccessMetric(BaseModel):
+    """Structured success metric for the active plan."""
+
+    metric_name: str = Field(..., min_length=1)
+    target_value: float | int | str
+    unit: str = Field(..., min_length=1)
+    direction: Literal["increase", "decrease", "maintain", "complete"]
+    deadline: date | None = None
 
 
 class PlanGoal(BaseModel):
-    """Goal contract for the active master plan."""
+    """High-level user goal and how success is measured."""
 
-    class MetricTargets(BaseModel):
-        """Optional metric targets used by metabolism/projection logic."""
-
-        direction: str | None = None
-        target_weight_kg: float | None = Field(default=None, gt=0)
-        weekly_weight_change_kg: float | None = Field(default=None, gt=0)
-        target_body_fat_pct: float | None = Field(default=None, gt=0, le=100)
-
-    primary: str = Field(..., min_length=1)
-    objective_summary: str = Field(..., min_length=1)
-    success_criteria: list[str] = Field(default_factory=list)
-    metric_targets: MetricTargets | None = None
+    primary_goal: PrimaryGoal
+    outcome_summary: str = Field(..., min_length=1)
+    success_metrics: list[SuccessMetric] = Field(..., min_length=1)
 
 
 class PlanTimeline(BaseModel):
-    """Explicit timeline for plan execution."""
+    """Plan execution window and review cadence."""
 
-    start_date: datetime
-    target_date: datetime
-    review_cadence: str = Field(..., min_length=1)
+    start_date: date
+    target_date: date
+    review_cadence_days: int = Field(..., gt=0)
+    current_phase: str = Field(..., min_length=1)
 
-    @field_validator("target_date")
-    @classmethod
-    def validate_dates(cls, target_date: datetime, info):
-        """Ensure timeline target date is not before start date."""
-        start_date = info.data.get("start_date")
-        if start_date and target_date < start_date:
+    @model_validator(mode="after")
+    def validate_date_order(self):
+        """Target date cannot be before the plan start date."""
+        if self.target_date < self.start_date:
             raise ValueError("target_date must be greater than or equal to start_date")
-        return target_date
+        return self
 
 
-class PlanStrategy(BaseModel):
-    """Strategic rationale and constraints."""
+class PlanUserContext(BaseModel):
+    """Known constraints and preferences needed for personalization."""
 
-    rationale: str = Field(..., min_length=1)
-    adaptation_policy: str = Field(..., min_length=1)
+    training_days_available: list[Weekday] = Field(..., min_length=1)
+    session_duration_min: int = Field(..., gt=0)
     constraints: list[str] = Field(default_factory=list)
     preferences: list[str] = Field(default_factory=list)
-    current_risks: list[str] = Field(default_factory=list)
+    available_equipment: list[str] = Field(default_factory=list)
+    training_level: Literal["beginner", "intermediate", "advanced", "unknown"] = (
+        "unknown"
+    )
+    nutrition_preferences: list[str] = Field(default_factory=list)
 
 
-class NutritionDailyTargets(BaseModel):
-    """Daily nutrition targets used by the plan."""
+class RepRange(BaseModel):
+    """Prescription for a repetition range."""
 
-    calories: int = Field(..., gt=0)
-    protein_g: int = Field(..., gt=0)
-    carbs_g: int = Field(..., gt=0)
-    fat_g: int = Field(..., gt=0)
-    fiber_g: int | None = Field(default=None, gt=0)
+    min_reps: int = Field(..., gt=0)
+    max_reps: int = Field(..., gt=0)
+
+    @model_validator(mode="after")
+    def validate_range(self):
+        """The max value cannot be smaller than the min value."""
+        if self.max_reps < self.min_reps:
+            raise ValueError("max_reps must be greater than or equal to min_reps")
+        return self
 
 
-class NutritionStrategy(BaseModel):
-    """Nutrition strategy block."""
+class IntensityPrescription(BaseModel):
+    """How hard the set should feel or be loaded."""
 
-    daily_targets: NutritionDailyTargets
-    adherence_notes: list[str] = Field(default_factory=list)
+    prescription_type: Literal["rpe", "rir", "percent_1rm", "guidance"]
+    target: str = Field(..., min_length=1)
+
+
+class ProgressionRule(BaseModel):
+    """Rule the AI must follow when progressing the exercise."""
+
+    method: Literal[
+        "double_progression",
+        "linear_load",
+        "volume_progression",
+        "maintenance",
+    ]
+    increase_when: str = Field(..., min_length=1)
+    hold_when: str = Field(..., min_length=1)
+    deload_when: str = Field(..., min_length=1)
+
+
+class ExternalRoutineBinding(BaseModel):
+    """External provider binding for a plan routine."""
+
+    provider: Literal["hevy"]
+    external_routine_id: str = Field(..., min_length=1)
+    external_routine_name: str | None = None
+    last_synced_at: datetime | None = None
+    last_sync_error: str | None = None
 
 
 class TrainingExercise(BaseModel):
-    """Exercise prescription for one routine."""
+    """Exercise prescription inside a routine."""
 
     name: str = Field(..., min_length=1)
+    external_exercise_template_id: str | None = None
     sets: int = Field(..., gt=0)
-    reps: str = Field(..., min_length=1)
-    load_guidance: str = Field(default="RPE 7-8")
+    rep_range: RepRange
+    intensity: IntensityPrescription
     rest_seconds: int | None = Field(default=None, gt=0)
+    progression_rule: ProgressionRule
     notes: str | None = None
 
 
 class TrainingRoutine(BaseModel):
-    """Reusable routine definition."""
+    """Reusable training routine."""
 
     id: str = Field(..., min_length=1)
     name: str = Field(..., min_length=1)
     objective: str | None = None
     exercises: list[TrainingExercise] = Field(..., min_length=1)
+    external_bindings: list[ExternalRoutineBinding] = Field(default_factory=list)
 
 
 class WeeklyScheduleItem(BaseModel):
-    """Weekly schedule assignment that references routines."""
+    """Weekly training assignment."""
 
-    day: str = Field(..., min_length=1)
+    day: Weekday
     routine_id: str | None = None
     focus: str = Field(..., min_length=1)
-    type: str = Field(default="training", min_length=1)
+    type: Literal["training", "off"] = "training"
 
     @model_validator(mode="after")
-    def validate_training_assignment(self):
-        """Training days must point to a concrete routine."""
+    def validate_training_item(self):
+        """Training rows must reference a routine and off rows must not."""
         if self.type == "training" and not self.routine_id:
             raise ValueError("routine_id is required when type is 'training'")
+        if self.type == "off" and self.routine_id is not None:
+            raise ValueError("routine_id must be null when type is 'off'")
         return self
 
 
-class TrainingProgram(BaseModel):
-    """Master training program with reusable routines and weekly schedule."""
+class PlanTraining(BaseModel):
+    """Structured training prescription."""
 
     split_name: str = Field(..., min_length=1)
     frequency_per_week: int = Field(..., gt=0)
@@ -113,159 +213,332 @@ class TrainingProgram(BaseModel):
     weekly_schedule: list[WeeklyScheduleItem] = Field(..., min_length=1)
 
     @model_validator(mode="after")
-    def validate_schedule_references(self):
-        """Every training day must reference an existing routine id."""
+    def validate_training_program(self):
+        """Validate references and schedule coherence."""
         routine_ids = {routine.id for routine in self.routines}
-        training_day_keys: set[tuple[str, str]] = set()
-        training_days = 0
+        scheduled_training_days = 0
+        seen_days: set[str] = set()
+
         for item in self.weekly_schedule:
-            if item.type == "training" and item.routine_id not in routine_ids:
+            if item.day in seen_days:
                 raise ValueError(
-                    f"weekly_schedule references unknown routine_id '{item.routine_id}'"
+                    f"weekly_schedule contains duplicate assignment for day '{item.day}'"
                 )
+            seen_days.add(item.day)
+
             if item.type == "training":
-                training_days += 1
-                key = (item.day, item.type)
-                if key in training_day_keys:
+                scheduled_training_days += 1
+                if item.routine_id not in routine_ids:
                     raise ValueError(
-                        "weekly_schedule contains duplicate training assignment "
-                        f"for day '{item.day}'"
+                        f"weekly_schedule references unknown routine_id '{item.routine_id}'"
                     )
-                training_day_keys.add(key)
-        if training_days != self.frequency_per_week:
+
+        if scheduled_training_days != self.frequency_per_week:
             raise ValueError(
                 "frequency_per_week must match the number of training items in weekly_schedule"
             )
         return self
 
 
-class PlanCheckpoint(BaseModel):
-    """Structured checkpoint record for review history."""
+class NutritionDailyTargets(BaseModel):
+    """Daily calories and macro targets."""
 
-    checkpoint_at: datetime = Field(default_factory=datetime.now)
+    calories_kcal: int = Field(..., gt=0)
+    protein_g: int = Field(..., gt=0)
+    carbs_g: int = Field(..., gt=0)
+    fat_g: int = Field(..., gt=0)
+    fiber_g: int | None = Field(default=None, gt=0)
+
+
+class PlanNutrition(BaseModel):
+    """Structured nutrition strategy for the plan."""
+
+    daily_targets: NutritionDailyTargets
+    strategy: str = Field(..., min_length=1)
+    adherence_target_pct: int = Field(..., ge=0, le=100)
+
+
+class ConflictRule(BaseModel):
+    """A situation that should block or force a plan adjustment."""
+
+    trigger: str = Field(..., min_length=1)
+    action: str = Field(..., min_length=1)
+
+
+class PlanAlignment(BaseModel):
+    """How training, nutrition and recovery fit the user's goal."""
+
+    training_nutrition_rationale: str = Field(..., min_length=1)
+    energy_strategy: Literal["deficit", "maintenance", "surplus", "recomposition"]
+    recovery_assumptions: list[str] = Field(default_factory=list)
+    conflict_rules: list[ConflictRule] = Field(..., min_length=1)
+
+
+class ProgressMarker(BaseModel):
+    """Signal the AI should monitor over time."""
+
+    name: str = Field(..., min_length=1)
+    source: Literal["workouts", "nutrition", "body", "metabolism", "manual"]
+    target_summary: str = Field(..., min_length=1)
+
+
+class PlanTracking(BaseModel):
+    """Tracking targets and review prompts used by the AI."""
+
+    workout_adherence_target_pct: int = Field(..., ge=0, le=100)
+    nutrition_adherence_target_pct: int = Field(..., ge=0, le=100)
+    progress_markers: list[ProgressMarker] = Field(..., min_length=1)
+    review_questions: list[str] = Field(..., min_length=1)
+
+
+class PlanReview(BaseModel):
+    """Evidence-backed review of the active plan."""
+
+    reviewed_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     summary: str = Field(..., min_length=1)
-    evidence: list[str] = Field(default_factory=list)
     decision: str = Field(..., min_length=1)
-    next_focus: str = Field(..., min_length=1)
-
-
-class PlanCurrentSummary(BaseModel):
-    """Current operating summary for quick prompt/UI consumption."""
-
-    active_focus: str = Field(..., min_length=1)
-    rationale: str = Field(..., min_length=1)
-    key_risks: list[str] = Field(default_factory=list)
-    last_review: str | None = None
-    next_review: str = Field(..., min_length=1)
-
-
-class PlanUpsertInput(BaseModel):
-    """Payload generated by AI to create or update singleton master plan."""
-
-    title: str = Field(
-        ..., min_length=1,
-        description="Titulo do plano (ex: Plano Mestre Recomp)",
-    )
-    change_reason: str = Field(
-        default="initial_plan", min_length=1,
-        description="Motivo: initial_plan, goal_change, quarterly_review",
-    )
-    goal: dict[str, Any] = Field(
-        ...,
-        description=(
-            "Obrigatorio: 'primary' (lose_fat, build_muscle, recomposition, performance), "
-            "'objective_summary' (resumo especifico com criterio de sucesso). "
-            "Opcional: 'success_criteria' (lista de criterios mensuraveis)."
-        ),
-    )
-    timeline: dict[str, Any] = Field(
-        ...,
-        description=(
-            "Obrigatorio: 'target_date' (data alvo ISO 8601, ex: 2026-09-01T00:00:00), "
-            "'review_cadence' (ex: semanal, quinzenal, mensal). "
-            "Opcional: 'start_date' (preenchido automaticamente se omitido)."
-        ),
-    )
-    strategy: dict[str, Any] = Field(
-        ...,
-        description=(
-            "Obrigatorio: 'rationale' (justificativa estrategica), "
-            "'adaptation_policy' (como o plano se adapta). "
-            "Opcional: 'constraints', 'preferences', 'current_risks' (listas)."
-        ),
-    )
-    nutrition_strategy: dict[str, Any] = Field(
-        ...,
-        description=(
-            "Obrigatorio: 'daily_targets' com 'calories', 'protein_g', 'carbs_g', 'fat_g' "
-            "(todos > 0). Chame get_metabolism_data ANTES de definir estes valores. "
-            "Opcional: 'adherence_notes' (lista)."
-        ),
-    )
-    training_program: dict[str, Any] = Field(
-        ...,
-        description=(
-            "Obrigatorio: 'split_name', 'frequency_per_week'(>0), 'session_duration_min'(>0), "
-            "'routines' (lista de objetos com 'id', 'name' e 'exercises' contendo "
-            "'name', 'sets', 'reps', 'load_guidance'), "
-            "'weekly_schedule' (lista com 'day', 'routine_id', 'focus', 'type')."
-        ),
-    )
-    current_summary: dict[str, Any] = Field(
-        ...,
-        description=(
-            "Obrigatorio: 'active_focus' (foco atual), 'rationale' (justificativa), "
-            "'next_review' (data da proxima revisao ISO 8601). "
-            "Opcional: 'key_risks' (lista), 'last_review'."
-        ),
-    )
-    checkpoints: list[PlanCheckpoint] = Field(
-        default_factory=list,
-        description="Lista de checkpoints de revisao do plano.",
-    )
+    changes_made: list[str] = Field(default_factory=list)
+    next_review_at: date | None = None
+    evidence_summary: list[str] = Field(default_factory=list)
 
 
 class UserPlan(BaseModel):
-    """Full persisted singleton plan payload."""
+    """Persisted plan contract used across prompt, UI and tools."""
 
-    id: str | None = Field(default=None)
+    id: str | None = None
+    schema_version: Literal["plan_v2"] = "plan_v2"
+    plan_status: Literal["active"] = "active"
     user_email: str = Field(..., min_length=3)
     title: str = Field(..., min_length=1)
     goal: PlanGoal
     timeline: PlanTimeline
-    strategy: PlanStrategy
-    nutrition_strategy: NutritionStrategy
-    training_program: TrainingProgram
-    checkpoints: list[PlanCheckpoint] = Field(default_factory=list)
-    current_summary: PlanCurrentSummary
-    change_reason: str | None = None
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
+    user_context: PlanUserContext
+    training: PlanTraining
+    nutrition: PlanNutrition
+    alignment: PlanAlignment
+    tracking: PlanTracking
+    latest_review: PlanReview | None = None
+    review_history: list[PlanReview] = Field(default_factory=list)
+    created_from: Literal["discovery", "migration", "admin"] = "discovery"
+    last_material_change_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    review_reason: str | None = None
+    data_confidence: Literal["low", "medium", "high"] = "medium"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class PlanDiscoveryState(BaseModel):
+    """Persisted discovery draft while the user still has no active plan."""
+
+    id: str | None = None
+    user_email: str = Field(..., min_length=3)
+    goal_primary: PrimaryGoal | None = None
+    goal_summary: str | None = None
+    target_date: date | None = None
+    training_days_available: list[Weekday] = Field(default_factory=list)
+    session_duration_min: int | None = Field(default=None, gt=0)
+    constraints: list[str] = Field(default_factory=list)
+    preferences: list[str] = Field(default_factory=list)
+    available_equipment: list[str] = Field(default_factory=list)
+    training_level: Literal["beginner", "intermediate", "advanced", "unknown"] = (
+        "unknown"
+    )
+    nutrition_preferences: list[str] = Field(default_factory=list)
+    metabolism_confirmed: bool = False
+    missing_fields: list[str] = Field(default_factory=list)
+    confidence: dict[str, Literal["user_provided", "system_inferred", "missing"]] = (
+        Field(default_factory=dict)
+    )
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class PlanCreateInput(BaseModel):
+    """Payload to create a new active plan."""
+
+    title: str = Field(..., min_length=1)
+    goal: PlanGoal
+    timeline: PlanTimeline
+    user_context: PlanUserContext
+    training: PlanTraining
+    nutrition: PlanNutrition
+    alignment: PlanAlignment
+    tracking: PlanTracking
+    review_reason: str | None = None
+    data_confidence: Literal["low", "medium", "high"] = "medium"
+
+
+class PlanDiscoveryUpdateInput(BaseModel):
+    """Partial update for discovery state."""
+
+    goal_primary: PrimaryGoal | None = None
+    goal_summary: str | None = None
+    target_date: date | None = None
+    training_days_available: list[Weekday] | None = None
+    session_duration_min: int | None = Field(default=None, gt=0)
+    constraints: list[str] | None = None
+    preferences: list[str] | None = None
+    available_equipment: list[str] | None = None
+    training_level: Literal["beginner", "intermediate", "advanced", "unknown"] | None = (
+        None
+    )
+    nutrition_preferences: list[str] | None = None
+    metabolism_confirmed: bool | None = None
+
+
+class PlanSectionUpdateInput(BaseModel):
+    """Typed section update for the active plan."""
+
+    section: PlanSectionName
+    goal: PlanGoal | None = None
+    timeline: PlanTimeline | None = None
+    user_context: PlanUserContext | None = None
+    training: PlanTraining | None = None
+    nutrition: PlanNutrition | None = None
+    alignment: PlanAlignment | None = None
+    tracking: PlanTracking | None = None
+    review_reason: str | None = None
+
+    @model_validator(mode="after")
+    def validate_section_payload(self):
+        """Exactly one payload must be present and it must match the section name."""
+        payloads = {
+            "goal": self.goal,
+            "timeline": self.timeline,
+            "user_context": self.user_context,
+            "training": self.training,
+            "nutrition": self.nutrition,
+            "alignment": self.alignment,
+            "tracking": self.tracking,
+        }
+        provided = [name for name, value in payloads.items() if value is not None]
+        if len(provided) != 1 or provided[0] != self.section:
+            raise ValueError("section must match exactly one provided payload")
+        return self
+
+
+class PlanReviewInput(BaseModel):
+    """Tool/API payload to register a plan review."""
+
+    summary: str = Field(..., min_length=1)
+    decision: str = Field(..., min_length=1)
+    changes_made: list[str] = Field(default_factory=list)
+    next_review_at: date | None = None
+    evidence_summary: list[str] = Field(default_factory=list)
+
+
+class ProgressMetric(BaseModel):
+    """One computed progress dimension."""
+
+    status: Literal["on_track", "off_track", "insufficient_data"]
+    details: str = Field(..., min_length=1)
+
+
+class PlanConflict(BaseModel):
+    """Detected conflict between the plan and current data."""
+
+    kind: str = Field(..., min_length=1)
+    message: str = Field(..., min_length=1)
+
+
+class PlanProgressSnapshot(BaseModel):
+    """Computed progress summary shown to the user and the AI."""
+
+    plan_id: str
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    training_adherence: ProgressMetric
+    nutrition_adherence: ProgressMetric
+    progression_status: Literal[
+        "progressing",
+        "maintaining",
+        "stalled",
+        "regressing",
+        "insufficient_data",
+    ]
+    body_trend_status: Literal["aligned", "misaligned", "insufficient_data"]
+    conflicts: list[PlanConflict] = Field(default_factory=list)
+    recommended_review: bool = False
+    evidence_summary: list[str] = Field(default_factory=list)
 
 
 class PlanPromptContext(BaseModel):
-    """Prompt-safe full snapshot always injected in context."""
+    """Prompt-safe structured context injected into the chat runtime."""
+
+    status: PlanLifecycleStatus
+    schema_version: str | None = None
+    active_plan: dict[str, Any] = Field(default_factory=dict)
+    discovery: dict[str, Any] = Field(default_factory=dict)
+    progress_summary: dict[str, Any] = Field(default_factory=dict)
+
+
+class DiscoveryView(BaseModel):
+    """Frontend-friendly discovery summary."""
+
+    missing_fields: list[str] = Field(default_factory=list)
+    collected_fields: list[str] = Field(default_factory=list)
+    next_prompt: str = Field(..., min_length=1)
+
+
+class TodayTrainingView(BaseModel):
+    """Frontend summary of the current day's training."""
+
+    day: Weekday
+    routine_name: str | None = None
+    focus: str = Field(..., min_length=1)
+    exercise_names: list[str] = Field(default_factory=list)
+    is_rest_day: bool = False
+
+
+class WeeklyScheduleView(BaseModel):
+    """Frontend summary of one scheduled training day."""
+
+    day: Weekday
+    routine_name: str | None = None
+    focus: str = Field(..., min_length=1)
+    exercise_names: list[str] = Field(default_factory=list)
+    is_rest_day: bool = False
+    is_today: bool = False
+
+
+class ActivePlanView(BaseModel):
+    """Frontend view model for the active plan."""
 
     title: str = Field(..., min_length=1)
-    goal_primary: str = Field(..., min_length=1)
-    objective_summary: str = Field(..., min_length=1)
-    timeline_window: str = Field(..., min_length=1)
-    review_cadence: str = Field(..., min_length=1)
-    strategy_rationale: str = Field(..., min_length=1)
-    constraints: list[str] = Field(default_factory=list)
-    preferences: list[str] = Field(default_factory=list)
-    nutrition_targets: dict[str, Any] = Field(default_factory=dict)
+    goal_summary: str = Field(..., min_length=1)
+    success_metrics: list[str] = Field(default_factory=list)
     training_split: str = Field(..., min_length=1)
-    weekly_schedule: list[dict[str, Any]] = Field(default_factory=list)
-    routines: list[dict[str, Any]] = Field(default_factory=list)
-    current_summary: dict[str, Any] = Field(default_factory=dict)
-    latest_checkpoint: dict[str, Any] | None = None
-    metric_targets: dict[str, Any] = Field(default_factory=dict)
+    weekly_schedule: list[WeeklyScheduleView] = Field(default_factory=list)
+    today_training: TodayTrainingView
+    nutrition_targets: NutritionDailyTargets
+    current_risks: list[str] = Field(default_factory=list)
+    next_review_at: date | None = None
+    latest_review_summary: str | None = None
+
+
+class PlanViewModel(BaseModel):
+    """Complete view model consumed by the plan tab."""
+
+    status: PlanLifecycleStatus
+    generic_response_notice: str = Field(..., min_length=1)
+    discovery: DiscoveryView | None = None
+    active_plan: ActivePlanView | None = None
+    progress: PlanProgressSnapshot | None = None
 
 
 class UserPlanWithId(UserPlan):
     """Active plan with MongoDB id alias."""
 
-    id: str = Field(..., validation_alias="_id")
+    id: Annotated[str, BeforeValidator(validate_object_id)] = Field(
+        ..., validation_alias="_id"
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class PlanDiscoveryStateWithId(PlanDiscoveryState):
+    """Discovery draft with MongoDB id alias."""
+
+    id: Annotated[str, BeforeValidator(validate_object_id)] = Field(
+        ..., validation_alias="_id"
+    )
 
     model_config = ConfigDict(populate_by_name=True)

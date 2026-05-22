@@ -694,9 +694,18 @@ class AdaptiveTDEEService:
             goal_type=goal_type,
             goal_rate=goal_rate,
         )
-        if plan and getattr(plan, "nutrition_strategy", None):
-            daily_targets = getattr(plan.nutrition_strategy, "daily_targets", None)
-            calories = getattr(daily_targets, "calories", None) if daily_targets else None
+        nutrition_block = getattr(plan, "nutrition", None) if plan else None
+        if nutrition_block is None and plan is not None:
+            nutrition_block = getattr(plan, "nutrition_strategy", None)
+        if nutrition_block is not None:
+            daily_targets = getattr(nutrition_block, "daily_targets", None)
+            calories = (
+                getattr(daily_targets, "calories_kcal", None)
+                if daily_targets
+                else None
+            )
+            if calories is None and daily_targets is not None:
+                calories = getattr(daily_targets, "calories", None)
             if isinstance(calories, int) and calories > 0:
                 daily_target = calories
 
@@ -941,9 +950,18 @@ class AdaptiveTDEEService:
         target = int(round(tdee_est))
         goal_type = plan_goal_context["direction"]
         goal_rate = plan_goal_context["weekly_weight_change_kg"]
-        if plan and getattr(plan, "nutrition_strategy", None):
-            daily_targets = getattr(plan.nutrition_strategy, "daily_targets", None)
-            calories = getattr(daily_targets, "calories", None) if daily_targets else None
+        nutrition_block = getattr(plan, "nutrition", None) if plan else None
+        if nutrition_block is None and plan is not None:
+            nutrition_block = getattr(plan, "nutrition_strategy", None)
+        if nutrition_block is not None:
+            daily_targets = getattr(nutrition_block, "daily_targets", None)
+            calories = (
+                getattr(daily_targets, "calories_kcal", None)
+                if daily_targets
+                else None
+            )
+            if calories is None and daily_targets is not None:
+                calories = getattr(daily_targets, "calories", None)
             if isinstance(calories, int) and calories > 0:
                 target = calories
         elif goal_type in {"lose", "gain"} and goal_rate > 0:

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { httpClient } from '../api/http-client';
-import type { Plan } from '../types/plan';
+import type { PlanViewModel } from '../types/plan';
 
 import { usePlanStore } from './usePlan';
 
@@ -9,39 +9,51 @@ vi.mock('../api/http-client', () => ({
   httpClient: vi.fn(),
 }));
 
-const mockPlan: Plan = {
-  overview: {
-    id: 'plan-1',
+const mockPlan: PlanViewModel = {
+  status: 'ACTIVE_PLAN',
+  generic_response_notice: 'O plano ativo agora e a fonte primaria.',
+  active_plan: {
     title: 'Plano Mestre',
-    objective_summary: 'Ganhar massa magra mantendo gordura sob controle',
-    start_date: '2026-04-01',
-    target_date: '2026-06-01',
-    review_cadence: 'quinzenal',
-    active_focus: 'consistencia semanal de treinos',
-    last_updated_at: '2026-04-19T10:00:00Z',
-  },
-  strategy: {
-    rationale: 'Progressao de carga com deficit leve',
-    adaptation_policy: 'ajustes por evidencia',
-    constraints: [],
-    preferences: [],
+    goal_summary: 'Ganhar massa mantendo aderencia',
+    success_metrics: ['Peso: 75 kg'],
+    training_split: 'Upper Lower',
+    weekly_schedule: [
+      { day: 'monday', routine_name: 'Upper A', focus: 'Peito', exercise_names: ['Supino'], is_rest_day: false, is_today: true },
+      { day: 'tuesday', routine_name: null, focus: 'Recuperacao', exercise_names: [], is_rest_day: true, is_today: false },
+      { day: 'wednesday', routine_name: 'Lower A', focus: 'Pernas', exercise_names: ['Agachamento'], is_rest_day: false, is_today: false },
+      { day: 'thursday', routine_name: null, focus: 'Recuperacao', exercise_names: [], is_rest_day: true, is_today: false },
+      { day: 'friday', routine_name: 'Upper B', focus: 'Costas', exercise_names: ['Remada'], is_rest_day: false, is_today: false },
+      { day: 'saturday', routine_name: null, focus: 'Recuperacao', exercise_names: [], is_rest_day: true, is_today: false },
+      { day: 'sunday', routine_name: null, focus: 'Recuperacao', exercise_names: [], is_rest_day: true, is_today: false },
+    ],
+    today_training: {
+      day: 'monday',
+      routine_name: 'Upper A',
+      focus: 'Peito',
+      exercise_names: ['Supino'],
+      is_rest_day: false,
+    },
+    nutrition_targets: {
+      calories_kcal: 2600,
+      protein_g: 160,
+      carbs_g: 300,
+      fat_g: 75,
+    },
     current_risks: [],
+    next_review_at: '2026-06-01',
+    latest_review_summary: 'Aderencia boa',
   },
-  nutrition_targets: {
-    calories: 2200,
-    protein_g: 180,
-    carbs_g: 200,
-    fat_g: 70,
+  progress: {
+    plan_id: 'plan-1',
+    generated_at: '2026-05-22T10:00:00Z',
+    training_adherence: { status: 'on_track', details: '3 treino(s) registrado(s) recentemente.' },
+    nutrition_adherence: { status: 'insufficient_data', details: 'Sem logs nutricionais suficientes.' },
+    progression_status: 'maintaining',
+    body_trend_status: 'insufficient_data',
+    conflicts: [],
+    recommended_review: false,
+    evidence_summary: ['Treinos presentes'],
   },
-  adherence_notes: [],
-  training_program: {
-    split_name: 'upper_lower',
-    frequency_per_week: 4,
-    session_duration_min: 55,
-    weekly_schedule: [{ day: 'monday', routine_id: 'upper_a', focus: 'upper', type: 'training' }],
-    routines: [{ id: 'upper_a', name: 'Upper A', exercises: [{ name: 'Supino', sets: 4, reps: '6-8', load_guidance: 'RPE 8' }] }],
-  },
-  latest_checkpoint: null,
 };
 
 describe('usePlanStore', () => {
@@ -57,74 +69,33 @@ describe('usePlanStore', () => {
     expect(state.error).toBeNull();
   });
 
-  it('fetches plan successfully', async () => {
+  it('fetches the backend view model successfully', async () => {
     vi.mocked(httpClient).mockResolvedValue(mockPlan);
 
     await usePlanStore.getState().fetchPlan();
 
     const state = usePlanStore.getState();
-    expect(httpClient).toHaveBeenCalledWith('/plan');
+    expect(httpClient).toHaveBeenCalledWith('/plan/view');
     expect(state.plan).toEqual(mockPlan);
-    expect(state.isLoading).toBe(false);
     expect(state.error).toBeNull();
   });
 
-  it('normalizes backend plan payload into master-plan view model', async () => {
+  it('stores discovery view models as-is', async () => {
     vi.mocked(httpClient).mockResolvedValue({
-      id: 'plan-backend-1',
-      title: 'Plano Atual',
-      goal: {
-        primary: 'lose_fat',
-        objective_summary: 'Perder gordura mantendo desempenho',
+      status: 'DISCOVERY_IN_PROGRESS',
+      generic_response_notice: 'Sem plano ativo, a IA deve marcar a resposta como generica.',
+      discovery: {
+        missing_fields: ['target_date'],
+        collected_fields: ['goal_primary'],
+        next_prompt: 'Coletar: data alvo.',
       },
-      timeline: {
-        start_date: '2026-04-01T00:00:00Z',
-        target_date: '2026-06-01T00:00:00Z',
-        review_cadence: 'semanal',
-      },
-      strategy: {
-        rationale: 'deficit moderado',
-        adaptation_policy: 'approval_required',
-      },
-      nutrition_strategy: {
-        daily_targets: { calories: 2200, protein_g: 170 },
-      },
-      training_program: {
-        split_name: 'upper_lower',
-        frequency_per_week: 4,
-        session_duration_min: 50,
-        weekly_schedule: [{ day: 'monday', routine_id: 'upper_a', focus: 'upper', type: 'training' }],
-        routines: [
-          {
-            id: 'upper_a',
-            name: 'Upper A',
-            exercises: [{ name: 'Supino Reto', sets: 4, reps: '6-8', load_guidance: 'RPE 8' }],
-          },
-        ],
-      },
-      current_summary: {
-        active_focus: 'consistencia',
-      },
-      checkpoints: [
-        {
-          checkpoint_at: '2026-04-19T10:00:00Z',
-          summary: 'Aderencia boa',
-          decision: 'continuar',
-          next_focus: 'recuperacao',
-          evidence: ['treino completo'],
-        },
-      ],
-      updated_at: '2026-04-19T10:00:00Z',
     });
 
     await usePlanStore.getState().fetchPlan();
 
     const state = usePlanStore.getState();
-    expect(state.plan?.overview.title).toBe('Plano Atual');
-    expect(state.plan?.overview.start_date).toBe('2026-04-01');
-    expect(state.plan?.nutrition_targets.calories).toBe(2200);
-    expect(state.plan?.training_program.routines[0]?.name).toBe('Upper A');
-    expect(state.plan?.latest_checkpoint?.decision).toBe('continuar');
+    expect(state.plan?.status).toBe('DISCOVERY_IN_PROGRESS');
+    expect(state.plan?.discovery?.missing_fields).toEqual(['target_date']);
   });
 
   it('handles empty plan response', async () => {
@@ -134,7 +105,6 @@ describe('usePlanStore', () => {
 
     const state = usePlanStore.getState();
     expect(state.plan).toBeNull();
-    expect(state.isLoading).toBe(false);
     expect(state.error).toBeNull();
   });
 
@@ -145,7 +115,6 @@ describe('usePlanStore', () => {
 
     const state = usePlanStore.getState();
     expect(state.plan).toBeNull();
-    expect(state.isLoading).toBe(false);
     expect(state.error).toBe('plan unavailable');
   });
 

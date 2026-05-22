@@ -1,338 +1,177 @@
-import { CalendarDays, Check, Dumbbell } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { AlertTriangle, CalendarDays, CheckCircle2, Dumbbell, Target } from 'lucide-react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '../../../shared/components/ui/Button';
 import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
 import { Skeleton } from '../../../shared/components/ui/Skeleton';
-import type { Plan, PlanRoutine, PlanWeeklyScheduleItem } from '../../../shared/types/plan';
-import { cn } from '../../../shared/utils/cn';
+import type { PlanViewModel } from '../../../shared/types/plan';
 
 interface PlanViewProps {
-  plan: Plan | null;
+  plan: PlanViewModel | null;
   isLoading: boolean;
   onOpenChat: () => void;
-}
-
-interface RingMetric {
-  id: string;
-  label: string;
-  unit: string;
-  target: number;
-}
-
-const WEEKDAY_ORDER = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
-
-function parseIsoDate(value: string): Date | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return null;
-  const year = Number(match[1]);
-  const month = Number(match[2]) - 1;
-  const day = Number(match[3]);
-  const date = new Date(year, month, day);
-  if (Number.isNaN(date.getTime())) return null;
-  return date;
-}
-
-function formatDateByLocale(value: string, locale: string): string {
-  const date = parseIsoDate(value);
-  if (!date) return value;
-  return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(date);
-}
-
-function normalizeDay(value?: string): string {
-  if (!value) return '';
-  return value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim();
-}
-
-function toWeekdayIndex(isoWeekday: string): number {
-  return WEEKDAY_ORDER.indexOf(normalizeDay(isoWeekday));
-}
-
-function fromJsDayToIsoWeekday(day: number): string {
-  const mapping = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  return mapping[day] ?? 'monday';
-}
-
-function formatWeekdayShort(isoWeekday: string, locale: string): string {
-  const idx = toWeekdayIndex(isoWeekday);
-  const referenceDate = new Date(2024, 0, idx >= 0 ? idx + 1 : 1);
-  return new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(referenceDate);
-}
-
-function resolveRoutineForSchedule(
-  scheduleItem: PlanWeeklyScheduleItem | undefined,
-  routines: PlanRoutine[],
-): PlanRoutine | null {
-  if (!scheduleItem) return null;
-  if (scheduleItem.routine_id) {
-    const matchById = routines.find((routine) => normalizeDay(routine.id) === normalizeDay(scheduleItem.routine_id));
-    if (matchById) return matchById;
-  }
-
-  const focus = normalizeDay(scheduleItem.focus);
-  if (focus) {
-    const matchByFocus = routines.find((routine) => {
-      const name = normalizeDay(routine.name);
-      const objective = normalizeDay(routine.objective);
-      return name.includes(focus) || objective.includes(focus);
-    });
-    if (matchByFocus) return matchByFocus;
-  }
-
-  return null;
 }
 
 function PlanSkeleton() {
   return (
     <div data-testid="plan-skeleton" className="space-y-6 animate-pulse">
       <Skeleton className="h-32 rounded-[var(--radius-lg)] bg-[color:var(--color-surface-container)]" />
-      <Skeleton className="h-96 rounded-[var(--radius-lg)] bg-[color:var(--color-surface-container)]" />
       <Skeleton className="h-48 rounded-[var(--radius-lg)] bg-[color:var(--color-surface-container)]" />
-    </div>
-  );
-}
-
-function TimelineHeader({
-  title,
-  startDate,
-  targetDate,
-  locale,
-}: {
-  title: string;
-  startDate: string;
-  targetDate: string;
-  locale: string;
-}) {
-  const { t } = useTranslation();
-
-  const timeline = useMemo(() => {
-    const start = parseIsoDate(startDate);
-    const end = parseIsoDate(targetDate);
-    const today = new Date();
-    if (!start || !end || end < start) {
-      return { progress: 0, week: 1, totalWeeks: 1 };
-    }
-
-    const totalDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000) + 1);
-    const elapsedDays = clamp(Math.ceil((today.getTime() - start.getTime()) / 86400000), 0, totalDays);
-    const totalWeeks = Math.max(1, Math.ceil(totalDays / 7));
-    const week = clamp(Math.ceil(Math.max(1, elapsedDays) / 7), 1, totalWeeks);
-    return {
-      progress: clamp(Math.round((elapsedDays / totalDays) * 100), 0, 100),
-      week,
-      totalWeeks,
-    };
-  }, [startDate, targetDate]);
-
-  return (
-    <PremiumCard className="relative overflow-hidden border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] px-5 py-4 md:px-6 md:py-5">
-      <div className="relative space-y-5">
-        <div className="flex items-center gap-3 text-text-primary">
-          <CalendarDays size={20} className="text-[color:var(--color-primary)]" />
-          <h2 className="text-lg md:text-xl font-bold tracking-tight">{title}</h2>
-        </div>
-
-        <div className="space-y-3">
-          <div className="h-3 w-full rounded-full bg-[color:var(--color-background)]">
-            <div
-              className="relative h-3 rounded-full"
-              style={{
-                width: `${String(timeline.progress)}%`,
-                backgroundColor: 'var(--color-primary)',
-              }}
-            >
-              <div className="absolute right-[-8px] top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border-2 border-[color:var(--color-primary)] bg-[color:var(--color-surface-container-low)]" />
-            </div>
-          </div>
-          <div className="flex items-center justify-between text-xs font-medium text-text-secondary md:text-sm">
-            <p>
-              {formatDateByLocale(startDate, locale)} <span className="text-text-muted">({t('plan.labels.start')})</span>
-            </p>
-            <p className="text-[color:var(--color-primary)]">
-              {t('plan.labels.week_of', { week: timeline.week, total: timeline.totalWeeks })}
-            </p>
-            <p>
-              {formatDateByLocale(targetDate, locale)} <span className="text-text-muted">({t('plan.labels.target')})</span>
-            </p>
-          </div>
-        </div>
-      </div>
-    </PremiumCard>
-  );
-}
-
-function NutritionTargetCard({ metric }: { metric: RingMetric }) {
-  return (
-    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)]">
-      <div
-        className="px-4 py-2 text-center font-semibold text-[color:var(--color-on-primary)]"
-        style={{ backgroundColor: 'var(--color-primary)' }}
-      >
-        <p className="text-sm md:text-base leading-none">{metric.label}</p>
-      </div>
-      <div className="px-4 py-5 text-center">
-        <p className="text-xl md:text-2xl font-medium leading-none text-text-primary">
-          {Math.round(metric.target)}
-          <span className="ml-1 text-base md:text-lg">{metric.unit}</span>
-        </p>
-      </div>
+      <Skeleton className="h-64 rounded-[var(--radius-lg)] bg-[color:var(--color-surface-container)]" />
     </div>
   );
 }
 
 export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
-  const { t, i18n } = useTranslation();
-
-  const [selectedDay, setSelectedDay] = useState<string>('monday');
+  const { t } = useTranslation();
+  const activePlan = plan?.active_plan ?? null;
+  const dayLabels: Record<string, string> = {
+    monday: t('plan.days.monday'),
+    tuesday: t('plan.days.tuesday'),
+    wednesday: t('plan.days.wednesday'),
+    thursday: t('plan.days.thursday'),
+    friday: t('plan.days.friday'),
+    saturday: t('plan.days.saturday'),
+    sunday: t('plan.days.sunday'),
+  };
+  const initialSelectedDay =
+    activePlan?.weekly_schedule.find((entry) => entry.is_today)?.day ?? activePlan?.weekly_schedule[0]?.day ?? 'monday';
+  const [selectedDayOverride, setSelectedDayOverride] = useState<string | null>(null);
+  const selectedDay =
+    selectedDayOverride && activePlan?.weekly_schedule.some((entry) => entry.day === selectedDayOverride)
+      ? selectedDayOverride
+      : initialSelectedDay;
 
   if (isLoading) {
     return <PlanSkeleton />;
   }
 
-  if (!plan) {
+  if (!plan || plan.status === 'NO_PLAN' || plan.status === 'DISCOVERY_IN_PROGRESS') {
+    const discovery = plan?.discovery;
     return (
-      <PremiumCard className="space-y-4 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-8 text-center md:p-10">
-        <h2 className="text-2xl font-bold tracking-tight text-text-primary">{t('plan.empty.title')}</h2>
-        <p className="mx-auto max-w-xl text-sm font-medium text-text-muted">{t('plan.empty.description')}</p>
-        <div>
+      <div className="space-y-5" data-testid="plan-discovery-view">
+        <PremiumCard className="space-y-4 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-8 text-center md:p-10">
+          <h2 className="text-2xl font-bold tracking-tight text-text-primary">{t('plan.empty.title')}</h2>
+          <p className="mx-auto max-w-2xl text-sm font-medium text-text-muted">{plan?.generic_response_notice ?? t('plan.empty.description')}</p>
           <Button type="button" onClick={onOpenChat} className="px-6 py-3 font-bold">
             {t('plan.empty.cta')}
           </Button>
-        </div>
-      </PremiumCard>
+        </PremiumCard>
+
+        {discovery ? (
+          <PremiumCard className="space-y-4 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5">
+            <div className="flex items-center gap-3">
+              <Target className="text-[color:var(--color-primary)]" size={18} />
+              <h3 className="text-sm font-bold uppercase tracking-wide text-text-primary">{t('plan.sections.discovery')}</h3>
+            </div>
+            <p className="text-sm text-text-secondary">{discovery.next_prompt}</p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <p className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-text-muted">{t('plan.labels.collected_fields')}</p>
+                <ul className="space-y-1 text-sm text-text-secondary">
+                  {discovery.collected_fields.map((field) => {
+                    return <li key={field}>{field}</li>;
+                  })}
+                </ul>
+              </div>
+              <div>
+                <p className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-text-muted">{t('plan.labels.missing_fields')}</p>
+                <ul className="space-y-1 text-sm text-text-secondary">
+                  {discovery.missing_fields.map((field) => {
+                    return <li key={field}>{field}</li>;
+                  })}
+                </ul>
+              </div>
+            </div>
+          </PremiumCard>
+        ) : null}
+      </div>
     );
   }
 
-  const sortedWeekly = [...plan.training_program.weekly_schedule].sort((a, b) => toWeekdayIndex(a.day) - toWeekdayIndex(b.day));
-  const weeklyWithMissingDays = WEEKDAY_ORDER.map((day) => sortedWeekly.find((item) => normalizeDay(item.day) === day) ?? null);
-  const todayIsoDay = fromJsDayToIsoWeekday(new Date().getDay());
-  const selectedSchedule = weeklyWithMissingDays.find((item) => item && normalizeDay(item.day) === selectedDay) ?? null;
-  const selectedRoutine = resolveRoutineForSchedule(selectedSchedule ?? undefined, plan.training_program.routines);
-  const isViewingToday = selectedDay === todayIsoDay;
-
-  const metrics = [
-    {
-      id: 'calories',
-      label: t('plan.labels.calories'),
-      unit: 'kcal',
-      target: plan.nutrition_targets.calories,
-    },
-    {
-      id: 'protein',
-      label: t('plan.labels.protein'),
-      unit: 'g',
-      target: plan.nutrition_targets.protein_g,
-    },
-    {
-      id: 'carbs',
-      label: t('plan.labels.carbs'),
-      unit: 'g',
-      target: plan.nutrition_targets.carbs_g,
-    },
-    {
-      id: 'fat',
-      label: t('plan.labels.fat'),
-      unit: 'g',
-      target: plan.nutrition_targets.fat_g,
-    },
-  ].filter((item) => item.target > 0) as RingMetric[];
-
-  const successCriteria = [
-    t('plan.labels.review_cadence') + ': ' + plan.overview.review_cadence,
-    t('plan.labels.active_focus') + ': ' + plan.overview.active_focus,
-    ...plan.adherence_notes,
-  ].filter((item) => item.trim().length > 0);
+  if (!activePlan) return null;
+  const selectedSchedule =
+    activePlan.weekly_schedule.find((entry) => entry.day === selectedDay) ?? activePlan.weekly_schedule[0];
 
   return (
     <div className="space-y-5 pb-20 font-sans" data-testid="plan-view">
-      <TimelineHeader
-        title={plan.overview.title}
-        startDate={plan.overview.start_date}
-        targetDate={plan.overview.target_date}
-        locale={i18n.language}
-      />
+      <PremiumCard className="space-y-4 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5">
+        <div className="flex items-center gap-3 text-text-primary">
+          <CalendarDays size={20} className="text-[color:var(--color-primary)]" />
+          <h2 className="text-lg md:text-xl font-bold tracking-tight">{activePlan.title}</h2>
+        </div>
+        <p className="text-base font-semibold text-text-primary">{activePlan.goal_summary}</p>
+      </PremiumCard>
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <PremiumCard className="space-y-4 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5">
-          <h3 className="text-sm font-bold uppercase tracking-wide text-text-primary">{t('plan.sections.daily_routine')}</h3>
-          <div className="flex flex-wrap items-center gap-2">
+      <PremiumCard className="space-y-4 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5">
+        <div className="flex items-center gap-3">
+          <Target size={18} className="text-[color:var(--color-primary)]" />
+          <h3 className="text-sm font-bold uppercase tracking-wide text-text-primary">{t('plan.sections.weekly_schedule')}</h3>
+        </div>
+        <div className="flex gap-3 overflow-x-auto pb-2" data-testid="plan-weekly-schedule">
+          {activePlan.weekly_schedule.map((entry) => (
             <button
+              key={entry.day}
               type="button"
+              aria-label={dayLabels[entry.day] ?? entry.day}
+              aria-pressed={entry.day === selectedDay}
               onClick={() => {
-                setSelectedDay(todayIsoDay);
+                setSelectedDayOverride(entry.day);
               }}
-              className={cn(
-                'rounded-[var(--radius-full)] border px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.05em] transition-colors',
-                isViewingToday
-                  ? 'border-[color:var(--color-primary)] bg-[color:var(--color-primary)]/15 text-[color:var(--color-primary)]'
-                  : 'border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] text-text-secondary hover:border-[color:var(--color-primary)]/40 hover:text-text-primary'
-              )}
+              className={[
+                'min-w-[10rem] flex-shrink-0 rounded-2xl border px-4 py-3 text-left transition-colors',
+                entry.day === selectedDay
+                  ? 'border-[color:var(--color-primary)] bg-[color:var(--color-background)]'
+                  : 'border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)]',
+              ].join(' ')}
             >
-              {t('plan.sections.daily_routine')}
-            </button>
-            <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1">
-              {WEEKDAY_ORDER.map((day) => {
-                const isActive = selectedDay === day;
-                const label = formatWeekdayShort(day, i18n.language);
-                const isToday = day === todayIsoDay;
-                return (
-                  <button
-                    key={day}
-                    type="button"
-                    onClick={() => {
-                      setSelectedDay(day);
-                    }}
-                    className={cn(
-                      'shrink-0 rounded-[var(--radius-md)] border px-3 py-2 text-center text-[11px] md:text-xs font-bold uppercase tracking-[0.05em] transition-colors',
-                      isActive
-                        ? 'border-[color:var(--color-primary)] bg-[color:var(--color-primary)]/15 text-[color:var(--color-primary)]'
-                        : 'border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] text-text-secondary hover:border-[color:var(--color-primary)]/40 hover:text-text-primary',
-                    )}
-                    aria-pressed={isActive}
-                  >
-                    <span>{label}</span>
-                    {isToday ? <span className="ml-1 text-[color:var(--color-primary)]">{t('dashboard.week_short')}</span> : null}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2" data-testid="plan-weekly-exercises">
-            {selectedRoutine?.exercises.length ? (
-              selectedRoutine.exercises.map((exercise) => (
-                <div key={`${selectedDay}-${exercise.name}`} className="flex items-center gap-4 rounded-[var(--radius-lg)] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">
-                  <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-[color:var(--color-outline)] bg-[color:var(--color-surface-container)] text-text-secondary">
-                    <Dumbbell size={22} />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-base font-semibold text-text-primary md:text-lg">{exercise.name}</p>
-                    <div className="flex flex-wrap gap-4 text-xs font-medium text-text-secondary md:text-sm">
-                      <span>
-                        {t('plan.labels.sets_reps')}: {exercise.sets} x {exercise.reps}
-                      </span>
-                      <span>
-                        {t('plan.labels.rpe')}: {exercise.load_guidance}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="space-y-3 rounded-[var(--radius-lg)] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-5 text-sm font-semibold text-text-muted xl:col-span-2">
-                <p>{t('plan.labels.rest_day')}</p>
-                <Button type="button" variant="secondary" onClick={onOpenChat} className="h-10 rounded-lg px-4 text-xs md:text-sm">
-                  {t('plan.empty.cta')}
-                </Button>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">
+                  {dayLabels[entry.day] ?? entry.day}
+                </p>
+                {entry.is_today ? (
+                  <span className="rounded-full bg-[color:var(--color-primary)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
+                    {t('plan.labels.today')}
+                  </span>
+                ) : null}
               </div>
+              <p className="mt-2 text-sm font-semibold text-text-primary">
+                {entry.is_rest_day ? t('plan.labels.rest_day_short') : entry.routine_name}
+              </p>
+              <p className="mt-1 text-xs text-text-secondary">{entry.focus}</p>
+            </button>
+          ))}
+        </div>
+      </PremiumCard>
+
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        <PremiumCard
+          className="space-y-4 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5"
+          data-testid="plan-daily-routine"
+        >
+          <div className="flex items-center gap-3">
+            <Dumbbell size={18} className="text-[color:var(--color-primary)]" />
+            <h3 className="text-sm font-bold uppercase tracking-wide text-text-primary">{t('plan.sections.daily_routine')}</h3>
+          </div>
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">{dayLabels[selectedSchedule?.day ?? activePlan.today_training.day] ?? selectedSchedule?.day ?? activePlan.today_training.day}</p>
+          <p className="text-lg font-semibold text-text-primary">
+            {selectedSchedule?.is_rest_day ? t('plan.labels.rest_day') : selectedSchedule?.routine_name}
+          </p>
+          <p className="text-sm text-text-secondary">{selectedSchedule?.focus ?? activePlan.today_training.focus}</p>
+          <div data-testid="plan-weekly-exercises" className="space-y-2">
+            {selectedSchedule?.exercise_names.length ? (
+              selectedSchedule.exercise_names.map((exercise) => {
+                return (
+                  <div key={exercise} className="rounded-[var(--radius-lg)] border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] px-4 py-3 text-sm text-text-secondary">
+                    {exercise}
+                  </div>
+                );
+              })
+            ) : (
+              <Button type="button" variant="secondary" onClick={onOpenChat} className="h-10 rounded-lg px-4 text-xs md:text-sm">
+                {t('plan.empty.cta')}
+              </Button>
             )}
           </div>
         </PremiumCard>
@@ -340,55 +179,57 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
         <div className="space-y-5">
           <PremiumCard className="space-y-4 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5">
             <h3 className="text-sm font-bold uppercase tracking-wide text-text-primary">{t('plan.sections.overview')}</h3>
-            <div className="space-y-3 rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">{t('plan.labels.primary_goal')}</p>
-              <p className="text-lg font-bold text-text-primary md:text-xl">{plan.strategy.rationale}</p>
-              <p className="text-sm font-medium text-text-secondary md:text-base">{plan.overview.objective_summary}</p>
-            </div>
-            <div className="space-y-3 rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">
+            <div className="space-y-2 rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">
               <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">{t('plan.labels.success_criteria')}</p>
-              <div className="space-y-2">
-                {successCriteria.map((criterion) => (
-                  <div key={criterion} className="flex items-start gap-2 text-text-secondary">
-                    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-outline)] bg-[color:var(--color-surface-container)] text-text-secondary">
-                      <Check size={12} />
-                    </span>
-                    <p className="text-xs font-medium md:text-sm">{criterion}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </PremiumCard>
-
-          <PremiumCard className="space-y-5 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5">
-            <h3 className="text-sm font-bold uppercase tracking-wide text-text-primary">{t('plan.sections.nutrition_strategy')}</h3>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {metrics.map((metric) => (
-                <NutritionTargetCard key={metric.id} metric={metric} />
+              {activePlan.success_metrics.map((metric) => (
+                <div key={metric} className="flex items-start gap-2 text-text-secondary">
+                  <CheckCircle2 size={14} className="mt-0.5 text-[color:var(--color-primary)]" />
+                  <p className="text-sm">{metric}</p>
+                </div>
               ))}
             </div>
           </PremiumCard>
 
-          <PremiumCard className="space-y-3 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-text-primary">{t('plan.sections.latest_checkpoint')}</h3>
-            {plan.latest_checkpoint ? (
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-text-secondary">{plan.latest_checkpoint.summary}</p>
-                <p className="text-xs font-medium text-text-secondary md:text-sm">
-                  {t('plan.checkpoint.decision')}: {plan.latest_checkpoint.decision}
-                </p>
-                <p className="text-xs font-medium text-text-secondary md:text-sm">
-                  {t('plan.checkpoint.next_focus')}: {plan.latest_checkpoint.next_focus}
-                </p>
+          <PremiumCard className="space-y-4 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-text-primary">{t('plan.sections.nutrition_strategy')}</h3>
+            <div className="grid grid-cols-2 gap-3 text-sm text-text-secondary">
+              <div className="rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">
+                {activePlan.nutrition_targets.calories_kcal} kcal
+              </div>
+              <div className="rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">
+                {activePlan.nutrition_targets.protein_g}g P
+              </div>
+              <div className="rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">
+                {activePlan.nutrition_targets.carbs_g}g C
+              </div>
+              <div className="rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">
+                {activePlan.nutrition_targets.fat_g}g F
+              </div>
+            </div>
+          </PremiumCard>
+
+          <PremiumCard className="space-y-4 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-text-primary">{t('plan.sections.progress')}</h3>
+            {plan.progress ? (
+              <div className="space-y-3 text-sm text-text-secondary">
+                <p>{plan.progress.training_adherence.details}</p>
+                <p>{plan.progress.nutrition_adherence.details}</p>
+                <p>{plan.progress.evidence_summary.join(' ')}</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                <p className="text-xs font-semibold text-text-muted">{t('plan.checkpoint.empty')}</p>
-                <Button type="button" variant="secondary" onClick={onOpenChat} className="h-10 rounded-lg px-4 text-xs md:text-sm">
-                  {t('plan.empty.cta')}
-                </Button>
-              </div>
+              <p className="text-sm text-text-muted">{t('plan.progress.empty')}</p>
             )}
+            {plan.progress?.conflicts.length ? (
+              <div className="space-y-2 rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle size={14} className="text-[color:var(--color-tertiary)]" />
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">{t('plan.sections.conflicts')}</p>
+                </div>
+                {plan.progress.conflicts.map((conflict) => (
+                  <p key={`${conflict.kind}-${conflict.message}`} className="text-sm text-text-secondary">{conflict.message}</p>
+                ))}
+              </div>
+            ) : null}
           </PremiumCard>
         </div>
       </div>
