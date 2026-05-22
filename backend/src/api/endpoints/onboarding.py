@@ -133,10 +133,10 @@ def complete_onboarding(request: OnboardingCompleteRequest):
         role="user",
         gender=request.gender,
         age=request.age,
-        weight=request.weight,
+        weight=None,
         height=request.height,
-        goal_type=request.goal_type,
-        weekly_rate=request.weekly_rate,
+        goal_type="maintain",
+        weekly_rate=0.0,
         subscription_plan=request.subscription_plan,
         # Mandatory fields for Mypy/Pyright
         # Optional/Default fields
@@ -199,10 +199,10 @@ def complete_public_onboarding(
     # Update profile fields
     profile.gender = request.gender
     profile.age = request.age
-    profile.weight = request.weight
+    profile.weight = None
     profile.height = request.height
-    profile.goal_type = request.goal_type
-    profile.weekly_rate = request.weekly_rate
+    profile.goal_type = "maintain"
+    profile.weekly_rate = 0.0
     profile.subscription_plan = request.subscription_plan
     profile.onboarding_completed = True
     if request.name:

@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Camera, Mail, Activity, Target, ChevronRight, User, Ruler, TrendingUp } from 'lucide-react';
+import { Camera, Mail, Activity, ChevronRight, User, Ruler } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -42,9 +42,6 @@ export default function UserProfileView({
         gender: profile.gender,
         age: profile.age,
         height: profile.height,
-        target_weight: profile.target_weight ?? undefined,
-        goal_type: profile.goal_type,
-        weekly_rate: profile.weekly_rate,
       });
     }
   }, [profile, reset]);
@@ -185,70 +182,16 @@ export default function UserProfileView({
            </div>
         </PremiumCard>
 
-        <PremiumCard className="p-8">
-           <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 rounded-xl bg-[color:var(--color-secondary)]/10 border border-[color:var(--color-secondary)]/20 flex items-center justify-center text-[color:var(--color-secondary)]">
-                 <Target size={20} />
-              </div>
-              <h3 className="text-xl font-semibold text-text-primary tracking-tight uppercase">{t('settings.profile.goals')}</h3>
-           </div>
-
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField label={t('settings.profile.goal_type')} id="profile-goal" icon={<Target size={18} />}>
-                  <select 
-                    id="profile-goal"
-                    disabled={isReadOnly}
-                    {...register('goal_type')}
-                  className="form-field flex h-14 w-full rounded-2xl px-4 py-2 text-sm"
-                >
-                  <option value="lose">{t('onboarding.goals.lose')}</option>
-                  <option value="maintain">{t('onboarding.goals.maintain')}</option>
-                  <option value="gain">{t('onboarding.goals.gain')}</option>
-                </select>
-              </FormField>
-
-              <FormField label={t('settings.profile.target_weight')} id="profile-target" icon={<Ruler size={18} />} error={errors.target_weight?.message}>
-                <div className="relative">
-                  <Input 
-                    id="profile-target"
-                    data-testid="profile-target"
-                    type="number"
-                    step="any"
-                    disabled={isReadOnly}
-                    {...register('target_weight', { valueAsNumber: true })}
-                    className="pl-12 h-14 rounded-2xl"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-text-muted uppercase tracking-[0.05em]">kg</span>
-                </div>
-              </FormField>
-
-              <FormField label={t('settings.profile.weekly_rate')} id="profile-weekly-rate" icon={<TrendingUp size={18} />} error={errors.weekly_rate?.message}>
-                <div className="relative">
-                  <Input 
-                    id="profile-weekly-rate"
-                    data-testid="profile-weekly-rate"
-                    type="number"
-                    step="any"
-                    disabled={isReadOnly}
-                    {...register('weekly_rate', { valueAsNumber: true })}
-                    className="pl-12 h-14 rounded-2xl"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-text-muted uppercase tracking-[0.05em]">kg/sem</span>
-                </div>
-              </FormField>
-           </div>
-
-           <div className="mt-10 flex justify-end">
-              <Button 
-                type="submit" 
-                disabled={isSaving || isReadOnly}
-                className="btn-premium h-14 px-10 rounded-2xl text-base  hover:scale-[1.02] active:scale-[0.98] transition-all"
-              >
-                {isReadOnly ? t('settings.profile.read_only', 'Somente leitura') : isSaving ? t('common.loading') : t('common.save')}
-                <ChevronRight className="ml-2 w-5 h-5" />
-              </Button>
-           </div>
-        </PremiumCard>
+        <div className="mt-2 flex justify-end">
+          <Button
+            type="submit"
+            disabled={isSaving || isReadOnly}
+            className="btn-premium h-14 px-10 rounded-2xl text-base  hover:scale-[1.02] active:scale-[0.98] transition-all"
+          >
+            {isReadOnly ? t('settings.profile.read_only', 'Somente leitura') : isSaving ? t('common.loading') : t('common.save')}
+            <ChevronRight className="ml-2 w-5 h-5" />
+          </Button>
+        </div>
       </div>
     </form>
   );

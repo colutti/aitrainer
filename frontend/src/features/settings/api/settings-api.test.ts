@@ -18,11 +18,9 @@ describe('settingsApi', () => {
     email: 'test@test.com',
     gender: 'Masculino',
     age: 30,
-    weight: 80,
     height: 180,
-    goal: 'muscle_gain',
-    goal_type: 'gain',
-    weekly_rate: 0.5
+    notes: 'Sem restrições',
+    display_name: 'Atleta Teste'
   };
 
   it('should get profile', async () => {
@@ -35,7 +33,7 @@ describe('settingsApi', () => {
   });
 
   it('should update profile', async () => {
-    const updateData = { goal: 'weight_loss', goal_type: 'lose' };
+    const updateData = { gender: 'Feminino', notes: 'Atualizado' };
     const mockResponse = { ...mockProfile, ...updateData };
     vi.mocked(httpClient).mockResolvedValue(mockResponse);
 

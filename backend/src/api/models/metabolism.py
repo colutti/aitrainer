@@ -45,8 +45,12 @@ class MetabolismResponse(BaseModel):
     )
     startDate: str = Field(..., description="Start date of the analysis period (ISO)")
     endDate: str = Field(..., description="End date of the analysis period (ISO)")
-    start_weight: float = Field(..., description="Starting weight (trend estimation)")
-    end_weight: float = Field(..., description="Ending weight (trend estimation)")
+    start_weight: float | None = Field(
+        None, description="Starting weight (trend estimation)"
+    )
+    end_weight: float | None = Field(
+        None, description="Ending weight (trend estimation)"
+    )
 
     # New fields for UX
     daily_target: int | None = Field(

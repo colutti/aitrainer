@@ -9,9 +9,18 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 class PlanGoal(BaseModel):
     """Goal contract for the active master plan."""
 
+    class MetricTargets(BaseModel):
+        """Optional metric targets used by metabolism/projection logic."""
+
+        direction: str | None = None
+        target_weight_kg: float | None = Field(default=None, gt=0)
+        weekly_weight_change_kg: float | None = Field(default=None, gt=0)
+        target_body_fat_pct: float | None = Field(default=None, gt=0, le=100)
+
     primary: str = Field(..., min_length=1)
     objective_summary: str = Field(..., min_length=1)
     success_criteria: list[str] = Field(default_factory=list)
+    metric_targets: MetricTargets | None = None
 
 
 class PlanTimeline(BaseModel):
@@ -251,6 +260,7 @@ class PlanPromptContext(BaseModel):
     routines: list[dict[str, Any]] = Field(default_factory=list)
     current_summary: dict[str, Any] = Field(default_factory=dict)
     latest_checkpoint: dict[str, Any] | None = None
+    metric_targets: dict[str, Any] = Field(default_factory=dict)
 
 
 class UserPlanWithId(UserPlan):

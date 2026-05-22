@@ -32,7 +32,7 @@ let fetchAvailableTrainersInFlight: Promise<void> | null = null;
 /**
  * Settings store using Zustand
  * 
- * Manages user profile, fitness goals, and trainer preferences.
+ * Manages user profile and trainer preferences.
  */
 export const useSettingsStore = create<SettingsStore>((set, get) => ({
   profile: null,

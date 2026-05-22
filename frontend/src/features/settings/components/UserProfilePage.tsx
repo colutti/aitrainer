@@ -44,7 +44,7 @@ const UserProfilePage = () => {
     if (isDemoUser) return;
     setIsSaving(true);
     try {
-      // 1. Update Profile Stats (age, gender, goals, etc.)
+      // 1. Update profile basics (age, gender, height, notes, etc.)
       await settingsApi.updateProfile(formData);
       
       // 2. Update Identity (display_name) if changed

@@ -8,8 +8,6 @@ export interface OnboardingPayload {
   age: number;
   weight: number;
   height: number;
-  goal_type: string;
-  weekly_rate: number;
   trainer_type: string;
   subscription_plan: string;
   activity_level?: string;

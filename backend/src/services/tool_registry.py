@@ -49,12 +49,6 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
         ToolMemoryType.EPHEMERAL,
         "Fetch raw body composition",
     ),
-    "get_user_goal": ToolMetadata(
-        "get_user_goal", ToolMemoryType.EPHEMERAL, "Fetch goal"
-    ),
-    "get_goal_history_raw": ToolMetadata(
-        "get_goal_history_raw", ToolMemoryType.EPHEMERAL, "Fetch raw goal history"
-    ),
     "list_hevy_routines": ToolMetadata(
         "list_hevy_routines", ToolMemoryType.EPHEMERAL, "List Hevy routines"
     ),
@@ -75,9 +69,6 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
     ),
     "save_body_composition": ToolMetadata(
         "save_body_composition", ToolMemoryType.MEMORABLE, "Save weight"
-    ),
-    "update_user_goal": ToolMetadata(
-        "update_user_goal", ToolMemoryType.MEMORABLE, "Update goal"
     ),
     "create_hevy_routine": ToolMetadata(
         "create_hevy_routine", ToolMemoryType.MEMORABLE, "Create routine"

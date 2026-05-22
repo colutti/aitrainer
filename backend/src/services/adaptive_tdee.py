@@ -4,7 +4,7 @@ Service for calculating Adaptive TDEE based on weight and nutrition history.
 # pylint: disable=too-many-lines,too-many-locals
 
 from datetime import date, timedelta, datetime
-from typing import List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -77,6 +77,41 @@ class AdaptiveTDEEService:
     def __init__(self, db: "MongoDatabase"):
         """Initialize the AdaptiveTDEEService with a database connection."""
         self.db = db
+
+    @staticmethod
+    def _extract_plan_goal_context(plan) -> dict[str, Any]:
+        """Return goal direction/rate/target from plan when available."""
+        primary = ""
+        direction = "maintain"
+        target_weight = None
+        weekly_rate = 0.0
+        if plan and getattr(plan, "goal", None):
+            primary = getattr(plan.goal, "primary", "") or ""
+            metric_targets = getattr(plan.goal, "metric_targets", None)
+            if metric_targets:
+                direction = (
+                    getattr(metric_targets, "direction", None) or direction
+                ).strip().lower()
+                target_weight = getattr(metric_targets, "target_weight_kg", None)
+                weekly = getattr(metric_targets, "weekly_weight_change_kg", None)
+                if isinstance(weekly, (float, int)):
+                    weekly_rate = float(weekly)
+
+        if direction not in {"lose", "gain", "maintain"}:
+            normalized = primary.strip().lower()
+            if normalized in {"lose_fat", "cut"}:
+                direction = "lose"
+            elif normalized in {"build_muscle", "bulk"}:
+                direction = "gain"
+            else:
+                direction = "maintain"
+
+        return {
+            "primary": primary,
+            "direction": direction,
+            "target_weight_kg": target_weight,
+            "weekly_weight_change_kg": max(0.0, weekly_rate),
+        }
 
     def filter_outliers(self, logs: list[WeightLog]) -> tuple[list[WeightLog], int]:
         """Compatibility wrapper for outlier filtering."""
@@ -425,18 +460,21 @@ class AdaptiveTDEEService:
 
     # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     def _calculate_formula_tdee(
-        self, profile: "UserProfile | None", latest_weight: float, weight_logs: list[WeightLog]
+        self,
+        profile: "UserProfile | None",
+        latest_weight: float | None,
+        weight_logs: list[WeightLog],
     ) -> float:
         """Calculates a formula-based TDEE estimate as a fallback or prior."""
         scale_bmr = next((log.bmr for log in reversed(weight_logs) if log.bmr), None)
         calc_bmr = 0.0
-        if profile and profile.height and profile.age:
+        if profile and profile.height and profile.age and latest_weight is not None:
             try:
                 adj = -161 if profile.gender in ("Feminino", "female") else 5
                 calc_bmr = (10 * latest_weight) + (6.25 * profile.height) - (5 * profile.age) + adj
             except (ValueError, TypeError, AttributeError):
                 pass
-        base_bmr = scale_bmr or calc_bmr or (latest_weight * 22) or 1500
+        base_bmr = scale_bmr or calc_bmr or 1500
         activity_factor = 1.45
         if profile and hasattr(profile, "tdee_activity_factor"):
             af = getattr(profile, "tdee_activity_factor", None)
@@ -490,6 +528,8 @@ class AdaptiveTDEEService:
 
         # Step 2: Calculate formula TDEE as prior/fallback
         profile = self.db.get_user_profile(user_email)
+        plan = self.db.get_plan(user_email)
+        plan_goal_context = self._extract_plan_goal_context(plan)
         tdee_start_date_str = getattr(profile, "tdee_start_date", None)
         tdee_start_date = None
         if tdee_start_date_str:
@@ -500,7 +540,7 @@ class AdaptiveTDEEService:
         latest_weight = (
             sorted(weight_logs, key=lambda x: x.date)[-1].weight_kg
             if weight_logs
-            else 70.0
+            else None
         )
         scale_bmr = next((log.bmr for log in reversed(weight_logs) if log.bmr), None)
         calc_bmr = 0.0
@@ -515,7 +555,7 @@ class AdaptiveTDEEService:
                 )
             except (ValueError, TypeError, AttributeError):
                 pass
-        base_bmr = scale_bmr or calc_bmr or (latest_weight * 22) or 1500
+        base_bmr = scale_bmr or calc_bmr or 1500
         activity_factor = 1.45
         if profile and hasattr(profile, "tdee_activity_factor"):
             af = getattr(profile, "tdee_activity_factor", None)
@@ -644,21 +684,30 @@ class AdaptiveTDEEService:
         weekly_change = (total_weight_change / days_elapsed) * 7
 
         # Step 14: Include Goal & Target Info
-        goal_rate, goal_type = 0.0, "maintain"
+        goal_rate = plan_goal_context["weekly_weight_change_kg"]
+        goal_type = plan_goal_context["direction"]
 
         # Use coaching check-in for daily_target
-        daily_target = self.calculate_coaching_target(tdee, profile)
-
-        if profile:
-            goal_rate, goal_type = profile.weekly_rate or 0.0, profile.goal_type
+        daily_target = self.calculate_coaching_target(
+            tdee,
+            profile,
+            goal_type=goal_type,
+            goal_rate=goal_rate,
+        )
+        if plan and getattr(plan, "nutrition_strategy", None):
+            daily_targets = getattr(plan.nutrition_strategy, "daily_targets", None)
+            calories = getattr(daily_targets, "calories", None) if daily_targets else None
+            if isinstance(calories, int) and calories > 0:
+                daily_target = calories
 
         # Step 15: Body Composition Analysis
         comp_changes = calculate_body_composition_changes(weight_logs)
 
         # Step 16: Projection & ETA
         weeks_to_goal, goal_eta_weeks = None, None
-        if profile and profile.target_weight and goal_type != "maintain":
-            weight_diff = abs(weight_logs[-1].weight_kg - profile.target_weight)
+        target_weight = plan_goal_context["target_weight_kg"]
+        if target_weight and goal_type != "maintain":
+            weight_diff = abs(weight_logs[-1].weight_kg - target_weight)
             if goal_rate > 0:
                 goal_eta_weeks = round(weight_diff / goal_rate, 1)
             favors_goal = (goal_type == "lose" and weekly_change < -0.05) or (
@@ -698,7 +747,7 @@ class AdaptiveTDEEService:
             "target": daily_target,
             "g_rate": goal_rate,
             "g_type": goal_type,
-            "profile": profile,
+            "goal_target_weight": target_weight,
             "w_goal": weeks_to_goal,
             "g_eta": goal_eta_weeks,
             "out_cnt": outliers_count,
@@ -730,16 +779,12 @@ class AdaptiveTDEEService:
         tdee = tdee_data.get("tdee", 2000)
         daily_target = tdee_data.get("daily_target", tdee)
 
-        profile = self.db.get_user_profile(user_email)
         reason = "Maintenance"
-        goal_type = "maintain"
-
-        if profile:
-            goal_type = profile.goal_type
-            if goal_type == "lose":
-                reason = "Weight loss (coaching check-in)"
-            elif goal_type == "gain":
-                reason = "Weight gain (coaching check-in)"
+        goal_type = tdee_data.get("goal_type", "maintain")
+        if goal_type == "lose":
+            reason = "Weight loss (plan goal)"
+        elif goal_type == "gain":
+            reason = "Weight gain (plan goal)"
 
         return {
             "tdee": tdee,
@@ -750,7 +795,11 @@ class AdaptiveTDEEService:
 
     def _map_result(self, p: dict) -> dict:
         """Helper to map results to the final dictionary."""
-        macro_targets = self.calculate_macro_targets(p["target"], p["lat_weight"])
+        macro_targets = (
+            self.calculate_macro_targets(p["target"], p["lat_weight"])
+            if p["lat_weight"] is not None
+            else None
+        )
         stability = self._calculate_stability_score(p["target"], p["relevant_nut"])
         raw_weight_dates = {log.date for log in p["w_logs_raw"]}
         relevant_nutrition_dates = {
@@ -789,7 +838,7 @@ class AdaptiveTDEEService:
             "daily_target": p["target"],
             "goal_weekly_rate": p["g_rate"],
             "goal_type": p["g_type"],
-            "target_weight": p["profile"].target_weight if p["profile"] else None,
+            "target_weight": p["goal_target_weight"],
             "weeks_to_goal": p["w_goal"],
             "goal_eta_weeks": p["g_eta"],
             "outliers_count": p["out_cnt"],
@@ -872,12 +921,14 @@ class AdaptiveTDEEService:
     def _calculate_fallback_tdee(self, user_email, weight_logs, nutrition_logs) -> dict:
         """Safe TDEE estimate when adaptive data is missing."""
         profile = self.db.get_user_profile(user_email)
+        plan = self.db.get_plan(user_email)
+        plan_goal_context = self._extract_plan_goal_context(plan)
         complete_nutrition = [log for log in nutrition_logs if not log.partial_logged]
         sorted_weight_logs = sorted(weight_logs, key=lambda x: x.date) if weight_logs else []
         latest_weight = (
             sorted_weight_logs[-1].weight_kg
             if sorted_weight_logs
-            else 70.0
+            else None
         )
         tdee_est = self._calculate_formula_tdee(profile, latest_weight, weight_logs)
 
@@ -888,16 +939,15 @@ class AdaptiveTDEEService:
         )
         adh = len(complete_nutrition) / (days + 1) if days > 0 else 0
         target = int(round(tdee_est))
-        goal_type, goal_rate = "maintain", 0.0
-        if profile:
-            goal_type, goal_rate = profile.goal_type, profile.weekly_rate or 0.0
-            adj = (
-                -1 * abs(goal_rate) * 1100
-                if goal_type == "lose"
-                else abs(goal_rate) * 1100
-                if goal_type == "gain"
-                else 0
-            )
+        goal_type = plan_goal_context["direction"]
+        goal_rate = plan_goal_context["weekly_weight_change_kg"]
+        if plan and getattr(plan, "nutrition_strategy", None):
+            daily_targets = getattr(plan.nutrition_strategy, "daily_targets", None)
+            calories = getattr(daily_targets, "calories", None) if daily_targets else None
+            if isinstance(calories, int) and calories > 0:
+                target = calories
+        elif goal_type in {"lose", "gain"} and goal_rate > 0:
+            adj = -1 * abs(goal_rate) * 1100 if goal_type == "lose" else abs(goal_rate) * 1100
             target = max(1000, int(round(tdee_est + adj)))
         res = {
             "tdee": int(round(tdee_est)),
@@ -921,18 +971,25 @@ class AdaptiveTDEEService:
             "endDate": sorted_weight_logs[-1].date.isoformat()
             if sorted_weight_logs
             else date.today().isoformat(),
+            "start_weight": sorted_weight_logs[0].weight_kg if sorted_weight_logs else None,
+            "end_weight": sorted_weight_logs[-1].weight_kg if sorted_weight_logs else None,
             "latest_weight": latest_weight,
             "daily_target": target,
             "goal_weekly_rate": goal_rate,
             "goal_type": goal_type,
+            "target_weight": plan_goal_context["target_weight_kg"],
             "consistency_score": int(round(adh * 100)),
             "stability_score": self._calculate_stability_score(
                 target, complete_nutrition
             ),
-            "macro_targets": calculate_macro_targets(target, latest_weight),
             "weight_trend": [],
             "consistency": [],
             "calorie_trend": [],
+            "macro_targets": (
+                calculate_macro_targets(target, latest_weight)
+                if latest_weight is not None
+                else None
+            ),
             "confidence_reason": (
                 "Utilizando estimativa baseada em seu metabolismo basal (BMR) "
                 "devido a histórico de dados insuficiente ou instável."
@@ -961,6 +1018,8 @@ class AdaptiveTDEEService:
         self,
         tdee: float,
         profile: "UserProfile | None",
+        goal_type: str = "maintain",
+        goal_rate: float = 0.0,
     ) -> int:
         """
         Calculates daily_target using MacroFactor-inspired approach.
@@ -976,13 +1035,15 @@ class AdaptiveTDEEService:
         3. Apply gradual adjustment (max ±100 kcal/week vs previous target)
         4. Apply safety floor (gender min + max 30% deficit)
         """
-        if not profile or profile.goal_type == "maintain":
+        if goal_type not in {"lose", "gain", "maintain"}:
+            goal_type = "maintain"
+        if goal_type == "maintain":
             return int(round(tdee))
 
-        goal_rate = abs(profile.weekly_rate or 0.0)
+        goal_rate = abs(goal_rate or 0.0)
 
         # Calculate ideal target based on goal — NO penalty for being off-track
-        if profile.goal_type == "lose":
+        if goal_type == "lose":
             deficit_needed = goal_rate * 1100
             ideal_target = int(round(tdee - deficit_needed))
         else:  # gain
@@ -993,7 +1054,12 @@ class AdaptiveTDEEService:
         ideal_target = self.apply_gradual_adjustment(ideal_target, profile)
 
         # Apply safety floor
-        ideal_target = self.apply_safety_floor(ideal_target, tdee, profile)
+        ideal_target = self.apply_safety_floor(
+            ideal_target,
+            tdee,
+            profile,
+            goal_type=goal_type,
+        )
 
         return ideal_target
 
@@ -1031,7 +1097,11 @@ class AdaptiveTDEEService:
         return prev_target + step
 
     def apply_safety_floor(
-        self, target: int, tdee: float, profile: "UserProfile | None"
+        self,
+        target: int,
+        tdee: float,
+        profile: "UserProfile | None",
+        goal_type: str = "maintain",
     ) -> int:
         """
         Applies gender-specific calorie floor and max deficit percentage.
@@ -1050,7 +1120,7 @@ class AdaptiveTDEEService:
             else self.MIN_CALORIES_MALE
         )
 
-        if profile.goal_type == "lose":
+        if goal_type == "lose":
             return max(
                 gender_min, int(round(tdee * (1 - self.MAX_DEFICIT_PCT))), target
             )

@@ -17,7 +17,6 @@ describe('OnboardingView', () => {
       age: 25,
       height: 180,
       weight: 80,
-      goal_type: 'maintain',
       trainer_type: 'gymbro',
       subscription_plan: 'Free'
     },

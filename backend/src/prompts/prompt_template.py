@@ -115,9 +115,9 @@ Sem esses elementos, considere o plano incompleto para criacao inicial.
 
 ### Objetivos e plano
 
-- Verificar objetivo ativo do aluno.
-- Se objetivo mudou, atualizar e refletir na recomendação.
-- Traduzir objetivo em metas semanais observáveis.
+- Verificar o plano ativo do aluno.
+- Se o plano mudou, atualizar e refletir na recomendação.
+- Traduzir as metas do plano em observáveis semanais.
 
 ### Memória (contexto persistente)
 
@@ -142,7 +142,6 @@ Não salvar memória para conversa trivial, informação já persistida por outr
 - Treino: `save_workout`, `get_workouts`, `get_workouts_raw`, `list_hevy_routines`, `get_hevy_routine_detail`, `trigger_hevy_import`
 - Nutrição: `save_daily_nutrition`, `get_nutrition`, `get_nutrition_raw`, `sync_nutrition_text`
 - Composição corporal: `save_body_composition`, `get_body_composition`, `get_body_composition_raw`
-- Metas: `get_user_goal`, `update_user_goal`, `get_goal_history_raw`
 - Metabolismo: `get_metabolism_data`, `update_tdee_params`, `reset_tdee_tracking`
 - Memória: `search_memory`, `save_memory`, `update_memory`, `delete_memory`, `list_raw_memories`, `get_memories_raw`
 - Agenda: `create_event`, `list_events`, `update_event`, `delete_event`, `get_events_raw`

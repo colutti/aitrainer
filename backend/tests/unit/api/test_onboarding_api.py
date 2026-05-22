@@ -110,8 +110,6 @@ def test_complete_onboarding_success(valid_invite):
             "age": 30,
             "weight": 75.0,
             "height": 175,
-            "goal_type": "maintain",
-            "weekly_rate": 0.5,
             "trainer_type": "atlas",
         }
 
@@ -123,6 +121,7 @@ def test_complete_onboarding_success(valid_invite):
         mock_db_instance.save_user_profile.assert_called_once()
         saved_profile = mock_db_instance.save_user_profile.call_args[0][0]
         assert saved_profile.subscription_plan == "Free"
+        assert saved_profile.weight is None
         mock_db_instance.save_trainer_profile.assert_called_once()
         mock_invites.mark_as_used.assert_called_once_with(valid_invite.token)
 
@@ -145,8 +144,6 @@ def test_complete_onboarding_various_trainers(trainer_type, valid_invite):
             "age": 28,
             "weight": 75.0,
             "height": 180,
-            "goal_type": "lose",
-            "weekly_rate": 0.5,
             "trainer_type": trainer_type
         }
 
@@ -180,8 +177,6 @@ def test_complete_onboarding_creates_weight_log(valid_invite):
             "age": 30,
             "weight": 80.0,
             "height": 175,
-            "goal_type": "maintain",
-            "weekly_rate": 0.5,
             "trainer_type": "atlas",
         }
         response = client.post("/onboarding/complete", json=request_data)
@@ -211,7 +206,7 @@ def test_complete_public_onboarding_success(monkeypatch):
             email=user_email,
             gender="Male",
             age=25,
-            weight=70.0,
+            weight=None,
             height=170,
             goal_type="maintain",
             onboarding_completed=False
@@ -225,8 +220,6 @@ def test_complete_public_onboarding_success(monkeypatch):
             "age": 26,
             "weight": 65.0,
             "height": 165,
-            "goal_type": "lose",
-            "weekly_rate": 0.5,
             "trainer_type": "sofia",
             "subscription_plan": "Pro",
             "name": "Public User"
@@ -243,6 +236,7 @@ def test_complete_public_onboarding_success(monkeypatch):
         updated_profile = mock_db_instance.save_user_profile.call_args[0][0]
         assert updated_profile.subscription_plan == "Pro"
         assert updated_profile.gender == "Feminino"
+        assert updated_profile.weight is None
         assert updated_profile.display_name == "Public User"
         assert updated_profile.onboarding_completed is True
         
@@ -268,7 +262,7 @@ def test_complete_public_onboarding_blocked_when_signups_disabled(monkeypatch):
             email=user_email,
             gender="Male",
             age=25,
-            weight=70.0,
+            weight=None,
             height=170,
             goal_type="maintain",
             onboarding_completed=False,
@@ -281,8 +275,6 @@ def test_complete_public_onboarding_blocked_when_signups_disabled(monkeypatch):
             "age": 26,
             "weight": 65.0,
             "height": 165,
-            "goal_type": "lose",
-            "weekly_rate": 0.5,
             "trainer_type": "sofia",
             "subscription_plan": "Pro",
             "name": "Public User",

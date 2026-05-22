@@ -19,10 +19,6 @@ class OnboardingCompleteRequest(BaseModel):
     age: int = Field(..., ge=18, le=100)
     weight: float = Field(..., ge=30.0, le=500.0, description="Weight in kg")
     height: int = Field(..., ge=100, le=250, description="Height in cm")
-    goal_type: str = Field(..., pattern="^(lose|gain|maintain)$")
-    weekly_rate: float = Field(
-        0.5, ge=0.0, le=2.0, description="Weekly change rate in kg"
-    )
     trainer_type: str = Field(
         default="atlas",
         pattern="^(atlas|luna|sargento|sofia|gymbro)$",
@@ -74,10 +70,6 @@ class PublicOnboardingRequest(BaseModel):
     age: int = Field(..., ge=18, le=100)
     weight: float = Field(..., ge=30.0, le=500.0, description="Weight in kg")
     height: int = Field(..., ge=100, le=250, description="Height in cm")
-    goal_type: str = Field(..., pattern="^(lose|gain|maintain)$")
-    weekly_rate: float = Field(
-        0.5, ge=0.0, le=2.0, description="Weekly change rate in kg"
-    )
     trainer_type: str = Field(
         default="atlas",
         pattern="^(atlas|luna|sargento|sofia|gymbro)$",

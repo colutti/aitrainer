@@ -73,6 +73,38 @@ class UserProfileInput(BaseModel):
         return self
 
 
+class UserProfileUpdateInput(BaseModel):
+    """
+    Partial update model for profile edits from settings UI.
+    """
+
+    model_config = {"extra": "ignore"}
+
+    gender: str | None = Field(
+        default=None,
+        description="User's gender",
+        pattern="^([Mm]asculino|[Ff]eminino|[Mm]ale|[Ff]emale|[Ff]emenino|[Oo]tro|[Oo]ther)$",
+    )
+    age: int | None = Field(default=None, ge=18, le=100, description="Age between 18 and 100 years")
+    height: int | None = Field(
+        default=None, ge=100, le=250, description="Height in cm between 100 and 250"
+    )
+    notes: str | None = Field(
+        default=None, max_length=1000, description="User observations/notes"
+    )
+    display_name: str | None = Field(
+        default=None, max_length=50, description="User display name for UI and prompts"
+    )
+    photo_base64: str | None = Field(
+        default=None,
+        max_length=700_000,
+        description="Profile photo as base64 data URI (max ~500KB)",
+    )
+    onboarding_completed: bool | None = Field(
+        default=None, description="Whether the user has completed the onboarding flow"
+    )
+
+
 class UserProfile(UserProfileInput):
     """
     Data class to hold user configuration and profile data.
@@ -317,14 +349,16 @@ class UserProfile(UserProfileInput):
             str: Formatted summary of the user's profile as key-value pairs.
         """
         name_line = f"**Nome:** {self.display_name}\n" if self.display_name else ""
-        weight_line = f"**Peso Inicial:** {self.weight}kg\n" if self.weight else ""
         return (
             f"{name_line}"
             f"**Gênero:** {self.gender}\n"
             f"**Idade:** {self.age} anos\n"
-            f"{weight_line}"
             f"**Altura:** {self.height}cm\n"
-            f"**Tipo de Objetivo:** {self._goal_type_label()}\n"
-            f"**Taxa Semanal:** {self.weekly_rate}kg/semana\n"
             f"**Observações:** {self.notes or 'Nenhuma'}"
+        )
+
+    def get_public_profile_data(self) -> dict[str, object]:
+        """Return the profile payload allowed outside the legacy Mongo contract."""
+        return self.model_dump(
+            exclude={"weight", "goal", "goal_type", "target_weight", "weekly_rate"}
         )

@@ -6,15 +6,15 @@ export interface MetabolismResponse {
   logs_count: number;
   startDate: string;
   endDate: string;
-  start_weight: number;
-  end_weight: number;
+  start_weight?: number | null;
+  end_weight?: number | null;
   daily_target: number;
   goal_weekly_rate: number;
   goal_type: string;
   status: string;
   energy_balance: number;
   is_stable: boolean;
-  latest_weight: number;
+  latest_weight?: number | null;
   outliers_count: number;
   weight_logs_count: number;
   nutrition_logs_count: number;

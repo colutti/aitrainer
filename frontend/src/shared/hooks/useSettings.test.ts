@@ -17,14 +17,12 @@ describe('useSettingsStore', () => {
   });
 
   const mockProfile: UserProfile = { 
-    email: 'test@example.com', 
-    gender: 'Masculino', 
-    age: 30, 
-    weight: 80, 
-    height: 180, 
-    goal: 'muscle_gain',
-    goal_type: 'gain',
-    weekly_rate: 0.5
+    email: 'test@example.com',
+    gender: 'Masculino',
+    age: 30,
+    height: 180,
+    notes: 'Sem restrições',
+    display_name: 'Atleta Teste',
   };
 
   const mockTrainer: TrainerProfile = { 
@@ -69,9 +67,9 @@ describe('useSettingsStore', () => {
 
   describe('updateProfile', () => {
     it('should update profile successfully', async () => {
-      const updatedProfile = { ...mockProfile, goal: 'lose_weight', goal_type: 'lose' as const };
+      const updatedProfile = { ...mockProfile, gender: 'Feminino', notes: 'Atualizado' };
       vi.mocked(httpClient).mockResolvedValue(updatedProfile);
-      await useSettingsStore.getState().updateProfile({ goal: 'lose_weight', goal_type: 'lose' });
+      await useSettingsStore.getState().updateProfile({ gender: 'Feminino', notes: 'Atualizado' });
       const state = useSettingsStore.getState();
       expect(state.profile).toEqual(updatedProfile);
       expect(state.isSaving).toBe(false);
@@ -80,7 +78,7 @@ describe('useSettingsStore', () => {
     it('should handle update profile returning undefined (keep existing)', async () => {
       useSettingsStore.setState({ profile: mockProfile });
       vi.mocked(httpClient).mockResolvedValue(undefined);
-      await useSettingsStore.getState().updateProfile({ goal: 'lose_weight' });
+      await useSettingsStore.getState().updateProfile({ notes: 'Novo note' });
       const state = useSettingsStore.getState();
       expect(state.profile).toEqual(mockProfile);
     });
@@ -88,7 +86,7 @@ describe('useSettingsStore', () => {
     it('should handle update profile error', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.mocked(httpClient).mockRejectedValue(new Error('error'));
-      await expect(useSettingsStore.getState().updateProfile({ goal: 'lose_weight' }))
+      await expect(useSettingsStore.getState().updateProfile({ gender: 'Feminino' }))
         .rejects.toThrow('error');
       const state = useSettingsStore.getState();
       expect(state.error).toBe('Falha ao salvar perfil.');

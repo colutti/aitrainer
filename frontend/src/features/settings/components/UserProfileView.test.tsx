@@ -11,12 +11,9 @@ describe('UserProfileView', () => {
     gender: 'male',
     age: 30,
     height: 180,
-    target_weight: 75,
-    goal_type: 'lose' as const,
-    weekly_rate: 0.5,
+    notes: 'Sem restrições',
     onboarding_completed: true,
     is_admin: false,
-    effective_remaining_messages: 50,
   };
 
   const mockProps = {
@@ -60,13 +57,13 @@ describe('UserProfileView', () => {
     expect(pulseElements.length).toBeGreaterThan(0);
   });
 
-  it('should submit when profile target_weight is null', async () => {
+  it('should submit when notes are missing', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
 
     render(
       <UserProfileView
         {...mockProps}
-        profile={{ ...mockProfile, target_weight: null as unknown as number }}
+        profile={{ ...mockProfile, notes: undefined }}
         onSubmit={onSubmit}
       />
     );

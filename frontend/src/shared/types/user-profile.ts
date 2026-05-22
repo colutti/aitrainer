@@ -1,11 +1,8 @@
 export interface UserProfile {
+  email: string;
   gender: string;
   age: number;
   height: number;
-  goal_type: 'lose' | 'gain' | 'maintain';
-  target_weight?: number;
-  weekly_rate: number;
-  email: string;
   notes?: string;
   display_name?: string;
   photo_base64?: string;
@@ -20,8 +17,9 @@ export interface UserProfile {
   trial_remaining_days?: number | null;
   current_daily_limit?: number | null;
   current_plan_limit?: number | null;
-  effective_remaining_messages: number;
-
+  effective_remaining_messages?: number;
+  onboarding_completed?: boolean;
+  is_demo?: boolean;
 }
 
 export type OnboardingData = Partial<UserProfile>;

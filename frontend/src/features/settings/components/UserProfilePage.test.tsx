@@ -21,9 +21,7 @@ describe('UserProfilePage', () => {
     gender: 'male',
     age: 30,
     height: 180,
-    target_weight: 75,
-    goal_type: 'lose',
-    weekly_rate: 0.5,
+    notes: 'Sem restrições',
     onboarding_completed: true,
     is_admin: false,
   };

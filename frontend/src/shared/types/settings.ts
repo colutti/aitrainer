@@ -1,15 +1,25 @@
 export interface UserProfile {
+  email: string;
   gender: string;
   age: number;
-  weight: number;
   height: number;
-  goal: string;
-  email: string;
-  goal_type: 'lose' | 'gain' | 'maintain';
-  weekly_rate: number;
-  target_weight?: number;
   notes?: string;
-  tdee?: number;
+  display_name?: string;
+  photo_base64?: string;
+  subscription_plan?: string;
+  custom_message_limit?: number | null;
+  custom_trial_days?: number | null;
+  messages_sent_this_month?: number;
+  total_messages_sent?: number;
+  current_billing_cycle_start?: string;
+  messages_sent_today?: number;
+  last_message_date?: string;
+  trial_remaining_days?: number | null;
+  current_daily_limit?: number | null;
+  current_plan_limit?: number | null;
+  effective_remaining_messages?: number;
+  onboarding_completed?: boolean;
+  is_demo?: boolean;
 }
 
 export interface TrainerCard {

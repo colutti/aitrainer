@@ -575,6 +575,11 @@ def build_plan_prompt_snapshot(plan: UserPlan | None) -> PlanPromptContext | Non
         routines=[item.model_dump() for item in plan.training_program.routines],
         current_summary=plan.current_summary.model_dump(exclude_none=True),
         latest_checkpoint=latest_checkpoint,
+        metric_targets=(
+            plan.goal.metric_targets.model_dump(exclude_none=True)
+            if plan.goal.metric_targets
+            else {}
+        ),
     )
 
 
@@ -624,5 +629,6 @@ def format_plan_snapshot(snapshot: PlanPromptContext | None) -> str:
         f"- Rotinas no programa: {routines_count}\n"
         f"- Itens na agenda semanal: {schedule_count}\n"
         f"- Resumo atual: {snapshot.current_summary}\n"
+        f"- Metas metricas: {snapshot.metric_targets or 'nao definidas'}\n"
         f"- Ultimo checkpoint: {latest_checkpoint}"
     )

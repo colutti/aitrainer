@@ -11,7 +11,10 @@ from pydantic import BaseModel
 from pydantic_core import ValidationError
 
 from src.api.models.auth import FirebaseLoginRequest
-from src.api.models.user_profile import UserProfile, UserProfileInput
+from src.api.models.user_profile import (
+    UserProfile,
+    UserProfileUpdateInput,
+)
 from src.core.config import settings
 from src.core.deps import get_mongo_database
 from src.core.demo_access import WritableCurrentUser
@@ -22,6 +25,16 @@ from src.services.auth import user_logout, oauth2_scheme, verify_token, create_t
 from src.services.database import MongoDatabase
 
 router = APIRouter()
+
+PUBLIC_PROFILE_UPDATE_FIELDS = {
+    "gender",
+    "age",
+    "height",
+    "notes",
+    "display_name",
+    "photo_base64",
+    "onboarding_completed",
+}
 
 CurrentUser = Annotated[str, Depends(verify_token)]
 DatabaseDep = Annotated[MongoDatabase, Depends(get_mongo_database)]
@@ -128,7 +141,7 @@ def login(
                 role="user",
                 gender="Masculino",
                 age=30,
-                weight=70.0,
+                weight=None,
                 height=170,
                 goal_type="maintain",
                 subscription_plan="Free",
@@ -171,7 +184,7 @@ def social_login(
 
 
 @router.get("/profile")
-def get_profile(user_email: CurrentUser, db: DatabaseDep) -> UserProfile:
+def get_profile(user_email: CurrentUser, db: DatabaseDep) -> dict[str, object]:
     """
     Retrieve the profile information for the authenticated user.
     """
@@ -181,7 +194,7 @@ def get_profile(user_email: CurrentUser, db: DatabaseDep) -> UserProfile:
             "Attempted to retrieve non-existent user profile for email: %s", user_email
         )
         raise HTTPException(status_code=404, detail="User profile not found")
-    return user_profile
+    return user_profile.get_public_profile_data()
 
 
 @router.get("/me")
@@ -214,7 +227,7 @@ def get_current_user(user_email: CurrentUser, db: DatabaseDep) -> dict:
 
 @router.post("/update_profile")
 def update_profile(
-    profile_data: UserProfileInput,
+    profile_data: UserProfileUpdateInput,
     user_email: WritableCurrentUser,
     db: DatabaseDep,
 ) -> JSONResponse:
@@ -228,30 +241,46 @@ def update_profile(
         if existing_profile:
             # Update existing profile with new data
             update_data = profile_data.model_dump(exclude_unset=True)
-            g_old = existing_profile.goal_type
-            w_old = existing_profile.weekly_rate
-            goal_changed = (
-                "goal_type" in update_data and update_data["goal_type"] != g_old
-            ) or ("weekly_rate" in update_data and update_data["weekly_rate"] != w_old)
-            updated_profile = existing_profile.model_copy(update=update_data)
+            sanitized_update = {
+                key: value
+                for key, value in update_data.items()
+                if key in PUBLIC_PROFILE_UPDATE_FIELDS
+            }
+            updated_profile = existing_profile.model_copy(update=sanitized_update)
             logger.info(
                 "Saving user profile for %s. Onboarding completed: %s",
                 user_email,
                 updated_profile.onboarding_completed,
             )
             db.save_user_profile(updated_profile)
-            if goal_changed:
-                db.update_user_profile_fields(
-                    user_email,
-                    {"tdee_last_check_in": None, "tdee_last_target": None},
-                )
         else:
             # Fallback: Create new profile if weirdly not found
             logger.warning(
                 "Creating new profile during update for %s (unexpected)", user_email
             )
+            sanitized_update = {
+                key: value
+                for key, value in profile_data.model_dump(exclude_unset=True).items()
+                if key in PUBLIC_PROFILE_UPDATE_FIELDS
+            }
             profile = UserProfile(
-                **profile_data.model_dump(exclude_unset=True), email=user_email
+                email=user_email,
+                role="user",
+                gender=sanitized_update.get("gender", "Masculino"),
+                age=sanitized_update.get("age", 30),
+                weight=None,
+                height=sanitized_update.get("height", 170),
+                goal_type="maintain",
+                weekly_rate=0.0,
+                subscription_plan="Free",
+                goal=None,
+                target_weight=None,
+                notes=sanitized_update.get("notes"),
+                display_name=sanitized_update.get("display_name"),
+                photo_base64=sanitized_update.get("photo_base64"),
+                onboarding_completed=sanitized_update.get(
+                    "onboarding_completed", True
+                ),
             )
             db.save_user_profile(profile)
 
@@ -342,7 +371,7 @@ def e2e_login(data: E2ETestLoginRequest, db: DatabaseDep) -> dict:
             role="user",
             gender="Masculino",
             age=30,
-            weight=80.0,
+            weight=None,
             height=180,
             goal_type="maintain",
             subscription_plan="Free",

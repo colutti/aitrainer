@@ -19,6 +19,31 @@ def service(mock_db):
     return AdaptiveTDEEService(mock_db)
 
 
+def make_plan_mock(
+    direction: str = "maintain",
+    weekly_rate: float = 0.0,
+    target_weight: float | None = None,
+    calories: int | None = None,
+):
+    metric_targets = MagicMock(
+        direction=direction,
+        weekly_weight_change_kg=weekly_rate,
+        target_weight_kg=target_weight,
+    )
+    goal = MagicMock(
+        primary={
+            "lose": "lose_fat",
+            "gain": "build_muscle",
+            "maintain": "maintain",
+        }.get(direction, "maintain"),
+        metric_targets=metric_targets,
+    )
+    nutrition_strategy = None
+    if calories is not None:
+        nutrition_strategy = MagicMock(daily_targets=MagicMock(calories=calories))
+    return MagicMock(goal=goal, nutrition_strategy=nutrition_strategy)
+
+
 def test_tdee_insufficient_data(service, mock_db):
     mock_db.get_weight_logs_by_date_range.return_value = []
     mock_db.get_nutrition_logs_by_date_range.return_value = []
@@ -152,7 +177,12 @@ def test_insufficient_nutrition_logs(service, mock_db):
 def test_get_current_targets(service, mock_db):
     # Mock TDEE calculation with daily_target from coaching logic
     service.calculate_tdee = MagicMock(
-        return_value={"tdee": 2500, "daily_target": 1950, "confidence": "high"}
+        return_value={
+            "tdee": 2500,
+            "daily_target": 1950,
+            "confidence": "high",
+            "goal_type": "lose",
+        }
     )
 
     # Mock Profile
@@ -169,13 +199,18 @@ def test_get_current_targets(service, mock_db):
     # Target comes from calculate_tdee (which uses coaching logic)
     assert targets["tdee"] == 2500
     assert targets["daily_target"] == 1950
-    assert "coaching" in targets["reason"]
+    assert targets["reason"] == "Weight loss (plan goal)"
 
 
 def test_get_current_targets_gain(service, mock_db):
     # Mock TDEE calculation with daily_target from coaching logic
     service.calculate_tdee = MagicMock(
-        return_value={"tdee": 2500, "daily_target": 2720, "confidence": "high"}
+        return_value={
+            "tdee": 2500,
+            "daily_target": 2720,
+            "confidence": "high",
+            "goal_type": "gain",
+        }
     )
 
     # Mock Profile
@@ -193,6 +228,7 @@ def test_get_current_targets_gain(service, mock_db):
     # Target comes from calculate_tdee (which uses coaching logic)
     assert targets["tdee"] == 2500
     assert targets["daily_target"] == 2720
+    assert targets["reason"] == "Weight gain (plan goal)"
 
 
 def test_tdee_includes_body_composition_changes(service, mock_db):
@@ -431,12 +467,11 @@ def test_tdee_eta_projection(service, mock_db):
 
     mock_db.get_weight_logs_by_date_range.return_value = weights
     mock_db.get_nutrition_logs_by_date_range.return_value = nutrition
+    mock_db.get_plan.return_value = make_plan_mock(
+        direction="lose", weekly_rate=0.5, target_weight=75.0
+    )
 
-    # Profile: Target 75kg, Goal Lose 0.5kg/week
     profile_mock = MagicMock()
-    profile_mock.goal_type = "lose"
-    profile_mock.target_weight = 75.0
-    profile_mock.weekly_rate = 0.5
     profile_mock.height = 175  # Set required fields
     profile_mock.age = 30
     profile_mock.gender = "Masculino"
@@ -716,9 +751,10 @@ def test_coaching_target_on_track(service, mock_db):
     ]
 
     # Profile with previous target = 1900, last check-in 8 days ago (past 7-day interval)
+    mock_db.get_plan.return_value = make_plan_mock(
+        direction="lose", weekly_rate=0.3, target_weight=80.0, calories=1900
+    )
     profile_mock = MagicMock()
-    profile_mock.goal_type = "lose"
-    profile_mock.weekly_rate = 0.3
     profile_mock.tdee_last_target = 1900
     profile_mock.tdee_last_check_in = (today - timedelta(days=8)).isoformat()
     profile_mock.height = 175  # Required for BMR calculation
@@ -731,11 +767,8 @@ def test_coaching_target_on_track(service, mock_db):
 
     result = service.calculate_tdee("test@test.com")
 
-    # Check-in > 7 days, so gradual adjustment applies:
-    # Verify target is adjusting gradually (within ±20 of expected cap, accounting for 7-day window + activity factor 1.45)
-    assert 1960 <= result["daily_target"] <= 2010, (
-        f"Expected daily_target ~2000 with gradual adjustment, got {result['daily_target']}"
-    )
+    # The plan's daily calorie target should override coaching check-in adjustments.
+    assert result["daily_target"] == 1900
 
 
 
@@ -765,9 +798,10 @@ def test_coaching_target_check_in_within_7_days(service, mock_db):
     ]
 
     # Last check-in was 3 days ago
+    mock_db.get_plan.return_value = make_plan_mock(
+        direction="lose", weekly_rate=0.3, target_weight=80.0, calories=1850
+    )
     profile_mock = MagicMock()
-    profile_mock.goal_type = "lose"
-    profile_mock.weekly_rate = 0.3
     profile_mock.tdee_last_target = 1850
     profile_mock.tdee_last_check_in = (today - timedelta(days=3)).isoformat()
     profile_mock.height = 175  # Required for BMR calculation
@@ -813,9 +847,10 @@ def test_coaching_target_offtrack_reduces_target(service, mock_db):
     # Previous target was 1950, user is off track (maintaining weight instead of losing)
     # Off-track penalty: ideal = TDEE - deficit_needed - gap_penalty ≈ 2200 - 330 - 330 = 1540
     # Result should be below prev_target=1950
+    mock_db.get_plan.return_value = make_plan_mock(
+        direction="lose", weekly_rate=0.3, target_weight=80.0, calories=1950
+    )
     profile_mock = MagicMock()
-    profile_mock.goal_type = "lose"
-    profile_mock.weekly_rate = 0.3
     profile_mock.tdee_last_target = 1950
     profile_mock.tdee_last_check_in = (today - timedelta(days=8)).isoformat()
     profile_mock.height = 175  # Required for BMR calculation

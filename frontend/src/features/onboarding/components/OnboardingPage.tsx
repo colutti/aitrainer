@@ -32,8 +32,6 @@ export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
   
   const [formData, setFormData] = useState<Partial<OnboardingPayload>>({
-    goal_type: 'maintain',
-    weekly_rate: 0.5,
     trainer_type: 'gymbro',
     subscription_plan: 'Free'
   });
@@ -91,8 +89,6 @@ export default function OnboardingPage() {
         age: Number(formData.age),
         weight: Number(formData.weight),
         height: Number(formData.height),
-        goal_type: formData.goal_type ?? 'maintain',
-        weekly_rate: Number(formData.weekly_rate),
         trainer_type: formData.trainer_type ?? 'gymbro',
         subscription_plan: formData.subscription_plan ?? 'Free',
         name: formData.name

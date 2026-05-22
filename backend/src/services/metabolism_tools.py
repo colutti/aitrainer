@@ -71,7 +71,8 @@ def create_get_metabolism_tool(database: MongoDatabase, user_email: str):
 
 TDEE Estimado: {tdee_data.get("tdee")} kcal
 Meta Diária Atual: {tdee_data.get("daily_target")} kcal
-Objetivo: {tdee_data.get("goal_type")} ({tdee_data.get("goal_weekly_rate")} kg/semana)
+Objetivo Operacional (plano): {tdee_data.get("goal_type")}
+Ritmo-alvo (plano): {tdee_data.get("goal_weekly_rate")} kg/semana
 
 -- AUDITORIA DE LOWS (Média dos 3 menores pesos) --
 Semana Atual: {f"{current_lows:.2f} kg" if current_lows else "N/A"}

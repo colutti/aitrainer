@@ -21,6 +21,10 @@ DISCOVERY_REQUIRED_FIELDS = {
     "goal.primary": "objetivo do aluno (lose_fat, build_muscle, recomposition, performance)",
     "goal.objective_summary": "resumo especifico do objetivo com criterio de sucesso",
     "goal.success_criteria": "criterios de sucesso mensuraveis",
+    "goal.metric_targets.direction": "direcao operacional (lose, gain, maintain)",
+    "goal.metric_targets.target_weight_kg": "peso-alvo em kg para projeções",
+    "goal.metric_targets.weekly_weight_change_kg": "ritmo semanal desejado em kg",
+    "goal.metric_targets.target_body_fat_pct": "percentual de gordura alvo opcional",
     "timeline.target_date": "data alvo para atingir o objetivo (ISO 8601)",
     "timeline.review_cadence": "cadencia de revisao (ex: semanal, quinzenal, mensal)",
     "strategy.rationale": "racional estrategico do plano",
@@ -62,7 +66,12 @@ def _minimum_upsert_payload_template() -> str:
           "goal": {
             "primary": "lose_fat",
             "objective_summary": "Chegar a 15% de gordura corporal ate o verao",
-            "success_criteria": ["aderencia >= 80%", "perda de gordura sustentavel"]
+            "success_criteria": ["aderencia >= 80%", "perda de gordura sustentavel"],
+            "metric_targets": {
+              "direction": "lose",
+              "target_weight_kg": 76,
+              "weekly_weight_change_kg": 0.4
+            }
           },
           "timeline": {
             "target_date": "2026-09-01T00:00:00",

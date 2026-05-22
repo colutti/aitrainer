@@ -62,15 +62,10 @@ from src.services.hevy_tools import (
 )
 from src.services.hevy_service import HevyService
 from src.utils.qdrant_utils import point_to_dict
-from src.services.profile_tools import (
-    create_get_user_goal_tool,
-    create_update_user_goal_tool,
-)
 from src.services.raw_data_tools import (
     create_get_workouts_raw_tool,
     create_get_nutrition_raw_tool,
     create_get_body_composition_raw_tool,
-    create_get_goal_history_raw_tool,
     create_get_events_raw_tool,
     create_get_memories_raw_tool,
 )
@@ -321,13 +316,13 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
                 role="user",
                 gender="Masculino",
                 age=30,
-                weight=70.0,
+                weight=None,
                 height=175,
                 goal="Melhorar condicionamento",
                 goal_type="maintain",
                 # Mandatory fields for Mypy/Pyright
                 target_weight=None,
-                weekly_rate=0.5,
+                weekly_rate=0.0,
                 notes=None,
             )
             self.save_user_profile(profile)
@@ -621,10 +616,6 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
             create_save_composition_tool(self._database, user_email),
             create_get_composition_tool(self._database, user_email),
             create_get_body_composition_raw_tool(self._database, user_email),
-            # User Goals
-            create_get_user_goal_tool(self._database, user_email),
-            create_update_user_goal_tool(self._database, user_email),
-            create_get_goal_history_raw_tool(self._database, user_email),
             # Metabolism
             create_get_metabolism_tool(self._database, user_email),
             create_update_tdee_params_tool(self._database, user_email),

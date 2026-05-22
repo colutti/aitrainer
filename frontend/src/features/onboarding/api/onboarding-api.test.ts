@@ -30,8 +30,6 @@ describe('onboardingApi', () => {
       age: 30,
       weight: 80,
       height: 180,
-      goal_type: 'maintain',
-      weekly_rate: 0,
       trainer_type: 'atlas',
       subscription_plan: 'Pro'
     };

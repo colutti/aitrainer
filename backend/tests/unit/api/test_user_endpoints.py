@@ -207,6 +207,10 @@ def test_get_profile_success(sample_user_profile):
     data = response.json()
     assert data["email"] == "test@example.com"
     assert data["age"] == 30
+    assert "goal_type" not in data
+    assert "weekly_rate" not in data
+    assert "target_weight" not in data
+    assert "weight" not in data
     mock_brain.get_user_profile.assert_called_once_with("test@example.com")
 
     app.dependency_overrides = {}
@@ -302,6 +306,7 @@ def test_e2e_login_can_start_user_unonboarded():
         assert saved_profile.email == "fresh@example.com"
         assert saved_profile.display_name == "Fresh User"
         assert saved_profile.onboarding_completed is False
+        assert saved_profile.weight is None
 
     app.dependency_overrides = {}
 
@@ -343,6 +348,7 @@ def test_e2e_login_recovers_malformed_existing_profile():
         assert saved_profile.email == "fresh@example.com"
         assert saved_profile.display_name == "Fresh User"
         assert saved_profile.onboarding_completed is False
+        assert saved_profile.weight is None
 
     app.dependency_overrides = {}
 
@@ -359,11 +365,9 @@ def test_update_profile_success(sample_user_profile):
     update_payload = {
         "gender": "Masculino",
         "age": 31,
-        "weight": 74.0,
         "height": 180,
-        "goal_type": "lose",
-        "weekly_rate": 0.5,
-        "notes": "Updated note"
+        "notes": "Updated note",
+        "display_name": "Updated User",
     }
 
     response = client.post(
@@ -395,10 +399,8 @@ def test_update_profile_rejects_demo_user(sample_user_profile):
     update_payload = {
         "gender": "Masculino",
         "age": 31,
-        "weight": 74.0,
         "height": 180,
-        "goal_type": "lose",
-        "weekly_rate": 0.5,
+        "display_name": "Demo User",
     }
 
     response = client.post(
@@ -425,11 +427,9 @@ def test_update_profile_creates_new():
 
     update_payload = {
         "age": 25,
-        "weight": 70.0,
         "gender": "Feminino",
         "height": 165,
-        "goal_type": "maintain",
-        "weekly_rate": 0.5
+        "notes": "Novo usuário",
     }
 
     response = client.post(
@@ -519,8 +519,6 @@ def test_update_profile_without_weight_preserves_existing(sample_user_profile):
         "gender": "Masculino",
         "age": 31,  # só muda a idade
         "height": 180,
-        "goal_type": "lose",
-        "weekly_rate": 0.5,
         # weight ausente intencionalmente
     }
 

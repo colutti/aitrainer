@@ -73,7 +73,7 @@ class PromptBuilder:
             "Sugestao do algoritmo adaptativo (referencia — o plano pode sobrescrever):\n"
             f"- TDEE atual: {_field(metabolism_data, 'tdee')} kcal\n"
             f"- Meta diaria atual: {_field(metabolism_data, 'daily_target')} kcal\n"
-            f"- Objetivo: {_field(metabolism_data, 'goal_type')} "
+            f"- Objetivo operacional (plano): {_field(metabolism_data, 'goal_type')} "
             f"({_field(metabolism_data, 'goal_weekly_rate')} kg/semana)\n"
             f"- Confianca do algoritmo: {_field(metabolism_data, 'confidence')}\n"
             "- Macros de referencia do algoritmo:\n"
