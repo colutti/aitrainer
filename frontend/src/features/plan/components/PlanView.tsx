@@ -48,7 +48,6 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
   }
 
   if (!plan || plan.status === 'NO_PLAN' || plan.status === 'DISCOVERY_IN_PROGRESS') {
-    const discovery = plan?.discovery;
     return (
       <div className="space-y-5" data-testid="plan-discovery-view">
         <PremiumCard className="space-y-4 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-8 text-center md:p-10">
@@ -58,34 +57,6 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
             {t('plan.empty.cta')}
           </Button>
         </PremiumCard>
-
-        {discovery ? (
-          <PremiumCard className="space-y-4 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5">
-            <div className="flex items-center gap-3">
-              <Target className="text-[color:var(--color-primary)]" size={18} />
-              <h3 className="text-sm font-bold uppercase tracking-wide text-text-primary">{t('plan.sections.discovery')}</h3>
-            </div>
-            <p className="text-sm text-text-secondary">{discovery.next_prompt}</p>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <p className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-text-muted">{t('plan.labels.collected_fields')}</p>
-                <ul className="space-y-1 text-sm text-text-secondary">
-                  {discovery.collected_fields.map((field) => {
-                    return <li key={field}>{field}</li>;
-                  })}
-                </ul>
-              </div>
-              <div>
-                <p className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-text-muted">{t('plan.labels.missing_fields')}</p>
-                <ul className="space-y-1 text-sm text-text-secondary">
-                  {discovery.missing_fields.map((field) => {
-                    return <li key={field}>{field}</li>;
-                  })}
-                </ul>
-              </div>
-            </div>
-          </PremiumCard>
-        ) : null}
       </div>
     );
   }

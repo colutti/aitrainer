@@ -73,7 +73,7 @@ describe('PlanView', () => {
     expect(onOpenChat).toHaveBeenCalledTimes(1);
   });
 
-  it('renders discovery state when plan is missing but discovery exists', () => {
+  it('hides discovery details when plan is missing but discovery exists', () => {
     const onOpenChat = vi.fn();
     render(
       <PlanView
@@ -92,9 +92,10 @@ describe('PlanView', () => {
     );
 
     expect(screen.getByTestId('plan-discovery-view')).toBeInTheDocument();
-    expect(screen.getByText('Coletar: data alvo.')).toBeInTheDocument();
-    expect(screen.getByText('goal_primary')).toBeInTheDocument();
-    expect(screen.getByText('constraints')).toBeInTheDocument();
+    expect(screen.queryByText('Coletar: data alvo.')).not.toBeInTheDocument();
+    expect(screen.queryByText('plan.sections.discovery')).not.toBeInTheDocument();
+    expect(screen.queryByText('plan.labels.collected_fields')).not.toBeInTheDocument();
+    expect(screen.queryByText('plan.labels.missing_fields')).not.toBeInTheDocument();
   });
 
   it('renders active plan view with progress and nutrition', () => {
