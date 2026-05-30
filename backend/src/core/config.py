@@ -129,7 +129,8 @@ class Settings(BaseSettings):
     # ====== OPENROUTER ======
     OPENROUTER_API_KEY: str = ""
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
-    OPENROUTER_CHAT_MODEL: str = "google/gemini-3-flash-preview"
+    OPENROUTER_CHAT_MODEL: str = "google/gemini-3.5-flash"
+    OPENROUTER_SERVICE_TIER: str = "flex"
     OPENROUTER_EMBED_MODEL: str = "openai/text-embedding-3-small"
     OPENROUTER_EMBED_DIMENSIONS: int = 768
     PROMPT_CONTEXT_CONTRACT_VERSION: str = "prompt_context_v1"

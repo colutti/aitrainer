@@ -36,7 +36,7 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         mock_settings.MAX_LONG_TERM_MEMORY_MESSAGES = 20
         mock_settings.MAX_SHORT_TERM_MEMORY_MESSAGES = 10
         mock_settings.AI_TRAINER_THREADPOOL_WORKERS = 4
-        mock_settings.OPENROUTER_CHAT_MODEL = "google/gemini-3-flash-preview"
+        mock_settings.OPENROUTER_CHAT_MODEL = "google/gemini-3.5-flash"
         mock_settings.LLM_STREAM_TIMEOUT_SECONDS = 120
 
         profile = UserProfile(
@@ -116,7 +116,7 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         async for _ in self.brain.send_message_ai("test@test.com", "oi"):
             pass
 
-        self.assertEqual(captured["model_override"], "google/gemini-3-flash-preview")
+        self.assertEqual(captured["model_override"], "google/gemini-3.5-flash")
         self.brain._executor.shutdown(wait=True, cancel_futures=True)
 
     def test_get_chat_history_sanitizes_only_trainer_internal_tags(self):

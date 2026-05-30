@@ -222,6 +222,7 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(kwargs["model"], "google/gemini-2.5-flash-lite")
             self.assertEqual(kwargs["base_url"], "https://openrouter.ai/api/v1")
             self.assertEqual(kwargs["temperature"], 0.5)
+            self.assertEqual(kwargs["extra_body"]["service_tier"], "flex")
 
     def test_openrouter_receives_max_tokens_reasoning_and_parallel_tool_calls(self):
         """OpenRouter client must accept max_tokens, reasoning, parallel_tool_calls."""
@@ -247,6 +248,7 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
             model_kw = kwargs.get("model_kwargs", {})
             self.assertIsNotNone(model_kw)
             self.assertEqual(model_kw.get("parallel_tool_calls"), False)
+            self.assertEqual(kwargs["extra_body"]["service_tier"], "flex")
 
     @patch("src.services.llm_client.create_agent")
     async def test_stream_with_tools_passes_response_format(self, mock_create_agent):

@@ -466,6 +466,7 @@ class OpenRouterClient(LLMClient):
         """Return an OpenRouter client for a specific graph node."""
         from langchain_openai import ChatOpenAI  # pylint: disable=import-outside-toplevel
         from pydantic import SecretStr  # pylint: disable=import-outside-toplevel
+        from src.core.config import settings  # pylint: disable=import-outside-toplevel
 
         if not model_override:
             raise ValueError("model_override is required")
@@ -492,6 +493,8 @@ class OpenRouterClient(LLMClient):
         extra: dict[str, Any] = {}
         if provider_sort:
             extra["provider"] = {"sort": provider_sort}
+        if settings.OPENROUTER_SERVICE_TIER:
+            extra["service_tier"] = settings.OPENROUTER_SERVICE_TIER
         if extra:
             kwargs["extra_body"] = extra
         llm = ChatOpenAI(**kwargs)
