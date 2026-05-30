@@ -4,6 +4,7 @@ This module contains the AI trainer brain, which is responsible for interacting 
 # pylint: disable=too-many-lines
 
 import asyncio
+import json
 import re
 from typing import Optional, TYPE_CHECKING
 from datetime import datetime, timedelta, timezone
@@ -598,6 +599,56 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
         pending = buffer[last_lt:] if has_partial_tag else ""
         return cls.strip_internal_wrappers(stable), pending
 
+    @classmethod
+    def enforce_plan_update_truth_policy(
+        cls,
+        *,
+        final_response: str,
+        tool_events: list[dict],
+        user_locale: str | None,
+    ) -> str:
+        """Prevent false success claims when no material plan change was saved."""
+        attempted_update = any(
+            event.get("tool_name") in {"update_plan_section", "create_plan_from_discovery"}
+            for event in tool_events
+        )
+        if not attempted_update:
+            return final_response
+
+        material_change = False
+        for event in tool_events:
+            content = event.get("content")
+            if not isinstance(content, str):
+                continue
+            try:
+                payload = json.loads(content)
+            except json.JSONDecodeError:
+                continue
+            if payload.get("plan_materially_changed") is True:
+                material_change = True
+                break
+
+        if material_change:
+            return final_response
+
+        if user_locale == "en-US":
+            return (
+                "I could not apply a material update to your plan. "
+                "The update attempts were blocked by consistency checks, "
+                "so your active plan remains unchanged."
+            )
+        if user_locale == "es-ES":
+            return (
+                "No pude aplicar una actualización material a tu plan. "
+                "Los intentos de actualización fueron bloqueados por validaciones "
+                "de consistencia, por lo que tu plan activo sigue sin cambios."
+            )
+        return (
+            "Nao consegui aplicar uma atualizacao material no seu plano. "
+            "As tentativas de update foram bloqueadas por validacoes de consistencia, "
+            "entao o plano ativo continua sem mudanca."
+        )
+
     def get_tools(self, user_email: str) -> list[BaseTool]:
         """
         Creates and returns a list of tools available to the AI.
@@ -757,6 +808,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
             input_data["user_images"] = image_payloads
 
         raw_response: list[str] = []
+        tool_events: list[dict] = []
         stream_buffer = ""
         try:
             async with asyncio.timeout(self.get_llm_stream_timeout_seconds()):
@@ -775,6 +827,10 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
                     provider_sort="throughput",
                     reasoning={"effort": "low", "exclude": True},
                 ):
+                    if isinstance(chunk, dict):
+                        if chunk.get("type") == "tool_result":
+                            tool_events.append(chunk)
+                        continue
                     if not isinstance(chunk, str):
                         continue
                     raw_response.append(chunk)
@@ -799,7 +855,11 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
         await self.finalize_ai_response(
             user_email=user_email,
             user_input=user_input,
-            final_response=self.strip_internal_wrappers("".join(raw_response)),
+            final_response=self.enforce_plan_update_truth_policy(
+                final_response=self.strip_internal_wrappers("".join(raw_response)),
+                tool_events=tool_events,
+                user_locale=input_data.get("user_locale"),
+            ),
             metadata={
                 "trainer_type": trainer_profile_obj.trainer_type or "atlas",
                 "needs_cycle_reset": needs_cycle_reset,

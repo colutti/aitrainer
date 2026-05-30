@@ -23,7 +23,7 @@ interface WeightLogCardProps {
 export function WeightLogCard({ log, isReadOnly = false, onDelete, onEdit, onClick }: WeightLogCardProps) {
   const { t } = useTranslation();
   const muscleMassValue = log.muscle_mass_kg ?? log.muscle_mass_pct;
-  const muscleMassUnit = log.muscle_mass_kg != null ? 'kg' : '%';
+  const muscleMassUnit = 'kg';
   
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();

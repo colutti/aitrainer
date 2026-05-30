@@ -181,11 +181,12 @@ def _get_composition_trends(
     mus_trend = []
     ema_mus = None
     for log in logs_asc:
-        # Prefer muscle_mass_kg for the chart (matches frontend display)
-        mus_val = log.muscle_mass_kg
-        # Fallback to calculating kg from pct if kg is missing
-        if mus_val is None and log.muscle_mass_pct is not None:
-            mus_val = round(log.weight_kg * (log.muscle_mass_pct / 100), 2)
+        # Use kg directly; legacy records stored in muscle_mass_pct are treated as kg.
+        mus_val = (
+            log.muscle_mass_kg
+            if log.muscle_mass_kg is not None
+            else log.muscle_mass_pct
+        )
 
         if mus_val is not None:
             mus_hist.append(
@@ -279,7 +280,13 @@ def _get_latest_metrics(weight_logs: list) -> tuple:
         None,
     )
     mus_kg = next(
-        (log.muscle_mass_kg for log in weight_logs if log.muscle_mass_kg is not None),
+        (
+            log.muscle_mass_kg
+            if log.muscle_mass_kg is not None
+            else log.muscle_mass_pct
+            for log in weight_logs
+            if log.muscle_mass_kg is not None or log.muscle_mass_pct is not None
+        ),
         None,
     )
     bmr = next((log.bmr for log in weight_logs if log.bmr is not None), None)
@@ -318,8 +325,10 @@ def _find_closest_logs(today: datetime, weight_logs: list) -> dict:
                 if log.muscle_mass_pct is not None and diff < min_diffs[p]["m_pct"]:
                     results[p]["m_pct"] = log
                     min_diffs[p]["m_pct"] = diff
-                # Muscle Kg
-                if log.muscle_mass_kg is not None and diff < min_diffs[p]["m_kg"]:
+                # Muscle Kg (legacy muscle_mass_pct treated as kg when kg is absent)
+                if (
+                    log.muscle_mass_kg is not None or log.muscle_mass_pct is not None
+                ) and diff < min_diffs[p]["m_kg"]:
                     results[p]["m_kg"] = log
                     min_diffs[p]["m_kg"] = diff
     return results
@@ -348,7 +357,13 @@ def _get_metrics_diffs(today: datetime, weight_logs: List[Any], curr: dict) -> d
             diffs["m"][i] = round(curr["m"] - cl_m_pct.muscle_mass_pct, 1)
         # Muscle (kg)
         if curr["m_kg"] is not None and (cl_m_kg := cl_map.get("m_kg")):
-            diffs["m_kg"][i] = round(curr["m_kg"] - cl_m_kg.muscle_mass_kg, 1)
+            baseline_kg = (
+                cl_m_kg.muscle_mass_kg
+                if cl_m_kg.muscle_mass_kg is not None
+                else cl_m_kg.muscle_mass_pct
+            )
+            if baseline_kg is not None:
+                diffs["m_kg"][i] = round(curr["m_kg"] - baseline_kg, 1)
     return diffs
 
 

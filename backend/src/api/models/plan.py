@@ -400,7 +400,7 @@ class PlanSectionUpdateInput(BaseModel):
 
     @model_validator(mode="after")
     def validate_section_payload(self):
-        """Exactly one payload must be present and it must match the section name."""
+        """At least one payload must be present and include the section name."""
         payloads = {
             "goal": self.goal,
             "timeline": self.timeline,
@@ -411,8 +411,10 @@ class PlanSectionUpdateInput(BaseModel):
             "tracking": self.tracking,
         }
         provided = [name for name, value in payloads.items() if value is not None]
-        if len(provided) != 1 or provided[0] != self.section:
-            raise ValueError("section must match exactly one provided payload")
+        if not provided or self.section not in provided:
+            raise ValueError(
+                "section must match at least one provided payload in the same request"
+            )
         return self
 
 

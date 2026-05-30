@@ -12,7 +12,7 @@ const WEIGHT_DEFAULTS = {
   date: new Date().toISOString().split('T')[0],
   weight_kg: undefined,
   body_fat_pct: undefined,
-  muscle_mass_pct: undefined,
+  muscle_mass_kg: undefined,
   body_water_pct: undefined,
   bone_mass_kg: undefined,
   visceral_fat: undefined,
@@ -43,7 +43,6 @@ export function useWeightTab() {
   const [editingDate, setEditingDate] = useState<string | null>(null);
   const notify = useNotificationStore();
   const { t } = useTranslation();
-  const muscleMassShort = t('body.weight.muscle_mass').split(' ')[0];
 
   const mandatoryNumberSchema = (min: number, max: number, label: string) => z.preprocess(
     (val) => (val === "" || val === null || val === undefined || (typeof val === 'number' && isNaN(val))) ? undefined : Number(val),
@@ -70,7 +69,7 @@ export function useWeightTab() {
     date: z.string().min(1, t('validation.field_required', { field: t('body.nutrition.date') })),
     weight_kg: mandatoryNumberSchema(30, 300, t('body.weight.weight').split(' ')[0] ?? ''),
     body_fat_pct: optionalNumberSchema(2, 100, t('body.weight.body_fat').split(' ')[0] ?? ''),
-    muscle_mass_pct: optionalNumberSchema(2, 100, `${muscleMassShort ?? ''} (%)`),
+    muscle_mass_kg: optionalNumberSchema(2, 250, `${t('body.weight.muscle_mass')} (kg)`),
     body_water_pct: optionalNumberSchema(2, 100, t('body.weight.body_water').split(' ')[0] ?? ''),
     bone_mass_kg: optionalNumberSchema(0, 20, t('body.weight.bone_mass').split(' ')[0] ?? ''),
     visceral_fat: optionalNumberSchema(0, 50, t('body.weight.visceral_fat').split(' ')[0] ?? ''),
@@ -170,7 +169,7 @@ export function useWeightTab() {
       date: log.date,
       weight_kg: log.weight_kg,
       body_fat_pct: log.body_fat_pct ?? undefined,
-      muscle_mass_pct: log.muscle_mass_pct ?? undefined,
+      muscle_mass_kg: log.muscle_mass_kg ?? log.muscle_mass_pct ?? undefined,
       body_water_pct: log.body_water_pct ?? undefined,
       bone_mass_kg: log.bone_mass_kg ?? undefined,
       visceral_fat: log.visceral_fat ?? undefined,

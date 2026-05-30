@@ -182,6 +182,92 @@ def test_merge_plan_section_updates_typed_section():
     assert updated.nutrition.daily_targets.calories_kcal == 2800
 
 
+def test_merge_plan_section_accepts_multi_section_atomic_update():
+    plan = build_plan_from_create_input("user@test.com", make_create_input())
+    updated = merge_plan_section(
+        plan,
+        PlanSectionUpdateInput(
+            section="goal",
+            goal=PlanGoal(
+                primary_goal="recomposition",
+                outcome_summary="Recomposicao corporal com manutencao de forca.",
+                success_metrics=[
+                    SuccessMetric(
+                        metric_name="cintura",
+                        target_value=-2,
+                        unit="cm",
+                        direction="decrease",
+                        deadline=date(2026, 8, 1),
+                    )
+                ],
+            ),
+            alignment=PlanAlignment(
+                training_nutrition_rationale="Recomposicao com controle calórico.",
+                energy_strategy="recomposition",
+                recovery_assumptions=["dormir 7h"],
+                conflict_rules=[
+                    ConflictRule(
+                        trigger="queda de performance",
+                        action="revisar recuperacao",
+                    )
+                ],
+            ),
+                timeline=PlanTimeline(
+                    start_date=plan.timeline.start_date,
+                    target_date=plan.timeline.target_date,
+                    review_cadence_days=7,
+                    current_phase="Recomp com manutencao de composicao",
+                ),
+            ),
+        )
+
+    assert updated.goal.primary_goal == "recomposition"
+    assert updated.alignment.energy_strategy == "recomposition"
+
+
+def test_merge_plan_section_blocks_semantic_goal_energy_conflict():
+    plan = build_plan_from_create_input("user@test.com", make_create_input())
+
+    with pytest.raises(ValueError, match="semantic consistency"):
+        merge_plan_section(
+            plan,
+            PlanSectionUpdateInput(
+                section="alignment",
+                alignment=PlanAlignment(
+                    training_nutrition_rationale=(
+                        "Deficit para reduzir gordura com controle de carga."
+                    ),
+                    energy_strategy="deficit",
+                    recovery_assumptions=["dormir 7h"],
+                    conflict_rules=[
+                        ConflictRule(
+                            trigger="queda de performance",
+                            action="revisar recuperacao",
+                        )
+                    ],
+                ),
+            ),
+        )
+
+
+def test_merge_plan_section_blocks_semantic_phase_goal_mismatch():
+    plan = build_plan_from_create_input("user@test.com", make_create_input())
+
+    with pytest.raises(ValueError, match="semantic consistency"):
+        merge_plan_section(
+            plan,
+            PlanSectionUpdateInput(
+                section="timeline",
+                timeline=PlanTimeline(
+                    start_date=plan.timeline.start_date,
+                    target_date=plan.timeline.target_date,
+                    review_cadence_days=7,
+                    current_phase="Definicao agressiva de gordura",
+                ),
+            ),
+        )
+
+
 def test_build_plan_prompt_snapshot_handles_no_plan():
     snapshot = build_plan_prompt_snapshot(None, None, None)
     text = format_plan_snapshot(snapshot)

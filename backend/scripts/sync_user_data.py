@@ -13,7 +13,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 try:
     from src.core.config import settings
     from src.api.models.user_profile import UserProfile
-    from scripts.utils import confirm_execution
 except ImportError as e:
     print(f"Error importing app modules: {e}")
     print("Make sure you are running this script from the 'backend' directory.")
@@ -235,16 +234,29 @@ def validate_local_import(dest_db, user_email: str) -> None:
         "nutrition_logs": {"user_email": user_email},
         "weight_logs": {"user_email": user_email},
         "prompt_logs": {"user_email": user_email},
+        "plans": {"user_email": user_email},
+        "plan_discovery_states": {"user_email": user_email},
+        "events": {"user_email": user_email},
+        "telegram_links": {"user_email": user_email},
+        "telegram_codes": {"user_email": user_email},
+        "invites": {"email": user_email},
         "message_store": {"SessionId": user_email},
     }
     minimum_counts = {
         "users": 1,
         "trainer_profiles": 1,
-        "workout_logs": 1,
-        "nutrition_logs": 1,
-        "weight_logs": 1,
+        "workout_logs": 0,
+        "nutrition_logs": 0,
+        "weight_logs": 0,
         "prompt_logs": 1,
-        "message_store": 1,
+        # Optional collections for many users; sync validates existence when present.
+        "plans": 0,
+        "plan_discovery_states": 0,
+        "events": 0,
+        "telegram_links": 0,
+        "telegram_codes": 0,
+        "invites": 0,
+        "message_store": 0,
     }
 
     print("\n✅ Running post-import validation...")
@@ -306,6 +318,12 @@ def main():
         "nutrition_logs": "user_email",
         "weight_logs": "user_email",
         "prompt_logs": "user_email",
+        "plans": "user_email",
+        "plan_discovery_states": "user_email",
+        "events": "user_email",
+        "telegram_links": "user_email",
+        "telegram_codes": "user_email",
+        "invites": "email",
         "chat_history": "SessionId", 
         "message_store": "SessionId"
     }

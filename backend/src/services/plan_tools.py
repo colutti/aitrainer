@@ -53,6 +53,9 @@ def create_plan_help_tool(_database, _user_email: str):
             1. Use get_plan_status para confirmar ACTIVE_PLAN.
             2. Use update_plan_section para alterar goal, timeline,
                user_context, training, nutrition, alignment ou tracking.
+               Para mudancas de estrategia (ex: bulking -> recomposition),
+               envie goal+alignment+timeline (e nutrition se necessario)
+               no mesmo update_plan_section para manter consistencia atomica.
             3. Use record_plan_review para registrar evidencia, decisao e proxima revisao.
 
             Regras de formato:
@@ -82,8 +85,18 @@ def create_get_plan_tool(database, user_email: str):
         """Retorna o plano ativo completo em JSON."""
         plan = database.get_plan(user_email)
         if plan is None:
-            return _tool_result(status="NO_PLAN", saved=False, plan=None)
-        return _tool_result(status="ACTIVE_PLAN", saved=False, plan=plan.model_dump())
+            return _tool_result(
+                status="NO_PLAN",
+                saved=False,
+                plan_materially_changed=False,
+                plan=None,
+            )
+        return _tool_result(
+            status="ACTIVE_PLAN",
+            saved=False,
+            plan_materially_changed=False,
+            plan=plan.model_dump(),
+        )
 
     return get_plan
 
@@ -101,6 +114,7 @@ def create_get_plan_status_tool(database, user_email: str):
             return _tool_result(
                 status="ACTIVE_PLAN",
                 saved=False,
+                plan_materially_changed=False,
                 plan_id=plan.id,
                 missing_fields=[],
                 view=view.model_dump(),
@@ -111,6 +125,7 @@ def create_get_plan_status_tool(database, user_email: str):
         return _tool_result(
             status="DISCOVERY_IN_PROGRESS" if discovery else "NO_PLAN",
             saved=False,
+            plan_materially_changed=False,
             plan_id=None,
             missing_fields=missing_fields,
             discovery=discovery.model_dump() if discovery else None,
@@ -133,6 +148,7 @@ def create_update_plan_discovery_tool(database, user_email: str):
         return _tool_result(
             status="discovery_updated",
             saved=True,
+            plan_materially_changed=False,
             plan_id=None,
             discovery_id=discovery_id,
             missing_fields=discovery.missing_fields,
@@ -157,6 +173,7 @@ def create_create_plan_from_discovery_tool(database, user_email: str):
             return _tool_result(
                 status="discovery_needed",
                 saved=False,
+                plan_materially_changed=False,
                 plan_id=None,
                 changed_sections=[],
                 missing_fields=missing_fields,
@@ -173,6 +190,7 @@ def create_create_plan_from_discovery_tool(database, user_email: str):
             return _tool_result(
                 status="success",
                 saved=True,
+                plan_materially_changed=True,
                 plan_id=plan_id,
                 changed_sections=list(CANONICAL_PLAN_SECTIONS),
                 missing_fields=[],
@@ -185,6 +203,7 @@ def create_create_plan_from_discovery_tool(database, user_email: str):
             return _tool_result(
                 status="validation_error",
                 saved=False,
+                plan_materially_changed=False,
                 plan_id=None,
                 changed_sections=[],
                 missing_fields=[],
@@ -207,6 +226,7 @@ def create_update_plan_section_tool(database, user_email: str):
             return _tool_result(
                 status="no_plan",
                 saved=False,
+                plan_materially_changed=False,
                 plan_id=None,
                 changed_sections=[],
                 missing_fields=["active_plan"],
@@ -217,6 +237,11 @@ def create_update_plan_section_tool(database, user_email: str):
 
         try:
             payload = PlanSectionUpdateInput(**kwargs)
+            changed_sections = [
+                section
+                for section in CANONICAL_PLAN_SECTIONS
+                if getattr(payload, section) is not None
+            ]
             updated_plan = merge_plan_section(current, payload)
             if payload.section == "training":
                 updated_plan = sync_training_with_hevy_if_needed(
@@ -229,8 +254,9 @@ def create_update_plan_section_tool(database, user_email: str):
             return _tool_result(
                 status="success",
                 saved=True,
+                plan_materially_changed=True,
                 plan_id=plan_id,
-                changed_sections=[payload.section],
+                changed_sections=changed_sections,
                 missing_fields=[],
                 validation_errors=[],
                 external_sync_failed=False,
@@ -241,6 +267,7 @@ def create_update_plan_section_tool(database, user_email: str):
             return _tool_result(
                 status="external_sync_failed",
                 saved=False,
+                plan_materially_changed=False,
                 plan_id=current.id,
                 changed_sections=[],
                 missing_fields=[],
@@ -253,12 +280,29 @@ def create_update_plan_section_tool(database, user_email: str):
             return _tool_result(
                 status="validation_error",
                 saved=False,
+                plan_materially_changed=False,
                 plan_id=current.id,
                 changed_sections=[],
                 missing_fields=[],
                 validation_errors=exc.errors(),
                 external_sync_failed=False,
                 message_for_ai="A secao do plano nao foi atualizada por erro de validacao.",
+            )
+        except ValueError as exc:
+            logger.warning("update_plan_section semantic validation error: %s", exc)
+            return _tool_result(
+                status="validation_error",
+                saved=False,
+                plan_materially_changed=False,
+                plan_id=current.id,
+                changed_sections=[],
+                missing_fields=[],
+                validation_errors=[{"msg": str(exc), "type": "value_error"}],
+                external_sync_failed=False,
+                message_for_ai=(
+                    "A secao do plano nao foi atualizada por inconsistencias "
+                    "semanticas entre objetivo e estrategia."
+                ),
             )
 
     return update_plan_section
@@ -275,6 +319,7 @@ def create_record_plan_review_tool(database, user_email: str):
             return _tool_result(
                 status="no_plan",
                 saved=False,
+                plan_materially_changed=False,
                 plan_id=None,
                 changed_sections=[],
                 missing_fields=["active_plan"],
@@ -289,8 +334,9 @@ def create_record_plan_review_tool(database, user_email: str):
             updated_plan = attach_review(current, review)
             plan_id = database.save_plan(updated_plan)
             return _tool_result(
-                status="success",
+                status="review_recorded",
                 saved=True,
+                plan_materially_changed=False,
                 plan_id=plan_id,
                 changed_sections=["latest_review", "review_history"],
                 missing_fields=[],
@@ -303,6 +349,7 @@ def create_record_plan_review_tool(database, user_email: str):
             return _tool_result(
                 status="validation_error",
                 saved=False,
+                plan_materially_changed=False,
                 plan_id=current.id,
                 changed_sections=[],
                 missing_fields=[],

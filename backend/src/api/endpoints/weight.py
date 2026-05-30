@@ -202,9 +202,19 @@ def get_body_composition_stats(
             if log_item.body_fat_pct
         ],
         "muscle_trend": [
-            {"date": log_item.date.isoformat(), "value": log_item.muscle_mass_pct}
+            {
+                "date": log_item.date.isoformat(),
+                "value": (
+                    log_item.muscle_mass_kg
+                    if log_item.muscle_mass_kg is not None
+                    else log_item.muscle_mass_pct
+                ),
+            }
             for log_item in logs_asc
-            if log_item.muscle_mass_pct
+            if (
+                log_item.muscle_mass_kg is not None
+                or log_item.muscle_mass_pct is not None
+            )
         ],
     }
 

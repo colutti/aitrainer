@@ -391,6 +391,17 @@
       "collected_fields": "Collected data",
       "missing_fields": "Missing data"
     },
+    "discovery_fields": {
+      "goal_primary": "Primary goal",
+      "goal_summary": "Goal summary",
+      "target_date": "Target date",
+      "training_days_available": "Training days available",
+      "session_duration_min": "Session duration",
+      "constraints": "Constraints or limitations",
+      "preferences": "Relevant preferences",
+      "available_equipment": "Available equipment",
+      "metabolism_confirmed": "Official metabolic data"
+    },
     "days": {
       "monday": "Monday",
       "tuesday": "Tuesday",

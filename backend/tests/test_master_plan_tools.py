@@ -265,6 +265,7 @@ def test_update_plan_section_updates_existing_plan():
 
     assert result["status"] == "success"
     assert result["saved"] is True
+    assert result["plan_materially_changed"] is True
     assert result["changed_sections"] == ["nutrition"]
     db.save_plan.assert_called_once()
 
@@ -284,8 +285,9 @@ def test_record_plan_review_appends_review_to_active_plan():
         )
     )
 
-    assert result["status"] == "success"
+    assert result["status"] == "review_recorded"
     assert result["saved"] is True
+    assert result["plan_materially_changed"] is False
     db.save_plan.assert_called_once()
 
 
@@ -368,3 +370,82 @@ def test_update_plan_section_blocks_save_when_hevy_sync_fails():
     assert result["saved"] is False
     assert result["external_sync_failed"] is True
     db.save_plan.assert_not_called()
+
+
+def test_update_plan_section_returns_validation_error_on_semantic_conflict():
+    db = MagicMock()
+    db.get_plan.return_value = build_plan_from_create_input("user@test.com", make_create_input())
+
+    result = json.loads(
+        create_update_plan_section_tool(db, "user@test.com").invoke(
+            {
+                "section": "alignment",
+                "alignment": {
+                    "training_nutrition_rationale": "Deficit para reduzir gordura.",
+                    "energy_strategy": "deficit",
+                    "recovery_assumptions": ["dormir 7h"],
+                    "conflict_rules": [
+                        {
+                            "trigger": "queda de performance",
+                            "action": "revisar recuperacao",
+                        }
+                    ],
+                },
+            }
+        )
+    )
+
+    assert result["status"] == "validation_error"
+    assert result["saved"] is False
+    assert result["changed_sections"] == []
+    assert result["external_sync_failed"] is False
+    db.save_plan.assert_not_called()
+
+
+def test_update_plan_section_reports_all_changed_sections_for_atomic_update():
+    db = MagicMock()
+    db.get_plan.return_value = build_plan_from_create_input("user@test.com", make_create_input())
+    db.save_plan.return_value = "plan_3"
+
+    result = json.loads(
+        create_update_plan_section_tool(db, "user@test.com").invoke(
+            {
+                "section": "goal",
+                "goal": {
+                    "primary_goal": "recomposition",
+                    "outcome_summary": "Recomposicao corporal com manutencao de forca",
+                    "success_metrics": [
+                        {
+                            "metric_name": "cintura",
+                            "target_value": -2,
+                            "unit": "cm",
+                            "direction": "decrease",
+                            "deadline": "2026-08-01",
+                        }
+                    ],
+                },
+                "alignment": {
+                    "training_nutrition_rationale": "Recomposicao com controle calorico.",
+                    "energy_strategy": "recomposition",
+                    "recovery_assumptions": ["dormir 7h"],
+                    "conflict_rules": [
+                        {
+                            "trigger": "queda de performance",
+                            "action": "revisar recuperacao",
+                        }
+                    ],
+                },
+                "timeline": {
+                    "start_date": "2026-05-01",
+                    "target_date": "2026-08-01",
+                    "review_cadence_days": 7,
+                    "current_phase": "Recomp com manutencao de composicao",
+                },
+            }
+        )
+    )
+
+    assert result["status"] == "success"
+    assert result["saved"] is True
+    assert result["plan_materially_changed"] is True
+    assert result["changed_sections"] == ["goal", "timeline", "alignment"]

@@ -391,6 +391,17 @@
       "collected_fields": "Dados já coletados",
       "missing_fields": "Dados que ainda faltam"
     },
+    "discovery_fields": {
+      "goal_primary": "Objetivo principal",
+      "goal_summary": "Resumo do objetivo",
+      "target_date": "Data alvo",
+      "training_days_available": "Dias disponíveis para treino",
+      "session_duration_min": "Duração da sessão",
+      "constraints": "Restrições ou limitações",
+      "preferences": "Preferências relevantes",
+      "available_equipment": "Equipamentos disponíveis",
+      "metabolism_confirmed": "Dados metabólicos oficiais"
+    },
     "days": {
       "monday": "Segunda",
       "tuesday": "Terça",

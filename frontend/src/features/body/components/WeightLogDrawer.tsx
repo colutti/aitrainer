@@ -20,7 +20,7 @@ const weightSchema = z.object({
   date: z.string().min(1),
   weight_kg: z.coerce.number().min(20).max(300),
   body_fat_pct: optionalNumber(2, 70),
-  muscle_mass_pct: optionalNumber(2, 100),
+  muscle_mass_kg: optionalNumber(2, 250),
   visceral_fat: optionalNumber(1, 50),
   body_water_pct: optionalNumber(2, 100),
   bone_mass_kg: optionalNumber(0, 20),
@@ -70,7 +70,7 @@ export function WeightLogDrawer({ isOpen, onClose, onSubmit, isReadOnly = false,
         date: log.date.split('T')[0],
         weight_kg: log.weight_kg,
         body_fat_pct: log.body_fat_pct,
-        muscle_mass_pct: log.muscle_mass_pct,
+        muscle_mass_kg: log.muscle_mass_kg ?? log.muscle_mass_pct,
         visceral_fat: log.visceral_fat,
         body_water_pct: log.body_water_pct,
         bone_mass_kg: log.bone_mass_kg,
@@ -155,8 +155,8 @@ export function WeightLogDrawer({ isOpen, onClose, onSubmit, isReadOnly = false,
                   <Input id="body-fat-pct" data-testid="body-fat-pct" type="number" step="any" disabled={isReadOnly} {...register('body_fat_pct')} placeholder="%" className="h-14 rounded-2xl font-bold" />
                 </FormField>
 
-                <FormField label={`${t('body.weight.muscle_mass')} (%)`} id="muscle-mass-pct" icon={<Target size={14} className="text-text-secondary" />} error={errors.muscle_mass_pct?.message}>
-                  <Input id="muscle-mass-pct" type="number" step="any" disabled={isReadOnly} {...register('muscle_mass_pct')} placeholder="%" className="h-14 rounded-2xl font-bold" />
+                <FormField label={`${t('body.weight.muscle_mass')} (kg)`} id="muscle-mass-kg" icon={<Target size={14} className="text-text-secondary" />} error={errors.muscle_mass_kg?.message}>
+                  <Input id="muscle-mass-kg" type="number" step="any" disabled={isReadOnly} {...register('muscle_mass_kg')} placeholder="kg" className="h-14 rounded-2xl font-bold" />
                 </FormField>
                 
                 <FormField label={t('body.weight.visceral_fat')} id="visceral-fat" icon={<Ruler size={14} className="text-text-secondary" />} error={errors.visceral_fat?.message}>

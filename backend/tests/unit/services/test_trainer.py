@@ -139,6 +139,37 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         assert messages[0].text == "Resposta antiga"
         assert messages[1].text == 'Dados do usuário: <msg data="arquivo.csv">linha 1</msg>'
 
+    def test_enforce_plan_update_truth_policy_blocks_false_success(self):
+        response = AITrainerBrain.enforce_plan_update_truth_policy(
+            final_response="Atualizado com sucesso!",
+            tool_events=[
+                {
+                    "type": "tool_result",
+                    "tool_name": "update_plan_section",
+                    "content": '{"status":"validation_error","saved":false,"plan_materially_changed":false}',
+                }
+            ],
+            user_locale="pt-BR",
+        )
+
+        assert "Nao consegui aplicar uma atualizacao material no seu plano" in response
+
+    def test_enforce_plan_update_truth_policy_preserves_response_on_material_change(self):
+        original = "Plano atualizado com sucesso."
+        response = AITrainerBrain.enforce_plan_update_truth_policy(
+            final_response=original,
+            tool_events=[
+                {
+                    "type": "tool_result",
+                    "tool_name": "update_plan_section",
+                    "content": '{"status":"success","saved":true,"plan_materially_changed":true}',
+                }
+            ],
+            user_locale="pt-BR",
+        )
+
+        assert response == original
+
 
 if __name__ == "__main__":
     unittest.main()

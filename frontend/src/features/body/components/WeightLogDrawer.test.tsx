@@ -42,12 +42,12 @@ describe('WeightLogDrawer', () => {
     if (!measurementSummary) throw new Error('Measurements summary not found');
     fireEvent.click(measurementSummary);
 
-    const musclePctInput = screen.getByLabelText(/Massa Muscular \(%\)/i);
+    const muscleKgInput = screen.getByLabelText(/Massa Muscular \(kg\)/i);
     const neckInput = screen.getByLabelText(/Pescoço/i);
     
     fireEvent.change(dateInput, { target: { value: '2026-04-01' } });
     fireEvent.change(weightInput, { target: { value: '82.5' } });
-    fireEvent.change(musclePctInput, { target: { value: '42.1' } });
+    fireEvent.change(muscleKgInput, { target: { value: '42.1' } });
     fireEvent.change(neckInput, { target: { value: '37' } });
     
     const saveBtn = screen.getByText(/Salvar/i);
@@ -59,7 +59,7 @@ describe('WeightLogDrawer', () => {
       expect(submittedData.date).toBe('2026-04-01');
       expect(submittedData.weight_kg).toBe(82.5);
       expect(submittedData.body_fat_pct).toBeUndefined();
-      expect(submittedData.muscle_mass_pct).toBe(42.1);
+      expect(submittedData.muscle_mass_kg).toBe(42.1);
       expect(submittedData.neck_cm).toBe(37);
     });
   });
@@ -71,14 +71,14 @@ describe('WeightLogDrawer', () => {
       date: '2026-04-10',
       weight_kg: 80,
       body_fat_pct: 15,
-      muscle_mass_pct: 40,
+      muscle_mass_kg: 40,
       neck_cm: 36,
     };
 
     render(<WeightLogDrawer {...mockProps} log={existingLog} />);
 
     expect(screen.getByLabelText(/Data/i)).toHaveValue('2026-04-10');
-    expect(screen.getByLabelText(/Massa Muscular \(%\)/i)).toHaveValue(40);
+    expect(screen.getByLabelText(/Massa Muscular \(kg\)/i)).toHaveValue(40);
     expect(screen.getByLabelText(/Pescoço/i)).toHaveValue(36);
   });
 

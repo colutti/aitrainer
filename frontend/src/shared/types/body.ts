@@ -53,6 +53,7 @@ export interface WeightLogFormData {
   weight_kg: number;
   body_fat_pct?: number | null;
   muscle_mass_pct?: number | null;
+  muscle_mass_kg?: number | null;
   body_water_pct?: number | null;
   bone_mass_kg?: number | null;
   visceral_fat?: number | null;

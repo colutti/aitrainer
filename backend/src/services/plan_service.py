@@ -1,9 +1,11 @@
 """Plan V2 service helpers for discovery, prompt context and view models."""
 
 from datetime import date, datetime, timezone
+import re
 
 from src.api.models.plan import (
     ActivePlanView,
+    CANONICAL_PLAN_SECTIONS,
     CANONICAL_WEEKDAYS,
     DiscoveryView,
     PlanConflict,
@@ -33,6 +35,66 @@ DISCOVERY_FIELD_LABELS = {
     "available_equipment": "equipamentos disponiveis",
     "metabolism_confirmed": "dados metabolicos oficiais",
 }
+
+_PHASE_KEYWORDS = {
+    "muscle_gain": ("bulk", "bulking", "hipertrof", "ganho de massa", "massa muscular"),
+    "fat_loss": ("cut", "cutting", "defini", "perda de gordura", "emagrec"),
+    "recomposition": ("recomp", "manuten", "defini", "reduzir gordura"),
+    "performance": ("performance", "desempenho", "forca", "potencia"),
+}
+
+_OUTCOME_FORBIDDEN_TERMS = {
+    "muscle_gain": ("deficit", "déficit", "manuten"),
+    "fat_loss": ("surplus", "superavit", "superávit", "bulking"),
+}
+
+
+def _contains_any(text: str, keywords: tuple[str, ...]) -> bool:
+    normalized = text.lower()
+    return any(term in normalized for term in keywords)
+
+
+def validate_plan_semantic_consistency(plan: UserPlan) -> list[str]:
+    """Return semantic consistency violations for a fully-typed plan."""
+    issues: list[str] = []
+
+    goal = plan.goal.primary_goal
+    energy = plan.alignment.energy_strategy
+    allowed_energy_by_goal = {
+        "muscle_gain": {"surplus"},
+        "fat_loss": {"deficit", "recomposition"},
+        "recomposition": {"maintenance", "deficit", "recomposition"},
+        "performance": {"maintenance", "surplus", "recomposition"},
+        "health": {"maintenance", "deficit", "surplus", "recomposition"},
+    }
+
+    if energy not in allowed_energy_by_goal[goal]:
+        issues.append(
+            f"goal '{goal}' is inconsistent with energy_strategy '{energy}'"
+        )
+
+    summary = plan.goal.outcome_summary.strip().lower()
+    forbidden_terms = _OUTCOME_FORBIDDEN_TERMS.get(goal, ())
+    matched_forbidden = [term for term in forbidden_terms if term in summary]
+    if matched_forbidden:
+        issues.append(
+            "goal.outcome_summary contradicts primary_goal "
+            f"('{goal}') via terms: {', '.join(matched_forbidden)}"
+        )
+
+    phase = plan.timeline.current_phase.strip().lower()
+    opposite_keywords = set()
+    for goal_key, keywords in _PHASE_KEYWORDS.items():
+        if goal_key != goal:
+            opposite_keywords.update(keywords)
+    keyword_regex = "|".join(re.escape(term) for term in opposite_keywords)
+    if keyword_regex and re.search(keyword_regex, phase):
+        issues.append(
+            "timeline.current_phase contains goal-opposite terms for "
+            f"primary_goal '{goal}'"
+        )
+
+    return issues
 
 
 def _utc_now() -> datetime:
@@ -104,7 +166,7 @@ def build_plan_from_create_input(
 ) -> UserPlan:
     """Build a fresh active plan from a validated create payload."""
     now = _utc_now()
-    return UserPlan(
+    plan = UserPlan(
         user_email=user_email,
         title=payload.title,
         goal=payload.goal,
@@ -121,21 +183,41 @@ def build_plan_from_create_input(
         created_at=now,
         updated_at=now,
     )
+    consistency_issues = validate_plan_semantic_consistency(plan)
+    if consistency_issues:
+        raise ValueError(
+            "Plan semantic consistency validation failed: "
+            + "; ".join(consistency_issues)
+        )
+    return plan
 
 
 def merge_plan_section(plan: UserPlan, payload: PlanSectionUpdateInput) -> UserPlan:
-    """Apply a typed section update and return a fresh validated plan."""
+    """Apply one or more typed section updates and return a fresh validated plan."""
     plan_dict = plan.model_dump()
-    section = payload.section
-    section_payload = getattr(payload, section)
-    if section_payload is None:
-        raise ValueError(f"missing payload for section '{section}'")
+    candidate_sections = CANONICAL_PLAN_SECTIONS
+    updated_sections: list[str] = []
+    for section in candidate_sections:
+        section_payload = getattr(payload, section)
+        if section_payload is None:
+            continue
+        plan_dict[section] = section_payload.model_dump()
+        updated_sections.append(section)
 
-    plan_dict[section] = section_payload.model_dump()
+    if not updated_sections:
+        raise ValueError("missing section payload")
+
     plan_dict["updated_at"] = _utc_now()
     plan_dict["last_material_change_at"] = _utc_now()
     plan_dict["review_reason"] = payload.review_reason
-    return UserPlan(**plan_dict)
+    updated_plan = UserPlan(**plan_dict)
+    consistency_issues = validate_plan_semantic_consistency(updated_plan)
+    if consistency_issues:
+        raise ValueError(
+            "Plan semantic consistency validation failed: "
+            + "; ".join(consistency_issues)
+        )
+    return updated_plan
 
 
 def build_review_record(payload: PlanReviewInput) -> PlanReview:
@@ -290,7 +372,11 @@ def _build_weekly_schedule(plan: UserPlan) -> list[WeeklyScheduleView]:
                     day=day,
                     routine_name=routine.name if routine else None,
                     focus=item.focus,
-                    exercise_names=[exercise.name for exercise in routine.exercises] if routine else [],
+                    exercise_names=(
+                        [exercise.name for exercise in routine.exercises]
+                        if routine
+                        else []
+                    ),
                     is_rest_day=item.type == "off" or routine is None,
                     is_today=day == today,
                 )
