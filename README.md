@@ -233,6 +233,23 @@ Notes:
 
 ---
 
+## 💬 Chat Streaming Contract
+
+`POST /message` streams structured SSE events with `Content-Type: text/event-stream`.
+
+Current event types:
+- `status`: progress stage for the current turn. Current stages are `preparing_context`, `using_tools`, `writing_reply`, and `saving`.
+- `delta`: partial user-visible text chunks for the final reply.
+- `done`: final persisted payload with the full assistant text.
+- `error`: terminal user-visible error payload.
+
+Notes:
+- The operational tool round can run before visible text starts streaming.
+- The final user-visible reply is generated in a tools-disabled round on the same OpenRouter model.
+- `/message/history` remains the source of truth for persisted conversation recovery.
+
+---
+
 ## 🤖 Agent Workflows
 
 Project-specific workflows live in [`.agent/workflows`](/.agent/workflows):

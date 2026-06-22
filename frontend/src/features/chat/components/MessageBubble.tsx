@@ -14,6 +14,7 @@ interface MessageBubbleProps {
   trainerId?: string;
   userPhoto?: string;
   userName?: string;
+  isPending?: boolean;
 }
 
 function normalizeMarkdownText(text: string): string {
@@ -91,7 +92,7 @@ function normalizeMarkdownText(text: string): string {
  * Renders an individual chat message with premium glassmorphism aesthetic,
  * Markdown support, and smooth Framer Motion animations.
  */
-export const MessageBubble = memo(function MessageBubble({ message, resolveText, trainerId, userPhoto, userName }: MessageBubbleProps) {
+export const MessageBubble = memo(function MessageBubble({ message, resolveText, trainerId, userPhoto, userName, isPending = false }: MessageBubbleProps) {
   const { t } = useTranslation();
   const isTrainer = message.sender === 'Trainer';
   const displayText = resolveText ? resolveText(message) : message.text;
@@ -155,7 +156,7 @@ export const MessageBubble = memo(function MessageBubble({ message, resolveText,
           )}
           
           <div className="prose prose-invert prose-sm max-w-none font-medium leading-relaxed selection:bg-white/20 markdown-content">
-             {isEmpty && isTrainer ? (
+             {isEmpty && isTrainer && isPending ? (
                <div className="flex gap-1 py-2 px-1">
                  <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                  <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />

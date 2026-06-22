@@ -42,9 +42,21 @@ describe('MessageBubble', () => {
       timestamp: new Date().toISOString(),
     };
 
-    const { container } = render(<MessageBubble message={message} />);
+    const { container } = render(<MessageBubble message={message} isPending={true} />);
     // Look for generic dots structure
     expect(container.querySelectorAll('.animate-bounce')).toHaveLength(3);
+  });
+
+  it('should not render loading dots for an empty persisted trainer message', () => {
+    const message = {
+      id: '3b',
+      sender: 'Trainer' as const,
+      text: '',
+      timestamp: new Date().toISOString(),
+    };
+
+    const { container } = render(<MessageBubble message={message} isPending={false} />);
+    expect(container.querySelectorAll('.animate-bounce')).toHaveLength(0);
   });
 
   it('should render trainer avatar when trainerId is provided', () => {

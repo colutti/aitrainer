@@ -30,6 +30,7 @@ const mockProps = {
     { id: '2', sender: 'Student' as const, text: 'Oi', timestamp: '2024-01-01T10:01:00Z' }
   ],
   isStreaming: false,
+  streamingStage: null,
   isLoading: false,
   hasMore: false,
   error: null,
@@ -148,6 +149,11 @@ describe('ChatView', () => {
   it('renders typing indicator when streaming', () => {
     render(<ChatView {...mockProps} isStreaming={true} />);
     expect(screen.getByText('chat.typing')).toBeInTheDocument();
+  });
+
+  it('renders backend-driven progress status while streaming', () => {
+    render(<ChatView {...mockProps} isStreaming={true} streamingStage="writing_reply" />);
+    expect(screen.getByText('chat.streaming_stages.writing_reply')).toBeInTheDocument();
   });
 
   it('renders limit error state correctly', () => {

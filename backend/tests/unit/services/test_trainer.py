@@ -2,6 +2,7 @@
 
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
+import json
 
 from src.api.models.chat_history import ChatHistory
 from src.api.models.sender import Sender
@@ -89,9 +90,14 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         self.brain.prompt_builder.get_prompt_template = MagicMock(return_value=MagicMock())
 
     async def test_send_message_ai_streams_text_from_llm(self):
-        """send_message_ai should stream plain text chunks in legacy single-model flow."""
+        """send_message_ai should emit structured SSE events with final text."""
 
-        async def _stream_with_tools(**_kwargs):
+        async def _stream_with_tools(**kwargs):
+            if kwargs.get("tools"):
+                yield {"type": "tool_result", "tool_name": "get_plan", "content": '{"status":"ACTIVE_PLAN"}'}
+                yield "rascunho interno"
+                yield {"type": "tools_summary", "tools_called": ["get_plan"]}
+                return
             yield "resposta "
             yield "final"
 
@@ -101,29 +107,42 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         async for chunk in self.brain.send_message_ai("test@test.com", "oi"):
             chunks.append(chunk)
 
-        self.assertEqual("".join(chunks), "resposta final")
+        payload = "".join(chunks)
+        self.assertIn("event: status", payload)
+        self.assertIn('"stage":"using_tools"', payload)
+        self.assertIn('"stage":"writing_reply"', payload)
+        self.assertIn("event: delta", payload)
+        self.assertIn("event: done", payload)
+        self.assertIn('"text":"resposta final"', payload)
         self.brain._executor.shutdown(wait=True, cancel_futures=True)
 
     async def test_send_message_ai_uses_configured_chat_model(self):
         """send_message_ai must call stream_with_tools with OPENROUTER_CHAT_MODEL."""
-        captured = {}
+        captured = []
 
         async def _stream_with_tools(**kwargs):
-            captured.update(kwargs)
+            captured.append(kwargs)
+            if kwargs.get("tools"):
+                yield {"type": "tools_summary", "tools_called": []}
+                return
             yield "ok"
 
         self.mock_llm.stream_with_tools = _stream_with_tools
         async for _ in self.brain.send_message_ai("test@test.com", "oi"):
             pass
 
-        self.assertEqual(captured["model_override"], "google/gemini-3.5-flash")
+        self.assertEqual(captured[0]["model_override"], "google/gemini-3.5-flash")
+        self.assertEqual(captured[1]["model_override"], "google/gemini-3.5-flash")
+        self.assertEqual(captured[0]["provider_sort"], "throughput")
+        self.assertEqual(captured[1]["provider_sort"], "latency")
+        self.assertEqual(captured[0]["parallel_tool_calls"], False)
+        self.assertEqual(captured[1]["tools"], [])
         self.brain._executor.shutdown(wait=True, cancel_futures=True)
 
     async def test_send_message_ai_does_not_persist_stream_errors(self):
         """A provider error is shown to the user but must not enter chat history."""
 
         async def _stream_with_tools(**_kwargs):
-            yield "Desculpe, ocorreu um erro interno. Tente novamente em instantes."
             yield {"type": "stream_error", "error_type": "ValueError"}
             yield {"type": "tools_summary", "tools_called": []}
 
@@ -133,11 +152,27 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         async for chunk in self.brain.send_message_ai("test@test.com", "oi"):
             chunks.append(chunk)
 
-        self.assertEqual(
-            "".join(chunks),
-            "Desculpe, ocorreu um erro interno. Tente novamente em instantes.",
-        )
+        payload = "".join(chunks)
+        self.assertIn("event: error", payload)
         self.mock_db.add_to_history.assert_not_called()
+        self.brain._executor.shutdown(wait=True, cancel_futures=True)
+
+    async def test_send_message_ai_uses_20_message_window(self):
+        async def _stream_with_tools(**kwargs):
+            if kwargs.get("tools"):
+                yield {"type": "tools_summary", "tools_called": []}
+                return
+            yield "ok"
+
+        self.mock_llm.stream_with_tools = _stream_with_tools
+        with patch("src.services.trainer.settings.MAX_SHORT_TERM_MEMORY_MESSAGES", 20):
+            async for _ in self.brain.send_message_ai("test@test.com", "oi"):
+                pass
+
+        self.mock_db.get_window_memory.assert_any_call(
+            session_id="test@test.com",
+            k=20,
+        )
         self.brain._executor.shutdown(wait=True, cancel_futures=True)
 
     def test_get_chat_history_sanitizes_only_trainer_internal_tags(self):
@@ -190,6 +225,38 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         )
 
         assert response == original
+
+    def test_format_sse_event_serializes_payload(self):
+        chunk = AITrainerBrain.format_sse_event(
+            "done",
+            {"text": "oi", "persisted": True},
+        )
+
+        self.assertEqual(
+            chunk,
+            'event: done\ndata: {"text":"oi","persisted":true}\n\n',
+        )
+
+    def test_summarize_tool_events_marks_material_plan_change(self):
+        summary = AITrainerBrain.summarize_tool_events(
+            [
+                {
+                    "tool_name": "update_plan_section",
+                    "content": json.dumps(
+                        {
+                            "status": "success",
+                            "saved": True,
+                            "plan_materially_changed": True,
+                            "changed_sections": ["nutrition"],
+                            "message_for_ai": "Plano atualizado com sucesso.",
+                        }
+                    ),
+                }
+            ]
+        )
+
+        self.assertTrue(summary["material_plan_change"])
+        self.assertEqual(summary["tool_results"][0]["changed_sections"], ["nutrition"])
 
     def test_add_to_mongo_history_persists_pair_in_one_batch(self):
         """Conversation persistence delegates the pair to one repository operation."""

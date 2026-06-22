@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor
 from fastapi import BackgroundTasks, HTTPException
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.tools import BaseTool
 
 from src.core.config import settings
@@ -107,6 +108,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
     """
     _MSG_OPEN_PATTERN = re.compile(r'<msg(?:\s+data="[^"]*")?(?:\s+hora="[^"]*")?>')
     _TREINADOR_OPEN_PATTERN = re.compile(r'<treinador(?:\s+name="[^"]*")?>')
+    _FINAL_REPLY_HISTORY_MESSAGES = 6
 
     def __init__(
         self,
@@ -650,6 +652,145 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
             "entao o plano ativo continua sem mudanca."
         )
 
+    @staticmethod
+    def format_sse_event(event: str, payload: dict | str) -> str:
+        """Serialize one SSE event frame."""
+        data = (
+            payload
+            if isinstance(payload, str)
+            else json.dumps(payload, ensure_ascii=True, separators=(",", ":"))
+        )
+        return f"event: {event}\ndata: {data}\n\n"
+
+    @classmethod
+    def summarize_tool_events(cls, tool_events: list[dict]) -> dict:
+        """Extract factual tool outcome summary for the final response round."""
+        results: list[dict] = []
+        material_plan_change = False
+        any_saved = False
+        any_failure = False
+
+        for event in tool_events:
+            content = event.get("content")
+            if not isinstance(content, str):
+                continue
+            try:
+                payload = json.loads(content)
+            except json.JSONDecodeError:
+                payload = {"raw_content": content}
+
+            result = {
+                "tool_name": event.get("tool_name"),
+                "status": payload.get("status"),
+                "saved": bool(payload.get("saved")),
+                "plan_materially_changed": bool(
+                    payload.get("plan_materially_changed")
+                ),
+                "changed_sections": payload.get("changed_sections") or [],
+                "message_for_ai": payload.get("message_for_ai"),
+                "missing_fields": payload.get("missing_fields") or [],
+                "validation_errors": payload.get("validation_errors") or [],
+                "external_sync_failed": bool(payload.get("external_sync_failed")),
+            }
+            results.append(result)
+            material_plan_change = material_plan_change or result["plan_materially_changed"]
+            any_saved = any_saved or result["saved"]
+            status = result["status"]
+            any_failure = any_failure or (
+                status
+                not in {
+                    None,
+                    "success",
+                    "review_recorded",
+                    "discovery_updated",
+                    "ACTIVE_PLAN",
+                    "NO_PLAN",
+                }
+                and not result["saved"]
+            )
+
+        return {
+            "material_plan_change": material_plan_change,
+            "any_saved": any_saved,
+            "any_failure": any_failure,
+            "tool_results": results,
+        }
+
+    def build_final_response_prompt(self) -> ChatPromptTemplate:
+        """Prompt for the final user-facing round with tools disabled."""
+        return ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    (
+                        "Voce escreve a resposta final visivel ao usuario. "
+                        "Use apenas os fatos do TOOL_OUTCOME_JSON, "
+                        "do runtime context e do historico recente. "
+                        "Nunca invente sucesso operacional. "
+                        "Se material_plan_change=false, diga claramente "
+                        "que o plano ativo nao mudou. "
+                        "Se houve erro de validacao ou sincronizacao externa, "
+                        "explique de forma curta e objetiva. "
+                        "Responda no locale pedido em user_locale."
+                    ),
+                ),
+                (
+                    "system",
+                    (
+                        "user_locale={user_locale}\n"
+                        "RUNTIME_CONTEXT_JSON:\n{runtime_context_json}\n"
+                        "TOOL_OUTCOME_JSON:\n{tool_outcome_json}\n"
+                        "ASSISTANT_DRAFT:\n{assistant_draft}"
+                    ),
+                ),
+                MessagesPlaceholder(variable_name="chat_history"),
+                (
+                    "human",
+                    "Ultima mensagem do usuario:\n{user_message}",
+                ),
+            ]
+        )
+
+    def _safe_user_facing_error_message(self, locale: str | None) -> str:
+        """Return a JSON-serializable localized error string even under mocks."""
+        message = self._llm_client.get_user_facing_error_message(locale)
+        if isinstance(message, str):
+            return message
+        return LLMClient.get_user_facing_error_message(locale)
+
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    async def build_final_response_input(
+        self,
+        *,
+        user_email: str,
+        profile: UserProfile,
+        user_input: str,
+        runtime_context_json: str,
+        user_locale: str,
+        tool_summary: dict,
+        assistant_draft: str,
+    ) -> dict:
+        """Create compact prompt input for the final no-tools response round."""
+        recent_history = (
+            await asyncio.to_thread(
+                self._database.get_window_memory(
+                    session_id=user_email,
+                    k=self._FINAL_REPLY_HISTORY_MESSAGES,
+                ).load_memory_variables,
+                {},
+            )
+        ).get("chat_history", [])
+
+        return {
+            "chat_history": self.format_history_as_messages(recent_history),
+            "user_message": user_input,
+            "runtime_context_json": runtime_context_json,
+            "tool_outcome_json": json.dumps(tool_summary, ensure_ascii=True, sort_keys=True),
+            "assistant_draft": assistant_draft,
+            "user_locale": user_locale,
+            "user_profile_obj": profile,
+        }
+
     def get_tools(self, user_email: str) -> list[BaseTool]:
         """
         Creates and returns a list of tools available to the AI.
@@ -736,6 +877,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
         return float(settings.LLM_STREAM_TIMEOUT_SECONDS)
 
     # pylint: disable=too-many-locals,too-many-arguments,too-many-positional-arguments
+    # pylint: disable=too-many-branches,too-many-statements
     async def send_message_ai(
         self,
         user_email: str,
@@ -808,12 +950,15 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
         if image_payloads:
             input_data["user_images"] = image_payloads
 
+        yield self.format_sse_event("status", {"stage": "preparing_context"})
+
         raw_response: list[str] = []
         tool_events: list[dict] = []
-        stream_buffer = ""
         stream_failed = False
+        tool_summary: dict[str, list[str]] | None = None
         try:
             async with asyncio.timeout(self.get_llm_stream_timeout_seconds()):
+                yield self.format_sse_event("status", {"stage": "using_tools"})
                 async for chunk in self._llm_client.stream_with_tools(
                     prompt_template=self.prompt_builder.get_prompt_template(
                         input_data,
@@ -825,52 +970,128 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
                     user_email=user_email,
                     log_callback=self.get_log_callback(background_tasks),
                     temperature=0.2,
-                    max_tokens=6144,
+                    max_tokens=4096,
                     provider_sort="throughput",
                     reasoning={"effort": "low", "exclude": True},
+                    parallel_tool_calls=False,
                 ):
                     if isinstance(chunk, dict):
                         if chunk.get("type") == "tool_result":
                             tool_events.append(chunk)
+                        elif chunk.get("type") == "tools_summary":
+                            tool_summary = {"tools_called": chunk.get("tools_called", [])}
                         elif chunk.get("type") == "stream_error":
                             stream_failed = True
                         continue
                     if not isinstance(chunk, str):
                         continue
                     raw_response.append(chunk)
-                    stream_buffer += chunk
-                    visible, stream_buffer = self.split_stream_visible_text(stream_buffer)
-                    if visible:
-                        yield visible
         except TimeoutError:
             logger.error(
                 "LLM stream timeout for user %s after %ss",
                 user_email,
                 self.get_llm_stream_timeout_seconds(),
             )
-            yield "Error processing request: STREAM_TIMEOUT"
+            yield self.format_sse_event(
+                "error",
+                {
+                    "message": self._safe_user_facing_error_message(
+                        input_data.get("user_locale")
+                    )
+                },
+            )
             return
-
-        if stream_buffer:
-            cleaned_tail = self.strip_internal_wrappers(stream_buffer)
-            if cleaned_tail:
-                yield cleaned_tail
 
         if stream_failed:
             logger.warning(
                 "LLM stream failed for user %s; skipping history persistence.",
                 user_email,
             )
+            yield self.format_sse_event(
+                "error",
+                {
+                    "message": self._safe_user_facing_error_message(
+                        input_data.get("user_locale")
+                    )
+                },
+            )
             return
 
+        assistant_draft = self.strip_internal_wrappers("".join(raw_response))
+        outcome_summary = self.summarize_tool_events(tool_events)
+        if tool_summary:
+            outcome_summary["tools_called"] = tool_summary.get("tools_called", [])
+
+        final_input = await self.build_final_response_input(
+            user_email=user_email,
+            profile=profile,
+            user_input=user_input,
+            runtime_context_json=input_data.get("runtime_context_json", "{}"),
+            user_locale=input_data.get("user_locale", "pt-BR"),
+            tool_summary=outcome_summary,
+            assistant_draft=assistant_draft,
+        )
+
+        yield self.format_sse_event("status", {"stage": "writing_reply"})
+
+        final_response_chunks: list[str] = []
+        final_stream_buffer = ""
+        final_stream_failed = False
+
+        async for chunk in self._llm_client.stream_with_tools(
+            prompt_template=self.build_final_response_prompt(),
+            input_data=final_input,
+            tools=[],
+            model_override=settings.OPENROUTER_CHAT_MODEL,
+            user_email=user_email,
+            log_callback=self.get_log_callback(background_tasks),
+            temperature=0.2,
+            max_tokens=512,
+            provider_sort="latency",
+            reasoning={"effort": "low", "exclude": True},
+            run_name="chat.final",
+            mode="final",
+        ):
+            if isinstance(chunk, dict):
+                if chunk.get("type") == "stream_error":
+                    final_stream_failed = True
+                continue
+            if not isinstance(chunk, str):
+                continue
+            final_response_chunks.append(chunk)
+            final_stream_buffer += chunk
+            visible, final_stream_buffer = self.split_stream_visible_text(final_stream_buffer)
+            if visible:
+                yield self.format_sse_event("delta", {"text": visible})
+
+        if final_stream_buffer:
+            cleaned_tail = self.strip_internal_wrappers(final_stream_buffer)
+            if cleaned_tail:
+                final_response_chunks.append(cleaned_tail)
+                yield self.format_sse_event("delta", {"text": cleaned_tail})
+
+        final_response = self.strip_internal_wrappers("".join(final_response_chunks)).strip()
+
+        if final_stream_failed or not final_response:
+            logger.warning(
+                "Final response round failed or returned empty output for user %s",
+                user_email,
+            )
+            yield self.format_sse_event(
+                "error",
+                {
+                    "message": self._safe_user_facing_error_message(
+                        input_data.get("user_locale")
+                    )
+                },
+            )
+            return
+
+        yield self.format_sse_event("status", {"stage": "saving"})
         await self.finalize_ai_response(
             user_email=user_email,
             user_input=user_input,
-            final_response=self.enforce_plan_update_truth_policy(
-                final_response=self.strip_internal_wrappers("".join(raw_response)),
-                tool_events=tool_events,
-                user_locale=input_data.get("user_locale"),
-            ),
+            final_response=final_response,
             metadata={
                 "trainer_type": trainer_profile_obj.trainer_type or "atlas",
                 "needs_cycle_reset": needs_cycle_reset,
@@ -878,6 +1099,10 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
                 "log_callback": self.get_log_callback(background_tasks),
                 "user_images": image_payloads,
             },
+        )
+        yield self.format_sse_event(
+            "done",
+            {"text": final_response, "persisted": True},
         )
 
     async def finalize_ai_response(
