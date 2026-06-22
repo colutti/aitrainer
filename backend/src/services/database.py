@@ -149,6 +149,15 @@ class MongoDatabase:
         """Adds a message to chat history."""
         return self.chat.add_message(chat_history, session_id, trainer_type)
 
+    def add_many_to_history(
+        self,
+        chat_histories: list[ChatHistory],
+        session_id: str,
+        trainer_type: str | None = None,
+    ) -> None:
+        """Adds multiple messages to chat history in one database operation."""
+        self.chat.add_messages(chat_histories, session_id, trainer_type)
+
     def log_prompt(self, user_email: str, prompt_data: dict):
         """
         Logs an LLM prompt for debugging purposes.

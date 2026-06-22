@@ -11,6 +11,7 @@ from langchain_core.messages import (
     AIMessage,
     HumanMessage,
     SystemMessage,
+    message_to_dict,
 )
 from langchain_classic.memory import ConversationBufferWindowMemory
 
@@ -143,9 +144,11 @@ class ChatRepository(BaseRepository):
         self.logger.debug("Adding messages to chat history with timestamp.")
         now = datetime.now().isoformat()
         chat_history_mongo = MongoDBChatMessageHistory(
-            connection_string=settings.MONGO_URI,
+            connection_string=None,
             session_id=session_id,
             database_name=settings.DB_NAME,
+            client=self.db.client,
+            create_index=False,
         )
 
         additional_kwargs = {"timestamp": now}
@@ -173,6 +176,48 @@ class ChatRepository(BaseRepository):
                 )
             )
 
+    def add_messages(
+        self,
+        chat_histories: list[ChatHistory],
+        session_id: str,
+        trainer_type: str | None = None,
+    ) -> None:
+        """Persist multiple chat messages with one MongoDB round trip."""
+        now = datetime.now().isoformat()
+        documents = []
+        for chat_history in chat_histories:
+            additional_kwargs = {"timestamp": now}
+            if trainer_type:
+                additional_kwargs["trainer_type"] = trainer_type
+            if chat_history.images:
+                additional_kwargs["images"] = chat_history.images
+
+            if chat_history.sender == Sender.TRAINER:
+                message = AIMessage(
+                    content=chat_history.text,
+                    additional_kwargs=additional_kwargs,
+                )
+            elif chat_history.sender == Sender.SYSTEM:
+                message = SystemMessage(
+                    content=chat_history.text,
+                    additional_kwargs=additional_kwargs,
+                )
+            else:
+                message = HumanMessage(
+                    content=chat_history.text,
+                    additional_kwargs=additional_kwargs,
+                )
+
+            documents.append(
+                {
+                    "SessionId": session_id,
+                    "History": json.dumps(message_to_dict(message)),
+                }
+            )
+
+        if documents:
+            self.collection.insert_many(documents, ordered=True)
+
     def get_window_memory(
         self,
         session_id: str,
@@ -182,10 +227,12 @@ class ChatRepository(BaseRepository):
         Returns a ConversationBufferWindowMemory that only looks at the last K messages.
         """
         chat_history = MongoDBChatMessageHistory(
-            connection_string=settings.MONGO_URI,
+            connection_string=None,
             session_id=session_id,
             database_name=settings.DB_NAME,
             history_size=k,
+            client=self.db.client,
+            create_index=False,
         )
 
         return ConversationBufferWindowMemory(
