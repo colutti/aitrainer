@@ -196,6 +196,7 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
         headers: {
           'Content-Type': 'application/json',
           Authorization: token ? `Bearer ${token}` : '',
+          'X-Chat-Stream-Format': 'sse-v1',
           'X-User-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
         },
         body: JSON.stringify({

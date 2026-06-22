@@ -121,7 +121,7 @@ def test_message_ai_success():
     response = asyncio.run(
         message_ai(
             message=SimpleNamespace(user_message="What should I eat today?", images=None),
-            request=SimpleNamespace(headers={}),
+            request=SimpleNamespace(headers={"X-Chat-Stream-Format": "sse-v1"}),
             user_email="test@example.com",
             background_tasks=MagicMock(),
             brain=mock_brain,
@@ -132,6 +132,66 @@ def test_message_ai_success():
 
     assert response.media_type == "text/event-stream"
     assert "Hello, this is your trainer!" in content
+
+
+def test_message_ai_defaults_to_legacy_raw_text_for_clients_without_stream_header():
+    mock_brain = MagicMock()
+
+    async def mock_generator():
+        yield 'event: status\ndata: {"stage":"preparing_context"}\n\n'
+        yield 'event: delta\ndata: {"text":"Hello "}\n\n'
+        yield 'event: delta\ndata: {"text":"World"}\n\n'
+        yield 'event: done\ndata: {"text":"Hello World","persisted":true}\n\n'
+
+    mock_brain.get_or_create_user_profile.return_value = _make_user_profile(
+        "test@example.com"
+    )
+    mock_brain.check_message_limits.return_value = False
+    mock_brain.send_message_ai.return_value = mock_generator()
+
+    response = asyncio.run(
+        message_ai(
+            message=SimpleNamespace(user_message="Oi", images=None),
+            request=SimpleNamespace(headers={}),
+            user_email="test@example.com",
+            background_tasks=MagicMock(),
+            brain=mock_brain,
+        )
+    )
+
+    content = _collect_stream_text(response)
+
+    assert response.media_type == "text/plain"
+    assert content == "Hello World"
+
+
+def test_message_ai_keeps_sse_for_explicit_sse_clients():
+    mock_brain = MagicMock()
+
+    async def mock_generator():
+        yield 'event: status\ndata: {"stage":"preparing_context"}\n\n'
+        yield 'event: delta\ndata: {"text":"Hello"}\n\n'
+
+    mock_brain.get_or_create_user_profile.return_value = _make_user_profile(
+        "test@example.com"
+    )
+    mock_brain.check_message_limits.return_value = False
+    mock_brain.send_message_ai.return_value = mock_generator()
+
+    response = asyncio.run(
+        message_ai(
+            message=SimpleNamespace(user_message="Oi", images=None),
+            request=SimpleNamespace(headers={"X-Chat-Stream-Format": "sse-v1"}),
+            user_email="test@example.com",
+            background_tasks=MagicMock(),
+            brain=mock_brain,
+        )
+    )
+
+    content = _collect_stream_text(response)
+
+    assert response.media_type == "text/event-stream"
+    assert 'event: delta\ndata: {"text":"Hello"}\n\n' in content
 
 
 def test_message_ai_user_not_found():

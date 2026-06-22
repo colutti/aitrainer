@@ -77,6 +77,14 @@ describe('useChatStore', () => {
     expect(finalState.messages).toHaveLength(2);
     expect(finalState.messages[1]?.text).toContain(streamResponse);
     expect(finalState.streamingStage).toBeNull();
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://localhost/api/message',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'X-Chat-Stream-Format': 'sse-v1',
+        }),
+      }),
+    );
   });
 
   it('uses the done event payload when there are no delta chunks', async () => {
