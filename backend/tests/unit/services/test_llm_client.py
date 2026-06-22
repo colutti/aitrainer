@@ -138,6 +138,29 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
             results[0], client.USER_FACING_ERROR_MESSAGES["pt-BR"]
         )
         self.assertNotIn("Agent Error", results[0])
+        self.assertEqual(results[1]["type"], "stream_error")
+
+    @patch("src.services.llm_client.create_agent")
+    async def test_stream_with_tools_logs_error_status(self, mock_create_agent):
+        """Failed model calls must not be reported as successful executions."""
+        client = _TestLLMClient()
+        mock_create_agent.side_effect = ValueError("invalid provider payload")
+        prompt = MagicMock()
+        log_callback = MagicMock()
+
+        results = []
+        async for chunk in client.stream_with_tools(
+            prompt,
+            {},
+            [],
+            model_override="test-model",
+            user_email="user@test.com",
+            log_callback=log_callback,
+        ):
+            results.append(chunk)
+
+        self.assertEqual(results[1]["type"], "stream_error")
+        self.assertEqual(log_callback.call_args.args[1]["status"], "error")
 
     @patch("src.services.llm_client.create_agent")
     @patch("src.core.config.settings")
@@ -222,10 +245,14 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(kwargs["model"], "google/gemini-2.5-flash-lite")
             self.assertEqual(kwargs["base_url"], "https://openrouter.ai/api/v1")
             self.assertEqual(kwargs["temperature"], 0.5)
-            self.assertEqual(kwargs["extra_body"]["service_tier"], "flex")
+            self.assertEqual(kwargs["extra_body"]["service_tier"], "priority")
+            self.assertEqual(
+                kwargs["extra_body"]["session_id"],
+                "f660ab912ec121d1b1e928a0bb4bc61b",
+            )
 
-    def test_openrouter_receives_max_tokens_reasoning_and_parallel_tool_calls(self):
-        """OpenRouter client must accept max_tokens, reasoning, parallel_tool_calls."""
+    def test_openrouter_tool_loop_uses_chat_completions(self):
+        """Tool loops must avoid Responses API output items with missing IDs."""
         with patch("langchain_openai.ChatOpenAI") as mock_cls:
             client = OpenRouterClient(
                 api_key="or-key",
@@ -244,11 +271,16 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(kwargs["model"], "google/gemini-3-flash-preview")
             self.assertEqual(kwargs["temperature"], 0.2)
             self.assertEqual(kwargs.get("max_tokens"), 6144)
-            self.assertEqual(kwargs.get("reasoning"), {"effort": "low", "exclude": True})
+            self.assertFalse(kwargs["use_responses_api"])
+            self.assertNotIn("reasoning", kwargs)
+            self.assertEqual(
+                kwargs["extra_body"]["reasoning"],
+                {"effort": "low", "exclude": True},
+            )
             model_kw = kwargs.get("model_kwargs", {})
             self.assertIsNotNone(model_kw)
             self.assertEqual(model_kw.get("parallel_tool_calls"), False)
-            self.assertEqual(kwargs["extra_body"]["service_tier"], "flex")
+            self.assertEqual(kwargs["extra_body"]["service_tier"], "priority")
 
     @patch("src.services.llm_client.create_agent")
     async def test_stream_with_tools_passes_response_format(self, mock_create_agent):

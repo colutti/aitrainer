@@ -119,6 +119,27 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(captured["model_override"], "google/gemini-3.5-flash")
         self.brain._executor.shutdown(wait=True, cancel_futures=True)
 
+    async def test_send_message_ai_does_not_persist_stream_errors(self):
+        """A provider error is shown to the user but must not enter chat history."""
+
+        async def _stream_with_tools(**_kwargs):
+            yield "Desculpe, ocorreu um erro interno. Tente novamente em instantes."
+            yield {"type": "stream_error", "error_type": "ValueError"}
+            yield {"type": "tools_summary", "tools_called": []}
+
+        self.mock_llm.stream_with_tools = _stream_with_tools
+
+        chunks = []
+        async for chunk in self.brain.send_message_ai("test@test.com", "oi"):
+            chunks.append(chunk)
+
+        self.assertEqual(
+            "".join(chunks),
+            "Desculpe, ocorreu um erro interno. Tente novamente em instantes.",
+        )
+        self.mock_db.add_to_history.assert_not_called()
+        self.brain._executor.shutdown(wait=True, cancel_futures=True)
+
     def test_get_chat_history_sanitizes_only_trainer_internal_tags(self):
         user_email = "test@test.com"
         self.mock_db.get_chat_history.return_value = [
@@ -169,6 +190,24 @@ class TestAITrainerBrain(unittest.IsolatedAsyncioTestCase):
         )
 
         assert response == original
+
+    def test_add_to_mongo_history_persists_pair_in_one_batch(self):
+        """Conversation persistence delegates the pair to one repository operation."""
+        self.brain.add_to_mongo_history(
+            "test@test.com",
+            "Pode atualizar o plano",
+            "Plano atualizado",
+            {"trainer_type": "atlas"},
+        )
+
+        self.mock_db.add_many_to_history.assert_called_once()
+        messages, session_id, trainer_type = (
+            self.mock_db.add_many_to_history.call_args.args
+        )
+        self.assertEqual(session_id, "test@test.com")
+        self.assertEqual(trainer_type, "atlas")
+        self.assertEqual([message.sender for message in messages], [Sender.STUDENT, Sender.TRAINER])
+        self.mock_db.add_to_history.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -130,6 +130,9 @@ class TestChatRepositoryAddMessage:
         mock_human_msg.assert_called_once()
         call_args = mock_human_msg.call_args
         assert "I want to train" in str(call_args)
+        _, history_kwargs = mock_mongo_history.call_args
+        assert history_kwargs["client"] is chat_repo.db.client
+        assert history_kwargs["create_index"] is False
 
     @patch('src.repositories.chat_repository.MongoDBChatMessageHistory')
     @patch('src.repositories.chat_repository.HumanMessage')
@@ -214,6 +217,32 @@ class TestChatRepositoryAddMessage:
         # trainer_type should not be in additional_kwargs
         assert 'trainer_type' not in call_kwargs.get('additional_kwargs', {})
 
+    def test_add_messages_persists_conversation_in_one_batch(self, chat_repo):
+        """A user/assistant pair should require one MongoDB write round trip."""
+        messages = [
+            ChatHistory(
+                text="Pode atualizar o plano",
+                sender=Sender.STUDENT,
+                timestamp=datetime.now().isoformat(),
+            ),
+            ChatHistory(
+                text="Plano atualizado",
+                sender=Sender.TRAINER,
+                timestamp=datetime.now().isoformat(),
+            ),
+        ]
+
+        chat_repo.add_messages(messages, "session_123", trainer_type="atlas")
+
+        chat_repo.collection.insert_many.assert_called_once()
+        documents = chat_repo.collection.insert_many.call_args.args[0]
+        assert [document["SessionId"] for document in documents] == [
+            "session_123",
+            "session_123",
+        ]
+        assert '"type": "human"' in documents[0]["History"]
+        assert '"type": "ai"' in documents[1]["History"]
+
 
 class TestChatRepositoryGetWindowMemory:
     """Test get_window_memory method."""
@@ -230,6 +259,9 @@ class TestChatRepositoryGetWindowMemory:
         mock_window_memory_class.assert_called_once()
         call_kwargs = mock_window_memory_class.call_args[1]
         assert call_kwargs['k'] == 40
+        _, history_kwargs = mock_mongo_history.call_args
+        assert history_kwargs["client"] is chat_repo.db.client
+        assert history_kwargs["create_index"] is False
 
     @patch('src.repositories.chat_repository.MongoDBChatMessageHistory')
     @patch('src.repositories.chat_repository.ConversationBufferWindowMemory')

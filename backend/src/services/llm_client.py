@@ -135,6 +135,8 @@ class LLMClient:
         usage_metadata: dict = {"input_tokens": 0, "output_tokens": 0}
         runtime_metadata: dict[str, Any] = {}
         usage_metadata_captured = False  # Track if we already captured
+        execution_status = "success"
+        error_type: str | None = None
         config: RunnableConfig = {}
         requested_model = model_override
 
@@ -203,6 +205,8 @@ class LLMClient:
                             for block in self._yield_content_blocks(result.content):
                                 yield block
                 except Exception as exc:  # pylint: disable=broad-exception-caught
+                    execution_status = "error"
+                    error_type = type(exc).__name__
                     logger.error(
                         "Error in direct structured LLM call: %s sha=%s",
                         exc,
@@ -211,6 +215,7 @@ class LLMClient:
                     yield self.get_user_facing_error_message(
                         input_data.get("user_locale")
                     )
+                    yield {"type": "stream_error", "error_type": error_type}
                 return
 
             agent_kwargs: dict[str, Any] = {}
@@ -281,8 +286,11 @@ class LLMClient:
                         yield block
 
         except (ValueError, TypeError, AttributeError, Exception) as e:  # pylint: disable=broad-exception-caught
+            execution_status = "error"
+            error_type = type(e).__name__
             logger.error("Error in stream_with_tools: %s", e)
             yield self.get_user_facing_error_message(input_data.get("user_locale"))
+            yield {"type": "stream_error", "error_type": error_type}
         finally:
             # Log prompt with tokens at the END of streaming
             duration_ms = int((time.time() - start_time) * 1000)
@@ -297,7 +305,8 @@ class LLMClient:
                         "resolved_provider": runtime_metadata.get("resolved_provider"),
                         "usage_cost": runtime_metadata.get("usage_cost"),
                         "service_tier": runtime_metadata.get("service_tier"),
-                        "status": "success",
+                        "status": execution_status,
+                        "error_type": error_type,
                         "tokens_input": usage_metadata.get("input_tokens", 0),
                         "tokens_output": usage_metadata.get("output_tokens", 0),
                     },
@@ -334,7 +343,8 @@ class LLMClient:
                             ),
                             "usage_cost": runtime_metadata.get("usage_cost"),
                             "service_tier": runtime_metadata.get("service_tier"),
-                            "status": "success",
+                            "status": execution_status,
+                            "error_type": error_type,
                         },
                     )
                 except (ValueError, TypeError, AttributeError, Exception) as log_err:  # pylint: disable=broad-exception-caught
@@ -474,6 +484,9 @@ class OpenRouterClient(LLMClient):
             "model": model_override,
             "base_url": self._base_url,
             "api_key": SecretStr(self._api_key) if self._api_key else SecretStr(""),
+            # OpenRouter Responses API can return tool-call items without IDs.
+            # Chat Completions uses stable call_id semantics across agent rounds.
+            "use_responses_api": False,
         }
         if temperature is not None:
             kwargs["temperature"] = temperature
@@ -483,14 +496,23 @@ class OpenRouterClient(LLMClient):
             kwargs["frequency_penalty"] = frequency_penalty
         if max_tokens is not None:
             kwargs["max_tokens"] = max_tokens
-        if reasoning is not None:
-            kwargs["reasoning"] = reasoning
         model_kw: dict[str, Any] = {}
         if parallel_tool_calls is not None:
             model_kw["parallel_tool_calls"] = parallel_tool_calls
         if model_kw:
             kwargs["model_kwargs"] = model_kw
         extra: dict[str, Any] = {}
+        if reasoning is not None:
+            extra["reasoning"] = reasoning
+        extra.update(
+            {
+                "session_id": hashlib.sha256(
+                    user_email.encode("utf-8")
+                ).hexdigest()[:32]
+            }
+            if user_email
+            else {}
+        )
         if provider_sort:
             extra["provider"] = {"sort": provider_sort}
         if settings.OPENROUTER_SERVICE_TIER:

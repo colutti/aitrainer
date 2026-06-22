@@ -436,8 +436,9 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
         )
 
         # Save to MongoDB (Session History) - synchronous
-        self._database.add_to_history(user_message, user_email, trainer_type)
-        self._database.add_to_history(ai_message, user_email, trainer_type)
+        self._database.add_many_to_history(
+            [user_message, ai_message], user_email, trainer_type
+        )
         logger.info(
             "Successfully saved conversation to MongoDB for user: %s (trainer: %s)",
             user_email,
@@ -810,6 +811,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
         raw_response: list[str] = []
         tool_events: list[dict] = []
         stream_buffer = ""
+        stream_failed = False
         try:
             async with asyncio.timeout(self.get_llm_stream_timeout_seconds()):
                 async for chunk in self._llm_client.stream_with_tools(
@@ -830,6 +832,8 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
                     if isinstance(chunk, dict):
                         if chunk.get("type") == "tool_result":
                             tool_events.append(chunk)
+                        elif chunk.get("type") == "stream_error":
+                            stream_failed = True
                         continue
                     if not isinstance(chunk, str):
                         continue
@@ -851,6 +855,13 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
             cleaned_tail = self.strip_internal_wrappers(stream_buffer)
             if cleaned_tail:
                 yield cleaned_tail
+
+        if stream_failed:
+            logger.warning(
+                "LLM stream failed for user %s; skipping history persistence.",
+                user_email,
+            )
+            return
 
         await self.finalize_ai_response(
             user_email=user_email,
