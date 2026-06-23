@@ -4,6 +4,7 @@ Service to interact with Hevy API.
 
 from datetime import datetime, timezone, timedelta
 from typing import Optional
+import json
 import httpx
 from src.api.models.workout_log import WorkoutLog, ExerciseLog
 from src.api.models.routine import (
@@ -30,6 +31,10 @@ class HevyService:
         str, tuple[float, list[HevyExerciseTemplate]]
     ] = {}  # key: api_key, value: (timestamp, templates)
     CACHE_DURATION = 3600 * 24  # 24 hours
+    _routines_cache: dict[
+        str, tuple[float, list[HevyRoutine]]
+    ] = {}  # key: api_key, value: (timestamp, routines)
+    ROUTINES_CACHE_DURATION = 15  # seconds
 
     def __init__(self, workout_repository: WorkoutRepository):
         self.workout_repository = workout_repository
@@ -397,6 +402,16 @@ class HevyService:
 
     async def get_all_routines(self, api_key: str, max_pages: int = 100) -> list[HevyRoutine]:
         """Fetch all visible routines from Hevy across paginated responses."""
+        import time
+
+        now = time.time()
+        cached = self._routines_cache.get(api_key)
+        if cached:
+            ts, routines = cached
+            if now - ts < self.ROUTINES_CACHE_DURATION:
+                logger.debug("Returning %d routines from memory cache", len(routines))
+                return routines
+
         all_routines: list[HevyRoutine] = []
         page = 1
 
@@ -412,6 +427,7 @@ class HevyService:
         if page > max_pages:
             logger.warning("get_all_routines hit safeguard page limit: %d", max_pages)
 
+        self._routines_cache[api_key] = (now, all_routines)
         return all_routines
 
     async def get_routine_by_id(
@@ -556,8 +572,6 @@ class HevyService:
                     routine_data, for_update=False
                 )
 
-                import json
-
                 payload = {"routine": routine_data}
 
                 logger.debug(
@@ -649,8 +663,6 @@ class HevyService:
                     routine_data, for_update=True
                 )
 
-                import json
-
                 payload = {"routine": routine_data}
 
                 logger.debug(
@@ -659,9 +671,9 @@ class HevyService:
                 )
 
                 logger.info(
-                    "[update_routine] Sending payload for routine %s:\n%s",
+                    "[update_routine] Sending payload for routine %s (exercises=%d)",
                     routine_id,
-                    json.dumps(payload, indent=2, default=str),
+                    len(payload["routine"].get("exercises", [])),
                 )
 
                 response = await client.put(
@@ -680,6 +692,7 @@ class HevyService:
                         routine_data = routine_data[0]
 
                     if isinstance(routine_data, dict):
+                        self._routines_cache.pop(api_key, None)
                         return HevyRoutine(**routine_data)
 
                 # Detailed error logging

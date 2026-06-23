@@ -8,6 +8,7 @@ interface ChatState {
   messages: ChatMessage[];
   isLoading: boolean;
   isStreaming: boolean;
+  streamingStage: string | null;
   error: string | null;
   hasMore: boolean;
 }
@@ -23,21 +24,76 @@ interface ChatActions {
 type ChatStore = ChatState & ChatActions;
 
 const AUTH_TOKEN_KEY = 'auth_token';
-const CHAT_STREAM_TIMEOUT_MS = 200_000;
-const CHAT_HISTORY_SYNC_RETRIES = 5;
-const CHAT_HISTORY_SYNC_DELAY_MS = 500;
+const CHAT_STREAM_TIMEOUT_MS = 300_000;
 let historyInFlight: Promise<void> | null = null;
 let loadMoreInFlight: Promise<void> | null = null;
 
-const sleep = async (ms: number): Promise<void> =>
-  new Promise((resolve) => {
-    window.setTimeout(resolve, ms);
-  });
+interface StreamEventPayload {
+  text?: string;
+  stage?: string;
+  message?: string;
+  persisted?: boolean;
+}
+
+interface ParsedSseEvent {
+  event: string;
+  payload: StreamEventPayload;
+}
+
+function parseSseFrame(frame: string): ParsedSseEvent | null {
+  const trimmed = frame.trim();
+  if (!trimmed.startsWith('event:')) return null;
+
+  const lines = trimmed.split('\n');
+  const eventLine = lines.find((line) => line.startsWith('event:'));
+  const dataLines = lines.filter((line) => line.startsWith('data:'));
+  if (!eventLine || dataLines.length === 0) return null;
+
+  const event = eventLine.slice('event:'.length).trim();
+  const data = dataLines
+    .map((line) => line.slice('data:'.length).trim())
+    .join('\n');
+
+  try {
+    return {
+      event,
+      payload: JSON.parse(data) as StreamEventPayload,
+    };
+  } catch {
+    return {
+      event,
+      payload: { text: data },
+    };
+  }
+}
+
+function upsertPendingTrainerMessage(messages: ChatMessage[], nextText: string, isPending: boolean): ChatMessage[] {
+  const nextMessages = [...messages];
+  const lastIndex = nextMessages.length - 1;
+  const existing = nextMessages[lastIndex];
+  if (existing?.sender !== 'Trainer') return nextMessages;
+  nextMessages[lastIndex] = {
+    ...existing,
+    text: nextText,
+    isPending,
+  };
+  return nextMessages;
+}
+
+function removePendingTrainerMessage(messages: ChatMessage[]): ChatMessage[] {
+  if (messages.length === 0) return messages;
+  const lastMessage = messages[messages.length - 1];
+  if (lastMessage?.sender === 'Trainer' && lastMessage.isPending) {
+    return messages.slice(0, -1);
+  }
+  return messages;
+}
 
 export const useChatStore = create<ChatStore>((set, _get) => ({
   messages: [],
   isLoading: false,
   isStreaming: false,
+  streamingStage: null,
   error: null,
   hasMore: true,
 
@@ -115,8 +171,14 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
     };
 
     set((state) => ({
-      messages: [...state.messages, userMessage],
+      messages: [...state.messages, userMessage, {
+        text: '',
+        sender: 'Trainer',
+        timestamp: new Date().toISOString(),
+        isPending: true,
+      }],
       isStreaming: true,
+      streamingStage: 'preparing_context',
       error: null,
     }));
 
@@ -134,6 +196,7 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
         headers: {
           'Content-Type': 'application/json',
           Authorization: token ? `Bearer ${token}` : '',
+          'X-Chat-Stream-Format': 'sse-v1',
           'X-User-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
         },
         body: JSON.stringify({
@@ -204,53 +267,109 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
       const reader = response.body?.getReader();
       if (!reader) throw new Error('Stream not available');
 
-      const aiMessage: ChatMessage = {
-        text: '',
-        sender: 'Trainer',
-        timestamp: new Date().toISOString(),
-      };
-      set((state) => ({ messages: [...state.messages, aiMessage] }));
-
       const decoder = new TextDecoder();
       let accumulatedText = '';
+      let rawBuffer = '';
+      let sawStructuredEvent = false;
+      let sawDoneEvent = false;
+      let streamErrorMessage: string | null = null;
 
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        accumulatedText += decoder.decode(value, { stream: true });
-        set((state) => {
-          const newMessages = [...state.messages];
-          const lastIndex = newMessages.length - 1;
-          const existing = newMessages[lastIndex];
-          if (existing) {
-            newMessages[lastIndex] = { ...existing, text: accumulatedText };
+        const chunkText = decoder.decode(value, { stream: true });
+        rawBuffer += chunkText;
+
+        const frames = rawBuffer.split('\n\n');
+        rawBuffer = frames.pop() ?? '';
+
+        let handledStructuredFrame = false;
+        for (const frame of frames) {
+          const parsed = parseSseFrame(frame);
+          if (!parsed) continue;
+
+          handledStructuredFrame = true;
+          sawStructuredEvent = true;
+
+          if (parsed.event === 'status') {
+            set({ streamingStage: parsed.payload.stage ?? null });
+            continue;
           }
-          return { messages: newMessages };
-        });
-      }
-      set({ isStreaming: false });
 
-      if (!accumulatedText.trim()) {
-        const expectedCount = _get().messages.length;
-        for (let attempt = 0; attempt < CHAT_HISTORY_SYNC_RETRIES; attempt += 1) {
-          await sleep(CHAT_HISTORY_SYNC_DELAY_MS);
+          if (parsed.event === 'delta') {
+            accumulatedText += parsed.payload.text ?? '';
+            set((state) => ({
+              messages: upsertPendingTrainerMessage(state.messages, accumulatedText, true),
+            }));
+            continue;
+          }
 
-          try {
-            const messages = await httpClient<ChatMessage[]>('/message/history?limit=20&offset=0');
-            if (messages && messages.length >= expectedCount) {
-              set({
-                messages,
-                isLoading: false,
-                error: null,
-                hasMore: messages.length === 20,
-              });
-              break;
-            }
-          } catch (syncError) {
-            console.error('Error syncing chat history after streaming:', syncError);
+          if (parsed.event === 'done') {
+            sawDoneEvent = true;
+            accumulatedText = parsed.payload.text ?? accumulatedText;
+            set((state) => ({
+              messages: upsertPendingTrainerMessage(state.messages, accumulatedText, false),
+              isStreaming: false,
+              streamingStage: null,
+              error: null,
+            }));
+            continue;
+          }
+
+          if (parsed.event === 'error') {
+            streamErrorMessage = parsed.payload.message ?? 'Ocorreu um problema ao enviar sua mensagem.';
+            set((state) => ({
+              messages: removePendingTrainerMessage(state.messages),
+              isStreaming: false,
+              streamingStage: null,
+              error: streamErrorMessage,
+            }));
           }
         }
+
+        if (!handledStructuredFrame) {
+          accumulatedText += chunkText;
+          set((state) => ({
+            messages: upsertPendingTrainerMessage(state.messages, accumulatedText, true),
+          }));
+        }
+      }
+
+      if (streamErrorMessage) {
+        return;
+      }
+
+      if (!sawDoneEvent) {
+        set({
+          isStreaming: false,
+          streamingStage: null,
+        });
+      }
+
+      if (!accumulatedText.trim()) {
+        try {
+          const messages: ChatMessage[] = (await httpClient<ChatMessage[]>('/message/history?limit=20&offset=0')) ?? [];
+          const latestTrainerMessage = [...messages].reverse().find((message) => message.sender === 'Trainer');
+          if (latestTrainerMessage?.text.trim()) {
+            set({
+              messages,
+              isLoading: false,
+              error: null,
+              hasMore: messages.length === 20,
+            });
+            return;
+          }
+        } catch (syncError) {
+          console.error('Error syncing chat history after streaming:', syncError);
+        }
+
+        set((state) => ({
+          messages: removePendingTrainerMessage(state.messages),
+          error: sawStructuredEvent
+            ? 'Ocorreu um problema ao enviar sua mensagem.'
+            : state.error,
+        }));
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -279,7 +398,9 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
       }
 
       set({
+        messages: removePendingTrainerMessage(_get().messages),
         isStreaming: false,
+        streamingStage: null,
         error: errorMessage,
       });
     } finally {
@@ -296,12 +417,13 @@ export const useChatStore = create<ChatStore>((set, _get) => ({
   reset: () => {
     historyInFlight = null;
     loadMoreInFlight = null;
-    set({
-      messages: [],
-      isLoading: false,
-      isStreaming: false,
-      error: null,
-      hasMore: true,
-    });
+      set({
+        messages: [],
+        isLoading: false,
+        isStreaming: false,
+        streamingStage: null,
+        error: null,
+        hasMore: true,
+      });
   },
 }));

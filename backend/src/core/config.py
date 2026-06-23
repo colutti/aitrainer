@@ -86,7 +86,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = Field(default="")
     API_SERVER_PORT: int = 8000
 
-    MAX_SHORT_TERM_MEMORY_MESSAGES: int = 50
+    MAX_SHORT_TERM_MEMORY_MESSAGES: int = 20
     MAX_LONG_TERM_MEMORY_MESSAGES: int = Field(default=50)
     LLM_STREAM_TIMEOUT_SECONDS: int = Field(default=120)
     LLM_STREAM_INACTIVITY_TIMEOUT_SECONDS: int = Field(default=45)

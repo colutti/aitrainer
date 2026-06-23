@@ -428,6 +428,12 @@
   },
   "chat": {
     "typing": "Typing...",
+    "streaming_stages": {
+      "preparing_context": "Preparing context...",
+      "using_tools": "Checking tools and data...",
+      "writing_reply": "Writing reply...",
+      "saving": "Saving conversation..."
+    },
     "status": {
       "session_context": "Analyzing context...",
       "prompt_security": "Checking security...",

@@ -57,8 +57,10 @@ describe('useChatStore', () => {
     const streamResponse = 'Hello User';
     const stream = new ReadableStream({
       start(controller) {
-        controller.enqueue(new TextEncoder().encode('Hello '));
-        controller.enqueue(new TextEncoder().encode('User'));
+        controller.enqueue(new TextEncoder().encode('event: status\ndata: {"stage":"using_tools"}\n\n'));
+        controller.enqueue(new TextEncoder().encode('event: delta\ndata: {"text":"Hello "}\n\n'));
+        controller.enqueue(new TextEncoder().encode('event: delta\ndata: {"text":"User"}\n\n'));
+        controller.enqueue(new TextEncoder().encode('event: done\ndata: {"text":"Hello User","persisted":true}\n\n'));
         controller.close();
       },
     });
@@ -74,36 +76,61 @@ describe('useChatStore', () => {
     expect(finalState.isStreaming).toBe(false);
     expect(finalState.messages).toHaveLength(2);
     expect(finalState.messages[1]?.text).toContain(streamResponse);
+    expect(finalState.streamingStage).toBeNull();
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://localhost/api/message',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'X-Chat-Stream-Format': 'sse-v1',
+        }),
+      }),
+    );
   });
 
-  it('syncs chat history after a blank stream so the final response appears without refresh', async () => {
-    vi.useFakeTimers();
-
-    const emptyStream = new ReadableStream({
+  it('uses the done event payload when there are no delta chunks', async () => {
+    const stream = new ReadableStream({
       start(controller) {
+        controller.enqueue(new TextEncoder().encode('event: status\ndata: {"stage":"writing_reply"}\n\n'));
+        controller.enqueue(new TextEncoder().encode('event: done\ndata: {"text":"Hello User","persisted":true}\n\n'));
         controller.close();
       },
     });
 
-    const syncedHistory = [
-      { text: 'Hello AI', sender: 'Student', timestamp: '2024-01-01T10:00:00Z' },
-      { text: 'Hello User', sender: 'Trainer', timestamp: '2024-01-01T10:00:01Z' },
-    ];
-
     mockFetch.mockResolvedValue({
       ok: true,
-      body: { getReader: () => emptyStream.getReader() },
+      body: { getReader: () => stream.getReader() },
     });
-    vi.mocked(httpClient).mockResolvedValueOnce(syncedHistory);
 
-    const sendPromise = useChatStore.getState().sendMessage('Hello AI');
-    await vi.advanceTimersByTimeAsync(500);
-    await sendPromise;
+    await useChatStore.getState().sendMessage('Hello AI');
 
     const finalState = useChatStore.getState();
     expect(finalState.isStreaming).toBe(false);
-    expect(finalState.messages).toEqual(syncedHistory);
-    expect(httpClient).toHaveBeenCalledWith('/message/history?limit=20&offset=0');
+    expect(finalState.messages).toHaveLength(2);
+    expect(finalState.messages[1]?.text).toBe('Hello User');
+    expect(httpClient).not.toHaveBeenCalledWith('/message/history?limit=20&offset=0');
+  });
+
+  it('removes the pending trainer bubble when the stream ends with an error event', async () => {
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('event: status\ndata: {"stage":"using_tools"}\n\n'));
+        controller.enqueue(new TextEncoder().encode('event: error\ndata: {"message":"Desculpe, ocorreu um erro interno. Tente novamente em instantes."}\n\n'));
+        controller.close();
+      },
+    });
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      body: { getReader: () => stream.getReader() },
+    });
+
+    await useChatStore.getState().sendMessage('Hello AI');
+
+    const finalState = useChatStore.getState();
+    expect(finalState.isStreaming).toBe(false);
+    expect(finalState.messages).toHaveLength(1);
+    expect(finalState.error).toBe('Desculpe, ocorreu um erro interno. Tente novamente em instantes.');
+    expect(finalState.streamingStage).toBeNull();
   });
 
   it('handles send message error', async () => {
@@ -117,5 +144,26 @@ describe('useChatStore', () => {
     expect(state.messages).toHaveLength(1);
     expect(state.error).toBe('Ocorreu um problema ao enviar sua mensagem.');
     consoleSpy.mockRestore();
+  });
+
+  it('stores the latest streaming stage from the backend', async () => {
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('event: status\ndata: {"stage":"using_tools"}\n\n'));
+        controller.enqueue(new TextEncoder().encode('event: status\ndata: {"stage":"writing_reply"}\n\n'));
+        controller.enqueue(new TextEncoder().encode('event: done\ndata: {"text":"Hello User","persisted":true}\n\n'));
+        controller.close();
+      },
+    });
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      body: { getReader: () => stream.getReader() },
+    });
+
+    const sendPromise = useChatStore.getState().sendMessage('Hello AI');
+    await sendPromise;
+
+    expect(useChatStore.getState().streamingStage).toBeNull();
   });
 });

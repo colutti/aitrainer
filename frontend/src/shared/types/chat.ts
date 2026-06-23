@@ -8,6 +8,7 @@ export interface ChatMessage {
   timestamp: string;
   trainer_type?: string;
   summarized?: boolean;
+  isPending?: boolean;
 }
 
 export interface MessageImagePayload {

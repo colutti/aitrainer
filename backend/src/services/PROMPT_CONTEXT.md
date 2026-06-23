@@ -38,6 +38,12 @@ Top-level shape:
   "plan": {
     "summary": "formatted active plan text",
     "has_active_plan": true
+  },
+  "plan_execution": {
+    "explicit_user_approval": true,
+    "mode": "update_active_plan | create_from_discovery",
+    "required_tool": "update_plan_section | create_plan_from_discovery",
+    "must_execute_now": true
   }
 }
 ```
@@ -68,5 +74,6 @@ Node prompt instructions should:
 
 - Treat `RUNTIME_CONTEXT_JSON` as primary dynamic context.
 - Prefer `plan.summary` and `plan.has_active_plan` for plan behavior.
+- Respect `plan_execution` when present: explicit approval means execute now, not reconfirm.
 - Respect `session.channel` for response formatting differences.
 - Avoid requiring extra placeholders not present in the contract.

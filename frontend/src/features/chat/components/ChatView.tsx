@@ -17,6 +17,7 @@ import { MessageBubble } from './MessageBubble';
 export interface ChatViewProps {
   messages: ChatMessage[];
   isStreaming: boolean;
+  streamingStage: string | null;
   isLoading: boolean;
   hasMore: boolean;
   error: string | null;
@@ -52,6 +53,7 @@ const MessageList = memo(function MessageList({
         <MessageBubble
           key={`${msg.timestamp}-${i.toString()}`}
           message={msg}
+          isPending={Boolean(msg.isPending)}
           resolveText={resolveText}
           trainerId={trainerId}
           userPhoto={userPhoto}
@@ -66,6 +68,7 @@ const MessageList = memo(function MessageList({
 export function ChatView({
   messages,
   isStreaming,
+  streamingStage,
   isLoading,
   hasMore,
   error,
@@ -94,7 +97,7 @@ export function ChatView({
     maxSizeMb: maxImageSizeMb,
   });
   const imageHelperAriaLabel = t('chat.image_upload.helper_aria');
-  const typingLabel = 'chat.typing';
+  const typingLabel = streamingStage ? `chat.streaming_stages.${streamingStage}` : 'chat.typing';
   const trainerName = trainer?.name ?? t('chat.default_trainer_name');
   const { isReadOnly: isDemoUser } = useDemoMode(userInfo);
   const normalizedLocale = i18n.language.toLowerCase();

@@ -6,11 +6,13 @@ This module contains the AI trainer brain, which is responsible for interacting 
 import asyncio
 import json
 import re
+import unicodedata
 from typing import Optional, TYPE_CHECKING
 from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor
 from fastapi import BackgroundTasks, HTTPException
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.tools import BaseTool
 
 from src.core.config import settings
@@ -107,6 +109,49 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
     """
     _MSG_OPEN_PATTERN = re.compile(r'<msg(?:\s+data="[^"]*")?(?:\s+hora="[^"]*")?>')
     _TREINADOR_OPEN_PATTERN = re.compile(r'<treinador(?:\s+name="[^"]*")?>')
+    _FINAL_REPLY_HISTORY_MESSAGES = 6
+    _EXPLICIT_PLAN_APPROVAL_MESSAGES = {
+        "ok",
+        "meu ok",
+        "pode atualizar",
+        "pode aplicar",
+        "pode mudar",
+        "manda ver",
+        "pode fazer",
+        "sinal verde",
+    }
+    _PLAN_UPDATE_CONTEXT_HINTS = (
+        "atualizar o plano",
+        "ajustar o plano",
+        "alterar o plano",
+        "mudar o plano",
+        "aplicar no plano",
+        "aplicar essa mudanca",
+        "plano ativo",
+        "posso atualizar",
+        "posso aplicar",
+        "sinal verde",
+    )
+    _PLAN_CREATE_CONTEXT_HINTS = (
+        "criar o plano",
+        "montar o plano",
+        "gerar o plano",
+        "fechar o plano",
+        "ja tenho tudo para criar o plano",
+        "posso criar",
+        "pode criar",
+    )
+    _RECONFIRMATION_HINTS = (
+        "me confirma",
+        "me de o sinal verde",
+        "me da o sinal verde",
+        "posso atualizar",
+        "posso aplicar",
+        "quer que eu aplique",
+        "quer que eu atualize",
+        "esta 100 pronto",
+        "so confirmar",
+    )
 
     def __init__(
         self,
@@ -554,6 +599,121 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
         cleaned = cleaned.replace("</treinador>", "")
         return cleaned
 
+    @staticmethod
+    def normalize_text_for_intent(text: str) -> str:
+        """Normalize free text for deterministic intent checks."""
+        if not text:
+            return ""
+        normalized = unicodedata.normalize("NFKD", text)
+        ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
+        ascii_text = ascii_text.lower()
+        ascii_text = re.sub(r"[^a-z0-9\s]", " ", ascii_text)
+        return re.sub(r"\s+", " ", ascii_text).strip()
+
+    @classmethod
+    def _history_to_plain_text(cls, recent_history: list[BaseMessage]) -> str:
+        parts: list[str] = []
+        for message in recent_history:
+            content = str(getattr(message, "content", "") or "")
+            cleaned = cls.strip_internal_wrappers(content).strip()
+            if cleaned:
+                parts.append(cleaned)
+        return "\n".join(parts)
+
+    @classmethod
+    def _is_explicit_approval_message(cls, normalized_input: str) -> bool:
+        if not normalized_input:
+            return False
+        if normalized_input in cls._EXPLICIT_PLAN_APPROVAL_MESSAGES:
+            return True
+        return any(
+            phrase in normalized_input
+            for phrase in cls._EXPLICIT_PLAN_APPROVAL_MESSAGES
+            if " " in phrase
+        )
+
+    @classmethod
+    def _has_plan_update_context(cls, normalized_history: str) -> bool:
+        if not normalized_history:
+            return False
+        if any(hint in normalized_history for hint in cls._PLAN_UPDATE_CONTEXT_HINTS):
+            return True
+        has_plan = "plano" in normalized_history
+        has_mutation = any(
+            token in normalized_history
+            for token in ("atualiz", "ajust", "alter", "mudar", "aplic")
+        )
+        return has_plan and has_mutation
+
+    @classmethod
+    def _has_plan_create_context(cls, normalized_history: str) -> bool:
+        if not normalized_history:
+            return False
+        if any(hint in normalized_history for hint in cls._PLAN_CREATE_CONTEXT_HINTS):
+            return True
+        return "plano" in normalized_history and any(
+            token in normalized_history
+            for token in ("criar", "montar", "gerar", "fechar")
+        )
+
+    @classmethod
+    def detect_explicit_plan_execution(
+        cls,
+        *,
+        user_input: str,
+        recent_history: list[BaseMessage],
+        plan_snapshot,
+    ) -> dict | None:
+        """Detect explicit approval that should force immediate plan execution."""
+        normalized_input = cls.normalize_text_for_intent(user_input)
+        if not cls._is_explicit_approval_message(normalized_input):
+            return None
+
+        normalized_history = cls.normalize_text_for_intent(
+            cls._history_to_plain_text(recent_history[-cls._FINAL_REPLY_HISTORY_MESSAGES :])
+        )
+        if getattr(plan_snapshot, "status", None) == "ACTIVE_PLAN":
+            if not cls._has_plan_update_context(normalized_history):
+                return None
+            return {
+                "mode": "update_active_plan",
+                "required_tool": "update_plan_section",
+            }
+
+        discovery = getattr(plan_snapshot, "discovery", {}) or {}
+        missing_fields = discovery.get("missing_fields") or []
+        if missing_fields:
+            return None
+        if not cls._has_plan_create_context(normalized_history):
+            return None
+        return {
+            "mode": "create_from_discovery",
+            "required_tool": "create_plan_from_discovery",
+        }
+
+    @classmethod
+    def apply_explicit_plan_execution_context(
+        cls,
+        input_data: dict,
+        approval_context: dict,
+    ) -> dict:
+        """Inject deterministic execution flags into prompt runtime context."""
+        runtime_context = dict(input_data.get("runtime_context") or {})
+        runtime_context["plan_execution"] = {
+            "explicit_user_approval": True,
+            "mode": approval_context["mode"],
+            "required_tool": approval_context["required_tool"],
+            "must_execute_now": True,
+        }
+        input_data["runtime_context"] = runtime_context
+        input_data["runtime_context_json"] = json.dumps(
+            runtime_context, ensure_ascii=True, sort_keys=True
+        )
+        input_data["explicit_plan_approval"] = True
+        input_data["plan_execution_mode"] = approval_context["mode"]
+        input_data["required_plan_tool"] = approval_context["required_tool"]
+        return input_data
+
     @classmethod
     def normalize_public_chat_text(cls, text: str) -> str:
         """
@@ -650,6 +810,281 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
             "entao o plano ativo continua sem mudanca."
         )
 
+    @staticmethod
+    def format_sse_event(event: str, payload: dict | str) -> str:
+        """Serialize one SSE event frame."""
+        data = (
+            payload
+            if isinstance(payload, str)
+            else json.dumps(payload, ensure_ascii=True, separators=(",", ":"))
+        )
+        return f"event: {event}\ndata: {data}\n\n"
+
+    @classmethod
+    def summarize_tool_events(cls, tool_events: list[dict]) -> dict:
+        """Extract factual tool outcome summary for the final response round."""
+        results: list[dict] = []
+        material_plan_change = False
+        any_saved = False
+        any_failure = False
+
+        for event in tool_events:
+            content = event.get("content")
+            if not isinstance(content, str):
+                continue
+            try:
+                payload = json.loads(content)
+            except json.JSONDecodeError:
+                payload = {"raw_content": content}
+
+            result = {
+                "tool_name": event.get("tool_name"),
+                "status": payload.get("status"),
+                "saved": bool(payload.get("saved")),
+                "plan_materially_changed": bool(
+                    payload.get("plan_materially_changed")
+                ),
+                "changed_sections": payload.get("changed_sections") or [],
+                "message_for_ai": payload.get("message_for_ai"),
+                "missing_fields": payload.get("missing_fields") or [],
+                "validation_errors": payload.get("validation_errors") or [],
+                "external_sync_failed": bool(payload.get("external_sync_failed")),
+            }
+            results.append(result)
+            material_plan_change = material_plan_change or result["plan_materially_changed"]
+            any_saved = any_saved or result["saved"]
+            status = result["status"]
+            any_failure = any_failure or (
+                status
+                not in {
+                    None,
+                    "success",
+                    "review_recorded",
+                    "discovery_updated",
+                    "ACTIVE_PLAN",
+                    "NO_PLAN",
+                }
+                and not result["saved"]
+            )
+
+        return {
+            "material_plan_change": material_plan_change,
+            "any_saved": any_saved,
+            "any_failure": any_failure,
+            "attempted_material_plan_write": any(
+                result["tool_name"] in {"update_plan_section", "create_plan_from_discovery"}
+                for result in results
+            ),
+            "tool_results": results,
+        }
+
+    @classmethod
+    def _latest_plan_tool_result(
+        cls,
+        tool_events: list[dict],
+        required_tool: str,
+    ) -> dict | None:
+        for event in reversed(tool_events):
+            if event.get("tool_name") != required_tool:
+                continue
+            content = event.get("content")
+            if not isinstance(content, str):
+                continue
+            try:
+                payload = json.loads(content)
+            except json.JSONDecodeError:
+                payload = {"message_for_ai": content}
+            payload["tool_name"] = required_tool
+            return payload
+        return None
+
+    @classmethod
+    def _contains_reconfirmation_request(cls, text: str) -> bool:
+        normalized = cls.normalize_text_for_intent(text)
+        return any(hint in normalized for hint in cls._RECONFIRMATION_HINTS)
+
+    @classmethod
+    # pylint: disable=too-many-return-statements,too-many-branches
+    def _compose_plan_execution_blocker(
+        cls,
+        *,
+        approval_context: dict,
+        tool_events: list[dict],
+        user_locale: str | None,
+    ) -> str:
+        required_tool = approval_context["required_tool"]
+        latest_result = cls._latest_plan_tool_result(tool_events, required_tool)
+        if latest_result is None:
+            if user_locale == "en-US":
+                return (
+                    f"This turn did not execute `{required_tool}` after your explicit approval, "
+                    "so no plan change was applied."
+                )
+            if user_locale == "es-ES":
+                return (
+                    f"Este turno no ejecutó `{required_tool}` después de tu aprobación explícita, "
+                    "así que no se aplicó ningún cambio al plan."
+                )
+            return (
+                f"Este turno nao executou `{required_tool}` depois do seu OK explicito, "
+                "entao nenhuma mudanca foi aplicada ao plano."
+            )
+
+        status = latest_result.get("status")
+        validation_errors = latest_result.get("validation_errors") or []
+        first_error = validation_errors[0].get("msg") if validation_errors else None
+        message_for_ai = latest_result.get("message_for_ai")
+        missing_fields = latest_result.get("missing_fields") or []
+
+        if status == "discovery_needed" and missing_fields:
+            missing_label = ", ".join(str(field) for field in missing_fields)
+            if user_locale == "en-US":
+                return f"Discovery is still incomplete: {missing_label}."
+            if user_locale == "es-ES":
+                return f"El discovery sigue incompleto: {missing_label}."
+            return f"O discovery ainda esta incompleto: {missing_label}."
+        if status == "no_plan":
+            if user_locale == "en-US":
+                return "There is no active plan to update yet."
+            if user_locale == "es-ES":
+                return "Todavia no existe un plan activo para actualizar."
+            return "Ainda nao existe um plano ativo para atualizar."
+        if first_error:
+            return str(first_error)
+        if isinstance(message_for_ai, str) and message_for_ai.strip():
+            return message_for_ai.strip()
+        if user_locale == "en-US":
+            return "The requested plan execution did not persist a material change."
+        if user_locale == "es-ES":
+            return "La ejecucion solicitada del plan no guardo un cambio material."
+        return "A execucao solicitada do plano nao salvou uma mudanca material."
+
+    @classmethod
+    # pylint: disable=too-many-return-statements
+    def render_explicit_plan_execution_response(
+        cls,
+        *,
+        approval_context: dict,
+        tool_events: list[dict],
+        user_locale: str | None,
+    ) -> str:
+        """Build deterministic user-facing output for explicit approval turns."""
+        required_tool = approval_context["required_tool"]
+        latest_result = cls._latest_plan_tool_result(tool_events, required_tool)
+        if latest_result and latest_result.get("saved") and latest_result.get(
+            "plan_materially_changed"
+        ):
+            if approval_context["mode"] == "create_from_discovery":
+                if user_locale == "en-US":
+                    return "Your plan was created successfully."
+                if user_locale == "es-ES":
+                    return "Tu plan se creo correctamente."
+                return "Plano criado com sucesso."
+            if user_locale == "en-US":
+                return "Your plan was updated successfully."
+            if user_locale == "es-ES":
+                return "Tu plan se actualizo correctamente."
+            return "Plano atualizado com sucesso."
+
+        blocker = cls._compose_plan_execution_blocker(
+            approval_context=approval_context,
+            tool_events=tool_events,
+            user_locale=user_locale,
+        )
+        if user_locale == "en-US":
+            return f"I did not execute the requested plan change. Blocker: {blocker}"
+        if user_locale == "es-ES":
+            return f"No ejecute el cambio solicitado del plan. Bloqueo: {blocker}"
+        return f"Nao executei a mudanca solicitada no plano. Bloqueio: {blocker}"
+
+    def build_final_response_prompt(self) -> ChatPromptTemplate:
+        """Prompt for the final user-facing round with tools disabled."""
+        return ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    (
+                        "Voce escreve a resposta final visivel ao usuario. "
+                        "Use apenas os fatos do TOOL_OUTCOME_JSON, "
+                        "do runtime context e do historico recente. "
+                        "Nunca invente sucesso operacional. "
+                        "Se EXPLICIT_PLAN_APPROVAL=true, isso significa que o usuario "
+                        "ja autorizou a execucao neste turno. "
+                        "Nao faca nova pergunta de confirmacao, nao peca sinal verde "
+                        "e nao devolva reconfirmacao. "
+                        "Se material_plan_change=false, diga claramente "
+                        "que o plano ativo nao mudou. "
+                        "Se houve erro de validacao ou sincronizacao externa, "
+                        "explique de forma curta e objetiva. "
+                        "Responda no locale pedido em user_locale."
+                    ),
+                ),
+                (
+                    "system",
+                    (
+                        "user_locale={user_locale}\n"
+                        "EXPLICIT_PLAN_APPROVAL={explicit_plan_approval}\n"
+                        "PLAN_EXECUTION_MODE={plan_execution_mode}\n"
+                        "REQUIRED_PLAN_TOOL={required_plan_tool}\n"
+                        "RUNTIME_CONTEXT_JSON:\n{runtime_context_json}\n"
+                        "TOOL_OUTCOME_JSON:\n{tool_outcome_json}\n"
+                        "ASSISTANT_DRAFT:\n{assistant_draft}"
+                    ),
+                ),
+                MessagesPlaceholder(variable_name="chat_history"),
+                (
+                    "human",
+                    "Ultima mensagem do usuario:\n{user_message}",
+                ),
+            ]
+        )
+
+    def _safe_user_facing_error_message(self, locale: str | None) -> str:
+        """Return a JSON-serializable localized error string even under mocks."""
+        message = self._llm_client.get_user_facing_error_message(locale)
+        if isinstance(message, str):
+            return message
+        return LLMClient.get_user_facing_error_message(locale)
+
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    async def build_final_response_input(
+        self,
+        *,
+        user_email: str,
+        profile: UserProfile,
+        user_input: str,
+        runtime_context_json: str,
+        user_locale: str,
+        tool_summary: dict,
+        assistant_draft: str,
+        explicit_plan_approval: bool = False,
+        plan_execution_mode: str = "none",
+        required_plan_tool: str = "none",
+    ) -> dict:
+        """Create compact prompt input for the final no-tools response round."""
+        recent_history = (
+            await asyncio.to_thread(
+                self._database.get_window_memory(
+                    session_id=user_email,
+                    k=self._FINAL_REPLY_HISTORY_MESSAGES,
+                ).load_memory_variables,
+                {},
+            )
+        ).get("chat_history", [])
+
+        return {
+            "chat_history": self.format_history_as_messages(recent_history),
+            "user_message": user_input,
+            "runtime_context_json": runtime_context_json,
+            "tool_outcome_json": json.dumps(tool_summary, ensure_ascii=True, sort_keys=True),
+            "assistant_draft": assistant_draft,
+            "user_locale": user_locale,
+            "explicit_plan_approval": str(explicit_plan_approval).lower(),
+            "plan_execution_mode": plan_execution_mode,
+            "required_plan_tool": required_plan_tool,
+            "user_profile_obj": profile,
+        }
+
     def get_tools(self, user_email: str) -> list[BaseTool]:
         """
         Creates and returns a list of tools available to the AI.
@@ -736,6 +1171,7 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
         return float(settings.LLM_STREAM_TIMEOUT_SECONDS)
 
     # pylint: disable=too-many-locals,too-many-arguments,too-many-positional-arguments
+    # pylint: disable=too-many-branches,too-many-statements
     async def send_message_ai(
         self,
         user_email: str,
@@ -780,22 +1216,26 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
             else None
         )
         enriched_plan_snapshot = build_plan_prompt_snapshot(plan, discovery, progress)
+        recent_history = (
+            await asyncio.to_thread(
+                self._database.get_window_memory(
+                    session_id=user_email,
+                    k=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
+                ).load_memory_variables,
+                {},
+            )
+        ).get("chat_history", [])
+        approval_context = self.detect_explicit_plan_execution(
+            user_input=user_input,
+            recent_history=recent_history,
+            plan_snapshot=enriched_plan_snapshot,
+        )
 
         input_data = self.prompt_builder.build_input_data(
             profile=profile,
             trainer_profile_summary=trainer_profile_obj.get_trainer_profile_summary(),
             user_profile_summary=profile.get_profile_summary(),
-            formatted_history_msgs=self.format_history_as_messages(
-                (
-                    await asyncio.to_thread(
-                        self._database.get_window_memory(
-                            session_id=user_email,
-                            k=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
-                        ).load_memory_variables,
-                        {},
-                    )
-                ).get("chat_history", [])
-            ),
+            formatted_history_msgs=self.format_history_as_messages(recent_history),
             user_input=user_input,
             current_date=datetime.now().strftime("%Y-%m-%d"),
             agenda_events=await asyncio.to_thread(
@@ -805,15 +1245,23 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
             metabolism_data=metabolism_data,
         )
         input_data["user_locale"] = trainer_profile_obj.preferred_language or "pt-BR"
+        if approval_context:
+            input_data = self.apply_explicit_plan_execution_context(
+                input_data,
+                approval_context,
+            )
         if image_payloads:
             input_data["user_images"] = image_payloads
 
+        yield self.format_sse_event("status", {"stage": "preparing_context"})
+
         raw_response: list[str] = []
         tool_events: list[dict] = []
-        stream_buffer = ""
         stream_failed = False
+        tool_summary: dict[str, list[str]] | None = None
         try:
             async with asyncio.timeout(self.get_llm_stream_timeout_seconds()):
+                yield self.format_sse_event("status", {"stage": "using_tools"})
                 async for chunk in self._llm_client.stream_with_tools(
                     prompt_template=self.prompt_builder.get_prompt_template(
                         input_data,
@@ -825,52 +1273,169 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
                     user_email=user_email,
                     log_callback=self.get_log_callback(background_tasks),
                     temperature=0.2,
-                    max_tokens=6144,
+                    max_tokens=4096,
                     provider_sort="throughput",
                     reasoning={"effort": "low", "exclude": True},
+                    parallel_tool_calls=False,
                 ):
                     if isinstance(chunk, dict):
                         if chunk.get("type") == "tool_result":
                             tool_events.append(chunk)
+                        elif chunk.get("type") == "tools_summary":
+                            tool_summary = {"tools_called": chunk.get("tools_called", [])}
                         elif chunk.get("type") == "stream_error":
                             stream_failed = True
                         continue
                     if not isinstance(chunk, str):
                         continue
                     raw_response.append(chunk)
-                    stream_buffer += chunk
-                    visible, stream_buffer = self.split_stream_visible_text(stream_buffer)
-                    if visible:
-                        yield visible
         except TimeoutError:
             logger.error(
                 "LLM stream timeout for user %s after %ss",
                 user_email,
                 self.get_llm_stream_timeout_seconds(),
             )
-            yield "Error processing request: STREAM_TIMEOUT"
+            yield self.format_sse_event(
+                "error",
+                {
+                    "message": self._safe_user_facing_error_message(
+                        input_data.get("user_locale")
+                    )
+                },
+            )
             return
-
-        if stream_buffer:
-            cleaned_tail = self.strip_internal_wrappers(stream_buffer)
-            if cleaned_tail:
-                yield cleaned_tail
 
         if stream_failed:
             logger.warning(
                 "LLM stream failed for user %s; skipping history persistence.",
                 user_email,
             )
+            yield self.format_sse_event(
+                "error",
+                {
+                    "message": self._safe_user_facing_error_message(
+                        input_data.get("user_locale")
+                    )
+                },
+            )
             return
 
+        assistant_draft = self.strip_internal_wrappers("".join(raw_response))
+        outcome_summary = self.summarize_tool_events(tool_events)
+        if tool_summary:
+            outcome_summary["tools_called"] = tool_summary.get("tools_called", [])
+
+        if approval_context:
+            final_response = self.render_explicit_plan_execution_response(
+                approval_context=approval_context,
+                tool_events=tool_events,
+                user_locale=input_data.get("user_locale", "pt-BR"),
+            )
+            yield self.format_sse_event("status", {"stage": "writing_reply"})
+            yield self.format_sse_event("delta", {"text": final_response})
+            yield self.format_sse_event("status", {"stage": "saving"})
+            await self.finalize_ai_response(
+                user_email=user_email,
+                user_input=user_input,
+                final_response=final_response,
+                metadata={
+                    "trainer_type": trainer_profile_obj.trainer_type or "atlas",
+                    "needs_cycle_reset": needs_cycle_reset,
+                    "background_tasks": background_tasks,
+                    "log_callback": self.get_log_callback(background_tasks),
+                    "user_images": image_payloads,
+                },
+            )
+            yield self.format_sse_event(
+                "done",
+                {"text": final_response, "persisted": True},
+            )
+            return
+
+        final_input = await self.build_final_response_input(
+            user_email=user_email,
+            profile=profile,
+            user_input=user_input,
+            runtime_context_json=input_data.get("runtime_context_json", "{}"),
+            user_locale=input_data.get("user_locale", "pt-BR"),
+            tool_summary=outcome_summary,
+            assistant_draft=assistant_draft,
+            explicit_plan_approval=False,
+            plan_execution_mode=input_data.get("plan_execution_mode", "none"),
+            required_plan_tool=input_data.get("required_plan_tool", "none"),
+        )
+
+        yield self.format_sse_event("status", {"stage": "writing_reply"})
+
+        final_response_chunks: list[str] = []
+        final_stream_buffer = ""
+        final_stream_failed = False
+
+        async for chunk in self._llm_client.stream_with_tools(
+            prompt_template=self.build_final_response_prompt(),
+            input_data=final_input,
+            tools=[],
+            model_override=settings.OPENROUTER_CHAT_MODEL,
+            user_email=user_email,
+            log_callback=self.get_log_callback(background_tasks),
+            temperature=0.2,
+            max_tokens=512,
+            provider_sort="latency",
+            reasoning={"effort": "low", "exclude": True},
+            run_name="chat.final",
+            mode="final",
+        ):
+            if isinstance(chunk, dict):
+                if chunk.get("type") == "stream_error":
+                    final_stream_failed = True
+                continue
+            if not isinstance(chunk, str):
+                continue
+            final_response_chunks.append(chunk)
+            final_stream_buffer += chunk
+            visible, final_stream_buffer = self.split_stream_visible_text(final_stream_buffer)
+            if visible:
+                yield self.format_sse_event("delta", {"text": visible})
+
+        if final_stream_buffer:
+            cleaned_tail = self.strip_internal_wrappers(final_stream_buffer)
+            if cleaned_tail:
+                final_response_chunks.append(cleaned_tail)
+                yield self.format_sse_event("delta", {"text": cleaned_tail})
+
+        final_response = self.strip_internal_wrappers("".join(final_response_chunks)).strip()
+        final_response = self.enforce_plan_update_truth_policy(
+            final_response=final_response,
+            tool_events=tool_events,
+            user_locale=input_data.get("user_locale"),
+        )
+        if approval_context and self._contains_reconfirmation_request(final_response):
+            final_response = self.render_explicit_plan_execution_response(
+                approval_context=approval_context,
+                tool_events=tool_events,
+                user_locale=input_data.get("user_locale", "pt-BR"),
+            )
+
+        if final_stream_failed or not final_response:
+            logger.warning(
+                "Final response round failed or returned empty output for user %s",
+                user_email,
+            )
+            yield self.format_sse_event(
+                "error",
+                {
+                    "message": self._safe_user_facing_error_message(
+                        input_data.get("user_locale")
+                    )
+                },
+            )
+            return
+
+        yield self.format_sse_event("status", {"stage": "saving"})
         await self.finalize_ai_response(
             user_email=user_email,
             user_input=user_input,
-            final_response=self.enforce_plan_update_truth_policy(
-                final_response=self.strip_internal_wrappers("".join(raw_response)),
-                tool_events=tool_events,
-                user_locale=input_data.get("user_locale"),
-            ),
+            final_response=final_response,
             metadata={
                 "trainer_type": trainer_profile_obj.trainer_type or "atlas",
                 "needs_cycle_reset": needs_cycle_reset,
@@ -878,6 +1443,10 @@ class AITrainerBrain:  # pylint: disable=too-many-public-methods,too-many-instan
                 "log_callback": self.get_log_callback(background_tasks),
                 "user_images": image_payloads,
             },
+        )
+        yield self.format_sse_event(
+            "done",
+            {"text": final_response, "persisted": True},
         )
 
     async def finalize_ai_response(
