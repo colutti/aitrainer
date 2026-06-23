@@ -189,26 +189,32 @@ class LLMClient:
                 recursion_limit=int(settings.LLM_AGENT_RECURSION_LIMIT),
             )
 
-            # Direct structured invocation for nodes with response_format but
-            # no tools. Bypasses agent loop to avoid GRAPH_RECURSION_LIMIT
-            # when tools=[], e.g., prompt_security with json_schema strict.
-            if not tools and response_format is not None:
+            # Direct invocation for no-tools rounds. Bypasses agent loop, which
+            # is unnecessary for pure text/structured calls and proved unstable
+            # for the final no-tools chat reply in production.
+            if not tools and (response_format is not None or mode == "final"):
                 try:
-                    llm_with_format = request_llm.bind(response_format=response_format)
-                    result = await llm_with_format.ainvoke(messages, config=config)
+                    llm_runnable = (
+                        request_llm.bind(response_format=response_format)
+                        if response_format is not None
+                        else request_llm
+                    )
+                    result = await llm_runnable.ainvoke(messages, config=config)
                     if isinstance(result, AIMessage):
                         usage_metadata_captured, usage_metadata = self._capture_metadata(
-                            result, source="DirectStructured"
+                            result, source="DirectInvoke"
                         )
                         runtime_metadata = self._extract_runtime_metadata(result)
                         if result.content:
                             for block in self._yield_content_blocks(result.content):
                                 yield block
+                    elif result:
+                        yield str(result)
                 except Exception as exc:  # pylint: disable=broad-exception-caught
                     execution_status = "error"
                     error_type = type(exc).__name__
                     logger.error(
-                        "Error in direct structured LLM call: %s sha=%s",
+                        "Error in direct no-tools LLM call: %s sha=%s",
                         exc,
                         hashlib.sha256(user_message.encode("utf-8")).hexdigest()[:12],
                     )

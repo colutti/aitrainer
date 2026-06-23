@@ -410,6 +410,40 @@ class TestLLMClient(unittest.IsolatedAsyncioTestCase):
             mock_create_agent.assert_not_called()
             self.assertEqual(results[0], client.USER_FACING_ERROR_MESSAGES["pt-BR"])
 
+    async def test_direct_text_bypasses_agent_when_no_tools(self):
+        """No-tools text-only calls must use direct LLM invocation.
+
+        Regression test for the final chat reply round: in production the no-tools
+        agent path can return no visible output, which surfaces as the generic
+        internal error in the chat UI.
+        """
+        with patch("src.services.llm_client.create_agent") as mock_create_agent:
+            client = _TestLLMClient()
+            mock_llm = client.mock_llm
+            mock_llm.bind.return_value = mock_llm
+            mock_llm.ainvoke = AsyncMock(return_value=AIMessage(content="final text"))
+            prompt = MagicMock()
+            prompt.format_messages.return_value = []
+
+            results = []
+            async for chunk in client.stream_with_tools(
+                prompt,
+                {},
+                [],
+                model_override="test-model",
+                mode="final",
+            ):
+                results.append(chunk)
+
+            mock_create_agent.assert_not_called()
+            self.assertEqual(results[0], "final text")
+            self.assertTrue(
+                any(
+                    isinstance(item, dict) and item.get("type") == "tools_summary"
+                    for item in results
+                )
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
