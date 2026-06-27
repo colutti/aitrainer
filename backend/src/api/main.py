@@ -152,8 +152,7 @@ def health_check() -> JSONResponse:
         health_status["services"]["qdrant"] = "healthy"
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("Qdrant health check failed: %s", e)
-        health_status["status"] = "unhealthy"
-        health_status["services"]["qdrant"] = f"unhealthy: {str(e)}"
+        health_status["services"]["qdrant"] = f"degraded: {str(e)}"
 
     # Check Firebase Admin initialization, which social login depends on.
     try:

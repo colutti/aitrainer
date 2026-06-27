@@ -68,10 +68,10 @@ def test_health_endpoint_qdrant_unhealthy():
 
         response = client.get("/health")
 
-        assert response.status_code == 503
+        assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "unhealthy"
-        assert "unhealthy" in data["services"]["qdrant"]
+        assert data["status"] == "healthy"
+        assert "degraded" in data["services"]["qdrant"]
 
 
 def test_health_endpoint_firebase_unhealthy():
