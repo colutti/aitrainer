@@ -96,6 +96,8 @@ async def test_runner_calls_agent_once_and_persists_public_pair():
     assert agent.calls == 1
     assert "toolsets" in agent.kwargs
     assert agent.kwargs["toolsets"]
+    assert agent.kwargs["model_settings"]["extra_body"]["user"].startswith("fityq:")
+    assert "test@test.com" not in agent.kwargs["model_settings"]["extra_body"]["user"]
     assert '"stage":"preparing_context"' in payload
     assert '"stage":"using_tools"' in payload
     assert '"stage":"writing_reply"' in payload
@@ -198,3 +200,35 @@ async def test_runner_logs_tool_result_preview_without_raw_payload():
     assert "payload" not in audit_entry["result"]
     assert "secret-token" not in str(logged)
     assert "x" * 100 not in str(logged)
+
+
+def test_runner_logs_openrouter_cache_usage_tokens():
+    database = FakeDatabase()
+    runner = ChatTurnRunner(database=database, qdrant_client=None, agent=FakeAgent())
+    result = SimpleNamespace(
+        usage=SimpleNamespace(
+            input_tokens=120,
+            output_tokens=30,
+            requests=1,
+            cache_read_tokens=80,
+            cache_write_tokens=40,
+        )
+    )
+
+    runner._log_run(  # pylint: disable=protected-access
+        user_email="test@test.com",
+        status="success",
+        error_type=None,
+        start=0,
+        context_ms=1,
+        agent_ms=2,
+        message_chars=10,
+        deps=None,
+        result=result,
+        history_messages_count=3,
+        selected_toolsets=[],
+    )
+
+    logged = database.logged_prompts[0][1]
+    assert logged["cache_read_tokens"] == 80
+    assert logged["cache_write_tokens"] == 40

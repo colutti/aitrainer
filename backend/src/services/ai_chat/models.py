@@ -79,6 +79,8 @@ class ChatRunLog(BaseModel):
     service_tier: str | None = None
     tokens_input: int = 0
     tokens_output: int = 0
+    cache_read_tokens: int = 0
+    cache_write_tokens: int = 0
     usage_cost: float | None = None
     duration_ms: int = 0
     context_load_ms: int = 0

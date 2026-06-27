@@ -26,6 +26,7 @@ from src.api.models.plan import (
 from src.api.models.trainer_profile import TrainerProfile
 from src.api.models.user_profile import UserProfile
 from src.services.ai_chat.context import build_runtime_context
+from src.services.ai_chat.prompts import CHAT_AGENT_INSTRUCTIONS, build_user_prompt
 from src.services.plan_service import build_plan_from_create_input
 
 
@@ -191,3 +192,101 @@ def test_build_runtime_context_exposes_structured_locale_and_identity_fields():
     assert context["trainer"]["preferred_language"] == "en-US"
     assert context["user"]["email"] == "test@test.com"
     assert context["user"]["name"] == "Rafa"
+
+
+def test_chat_agent_instructions_encode_elite_coaching_decision_rules():
+    assert "coach de elite" in CHAT_AGENT_INSTRUCTIONS
+    assert "Seguranca, saude e verdade operacional" in CHAT_AGENT_INSTRUCTIONS
+    assert "Antes de ajustar o plano, avalie aderencia" in CHAT_AGENT_INSTRUCTIONS
+    assert "Nao mude o plano por ansiedade, por um dia ruim" in CHAT_AGENT_INSTRUCTIONS
+    assert "Nunca diga que criou, atualizou, salvou" in CHAT_AGENT_INSTRUCTIONS
+    assert "saved=true" in CHAT_AGENT_INSTRUCTIONS
+    assert "material_change=true" in CHAT_AGENT_INSTRUCTIONS
+
+
+def test_build_user_prompt_marks_prompt_context_v2_and_keeps_stable_json_order():
+    rendered = build_user_prompt(
+        "nao estou evoluindo",
+        {"z": 1, "prompt_context_v2": {"coaching_snapshot": {"decision": "collect_data"}}},
+    )
+
+    assert "RUNTIME_CONTEXT_JSON (PROMPT_CONTEXT_V2)" in rendered
+    assert rendered.index('"prompt_context_v2"') < rendered.index('"z"')
+    assert "MENSAGEM_DO_USUARIO:\nnao estou evoluindo" in rendered
+
+
+def test_build_runtime_context_includes_compact_coaching_snapshot():
+    mock_db = MagicMock()
+    profile = UserProfile(
+        email="test@test.com",
+        gender="Masculino",
+        age=30,
+        weight=80,
+        height=175,
+        goal="ganhar massa",
+        goal_type="gain",
+        weekly_rate=0.5,
+    )
+    trainer_profile = TrainerProfile(user_email="test@test.com", trainer_type="atlas")
+
+    mock_db.get_plan.return_value = make_plan()
+    mock_db.get_plan_discovery.return_value = None
+    mock_db.get_workout_logs.return_value = []
+    mock_db.get_nutrition_stats.return_value = MagicMock(
+        total_logs=0,
+        avg_daily_calories=0,
+        avg_protein=0,
+        daily_target=3000,
+        macro_targets={"protein_g": 180},
+    )
+    mock_db.get_weight_logs.return_value = []
+
+    context = build_runtime_context(
+        database=mock_db,
+        user_email="test@test.com",
+        profile=profile,
+        trainer_profile=trainer_profile,
+    )
+
+    snapshot = context["prompt_context_v2"]["coaching_snapshot"]
+    assert snapshot["data_quality"]["confidence"] == "low"
+    assert "nutrition" in snapshot["data_quality"]["gaps"]
+    assert snapshot["adherence"]["training"]["status"] == "insufficient_data"
+    assert snapshot["adherence"]["nutrition"]["logged_days"] == 0
+    assert snapshot["progression"]["status"] == "insufficient_data"
+    assert snapshot["recovery_risk"]["conflicts"] == []
+    assert snapshot["metabolism_body"]["tdee"] is None
+    assert snapshot["decision"]["suggested_action"] == "collect_data"
+
+
+def test_build_runtime_context_keeps_coaching_snapshot_when_optional_loads_fail():
+    mock_db = MagicMock()
+    profile = UserProfile(
+        email="test@test.com",
+        gender="Masculino",
+        age=30,
+        weight=80,
+        height=175,
+        goal="ganhar massa",
+        goal_type="gain",
+        weekly_rate=0.5,
+    )
+    trainer_profile = TrainerProfile(user_email="test@test.com", trainer_type="atlas")
+
+    mock_db.get_plan.return_value = make_plan()
+    mock_db.get_plan_discovery.return_value = None
+    mock_db.get_workout_logs.side_effect = RuntimeError("workout store unavailable")
+    mock_db.get_nutrition_stats.side_effect = RuntimeError("nutrition store unavailable")
+    mock_db.get_weight_logs.side_effect = RuntimeError("weight store unavailable")
+
+    context = build_runtime_context(
+        database=mock_db,
+        user_email="test@test.com",
+        profile=profile,
+        trainer_profile=trainer_profile,
+    )
+
+    snapshot = context["prompt_context_v2"]["coaching_snapshot"]
+    assert snapshot["data_quality"]["confidence"] == "low"
+    assert "plan_progress" in snapshot["data_quality"]["gaps"]
+    assert snapshot["decision"]["suggested_action"] == "collect_data"

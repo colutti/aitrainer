@@ -18,6 +18,8 @@ def build_openrouter_model(provider_sort: str = "throughput") -> OpenRouterModel
         openrouter_provider={"sort": provider_sort},
         openrouter_reasoning={"effort": "low", "exclude": True},
         openrouter_usage={"include": True},
+        openrouter_cache_instructions=True,
+        openrouter_cache_tool_definitions=True,
     )
     # Pydantic AI's OpenRouterProvider owns the OpenRouter endpoint; base_url is
     # only used by our direct OpenAI-compatible embedding client.

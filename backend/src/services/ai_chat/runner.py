@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import time
 from datetime import datetime
 from typing import AsyncIterator, Any
@@ -25,6 +26,30 @@ from src.services.ai_chat.tools.base import audit_entry_preview_for_log
 from src.services.ai_chat.tools.registry import select_chat_toolsets, selected_toolset_summary
 from src.services.ai_chat.validation import validate_turn_output
 from src.services.hevy_service import HevyService
+
+
+def _stable_openrouter_user_id(user_email: str) -> str:
+    """Build a stable non-PII OpenRouter user identifier for cache locality."""
+    digest = hashlib.sha256(user_email.strip().lower().encode("utf-8")).hexdigest()
+    return f"fityq:{digest[:32]}"
+
+
+def _usage_value(usage, name: str, default: int = 0) -> int:
+    """Read numeric usage fields from SDK objects or dicts."""
+    if not usage:
+        return default
+    value = usage.get(name, default) if isinstance(usage, dict) else getattr(usage, name, default)
+    return int(value or default)
+
+
+def _result_usage(result: Any | None):
+    """Return Pydantic AI run usage across SDK versions."""
+    if result is None:
+        return None
+    usage = getattr(result, "usage", None)
+    if callable(usage):
+        return usage()
+    return usage
 
 
 class ChatTurnRunner:  # pylint: disable=too-few-public-methods
@@ -117,6 +142,9 @@ class ChatTurnRunner:  # pylint: disable=too-few-public-methods
                     message_history=history,
                     conversation_id=user_email,
                     metadata={"user_email": user_email},
+                    model_settings={
+                        "extra_body": {"user": _stable_openrouter_user_id(user_email)}
+                    },
                     toolsets=selected_toolsets,
                 ),
                 timeout=float(settings.LLM_STREAM_TIMEOUT_SECONDS),
@@ -241,10 +269,12 @@ class ChatTurnRunner:  # pylint: disable=too-few-public-methods
         history_messages_count: int,
         selected_toolsets: list,
     ) -> None:
-        usage = getattr(result, "usage", None)
-        input_tokens = int(getattr(usage, "input_tokens", 0) or 0) if usage else 0
-        output_tokens = int(getattr(usage, "output_tokens", 0) or 0) if usage else 0
-        requests = int(getattr(usage, "requests", 0) or 0) if usage else 0
+        usage = _result_usage(result)
+        input_tokens = _usage_value(usage, "input_tokens")
+        output_tokens = _usage_value(usage, "output_tokens")
+        cache_read_tokens = _usage_value(usage, "cache_read_tokens")
+        cache_write_tokens = _usage_value(usage, "cache_write_tokens")
+        requests = _usage_value(usage, "requests")
         audit = deps.tool_audit if deps is not None else []
         audit_for_log = [audit_entry_preview_for_log(entry) for entry in audit]
         toolset_ids, available_tool_names = selected_toolset_summary(selected_toolsets)
@@ -255,6 +285,8 @@ class ChatTurnRunner:  # pylint: disable=too-few-public-methods
             service_tier=settings.OPENROUTER_SERVICE_TIER,
             tokens_input=input_tokens,
             tokens_output=output_tokens,
+            cache_read_tokens=cache_read_tokens,
+            cache_write_tokens=cache_write_tokens,
             duration_ms=int((time.perf_counter() - start) * 1000),
             context_load_ms=context_ms,
             agent_run_ms=agent_ms,

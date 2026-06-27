@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from src.core.config import Settings, validate_required_runtime_config
+from src.services.ai_chat.model_factory import build_openrouter_model
 
 
 class TestOpenRouterSettings(unittest.TestCase):
@@ -70,6 +71,30 @@ class TestOpenRouterSettings(unittest.TestCase):
         settings.MONGO_URI = "CHANGE_ME_MONGO_URI"
         with self.assertRaises(ValueError):
             validate_required_runtime_config(settings)
+
+    def test_openrouter_model_enables_prompt_cache_for_static_prefixes(self):
+        """Chat model settings should opt in to cacheable instructions/tools."""
+        model = build_openrouter_model()
+        model_settings = model.settings
+        cache_instructions = (
+            model_settings.get("openrouter_cache_instructions")
+            if isinstance(model_settings, dict)
+            else model_settings.openrouter_cache_instructions
+        )
+        cache_tool_definitions = (
+            model_settings.get("openrouter_cache_tool_definitions")
+            if isinstance(model_settings, dict)
+            else model_settings.openrouter_cache_tool_definitions
+        )
+        cache_messages = (
+            model_settings.get("openrouter_cache_messages", False)
+            if isinstance(model_settings, dict)
+            else getattr(model_settings, "openrouter_cache_messages", False)
+        )
+
+        self.assertTrue(cache_instructions)
+        self.assertTrue(cache_tool_definitions)
+        self.assertFalse(cache_messages)
 
 
 if __name__ == "__main__":

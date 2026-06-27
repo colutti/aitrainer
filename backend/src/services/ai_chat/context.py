@@ -16,6 +16,174 @@ from src.services.plan_service import (
 )
 
 
+def _safe_number(value) -> int | float | None:
+    """Return a JSON-friendly numeric value when one is available."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int | float):
+        return value
+    return None
+
+
+def _get_attr_or_key(source, name: str, default=None):
+    """Read from a Pydantic model, object, or dict without caring about shape."""
+    if isinstance(source, dict):
+        return source.get(name, default)
+    return getattr(source, name, default)
+
+
+def _macro_target(nutrition_stats, key: str) -> int | float | None:
+    targets = _get_attr_or_key(nutrition_stats, "macro_targets", None) or {}
+    if not isinstance(targets, dict):
+        return None
+    candidates = (key, f"{key}_g", key.replace("_g", ""))
+    for candidate in candidates:
+        value = targets.get(candidate)
+        if (number := _safe_number(value)) is not None:
+            return number
+    return None
+
+
+def _suggest_decision(progress, nutrition_stats, metabolism_data: dict) -> str:
+    decision = "maintain"
+    if progress is None:
+        decision = "collect_data"
+    elif getattr(progress, "conflicts", None):
+        decision = "formal_plan_review"
+    else:
+        training_status = getattr(progress.training_adherence, "status", "insufficient_data")
+        nutrition_status = getattr(progress.nutrition_adherence, "status", "insufficient_data")
+        body_status = getattr(progress, "body_trend_status", "insufficient_data")
+        progression_status = getattr(progress, "progression_status", "insufficient_data")
+        logged_days = int(_get_attr_or_key(nutrition_stats, "total_logs", 0) or 0)
+        tdee = _safe_number((metabolism_data or {}).get("tdee"))
+
+        if "insufficient_data" in {training_status, nutrition_status} or logged_days == 0:
+            decision = "collect_data"
+        elif training_status == "off_track" or nutrition_status == "off_track":
+            decision = "coach_adherence"
+        elif (
+            progression_status in {"stalled", "regressing"}
+            and body_status != "insufficient_data"
+        ):
+            decision = "small_adjustment"
+        elif tdee is None and body_status == "insufficient_data":
+            decision = "collect_data"
+    return decision
+
+
+def _build_coaching_snapshot(
+    *,
+    progress,
+    nutrition_stats,
+    weight_logs: list,
+    metabolism_data: dict,
+    progress_failed: bool,
+) -> dict:
+    """Build a compact, signal-oriented context block for coach decisions."""
+    gaps = []
+    if progress is None:
+        gaps.append("plan_progress" if progress_failed else "training")
+        if progress_failed:
+            gaps.extend(["training", "nutrition", "body"])
+    else:
+        if progress.training_adherence.status == "insufficient_data":
+            gaps.append("training")
+        if progress.nutrition_adherence.status == "insufficient_data":
+            gaps.append("nutrition")
+        if progress.body_trend_status == "insufficient_data":
+            gaps.append("body")
+    if not metabolism_data:
+        gaps.append("metabolism")
+
+    logged_days = int(_get_attr_or_key(nutrition_stats, "total_logs", 0) or 0)
+    avg_calories = _safe_number(_get_attr_or_key(nutrition_stats, "avg_daily_calories", None))
+    avg_protein = _safe_number(_get_attr_or_key(nutrition_stats, "avg_protein", None))
+    calorie_target = _safe_number(_get_attr_or_key(nutrition_stats, "daily_target", None))
+    protein_target = _macro_target(nutrition_stats, "protein")
+    tdee = _safe_number((metabolism_data or {}).get("tdee"))
+    tdee_confidence = (metabolism_data or {}).get("confidence")
+
+    confidence = "high"
+    if len(set(gaps)) >= 3:
+        confidence = "low"
+    elif gaps:
+        confidence = "medium"
+
+    conflicts = []
+    if progress is not None:
+        conflicts = [
+            getattr(conflict, "message", str(conflict))
+            for conflict in getattr(progress, "conflicts", [])
+        ]
+
+    return {
+        "data_quality": {
+            "confidence": confidence,
+            "gaps": sorted(set(gaps)),
+        },
+        "adherence": {
+            "training": {
+                "status": (
+                    getattr(progress.training_adherence, "status", "insufficient_data")
+                    if progress is not None
+                    else "insufficient_data"
+                ),
+                "details": (
+                    getattr(progress.training_adherence, "details", "Sem dados suficientes.")
+                    if progress is not None
+                    else "Sem dados suficientes."
+                ),
+            },
+            "nutrition": {
+                "status": (
+                    getattr(progress.nutrition_adherence, "status", "insufficient_data")
+                    if progress is not None
+                    else "insufficient_data"
+                ),
+                "logged_days": logged_days,
+                "avg_calories": avg_calories,
+                "calorie_target": calorie_target,
+                "avg_protein": avg_protein,
+                "protein_target": protein_target,
+            },
+        },
+        "progression": {
+            "status": (
+                getattr(progress, "progression_status", "insufficient_data")
+                if progress is not None
+                else "insufficient_data"
+            ),
+            "evidence": (
+                list(getattr(progress, "evidence_summary", []))[:3]
+                if progress is not None
+                else []
+            ),
+        },
+        "recovery_risk": {
+            "conflicts": conflicts[:3],
+            "recommended_review": bool(
+                getattr(progress, "recommended_review", False)
+                if progress is not None
+                else False
+            ),
+        },
+        "metabolism_body": {
+            "tdee": tdee,
+            "tdee_confidence": tdee_confidence,
+            "weight_logs": len(weight_logs),
+            "body_trend": (
+                getattr(progress, "body_trend_status", "insufficient_data")
+                if progress is not None
+                else "insufficient_data"
+            ),
+        },
+        "decision": {
+            "suggested_action": _suggest_decision(progress, nutrition_stats, metabolism_data),
+        },
+    }
+
+
 def build_runtime_context(
     # pylint: disable=too-many-locals
     *,
@@ -45,6 +213,8 @@ def build_runtime_context(
         if hasattr(database, "get_plan_discovery")
         else None
     )
+    progress = None
+    progress_failed = False
     try:
         progress = build_progress_snapshot(plan, database) if plan else None
         plan_snapshot = build_plan_prompt_snapshot(plan, discovery, progress)
@@ -53,9 +223,30 @@ def build_runtime_context(
         plan_discovery = getattr(plan_snapshot, "discovery", None)
     except Exception as exc:  # pylint: disable=broad-exception-caught
         logger.warning("Failed to load plan context for %s: %s", user_email, exc)
+        progress_failed = True
         plan_summary = ""
         plan_status = "NO_PLAN"
         plan_discovery = None
+
+    try:
+        nutrition_stats = database.get_nutrition_stats(user_email)
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        logger.warning("Failed to load nutrition context for %s: %s", user_email, exc)
+        nutrition_stats = {}
+
+    try:
+        weight_logs = database.get_weight_logs(user_email, limit=30)
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        logger.warning("Failed to load body context for %s: %s", user_email, exc)
+        weight_logs = []
+
+    coaching_snapshot = _build_coaching_snapshot(
+        progress=progress,
+        nutrition_stats=nutrition_stats,
+        weight_logs=weight_logs,
+        metabolism_data=metabolism_data or {},
+        progress_failed=progress_failed,
+    )
 
     try:
         agenda = EventRepository(database.database).get_active_events(user_email)
@@ -100,5 +291,8 @@ def build_runtime_context(
             "status": plan_status,
             "has_active_plan": plan_status == "ACTIVE_PLAN",
             "discovery": plan_discovery,
+        },
+        "prompt_context_v2": {
+            "coaching_snapshot": coaching_snapshot,
         },
     }
