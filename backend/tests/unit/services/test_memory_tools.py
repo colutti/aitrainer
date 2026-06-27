@@ -2,7 +2,7 @@
 Unit tests for AI-driven memory management tools.
 
 Note: These are simplified integration tests that verify the tools work correctly
-when integrated with the rest of the system. Full mocking of LangChain tools
+when integrated with the rest of the system. Full mocking of Local tools
 is complex due to the @tool decorator behavior.
 """
 
@@ -41,7 +41,7 @@ class TestGetCollectionName:
 class TestMemoryToolsIntegration:
     """Integration tests for memory tools.
 
-    Note: Due to LangChain's @tool decorator creating StructuredTool objects,
+    Note: Due to the local compatibility tool wrapper,
     these tests are simplified to verify the factory functions exist and
     can be called. Full tool invocation testing is done via E2E tests.
     """
@@ -147,15 +147,20 @@ class TestMemoryToolsIntegration:
 class TestEmbeddingUserPropagation:
     """Tests for OpenRouter `user` propagation in embeddings calls."""
 
-    @patch("src.services.memory_tools.OpenAIEmbeddings")
-    def test_get_embedder_sets_user_in_model_kwargs(self, mock_embeddings):
+    @patch("src.services.memory_tools.OpenAI")
+    def test_get_embedder_sets_user_in_embedding_request(self, mock_openai):
         """_get_embedder should forward user for per-user usage accounting."""
         from src.services.memory_tools import _get_embedder
 
-        _get_embedder("user@test.com")
+        mock_client = mock_openai.return_value
+        mock_client.embeddings.create.return_value.data = [
+            MagicMock(embedding=[0.1] * 768)
+        ]
 
-        call_kwargs = mock_embeddings.call_args.kwargs
-        assert call_kwargs["model_kwargs"]["user"] == "user@test.com"
+        _get_embedder("user@test.com").embed_query("hello")
+
+        call_kwargs = mock_client.embeddings.create.call_args.kwargs
+        assert call_kwargs["extra_body"]["user"] == "user@test.com"
 
     @patch("src.services.memory_tools._get_embedder")
     def test_embed_text_passes_user_email_to_embedder(self, mock_get_embedder):

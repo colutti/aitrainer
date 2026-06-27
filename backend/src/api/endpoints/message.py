@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 from typing import Annotated, TYPE_CHECKING
 
@@ -52,11 +53,23 @@ def _parse_sse_event(frame: str) -> tuple[str, dict] | None:
 
 
 async def _adapt_sse_for_legacy_clients(response_generator):
+    # pylint: disable=too-many-branches
     """Convert structured SSE stream into plain text for older frontend bundles."""
     raw_buffer = ""
     accumulated_text = ""
 
-    async for chunk in response_generator:
+    if hasattr(response_generator, "__aiter__"):
+        iterator = response_generator
+    else:
+        async def _sync_to_async():
+            for item in response_generator:
+                yield item
+
+        iterator = _sync_to_async()
+
+    async for chunk in iterator:
+        if inspect.isawaitable(chunk):
+            chunk = await chunk
         if not isinstance(chunk, str):
             continue
         raw_buffer += chunk

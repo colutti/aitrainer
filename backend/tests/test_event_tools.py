@@ -38,7 +38,7 @@ class TestCreateEventTool:
         mock_repo_class.return_value = mock_repo
 
         tool = create_create_event_tool(mock_db, user_email)
-        # LangChain tools need to be invoked with invoke() or use .func()
+        # Local tools need to be invoked with invoke() or use .func()
         result = tool.invoke({
             "title": "Test Event",
             "description": "Test",

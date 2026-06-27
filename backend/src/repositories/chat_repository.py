@@ -6,24 +6,32 @@ import json
 from datetime import datetime
 
 import pymongo
-from langchain_mongodb.chat_message_histories import MongoDBChatMessageHistory
-from langchain_core.messages import (
-    AIMessage,
-    HumanMessage,
-    SystemMessage,
-    message_to_dict,
+from pydantic_ai.messages import (
+    ModelRequest,
+    ModelResponse,
+    TextPart,
+    UserPromptPart,
 )
-from langchain_classic.memory import ConversationBufferWindowMemory
 
-from src.core.config import settings
 from src.api.models.chat_history import ChatHistory
 from src.api.models.sender import Sender
 from src.repositories.base import BaseRepository
 
 
+class SimpleWindowMemory:  # pylint: disable=too-few-public-methods
+    """Small compatibility wrapper for callers expecting load_memory_variables."""
+
+    def __init__(self, messages: list[ChatHistory]):
+        self.messages = messages
+
+    def load_memory_variables(self, _inputs):
+        """Return history using the old memory-variable shape."""
+        return {"chat_history": self.messages}
+
+
 class ChatRepository(BaseRepository):
     """
-    Repository for managing chat history using LangChain's MongoDB message history.
+    Repository for managing public chat history in MongoDB.
     """
 
     def __init__(self, database):
@@ -48,21 +56,38 @@ class ChatRepository(BaseRepository):
         Decodes a raw Mongo doc into ChatHistory and filters out system messages.
         """
         try:
-            msg_dict = json.loads(doc["History"])
-            msg_type = msg_dict.get("type")
+            raw_history = doc["History"]
+            msg_dict = (
+                json.loads(raw_history) if isinstance(raw_history, str) else raw_history
+            )
+            msg_type = msg_dict.get("type") or msg_dict.get("sender")
             data = msg_dict.get("data", {})
-            content = data.get("content", "")
+            if not isinstance(data, dict):
+                data = {}
+            content = data.get("content", msg_dict.get("text", ""))
             additional_kwargs = data.get("additional_kwargs", {}) or {}
+            timestamp = (
+                additional_kwargs.get("timestamp")
+                or msg_dict.get("timestamp")
+                or datetime.min.isoformat()
+            )
+            translations = additional_kwargs.get("translations") or msg_dict.get(
+                "translations"
+            )
+            images = additional_kwargs.get("images") or msg_dict.get("images")
+            trainer_type = additional_kwargs.get("trainer_type") or msg_dict.get(
+                "trainer_type"
+            )
         except (json.JSONDecodeError, KeyError, AttributeError, TypeError):
             return None
 
-        if msg_type == "human":
+        if msg_type in {"human", Sender.STUDENT.value, "student"}:
             # Retroactive fix: some system messages were stored as human.
             if isinstance(content, str) and content.startswith("✅ Tool"):
                 sender = Sender.SYSTEM
             else:
                 sender = Sender.STUDENT
-        elif msg_type == "system":
+        elif msg_type in {"system", Sender.SYSTEM.value}:
             sender = Sender.SYSTEM
         else:
             sender = Sender.TRAINER
@@ -72,11 +97,11 @@ class ChatRepository(BaseRepository):
 
         return ChatHistory(
             text=content,
-            translations=additional_kwargs.get("translations"),
-            images=additional_kwargs.get("images"),
+            translations=translations,
+            images=images,
             sender=sender,
-            timestamp=additional_kwargs.get("timestamp", datetime.min.isoformat()),
-            trainer_type=additional_kwargs.get("trainer_type"),
+            timestamp=timestamp,
+            trainer_type=trainer_type,
         )
 
     def get_history(
@@ -141,40 +166,16 @@ class ChatRepository(BaseRepository):
         """
         Adds a message to the chat history.
         """
-        self.logger.debug("Adding messages to chat history with timestamp.")
         now = datetime.now().isoformat()
-        chat_history_mongo = MongoDBChatMessageHistory(
-            connection_string=None,
-            session_id=session_id,
-            database_name=settings.DB_NAME,
-            client=self.db.client,
-            create_index=False,
+        self.add_messages(
+            [
+                chat_history.model_copy(
+                    update={"timestamp": chat_history.timestamp or now}
+                )
+            ],
+            session_id,
+            trainer_type,
         )
-
-        additional_kwargs = {"timestamp": now}
-        if trainer_type:
-            additional_kwargs["trainer_type"] = trainer_type
-        if chat_history.images:
-            additional_kwargs["images"] = chat_history.images
-
-        if chat_history.sender == Sender.TRAINER:
-            chat_history_mongo.add_message(
-                AIMessage(
-                    content=chat_history.text, additional_kwargs=additional_kwargs
-                )
-            )
-        elif chat_history.sender == Sender.SYSTEM:
-            chat_history_mongo.add_message(
-                SystemMessage(
-                    content=chat_history.text, additional_kwargs=additional_kwargs
-                )
-            )
-        else:
-            chat_history_mongo.add_message(
-                HumanMessage(
-                    content=chat_history.text, additional_kwargs=additional_kwargs
-                )
-            )
 
     def add_messages(
         self,
@@ -192,54 +193,49 @@ class ChatRepository(BaseRepository):
             if chat_history.images:
                 additional_kwargs["images"] = chat_history.images
 
-            if chat_history.sender == Sender.TRAINER:
-                message = AIMessage(
-                    content=chat_history.text,
-                    additional_kwargs=additional_kwargs,
-                )
-            elif chat_history.sender == Sender.SYSTEM:
-                message = SystemMessage(
-                    content=chat_history.text,
-                    additional_kwargs=additional_kwargs,
-                )
-            else:
-                message = HumanMessage(
-                    content=chat_history.text,
-                    additional_kwargs=additional_kwargs,
-                )
-
             documents.append(
                 {
                     "SessionId": session_id,
-                    "History": json.dumps(message_to_dict(message)),
+                    "History": {
+                        "sender": chat_history.sender.value,
+                        "text": chat_history.text,
+                        "timestamp": additional_kwargs["timestamp"],
+                        "images": chat_history.images,
+                        "trainer_type": trainer_type,
+                        "translations": chat_history.translations,
+                    },
                 }
             )
 
         if documents:
             self.collection.insert_many(documents, ordered=True)
 
-    def get_window_memory(
-        self,
-        session_id: str,
-        k: int = 40,
-    ) -> ConversationBufferWindowMemory:
-        """
-        Returns a ConversationBufferWindowMemory that only looks at the last K messages.
-        """
-        chat_history = MongoDBChatMessageHistory(
-            connection_string=None,
-            session_id=session_id,
-            database_name=settings.DB_NAME,
-            history_size=k,
-            client=self.db.client,
-            create_index=False,
-        )
+    def get_window_memory(self, session_id: str, k: int = 40) -> SimpleWindowMemory:
+        """Return a compatibility object containing the latest public messages."""
+        return SimpleWindowMemory(self.get_history(session_id, limit=k, offset=0))
 
-        return ConversationBufferWindowMemory(
-            chat_memory=chat_history,
-            k=k,
-            return_messages=True,
-            memory_key="chat_history",
-            human_prefix="Aluno",
-            ai_prefix="Treinador",
-        )
+    def get_pydantic_ai_history(self, session_id: str, limit: int = 20) -> list:
+        """Return recent public history as Pydantic AI model messages."""
+        messages = self.get_history(session_id, limit=limit, offset=0)
+        result = []
+        for message in messages:
+            try:
+                timestamp = datetime.fromisoformat(message.timestamp)
+            except (ValueError, TypeError):
+                timestamp = datetime.now()
+            if message.sender == Sender.STUDENT:
+                result.append(
+                    ModelRequest(
+                        parts=[UserPromptPart(content=message.text, timestamp=timestamp)],
+                        timestamp=timestamp,
+                    )
+                )
+            elif message.sender == Sender.TRAINER:
+                result.append(
+                    ModelResponse(
+                        parts=[TextPart(content=message.text)],
+                        timestamp=timestamp,
+                        model_name=message.trainer_type,
+                    )
+                )
+        return result

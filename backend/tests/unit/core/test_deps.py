@@ -5,7 +5,6 @@ Tests for dependency injection functions in src/core/deps.py
 from unittest.mock import patch, MagicMock
 from src.core.deps import (
     get_qdrant_client,
-    get_llm_client,
     get_mongo_database,
     get_ai_trainer_brain,
 )
@@ -56,27 +55,6 @@ def test_get_qdrant_client_local():
         assert call_kwargs["port"] == 6333
 
 
-def test_get_llm_client():
-    """Test that get_llm_client returns an OpenRouterClient instance."""
-    get_llm_client.cache_clear()
-
-    with (
-        patch("src.services.llm_client.OpenRouterClient") as mock_cls,
-        patch("src.core.deps.settings") as mock_settings,
-    ):
-        mock_settings.OPENROUTER_API_KEY = "or-key"
-        mock_settings.OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-        mock_cls.return_value = MagicMock()
-
-        client = get_llm_client()
-
-        assert client is not None
-        mock_cls.assert_called_once_with(
-            api_key="or-key",
-            base_url="https://openrouter.ai/api/v1",
-        )
-
-
 def test_get_mongo_database():
     """Test that get_mongo_database returns a MongoDatabase instance."""
     get_mongo_database.cache_clear()
@@ -93,20 +71,19 @@ def test_get_mongo_database():
 def test_get_ai_trainer_brain():
     """Test that get_ai_trainer_brain creates AITrainerBrain with dependencies."""
     # Clear all caches
-    get_llm_client.cache_clear()
     get_mongo_database.cache_clear()
     get_ai_trainer_brain.cache_clear()
 
     with (
-        patch("src.services.llm_client.OpenRouterClient") as mock_llm,
         patch("src.services.database.MongoDatabase") as mock_mongo,
+        patch("qdrant_client.QdrantClient") as mock_qdrant,
         patch("src.services.trainer.AITrainerBrain") as mock_brain,
         patch("src.core.deps.settings") as mock_settings,
     ):
-        mock_settings.OPENROUTER_API_KEY = "or-key"
-        mock_settings.OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-        mock_llm.return_value = MagicMock()
+        mock_settings.QDRANT_HOST = "localhost"
+        mock_settings.QDRANT_PORT = 6333
         mock_mongo.return_value = MagicMock()
+        mock_qdrant.return_value = MagicMock()
         mock_brain.return_value = MagicMock()
 
         brain = get_ai_trainer_brain()
@@ -114,5 +91,5 @@ def test_get_ai_trainer_brain():
         assert brain is not None
         mock_brain.assert_called_once()
         call_kwargs = mock_brain.call_args[1]
-        assert "llm_client" in call_kwargs
         assert "database" in call_kwargs
+        assert "qdrant_client" in call_kwargs

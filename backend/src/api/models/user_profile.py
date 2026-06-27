@@ -89,6 +89,23 @@ class UserProfileUpdateInput(BaseModel):
     height: int | None = Field(
         default=None, ge=100, le=250, description="Height in cm between 100 and 250"
     )
+    goal_type: str | None = Field(
+        default=None,
+        pattern="^(lose|gain|maintain)$",
+        description="Type of goal: lose, gain, or maintain",
+    )
+    target_weight: float | None = Field(
+        default=None,
+        gt=0,
+        le=500.0,
+        description="Target weight in kg",
+    )
+    weekly_rate: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=2.0,
+        description="Desired weekly weight change rate in kg",
+    )
     notes: str | None = Field(
         default=None, max_length=1000, description="User observations/notes"
     )

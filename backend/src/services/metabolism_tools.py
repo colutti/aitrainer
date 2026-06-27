@@ -1,10 +1,10 @@
 """
-LangChain tools for TDEE and metabolism data access.
+Local tools for TDEE and metabolism data access.
 Provides AI trainer access to adaptive TDEE calculations with full algorithm documentation.
 """
 
 from datetime import date, timedelta
-from langchain_core.tools import tool
+from src.services.compat_tools import tool
 from src.core.logs import logger
 from src.services.database import MongoDatabase
 from src.services.adaptive_tdee import AdaptiveTDEEService

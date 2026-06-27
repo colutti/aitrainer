@@ -1,4 +1,4 @@
-"""Tests for Hevy tools (LangChain tools for AI agent)."""
+"""Tests for Hevy tools (Local tools for AI agent)."""
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock

@@ -115,6 +115,7 @@ Com plano ativo:
 - Estrategia energetica: `deficit`, `maintenance`, `surplus`, `recomposition`.
 - Intensidade: use `prescription_type` + `target`.
 - Progressao: use `method`, `increase_when`, `hold_when`, `deload_when`.
+- Treino: A frequencia semanal (`frequency_per_week`) deve corresponder EXATAMENTE ao numero total de itens com `type` igual a `"training"` no `weekly_schedule`. Por exemplo, se houver 3 dias de musculacao e 2 dias de cardio no agendamento semanal com `type: "training"`, a frequencia semanal deve ser 5.
 
 Nao use textos vazios como:
 - "ajustar conforme necessario"

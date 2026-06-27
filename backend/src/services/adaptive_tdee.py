@@ -79,19 +79,20 @@ class AdaptiveTDEEService:
         self.db = db
 
     @staticmethod
-    def _extract_plan_goal_context(plan) -> dict[str, Any]:
-        """Return goal direction/rate/target from plan when available."""
+    def _extract_plan_goal_context(plan, profile=None) -> dict[str, Any]:
+        """Return goal direction/rate/target from plan, falling back to profile."""
         primary = ""
         direction = "maintain"
         target_weight = None
         weekly_rate = 0.0
         if plan and getattr(plan, "goal", None):
-            primary = getattr(plan.goal, "primary", "") or ""
+            raw_primary = getattr(plan.goal, "primary", "") or ""
+            primary = raw_primary if isinstance(raw_primary, str) else ""
             metric_targets = getattr(plan.goal, "metric_targets", None)
             if metric_targets:
-                direction = (
-                    getattr(metric_targets, "direction", None) or direction
-                ).strip().lower()
+                raw_direction = getattr(metric_targets, "direction", None)
+                if isinstance(raw_direction, str):
+                    direction = raw_direction.strip().lower()
                 target_weight = getattr(metric_targets, "target_weight_kg", None)
                 weekly = getattr(metric_targets, "weekly_weight_change_kg", None)
                 if isinstance(weekly, (float, int)):
@@ -106,12 +107,35 @@ class AdaptiveTDEEService:
             else:
                 direction = "maintain"
 
+        if direction == "maintain" and profile is not None:
+            profile_goal = getattr(profile, "goal_type", None)
+            if profile_goal in {"lose", "gain", "maintain"}:
+                direction = profile_goal
+            profile_rate = getattr(profile, "weekly_rate", None)
+            if isinstance(profile_rate, (float, int)):
+                weekly_rate = float(profile_rate)
+            profile_target = getattr(profile, "target_weight", None)
+            if isinstance(profile_target, (float, int)):
+                target_weight = float(profile_target)
+
         return {
             "primary": primary,
             "direction": direction,
             "target_weight_kg": target_weight,
             "weekly_weight_change_kg": max(0.0, weekly_rate),
         }
+
+    @staticmethod
+    def _extract_plan_calories(plan) -> int | None:
+        """Return plan calories from either current or legacy nutrition block."""
+        for block_name in ("nutrition", "nutrition_strategy"):
+            nutrition_block = getattr(plan, block_name, None) if plan else None
+            daily_targets = getattr(nutrition_block, "daily_targets", None)
+            for attr in ("calories_kcal", "calories"):
+                calories = getattr(daily_targets, attr, None)
+                if isinstance(calories, int) and calories > 0:
+                    return calories
+        return None
 
     def filter_outliers(self, logs: list[WeightLog]) -> tuple[list[WeightLog], int]:
         """Compatibility wrapper for outlier filtering."""
@@ -529,7 +553,7 @@ class AdaptiveTDEEService:
         # Step 2: Calculate formula TDEE as prior/fallback
         profile = self.db.get_user_profile(user_email)
         plan = self.db.get_plan(user_email)
-        plan_goal_context = self._extract_plan_goal_context(plan)
+        plan_goal_context = self._extract_plan_goal_context(plan, profile)
         tdee_start_date_str = getattr(profile, "tdee_start_date", None)
         tdee_start_date = None
         if tdee_start_date_str:
@@ -694,20 +718,9 @@ class AdaptiveTDEEService:
             goal_type=goal_type,
             goal_rate=goal_rate,
         )
-        nutrition_block = getattr(plan, "nutrition", None) if plan else None
-        if nutrition_block is None and plan is not None:
-            nutrition_block = getattr(plan, "nutrition_strategy", None)
-        if nutrition_block is not None:
-            daily_targets = getattr(nutrition_block, "daily_targets", None)
-            calories = (
-                getattr(daily_targets, "calories_kcal", None)
-                if daily_targets
-                else None
-            )
-            if calories is None and daily_targets is not None:
-                calories = getattr(daily_targets, "calories", None)
-            if isinstance(calories, int) and calories > 0:
-                daily_target = calories
+        calories = self._extract_plan_calories(plan)
+        if calories is not None:
+            daily_target = calories
 
         # Step 15: Body Composition Analysis
         comp_changes = calculate_body_composition_changes(weight_logs)
@@ -931,7 +944,7 @@ class AdaptiveTDEEService:
         """Safe TDEE estimate when adaptive data is missing."""
         profile = self.db.get_user_profile(user_email)
         plan = self.db.get_plan(user_email)
-        plan_goal_context = self._extract_plan_goal_context(plan)
+        plan_goal_context = self._extract_plan_goal_context(plan, profile)
         complete_nutrition = [log for log in nutrition_logs if not log.partial_logged]
         sorted_weight_logs = sorted(weight_logs, key=lambda x: x.date) if weight_logs else []
         latest_weight = (
@@ -950,20 +963,9 @@ class AdaptiveTDEEService:
         target = int(round(tdee_est))
         goal_type = plan_goal_context["direction"]
         goal_rate = plan_goal_context["weekly_weight_change_kg"]
-        nutrition_block = getattr(plan, "nutrition", None) if plan else None
-        if nutrition_block is None and plan is not None:
-            nutrition_block = getattr(plan, "nutrition_strategy", None)
-        if nutrition_block is not None:
-            daily_targets = getattr(nutrition_block, "daily_targets", None)
-            calories = (
-                getattr(daily_targets, "calories_kcal", None)
-                if daily_targets
-                else None
-            )
-            if calories is None and daily_targets is not None:
-                calories = getattr(daily_targets, "calories", None)
-            if isinstance(calories, int) and calories > 0:
-                target = calories
+        calories = self._extract_plan_calories(plan)
+        if calories is not None:
+            target = calories
         elif goal_type in {"lose", "gain"} and goal_rate > 0:
             adj = -1 * abs(goal_rate) * 1100 if goal_type == "lose" else abs(goal_rate) * 1100
             target = max(1000, int(round(tdee_est + adj)))
@@ -1053,6 +1055,13 @@ class AdaptiveTDEEService:
         3. Apply gradual adjustment (max ±100 kcal/week vs previous target)
         4. Apply safety floor (gender min + max 30% deficit)
         """
+        if profile is not None and goal_type == "maintain":
+            profile_goal = getattr(profile, "goal_type", None)
+            if profile_goal in {"lose", "gain", "maintain"}:
+                goal_type = profile_goal
+            profile_rate = getattr(profile, "weekly_rate", None)
+            if isinstance(profile_rate, (float, int)):
+                goal_rate = float(profile_rate)
         if goal_type not in {"lose", "gain", "maintain"}:
             goal_type = "maintain"
         if goal_type == "maintain":
@@ -1130,6 +1139,10 @@ class AdaptiveTDEEService:
         """
         if not profile:
             return max(self.MIN_TDEE, target)
+        if goal_type == "maintain":
+            profile_goal = getattr(profile, "goal_type", None)
+            if profile_goal in {"lose", "gain"}:
+                goal_type = profile_goal
 
         # Gender-specific minimum
         gender_min = (

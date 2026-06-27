@@ -1,21 +1,76 @@
 """
 Prompt building and injection service.
 
-In the OpenRouter preset architecture, this builder is responsible for:
+In the OpenRouter preset architecture, this legacy builder is responsible for:
 - Building input_data dictionary
 - Building runtime context payload (PROMPT_CONTEXT_V1)
-- Constructing ChatPromptTemplate with a minimal local system message
+- Constructing a local prompt template for tests and compatibility
 """
 
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import json
+from dataclasses import dataclass
 from typing import Any
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+
 from src.core.logs import logger
 from src.core.config import settings
 from src.prompts.prompt_template import PROMPT_TEMPLATE
+from src.api.models.plan import PlanPromptContext
 from src.services.plan_service import format_plan_snapshot
+
+
+@dataclass
+class LocalMessage:
+    """Minimal message object used by the compatibility prompt template."""
+
+    role: str
+    content: str
+
+
+@dataclass
+class LocalMessagesPlaceholder:
+    """Placeholder for already formatted history messages."""
+
+    variable_name: str
+
+
+class LocalChatPromptTemplate:
+    """Tiny prompt template supporting the subset used by local tests."""
+
+    def __init__(self, messages: list[Any]):
+        self.messages = messages
+
+    @classmethod
+    def from_messages(cls, messages: list[Any]) -> "LocalChatPromptTemplate":
+        """Build a prompt template from role/content tuples and placeholders."""
+        return cls(messages)
+
+    def format_messages(self, **input_data: Any) -> list[LocalMessage]:
+        """Render messages into local message objects."""
+        rendered: list[LocalMessage] = []
+        for item in self.messages:
+            if isinstance(item, LocalMessagesPlaceholder):
+                for history_item in input_data.get(item.variable_name, []) or []:
+                    role = getattr(history_item, "role", None) or getattr(
+                        history_item, "type", "history"
+                    )
+                    content = str(getattr(history_item, "content", ""))
+                    rendered.append(LocalMessage(role=role, content=content))
+                continue
+            role, content = item
+            text = str(content)
+            for key, value in input_data.items():
+                text = text.replace("{" + str(key) + "}", str(value))
+            rendered.append(LocalMessage(role=role, content=text))
+        return rendered
+
+    def format(self, **input_data: Any) -> str:
+        """Render all messages into one readable prompt string."""
+        return "\n\n".join(
+            f"{message.role.upper()}:\n{message.content}"
+            for message in self.format_messages(**input_data)
+        )
 
 
 class PromptBuilder:
@@ -153,6 +208,7 @@ class PromptBuilder:
 
         # Format agenda section
         agenda_section = PromptBuilder._format_agenda_section(agenda_events or [])
+        plan_snapshot = plan_snapshot or PlanPromptContext(status="NO_PLAN")
         plan_section = format_plan_snapshot(plan_snapshot)
         has_active_plan = plan_snapshot.status == "ACTIVE_PLAN"
         metabolism_section = PromptBuilder._format_metabolism_section(metabolism_data)
@@ -229,21 +285,21 @@ class PromptBuilder:
     @staticmethod
     def get_prompt_template(
         input_data: dict, is_telegram: bool = False
-    ) -> ChatPromptTemplate:
+    ) -> LocalChatPromptTemplate:
         """
         Constructs and returns the chat prompt template with defensive injection.
 
-        🛡️ DEFENSIVE INJECTION PATTERN (V3):
+        DEFENSIVE INJECTION PATTERN (V3):
         - Move potentially 'dirty' content (with braces {}) to dedicated placeholders
-        - Prevents LangChain from interpreting them as template variables
-        - Use MessagesPlaceholder for chat history instead of string placeholder
+        - Prevents template interpolation from interpreting them as variables
+        - Use LocalMessagesPlaceholder for chat history instead of string placeholder
 
         Args:
             input_data: Input data dictionary from build_input_data()
             is_telegram: Whether response should be Telegram-optimized
 
         Returns:
-            ChatPromptTemplate: Ready-to-use prompt template
+            LocalChatPromptTemplate: Ready-to-use prompt template
         """
         logger.debug(
             "Constructing chat prompt template with runtime context (is_telegram=%s).",
@@ -263,10 +319,10 @@ class PromptBuilder:
         # Build messages with a full local system prompt plus runtime context payload.
         messages: list[Any] = [("system", PROMPT_TEMPLATE)]
         messages.append(("system", PromptBuilder.RUNTIME_CONTEXT_PROMPT))
-        messages.append(MessagesPlaceholder(variable_name="chat_history"))
+        messages.append(LocalMessagesPlaceholder(variable_name="chat_history"))
         messages.append(("human", "{user_message}"))
 
-        prompt_template = ChatPromptTemplate.from_messages(messages)
+        prompt_template = LocalChatPromptTemplate.from_messages(messages)
 
         logger.debug(
             "Prompt built with runtime context | user_message chars: %d",

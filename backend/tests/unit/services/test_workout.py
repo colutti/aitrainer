@@ -84,7 +84,7 @@ class TestWorkoutLogModels(unittest.TestCase):
 
 
 class TestSaveWorkoutTool(unittest.TestCase):
-    """Tests for the save_workout LangChain tool."""
+    """Tests for the save_workout local tool."""
 
     def setUp(self):
         """Set up mock database."""
@@ -210,7 +210,7 @@ class TestSaveWorkoutTool(unittest.TestCase):
 
 
 class TestGetWorkoutsTool(unittest.TestCase):
-    """Tests for the get_workouts LangChain tool."""
+    """Tests for the get_workouts local tool."""
 
     def setUp(self):
         """Set up mock database with sample workouts."""

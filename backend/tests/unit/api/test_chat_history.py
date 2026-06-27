@@ -4,25 +4,34 @@ Tests for chat history model translation handling.
 
 from types import SimpleNamespace
 
-from langchain_core.messages import AIMessage, HumanMessage
-
 from src.api.models.chat_history import ChatHistory
 from src.api.models.sender import Sender
+
+
+class FakeMessage:
+    """Minimal message object for ChatHistory conversion tests."""
+
+    def __init__(self, content: str, message_type: str, additional_kwargs=None):
+        self.content = content
+        self.type = message_type
+        self.additional_kwargs = additional_kwargs
 
 
 def test_from_mongodb_chat_message_history_preserves_translations() -> None:
     """Mongo chat history entries should keep per-locale translations."""
     history = SimpleNamespace(
         messages=[
-            HumanMessage(
+            FakeMessage(
                 content="Hello",
+                message_type="human",
                 additional_kwargs={
                     "timestamp": "2026-01-01T10:00:00Z",
                     "translations": {"pt-BR": "Olá"},
                 },
             ),
-            AIMessage(
+            FakeMessage(
                 content="Let's go.",
+                message_type="ai",
                 additional_kwargs={
                     "timestamp": "2026-01-01T10:01:00Z",
                     "trainer_type": "gymbro",
@@ -45,8 +54,16 @@ def test_from_mongodb_chat_message_history_handles_missing_additional_kwargs() -
     """Legacy imported messages without additional_kwargs should not crash conversion."""
     history = SimpleNamespace(
         messages=[
-            HumanMessage(content="Mensagem antiga", additional_kwargs={}),
-            AIMessage(content="Resposta antiga", additional_kwargs={}),
+            FakeMessage(
+                content="Mensagem antiga",
+                message_type="human",
+                additional_kwargs={},
+            ),
+            FakeMessage(
+                content="Resposta antiga",
+                message_type="ai",
+                additional_kwargs={},
+            ),
         ]
     )
 

@@ -208,19 +208,12 @@ def test_get_trainer_profile_not_found(mock_settings):
 
 def test_add_to_history(mock_settings):
     """Test adding messages to chat history."""
-    # Patch where it is USED: src.repositories.chat_repository
-    with (
-        patch("pymongo.MongoClient") as mock_client,
-        patch(
-            "src.repositories.chat_repository.MongoDBChatMessageHistory"
-        ) as mock_history_cls,
-    ):
+    with patch("pymongo.MongoClient") as mock_client:
         db_mock = MagicMock()
         mock_client.return_value.__getitem__.return_value = db_mock
-        mock_history_instance = MagicMock()
-        mock_history_cls.return_value = mock_history_instance
 
         mongo = MongoDatabase()
+        mongo.chat = MagicMock()
 
         msg = MagicMock()
         msg.sender = Sender.STUDENT
@@ -228,35 +221,26 @@ def test_add_to_history(mock_settings):
 
         mongo.add_to_history(msg, "session_id")
 
-        mock_history_instance.add_message.assert_called_once()
+        mongo.chat.add_message.assert_called_once_with(msg, "session_id", None)
 
         # Test trainer message
         msg.sender = Sender.TRAINER
         mongo.add_to_history(msg, "session_id", trainer_type="atlas")
-        assert mock_history_instance.add_message.call_count == 2
+        assert mongo.chat.add_message.call_count == 2
 
 
 def test_get_window_memory(mock_settings):
     """Test retrieving short-term conversation window memory."""
-    with (
-        patch("pymongo.MongoClient") as mock_client,
-        patch("src.repositories.chat_repository.MongoDBChatMessageHistory"),
-        patch(
-            "src.repositories.chat_repository.ConversationBufferWindowMemory"
-        ) as mock_memory_cls,
-    ):
-
+    with patch("pymongo.MongoClient") as mock_client:
         db_mock = MagicMock()
         mock_client.return_value.__getitem__.return_value = db_mock
 
         mongo = MongoDatabase()
+        mongo.chat = MagicMock()
 
         mongo.get_window_memory("session_id", 50)
 
-        mock_memory_cls.assert_called_once()
-        call_kwargs = mock_memory_cls.call_args[1]
-        assert call_kwargs["k"] == 50
-        assert "chat_memory" in call_kwargs
+        mongo.chat.get_window_memory.assert_called_once_with("session_id", 50)
 
 
 def test_get_workout_logs(mock_settings):

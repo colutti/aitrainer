@@ -2,8 +2,9 @@
 
 import json
 
-from langchain_core.tools import tool
 from pydantic import BaseModel, Field
+
+from src.services.compat_tools import tool
 
 
 class PlanTrainingInput(BaseModel):

@@ -1,13 +1,15 @@
 """
-LangChain tools for nutrition tracking.
+Local tools for nutrition tracking.
 """
 
 from datetime import datetime
 from typing import Optional, Any
-from langchain_core.tools import tool
+
 from pydantic import BaseModel, Field, field_validator
-from src.core.logs import logger
+
 from src.api.models.nutrition_log import NutritionLog
+from src.core.logs import logger
+from src.services.compat_tools import tool
 from src.utils.mfp_parser import parse_mfp_text
 
 
@@ -70,7 +72,7 @@ def create_save_nutrition_tool(database, user_email: str):
         user_email: Email of the user.
 
     Returns:
-        A LangChain tool function.
+        A local tool function.
     """
 
     def parse_numeric(value: int | float | str | None) -> float | None:
@@ -110,7 +112,7 @@ def create_save_nutrition_tool(database, user_email: str):
         date: Optional[str] = None,
     ) -> str:
         # pylint: disable=too-many-arguments,too-many-locals
-        # Justificativa: Necessário para a tool do LangChain receber os parâmetros estruturados.
+        # Justificativa: Necessário para a tool local receber os parâmetros estruturados.
         """
         Salva o resumo nutricional DIÁRIO do aluno.
 

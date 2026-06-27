@@ -1,9 +1,8 @@
-"""LangChain tools for plan V2 lifecycle management."""
+"""Local tools for plan V2 lifecycle management."""
 
 import json
 from textwrap import dedent
 
-from langchain_core.tools import tool
 from pydantic import ValidationError
 
 from src.api.models.plan import (
@@ -14,6 +13,7 @@ from src.api.models.plan import (
     PlanSectionUpdateInput,
 )
 from src.core.logs import logger
+from src.services.compat_tools import tool
 from src.services.plan_hevy_sync import HevySyncError, sync_training_with_hevy_if_needed
 from src.services.plan_service import (
     apply_discovery_update,

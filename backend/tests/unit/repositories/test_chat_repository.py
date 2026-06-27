@@ -1,11 +1,17 @@
-"""Tests for chat repository (chat history management)."""
+"""Tests for chat repository history storage and decoding."""
+
+from __future__ import annotations
+
+import json
+from datetime import datetime
+from unittest.mock import MagicMock
 
 import pytest
-from datetime import datetime
-from unittest.mock import MagicMock, patch
-from src.repositories.chat_repository import ChatRepository
+from pydantic_ai.messages import ModelRequest, ModelResponse
+
 from src.api.models.chat_history import ChatHistory
 from src.api.models.sender import Sender
+from src.repositories.chat_repository import ChatRepository
 
 
 @pytest.fixture
@@ -23,348 +29,153 @@ def chat_repo(mock_db):
     return ChatRepository(mock_db)
 
 
-@pytest.fixture
-def sample_chat_history():
-    """Create sample chat history for testing."""
-    return ChatHistory(
-        text="Hello trainer!",
-        sender=Sender.STUDENT,
-        timestamp=datetime.now().isoformat(),
-        trainer_type="atlas"
+def _cursor_with_docs(docs: list[dict]) -> MagicMock:
+    cursor = MagicMock()
+    cursor.sort.return_value = cursor
+    cursor.limit.return_value = docs
+    return cursor
+
+
+def _find_once(chat_repo, docs: list[dict]) -> None:
+    chat_repo.collection.find.side_effect = [_cursor_with_docs(docs), _cursor_with_docs([])]
+
+
+def test_get_history_decodes_new_documents(chat_repo):
+    """Repository should read the new plain document format."""
+    _find_once(
+        chat_repo,
+        [
+            {
+                "_id": 2,
+                "History": {
+                    "sender": "trainer",
+                    "text": "Resposta",
+                    "timestamp": "2026-01-01T10:01:00",
+                    "trainer_type": "atlas",
+                    "translations": {"en-US": "Answer"},
+                },
+            },
+            {
+                "_id": 1,
+                "History": {
+                    "sender": "student",
+                    "text": "Oi",
+                    "timestamp": "2026-01-01T10:00:00",
+                },
+            },
+        ],
     )
 
-
-@pytest.fixture
-def mock_llm():
-    """Create mock LLM for testing."""
-    return MagicMock()
-
-
-class TestChatRepositoryGetHistory:
-    """Test get_history method."""
-
-    @patch('src.repositories.chat_repository.ChatHistory')
-    def test_get_history_default_limit(self, _mock_chat_history_class, chat_repo):
-        """Test retrieving chat history with default limit."""
-        mock_cursor = MagicMock()
-        mock_cursor.__iter__.return_value = []
-        mock_find_cursor = MagicMock()
-        mock_find_cursor.sort.return_value = mock_find_cursor
-        mock_find_cursor.skip.return_value = mock_find_cursor
-        mock_find_cursor.limit.return_value = mock_cursor
-        chat_repo.collection.find.return_value = mock_find_cursor
-
-        _ = chat_repo.get_history("user_123")
-
-        assert chat_repo.collection.find.call_count >= 1
-        chat_repo.collection.find.assert_any_call(
-            {"SessionId": "user_123"}, {"History": 1}
-        )
-
-    @patch('src.repositories.chat_repository.ChatHistory')
-    def test_get_history_custom_limit(self, mock_chat_history_class, chat_repo):
-        """Test retrieving chat history with custom limit."""
-        mock_cursor = MagicMock()
-        mock_cursor.__iter__.return_value = []
-        mock_find_cursor = MagicMock()
-        mock_find_cursor.sort.return_value = mock_find_cursor
-        mock_find_cursor.skip.return_value = mock_find_cursor
-        mock_find_cursor.limit.return_value = mock_cursor
-        chat_repo.collection.find.return_value = mock_find_cursor
-        mock_chat_history_class.from_mongodb_chat_message_history.return_value = []
-
-        _ = chat_repo.get_history("user_123", limit=50)
-
-        # In the new implementation, limit is applied after filtering and sorting
-        # We don't verify 'limit' in find() anymore
-        assert chat_repo.collection.find.call_count >= 1
-        chat_repo.collection.find.assert_any_call(
-            {"SessionId": "user_123"}, {"History": 1}
-        )
-
-    @patch('src.repositories.chat_repository.ChatHistory')
-    def test_get_history_returns_chat_history_list(self, mock_chat_history_class, chat_repo):
-        """Test that get_history returns list of ChatHistory objects."""
-        mock_cursor = MagicMock()
-        mock_cursor.__iter__.return_value = []
-        mock_find_cursor = MagicMock()
-        mock_find_cursor.sort.return_value = mock_find_cursor
-        mock_find_cursor.skip.return_value = mock_find_cursor
-        mock_find_cursor.limit.return_value = mock_cursor
-        chat_repo.collection.find.return_value = mock_find_cursor
-
-        expected_histories = [
-            ChatHistory(
-                text="Hello",
-                sender=Sender.STUDENT,
-                timestamp=datetime.now().isoformat()
-            )
-        ]
-        mock_chat_history_class.from_mongodb_chat_message_history.return_value = expected_histories
-
-        result = chat_repo.get_history("user_123")
-
-        assert isinstance(result, list)
-
-
-class TestChatRepositoryAddMessage:
-    """Test add_message method."""
-
-    @patch('src.repositories.chat_repository.MongoDBChatMessageHistory')
-    @patch('src.repositories.chat_repository.HumanMessage')
-    @patch('src.repositories.chat_repository.AIMessage')
-    def test_add_message_from_student(self, mock_ai_msg, mock_human_msg, mock_mongo_history, chat_repo):
-        """Test adding a student message."""
-        mock_mongo_instance = MagicMock()
-        mock_mongo_history.return_value = mock_mongo_instance
-
-        chat_msg = ChatHistory(
-            text="I want to train",
-            sender=Sender.STUDENT,
-            timestamp=datetime.now().isoformat()
-        )
-
-        chat_repo.add_message(chat_msg, "session_123")
-
-        # Should call HumanMessage
-        mock_human_msg.assert_called_once()
-        call_args = mock_human_msg.call_args
-        assert "I want to train" in str(call_args)
-        _, history_kwargs = mock_mongo_history.call_args
-        assert history_kwargs["client"] is chat_repo.db.client
-        assert history_kwargs["create_index"] is False
-
-    @patch('src.repositories.chat_repository.MongoDBChatMessageHistory')
-    @patch('src.repositories.chat_repository.HumanMessage')
-    @patch('src.repositories.chat_repository.AIMessage')
-    def test_add_message_from_trainer(self, mock_ai_msg, mock_human_msg, mock_mongo_history, chat_repo):
-        """Test adding a trainer message."""
-        mock_mongo_instance = MagicMock()
-        mock_mongo_history.return_value = mock_mongo_instance
-
-        chat_msg = ChatHistory(
-            text="Great! Let's start training.",
-            sender=Sender.TRAINER,
-            timestamp=datetime.now().isoformat()
-        )
-
-        chat_repo.add_message(chat_msg, "session_123")
-
-        # Should call AIMessage
-        mock_ai_msg.assert_called_once()
-        call_args = mock_ai_msg.call_args
-        assert "Great!" in str(call_args)
-
-    @patch('src.repositories.chat_repository.MongoDBChatMessageHistory')
-    @patch('src.repositories.chat_repository.HumanMessage')
-    @patch('src.repositories.chat_repository.AIMessage')
-    def test_add_message_with_trainer_type(self, mock_ai_msg, mock_human_msg, mock_mongo_history, chat_repo):
-        """Test adding message with trainer type."""
-        mock_mongo_instance = MagicMock()
-        mock_mongo_history.return_value = mock_mongo_instance
-
-        chat_msg = ChatHistory(
-            text="Message",
-            sender=Sender.TRAINER,
-            timestamp=datetime.now().isoformat()
-        )
-
-        chat_repo.add_message(chat_msg, "session_123", trainer_type="luna")
-
-        # Verify AIMessage called with trainer_type in additional_kwargs
-        mock_ai_msg.assert_called_once()
-        call_kwargs = mock_ai_msg.call_args[1]
-        assert call_kwargs['additional_kwargs']['trainer_type'] == "luna"
-
-    @patch('src.repositories.chat_repository.MongoDBChatMessageHistory')
-    @patch('src.repositories.chat_repository.HumanMessage')
-    def test_add_message_includes_timestamp(self, mock_human_msg, mock_mongo_history, chat_repo):
-        """Test that added messages include timestamp."""
-        mock_mongo_instance = MagicMock()
-        mock_mongo_history.return_value = mock_mongo_instance
-
-        now = datetime.now()
-        chat_msg = ChatHistory(
-            text="Message",
-            sender=Sender.STUDENT,
-            timestamp=now.isoformat()
-        )
-
-        chat_repo.add_message(chat_msg, "session_123")
-
-        mock_human_msg.assert_called_once()
-        call_kwargs = mock_human_msg.call_args[1]
-        assert 'additional_kwargs' in call_kwargs
-        assert 'timestamp' in call_kwargs['additional_kwargs']
-
-    @patch('src.repositories.chat_repository.MongoDBChatMessageHistory')
-    @patch('src.repositories.chat_repository.AIMessage')
-    def test_add_message_without_trainer_type(self, mock_ai_msg, mock_mongo_history, chat_repo):
-        """Test adding message without specifying trainer_type."""
-        mock_mongo_instance = MagicMock()
-        mock_mongo_history.return_value = mock_mongo_instance
-
-        chat_msg = ChatHistory(
-            text="Message",
-            sender=Sender.TRAINER,
-            timestamp=datetime.now().isoformat()
-        )
-
-        chat_repo.add_message(chat_msg, "session_123", trainer_type=None)
-
-        mock_ai_msg.assert_called_once()
-        call_kwargs = mock_ai_msg.call_args[1]
-        # trainer_type should not be in additional_kwargs
-        assert 'trainer_type' not in call_kwargs.get('additional_kwargs', {})
-
-    def test_add_messages_persists_conversation_in_one_batch(self, chat_repo):
-        """A user/assistant pair should require one MongoDB write round trip."""
-        messages = [
-            ChatHistory(
-                text="Pode atualizar o plano",
-                sender=Sender.STUDENT,
-                timestamp=datetime.now().isoformat(),
-            ),
-            ChatHistory(
-                text="Plano atualizado",
-                sender=Sender.TRAINER,
-                timestamp=datetime.now().isoformat(),
-            ),
-        ]
-
-        chat_repo.add_messages(messages, "session_123", trainer_type="atlas")
-
-        chat_repo.collection.insert_many.assert_called_once()
-        documents = chat_repo.collection.insert_many.call_args.args[0]
-        assert [document["SessionId"] for document in documents] == [
-            "session_123",
-            "session_123",
-        ]
-        assert '"type": "human"' in documents[0]["History"]
-        assert '"type": "ai"' in documents[1]["History"]
-
-
-class TestChatRepositoryGetWindowMemory:
-    """Test get_window_memory method."""
-
-    @patch('src.repositories.chat_repository.MongoDBChatMessageHistory')
-    @patch('src.repositories.chat_repository.ConversationBufferWindowMemory')
-    def test_get_window_memory_default_k(self, mock_window_memory_class, mock_mongo_history, chat_repo):
-        """Test getting window memory with default k."""
-        mock_mongo_instance = MagicMock()
-        mock_mongo_history.return_value = mock_mongo_instance
-
-        chat_repo.get_window_memory("session_123")
-
-        mock_window_memory_class.assert_called_once()
-        call_kwargs = mock_window_memory_class.call_args[1]
-        assert call_kwargs['k'] == 40
-        _, history_kwargs = mock_mongo_history.call_args
-        assert history_kwargs["client"] is chat_repo.db.client
-        assert history_kwargs["create_index"] is False
-
-    @patch('src.repositories.chat_repository.MongoDBChatMessageHistory')
-    @patch('src.repositories.chat_repository.ConversationBufferWindowMemory')
-    def test_get_window_memory_custom_k(self, mock_window_memory_class, mock_mongo_history, chat_repo):
-        """Test getting window memory with custom k."""
-        mock_mongo_instance = MagicMock()
-        mock_mongo_history.return_value = mock_mongo_instance
-
-        chat_repo.get_window_memory("session_123", k=20)
-
-        mock_window_memory_class.assert_called_once()
-        call_kwargs = mock_window_memory_class.call_args[1]
-        assert call_kwargs['k'] == 20
-
-    @patch('src.repositories.chat_repository.MongoDBChatMessageHistory')
-    @patch('src.repositories.chat_repository.ConversationBufferWindowMemory')
-    def test_get_window_memory_returns_memory_object(self, mock_window_memory_class, mock_mongo_history, chat_repo):
-        """Test that window memory returns memory object."""
-        mock_mongo_instance = MagicMock()
-        mock_mongo_history.return_value = mock_mongo_instance
-        mock_memory_instance = MagicMock()
-        mock_window_memory_class.return_value = mock_memory_instance
-
-        result = chat_repo.get_window_memory("session_123")
-
-        assert result == mock_memory_instance
-
-class TestChatRepositoryInitialization:
-    """Test ChatRepository initialization."""
-
-    def test_chat_repository_inherits_from_base(self, chat_repo):
-        """Test that ChatRepository inherits from BaseRepository."""
-        assert hasattr(chat_repo, 'collection')
-        assert hasattr(chat_repo, 'logger')
-
-    def test_chat_repository_collection_name(self, mock_db):
-        """Test that ChatRepository uses correct collection name."""
-        _ = ChatRepository(mock_db)
-        mock_db.__getitem__.assert_called_with("message_store")
-
-    def test_chat_repository_with_mock_database(self, mock_db):
-        """Test ChatRepository initialization with mock database."""
-        repo = ChatRepository(mock_db)
-        assert repo is not None
-
-    def test_chat_repository_ensures_indexes_on_init(self, mock_db):
-        """Initialization should create query index for chat history."""
-        _ = ChatRepository(mock_db)
-        collection = mock_db.__getitem__.return_value
-        collection.create_index.assert_called_once()
-
-
-class TestChatRepositoryEdgeCases:
-    """Test edge cases and error handling."""
-
-    def test_get_history_empty_session(self, chat_repo):
-        """Test getting history for empty session."""
-        mock_cursor = MagicMock()
-        mock_cursor.__iter__.return_value = []
-        mock_find_cursor = MagicMock()
-        mock_find_cursor.sort.return_value = mock_find_cursor
-        mock_find_cursor.skip.return_value = mock_find_cursor
-        mock_find_cursor.limit.return_value = mock_cursor
-        chat_repo.collection.find.return_value = mock_find_cursor
-
-        with patch('src.repositories.chat_repository.ChatHistory') as mock_chat_cls:
-            mock_chat_cls.from_mongodb_chat_message_history.return_value = []
-
-            result = chat_repo.get_history("")
-
-            assert isinstance(result, list)
-
-    @patch('src.repositories.chat_repository.MongoDBChatMessageHistory')
-    def test_add_message_empty_text(self, mock_mongo_history, chat_repo):
-        """Test adding message with empty text."""
-        mock_mongo_instance = MagicMock()
-        mock_mongo_history.return_value = mock_mongo_instance
-
-        chat_msg = ChatHistory(
-            text="",
-            sender=Sender.STUDENT,
-            timestamp=datetime.now().isoformat()
-        )
-
-        with patch('src.repositories.chat_repository.HumanMessage') as mock_human:
-            chat_repo.add_message(chat_msg, "session_123")
-            mock_human.assert_called_once()
-
-    @patch('src.repositories.chat_repository.MongoDBChatMessageHistory')
-    def test_database_error_on_add_message(self, mock_mongo_history, chat_repo):
-        """Test handling database error on add_message."""
-        mock_mongo_instance = MagicMock()
-        mock_mongo_instance.add_message.side_effect = Exception("DB Error")
-        mock_mongo_history.return_value = mock_mongo_instance
-
-        chat_msg = ChatHistory(
-            text="Message",
-            sender=Sender.STUDENT,
-            timestamp=datetime.now().isoformat()
-        )
-
-        with patch('src.repositories.chat_repository.HumanMessage'):
-            with pytest.raises(Exception) as exc_info:
-                chat_repo.add_message(chat_msg, "session_123")
-
-            assert "DB Error" in str(exc_info.value)
+    result = chat_repo.get_history("user@test.com", limit=20)
+
+    assert [message.text for message in result] == ["Oi", "Resposta"]
+    assert result[0].sender == Sender.STUDENT
+    assert result[1].sender == Sender.TRAINER
+    assert result[1].trainer_type == "atlas"
+    assert result[1].translations == {"en-US": "Answer"}
+
+
+def test_get_history_decodes_legacy_json_documents(chat_repo):
+    """Legacy JSON rows remain readable during migration."""
+    _find_once(
+        chat_repo,
+        [
+            {
+                "_id": 2,
+                "History": json.dumps(
+                    {
+                        "type": "ai",
+                        "data": {
+                            "content": "Legacy reply",
+                            "additional_kwargs": {
+                                "timestamp": "2026-01-01T10:01:00",
+                                "trainer_type": "gymbro",
+                            },
+                        },
+                    }
+                ),
+            },
+            {
+                "_id": 1,
+                "History": json.dumps(
+                    {
+                        "type": "human",
+                        "data": {
+                            "content": "Legacy user",
+                            "additional_kwargs": {
+                                "timestamp": "2026-01-01T10:00:00"
+                            },
+                        },
+                    }
+                ),
+            },
+        ],
+    )
+
+    result = chat_repo.get_history("user@test.com", limit=20)
+
+    assert [message.text for message in result] == ["Legacy user", "Legacy reply"]
+    assert result[1].trainer_type == "gymbro"
+
+
+def test_add_messages_persists_conversation_in_one_batch(chat_repo):
+    """A user/assistant pair should require one MongoDB write round trip."""
+    now = datetime.now().isoformat()
+    messages = [
+        ChatHistory(text="Atualiza o plano", sender=Sender.STUDENT, timestamp=now),
+        ChatHistory(text="Plano atualizado", sender=Sender.TRAINER, timestamp=now),
+    ]
+
+    chat_repo.add_messages(messages, "session_123", trainer_type="atlas")
+
+    chat_repo.collection.insert_many.assert_called_once()
+    documents = chat_repo.collection.insert_many.call_args.args[0]
+    assert [document["SessionId"] for document in documents] == [
+        "session_123",
+        "session_123",
+    ]
+    assert documents[0]["History"]["sender"] == "Student"
+    assert documents[0]["History"]["text"] == "Atualiza o plano"
+    assert documents[1]["History"]["sender"] == "Trainer"
+    assert documents[1]["History"]["trainer_type"] == "atlas"
+
+
+def test_get_window_memory_returns_compatibility_wrapper(chat_repo):
+    """Compatibility wrapper should expose load_memory_variables."""
+    chat_repo.collection.find.return_value = _cursor_with_docs([])
+
+    memory = chat_repo.get_window_memory("session_123", k=10)
+
+    assert memory.load_memory_variables({}) == {"chat_history": []}
+
+
+def test_get_pydantic_ai_history_converts_public_messages(chat_repo):
+    """Recent public history should become Pydantic AI model messages."""
+    now = "2026-01-01T10:00:00"
+    _find_once(
+        chat_repo,
+        [
+            {
+                "_id": 2,
+                "History": {
+                    "sender": "trainer",
+                    "text": "Resposta",
+                    "timestamp": now,
+                    "trainer_type": "atlas",
+                },
+            },
+            {
+                "_id": 1,
+                "History": {
+                    "sender": "student",
+                    "text": "Oi",
+                    "timestamp": now,
+                },
+            },
+        ],
+    )
+
+    history = chat_repo.get_pydantic_ai_history("session_123", limit=10)
+
+    assert isinstance(history[0], ModelRequest)
+    assert isinstance(history[1], ModelResponse)

@@ -1,8 +1,8 @@
 """
-LangChain tools for user profile management.
+Local tools for user profile management.
 """
 
-from langchain_core.tools import tool
+from src.services.compat_tools import tool
 from src.core.logs import logger
 from src.services.database import MongoDatabase
 

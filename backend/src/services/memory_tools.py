@@ -1,40 +1,55 @@
 """
-LangChain tools for AI-driven memory management.
+Local tools for AI-driven memory management.
 
 The AI agent can explicitly save, search, update, and delete memories,
 replacing the automatic Mem0 extraction with agent-controlled memory curation.
 
-Uses OpenRouter embeddings through OpenAI-compatible API.
+Uses OpenRouter embeddings through the OpenAI-compatible API.
 """
 
 from datetime import datetime
 import hashlib
 from uuid import uuid4
 import numpy as np
-from langchain_core.tools import tool
-from langchain_openai import OpenAIEmbeddings
-from pydantic import SecretStr
+from openai import OpenAI
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance, PointStruct
 
 from src.core.config import settings
 from src.core.logs import logger
+from src.services.compat_tools import tool
 
 # pylint: disable=broad-exception-caught
 # Justificativa: Qdrant Client não expõe exceções específicas para todas as falhas,
 # precisamos evitar que erros de conexão/API quebrem as interações da IA.
 
 
-def _get_embedder(user_email: str | None = None) -> OpenAIEmbeddings:
+class OpenRouterEmbeddingClient:  # pylint: disable=too-few-public-methods
+    """Small embedding adapter with the old ``embed_query`` interface."""
+
+    def __init__(self, user_email: str | None = None):
+        self._user_email = user_email
+        self._client = OpenAI(
+            api_key=settings.OPENROUTER_API_KEY,
+            base_url=settings.OPENROUTER_BASE_URL,
+        )
+
+    def embed_query(self, text: str) -> list[float]:
+        """Return one normalized embedding vector for text."""
+        kwargs = {
+            "model": settings.OPENROUTER_EMBED_MODEL,
+            "input": text,
+            "dimensions": settings.OPENROUTER_EMBED_DIMENSIONS,
+        }
+        if self._user_email:
+            kwargs["extra_body"] = {"user": self._user_email}
+        response = self._client.embeddings.create(**kwargs)
+        return list(response.data[0].embedding)
+
+
+def _get_embedder(user_email: str | None = None) -> OpenRouterEmbeddingClient:
     """Returns an OpenRouter embedder with fixed output dimensions."""
-    model_kwargs = {"user": user_email} if user_email else {}
-    return OpenAIEmbeddings(
-        model=settings.OPENROUTER_EMBED_MODEL,
-        openai_api_key=SecretStr(settings.OPENROUTER_API_KEY),
-        openai_api_base=settings.OPENROUTER_BASE_URL,
-        dimensions=settings.OPENROUTER_EMBED_DIMENSIONS,
-        model_kwargs=model_kwargs,
-    )
+    return OpenRouterEmbeddingClient(user_email=user_email)
 
 
 def _embed_text(text: str, user_email: str | None = None) -> list:

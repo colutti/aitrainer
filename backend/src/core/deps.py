@@ -12,7 +12,6 @@ if TYPE_CHECKING:
     from src.repositories.telegram_repository import TelegramRepository
     from src.services.database import MongoDatabase
     from src.services.hevy_service import HevyService
-    from src.services.llm_client import LLMClient  # pylint: disable=import-outside-toplevel
     from src.services.telegram_service import TelegramBotService
     from src.services.trainer import AITrainerBrain
 
@@ -41,19 +40,6 @@ def get_qdrant_client() -> QdrantClient:
 
 
 @functools.lru_cache()
-def get_llm_client() -> LLMClient:
-    """
-    Returns the OpenRouter LLM client.
-    """
-    from src.services.llm_client import OpenRouterClient  # pylint: disable=import-outside-toplevel
-
-    return OpenRouterClient(
-        api_key=settings.OPENROUTER_API_KEY,
-        base_url=settings.OPENROUTER_BASE_URL,
-    )
-
-
-@functools.lru_cache()
 def get_mongo_database() -> MongoDatabase:
     """
     Returns a MongoDB database client.
@@ -70,12 +56,9 @@ def get_ai_trainer_brain() -> AITrainerBrain:
     """
     from src.services.trainer import AITrainerBrain  # pylint: disable=import-outside-toplevel
 
-    llm_client = get_llm_client()
     database = get_mongo_database()
     qdrant_client = get_qdrant_client()
-    return AITrainerBrain(
-        llm_client=llm_client, database=database, qdrant_client=qdrant_client
-    )
+    return AITrainerBrain(database=database, qdrant_client=qdrant_client)
 
 
 @functools.lru_cache()

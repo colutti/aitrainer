@@ -1,17 +1,18 @@
 """
-LangChain tools for managing scheduled events and future plans.
+Local tools for managing scheduled events and future plans.
 
 The AI can create, list, update, and delete events via conversation.
 Events are injected into the prompt context to guide coaching decisions.
 """
 
 from datetime import datetime
-from langchain_core.tools import tool
+
 from pymongo.database import Database
 
-from src.repositories.event_repository import EventRepository
 from src.api.models.scheduled_event import ScheduledEvent
 from src.core.logs import logger
+from src.repositories.event_repository import EventRepository
+from src.services.compat_tools import tool
 
 
 def _validate_date_format(date: str | None) -> str | None:

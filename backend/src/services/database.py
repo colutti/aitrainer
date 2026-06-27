@@ -3,7 +3,6 @@ This module contains the database logic for the application.
 """
 
 from datetime import datetime, date
-from typing import TYPE_CHECKING
 import pymongo
 
 from src.core.config import settings
@@ -29,10 +28,6 @@ from src.repositories.prompt_repository import PromptRepository
 from src.repositories.telegram_repository import TelegramRepository
 from src.repositories.plan_repository import PlanRepository
 from src.services.adaptive_tdee import AdaptiveTDEEService
-
-if TYPE_CHECKING:
-    from langchain_mongodb.chat_message_histories import MongoDBChatMessageHistory
-
 
 # pylint: disable=too-many-instance-attributes
 class MongoDatabase:
@@ -166,28 +161,19 @@ class MongoDatabase:
             user_email, prompt_data, settings.MAX_PROMPT_LOGS
         )
 
-    def _get_chat_message_history(self, session_id: str) -> "MongoDBChatMessageHistory":
-        # Deprecated: functionality moved to repository
-        from langchain_mongodb.chat_message_histories import (  # pylint: disable=import-outside-toplevel
-            MongoDBChatMessageHistory,
-        )
-
-        return MongoDBChatMessageHistory(
-            connection_string=settings.MONGO_URI,
-            session_id=session_id,
-            database_name=settings.DB_NAME,
-            history_size=settings.MAX_SHORT_TERM_MEMORY_MESSAGES,
-        )
-
     def get_window_memory(
         self,
         session_id: str,
         k: int = 40,
     ):
         """
-        Returns a ConversationBufferWindowMemory (k messages).
+        Returns a small compatibility window-memory object.
         """
         return self.chat.get_window_memory(session_id, k)
+
+    def get_pydantic_ai_history(self, session_id: str, limit: int = 20) -> list:
+        """Returns recent public messages as Pydantic AI message history."""
+        return self.chat.get_pydantic_ai_history(session_id, limit)
 
     # ====== WORKOUT REPOSITORY DELEGATION ======
     def save_workout_log(self, workout: WorkoutLog) -> str:

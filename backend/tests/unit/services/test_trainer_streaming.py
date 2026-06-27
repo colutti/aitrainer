@@ -5,7 +5,6 @@ Tests for AI Trainer streaming and error handling in src/services/trainer.py
 import pytest
 from unittest.mock import MagicMock
 from src.services.trainer import AITrainerBrain
-from langchain_core.messages import HumanMessage
 
 
 @pytest.fixture
@@ -50,22 +49,12 @@ def test_get_memory_by_id_error(mock_deps):
     assert result is None
 
 
-def test_format_memory_messages_unknown_type(mock_deps):
-    """Test _format_memory_messages with unknown message type."""
+def test_normalize_public_chat_text_handles_plain_unknown_content(mock_deps):
+    """Plain content should pass through public text normalization."""
     db, llm, memory = mock_deps
     trainer = AITrainerBrain(db, llm)
 
-    class UnknownMessage:
-        content = "Unknown content"
-        type = "unknown"
-
-    msg = UnknownMessage()
-    result = trainer.format_history_as_messages([msg])
-
-
-    assert len(result) == 1
-    assert isinstance(result[0], HumanMessage)
-    assert "Unknown content" in result[0].content
+    assert trainer.normalize_public_chat_text("Unknown content") == "Unknown content"
 
 
 

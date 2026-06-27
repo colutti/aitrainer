@@ -1,11 +1,11 @@
-"""LangChain tools for raw data retrieval without pre-computed analytics."""
+"""Local tools for raw data retrieval without pre-computed analytics."""
 
 from __future__ import annotations
 
 from datetime import datetime
 from typing import Any
 
-from langchain_core.tools import tool
+from src.services.compat_tools import tool
 
 from src.services.memory_tools import _get_collection_name
 from src.utils.qdrant_utils import scroll_all_user_points

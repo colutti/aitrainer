@@ -1,95 +1,100 @@
-"""Tests for raw data tools registration in AITrainerBrain."""
+"""Tests for Pydantic AI chat tool registration."""
 
-from unittest.mock import MagicMock
-
-from src.services.trainer import AITrainerBrain
-
-
-def test_get_tools_includes_raw_data_tools():
-    db = MagicMock()
-    llm = MagicMock()
-    db.get_user_profile.return_value = None
-
-    brain = AITrainerBrain(database=db, llm_client=llm)
-
-    tools = brain.get_tools("test@example.com")
-    names = {tool.name for tool in tools}
-
-    assert "get_workouts_raw" in names
-    assert "get_nutrition_raw" in names
-    assert "get_body_composition_raw" in names
-    assert "get_goal_history_raw" in names
-    assert "get_events_raw" in names
+from src.services.ai_chat.tools.registry import (
+    MAX_AI_TOOLS_PER_TURN,
+    build_chat_tools,
+    build_core_toolset,
+    select_chat_toolsets,
+)
 
 
-def test_get_tools_includes_raw_memories_tool_when_qdrant_is_available():
-    db = MagicMock()
-    llm = MagicMock()
-    qdrant = MagicMock()
-    db.get_user_profile.return_value = None
-
-    brain = AITrainerBrain(database=db, llm_client=llm, qdrant_client=qdrant)
-
-    tools = brain.get_tools("test@example.com")
-    names = {tool.name for tool in tools}
-
-    assert "get_memories_raw" in names
+def _toolset_names(toolsets) -> set[str]:
+    names: set[str] = set()
+    for toolset in toolsets:
+        names.update(toolset.tools.keys())
+    return names
 
 
-def test_get_tools_does_not_include_hevy_tools_when_disabled():
-    """Hevy tools must NOT be exposed when user has hevy_enabled=False or no api_key."""
-    from unittest.mock import MagicMock
-    from src.api.models.user_profile import UserProfile
+def test_registry_exposes_domain_tools_instead_of_legacy_tool_fanout():
+    names = {tool.__name__ for tool in build_chat_tools()}
 
-    db = MagicMock()
-    llm = MagicMock()
-    profile = MagicMock(spec=UserProfile)
-    profile.hevy_enabled = False
-    profile.hevy_api_key = None
-    db.get_user_profile.return_value = profile
-
-    brain = AITrainerBrain(database=db, llm_client=llm)
-
-    tools = brain.get_tools("test@example.com")
-    hevy_names = {t.name for t in tools if "hevy" in t.name}
-
-    assert len(hevy_names) == 0, f"Expected no Hevy tools, got: {hevy_names}"
-
-
-def test_get_tools_includes_hevy_tools_when_enabled():
-    """Hevy tools must be exposed when user has hevy_enabled=True and api_key."""
-    from unittest.mock import MagicMock
-    from src.api.models.user_profile import UserProfile
-
-    db = MagicMock()
-    llm = MagicMock()
-    profile = MagicMock(spec=UserProfile)
-    profile.hevy_enabled = True
-    profile.hevy_api_key = "valid-key-123"
-    db.get_user_profile.return_value = profile
-
-    brain = AITrainerBrain(database=db, llm_client=llm)
-
-    tools = brain.get_tools("test@example.com")
-    hevy_names = {t.name for t in tools if "hevy" in t.name}
-
-    assert len(hevy_names) > 0, "Expected Hevy tools, got none"
-    assert "list_hevy_routines" in hevy_names
-    assert "create_hevy_routine" in hevy_names
-    assert "trigger_hevy_import" in hevy_names
+    assert len(names) <= MAX_AI_TOOLS_PER_TURN
+    assert {
+        "plan_ops",
+        "training_ops",
+        "nutrition_ops",
+        "body_ops",
+        "schedule_ops",
+        "memory_ops",
+        "metabolism_ops",
+        "profile_ops",
+    }.issubset(names)
+    assert "get_plan_status" not in names
+    assert "update_plan_section" not in names
+    assert "get_workouts_raw" not in names
 
 
-def test_get_tools_includes_plan_training_program_tool():
-    """get_plan_training_program must always be available."""
-    from unittest.mock import MagicMock
+def test_default_toolsets_exclude_hevy_and_raw_domains():
+    toolsets = select_chat_toolsets(user_input="ola", runtime_context={})
+    names = _toolset_names(toolsets)
 
-    db = MagicMock()
-    llm = MagicMock()
-    db.get_user_profile.return_value = None
+    assert len(names) <= MAX_AI_TOOLS_PER_TURN
+    assert "plan_ops" in names
+    assert "training_ops" in names
+    assert "hevy_ops" not in names
+    assert "raw_data_ops" not in names
 
-    brain = AITrainerBrain(database=db, llm_client=llm)
 
-    tools = brain.get_tools("test@example.com")
-    names = {t.name for t in tools}
+def test_hevy_toolset_is_selected_only_for_hevy_intent():
+    toolsets = select_chat_toolsets(
+        user_input="crie uma rotina no Hevy trocando exercicios",
+        runtime_context={},
+    )
+    names = _toolset_names(toolsets)
 
-    assert "get_plan_training_program" in names
+    assert len(names) <= MAX_AI_TOOLS_PER_TURN
+    assert "hevy_ops" in names
+    assert "raw_data_ops" not in names
+
+
+def test_raw_toolset_is_selected_only_for_audit_intent():
+    toolsets = select_chat_toolsets(
+        user_input="mostre os dados brutos de treino para auditoria",
+        runtime_context={},
+    )
+    names = _toolset_names(toolsets)
+
+    assert len(names) <= MAX_AI_TOOLS_PER_TURN
+    assert "raw_data_ops" in names
+    assert "hevy_ops" not in names
+
+
+def test_required_plan_execution_keeps_plan_ops_available():
+    toolsets = select_chat_toolsets(
+        user_input="ok pode aplicar",
+        runtime_context={"plan_execution": {"required_tool": "update_plan_section"}},
+    )
+    names = _toolset_names(toolsets)
+
+    assert len(names) <= MAX_AI_TOOLS_PER_TURN
+    assert "plan_ops" in names
+
+
+def test_selected_tool_schemas_avoid_defs_for_google_tool_declarations():
+    toolsets = select_chat_toolsets(
+        user_input="debug da rotina Hevy com dados brutos",
+        runtime_context={},
+    )
+
+    for toolset in toolsets:
+        for tool in toolset.tools.values():
+            schema = tool.function_schema.json_schema
+            assert "$defs" not in schema, tool.function_schema.name
+            assert len(str(schema)) < 5000, tool.function_schema.name
+
+    plan_schema = build_core_toolset().tools["plan_ops"].function_schema.json_schema
+    assert set(plan_schema["properties"]) == {
+        "action",
+        "payload",
+        "output_format",
+    }

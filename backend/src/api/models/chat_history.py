@@ -81,7 +81,7 @@ class ChatHistory(BaseModel):
         for msg in history.messages:
             additional_kwargs = msg.additional_kwargs or {}
             if msg.type == "human":
-                # Retroactive fix: Some system messages were saved as HumanMessage
+                # Retroactive fix: Some system messages were saved as student message
                 if msg.content.startswith("✅ Tool"):
                     sender = Sender.SYSTEM
                 else:

@@ -30,6 +30,9 @@ PUBLIC_PROFILE_UPDATE_FIELDS = {
     "gender",
     "age",
     "height",
+    "goal_type",
+    "target_weight",
+    "weekly_rate",
     "notes",
     "display_name",
     "photo_base64",
@@ -246,13 +249,26 @@ def update_profile(
                 for key, value in update_data.items()
                 if key in PUBLIC_PROFILE_UPDATE_FIELDS
             }
+            goal_changed = any(
+                key in sanitized_update
+                and getattr(existing_profile, key, None) != sanitized_update[key]
+                for key in ("goal_type", "weekly_rate", "target_weight")
+            )
             updated_profile = existing_profile.model_copy(update=sanitized_update)
+            if goal_changed:
+                updated_profile.tdee_last_check_in = None
+                updated_profile.tdee_last_target = None
             logger.info(
                 "Saving user profile for %s. Onboarding completed: %s",
                 user_email,
                 updated_profile.onboarding_completed,
             )
             db.save_user_profile(updated_profile)
+            if goal_changed:
+                db.update_user_profile_fields(
+                    user_email,
+                    {"tdee_last_check_in": None, "tdee_last_target": None},
+                )
         else:
             # Fallback: Create new profile if weirdly not found
             logger.warning(

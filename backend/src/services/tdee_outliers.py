@@ -57,17 +57,26 @@ def pass2_contextual_filter(
 
         if delta > MAX_DAILY_WEIGHT_CHANGE and days_diff <= 3:
             if i + 1 < len(statistical_clean):
-                next_log = statistical_clean[i + 1]
-                dist_to_baseline = abs(next_log.weight_kg - last_valid_log.weight_kg)
+                return_index = None
+                for lookahead_index in range(
+                    i + 1, min(i + 4, len(statistical_clean))
+                ):
+                    candidate = statistical_clean[lookahead_index]
+                    dist_to_baseline = abs(
+                        candidate.weight_kg - last_valid_log.weight_kg
+                    )
+                    if dist_to_baseline <= MAX_DAILY_WEIGHT_CHANGE:
+                        return_index = lookahead_index
+                        break
 
-                if dist_to_baseline < delta:
+                if return_index is not None:
                     logger.info(
-                        "Ignoring transient weight spike: %s kg on %s",
+                        "Ignoring transient weight spike window starting at: %s kg on %s",
                         curr.weight_kg,
                         curr.date,
                     )
-                    contextual_removed += 1
-                    i += 1
+                    contextual_removed += return_index - i
+                    i = return_index
                     continue
 
                 logger.info(

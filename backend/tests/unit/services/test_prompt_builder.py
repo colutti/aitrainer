@@ -2,16 +2,14 @@
 
 from types import SimpleNamespace
 
-from langchain_core.messages import AIMessage, HumanMessage
-
 from src.services.prompt_builder import PromptBuilder
 
 
 def test_build_input_data_includes_formatted_history_summary():
     profile = SimpleNamespace(timezone="UTC", display_name="Aluno")
     history = [
-        HumanMessage(content='<msg data="30/04" hora="10:00">treinei peito</msg>'),
-        AIMessage(
+        SimpleNamespace(content='<msg data="30/04" hora="10:00">treinei peito</msg>'),
+        SimpleNamespace(
             content=(
                 '<msg data="30/04" hora="10:01">'
                 '<treinador name="Atlas">boa</treinador></msg>'

@@ -19,7 +19,7 @@ Source of truth for project operations is the codebase, especially:
 - Backend: FastAPI, Python 3.12, MongoDB, Qdrant
 - Main frontend: React 19, TypeScript 5.9.3, Vite 7.2.4, TailwindCSS v4, Zustand 5, React Router 7.6, React Query, i18next 25.8, react-i18next 16.5
 - Admin frontend: React 19, TypeScript 5.9.3, Vite 7.2.4, TailwindCSS v4
-- AI: LangChain, LangGraph, Mem0
+- AI: Pydantic AI, OpenRouter, Mem0
 - AI providers: Gemini, OpenAI, Ollama
 - Auth: Firebase
 - Payments: Stripe
@@ -122,68 +122,92 @@ make test-conversation    # Conversation flow e2e tests (10 scenarios)
 make user-reset EMAIL=... # Reset user data for fresh test state
 ```
 
-## Conversation Graph Nodes
+## AI Chat Runtime
 
-The conversation graph (`backend/src/services/graph/conversation_graph.py`) runs these nodes per turn in fixed sequential order (all specialists run every turn, self-suppressing with no-op when they have nothing to contribute):
+The conversation runtime is a single Pydantic AI agent call per user turn.
+There are no graph nodes, routing nodes, specialist turns, or second internal
+coach-rewrite call in the application code. Pydantic AI may still perform
+multiple provider requests internally when tools are needed.
 
-| Node | Model | Role |
-|---|---|---|
-| `session_context` | `qwen/qwen3-next-80b-a3b-instruct` | Hydrates turn context and recovers cross-turn `conversation_state` from history. LLM is used only for history sanitization. |
-| `prompt_security` | `google/gemini-2.5-flash-lite` | Detects prompt injection and abuse (NOT product scoping). If blocked, short-circuits to blocked response. Uses `json_schema` strict (`status`, `reason`, `sanitized`). |
-| `training_specialist` | `google/gemini-3-flash-preview` | Technical specialist for training analysis, progress tracking, workout logging, and training plan guidance. Uses `reasoning: low`, no trainer persona, and strict JSON with `public_message`, `internal_analysis`, and `operation_result`. Hevy tools are exclusive to this node. |
-| `nutrition_specialist` | `google/gemini-3-flash-preview` | Technical specialist for nutrition analysis, adherence evaluation, metabolism interpretation, logging, and nutrition target guidance. Uses `reasoning: low`, no trainer persona, and strict JSON with `public_message`, `internal_analysis`, and `operation_result`. |
-| `plan_specialist` | `openai/gpt-oss-120b` | **Plan orchestrator** — drives discovery, persists via tools, consumes `training_analysis` and `nutrition_analysis` for domain content. Does NOT invent exercises, sets, reps, nutrition targets, or success status. Uses `provider_sort: "throughput"`, strict JSON, `reasoning: low`, `parallel_tool_calls: false`, and fails closed on unsuccessful `operation_result`. |
-| `coach_reply` | `google/gemini-3.1-flash-lite-preview` | **Pure spokesperson** — no tools. Receives `coach_handoff` and persona, rewrites only tone/transitions, and cannot add facts or success claims. |
-| `memory_hub` | `google/gemini-3.1-flash-lite-preview` | **Residual persistence** — reads structured specialist results and persistence candidates, not coach prose. Failed material operations block memory, event, and summary writes. |
+Key files:
+- `backend/src/services/trainer.py`: API/Telegram facade and billing/history helpers.
+- `backend/src/services/ai_chat/runner.py`: one-turn orchestration, SSE, persistence, and run logging.
+- `backend/src/services/ai_chat/agent.py`: Pydantic AI `Agent` construction.
+- `backend/src/services/ai_chat/model_factory.py`: OpenRouter model settings.
+- `backend/src/services/ai_chat/prompts.py`: system instructions and current-turn prompt assembly.
+- `backend/src/services/ai_chat/plan_execution.py`: deterministic explicit-approval detection for plan tools.
+- `backend/src/services/ai_chat/tools/registry.py`: domain AI tool surface and dynamic toolset selection.
+- `backend/src/services/ai_chat/validation.py`: fail-closed output/tool-result validation.
+- `backend/src/services/ai_chat/models.py`: typed contracts for tool results, final output, and run logs.
 
-### Cross-turn conversation state
+### One-Turn Flow
 
-After each turn, a compact `[GRAPH_STATE_V1]` snapshot is persisted as a SYSTEM message in chat history (`backend/src/services/graph/conversation_contract.py`). This snapshot tracks `active_domain`, `pending_action` (resolved by priority from specialist suggestions), and `last_action_status`. On the next turn, `session_context` recovers it and injects it into `conversation_state`, which specialists can read via `context_blocks` for continuity. Old snapshots containing `primary_owner` and `interaction_mode` parse correctly (backward compatible).
+1. `AITrainerBrain.send_message_ai()` delegates to `ChatTurnRunner.stream_turn()`.
+2. The runner loads profile, trainer profile, plan/metabolism/agenda context, recent public history, and recent Pydantic AI message history.
+3. If the current message is explicit approval for a recent plan creation/update, the runner injects `runtime_context.plan_execution.required_tool`.
+4. The runner selects the smallest safe Pydantic AI toolsets for the turn.
+5. The runner calls `agent.run(...)` once with `message_history`, `deps`, `conversation_id`, metadata, and selected `toolsets`.
+6. Pydantic AI handles tool calls inside that run.
+7. The final output must validate as `CoachTurnOutput`.
+8. `validate_turn_output()` blocks false success claims when required tools did not save data, material changes did not happen, or external sync failed.
+9. Successful turns persist the user/trainer pair in one MongoDB batch and log a redacted `ChatRunLog`.
 
-### Sequential pipeline model
+### Tool Contract
 
-- All specialist nodes run every turn in fixed order after `prompt_security` passes.
-- Each specialist decides internally whether to act or emit `no_action_needed`.
-- There is no routing node, no `primary_owner`, no `interaction_mode`, no `secondary_nodes`, and no `handoff_target`.
-- Pending actions are resolved by deterministic priority: `domain_execution` > `plan_discovery` > `plan_review` > `domain_analysis` > `none`.
-- `pending_action` is consolidated between `plan_specialist` and `coach_reply`, before `memory_hub`.
-- `active_domain` is derived from actual specialist contributions after each turn.
-- On blocked turns, execution stops after `prompt_security`; `coach_reply` and `memory_hub` do not run.
-- `coach_reply` has zero tools and zero operational authority.
-- `memory_hub` cannot convert domain actions into calendar events.
-- `coach_handoff` is the only factual specialist channel into `coach_reply`.
-- `memory_hub` uses `specialist_results` as factual evidence and never uses coach prose for persistence.
+All AI tools return `ToolResult` with:
+- `tool_name`
+- `status`
+- `saved`
+- `material_change`
+- `message_for_ai`
+- optional `payload`, `validation_errors`, `changed_resources`, and `external_sync_failed`
 
-### Persona isolation
+The LLM must not claim a mutation succeeded unless the relevant tool returned
+`saved=true`. It must not claim a plan/training/nutrition material change unless
+the relevant tool returned `material_change=true`.
 
-Specialist nodes (training, nutrition, plan) operate in `persona_mode: "none"` and receive `history_summary_neutral` instead of raw `history_summary`. The `session_context` node uses an LLM to strip persona mannerisms (ex: "meu parceiro!", "sensacional!") while preserving all factual content. This prevents specialist nodes from adopting coach voice.
+The model sees domain tools, not every low-level operation. Core turns expose
+`plan_ops`, `training_ops`, `nutrition_ops`, `body_ops`, `schedule_ops`,
+`memory_ops`, `metabolism_ops`, and `profile_ops`. `hevy_ops` is selected only
+for Hevy-specific turns. `raw_data_ops` is selected only for explicit technical
+audit/debug/export/raw-data requests.
 
-### Plan creation flow
+Each domain tool accepts an `action` or `domain` parameter plus typed arguments.
+Legacy factory modules remain importable through `compat_tools.SimpleTool`, but
+the AI runtime does not depend on external agent-framework decorators.
 
-The `plan_specialist` follows a 5-item discovery checklist (no explicit consent required):
+Correctable tool argument/semantic validation failures should use Pydantic AI
+`ModelRetry`. Missing action-specific parameters should be rejected before any
+mutation. Prompt logs must store result previews only; full raw tool payloads,
+secrets, vectors, base64 content, and large document bodies must not be persisted
+in `prompt_logs`.
+
+### Plan Creation Flow
+
+The agent follows a 5-item discovery checklist:
 
 1. Objetivo principal (ex: ganhar massa, perder gordura)
 2. Prazo/meta (date or approximate deadline)
-3. Disponibilidade semanal (days + minutes per session) - combines info across turns
+3. Disponibilidade semanal (days + minutes per session)
 4. Restrições/limitações ("nenhuma" is accepted)
-5. Metabolismo (via `get_metabolism_data` tool)
+5. Metabolismo via `get_metabolism_data`
 
-When all 5 items are present, the plan_specialist:
-1. Calls `get_metabolism_data`
-2. Calls `plan_help` for the payload template
-3. **Checks `training_analysis` and `nutrition_analysis` context blocks** for domain specialist recommendations
-4. Only calls `upsert_plan` if **both** domain specialists contributed material content
-5. If either specialist emitted `no_action_needed`, returns `discovery_needed` instead
+When all 5 items are present, the agent should call:
+1. `plan_ops(action="get_status")`
+2. `metabolism_ops(action="get_data")`
+3. `plan_ops(action="help")` when it needs the exact payload contract
+4. `plan_ops(action="create_from_discovery")` only with a complete, typed payload
 
-The training_specialist provides **training plan guidance** (exercise selection, sets, reps, split) in `internal_analysis` when plan creation/review is detected. The nutrition_specialist provides **nutrition targets guidance** (calories, macros, adherence strategy) similarly. User-facing text belongs in `public_message`.
+For existing plans, the agent should read with `plan_ops(action="get_status")`
+or `plan_ops(action="get_plan")`, then mutate only through typed plan actions
+such as `update_section` or `record_review`.
 
-### OpenRouter provider routing
+### OpenRouter Routing
 
-The `plan_specialist` uses `provider_sort: "throughput"` in its node config to route to the fastest OpenRouter provider instead of the cheapest. This significantly reduced plan_specialist latency (~50%+). All other nodes use the default price-based routing which is optimal for flash-lite models.
-
-Each node config JSON can set:
-- `top_p` / `frequency_penalty` — LLM sampling params (default: null = use defaults)
-- `provider_sort` — OpenRouter routing: "throughput", "latency", or "price" (default: null = price-based)
+The chat agent uses `OPENROUTER_CHAT_MODEL` with Pydantic AI
+`OpenRouterModelSettings`. Defaults are optimized for latency and clarity:
+`provider_sort="throughput"`, `parallel_tool_calls=false`, `reasoning.effort=low`,
+and `reasoning.exclude=true`.
 
 ### Conversation E2E tests
 
@@ -251,23 +275,20 @@ Current routed areas include:
 ## Environment Notes
 
 Important backend settings currently defined in code:
-- `AI_PROVIDER=gemini` by default
-- Gemini, OpenAI and Ollama are supported
-- `EMBEDDING_MODEL_DIMS=768`
 - `DB_NAME=aitrainer`
 - `API_SERVER_PORT=8000`
 - `QDRANT_PORT=6333`
 - `MONGO_URI=mongodb://localhost:27017`
 - `SECRET_KEY` (required)
-- `LLM_TEMPERATURE=0.4`
+- `LLM_STREAM_TIMEOUT_SECONDS=120`
 - `LOG_LEVEL=INFO`
 - `RATE_LIMIT_LOGIN=5/minute`
-- `GEMINI_LLM_MODEL=gemini-1.5-flash`
-- `GEMINI_EMBEDDER_MODEL=gemini-embedding-001`
-- `OLLAMA_BASE_URL=http://localhost:11434`
-- `OLLAMA_LLM_MODEL=llama3-groq-tool-use:8b`
-- `OLLAMA_EMBEDDER_MODEL=nomic-embed-text:latest`
-- `OPENAI_API_KEY` (required for OpenAI provider)
+- `OPENROUTER_API_KEY` (required for AI chat and embeddings)
+- `OPENROUTER_BASE_URL=https://openrouter.ai/api/v1`
+- `OPENROUTER_CHAT_MODEL=google/gemini-3.5-flash`
+- `OPENROUTER_SERVICE_TIER=priority`
+- `OPENROUTER_EMBED_MODEL=openai/text-embedding-3-small`
+- `OPENROUTER_EMBED_DIMENSIONS=768`
 
 Do not hardcode environment assumptions that are not present in [backend/src/core/config.py](/home/colutti/projects/personal/backend/src/core/config.py) or the local env files.
 

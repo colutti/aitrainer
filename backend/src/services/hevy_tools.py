@@ -3,7 +3,7 @@ Hevy integration tools for AI trainer.
 """
 
 # pylint: disable=too-many-locals,broad-exception-caught,too-many-return-statements,too-many-branches,too-many-statements,line-too-long,missing-function-docstring
-from langchain_core.tools import tool
+from src.services.compat_tools import tool
 from src.core.logs import logger
 from src.api.models.routine import HevyRoutine, HevyRoutineExercise
 

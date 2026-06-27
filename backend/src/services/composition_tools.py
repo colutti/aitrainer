@@ -1,9 +1,9 @@
 """
-LangChain tools for body composition tracking.
+Local tools for body composition tracking.
 """
 
 from datetime import datetime
-from langchain_core.tools import tool
+from src.services.compat_tools import tool
 from src.core.logs import logger
 from src.api.models.weight_log import WeightLog
 from src.services.adaptive_tdee import AdaptiveTDEEService

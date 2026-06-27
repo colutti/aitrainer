@@ -97,14 +97,6 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     RATE_LIMIT_LOGIN: str = "5/minute"
     MAX_PROMPT_LOGS: int = 20
-    LANGSMITH_TRACING: bool = False
-    LANGSMITH_TRACING_ENABLED: bool = False
-    LANGSMITH_API_KEY: str = ""
-    LANGSMITH_WORKSPACE_ID: str = ""
-    LANGSMITH_ENDPOINT: str = "https://api.smith.langchain.com"
-    LANGSMITH_PROJECT: str = ""
-    LANGSMITH_ENVIRONMENT: str = "local"
-    LANGSMITH_SAMPLE_RATE: float = 1.0
 
     # ====== BETTERSTACK INTEGRATION ======
     BETTERSTACK_API_TOKEN: str = ""

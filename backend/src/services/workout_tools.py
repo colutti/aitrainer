@@ -1,9 +1,9 @@
 """
-LangChain tools for workout tracking.
+Local tools for workout tracking.
 """
 
 from datetime import datetime
-from langchain_core.tools import tool
+from src.services.compat_tools import tool
 from src.core.logs import logger
 from src.api.models.workout_log import WorkoutLog, ExerciseLog
 

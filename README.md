@@ -15,7 +15,7 @@
   - **Zepp Life/Xiaomi**: Import body composition from smart scales.
 - **Multi-Platform**: Chat via the web app or directly through **Telegram** with automatic workout analysis.
 - **15+ Body Metrics**: Track limb measurements, visceral fat, muscle mass, and weight trends with EMA smoothing.
-- **Privacy & Flexibility**: Compatible with Google Gemini, OpenAI, or local models via Ollama.
+- **Operational AI Runtime**: Chat runs through Pydantic AI with OpenRouter, typed tools, fail-closed success validation, and redacted operational logs.
 
 ---
 
@@ -33,9 +33,13 @@
 ### Backend
 - **Framework**: FastAPI (Python 3.12+)
 - **Database**: MongoDB (NoSQL) + Qdrant (Vector Database for Memory)
-- **AI/LLM**: LangChain + LiteLLM (Gemini, OpenAI, Ollama)
+- **AI/LLM**: Pydantic AI + OpenRouter
 - **Task Queue**: BackgroundTasks (FastAPI internal)
 - **Automation**: Telegram Bot API
+
+The chat backend uses one Pydantic AI agent call per user turn. Tools are typed,
+audited, and validated with fail-closed success rules before any response is
+persisted. See `backend/docs/architecture/ai-chat-runtime.md`.
 
 ---
 
