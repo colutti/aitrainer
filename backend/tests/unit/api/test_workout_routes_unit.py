@@ -6,6 +6,7 @@ from src.api.endpoints.workout import (
     ExerciseLog,
     create_workout,
     get_exercises,
+    update_workout,
 )
 from src.api.main import app
 from src.core.deps import get_mongo_database
@@ -110,3 +111,99 @@ def test_create_workout_rejects_demo_user():
     mock_db.save_workout_log.assert_not_called()
 
     app.dependency_overrides = {}
+
+
+def test_update_workout_replaces_manual_workout_for_owner():
+    mock_db = MagicMock()
+    mock_db.get_workout_by_id.side_effect = [
+        {
+            "_id": "workout123",
+            "user_email": "test@example.com",
+            "date": "2024-01-01T10:00:00",
+            "workout_type": "Push",
+            "duration_minutes": 45,
+            "source": "manual",
+            "external_id": None,
+            "exercises": [],
+        },
+        {
+            "_id": "workout123",
+            "user_email": "test@example.com",
+            "date": "2024-01-02T10:00:00",
+            "workout_type": "Pull",
+            "duration_minutes": 50,
+            "source": "manual",
+            "external_id": None,
+            "exercises": [
+                {
+                    "name": "Barbell Row",
+                    "sets": 2,
+                    "reps_per_set": [12, 10],
+                    "weights_per_set": [40.0, 45.0],
+                }
+            ],
+        },
+    ]
+    mock_db.update_workout_log.return_value = True
+
+    request = CreateWorkoutRequest(
+        date="2024-01-02T10:00:00",
+        workout_type="Pull",
+        duration_minutes=50,
+        source="manual",
+        exercises=[
+            ExerciseLog(
+                name="Barbell Row",
+                sets=2,
+                reps_per_set=[12, 10],
+                weights_per_set=[40.0, 45.0],
+            )
+        ],
+    )
+
+    result = update_workout("workout123", "test@example.com", mock_db, request)
+
+    assert result.id == "workout123"
+    assert result.workout_type == "Pull"
+    saved_workout = mock_db.update_workout_log.call_args.args[2]
+    assert saved_workout.user_email == "test@example.com"
+    assert saved_workout.source == "manual"
+    assert saved_workout.exercises[0].name == "Barbell Row"
+
+
+def test_update_workout_rejects_non_owner():
+    mock_db = MagicMock()
+    mock_db.get_workout_by_id.return_value = {
+        "_id": "workout123",
+        "user_email": "owner@example.com",
+        "date": "2024-01-01T10:00:00",
+        "workout_type": "Push",
+        "duration_minutes": 45,
+        "source": "manual",
+        "external_id": None,
+        "exercises": [],
+    }
+
+    request = CreateWorkoutRequest(
+        date="2024-01-02T10:00:00",
+        workout_type="Pull",
+        duration_minutes=50,
+        source="manual",
+        exercises=[
+            ExerciseLog(
+                name="Barbell Row",
+                sets=1,
+                reps_per_set=[12],
+                weights_per_set=[40.0],
+            )
+        ],
+    )
+
+    try:
+        update_workout("workout123", "attacker@example.com", mock_db, request)
+    except Exception as exc:  # HTTPException
+        assert getattr(exc, "status_code", None) == 403
+    else:
+        raise AssertionError("Expected update_workout to reject non-owner access")
+
+    mock_db.update_workout_log.assert_not_called()

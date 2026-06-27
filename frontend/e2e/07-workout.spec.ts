@@ -1,11 +1,14 @@
 import { test, expect } from './fixtures';
+import { bootstrapOnboardedUser } from './helpers/bootstrap';
 import { t } from './helpers/translations';
 
 test.describe('Workouts Feature', () => {
-  test('should create a workout and keep it after reload', async ({ authenticatedPage, ui }) => {
+  test('should create, update, reload and delete a manual workout', async ({ page, ui }, testInfo) => {
+    const workoutsPage = await bootstrapOnboardedUser(page, testInfo);
+
     await ui.navigateTo('workouts');
-    await expect(authenticatedPage.getByTestId('view-header-title')).toContainText(t('workouts.title'));
-    await ui.openDrawer('Registrar Treino');
+    await expect(workoutsPage.getByRole('button', { name: t('workouts.register_workout') })).toBeVisible({ timeout: 15000 });
+    await ui.openDrawer(t('workouts.register_workout'));
 
     const workoutType = `E2E Workout ${Date.now()}`;
     await ui.fillForm({
@@ -13,21 +16,33 @@ test.describe('Workouts Feature', () => {
       [t('workouts.duration')]: 45,
     });
 
-    const addExerciseBtn = authenticatedPage.getByRole('button', { name: /Adicionar/i });
+    const addExerciseBtn = workoutsPage.getByRole('button', { name: /Adicionar/i });
     await addExerciseBtn.click();
-    await authenticatedPage.getByPlaceholder('Nome do Exercício').first().fill('Supino Reto');
+    await workoutsPage.getByLabel(t('workouts.exercise_name')).fill('Supino Reto');
 
     await ui.submit();
-    await expect(authenticatedPage.getByText(new RegExp(workoutType, 'i'))).toBeVisible({ timeout: 15000 });
+    const createdCard = workoutsPage.getByTestId('workout-card').filter({ hasText: workoutType }).first();
+    await expect(createdCard).toBeVisible({ timeout: 15000 });
 
-    await authenticatedPage.reload({ waitUntil: 'networkidle' });
+    await createdCard.click();
+    const updatedWorkoutType = `${workoutType} Updated`;
+    await workoutsPage.getByLabel(t('workouts.workout_type')).fill(updatedWorkoutType);
+    await ui.submit();
+    const updatedCard = workoutsPage.getByTestId('workout-card').filter({ hasText: updatedWorkoutType }).first();
+    await expect(updatedCard).toBeVisible({ timeout: 15000 });
+
+    await workoutsPage.reload({ waitUntil: 'networkidle' });
     await ui.navigateTo('workouts');
-    const workoutCard = authenticatedPage.getByTestId('workout-card').filter({ hasText: workoutType }).first();
-    await expect(workoutCard).toBeVisible({ timeout: 15000 });
+    await expect(updatedCard).toBeVisible({ timeout: 15000 });
 
-    await workoutCard.click();
-    await expect(authenticatedPage.getByRole('heading', { name: t('workouts.edit_workout') })).toBeVisible({ timeout: 15000 });
-    await expect(authenticatedPage.getByLabel(t('workouts.workout_type'))).toHaveValue(workoutType);
-    await expect(authenticatedPage.getByPlaceholder('Nome do Exercício').first()).toHaveValue('Supino Reto');
+    await updatedCard.getByLabel(/Excluir|Delete/i).click();
+    const confirmDeleteButton = workoutsPage.getByTestId('confirm-accept');
+    await expect(confirmDeleteButton).toBeVisible({ timeout: 15000 });
+    await confirmDeleteButton.click();
+    await expect(updatedCard).not.toBeVisible({ timeout: 15000 });
+
+    await workoutsPage.reload({ waitUntil: 'networkidle' });
+    await ui.navigateTo('workouts');
+    await expect(workoutsPage.getByTestId('workout-card').filter({ hasText: updatedWorkoutType })).toHaveCount(0);
   });
 });

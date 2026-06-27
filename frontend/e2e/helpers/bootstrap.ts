@@ -116,6 +116,28 @@ export async function bootstrapRegisteredUser(page: Page, testInfo: TestInfo, pr
   return page;
 }
 
+export async function bootstrapOnboardedUser(page: Page, testInfo: TestInfo) {
+  const user = buildE2EUserCredentials(testInfo, 'onboarded');
+  const response = await page.request.post(`${apiBaseUrl}/user/e2e-login`, {
+    data: {
+      email: user.email,
+      display_name: user.name,
+      onboarding_completed: true,
+    },
+  });
+  expect(response.ok()).toBeTruthy();
+  const payload = await response.json() as { token?: string };
+  expect(payload.token).toBeTruthy();
+
+  await page.goto('/login', { waitUntil: 'networkidle' });
+  await page.evaluate((token: string) => {
+    localStorage.setItem('auth_token', token);
+  }, payload.token!);
+  await page.goto('/dashboard/workouts', { waitUntil: 'networkidle' });
+  await page.waitForURL('**/dashboard/workouts', { timeout: 20000 });
+  return page;
+}
+
 export async function bootstrapFreshUser(page: Page, testInfo: TestInfo) {
   const user = buildE2EUserCredentials(testInfo, 'fresh');
   const response = await page.request.post(`${apiBaseUrl}/user/e2e-login`, {
