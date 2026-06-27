@@ -23,6 +23,7 @@ def test_health_endpoint_all_services_healthy():
             "src.api.main.get_app"
         ) as mock_get_app, patch("src.api.main.stripe") as mock_stripe:
             mock_qdrant.return_value.get_collections.return_value = {"collections": []}
+            mock_qdrant.return_value.info.return_value = {"title": "qdrant"}
             mock_get_app.return_value = MagicMock()
             mock_stripe.api_key = None
 
@@ -62,7 +63,7 @@ def test_health_endpoint_qdrant_unhealthy():
         mock_db = MagicMock()
         mock_db.client.admin.command.return_value = {"ok": 1}
         mock_mongo.return_value = mock_db
-        mock_qdrant.return_value.get_collections.side_effect = RuntimeError("qdrant down")
+        mock_qdrant.return_value.info.side_effect = RuntimeError("qdrant down")
         mock_get_app.return_value = MagicMock()
 
         response = client.get("/health")
@@ -83,7 +84,7 @@ def test_health_endpoint_firebase_unhealthy():
         mock_db = MagicMock()
         mock_db.client.admin.command.return_value = {"ok": 1}
         mock_mongo.return_value = mock_db
-        mock_qdrant.return_value.get_collections.return_value = {"collections": []}
+        mock_qdrant.return_value.info.return_value = {"title": "qdrant"}
         mock_init.side_effect = RuntimeError("firebase down")
         mock_get_app.return_value = MagicMock()
 
@@ -105,7 +106,7 @@ def test_health_endpoint_stripe_unhealthy():
         mock_db = MagicMock()
         mock_db.client.admin.command.return_value = {"ok": 1}
         mock_mongo.return_value = mock_db
-        mock_qdrant.return_value.get_collections.return_value = {"collections": []}
+        mock_qdrant.return_value.info.return_value = {"title": "qdrant"}
         mock_get_app.return_value = MagicMock()
         mock_stripe.api_key = None
         with patch("src.api.main.settings") as mock_settings:

@@ -148,7 +148,7 @@ def health_check() -> JSONResponse:
     # Check Qdrant
     try:
         qdrant_client = get_qdrant_client()
-        qdrant_client.get_collections()
+        qdrant_client.info()
         health_status["services"]["qdrant"] = "healthy"
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("Qdrant health check failed: %s", e)
