@@ -144,9 +144,10 @@ class TestNutritionApi(unittest.TestCase):
         mock_db.get_nutrition_by_id.return_value = {"user_email": "test@test.com"}
         mock_db.delete_nutrition_log.return_value = True
         app.dependency_overrides[get_mongo_database] = lambda: mock_db
+        log_id = "507f1f77bcf86cd799439021"
 
         response = self.client.delete(
-            "/nutrition/log123", headers={"Authorization": "Bearer token"}
+            f"/nutrition/{log_id}", headers={"Authorization": "Bearer token"}
         )
 
         self.assertEqual(response.status_code, 200)
@@ -158,12 +159,56 @@ class TestNutritionApi(unittest.TestCase):
         mock_db = MagicMock()
         mock_db.get_nutrition_by_id.return_value = {"user_email": "victim@test.com"}
         app.dependency_overrides[get_mongo_database] = lambda: mock_db
+        log_id = "507f1f77bcf86cd799439022"
 
         response = self.client.delete(
-            "/nutrition/log123", headers={"Authorization": "Bearer token"}
+            f"/nutrition/{log_id}", headers={"Authorization": "Bearer token"}
         )
 
         self.assertEqual(response.status_code, 403)
+
+    def test_update_nutrition_rejects_non_owner(self):
+        """Updating another user's nutrition log should be forbidden."""
+        app.dependency_overrides[verify_token] = lambda: "attacker@test.com"
+        mock_db = MagicMock()
+        mock_db.update_nutrition_log.return_value = True
+        mock_db.get_nutrition_by_id.return_value = {
+            "_id": "507f1f77bcf86cd799439023",
+            "user_email": "victim@test.com",
+            "date": datetime(2024, 1, 5),
+            "calories": 2000,
+            "protein_grams": 150.0,
+            "carbs_grams": 200.0,
+            "fat_grams": 60.0,
+            "fiber_grams": None,
+            "sugar_grams": None,
+            "sodium_mg": None,
+            "cholesterol_mg": None,
+            "source": "manual",
+            "notes": "Victim entry",
+            "partial_logged": False,
+        }
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
+        log_id = "507f1f77bcf86cd799439023"
+
+        response = self.client.put(
+            f"/nutrition/log/{log_id}",
+            json={
+                "date": "2024-01-05T00:00:00",
+                "source": "manual",
+                "calories": 2000,
+                "protein_grams": 150.0,
+                "carbs_grams": 200.0,
+                "fat_grams": 60.0,
+            },
+            headers={"Authorization": "Bearer token"},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(
+            response.json()["detail"], "Not authorized to update this nutrition log"
+        )
+        mock_db.update_nutrition_log.assert_not_called()
 
     def test_import_nutrition_success(self):
         """Test successful MyFitnessPal import."""

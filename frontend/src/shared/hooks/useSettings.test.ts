@@ -83,6 +83,18 @@ describe('useSettingsStore', () => {
       expect(state.profile).toEqual(mockProfile);
     });
 
+    it('should preserve existing profile when backend returns only a success message', async () => {
+      useSettingsStore.setState({ profile: mockProfile });
+      vi.mocked(httpClient).mockResolvedValue({
+        message: 'Profile updated successfully',
+      } as any);
+
+      await useSettingsStore.getState().updateProfile({ notes: 'Novo note' });
+
+      const state = useSettingsStore.getState();
+      expect(state.profile).toEqual(mockProfile);
+    });
+
     it('should handle update profile error', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.mocked(httpClient).mockRejectedValue(new Error('error'));
@@ -164,6 +176,32 @@ describe('useSettingsStore', () => {
       await useSettingsStore.getState().updateTrainer('expert');
       const state = useSettingsStore.getState();
       expect(state.trainer).toBeNull();
+    });
+
+    it('should preserve existing trainer preference fields when changing trainer type', async () => {
+      useSettingsStore.setState({
+        trainer: {
+          trainer_type: 'atlas',
+          preferred_language: 'en-US',
+          personality_level: 'energetic',
+        },
+      });
+      vi.mocked(httpClient).mockResolvedValue({
+        trainer_type: 'sofia',
+        preferred_language: 'en-US',
+        personality_level: 'energetic',
+      });
+
+      await useSettingsStore.getState().updateTrainer('sofia');
+
+      expect(httpClient).toHaveBeenCalledWith('/trainer/update_trainer_profile', {
+        method: 'PUT',
+        body: JSON.stringify({
+          trainer_type: 'sofia',
+          preferred_language: 'en-US',
+          personality_level: 'energetic',
+        }),
+      });
     });
 
     it('should handle update trainer error', async () => {

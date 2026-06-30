@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures';
-import { t } from './helpers/translations';
+import { gotoAppRoute } from './helpers/bootstrap';
 
 test.describe('AI Memories Feature', () => {
   test('creates, localizes, reloads, and deletes a normal-user memory', async ({
@@ -9,24 +9,38 @@ test.describe('AI Memories Feature', () => {
   }) => {
     const memoryText = `E2E Test Memory ${Date.now()}`;
 
-    await ui.navigateTo('settings');
-    await authenticatedPage.getByRole('link', { name: t('settings.tabs.memories') }).click();
-    await expect(authenticatedPage.getByText(t('memories.empty_title'))).toBeVisible({ timeout: 15000 });
+    await gotoAppRoute(authenticatedPage, '/dashboard/settings');
+    await authenticatedPage.getByRole('link', { name: /Memories|Memórias|Memorias/i }).click();
+    await expect(
+      authenticatedPage.getByText(/No memories captured yet\.|Nenhuma memória capturada ainda\.|Aún no hay memorias capturadas\./i),
+    ).toBeVisible({ timeout: 15000 });
 
     await seedMemory(memoryText);
-    await authenticatedPage.reload({ waitUntil: 'networkidle' });
+    await authenticatedPage.reload({ waitUntil: 'commit' });
 
     const memoryCard = authenticatedPage.getByTestId('memory-card').filter({ hasText: memoryText });
     await expect(memoryCard).toBeVisible({ timeout: 15000 });
-    await expect(authenticatedPage.getByText(t('memories.title'))).toBeVisible();
+    await expect(
+      authenticatedPage
+        .getByTestId('memories-list-screen')
+        .getByRole('heading', { name: /AI Memories|Memórias AI|Memorias AI/i })
+        .first(),
+    ).toBeVisible();
 
     await authenticatedPage.evaluate(() => {
       window.localStorage.setItem('i18nextLng', 'es-ES');
     });
-    await authenticatedPage.reload({ waitUntil: 'networkidle' });
+    await authenticatedPage.reload({ waitUntil: 'commit' });
 
-    await expect(authenticatedPage.getByText(/Memorias AI/i)).toBeVisible({ timeout: 15000 });
-    await expect(authenticatedPage.getByText(/Lo que la inteligencia sabe sobre ti/i)).toBeVisible({
+    await expect(
+      authenticatedPage
+        .getByTestId('memories-list-screen')
+        .getByRole('heading', { name: /Memorias AI/i })
+        .first(),
+    ).toBeVisible({ timeout: 15000 });
+    await expect(
+      authenticatedPage.getByTestId('entity-list-screen').getByTestId('page-header-subtitle'),
+    ).toHaveText(/Lo que la inteligencia sabe sobre ti/i, {
       timeout: 15000,
     });
     await expect(authenticatedPage.getByText(memoryText)).toBeVisible({ timeout: 15000 });
@@ -38,9 +52,11 @@ test.describe('AI Memories Feature', () => {
     await authenticatedPage.getByTestId('confirm-accept').click();
     await expect(authenticatedPage.getByTestId('toast-container')).toContainText(/Memor[ií]a (eliminada|removida)\./i);
 
-    await authenticatedPage.reload({ waitUntil: 'networkidle' });
+    await authenticatedPage.reload({ waitUntil: 'commit' });
     await expect(authenticatedPage.getByText(memoryText)).toHaveCount(0);
-    await expect(authenticatedPage.getByText(/Aún no hay memorias capturadas\./i)).toBeVisible({
+    await expect(
+      authenticatedPage.getByText(/No memories captured yet\.|Nenhuma memória capturada ainda\.|Aún no hay memorias capturadas\./i),
+    ).toBeVisible({
       timeout: 15000,
     });
   });

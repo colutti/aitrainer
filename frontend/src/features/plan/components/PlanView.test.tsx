@@ -104,10 +104,31 @@ describe('PlanView', () => {
     expect(screen.getByText('Plano Mestre Hipertrofia')).toBeInTheDocument();
     expect(screen.getByTestId('plan-weekly-schedule')).toBeInTheDocument();
     expect(within(screen.getByTestId('plan-weekly-schedule')).getByText('plan.days.monday')).toBeInTheDocument();
+    expect(screen.getByText('Aderencia consistente na ultima semana')).toBeInTheDocument();
+    expect(screen.getByText('01/06/2026')).toBeInTheDocument();
     expect(screen.getByText('2600 kcal')).toBeInTheDocument();
     expect(screen.getByText('Supino Reto')).toBeInTheDocument();
     expect(screen.getByText('Conflito de energia detectado.')).toBeInTheDocument();
     expect(screen.queryByText('O plano ativo agora e a fonte primaria.')).not.toBeInTheDocument();
+  });
+
+  it('shows empty checkpoint state when no review has been recorded', () => {
+    render(
+      <PlanView
+        plan={{
+          ...activePlan,
+          active_plan: {
+            ...activePlan.active_plan!,
+            next_review_at: null,
+            latest_review_summary: null,
+          },
+        }}
+        isLoading={false}
+        onOpenChat={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('plan.checkpoint.empty')).toBeInTheDocument();
   });
 
   it('switches the daily routine when a weekly day is selected', () => {

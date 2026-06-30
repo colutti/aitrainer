@@ -90,6 +90,13 @@ export const bodyApi = {
       body: JSON.stringify(data),
     }) as Promise<NutritionLog>;
   },
+
+  updateNutritionLog: async (id: string, data: Partial<NutritionLog>): Promise<NutritionLog> => {
+    return httpClient<NutritionLog>(`/nutrition/log/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }) as Promise<NutritionLog>;
+  },
   
   deleteNutritionLog: async (id: string): Promise<void> => {
     await httpClient(`/nutrition/${id}`, { method: 'DELETE' });

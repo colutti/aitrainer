@@ -57,8 +57,8 @@ export interface CreateNutritionLogRequest {
   protein_grams: number;
   carbs_grams: number;
   fat_grams: number;
-  fiber_grams?: number;
-  sodium_mg?: number;
+  fiber_grams?: number | null;
+  sodium_mg?: number | null;
 }
 export interface NutritionFormData {
   date: string;

@@ -133,6 +133,80 @@ class TestMemoryToolsIntegration:
         assert tool is not None
         assert hasattr(tool, 'name')
 
+    def test_update_memory_updates_payload_and_embedding_when_owner_matches(self):
+        """Test that update_memory persists new content for the owning user."""
+        from qdrant_client.models import PointStruct
+        from src.services.memory_tools import create_update_memory_tool
+
+        mock_qdrant = MagicMock()
+        existing_point = PointStruct(
+            id="mem-123",
+            vector=[0.1] * 768,
+            payload={
+                "id": "mem-123",
+                "memory": "conteudo antigo",
+                "user_id": "test@example.com",
+                "created_at": "2026-03-01T10:00:00",
+            },
+        )
+        mock_qdrant.retrieve.return_value = [existing_point]
+
+        with (
+            patch("src.services.memory_tools._embed_text", return_value=[0.3] * 768),
+            patch("src.services.memory_tools.datetime") as mock_datetime,
+        ):
+            mock_datetime.utcnow.return_value.isoformat.return_value = (
+                "2026-03-27T10:00:00"
+            )
+            tool = create_update_memory_tool(mock_qdrant, "test@example.com")
+            result = tool.func(
+                memory_id="mem-123",
+                new_content="conteudo novo",
+            )
+
+        assert "✅" in result or "atualizada" in result.lower()
+        mock_qdrant.upsert.assert_called_once()
+        updated_point = mock_qdrant.upsert.call_args.kwargs["points"][0]
+        assert updated_point.payload["memory"] == "conteudo novo"
+        assert updated_point.payload["updated_at"] == "2026-03-27T10:00:00"
+        assert updated_point.vector == [0.3] * 768
+
+    def test_update_memory_rejects_non_owner(self):
+        """Test that update_memory refuses to update another user's memory."""
+        from qdrant_client.models import PointStruct
+        from src.services.memory_tools import create_update_memory_tool
+
+        mock_qdrant = MagicMock()
+        existing_point = PointStruct(
+            id="mem-123",
+            vector=[0.1] * 768,
+            payload={
+                "id": "mem-123",
+                "memory": "conteudo antigo",
+                "user_id": "other@example.com",
+            },
+        )
+        mock_qdrant.retrieve.return_value = [existing_point]
+
+        tool = create_update_memory_tool(mock_qdrant, "test@example.com")
+        result = tool.func(memory_id="mem-123", new_content="conteudo novo")
+
+        assert "permissão" in result.lower() or "❌" in result
+        mock_qdrant.upsert.assert_not_called()
+
+    def test_update_memory_returns_not_found_when_memory_missing(self):
+        """Test that update_memory reports missing memory IDs."""
+        from src.services.memory_tools import create_update_memory_tool
+
+        mock_qdrant = MagicMock()
+        mock_qdrant.retrieve.return_value = []
+
+        tool = create_update_memory_tool(mock_qdrant, "test@example.com")
+        result = tool.func(memory_id="missing-id", new_content="conteudo novo")
+
+        assert "não encontrada" in result.lower() or "not found" in result.lower()
+        mock_qdrant.upsert.assert_not_called()
+
     def test_delete_memory_tool_creation(self):
         """Test that delete_memory_tool can be created."""
         from src.services.memory_tools import create_delete_memory_tool
@@ -142,6 +216,65 @@ class TestMemoryToolsIntegration:
 
         assert tool is not None
         assert hasattr(tool, 'name')
+
+    def test_delete_memory_deletes_when_owner_matches(self):
+        """Test that delete_memory removes an owned memory."""
+        from qdrant_client.models import PointStruct
+        from src.services.memory_tools import create_delete_memory_tool
+
+        mock_qdrant = MagicMock()
+        existing_point = PointStruct(
+            id="mem-123",
+            vector=[0.1] * 768,
+            payload={
+                "id": "mem-123",
+                "memory": "conteudo antigo",
+                "user_id": "test@example.com",
+            },
+        )
+        mock_qdrant.retrieve.return_value = [existing_point]
+
+        tool = create_delete_memory_tool(mock_qdrant, "test@example.com")
+        result = tool.func(memory_id="mem-123")
+
+        assert "✅" in result or "deletada" in result.lower()
+        mock_qdrant.delete.assert_called_once()
+
+    def test_delete_memory_rejects_non_owner(self):
+        """Test that delete_memory refuses another user's memory."""
+        from qdrant_client.models import PointStruct
+        from src.services.memory_tools import create_delete_memory_tool
+
+        mock_qdrant = MagicMock()
+        existing_point = PointStruct(
+            id="mem-123",
+            vector=[0.1] * 768,
+            payload={
+                "id": "mem-123",
+                "memory": "conteudo antigo",
+                "user_id": "other@example.com",
+            },
+        )
+        mock_qdrant.retrieve.return_value = [existing_point]
+
+        tool = create_delete_memory_tool(mock_qdrant, "test@example.com")
+        result = tool.func(memory_id="mem-123")
+
+        assert "permissão" in result.lower() or "❌" in result
+        mock_qdrant.delete.assert_not_called()
+
+    def test_delete_memory_returns_not_found_when_memory_missing(self):
+        """Test that delete_memory reports missing memory IDs."""
+        from src.services.memory_tools import create_delete_memory_tool
+
+        mock_qdrant = MagicMock()
+        mock_qdrant.retrieve.return_value = []
+
+        tool = create_delete_memory_tool(mock_qdrant, "test@example.com")
+        result = tool.func(memory_id="missing-id")
+
+        assert "não encontrada" in result.lower() or "not found" in result.lower()
+        mock_qdrant.delete.assert_not_called()
 
 
 class TestEmbeddingUserPropagation:
@@ -174,3 +307,20 @@ class TestEmbeddingUserPropagation:
         _embed_text("some text", user_email="user@test.com")
 
         mock_get_embedder.assert_called_once_with("user@test.com")
+
+    @patch("src.services.memory_tools._get_embedder")
+    def test_embed_text_skips_remote_provider_for_test_openrouter_key(
+        self, mock_get_embedder
+    ):
+        """Test env placeholder keys should bypass remote embedding calls."""
+        from src.services.memory_tools import _embed_text, settings
+
+        original_key = settings.OPENROUTER_API_KEY
+        object.__setattr__(settings, "OPENROUTER_API_KEY", "or-test-key")
+        try:
+            embedding = _embed_text("some text", user_email="user@test.com")
+        finally:
+            object.__setattr__(settings, "OPENROUTER_API_KEY", original_key)
+
+        assert len(embedding) == 768
+        mock_get_embedder.assert_not_called()

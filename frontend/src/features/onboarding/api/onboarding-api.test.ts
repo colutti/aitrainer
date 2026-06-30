@@ -25,22 +25,43 @@ describe('onboardingApi', () => {
   it('should complete onboarding', async () => {
     const payload = {
       token: 'abc',
-      password: 'pass',
-      gender: 'M',
+      password: 'SecurePass1',
+      gender: 'Masculino',
       age: 30,
       weight: 80,
       height: 180,
       trainer_type: 'atlas',
-      subscription_plan: 'Pro'
+      subscription_plan: 'Pro',
     };
-    
+
     vi.mocked(httpClient).mockResolvedValue({ token: 'jwt-token' });
 
     await onboardingApi.completeOnboarding(payload);
-    
+
     expect(httpClient).toHaveBeenCalledWith('/onboarding/complete', {
-        method: 'POST',
-        body: JSON.stringify(payload)
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  });
+
+  it('should complete public onboarding', async () => {
+    const payload = {
+      gender: 'Feminino',
+      age: 28,
+      weight: 62,
+      height: 168,
+      trainer_type: 'sofia',
+      subscription_plan: 'Pro',
+      name: 'Public User',
+    };
+
+    vi.mocked(httpClient).mockResolvedValue({ token: 'jwt-token' });
+
+    await onboardingApi.completePublicOnboarding(payload);
+
+    expect(httpClient).toHaveBeenCalledWith('/onboarding/profile', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
   });
 });

@@ -229,6 +229,12 @@ class MongoDatabase:
         """Delegates to nutrition repository."""
         return self.nutrition.save_log(log)
 
+    def update_nutrition_log(
+        self, log_id: str, user_email: str, log: NutritionLog
+    ) -> bool:
+        """Delegates to nutrition repository."""
+        return self.nutrition.update_log(log_id, user_email, log)
+
     def get_nutrition_logs(
         self, user_email: str, limit: int = 30
     ) -> list[NutritionLog]:

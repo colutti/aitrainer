@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { useConfirmation } from '../../shared/hooks/useConfirmation';
@@ -61,7 +61,7 @@ describe('MemoriesPage', () => {
     expect(screen.getByText('2')).toBeInTheDocument(); // Total Insights count
   });
 
-  it('should handle delete interaction', () => {
+  it('should handle delete interaction', async () => {
     vi.mocked(useMemoryStore).mockReturnValue({
       ...defaultStore,
       memories: [
@@ -71,37 +71,13 @@ describe('MemoriesPage', () => {
     mockConfirm.mockResolvedValue(true);
 
     render(<MemoriesPage />);
-    
-    // Find delete button
-    // The button has Trash2 icon.
-    const deleteBtns = screen.getAllByRole('button');
-    // We assume the delete button is one of them.
-    // Let's refine. The button has `onClick` that calls `handleDelete`.
-    // It is inside the memory card.
-    
-    // We can click the button.
-    // There are no pagination buttons here (totalPages=1).
-    // So likely the only button is the Delete button on the card (and maybe header/info buttons if any?).
-    // Header has no buttons.
-    // So delete button is likely the only one.
-    
-    const deleteBtn = deleteBtns[0];
-    if (deleteBtn) {
-        fireEvent.click(deleteBtn);
-    }
+
+    fireEvent.click(screen.getByLabelText(/Excluir|Delete/i));
 
     expect(mockConfirm).toHaveBeenCalled();
-    // We need to wait for async delete?
-    // It's void/async.
-    // We can rely on `mockDeleteMemory` being called if we await properly or if it happens synchronously after confirm await.
-    
-    // Since `handleDelete` awaits `confirm`, then calls `deleteMemory`.
-    // We can wait for call.
-    // But `fireEvent` is sync.
-    // We might need `waitFor` if `handleDelete` is async.
-    
-    // Actually, `fireEvent` doesn't await the handler.
-    // But we can check expectations.
+    await waitFor(() => {
+      expect(mockDeleteMemory).toHaveBeenCalledWith('1');
+    });
   });
   
   it('should handle pagination', () => {
@@ -125,4 +101,3 @@ describe('MemoriesPage', () => {
     expect(mockNextPage).toHaveBeenCalled();
   });
 });
-;

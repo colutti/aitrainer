@@ -11,6 +11,7 @@ vi.mock('../api/body-api', () => ({
     getBodyCompositionStats: vi.fn(),
     getWeightHistory: vi.fn(),
     logWeight: vi.fn(),
+    updateWeight: vi.fn(),
     deleteWeight: vi.fn(),
   },
 }));
@@ -66,6 +67,72 @@ describe('useWeightTab hook', () => {
 
     expect(bodyApi.logWeight).toHaveBeenCalled();
     expect(mockNotify.success).toHaveBeenCalledWith('Registro de peso salvo!');
+  });
+
+  it('uses updateWeight with the edited log id instead of creating a new entry', async () => {
+    vi.mocked(bodyApi.getWeightHistory).mockResolvedValue(mockHistory as Awaited<ReturnType<typeof bodyApi.getWeightHistory>>);
+    vi.mocked(bodyApi.updateWeight).mockResolvedValue({} as Awaited<ReturnType<typeof bodyApi.updateWeight>>);
+
+    const { result } = renderHook(() => useWeightTab());
+    await waitFor(() => { expect(result.current.isLoading).toBe(false); });
+
+    act(() => {
+      result.current.editEntry({
+        ...mockLogEntry,
+        muscle_mass_kg: 34.6,
+        waist_cm: 83,
+        notes: 'updated entry',
+      } as Parameters<typeof result.current.editEntry>[0]);
+    });
+
+    await act(async () => {
+      await result.current.onSubmit({
+        date: '2024-01-15',
+        weight_kg: 79.4,
+        body_fat_pct: 18.7,
+        muscle_mass_kg: 34.6,
+        body_water_pct: 56.4,
+        bone_mass_kg: 3.2,
+        visceral_fat: 7,
+        bmr: 1740,
+        notes: 'updated entry',
+        neck_cm: 38,
+        chest_cm: 102,
+        waist_cm: 83,
+        hips_cm: 97,
+        bicep_r_cm: 35,
+        bicep_l_cm: 34,
+        thigh_r_cm: 56,
+        thigh_l_cm: 55,
+        calf_r_cm: 36,
+        calf_l_cm: 35,
+      });
+    });
+
+    expect(bodyApi.updateWeight).toHaveBeenCalledWith('log-1', 79.4, {
+      date: '2024-01-15',
+      weight_kg: 79.4,
+      body_fat_pct: 18.7,
+      muscle_mass_kg: 34.6,
+      body_water_pct: 56.4,
+      bone_mass_kg: 3.2,
+      visceral_fat: 7,
+      bmr: 1740,
+      notes: 'updated entry',
+      neck_cm: 38,
+      chest_cm: 102,
+      waist_cm: 83,
+      hips_cm: 97,
+      bicep_r_cm: 35,
+      bicep_l_cm: 34,
+      thigh_r_cm: 56,
+      thigh_l_cm: 55,
+      calf_r_cm: 36,
+      calf_l_cm: 35,
+    });
+    expect(bodyApi.logWeight).not.toHaveBeenCalled();
+    expect(result.current.isEditing).toBe(false);
+    expect(result.current.editingDate).toBeNull();
   });
 
   it('should handle submit error', async () => {

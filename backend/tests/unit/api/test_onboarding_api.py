@@ -189,6 +189,45 @@ def test_complete_onboarding_creates_weight_log(valid_invite):
         assert saved_log.user_email == "newuser@test.com"
 
 
+def test_complete_onboarding_persists_selected_plan_and_gymbro_trainer(valid_invite):
+    """Confirma que o onboarding respeita plano pago e o treinador gymbro."""
+    with (
+        patch("src.api.endpoints.onboarding.get_mongo_database") as mock_db,
+        patch("src.api.endpoints.onboarding.create_token") as mock_create_token,
+    ):
+        mock_invites = MagicMock()
+        mock_invites.get_by_token.return_value = valid_invite
+        mock_invites.mark_as_used.return_value = True
+        mock_db_instance = MagicMock()
+        mock_db_instance.invites = mock_invites
+        mock_db_instance.get_user_profile.return_value = None
+        mock_db.return_value = mock_db_instance
+        mock_create_token.return_value = "fake-jwt-token"
+
+        request_data = {
+            "token": valid_invite.token,
+            "password": "SecurePass1",
+            "gender": "Masculino",
+            "age": 32,
+            "weight": 82.5,
+            "height": 182,
+            "trainer_type": "gymbro",
+            "subscription_plan": "Pro",
+        }
+
+        response = client.post("/onboarding/complete", json=request_data)
+
+        assert response.status_code == 200
+        saved_profile = mock_db_instance.save_user_profile.call_args[0][0]
+        saved_trainer = mock_db_instance.save_trainer_profile.call_args[0][0]
+        saved_log = mock_db_instance.weight.save_log.call_args[0][0]
+        assert saved_profile.subscription_plan == "Pro"
+        assert saved_trainer.trainer_type == "gymbro"
+        assert saved_log.weight_kg == 82.5
+        assert saved_log.trend_weight == 82.5
+        mock_invites.mark_as_used.assert_called_once_with(valid_invite.token)
+
+
 def test_complete_public_onboarding_success(monkeypatch):
     """Test public onboarding (already authenticated user)."""
     user_email = "public@test.com"
@@ -237,6 +276,8 @@ def test_complete_public_onboarding_success(monkeypatch):
         assert updated_profile.subscription_plan == "Pro"
         assert updated_profile.gender == "Feminino"
         assert updated_profile.weight is None
+        assert updated_profile.goal_type == "maintain"
+        assert updated_profile.weekly_rate == 0.0
         assert updated_profile.display_name == "Public User"
         assert updated_profile.onboarding_completed is True
         
@@ -244,6 +285,11 @@ def test_complete_public_onboarding_success(monkeypatch):
         mock_db_instance.save_trainer_profile.assert_called_once()
         trainer = mock_db_instance.save_trainer_profile.call_args[0][0]
         assert trainer.trainer_type == "sofia"
+        mock_db_instance.weight.save_log.assert_called_once()
+        saved_log = mock_db_instance.weight.save_log.call_args[0][0]
+        assert saved_log.user_email == user_email
+        assert saved_log.weight_kg == 65.0
+        assert saved_log.trend_weight == 65.0
 
     app.dependency_overrides.clear()
 
@@ -284,6 +330,47 @@ def test_complete_public_onboarding_blocked_when_signups_disabled(monkeypatch):
 
         assert response.status_code == 403
         assert response.json()["detail"] == "new_signups_disabled"
+        mock_db_instance.save_user_profile.assert_not_called()
+        mock_db_instance.save_trainer_profile.assert_not_called()
+
+    app.dependency_overrides.clear()
+
+
+def test_complete_public_onboarding_rejects_unsupported_premium_plan(monkeypatch):
+    """Public onboarding must reject plans that are not supported by the product."""
+    user_email = "public@test.com"
+    app.dependency_overrides[verify_token] = lambda: user_email
+    monkeypatch.setattr(
+        "src.api.endpoints.onboarding.are_new_user_signups_enabled", lambda: True
+    )
+
+    with patch("src.api.endpoints.onboarding.get_mongo_database") as mock_db:
+        mock_db_instance = MagicMock()
+        mock_profile = UserProfile(
+            email=user_email,
+            gender="Male",
+            age=25,
+            weight=None,
+            height=170,
+            goal_type="maintain",
+            onboarding_completed=False,
+        )
+        mock_db_instance.get_user_profile.return_value = mock_profile
+        mock_db.return_value = mock_db_instance
+
+        request_data = {
+            "gender": "Feminino",
+            "age": 26,
+            "weight": 65.0,
+            "height": 165,
+            "trainer_type": "sofia",
+            "subscription_plan": "Premium",
+            "name": "Public User",
+        }
+
+        response = client.post("/onboarding/profile", json=request_data)
+
+        assert response.status_code == 422
         mock_db_instance.save_user_profile.assert_not_called()
         mock_db_instance.save_trainer_profile.assert_not_called()
 

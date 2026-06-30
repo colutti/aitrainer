@@ -189,6 +189,45 @@ class TestMemoryApi(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 422)
 
+    def test_create_memory_success(self):
+        """Test successful creation of a manual memory."""
+        user_email = "test@test.com"
+        app.dependency_overrides[verify_token] = lambda: user_email
+        mock_brain = MagicMock()
+        mock_brain.add_memory = AsyncMock(return_value="mem_999")
+        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+        response = self.client.post(
+            "/memory",
+            json={"memory": "User prefers lower volume deload weeks"},
+            headers={"Authorization": "Bearer test_token"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["id"], "mem_999")
+        self.assertEqual(data["memory"], "User prefers lower volume deload weeks")
+        self.assertIsNotNone(data["created_at"])
+        self.assertIsNotNone(data["updated_at"])
+        mock_brain.add_memory.assert_awaited_once_with(
+            "User prefers lower volume deload weeks",
+            user_email,
+        )
+
+    def test_create_memory_requires_text(self):
+        """Create memory must reject empty payloads."""
+        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+        app.dependency_overrides[get_ai_trainer_brain] = lambda: MagicMock()
+
+        response = self.client.post(
+            "/memory",
+            json={},
+            headers={"Authorization": "Bearer test_token"},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {"detail": "Missing 'memory' text"})
+
     def test_delete_memory_success(self):
         """
         Test successful deletion of a memory.
@@ -240,6 +279,24 @@ class TestMemoryApi(unittest.TestCase):
             response.json(), {"detail": "Not authorized to delete this memory"}
         )
         mock_brain.get_memory_by_id.assert_called_once_with("mem_123")
+
+    def test_delete_memory_normalizes_owner_identifier(self):
+        """Deletion should accept equivalent owner ids despite case/spacing noise."""
+        user_email = "test@test.com"
+        app.dependency_overrides[verify_token] = lambda: user_email
+        mock_brain = MagicMock()
+        mock_brain.get_memory_by_id.return_value = {
+            "id": "mem_123",
+            "user_id": "  TEST@Test.com ",
+        }
+        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+        response = self.client.delete(
+            "/memory/mem_123", headers={"Authorization": "Bearer test_token"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        mock_brain.delete_memory.assert_called_once_with("mem_123", user_email)
 
     def test_delete_memory_not_found(self):
         """

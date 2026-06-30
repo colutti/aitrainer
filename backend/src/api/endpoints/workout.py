@@ -3,6 +3,7 @@
 from datetime import datetime, date as py_date
 from typing import Annotated
 
+from bson import ObjectId
 from fastapi import APIRouter, Depends, Query, HTTPException
 from pydantic import BaseModel, Field
 
@@ -25,6 +26,11 @@ CurrentUser = Annotated[str, Depends(verify_token)]
 DatabaseDep = Annotated[MongoDatabase, Depends(get_mongo_database)]
 
 
+def _validate_object_id(resource_name: str, resource_id: str) -> None:
+    if not ObjectId.is_valid(resource_id):
+        raise HTTPException(status_code=400, detail=f"Invalid {resource_name} id")
+
+
 class CreateWorkoutRequest(BaseModel):
     """Request model for creating a workout log."""
 
@@ -33,6 +39,7 @@ class CreateWorkoutRequest(BaseModel):
     exercises: list[ExerciseLog]
     duration_minutes: int | None = None
     source: str = "manual"
+    external_id: str | None = None
 
 
 @router.post("", response_model=WorkoutWithId)
@@ -54,6 +61,7 @@ def create_workout(
             exercises=workout_data.exercises,
             duration_minutes=workout_data.duration_minutes,
             source=workout_data.source,
+            external_id=workout_data.external_id,
         )
 
         doc_id = db.save_workout_log(workout_log)
@@ -83,6 +91,7 @@ def update_workout(
     """
     logger.info("Updating workout log %s for user: %s", workout_id, user_email)
     try:
+        _validate_object_id("workout", workout_id)
         # Validate ownership first
         existing_workout = db.get_workout_by_id(workout_id)
         if not existing_workout:
@@ -101,6 +110,7 @@ def update_workout(
             exercises=workout_data.exercises,
             duration_minutes=workout_data.duration_minutes,
             source=workout_data.source,
+            external_id=workout_data.external_id,
         )
 
         updated = db.update_workout_log(workout_id, user_email, workout_log)
@@ -221,6 +231,7 @@ def delete_workout(
     logger.info("User: %s, Workout ID: %s", user_email, workout_id)
 
     try:
+        _validate_object_id("workout", workout_id)
         # Validate ownership first
         workout = db.get_workout_by_id(workout_id)
         if not workout:

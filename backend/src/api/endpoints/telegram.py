@@ -6,6 +6,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Header, Request
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 from src.core.demo_access import WritableCurrentUser
 from src.services.auth import verify_token
@@ -25,6 +26,18 @@ router = APIRouter()
 CurrentUser = Annotated[str, Depends(verify_token)]
 TelegramRepoDep = Annotated[TelegramRepository, Depends(get_telegram_repository)]
 BrainDep = Annotated[Any, Depends(get_ai_trainer_brain)]
+
+
+class E2ETelegramLinkInput(BaseModel):
+    """Test-only input for seeding a Telegram link during E2E runs."""
+
+    chat_id: int
+    username: str | None = None
+
+
+def is_e2e_test_auth_enabled() -> bool:
+    """Return whether E2E auth bootstrap helpers are enabled."""
+    return settings.ENABLE_E2E_TEST_AUTH
 
 
 def _assert_telegram_allowed(user_email: str, brain: BrainDep) -> None:
@@ -92,6 +105,21 @@ def unlink(
     _assert_telegram_allowed(user_email, brain)
     repo.delete_link(user_email)
     return JSONResponse(content={"message": "Unlinked successfully"})
+
+
+@router.post("/e2e-link")
+def e2e_link(
+    data: E2ETelegramLinkInput,
+    user_email: WritableCurrentUser,
+    repo: TelegramRepoDep,
+    brain: BrainDep,
+) -> JSONResponse:
+    """Seed a Telegram link in E2E environments without depending on the live bot."""
+    if not is_e2e_test_auth_enabled():
+        raise HTTPException(status_code=404, detail="Not found")
+    _assert_telegram_allowed(user_email, brain)
+    repo.create_or_replace_link(user_email, data.chat_id, data.username)
+    return JSONResponse(content={"linked": True})
 
 
 @router.post("/webhook", include_in_schema=False)

@@ -311,6 +311,34 @@ def test_e2e_login_can_start_user_unonboarded():
     app.dependency_overrides = {}
 
 
+def test_e2e_login_can_seed_non_default_subscription_plan():
+    """Test E2E bootstrap can create an onboarded user with a specific plan."""
+    with patch("src.api.endpoints.user.is_e2e_test_auth_enabled", return_value=True):
+        mock_brain = MagicMock()
+        mock_brain.get_user_profile.return_value = None
+        app.dependency_overrides[get_mongo_database] = lambda: mock_brain
+
+        response = client.post(
+            "/user/e2e-login",
+            json={
+                "email": "pro@example.com",
+                "display_name": "Pro User",
+                "onboarding_completed": True,
+                "subscription_plan": "Pro",
+            },
+        )
+
+        assert response.status_code == 200
+        mock_brain.save_user_profile.assert_called_once()
+        saved_profile = mock_brain.save_user_profile.call_args.args[0]
+        assert saved_profile.email == "pro@example.com"
+        assert saved_profile.display_name == "Pro User"
+        assert saved_profile.onboarding_completed is True
+        assert saved_profile.subscription_plan == "Pro"
+
+    app.dependency_overrides = {}
+
+
 def test_e2e_login_recovers_malformed_existing_profile():
     """E2E bootstrap should recover an invalid stored profile and overwrite it."""
     from pydantic_core import ValidationError as PydanticCoreValidationError
@@ -536,6 +564,104 @@ def test_update_profile_without_weight_preserves_existing(sample_user_profile):
     app.dependency_overrides = {}
 
 
+def test_update_profile_updates_all_public_fields_and_resets_tdee_on_goal_change(
+    sample_user_profile,
+):
+    """Goal changes must persist all public fields and clear stale TDEE check-in state."""
+    app.dependency_overrides[verify_token] = lambda: "test@example.com"
+    existing_profile = sample_user_profile.model_copy(
+        update={
+            "hevy_api_key": "secret-hevy-key",
+            "tdee_last_check_in": "2026-06-01",
+            "tdee_last_target": 2450,
+            "onboarding_completed": True,
+        }
+    )
+    mock_db = MagicMock()
+    mock_db.get_user_profile.return_value = existing_profile
+    mock_db.save_user_profile.return_value = None
+    mock_db.update_user_profile_fields.return_value = None
+    app.dependency_overrides[get_mongo_database] = lambda: mock_db
+
+    update_payload = {
+        "gender": "Feminino",
+        "age": 33,
+        "height": 172,
+        "goal_type": "gain",
+        "weekly_rate": 0.3,
+        "target_weight": 74.5,
+        "notes": "Foco em hipertrofia",
+        "display_name": "Updated User",
+        "photo_base64": "data:image/png;base64,abc123",
+        "onboarding_completed": False,
+    }
+
+    response = client.post(
+        "/user/update_profile",
+        json=update_payload,
+        headers={"Authorization": "Bearer test_token"},
+    )
+
+    assert response.status_code == 200
+    saved = mock_db.save_user_profile.call_args.args[0]
+    assert saved.gender == "Feminino"
+    assert saved.age == 33
+    assert saved.height == 172
+    assert saved.goal_type == "gain"
+    assert saved.weekly_rate == 0.3
+    assert saved.target_weight == 74.5
+    assert saved.notes == "Foco em hipertrofia"
+    assert saved.display_name == "Updated User"
+    assert saved.photo_base64 == "data:image/png;base64,abc123"
+    assert saved.onboarding_completed is False
+    assert saved.hevy_api_key == "secret-hevy-key"
+    assert saved.weight == 75.0
+    assert saved.tdee_last_check_in is None
+    assert saved.tdee_last_target is None
+    mock_db.update_user_profile_fields.assert_called_once_with(
+        "test@example.com",
+        {"tdee_last_check_in": None, "tdee_last_target": None},
+    )
+
+    app.dependency_overrides = {}
+
+
+def test_update_profile_keeps_tdee_state_when_goal_fields_do_not_change(
+    sample_user_profile,
+):
+    """Non-goal profile edits must not wipe coaching target/check-in state."""
+    app.dependency_overrides[verify_token] = lambda: "test@example.com"
+    existing_profile = sample_user_profile.model_copy(
+        update={
+            "tdee_last_check_in": "2026-06-01",
+            "tdee_last_target": 2450,
+        }
+    )
+    mock_db = MagicMock()
+    mock_db.get_user_profile.return_value = existing_profile
+    mock_db.save_user_profile.return_value = None
+    app.dependency_overrides[get_mongo_database] = lambda: mock_db
+
+    response = client.post(
+        "/user/update_profile",
+        json={
+            "notes": "Atualizei apenas as observações",
+            "display_name": "Same Goal User",
+        },
+        headers={"Authorization": "Bearer test_token"},
+    )
+
+    assert response.status_code == 200
+    saved = mock_db.save_user_profile.call_args.args[0]
+    assert saved.notes == "Atualizei apenas as observações"
+    assert saved.display_name == "Same Goal User"
+    assert saved.tdee_last_check_in == "2026-06-01"
+    assert saved.tdee_last_target == 2450
+    mock_db.update_user_profile_fields.assert_not_called()
+
+    app.dependency_overrides = {}
+
+
 # Test: POST /telegram-notifications - Success Case
 def test_update_telegram_notifications_success(sample_user_profile):
     """Test successful update of Telegram notification settings."""
@@ -744,6 +870,57 @@ def test_update_identity_partial_update_photo_only(
     mock_ai_trainer_brain.update_user_profile_fields.assert_called_once_with(
         mock_user_email, {"photo_base64": "data:image/png;base64,abc123"}
     )
+
+    app.dependency_overrides.clear()
+
+
+def test_update_identity_partial_update_combined_fields(
+    mock_user_email, mock_ai_trainer_brain, sample_user_profile
+):
+    """update_identity with both display name and photo must update both fields only."""
+    app.dependency_overrides[verify_token] = lambda: mock_user_email
+    app.dependency_overrides[get_mongo_database] = lambda: mock_ai_trainer_brain
+    mock_ai_trainer_brain.get_user_profile.return_value = sample_user_profile
+
+    response = client.post(
+        "/user/update_identity",
+        json={
+            "display_name": "Updated Name",
+            "photo_base64": "data:image/png;base64,combo123",
+        },
+        headers={"Authorization": "Bearer test_token"},
+    )
+
+    assert response.status_code == 200
+    mock_ai_trainer_brain.save_user_profile.assert_not_called()
+    mock_ai_trainer_brain.update_user_profile_fields.assert_called_once_with(
+        mock_user_email,
+        {
+            "display_name": "Updated Name",
+            "photo_base64": "data:image/png;base64,combo123",
+        },
+    )
+
+    app.dependency_overrides.clear()
+
+
+def test_update_identity_empty_payload_does_not_write(
+    mock_user_email, mock_ai_trainer_brain, sample_user_profile
+):
+    """Empty identity payload should return success without touching the database."""
+    app.dependency_overrides[verify_token] = lambda: mock_user_email
+    app.dependency_overrides[get_mongo_database] = lambda: mock_ai_trainer_brain
+    mock_ai_trainer_brain.get_user_profile.return_value = sample_user_profile
+
+    response = client.post(
+        "/user/update_identity",
+        json={},
+        headers={"Authorization": "Bearer test_token"},
+    )
+
+    assert response.status_code == 200
+    mock_ai_trainer_brain.save_user_profile.assert_not_called()
+    mock_ai_trainer_brain.update_user_profile_fields.assert_not_called()
 
     app.dependency_overrides.clear()
 

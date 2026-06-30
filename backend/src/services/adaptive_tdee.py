@@ -78,6 +78,13 @@ class AdaptiveTDEEService:
         """Initialize the AdaptiveTDEEService with a database connection."""
         self.db = db
 
+    def _get_optional_plan(self, user_email: str):
+        """Return the user's plan when the database surface provides it."""
+        get_plan = getattr(self.db, "get_plan", None)
+        if callable(get_plan):
+            return get_plan(user_email)
+        return None
+
     @staticmethod
     def _extract_plan_goal_context(plan, profile=None) -> dict[str, Any]:
         """Return goal direction/rate/target from plan, falling back to profile."""
@@ -552,7 +559,7 @@ class AdaptiveTDEEService:
 
         # Step 2: Calculate formula TDEE as prior/fallback
         profile = self.db.get_user_profile(user_email)
-        plan = self.db.get_plan(user_email)
+        plan = self._get_optional_plan(user_email)
         plan_goal_context = self._extract_plan_goal_context(plan, profile)
         tdee_start_date_str = getattr(profile, "tdee_start_date", None)
         tdee_start_date = None
@@ -943,7 +950,7 @@ class AdaptiveTDEEService:
     def _calculate_fallback_tdee(self, user_email, weight_logs, nutrition_logs) -> dict:
         """Safe TDEE estimate when adaptive data is missing."""
         profile = self.db.get_user_profile(user_email)
-        plan = self.db.get_plan(user_email)
+        plan = self._get_optional_plan(user_email)
         plan_goal_context = self._extract_plan_goal_context(plan, profile)
         complete_nutrition = [log for log in nutrition_logs if not log.partial_logged]
         sorted_weight_logs = sorted(weight_logs, key=lambda x: x.date) if weight_logs else []

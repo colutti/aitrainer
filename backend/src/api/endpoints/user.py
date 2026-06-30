@@ -324,6 +324,7 @@ class E2ETestLoginRequest(BaseModel):
     display_name: str = "Real QA Bot"
     onboarding_completed: bool = True
     is_demo: bool = False
+    subscription_plan: str = "Free"
 
 
 @router.post("/update_identity")
@@ -377,7 +378,7 @@ def e2e_login(data: E2ETestLoginRequest, db: DatabaseDep) -> dict:
 
     if existing_profile:
         existing_profile.display_name = data.display_name
-        existing_profile.subscription_plan = "Free"
+        existing_profile.subscription_plan = data.subscription_plan
         existing_profile.onboarding_completed = data.onboarding_completed
         existing_profile.is_demo = data.is_demo
         db.save_user_profile(existing_profile)
@@ -390,7 +391,7 @@ def e2e_login(data: E2ETestLoginRequest, db: DatabaseDep) -> dict:
             weight=None,
             height=180,
             goal_type="maintain",
-            subscription_plan="Free",
+            subscription_plan=data.subscription_plan,
             display_name=data.display_name,
             onboarding_completed=data.onboarding_completed,
             is_demo=data.is_demo,

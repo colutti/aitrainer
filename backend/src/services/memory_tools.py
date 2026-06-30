@@ -12,7 +12,7 @@ import hashlib
 from uuid import uuid4
 import numpy as np
 from openai import OpenAI
-from qdrant_client import QdrantClient
+from qdrant_client import QdrantClient, models as qdrant_models
 from qdrant_client.models import VectorParams, Distance, PointStruct
 
 from src.core.config import settings
@@ -52,10 +52,38 @@ def _get_embedder(user_email: str | None = None) -> OpenRouterEmbeddingClient:
     return OpenRouterEmbeddingClient(user_email=user_email)
 
 
+def _build_deterministic_fallback_embedding(text: str) -> list[float]:
+    """Return a stable local embedding for test/offline environments."""
+    digest = hashlib.sha256(text.encode("utf-8")).digest()
+    dims = int(settings.OPENROUTER_EMBED_DIMENSIONS)
+    raw = (digest * ((dims // len(digest)) + 1))[:dims]
+    vec = np.frombuffer(raw, dtype=np.uint8).astype(np.float32)
+    vec = (vec / 255.0) - 0.5
+    norm = np.linalg.norm(vec)
+    if norm > 0:
+        vec = vec / norm
+    return vec.tolist()
+
+
+def _has_usable_openrouter_embedding_config() -> bool:
+    """Return whether embeddings should try the remote OpenRouter provider."""
+    api_key = settings.OPENROUTER_API_KEY.strip()
+    if not api_key:
+        return False
+    return not api_key.startswith("or-test-")
+
+
 def _embed_text(text: str, user_email: str | None = None) -> list:
     """
     Generate fixed-size embedding from text using OpenRouter.
     """
+    if not _has_usable_openrouter_embedding_config():
+        logger.info(
+            "Skipping remote embeddings and using deterministic fallback "
+            "for local/test configuration."
+        )
+        return _build_deterministic_fallback_embedding(text)
+
     try:
         embedder = _get_embedder(user_email)
         embedding = embedder.embed_query(text)
@@ -66,21 +94,49 @@ def _embed_text(text: str, user_email: str | None = None) -> list:
         return embedding_array.tolist()
     except Exception as error:  # pylint: disable=broad-exception-caught
         # Test/runtime fallback when provider credentials/network are unavailable.
-        logger.warning("Embedding provider unavailable, using deterministic fallback: %s", error)
-        digest = hashlib.sha256(text.encode("utf-8")).digest()
-        dims = int(settings.OPENROUTER_EMBED_DIMENSIONS)
-        raw = (digest * ((dims // len(digest)) + 1))[:dims]
-        vec = np.frombuffer(raw, dtype=np.uint8).astype(np.float32)
-        vec = (vec / 255.0) - 0.5
-        norm = np.linalg.norm(vec)
-        if norm > 0:
-            vec = vec / norm
-        return vec.tolist()
+        logger.warning(
+            "Embedding provider unavailable, using deterministic fallback: %s",
+            error,
+        )
+        return _build_deterministic_fallback_embedding(text)
 
 
 def _get_collection_name(_user_email: str) -> str:
     """Returns collection name (shared across all users)."""
     return settings.QDRANT_COLLECTION_NAME
+
+
+def _normalize_user_id(user_id: str) -> str:
+    """Normalize user identifiers used for memory ownership and filtering."""
+    return user_id.strip().lower()
+
+
+def _build_user_filter(normalized_user_id: str) -> qdrant_models.Filter:
+    """Build a Qdrant filter scoped to one normalized user id."""
+    return qdrant_models.Filter(
+        must=[
+            qdrant_models.FieldCondition(
+                key="user_id",
+                match=qdrant_models.MatchValue(value=normalized_user_id),
+            )
+        ]
+    )
+
+
+def _build_memory_payload(
+    memory_id: str,
+    content: str,
+    normalized_user_id: str,
+    extra_payload: dict | None = None,
+) -> dict:
+    """Build the canonical memory payload stored in Qdrant."""
+    payload = dict(extra_payload or {})
+    return {
+        "id": memory_id,
+        "memory": content,
+        "user_id": normalized_user_id,
+        **payload,
+    }
 
 
 def _ensure_collection(qdrant_client: QdrantClient, collection_name: str):
@@ -115,6 +171,7 @@ def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str):
         qdrant_client: Qdrant client for vector storage
         user_email: User email for ownership and filtering
     """
+    normalized_user_id = _normalize_user_id(user_email)
 
     @tool
     def save_memory(content: str, category: str) -> str:
@@ -145,14 +202,11 @@ def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str):
         - save_memory(content="Tem dor nas costas", category="limitation")
         """
         try:
-            # pylint: disable=import-outside-toplevel
-            from qdrant_client import models as qdrant_models
-
             valid_categories = {"preference", "limitation", "goal", "health", "context"}
             if category not in valid_categories:
                 return f"Erro: categoria '{category}' inválida. Use: {', '.join(valid_categories)}"
 
-            collection_name = _get_collection_name(user_email)
+            collection_name = _get_collection_name(normalized_user_id)
             _ensure_collection(qdrant_client, collection_name)
 
             # Generate embedding with OpenRouter-compatible model
@@ -161,14 +215,7 @@ def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str):
             similar_results = qdrant_client.query_points(
                 collection_name=collection_name,
                 query=embedding,
-                query_filter=qdrant_models.Filter(
-                    must=[
-                        qdrant_models.FieldCondition(
-                            key="user_id",
-                            match=qdrant_models.MatchValue(value=user_email),
-                        )
-                    ]
-                ),
+                query_filter=_build_user_filter(normalized_user_id),
                 limit=1,
                 score_threshold=0.92,
                 with_payload=True,
@@ -195,14 +242,16 @@ def create_save_memory_tool(qdrant_client: QdrantClient, user_email: str):
             point = PointStruct(
                 id=memory_id,
                 vector=embedding,
-                payload={
-                    "id": memory_id,
-                    "memory": content,
-                    "category": category,
-                    "user_id": user_email,
-                    "created_at": now,
-                    "updated_at": now,
-                },
+                payload=_build_memory_payload(
+                    memory_id,
+                    content,
+                    normalized_user_id,
+                    {
+                        "category": category,
+                        "created_at": now,
+                        "updated_at": now,
+                    },
+                ),
             )
 
             # Upsert to Qdrant
@@ -234,6 +283,7 @@ def create_search_memory_tool(qdrant_client: QdrantClient, user_email: str):
         qdrant_client: Qdrant client for vector search
         user_email: User email for filtering
     """
+    normalized_user_id = _normalize_user_id(user_email)
 
     @tool
     def search_memory(query: str, limit: int = 5) -> str:
@@ -254,10 +304,7 @@ def create_search_memory_tool(qdrant_client: QdrantClient, user_email: str):
         - search_memory(query="limitações", limit=5)
         """
         try:
-            # pylint: disable=import-outside-toplevel
-            from qdrant_client import models as qdrant_models
-
-            collection_name = _get_collection_name(user_email)
+            collection_name = _get_collection_name(normalized_user_id)
 
             # Check if collection exists
             try:
@@ -269,13 +316,7 @@ def create_search_memory_tool(qdrant_client: QdrantClient, user_email: str):
             query_embedding = _embed_text(query, user_email=user_email)
 
             # Filter by user_id to ensure data isolation
-            user_filter = qdrant_models.Filter(
-                must=[
-                    qdrant_models.FieldCondition(
-                        key="user_id", match=qdrant_models.MatchValue(value=user_email)
-                    )
-                ]
-            )
+            user_filter = _build_user_filter(normalized_user_id)
 
             # Search in Qdrant using query_points (vector search with filter)
             query_response = qdrant_client.query_points(
@@ -332,6 +373,7 @@ def create_update_memory_tool(qdrant_client: QdrantClient, user_email: str):
         qdrant_client: Qdrant client for vector updates
         user_email: User email for filtering
     """
+    normalized_user_id = _normalize_user_id(user_email)
 
     @tool
     def update_memory(memory_id: str, new_content: str) -> str:
@@ -346,7 +388,7 @@ def create_update_memory_tool(qdrant_client: QdrantClient, user_email: str):
         - update_memory(memory_id="abc123", new_content="Agora treina de tarde")
         """
         try:
-            collection_name = _get_collection_name(user_email)
+            collection_name = _get_collection_name(normalized_user_id)
 
             # Retrieve existing point
             points = qdrant_client.retrieve(collection_name, ids=[memory_id])
@@ -358,7 +400,7 @@ def create_update_memory_tool(qdrant_client: QdrantClient, user_email: str):
             payload = point.payload or {}
 
             # Verify ownership
-            if payload.get("user_id") != user_email:
+            if payload.get("user_id") != normalized_user_id:
                 return "❌ Você não tem permissão para atualizar esta memória."
 
             # Generate new embedding with Gemini + dimensionality reduction
@@ -402,6 +444,7 @@ def create_delete_memory_tool(qdrant_client: QdrantClient, user_email: str):
         qdrant_client: Qdrant client for deletion
         user_email: User email for filtering
     """
+    normalized_user_id = _normalize_user_id(user_email)
 
     @tool
     def delete_memory(memory_id: str) -> str:
@@ -415,7 +458,7 @@ def create_delete_memory_tool(qdrant_client: QdrantClient, user_email: str):
         - delete_memory(memory_id="abc123")
         """
         try:
-            collection_name = _get_collection_name(user_email)
+            collection_name = _get_collection_name(normalized_user_id)
 
             # Retrieve to verify ownership
             points = qdrant_client.retrieve(collection_name, ids=[memory_id])
@@ -427,7 +470,7 @@ def create_delete_memory_tool(qdrant_client: QdrantClient, user_email: str):
             payload = point.payload or {}
 
             # Verify ownership
-            if payload.get("user_id") != user_email:
+            if payload.get("user_id") != normalized_user_id:
                 return "❌ Você não tem permissão para deletar esta memória."
 
             # Delete point
@@ -453,6 +496,7 @@ def create_list_raw_memories_tool(qdrant_client: QdrantClient, user_email: str):
         qdrant_client: Qdrant client for retrieving memories
         user_email: User email for filtering
     """
+    normalized_user_id = _normalize_user_id(user_email)
 
     @tool
     def list_raw_memories(limit: int = 50) -> str:
@@ -470,13 +514,10 @@ def create_list_raw_memories_tool(qdrant_client: QdrantClient, user_email: str):
         com todos os detalhes necessários para revisar, editar ou deletar.
         """
         try:
-            # pylint: disable=import-outside-toplevel
-            from qdrant_client import models as qdrant_models
-
             # Validate limit
             limit = max(1, min(int(limit), 200))  # Between 1 and 200
 
-            collection_name = _get_collection_name(user_email)
+            collection_name = _get_collection_name(normalized_user_id)
 
             # Check if collection exists
             try:
@@ -485,13 +526,7 @@ def create_list_raw_memories_tool(qdrant_client: QdrantClient, user_email: str):
                 return "Nenhuma memória encontrada."
 
             # Filter by user_id
-            user_filter = qdrant_models.Filter(
-                must=[
-                    qdrant_models.FieldCondition(
-                        key="user_id", match=qdrant_models.MatchValue(value=user_email)
-                    )
-                ]
-            )
+            user_filter = _build_user_filter(normalized_user_id)
 
             from src.utils.qdrant_utils import scroll_all_user_points  # pylint: disable=import-outside-toplevel
 

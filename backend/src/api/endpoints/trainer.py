@@ -50,7 +50,21 @@ async def update_trainer_profile(
             ),
         )
 
-    profile = TrainerProfile(user_email=user_email, **profile_input.model_dump())
+    existing_profile = brain.get_trainer_profile(user_email)
+    profile_data = profile_input.model_dump()
+
+    if (
+        "preferred_language" not in profile_input.model_fields_set
+        and existing_profile is not None
+    ):
+        profile_data["preferred_language"] = existing_profile.preferred_language
+    if (
+        "personality_level" not in profile_input.model_fields_set
+        and existing_profile is not None
+    ):
+        profile_data["personality_level"] = existing_profile.personality_level
+
+    profile = TrainerProfile(user_email=user_email, **profile_data)
     brain.save_trainer_profile(profile)
     return profile
 

@@ -6,7 +6,12 @@ from uuid import uuid4
 from qdrant_client import QdrantClient, models as qdrant_models
 from src.core.logs import logger
 from src.utils.qdrant_utils import scroll_all_user_points, point_to_dict
-from src.services.memory_tools import _embed_text, _ensure_collection
+from src.services.memory_tools import (
+    _build_memory_payload,
+    _build_user_filter,
+    _embed_text,
+    _ensure_collection,
+)
 
 
 def _normalize_user_id(user_id: str) -> str:
@@ -32,14 +37,7 @@ def get_memories_paginated(
     try:
         normalized_user_id = _normalize_user_id(user_id)
         _ensure_collection(qdrant_client, collection_name)
-        user_filter = qdrant_models.Filter(
-            must=[
-                qdrant_models.FieldCondition(
-                    key="user_id",
-                    match=qdrant_models.MatchValue(value=normalized_user_id),
-                )
-            ]
-        )
+        user_filter = _build_user_filter(normalized_user_id)
 
         total = qdrant_client.count(
             collection_name=collection_name, count_filter=user_filter
@@ -92,15 +90,17 @@ def add_memory(
         point = qdrant_models.PointStruct(
             id=memory_id,
             vector=embedding,
-            payload={
-                "id": memory_id,
-                "memory": text,
-                "translations": translations,
-                "category": category,
-                "user_id": normalized_user_id,
-                "created_at": now,
-                "updated_at": now,
-            },
+            payload=_build_memory_payload(
+                memory_id,
+                text,
+                normalized_user_id,
+                {
+                    "translations": translations,
+                    "category": category,
+                    "created_at": now,
+                    "updated_at": now,
+                },
+            ),
         )
 
         # Upsert

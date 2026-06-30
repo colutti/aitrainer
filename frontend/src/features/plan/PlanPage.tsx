@@ -11,6 +11,8 @@ export default function PlanPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { plan, isLoading, fetchPlan } = usePlanStore();
+  const discoveryNextPrompt = plan?.discovery?.next_prompt.trim();
+  const draftMessage = discoveryNextPrompt && discoveryNextPrompt.length > 0 ? discoveryNextPrompt : t('plan.empty.prefill_message');
 
   useEffect(() => {
     void fetchPlan();
@@ -28,7 +30,7 @@ export default function PlanPage() {
             onOpenChat={() => {
               void navigate('/dashboard/chat', {
                 state: {
-                  draftMessage: t('plan.empty.prefill_message'),
+                  draftMessage,
                 },
               });
             }}

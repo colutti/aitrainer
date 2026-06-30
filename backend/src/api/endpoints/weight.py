@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Annotated, Any
 
+from bson import ObjectId
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel
 
@@ -24,6 +25,11 @@ router = APIRouter()
 CurrentUser = Annotated[str, Depends(verify_token)]
 AITrainerBrainDep = Annotated[Any, Depends(get_ai_trainer_brain)]
 DatabaseDep = Annotated[MongoDatabase, Depends(get_mongo_database)]
+
+
+def _validate_object_id(resource_name: str, resource_id: str) -> None:
+    if not ObjectId.is_valid(resource_id):
+        raise HTTPException(status_code=400, detail=f"Invalid {resource_name} id")
 
 
 @router.post("")
@@ -80,6 +86,7 @@ def update_weight_log(
     """
     Updates an existing weight log by its ID.
     """
+    _validate_object_id("weight log", log_id)
     tdee_service = AdaptiveTDEEService(db)
 
     recent_logs = db.weight.get_logs(user_email, limit=1)
@@ -116,12 +123,14 @@ def delete_weight_log(
     try:
         log_date = date.fromisoformat(date_str)
     except ValueError:
-        return {"error": "Invalid date format. Use YYYY-MM-DD"}
+        raise HTTPException(
+            status_code=400, detail="Invalid date format. Use YYYY-MM-DD"
+        ) from None
 
     success = brain.database.delete_weight_log(user_email=user_email, log_date=log_date)
 
     if not success:
-        return {"message": "Log not found or could not be deleted", "deleted": False}
+        raise HTTPException(status_code=404, detail="Weight log not found")
 
     return {"message": "Weight log deleted successfully", "deleted": True}
 
@@ -199,7 +208,7 @@ def get_body_composition_stats(
         "fat_trend": [
             {"date": log_item.date.isoformat(), "value": log_item.body_fat_pct}
             for log_item in logs_asc
-            if log_item.body_fat_pct
+            if log_item.body_fat_pct is not None
         ],
         "muscle_trend": [
             {

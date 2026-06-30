@@ -110,7 +110,11 @@ export function useNutritionTab() {
       const payload = Object.fromEntries(
         Object.entries(data).filter(([_, v]) => v !== null)
       );
-      await bodyApi.logNutrition(payload as Partial<NutritionLog>);
+      if (editingId) {
+        await bodyApi.updateNutritionLog(editingId, payload as Partial<NutritionLog>);
+      } else {
+        await bodyApi.logNutrition(payload as Partial<NutritionLog>);
+      }
       notify.success(t('body.nutrition.notifications.save_success'));
       setEditingId(null);
       reset({ ...NUTRITION_DEFAULTS, date: new Date().toISOString().split('T')[0] });

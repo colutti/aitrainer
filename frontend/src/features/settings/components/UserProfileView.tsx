@@ -148,8 +148,8 @@ export default function UserProfileView({
                     {...register('gender')}
                   className="form-field flex h-14 w-full rounded-2xl px-4 py-2 text-sm"
                 >
-                  <option value="male">{t('onboarding.genders.male')}</option>
-                  <option value="female">{t('onboarding.genders.female')}</option>
+                  <option value={t('onboarding.genders.male')}>{t('onboarding.genders.male')}</option>
+                  <option value={t('onboarding.genders.female')}>{t('onboarding.genders.female')}</option>
                 </select>
               </FormField>
 

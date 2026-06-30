@@ -111,7 +111,7 @@ def create_plan_from_discovery(
 
     try:
         plan = build_plan_from_create_input(user_email, payload)
-    except ValidationError as exc:
+    except (ValidationError, ValueError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     plan_id = db.save_plan(plan)

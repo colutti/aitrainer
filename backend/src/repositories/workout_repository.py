@@ -159,6 +159,8 @@ class WorkoutRepository(BaseRepository):
                 "exercises": 1,
                 "user_email": 1,
                 "duration_minutes": 1,
+                "source": 1,
+                "external_id": 1,
             },
         ).sort("date", pymongo.DESCENDING)
 

@@ -131,9 +131,10 @@ class TestWorkoutApi(unittest.TestCase):
         mock_db.get_workout_by_id.return_value = {"user_email": "test@test.com"}
         mock_db.delete_workout_log.return_value = True
         app.dependency_overrides[get_mongo_database] = lambda: mock_db
+        workout_id = "507f1f77bcf86cd799439011"
 
         response = self.client.delete(
-            "/workout/workout123", headers={"Authorization": "Bearer token"}
+            f"/workout/{workout_id}", headers={"Authorization": "Bearer token"}
         )
 
         self.assertEqual(response.status_code, 200)
@@ -145,12 +146,27 @@ class TestWorkoutApi(unittest.TestCase):
         mock_db = MagicMock()
         mock_db.get_workout_by_id.return_value = {"user_email": "victim@test.com"}
         app.dependency_overrides[get_mongo_database] = lambda: mock_db
+        workout_id = "507f1f77bcf86cd799439012"
 
         response = self.client.delete(
-            "/workout/workout123", headers={"Authorization": "Bearer token"}
+            f"/workout/{workout_id}", headers={"Authorization": "Bearer token"}
         )
 
         self.assertEqual(response.status_code, 403)
+
+    def test_delete_workout_rejects_invalid_id(self):
+        """Invalid workout IDs should fail fast with a validation error."""
+        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+        mock_db = MagicMock()
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
+
+        response = self.client.delete(
+            "/workout/not-a-mongo-id", headers={"Authorization": "Bearer token"}
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["detail"], "Invalid workout id")
+        mock_db.get_workout_by_id.assert_not_called()
 
 if __name__ == "__main__":
     unittest.main()

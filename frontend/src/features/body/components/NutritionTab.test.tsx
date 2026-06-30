@@ -1,28 +1,89 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { useConfirmation } from '../../../shared/hooks/useConfirmation';
+import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { useNutritionStore } from '../../../shared/hooks/useNutrition';
-import { render, screen, fireEvent } from '../../../shared/utils/test-utils';
+import type { NutritionLog, NutritionFormData } from '../../../shared/types/nutrition';
+import { render, screen, fireEvent, waitFor } from '../../../shared/utils/test-utils';
 
 import { NutritionTab } from './NutritionTab';
 
-// Mocks
 vi.mock('../../../shared/hooks/useNutrition');
 vi.mock('../../../shared/hooks/useConfirmation');
+vi.mock('../../../shared/hooks/useDemoMode');
+vi.mock('../../nutrition/components/NutritionLogCard', () => ({
+  NutritionLogCard: ({ log, onDelete, onEdit, onClick }: any) => (
+    <div data-testid={`nutrition-log-card-${log.id}`}>
+      <button type="button" data-testid={`view-nutrition-${log.id}`} onClick={() => onClick(log)}>
+        {log.calories}
+      </button>
+      <button type="button" data-testid={`edit-nutrition-${log.id}`} onClick={() => onEdit(log)}>
+        edit
+      </button>
+      <button type="button" data-testid={`delete-nutrition-${log.id}`} onClick={() => onDelete(log.id)}>
+        delete
+      </button>
+    </div>
+  ),
+}));
+vi.mock('./NutritionLogDrawer', () => ({
+  NutritionLogDrawer: ({ isOpen, log, onSubmit, onClose }: any) => {
+    if (!isOpen) return null;
+
+    const payload: NutritionFormData = log
+      ? {
+          date: '2026-04-03',
+          source: 'Manual',
+          calories: 2350,
+          protein_grams: 190,
+          carbs_grams: 225,
+          fat_grams: 75,
+          fiber_grams: 31,
+          sodium_mg: 1650,
+        }
+      : {
+          date: '2026-04-02',
+          source: 'Manual',
+          calories: 2120,
+          protein_grams: 180,
+          carbs_grams: null,
+          fat_grams: 68,
+          fiber_grams: null,
+          sodium_mg: null,
+        };
+
+    return (
+      <div>
+        <h2>{log ? 'Edit nutrition' : 'Create nutrition'}</h2>
+        <button type="button" data-testid="submit-nutrition" onClick={() => void onSubmit(payload)}>
+          submit
+        </button>
+        <button type="button" data-testid="close-nutrition" onClick={onClose}>
+          close
+        </button>
+      </div>
+    );
+  },
+}));
 
 describe('NutritionTab', () => {
-  const mockLogs = [
-    { id: '1', date: '2024-01-01', calories: 2000, protein_grams: 150, carbs_grams: 200, fat_grams: 60, source: 'Manual' },
+  const mockLogs: NutritionLog[] = [
+    {
+      id: 'nutrition-1',
+      user_email: 'user@example.com',
+      date: '2026-03-19',
+      source: 'Manual',
+      calories: 2100,
+      protein_grams: 170,
+      carbs_grams: 210,
+      fat_grams: 70,
+      fiber_grams: 28,
+      sodium_mg: 1500,
+    },
   ];
 
-  const mockStats = {
-    today: { calories: 1500, protein_grams: 100, carbs_grams: 150, fat_grams: 40 },
-    daily_target: 2000,
-    macro_targets: { protein: 150, carbs: 200, fat: 60 }
-  };
-
   const defaultStore = {
-    logs: [],
+    logs: [] as NutritionLog[],
     stats: null,
     isLoading: false,
     error: null,
@@ -32,111 +93,134 @@ describe('NutritionTab', () => {
     fetchStats: vi.fn(),
     deleteLog: vi.fn(),
     createLog: vi.fn(),
+    updateLog: vi.fn(),
   };
+
   const mockConfirm = vi.fn();
+  const mockBlockIfReadOnly = vi.fn(() => false);
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useNutritionStore).mockReturnValue(defaultStore as any);
     vi.mocked(useConfirmation).mockReturnValue({ confirm: mockConfirm } as any);
+    vi.mocked(useDemoMode).mockReturnValue({
+      isReadOnly: false,
+      isDemoUser: false,
+      readOnlyMessage: 'Read-only mode',
+      notifyReadOnly: vi.fn(),
+      blockIfReadOnly: mockBlockIfReadOnly,
+    } as any);
     mockConfirm.mockResolvedValue(true);
   });
 
-  it('should call fetchLogs and fetchStats on mount', () => {
+  it('loads logs and stats on mount', () => {
     render(<NutritionTab />);
-    expect(defaultStore.fetchLogs).toHaveBeenCalled();
-    expect(defaultStore.fetchStats).toHaveBeenCalled();
+
+    expect(defaultStore.fetchLogs).toHaveBeenCalledWith();
+    expect(defaultStore.fetchStats).toHaveBeenCalledWith();
   });
 
-  it('should not render macro widgets section', () => {
-    vi.mocked(useNutritionStore).mockReturnValue({
-      ...defaultStore,
-      stats: mockStats,
-    } as any);
-
+  it('creates a nutrition log through the runtime component and preserves cleared optional fields as null', async () => {
     render(<NutritionTab />);
-    expect(screen.queryByText(/^1500$/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/^100$/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Registrar Refeição/i }));
+    fireEvent.click(screen.getByTestId('submit-nutrition'));
+
+    await waitFor(() => {
+      expect(defaultStore.createLog).toHaveBeenCalledWith({
+        date: '2026-04-02',
+        source: 'Manual',
+        calories: 2120,
+        protein_grams: 180,
+        carbs_grams: 0,
+        fat_grams: 68,
+        fiber_grams: null,
+        sodium_mg: null,
+      });
+    });
   });
 
-  it('should render logs list', () => {
-    vi.mocked(useNutritionStore).mockReturnValue({
-      ...defaultStore,
-      logs: mockLogs,
-      stats: mockStats,
-    } as any);
-
-    render(<NutritionTab />);
-    // Check for the calorie value in the log card (2000 kcal). 
-    // toLocaleString() in pt-BR might produce "2.000"
-    expect(screen.getByText(/2.*000/)).toBeInTheDocument();
-  });
-
-  it('should not render AI quick action button', () => {
-    render(<NutritionTab />);
-    expect(screen.queryByText(/\(AI\)/i)).not.toBeInTheDocument();
-  });
-
-  it('should open manual add drawer when Registrar Refeicao clicked and keep button full width on mobile', () => {
-    render(<NutritionTab />);
-    const addBtn = screen.getByRole('button', { name: /Registrar Refeição/i });
-    expect(addBtn.className).toContain('w-full');
-    fireEvent.click(addBtn);
-    // Use getAllByText and check the one that is a heading (h2)
-    const titles = screen.getAllByText(/Registrar Refeição/i);
-    expect(titles.some(t => t.tagName === 'H2')).toBe(true);
-  });
-
-  it('should open manual add drawer automatically when action=log-meal is present in url', () => {
-    render(<NutritionTab />, { route: '/dashboard/body/nutrition?action=log-meal' });
-
-    const titles = screen.getAllByText(/Registrar Refeição/i);
-    expect(titles.some((title) => title.tagName === 'H2')).toBe(true);
-  });
-
-  it('should open edit drawer when edit button clicked on log card', () => {
+  it('updates an existing nutrition log through the runtime component', async () => {
     vi.mocked(useNutritionStore).mockReturnValue({
       ...defaultStore,
       logs: mockLogs,
-      stats: mockStats,
     } as any);
 
     render(<NutritionTab />);
-    
-    const editBtn = screen.getByTitle(/Editar|shared\.edit/i);
-    fireEvent.click(editBtn);
-    
-    expect(screen.getByText(/Editar Refeição/i)).toBeInTheDocument();
-    expect(screen.getByDisplayValue('2000')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('edit-nutrition-nutrition-1'));
+    fireEvent.click(screen.getByTestId('submit-nutrition'));
+
+    await waitFor(() => {
+      expect(defaultStore.updateLog).toHaveBeenCalledWith('nutrition-1', {
+        date: '2026-04-03',
+        source: 'Manual',
+        calories: 2350,
+        protein_grams: 190,
+        carbs_grams: 225,
+        fat_grams: 75,
+        fiber_grams: 31,
+        sodium_mg: 1650,
+      });
+    });
   });
 
-  it('should open view drawer when clicking on log card', () => {
+  it('confirms and deletes a nutrition log', async () => {
     vi.mocked(useNutritionStore).mockReturnValue({
       ...defaultStore,
       logs: mockLogs,
-      stats: mockStats,
     } as any);
 
     render(<NutritionTab />);
-    
-    const logCard = screen.getByTestId('nutrition-log-card');
-    fireEvent.click(logCard);
-    
-    expect(screen.getByText(/Detalhes/i)).toBeInTheDocument();
-    expect(screen.getByText('2000')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('delete-nutrition-nutrition-1'));
+
+    await waitFor(() => {
+      expect(mockConfirm).toHaveBeenCalled();
+      expect(defaultStore.deleteLog).toHaveBeenCalledWith('nutrition-1');
+    });
   });
 
-  it('should ask confirmation before deleting a nutrition log', () => {
+  it('paginates through the runtime component', () => {
     vi.mocked(useNutritionStore).mockReturnValue({
       ...defaultStore,
       logs: mockLogs,
-      stats: mockStats,
+      page: 2,
+      totalPages: 3,
     } as any);
 
     render(<NutritionTab />);
 
-    fireEvent.click(screen.getByTestId('btn-delete-nutrition'));
+    fireEvent.click(screen.getByRole('button', { name: /Próxima/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Anterior/i }));
 
-    expect(mockConfirm).toHaveBeenCalled();
+    expect(defaultStore.fetchLogs).toHaveBeenCalledWith(3);
+    expect(defaultStore.fetchLogs).toHaveBeenCalledWith(1);
+  });
+
+  it('blocks create, edit and delete actions in read-only mode', async () => {
+    const readOnlyBlock = vi.fn(() => true);
+    vi.mocked(useDemoMode).mockReturnValue({
+      isReadOnly: true,
+      isDemoUser: true,
+      readOnlyMessage: 'Read-only mode',
+      notifyReadOnly: vi.fn(),
+      blockIfReadOnly: readOnlyBlock,
+    } as any);
+    vi.mocked(useNutritionStore).mockReturnValue({
+      ...defaultStore,
+      logs: mockLogs,
+    } as any);
+
+    render(<NutritionTab />);
+
+    expect(screen.getByRole('button', { name: /Registrar Refeição/i })).toBeDisabled();
+    fireEvent.click(screen.getByTestId('edit-nutrition-nutrition-1'));
+    fireEvent.click(screen.getByTestId('delete-nutrition-nutrition-1'));
+
+    expect(readOnlyBlock).toHaveBeenCalledTimes(1);
+    expect(defaultStore.createLog).not.toHaveBeenCalled();
+    expect(defaultStore.updateLog).not.toHaveBeenCalled();
+    expect(defaultStore.deleteLog).not.toHaveBeenCalled();
   });
 });

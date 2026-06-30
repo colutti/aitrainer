@@ -15,6 +15,7 @@ from src.core.demo_access import WritableCurrentUser
 from src.services.stripe import create_checkout_session, create_customer_portal_session
 from src.api.models.stripe import CheckoutSessionRequest, PortalSessionRequest
 from src.core.logs import logger
+from src.utils.date_utils import parse_cycle_start
 
 router = APIRouter()
 AITrainerBrainDep = Annotated[Any, Depends(get_ai_trainer_brain)]
@@ -176,9 +177,10 @@ def _handle_subscription_updated(subscription, brain):
     c_ts = subscription.get("current_period_start", datetime.now().timestamp())
     cycle_start = datetime.fromtimestamp(c_ts, tz=timezone.utc)
     cycle_start_iso = cycle_start.isoformat()
+    existing_cycle_start = parse_cycle_start(profile.current_billing_cycle_start, cycle_start)
 
     plan_changed = profile.subscription_plan != plan
-    cycle_changed = profile.current_billing_cycle_start != cycle_start_iso
+    cycle_changed = existing_cycle_start != cycle_start
 
     updates = {
         "stripe_subscription_id": subscription["id"],

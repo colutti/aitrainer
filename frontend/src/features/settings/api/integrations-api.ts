@@ -85,6 +85,8 @@ export const integrationsApi = {
 
   updateTelegramNotifications: async (preferences: {
     telegram_notify_on_workout?: boolean;
+    telegram_notify_on_nutrition?: boolean;
+    telegram_notify_on_weight?: boolean;
   }): Promise<void> => {
     return httpClient('/user/telegram-notifications', {
       method: 'POST',

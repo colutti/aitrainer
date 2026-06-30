@@ -4,11 +4,12 @@ Tests for body composition tracking tools.
 
 import pytest
 from unittest.mock import MagicMock
-from datetime import date
+from datetime import date, timedelta
 
 from src.services.composition_tools import (
     create_save_composition_tool,
     create_get_composition_tool,
+    _format_measurements,
 )
 from src.api.models.weight_log import WeightLog
 
@@ -99,6 +100,72 @@ class TestCompositionTools:
             "01/01/2024: Peso: 80.0kg, Gordura: 15.0%, Músculo: 42.0%, BMR: 1850 kcal"
             in result
         )
+
+    def test_get_body_composition_preserves_zero_values_in_metrics_and_weekly_average(
+        self, mock_db
+    ):
+        """Zero values must remain visible in formatting and weekly BF averages."""
+        today = date.today()
+        mock_db.get_weight_logs.return_value = [
+            WeightLog(
+                user_email="user@test.com",
+                date=today,
+                weight_kg=80.0,
+                body_fat_pct=0.0,
+            ),
+            WeightLog(
+                user_email="user@test.com",
+                date=today - timedelta(days=1),
+                weight_kg=79.0,
+                body_fat_pct=10.0,
+            ),
+        ]
+        tool = create_get_composition_tool(mock_db, "user@test.com")
+
+        result = tool.invoke({"limit": 5})
+
+        assert f"{today.strftime('%d/%m/%Y')}: Peso: 80.0kg, Gordura: 0.0%" in result
+        assert "BF médio últimos 7 dias: 5.0%" in result
+
+    def test_get_body_composition_preserves_zero_values_in_optional_metrics(self, mock_db):
+        """Optional metrics with zero values should still be shown to the AI."""
+        mock_db.get_weight_logs.return_value = [
+            WeightLog(
+                user_email="user@test.com",
+                date=date(2024, 1, 20),
+                weight_kg=77.0,
+                muscle_mass_kg=0.0,
+                visceral_fat=0.0,
+            )
+        ]
+        tool = create_get_composition_tool(mock_db, "user@test.com")
+
+        result = tool.invoke({"limit": 5})
+
+        assert "20/01/2024: Peso: 77.0kg, Músculo: 0.0kg, Gord. Visceral: 0.0" in result
+
+    def test_format_measurements_preserves_zero_value_on_one_side(self):
+        """Formatting should not drop a valid zero value when both sides are present."""
+        log = type(
+            "CompositionLog",
+            (),
+            {
+                "neck_cm": None,
+                "chest_cm": None,
+                "waist_cm": None,
+                "hips_cm": None,
+                "bicep_r_cm": 0.0,
+                "bicep_l_cm": 31.0,
+                "thigh_r_cm": None,
+                "thigh_l_cm": None,
+                "calf_r_cm": None,
+                "calf_l_cm": None,
+            },
+        )()
+
+        measurements = _format_measurements(log)
+
+        assert measurements == ["Bíceps: D=0.0cm E=31.0cm"]
 
     def test_save_body_composition_with_measurements(self, mock_db):
         """Test saving body composition with circumference measurements."""

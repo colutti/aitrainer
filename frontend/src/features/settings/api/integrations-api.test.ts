@@ -120,6 +120,25 @@ describe('integrationsApi', () => {
     expect(res).toEqual(mockRes);
   });
 
+  it('should update all supported Telegram notification preferences', async () => {
+    vi.mocked(httpClient).mockResolvedValue(undefined);
+
+    await integrationsApi.updateTelegramNotifications({
+      telegram_notify_on_workout: false,
+      telegram_notify_on_nutrition: true,
+      telegram_notify_on_weight: true,
+    });
+
+    expect(httpClient).toHaveBeenCalledWith('/user/telegram-notifications', {
+      method: 'POST',
+      body: JSON.stringify({
+        telegram_notify_on_workout: false,
+        telegram_notify_on_nutrition: true,
+        telegram_notify_on_weight: true,
+      }),
+    });
+  });
+
   it('should throw error on failed upload', async () => {
     const file = new File(['content'], 'test.csv', { type: 'text/csv' });
     

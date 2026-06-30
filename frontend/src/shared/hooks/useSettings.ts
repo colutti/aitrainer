@@ -60,7 +60,16 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         method: 'POST',
         body: JSON.stringify(data),
       });
-      set({ profile: updated ?? get().profile, isSaving: false });
+      const nextProfile =
+        updated &&
+        typeof updated === 'object' &&
+        'email' in updated &&
+        'gender' in updated &&
+        'age' in updated &&
+        'height' in updated
+          ? updated
+          : get().profile;
+      set({ profile: nextProfile, isSaving: false });
     } catch (error) {
       console.error('Error updating profile:', error);
       set({ isSaving: false, error: 'Falha ao salvar perfil.' });
@@ -101,9 +110,14 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   updateTrainer: async (trainerType: string) => {
     set({ isSaving: true });
     try {
+      const currentTrainer = get().trainer;
       const updated = await httpClient<TrainerProfile>('/trainer/update_trainer_profile', {
         method: 'PUT',
-        body: JSON.stringify({ trainer_type: trainerType }),
+        body: JSON.stringify({
+          trainer_type: trainerType,
+          preferred_language: currentTrainer?.preferred_language,
+          personality_level: currentTrainer?.personality_level,
+        }),
       });
       set({ trainer: updated ?? null, isSaving: false });
     } catch (error) {

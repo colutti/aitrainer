@@ -1,6 +1,6 @@
 import { test as base, expect, type Page, type APIRequestContext, type TestInfo } from '@playwright/test';
 
-import { bootstrapFreshUser, bootstrapRegisteredUser } from './helpers/bootstrap';
+import { bootstrapFreshUser, bootstrapOnboardedUser } from './helpers/bootstrap';
 import { UIActions } from './helpers/ui-actions';
 
 interface Fixtures {
@@ -33,7 +33,7 @@ export const test = base.extend<Fixtures>({
   },
 
   authenticatedPage: async ({ page }, use, testInfo: TestInfo) => {
-    const bootstrappedPage = await bootstrapRegisteredUser(page, testInfo);
+    const bootstrappedPage = await bootstrapOnboardedUser(page, testInfo);
     await use(bootstrappedPage);
   },
 

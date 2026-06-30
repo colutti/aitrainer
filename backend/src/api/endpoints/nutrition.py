@@ -5,6 +5,7 @@ API endpoints for nutrition management.
 from datetime import datetime
 from typing import Annotated
 
+from bson import ObjectId
 from fastapi import APIRouter, Depends, Query, HTTPException, File, UploadFile
 from pydantic import BaseModel
 
@@ -125,7 +126,11 @@ class CreateNutritionLogRequest(BaseModel):
     carbs_grams: float
     fat_grams: float
     fiber_grams: float | None = None
+    sugar_grams: float | None = None
     sodium_mg: float | None = None
+    cholesterol_mg: float | None = None
+    notes: str | None = None
+    partial_logged: bool = False
 
 
 @router.post("/log", response_model=NutritionWithId)
@@ -151,11 +156,12 @@ def create_nutrition_log(
             carbs_grams=log_data.carbs_grams,
             fat_grams=log_data.fat_grams,
             fiber_grams=log_data.fiber_grams,
-            sugar_grams=None,
+            sugar_grams=log_data.sugar_grams,
             sodium_mg=log_data.sodium_mg,
-            cholesterol_mg=None,
+            cholesterol_mg=log_data.cholesterol_mg,
             source=log_data.source,
-            notes=None,
+            notes=log_data.notes,
+            partial_logged=log_data.partial_logged,
         )
 
         log_id, _ = db.save_nutrition_log(nutrition_log)
@@ -230,6 +236,18 @@ def update_nutrition_log(
     """
     logger.info("Updating nutrition log %s for user: %s", log_id, user_email)
     try:
+        if not ObjectId.is_valid(log_id):
+            raise HTTPException(status_code=400, detail="Invalid nutrition log id")
+
+        existing_log = db.get_nutrition_by_id(log_id)
+        if not existing_log:
+            raise HTTPException(status_code=404, detail="Nutrition log not found")
+
+        if existing_log.get("user_email") != user_email:
+            raise HTTPException(
+                status_code=403, detail="Not authorized to update this nutrition log"
+            )
+
         date_obj = datetime.fromisoformat(log_data.date)
 
         nutrition_log = NutritionLog(
@@ -240,11 +258,12 @@ def update_nutrition_log(
             carbs_grams=log_data.carbs_grams,
             fat_grams=log_data.fat_grams,
             fiber_grams=log_data.fiber_grams,
-            sugar_grams=None,
+            sugar_grams=log_data.sugar_grams,
             sodium_mg=log_data.sodium_mg,
-            cholesterol_mg=None,
+            cholesterol_mg=log_data.cholesterol_mg,
             source=log_data.source,
-            notes=None,
+            notes=log_data.notes,
+            partial_logged=log_data.partial_logged,
         )
 
         success = db.update_nutrition_log(log_id, user_email, nutrition_log)
@@ -281,6 +300,9 @@ def delete_nutrition(
     logger.info("User: %s, Log ID: %s", user_email, log_id)
 
     try:
+        if not ObjectId.is_valid(log_id):
+            raise HTTPException(status_code=400, detail="Invalid nutrition log id")
+
         # Validate ownership first
         log = db.get_nutrition_by_id(log_id)
         if not log:

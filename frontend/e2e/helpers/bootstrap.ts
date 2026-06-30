@@ -3,6 +3,7 @@ import { expect, type Page, type TestInfo } from '@playwright/test';
 import { verifyEmailViaEmulator } from './firebase-emulator';
 
 const apiBaseUrl = process.env.E2E_API_BASE_URL ?? 'http://localhost:8000';
+const E2E_NAVIGATION_SETTLE_MS = 250;
 
 export interface E2EUserCredentials {
   name: string;
@@ -18,6 +19,17 @@ export interface OnboardingProfile {
   weight?: number;
   trainerType?: 'gymbro' | 'atlas' | 'luna' | 'sargento' | 'sofia';
   subscriptionPlan?: 'Free' | 'Basic' | 'Pro' | 'Premium';
+}
+
+export async function gotoAppRoute(page: Page, url: string) {
+  await page.goto(url, { waitUntil: 'commit' });
+  await page.waitForTimeout(E2E_NAVIGATION_SETTLE_MS);
+}
+
+export async function seedAuthToken(page: Page, token: string) {
+  await page.addInitScript((authToken: string) => {
+    window.localStorage.setItem('auth_token', authToken);
+  }, token);
 }
 
 export function buildE2EUserCredentials(testInfo: TestInfo, suffix = 'user'): E2EUserCredentials {
@@ -40,7 +52,7 @@ export function buildE2EUserCredentials(testInfo: TestInfo, suffix = 'user'): E2
 }
 
 export async function registerViaUi(page: Page, user: E2EUserCredentials) {
-  await page.goto('/login?mode=register', { waitUntil: 'networkidle' });
+  await gotoAppRoute(page, '/login?mode=register');
   await page.getByRole('button', { name: /Registro/i }).click();
   await page.getByTestId('register-name').fill(user.name);
   await page.getByTestId('register-email').fill(user.email);
@@ -51,7 +63,7 @@ export async function registerViaUi(page: Page, user: E2EUserCredentials) {
 }
 
 export async function loginViaUi(page: Page, user: E2EUserCredentials) {
-  await page.goto('/login', { waitUntil: 'networkidle' });
+  await gotoAppRoute(page, '/login');
   await page.getByRole('button', { name: /^Login$/i }).click();
   await page.getByTestId('login-email').fill(user.email);
   await page.getByTestId('login-password').fill(user.password);
@@ -73,7 +85,7 @@ export async function completeOnboardingViaUi(page: Page, profile: OnboardingPro
   const subscriptionPlan = profile.subscriptionPlan ?? 'Free';
 
   if (!page.url().includes('/onboarding')) {
-    await page.goto('/onboarding', { waitUntil: 'networkidle' });
+    await gotoAppRoute(page, '/onboarding');
   }
   await expect(page.getByText(/Your Profile|Seu Perfil|Tu perfil/i)).toBeVisible({ timeout: 20000 });
   await page.getByRole('button', { name: new RegExp(gender, 'i') }).click();
@@ -107,34 +119,33 @@ export async function bootstrapRegisteredUser(page: Page, testInfo: TestInfo, pr
   expect(response.ok()).toBeTruthy();
   const payload = await response.json() as { token?: string };
   expect(payload.token).toBeTruthy();
-  await page.goto('/login', { waitUntil: 'networkidle' });
-  await page.evaluate((token: string) => {
-    localStorage.setItem('auth_token', token);
-  }, payload.token!);
-  await page.goto('/onboarding', { waitUntil: 'networkidle' });
+  await seedAuthToken(page, payload.token!);
+  await gotoAppRoute(page, '/onboarding');
   await completeOnboardingViaUi(page, { ...profile, name: profile.name ?? user.name });
   return page;
 }
 
-export async function bootstrapOnboardedUser(page: Page, testInfo: TestInfo) {
+export async function bootstrapOnboardedUser(
+  page: Page,
+  testInfo: TestInfo,
+  profile: Pick<OnboardingProfile, 'subscriptionPlan'> = {},
+) {
   const user = buildE2EUserCredentials(testInfo, 'onboarded');
   const response = await page.request.post(`${apiBaseUrl}/user/e2e-login`, {
     data: {
       email: user.email,
       display_name: user.name,
       onboarding_completed: true,
+      subscription_plan: profile.subscriptionPlan ?? 'Free',
     },
   });
   expect(response.ok()).toBeTruthy();
   const payload = await response.json() as { token?: string };
   expect(payload.token).toBeTruthy();
 
-  await page.goto('/login', { waitUntil: 'networkidle' });
-  await page.evaluate((token: string) => {
-    localStorage.setItem('auth_token', token);
-  }, payload.token!);
-  await page.goto('/dashboard/workouts', { waitUntil: 'networkidle' });
-  await page.waitForURL('**/dashboard/workouts', { timeout: 20000 });
+  await seedAuthToken(page, payload.token!);
+  await gotoAppRoute(page, '/dashboard/settings/profile');
+  await page.getByTestId('profile-form').waitFor({ state: 'visible', timeout: 20000 });
   return page;
 }
 
@@ -150,11 +161,8 @@ export async function bootstrapFreshUser(page: Page, testInfo: TestInfo) {
   expect(response.ok()).toBeTruthy();
   const payload = await response.json() as { token?: string };
   expect(payload.token).toBeTruthy();
-  await page.goto('/login', { waitUntil: 'networkidle' });
-  await page.evaluate((token: string) => {
-    localStorage.setItem('auth_token', token);
-  }, payload.token!);
-  await page.goto('/onboarding', { waitUntil: 'networkidle' });
+  await seedAuthToken(page, payload.token!);
+  await gotoAppRoute(page, '/onboarding');
   await expect(page).toHaveURL(/\/onboarding(?:\?.*)?$/, { timeout: 20000 });
   await expect(page.getByText(/Your Profile|Seu Perfil|Tu perfil/i)).toBeVisible({ timeout: 20000 });
   return page;
@@ -173,10 +181,7 @@ export async function loginDemoUserViaUi(page: Page) {
   const payload = await response.json() as { token?: string };
   expect(payload.token).toBeTruthy();
 
-  await page.goto('/login', { waitUntil: 'networkidle' });
-  await page.evaluate((token: string) => {
-    localStorage.setItem('auth_token', token);
-  }, payload.token!);
-  await page.goto('/dashboard', { waitUntil: 'networkidle' });
+  await seedAuthToken(page, payload.token!);
+  await gotoAppRoute(page, '/dashboard');
   await page.waitForURL('**/dashboard', { timeout: 20000 });
 }

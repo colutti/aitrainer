@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { TrainerSettingsView } from './TrainerSettingsView';
 
@@ -27,6 +27,10 @@ const mockProps = {
 };
 
 describe('TrainerSettingsView', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('renders trainer list correctly', () => {
     render(<TrainerSettingsView {...mockProps} />);
     expect(screen.getByText('Atlas')).toBeInTheDocument();
@@ -42,9 +46,8 @@ describe('TrainerSettingsView', () => {
 
   it('shows lock icon for premium trainers on free plan', () => {
     render(<TrainerSettingsView {...mockProps} isFreePlan={true} />);
-    // Atlas is normally premium (logic in container, but view should render if lock prop true)
-    // Actually, view should receive isLocked per trainer
-    expect(screen.getAllByTestId('lock-icon').length).toBeGreaterThan(0);
+    expect(screen.getByTestId('trainer-card-atlas')).toContainElement(screen.getByTestId('lock-icon'));
+    expect(screen.queryByTestId('trainer-card-gymbro')?.querySelector('[data-testid="lock-icon"]')).toBeNull();
   });
 
   it('calls onSave when save button is clicked', () => {
@@ -58,5 +61,23 @@ describe('TrainerSettingsView', () => {
     render(<TrainerSettingsView {...mockProps} isReadOnly />);
     expect(screen.getByTestId('trainer-card-gymbro')).toBeInTheDocument();
     expect(screen.getByText('settings.trainer.read_only')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('trainer-card-gymbro'));
+    expect(mockProps.onSelect).not.toHaveBeenCalled();
+  });
+
+  it('renders save button as disabled when no trainer is selected', () => {
+    render(<TrainerSettingsView {...mockProps} selectedTrainerId="" />);
+    expect(screen.getByRole('button', { name: 'settings.trainer.save_button' })).toBeDisabled();
+  });
+
+  it('shows loading indicator while saving', () => {
+    render(<TrainerSettingsView {...mockProps} isSaving />);
+    expect(screen.getByText('settings.trainer.saving')).toBeInTheDocument();
+  });
+
+  it('shows retry state when trainer catalog fails to load', () => {
+    render(<TrainerSettingsView {...mockProps} availableTrainers={[]} />);
+    fireEvent.click(screen.getByText('settings.trainer.retry'));
+    expect(mockProps.onRetry).toHaveBeenCalled();
   });
 });

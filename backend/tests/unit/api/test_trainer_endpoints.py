@@ -60,6 +60,7 @@ def test_update_trainer_profile_success(sample_trainer_profile):
     mock_user = MagicMock()
     mock_user.subscription_plan = "Pro"
     mock_brain.get_user_profile.return_value = mock_user
+    mock_brain.get_trainer_profile.return_value = None
     mock_brain.save_trainer_profile.return_value = None
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
@@ -106,6 +107,7 @@ def test_update_trainer_profile_invalid_type():
     mock_user = MagicMock()
     mock_user.subscription_plan = "Pro"
     mock_brain.get_user_profile.return_value = mock_user
+    mock_brain.get_trainer_profile.return_value = None
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
     update_payload = {
@@ -269,6 +271,12 @@ def test_update_trainer_profile_partial():
     mock_user = MagicMock()
     mock_user.subscription_plan = "Pro"
     mock_brain.get_user_profile.return_value = mock_user
+    mock_brain.get_trainer_profile.return_value = TrainerProfile(
+        user_email="test@example.com",
+        trainer_type="atlas",
+        preferred_language="en-US",
+        personality_level="energetic",
+    )
     mock_brain.save_trainer_profile.return_value = None
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 
@@ -286,6 +294,8 @@ def test_update_trainer_profile_partial():
     assert response.status_code == 200
     data = response.json()
     assert data["trainer_type"] == "sargento"
+    assert data["preferred_language"] == "en-US"
+    assert data["personality_level"] == "energetic"
     assert data["user_email"] == "test@example.com"
 
     app.dependency_overrides = {}
@@ -297,6 +307,10 @@ def test_update_trainer_profile_multiple_fields():
     """Test updating multiple trainer profile fields."""
     app.dependency_overrides[verify_token] = lambda: "test@example.com"
     mock_brain = MagicMock()
+    mock_user = MagicMock()
+    mock_user.subscription_plan = "Pro"
+    mock_brain.get_user_profile.return_value = mock_user
+    mock_brain.get_trainer_profile.return_value = None
     mock_brain.save_trainer_profile.return_value = None
     app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
 

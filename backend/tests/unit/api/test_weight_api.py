@@ -121,6 +121,56 @@ class TestWeightApi(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()["deleted"])
 
+    def test_delete_weight_log_rejects_invalid_date(self):
+        """Invalid date input should return a client error instead of fake success."""
+        app.dependency_overrides[verify_token] = mock_get_current_user
+        app.dependency_overrides[get_ai_trainer_brain] = lambda: MagicMock()
+
+        response = self.client.delete(
+            "/weight/not-a-date", headers={"Authorization": "Bearer test_token"}
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json()["detail"], "Invalid date format. Use YYYY-MM-DD"
+        )
+
+    def test_delete_weight_log_returns_404_when_log_is_missing(self):
+        """Deleting a non-existent log should report not found."""
+        app.dependency_overrides[verify_token] = mock_get_current_user
+        mock_brain = MagicMock()
+        mock_brain.database.delete_weight_log.return_value = False
+        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+
+        response = self.client.delete(
+            f"/weight/{date.today().isoformat()}",
+            headers={"Authorization": "Bearer test_token"},
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json()["detail"], "Weight log not found")
+
+    def test_update_weight_log_rejects_invalid_id(self):
+        """Malformed weight log IDs should fail validation before persistence."""
+        app.dependency_overrides[verify_token] = mock_get_current_user
+        mock_db = MagicMock()
+        mock_db.weight.update_log.return_value = False
+        app.dependency_overrides[get_mongo_database] = lambda: mock_db
+
+        response = self.client.put(
+            "/weight/not-a-mongo-id",
+            json={
+                "date": str(date.today()),
+                "weight_kg": 75.5,
+                "notes": "Morning weight",
+            },
+            headers={"Authorization": "Bearer test_token"},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["detail"], "Invalid weight log id")
+        mock_db.weight.update_log.assert_not_called()
+
     def test_get_body_composition_stats_success(self):
         """Test retrieving body composition stats."""
         app.dependency_overrides[verify_token] = mock_get_current_user

@@ -210,6 +210,59 @@ describe('useWorkoutStore', () => {
     });
   });
 
+  it('should update an existing workout in place', async () => {
+    const updatedWorkout: WorkoutLog = {
+      ...mockWorkouts[0]!,
+      workout_type: 'Updated Strength',
+      duration_minutes: 75,
+      exercises: [
+        {
+          name: 'Bench Press',
+          sets: 3,
+          reps_per_set: [10, 8, 6],
+          weights_per_set: [60, 70, 80],
+        },
+      ],
+    };
+    useWorkoutStore.setState({ workouts: mockWorkouts, total: 2 });
+    vi.mocked(httpClient).mockResolvedValue(updatedWorkout);
+
+    await useWorkoutStore.getState().updateWorkout('1', {
+      date: '2024-01-01',
+      workout_type: 'Updated Strength',
+      duration_minutes: 75,
+      source: 'manual',
+      exercises: [
+        {
+          name: 'Bench Press',
+          sets: 3,
+          reps_per_set: [10, 8, 6],
+          weights_per_set: [60, 70, 80],
+        },
+      ],
+    });
+
+    expect(httpClient).toHaveBeenCalledWith('/workout/1', {
+      method: 'PUT',
+      body: JSON.stringify({
+        date: '2024-01-01',
+        workout_type: 'Updated Strength',
+        duration_minutes: 75,
+        source: 'manual',
+        exercises: [
+          {
+            name: 'Bench Press',
+            sets: 3,
+            reps_per_set: [10, 8, 6],
+            weights_per_set: [60, 70, 80],
+          },
+        ],
+      }),
+    });
+    expect(useWorkoutStore.getState().workouts[0]).toEqual(updatedWorkout);
+    expect(useWorkoutStore.getState().workouts[1]).toEqual(mockWorkouts[1]);
+  });
+
   it('should fetch workout type suggestions', async () => {
     vi.mocked(httpClient).mockResolvedValue(['Push', 'Pull']);
 

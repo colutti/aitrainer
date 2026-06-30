@@ -182,6 +182,37 @@ def test_merge_plan_section_updates_typed_section():
     assert updated.nutrition.daily_targets.calories_kcal == 2800
 
 
+@pytest.mark.parametrize("include_review_reason", [False, True])
+def test_merge_plan_section_preserves_existing_review_reason_when_not_replaced(
+    include_review_reason,
+):
+    plan = build_plan_from_create_input("user@test.com", make_create_input())
+    plan.review_reason = "Motivo original"
+
+    payload_kwargs = {
+        "section": "nutrition",
+        "nutrition": {
+            "daily_targets": {
+                "calories_kcal": 2800,
+                "protein_g": 160,
+                "carbs_g": 340,
+                "fat_g": 80,
+            },
+            "strategy": "superavit moderado",
+            "adherence_target_pct": 85,
+        },
+    }
+    if include_review_reason:
+        payload_kwargs["review_reason"] = None
+
+    updated = merge_plan_section(
+        plan,
+        PlanSectionUpdateInput(**payload_kwargs),
+    )
+
+    assert updated.review_reason == "Motivo original"
+
+
 def test_merge_plan_section_accepts_multi_section_atomic_update():
     plan = build_plan_from_create_input("user@test.com", make_create_input())
     updated = merge_plan_section(

@@ -82,4 +82,30 @@ describe('UserProfileView', () => {
     expect(screen.getByTestId('profile-age')).toBeDisabled();
     expect(screen.getByText('Demo Read-Only')).toBeInTheDocument();
   });
+
+  it('should submit localized gender values after the user edits gender', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <UserProfileView
+        {...mockProps}
+        profile={{ ...mockProfile, gender: 'Masculino' }}
+        onSubmit={onSubmit}
+      />
+    );
+
+    expect(screen.getByLabelText('Gênero')).toHaveValue('Masculino');
+    fireEvent.change(screen.getByLabelText('Gênero'), {
+      target: { value: 'Feminino' },
+    });
+    fireEvent.submit(screen.getByTestId('profile-form'));
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalled();
+    });
+
+    expect(onSubmit.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({ gender: 'Feminino' })
+    );
+  });
 });

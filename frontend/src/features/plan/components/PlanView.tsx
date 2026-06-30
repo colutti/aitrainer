@@ -6,6 +6,7 @@ import { Button } from '../../../shared/components/ui/Button';
 import { PremiumCard } from '../../../shared/components/ui/premium/PremiumCard';
 import { Skeleton } from '../../../shared/components/ui/Skeleton';
 import type { PlanViewModel } from '../../../shared/types/plan';
+import { formatDate } from '../../../shared/utils/format-date';
 
 interface PlanViewProps {
   plan: PlanViewModel | null;
@@ -159,6 +160,26 @@ export function PlanView({ plan, isLoading, onOpenChat }: PlanViewProps) {
                 </div>
               ))}
             </div>
+          </PremiumCard>
+
+          <PremiumCard className="space-y-4 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-text-primary">{t('plan.sections.latest_checkpoint')}</h3>
+            {activePlan.latest_review_summary ? (
+              <div className="space-y-3 rounded-xl border border-[color:var(--color-outline-variant)] bg-[color:var(--color-background)] p-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">{t('plan.checkpoint.decision')}</p>
+                  <p className="mt-1 text-sm text-text-secondary">{activePlan.latest_review_summary}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">{t('plan.checkpoint.next_focus')}</p>
+                  <p className="mt-1 text-sm text-text-secondary">
+                    {activePlan.next_review_at ? formatDate(activePlan.next_review_at) : t('plan.checkpoint.empty')}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-text-muted">{t('plan.checkpoint.empty')}</p>
+            )}
           </PremiumCard>
 
           <PremiumCard className="space-y-4 border-[color:var(--color-outline-variant)] bg-[color:var(--color-surface-container-low)] p-5">

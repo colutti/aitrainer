@@ -40,6 +40,7 @@ export function useWeightTab() {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editingDate, setEditingDate] = useState<string | null>(null);
   const notify = useNotificationStore();
   const { t } = useTranslation();
@@ -135,9 +136,14 @@ export function useWeightTab() {
       const payload = Object.fromEntries(
         Object.entries(data).filter(([_, v]) => v !== null)
       );
-      
-      await bodyApi.logWeight(data.weight_kg, payload as Partial<WeightLog>);
+
+      if (editingId) {
+        await bodyApi.updateWeight(editingId, data.weight_kg, payload as Partial<WeightLog>);
+      } else {
+        await bodyApi.logWeight(data.weight_kg, payload as Partial<WeightLog>);
+      }
       notify.success(t('body.weight.notifications.save_success'));
+      setEditingId(null);
       setEditingDate(null);
       reset({ ...WEIGHT_DEFAULTS, date: new Date().toISOString().split('T')[0] });
       await loadData(1); // Reload first page on new entry
@@ -159,11 +165,13 @@ export function useWeightTab() {
   };
 
   const cancelEdit = () => {
+    setEditingId(null);
     setEditingDate(null);
     reset({ ...WEIGHT_DEFAULTS, date: new Date().toISOString().split('T')[0] });
   };
 
   const editEntry = (log: WeightLog) => {
+    setEditingId(log.id ?? null);
     setEditingDate(log.date);
     reset({
       date: log.date,
@@ -207,6 +215,7 @@ export function useWeightTab() {
     editEntry,
     cancelEdit,
     isEditing: editingDate !== null,
+    editingId,
     editingDate,
   };
 }

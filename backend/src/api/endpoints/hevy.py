@@ -86,7 +86,7 @@ def save_config(
         "enabled": profile.hevy_enabled,
         "hasKey": bool(api_key),
         "apiKeyMasked": api_key_masked,
-        "lastSync": str(profile.hevy_last_sync) if profile.hevy_last_sync else None,
+        "lastSync": profile.hevy_last_sync,
     }
 
 

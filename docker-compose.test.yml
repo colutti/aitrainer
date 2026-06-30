@@ -42,10 +42,11 @@ services:
     working_dir: /workspace
     volumes:
       - .:/workspace
+      - firebase_tools_prefix:/firebase-tools
       - firebase_emulator_npm_cache:/root/.npm
     command: >
-      sh -lc "npm install -g firebase-tools@14.26.0 &&
-      firebase emulators:start --project demo-fityq --only auth --config /workspace/firebase.emulator.json"
+      sh -lc "/workspace/scripts/verify/firebase-install-if-needed.sh /firebase-tools
+      emulators:start --project demo-fityq --only auth --config /workspace/firebase.emulator.json"
     healthcheck:
       test: ["CMD", "node", "/workspace/scripts/test/firebase_auth_emulator_healthcheck.cjs"]
       interval: 10s
@@ -156,7 +157,7 @@ services:
       VITE_FIREBASE_APP_ID: 1:1234567890:web:demofityq123
       VITE_USE_FIREBASE_AUTH_EMULATOR: "true"
       VITE_FIREBASE_AUTH_EMULATOR_URL: http://firebase-emulator:9099
-    command: sh -lc "npm ci && npm run dev -- --host 0.0.0.0 --port 3000"
+    command: sh -lc "npm ci && npm run build && npm run preview -- --host 0.0.0.0 --port 3000"
     depends_on:
       backend:
         condition: service_healthy
@@ -198,6 +199,7 @@ services:
       - test-network
 
 volumes:
+  firebase_tools_prefix:
   firebase_emulator_npm_cache:
   frontend_dev_node_modules:
   frontend_playwright_node_modules:

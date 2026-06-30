@@ -13,13 +13,9 @@ test.describe('Demo Read-Only', () => {
     await expect(page.getByTestId('chat-input')).toBeDisabled();
 
     await page.goto('/dashboard/body');
-    const weightTab = page.getByTestId('body-tab-weight');
-    const nutritionTab = page.getByTestId('body-tab-nutrition');
-    await expect(weightTab).toBeVisible();
-    await expect(nutritionTab).toBeVisible();
-    await weightTab.click();
     await expect(page.getByRole('button', { name: /Registrar Peso|Register Weight|Registrar Peso/i })).toBeDisabled();
-    await nutritionTab.click();
+
+    await page.goto('/dashboard/nutrition');
     await expect(page.getByRole('button', { name: /Registrar Refei..o|Register Meal|Registrar Comida/i })).toBeDisabled();
 
     await page.goto('/dashboard/settings/profile');
@@ -29,6 +25,11 @@ test.describe('Demo Read-Only', () => {
 
     await page.goto('/dashboard/settings/subscription');
     await expect(page.getByText('Demo Read-Only', { exact: true }).first()).toBeVisible();
+
+    await page.goto('/dashboard/settings/trainer');
+    await expect(page.getByText('Demo Read-Only', { exact: true }).first()).toBeVisible();
+    await expect(page.getByTestId('trainer-card-gymbro')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('button', { name: /Somente leitura|Read-only|Solo lectura/i })).toBeDisabled();
 
     await page.goto('/dashboard/settings/integrations');
     await expect(page.getByText('Demo Read-Only', { exact: true }).first()).toBeVisible();

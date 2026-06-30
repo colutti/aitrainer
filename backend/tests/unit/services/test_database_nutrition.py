@@ -84,6 +84,42 @@ class TestGetNutritionLogs:
         )
 
 
+class TestNutritionDelegation:
+    """Tests for MongoDatabase delegation to nutrition repository."""
+
+    @pytest.fixture
+    def db(self):
+        with patch("src.services.database.pymongo.MongoClient") as mock_client:
+            mock_db_instance = MagicMock()
+            mock_client.return_value.__getitem__.return_value = mock_db_instance
+
+            service = MongoDatabase()
+
+            yield service
+
+    def test_update_nutrition_log_delegates_to_repository(self, db):
+        """Verify update_nutrition_log delegates to nutrition repository."""
+        log = NutritionLog(
+            user_email="test@test.com",
+            date=datetime(2026, 1, 10, 15, 30),
+            calories=2100,
+            protein_grams=140,
+            carbs_grams=220,
+            fat_grams=65,
+            sugar_grams=20,
+            sodium_mg=1200,
+            cholesterol_mg=180,
+            notes="updated note",
+            partial_logged=True,
+        )
+
+        with patch.object(db.nutrition, "update_log", return_value=True) as mock_update:
+            result = db.update_nutrition_log("log-123", "test@test.com", log)
+
+        assert result is True
+        mock_update.assert_called_once_with("log-123", "test@test.com", log)
+
+
 class TestGetNutritionPaginated:
     """Tests for get_nutrition_paginated() method."""
 

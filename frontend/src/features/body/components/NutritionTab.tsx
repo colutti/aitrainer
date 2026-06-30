@@ -15,6 +15,10 @@ import { NutritionLogCard } from '../../nutrition/components/NutritionLogCard';
 
 import { NutritionLogDrawer } from './NutritionLogDrawer';
 
+function optionalNumberOrNull(value: number | null | undefined): number | null {
+  return value ?? null;
+}
+
 /**
  * NutritionTab component
  * 
@@ -74,8 +78,8 @@ export function NutritionTab() {
       protein_grams: data.protein_grams ?? 0,
       carbs_grams: data.carbs_grams ?? 0,
       fat_grams: data.fat_grams ?? 0,
-      fiber_grams: data.fiber_grams ?? 0,
-      sodium_mg: data.sodium_mg ?? 0,
+      fiber_grams: optionalNumberOrNull(data.fiber_grams),
+      sodium_mg: optionalNumberOrNull(data.sodium_mg),
     };
     
     try {

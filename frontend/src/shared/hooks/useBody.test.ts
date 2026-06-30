@@ -127,6 +127,51 @@ describe('useBodyStore', () => {
     });
   });
 
+  describe('updateWeight', () => {
+    it('should update weight successfully and refresh data', async () => {
+      vi.mocked(httpClient)
+        .mockResolvedValueOnce({}) // updateWeight
+        .mockResolvedValueOnce({
+          logs: [{ ...mockLogs[0]!, weight_kg: 78.4, notes: 'updated' }],
+          total: 1,
+          page: 1,
+          page_size: 10,
+          total_pages: 1,
+        })
+        .mockResolvedValueOnce(mockStats);
+
+      await useBodyStore.getState().updateWeight('weight-1', {
+        date: '2024-01-01',
+        weight_kg: 78.4,
+        notes: 'updated',
+      });
+
+      expect(httpClient).toHaveBeenNthCalledWith(1, '/weight/weight-1', {
+        method: 'PUT',
+        body: JSON.stringify({
+          date: '2024-01-01',
+          weight_kg: 78.4,
+          notes: 'updated',
+        }),
+      });
+      expect(useBodyStore.getState().logs[0]).toMatchObject({
+        weight_kg: 78.4,
+        notes: 'updated',
+      });
+    });
+
+    it('should handle update weight error', async () => {
+      vi.mocked(httpClient).mockRejectedValue(new Error('Failed update'));
+
+      await expect(useBodyStore.getState().updateWeight('weight-1', { weight_kg: 78.4 }))
+        .rejects.toThrow('Failed update');
+
+      const state = useBodyStore.getState();
+      expect(state.error).toBe('Failed update');
+      expect(state.isLoading).toBe(false);
+    });
+  });
+
   describe('deleteLog', () => {
     it('should delete log successfully', async () => {
       useBodyStore.setState({ logs: mockLogs });

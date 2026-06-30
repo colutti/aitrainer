@@ -25,6 +25,8 @@ class TelegramRepository(BaseRepository):
         """Create necessary indexes."""
         # TTL index for automatic code expiration
         self.codes_collection.create_index("expires_at", expireAfterSeconds=0)
+        # Unique index to keep linking codes globally unambiguous
+        self.codes_collection.create_index("code", unique=True)
         # Unique index on chat_id
         self.collection.create_index("chat_id", unique=True, sparse=True)
         # Index on user_email for quick lookups
@@ -44,24 +46,31 @@ class TelegramRepository(BaseRepository):
         # Delete existing codes for this user
         self.codes_collection.delete_many({"user_email": user_email})
 
-        # Generate new code
         alphabet = string.ascii_uppercase + string.digits
-        code = "".join(secrets.choice(alphabet) for _ in range(6))
-
         now = datetime.now(timezone.utc)
         expires_at = now + timedelta(minutes=10)
 
-        self.codes_collection.insert_one(
-            {
-                "code": code,
-                "user_email": user_email,
-                "created_at": now,
-                "expires_at": expires_at,
-            }
-        )
+        for attempt in range(10):
+            code = "".join(secrets.choice(alphabet) for _ in range(6))
+            try:
+                self.codes_collection.insert_one(
+                    {
+                        "code": code,
+                        "user_email": user_email,
+                        "created_at": now,
+                        "expires_at": expires_at,
+                    }
+                )
+                self.logger.info("Created linking code for %s", user_email)
+                return code
+            except DuplicateKeyError:
+                self.logger.warning(
+                    "Telegram linking code collision for %s on attempt %s",
+                    user_email,
+                    attempt + 1,
+                )
 
-        self.logger.info("Created linking code for %s", user_email)
-        return code
+        raise RuntimeError("Unable to generate a unique Telegram linking code")
 
     def validate_and_consume_code(
         self, code: str, chat_id: int, username: Optional[str] = None
@@ -79,12 +88,16 @@ class TelegramRepository(BaseRepository):
 
         user_email = code_doc["user_email"]
 
-        # Delete any existing link for this user or chat_id
+        self.create_or_replace_link(user_email, chat_id, username)
+        return user_email
+
+    def create_or_replace_link(
+        self, user_email: str, chat_id: int, username: Optional[str] = None
+    ) -> None:
+        """Create a Telegram link, replacing any existing link for the user or chat."""
         self.collection.delete_many(
             {"$or": [{"user_email": user_email}, {"chat_id": chat_id}]}
         )
-
-        # Create new link
         self.collection.insert_one(
             {
                 "chat_id": chat_id,
@@ -93,9 +106,7 @@ class TelegramRepository(BaseRepository):
                 "linked_at": datetime.now(timezone.utc),
             }
         )
-
         self.logger.info("Linked %s to chat_id %s", user_email, chat_id)
-        return user_email
 
     def get_link_by_chat_id(self, chat_id: int) -> Optional[TelegramLink]:
         """Find link by Telegram chat ID."""

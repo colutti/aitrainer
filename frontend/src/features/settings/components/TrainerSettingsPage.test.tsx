@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { useAuthStore } from '../../../shared/hooks/useAuth';
+import { useDemoMode } from '../../../shared/hooks/useDemoMode';
 import { useSettingsStore } from '../../../shared/hooks/useSettings';
 
 import TrainerSettingsPage from './TrainerSettingsPage';
@@ -13,6 +14,20 @@ vi.mock('../../../shared/hooks/useAuth', () => ({
 
 vi.mock('../../../shared/hooks/useSettings', () => ({
   useSettingsStore: vi.fn(),
+}));
+
+vi.mock('../../../shared/hooks/useDemoMode', () => ({
+  useDemoMode: vi.fn(),
+}));
+
+const mockSuccessNotify = vi.fn();
+const mockErrorNotify = vi.fn();
+
+vi.mock('../../../shared/hooks/useNotification', () => ({
+  useNotificationStore: () => ({
+    success: mockSuccessNotify,
+    error: mockErrorNotify,
+  }),
 }));
 
 vi.mock('react-i18next', () => ({
@@ -48,6 +63,9 @@ describe('TrainerSettingsPage', () => {
     vi.mocked(useSettingsStore).mockReturnValue(defaultStoreValues as any);
     vi.mocked(useAuthStore).mockReturnValue({
       userInfo: { subscription_plan: 'Pro' }
+    } as any);
+    vi.mocked(useDemoMode).mockReturnValue({
+      isDemoUser: false,
     } as any);
   });
 
@@ -87,5 +105,83 @@ describe('TrainerSettingsPage', () => {
       const atlasCard = screen.getByTestId('trainer-card-atlas');
       expect(atlasCard).toContainElement(screen.getByTestId('lock-icon'));
     });
+  });
+
+  it('should redirect free users to subscription when selecting a locked trainer', async () => {
+    vi.mocked(useAuthStore).mockReturnValue({
+      userInfo: { subscription_plan: 'Free' }
+    } as any);
+
+    const originalLocation = window.location;
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { href: 'http://localhost/dashboard/settings/trainer' },
+    });
+
+    try {
+      render(<TrainerSettingsPage />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('trainer-card-atlas')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByTestId('trainer-card-atlas'));
+
+      expect(window.location.href).toBe('/dashboard/settings/subscription');
+      expect(mockUpdateTrainer).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: originalLocation,
+      });
+    }
+  });
+
+  it('should save selected trainer and show success notification', async () => {
+    mockUpdateTrainer.mockResolvedValue(undefined);
+    render(<TrainerSettingsPage />);
+
+    await waitFor(() => expect(screen.getByTestId('trainer-card-gymbro')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId('trainer-card-gymbro'));
+    fireEvent.click(screen.getByText(/settings\.trainer\.save_button/i));
+
+    await waitFor(() => {
+      expect(mockUpdateTrainer).toHaveBeenCalledWith('gymbro');
+      expect(mockSuccessNotify).toHaveBeenCalledWith('settings.trainer.update_success');
+    });
+    expect(mockErrorNotify).not.toHaveBeenCalled();
+  });
+
+  it('should show error notification when save fails', async () => {
+    mockUpdateTrainer.mockRejectedValue(new Error('save failed'));
+    render(<TrainerSettingsPage />);
+
+    await waitFor(() => expect(screen.getByTestId('trainer-card-gymbro')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId('trainer-card-gymbro'));
+    fireEvent.click(screen.getByText(/settings\.trainer\.save_button/i));
+
+    await waitFor(() => {
+      expect(mockErrorNotify).toHaveBeenCalledWith('settings.trainer.update_error');
+    });
+    expect(mockSuccessNotify).not.toHaveBeenCalled();
+  });
+
+  it('should stay read-only for demo users', async () => {
+    vi.mocked(useDemoMode).mockReturnValue({
+      isDemoUser: true,
+    } as any);
+
+    render(<TrainerSettingsPage />);
+
+    await waitFor(() => expect(screen.getByTestId('trainer-card-atlas')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId('trainer-card-gymbro'));
+    fireEvent.click(screen.getByText(/settings\.trainer\.read_only/i));
+
+    expect(mockUpdateTrainer).not.toHaveBeenCalled();
+    expect(mockSuccessNotify).not.toHaveBeenCalled();
+    expect(mockErrorNotify).not.toHaveBeenCalled();
   });
 });

@@ -38,11 +38,20 @@ class UserRepository(BaseRepository):
         """
         Saves or updates a user profile.
         """
-        # Exclude None values to prevent overwriting existing password_hash
-        data = profile.model_dump(exclude_none=True)
+        raw_data = profile.model_dump()
+        data = {key: value for key, value in raw_data.items() if value is not None}
+        unset_fields = {
+            key: ""
+            for key, value in raw_data.items()
+            if value is None and key != "password_hash"
+        }
+
+        update_doc: dict[str, Any] = {"$set": data}
+        if unset_fields:
+            update_doc["$unset"] = unset_fields
 
         result = self.collection.update_one(
-            {"email": profile.email}, {"$set": data}, upsert=True
+            {"email": profile.email}, update_doc, upsert=True
         )
         if result.upserted_id:
             self.logger.info("New user profile created for email: %s", profile.email)
@@ -58,7 +67,19 @@ class UserRepository(BaseRepository):
         """
         Partially updates a user profile with specific fields.
         """
-        result = self.collection.update_one({"email": email}, {"$set": fields})
+        set_fields = {key: value for key, value in fields.items() if value is not None}
+        unset_fields = {key: "" for key, value in fields.items() if value is None}
+
+        update_doc: dict[str, Any] = {}
+        if set_fields:
+            update_doc["$set"] = set_fields
+        if unset_fields:
+            update_doc["$unset"] = unset_fields
+
+        if not update_doc:
+            return False
+
+        result = self.collection.update_one({"email": email}, update_doc)
         if result.modified_count > 0:
             self.logger.info("Partially updated user profile for email: %s", email)
             return True

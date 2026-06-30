@@ -67,6 +67,32 @@ describe('workoutsApi', () => {
     });
   });
 
+  it('should update a manual workout', async () => {
+    const payload = {
+      date: '2024-01-02',
+      workout_type: 'Pull',
+      duration_minutes: 50,
+      source: 'manual' as const,
+      exercises: [
+        {
+          name: 'Barbell Row',
+          sets: 3,
+          reps_per_set: [12, 10, 8],
+          weights_per_set: [40, 45, 50],
+        },
+      ],
+    };
+
+    vi.mocked(httpClient).mockResolvedValue({ id: 'workout-2', ...payload });
+
+    await workoutsApi.updateWorkout('workout-2', payload);
+
+    expect(httpClient).toHaveBeenCalledWith('/workout/workout-2', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  });
+
   it('should fetch workout types', async () => {
     vi.mocked(httpClient).mockResolvedValue(['Push', 'Pull']);
 

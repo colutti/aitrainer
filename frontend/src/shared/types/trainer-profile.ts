@@ -1,6 +1,8 @@
 export interface TrainerProfile {
   user_email?: string;
   trainer_type: string;
+  preferred_language?: string | null;
+  personality_level?: string | null;
 }
 
 export interface TrainerCard {

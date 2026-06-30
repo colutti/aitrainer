@@ -70,6 +70,22 @@ describe('NutritionLogDrawer', () => {
     });
   });
 
+  it('should preserve cleared optional fiber and sodium fields as null', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(<NutritionLogDrawer {...defaultProps} mode="edit" onSubmit={onSubmit} />);
+
+    fireEvent.change(screen.getByLabelText(/Fibra/i), { target: { value: '' } });
+    fireEvent.change(screen.getByLabelText(/Sódio/i), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: /Salvar/i }));
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
+        fiber_grams: null,
+        sodium_mg: null,
+      }));
+    });
+  });
+
   it('should force view mode in read-only state', () => {
     render(<NutritionLogDrawer {...defaultProps} mode="edit" isReadOnly />);
 

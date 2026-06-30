@@ -1,6 +1,7 @@
 """Tests for Hevy integration endpoints."""
 
 import pytest
+from datetime import datetime
 from unittest.mock import MagicMock, AsyncMock
 from fastapi.testclient import TestClient
 from src.api.main import app
@@ -319,6 +320,69 @@ class TestHevyImport:
         assert data["imported"] == 3
         assert data["skipped"] == 1
         mock_brain.save_user_profile.assert_called_once()
+        app.dependency_overrides = {}
+
+    def test_import_workouts_passes_overwrite_mode_and_updates_last_sync(
+        self, client, mock_hevy_service, mock_brain
+    ):
+        """Test import forwards advanced params and persists last sync timestamp."""
+        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+
+        profile = MagicMock()
+        profile.subscription_plan = "Pro"
+        profile.hevy_api_key = "valid_key_123"
+        profile.hevy_last_sync = None
+        mock_brain.get_user_profile.return_value = profile
+
+        import_result = {"imported": 7, "skipped": 0}
+        mock_hevy_service.import_workouts = AsyncMock(return_value=import_result)
+
+        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+        app.dependency_overrides[get_hevy_service] = lambda: mock_hevy_service
+
+        response = client.post(
+            "/integrations/hevy/import",
+            json={"mode": "overwrite", "from_date": "2024-02-03T10:15:00Z"},
+            headers={"Authorization": "Bearer token"},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == import_result
+        mock_hevy_service.import_workouts.assert_awaited_once()
+        call = mock_hevy_service.import_workouts.await_args.kwargs
+        assert call["user_email"] == "test@test.com"
+        assert call["api_key"] == "valid_key_123"
+        assert call["mode"] == "overwrite"
+        assert isinstance(call["from_date"], datetime)
+        assert call["from_date"].isoformat() == "2024-02-03T10:15:00+00:00"
+        assert isinstance(profile.hevy_last_sync, datetime)
+        mock_brain.save_user_profile.assert_called_once_with(profile)
+        app.dependency_overrides = {}
+
+    def test_import_workouts_forbidden_for_basic_plan(
+        self, client, mock_hevy_service, mock_brain
+    ):
+        """Plans sem entitlement de integracao nao podem importar do Hevy."""
+        app.dependency_overrides[verify_token] = lambda: "test@test.com"
+
+        profile = MagicMock()
+        profile.subscription_plan = "Basic"
+        profile.hevy_api_key = "valid_key_123"
+        mock_brain.get_user_profile.return_value = profile
+
+        app.dependency_overrides[get_ai_trainer_brain] = lambda: mock_brain
+        app.dependency_overrides[get_hevy_service] = lambda: mock_hevy_service
+
+        response = client.post(
+            "/integrations/hevy/import",
+            json={"mode": "skip_duplicates"},
+            headers={"Authorization": "Bearer token"},
+        )
+
+        assert response.status_code == 403
+        assert response.json()["detail"] == "INTEGRATION_NOT_ALLOWED_FOR_PLAN"
+        mock_hevy_service.import_workouts.assert_not_called()
+        mock_brain.save_user_profile.assert_not_called()
         app.dependency_overrides = {}
 
     def test_import_workouts_no_key(self, client, mock_brain):

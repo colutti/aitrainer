@@ -69,4 +69,21 @@ describe('settingsApi', () => {
     });
     expect(result).toEqual(mockResponse);
   });
+
+  it('should update identity fields', async () => {
+    vi.mocked(httpClient).mockResolvedValue(undefined);
+
+    await settingsApi.updateIdentity({
+      display_name: 'Novo Nome',
+      photo_base64: 'data:image/png;base64,abc123',
+    });
+
+    expect(httpClient).toHaveBeenCalledWith('/user/update_identity', {
+      method: 'POST',
+      body: JSON.stringify({
+        display_name: 'Novo Nome',
+        photo_base64: 'data:image/png;base64,abc123',
+      }),
+    });
+  });
 });

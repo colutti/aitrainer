@@ -1,7 +1,9 @@
 """Tests for user repository (user profile management)."""
+# pylint: disable=line-too-long,redefined-outer-name,too-few-public-methods
+
+from unittest.mock import MagicMock
 
 import pytest
-from unittest.mock import MagicMock
 from src.repositories.user_repository import UserRepository
 from src.api.models.user_profile import UserProfile
 
@@ -75,7 +77,7 @@ class TestUserRepositorySaveProfile:
         collection.update_one.assert_called_once()
 
     def test_save_profile_excludes_none_values(self, user_repo, mock_db):
-        """Test that None values are excluded from save."""
+        """Test that None values are not set back into the document."""
         profile = UserProfile(
             email="test@example.com",
             gender="Feminino",
@@ -96,8 +98,33 @@ class TestUserRepositorySaveProfile:
         call_args = collection.update_one.call_args
         update_data = call_args[0][1]["$set"]
 
-        # password_hash should not be in the update
-        assert "password_hash" not in update_data or update_data.get("password_hash") is not None
+        assert "password_hash" not in update_data
+
+    def test_save_profile_unsets_nullable_fields_when_cleared(self, user_repo, mock_db):
+        """Test that clearing optional fields emits a Mongo $unset update."""
+        profile = UserProfile(
+            email="test@example.com",
+            gender="Feminino",
+            age=25,
+            weight=65.0,
+            height=170,
+            goal_type="lose",
+            weekly_rate=0.8,
+            hevy_api_key=None,
+            stripe_customer_id=None,
+        )
+
+        mock_db.__getitem__.return_value.update_one.return_value.upserted_id = None
+        mock_db.__getitem__.return_value.update_one.return_value.modified_count = 1
+
+        user_repo.save_profile(profile)
+
+        collection = mock_db.__getitem__.return_value
+        call_args = collection.update_one.call_args
+        update_doc = call_args[0][1]
+
+        assert update_doc["$unset"]["hevy_api_key"] == ""
+        assert update_doc["$unset"]["stripe_customer_id"] == ""
 
     def test_save_profile_with_all_fields(self, user_repo, mock_db):
         """Test saving profile with all fields populated."""
@@ -238,8 +265,33 @@ class TestUserRepositoryUpdateProfileFields:
         result = user_repo.update_profile_fields("test@example.com", fields)
 
         assert result is True
+
+    def test_update_profile_fields_unsets_none_values(self, user_repo, mock_db):
+        """Explicit None values should clear fields instead of persisting nulls."""
+        mock_db.__getitem__.return_value.update_one.return_value.modified_count = 1
+        fields = {"display_name": None, "photo_base64": None, "notes": "kept"}
+
+        result = user_repo.update_profile_fields("test@example.com", fields)
+
+        assert result is True
+        mock_db.__getitem__.return_value.update_one.assert_called_once_with(
+            {"email": "test@example.com"},
+            {
+                "$set": {"notes": "kept"},
+                "$unset": {"display_name": "", "photo_base64": ""},
+            },
+        )
         call_args = mock_db.__getitem__.return_value.update_one.call_args
-        assert call_args[0][1]["$set"] == fields
+        assert call_args[0][1]["$set"] == {"notes": "kept"}
+        assert "display_name" not in call_args[0][1]["$set"]
+        assert "photo_base64" not in call_args[0][1]["$set"]
+
+    def test_update_profile_fields_empty_payload_skips_write(self, user_repo, mock_db):
+        """An empty partial update should not issue a write."""
+        result = user_repo.update_profile_fields("test@example.com", {})
+
+        assert result is False
+        mock_db.__getitem__.return_value.update_one.assert_not_called()
 
 
 

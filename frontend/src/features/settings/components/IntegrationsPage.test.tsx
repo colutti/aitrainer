@@ -115,4 +115,71 @@ describe('IntegrationsPage', () => {
     expect(screen.getByRole('button', { name: /common\.confirm/i })).toBeDisabled();
     expect(screen.queryByRole('button', { name: /settings\.integrations\.telegram\.generate_code/i })).not.toBeInTheDocument();
   });
+
+  it('loads linked Telegram notification state and updates the workout toggle', async () => {
+    vi.mocked(integrationsApi.getTelegramStatus).mockResolvedValue({
+      linked: true,
+      telegram_username: 'telegram-user',
+      telegram_notify_on_workout: false,
+      telegram_notify_on_nutrition: true,
+      telegram_notify_on_weight: false,
+    } as any);
+    vi.mocked(integrationsApi.updateTelegramNotifications).mockResolvedValue(undefined);
+
+    render(<IntegrationsPage />);
+
+    const checkbox = await screen.findByRole('checkbox');
+    expect(checkbox).not.toBeChecked();
+
+    fireEvent.click(checkbox);
+
+    await waitFor(() => {
+      expect(integrationsApi.updateTelegramNotifications).toHaveBeenCalledWith({
+        telegram_notify_on_workout: true,
+      });
+      expect(mockNotify.success).toHaveBeenCalled();
+    });
+
+    expect(checkbox).toBeChecked();
+  });
+
+  it('keeps the Telegram linked state and notification preference after a remount when the API returns persisted data', async () => {
+    vi.mocked(integrationsApi.getTelegramStatus)
+      .mockResolvedValueOnce({
+        linked: true,
+        telegram_username: 'telegram-user',
+        telegram_notify_on_workout: false,
+        telegram_notify_on_nutrition: true,
+        telegram_notify_on_weight: false,
+      } as any)
+      .mockResolvedValueOnce({
+        linked: true,
+        telegram_username: 'telegram-user',
+        telegram_notify_on_workout: true,
+        telegram_notify_on_nutrition: true,
+        telegram_notify_on_weight: false,
+      } as any);
+    vi.mocked(integrationsApi.updateTelegramNotifications).mockResolvedValue(undefined);
+
+    const { unmount } = render(<IntegrationsPage />);
+
+    const checkbox = await screen.findByRole('checkbox');
+    expect(checkbox).not.toBeChecked();
+
+    fireEvent.click(checkbox);
+
+    await waitFor(() => {
+      expect(integrationsApi.updateTelegramNotifications).toHaveBeenCalledWith({
+        telegram_notify_on_workout: true,
+      });
+    });
+    expect(checkbox).toBeChecked();
+
+    unmount();
+    render(<IntegrationsPage />);
+
+    const persistedCheckbox = await screen.findByRole('checkbox');
+    expect(persistedCheckbox).toBeChecked();
+    expect(screen.getByText(/settings\.integrations\.telegram\.connected/i)).toBeInTheDocument();
+  });
 });

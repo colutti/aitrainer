@@ -1,10 +1,8 @@
-"""
-Tests for event management tools.
+"""Tests for event management tools."""
 
-Tests that tools return properly formatted strings for the AI agent.
-"""
-
+from copy import deepcopy
 from unittest.mock import MagicMock, patch
+from bson import ObjectId
 import pytest
 from src.services.event_tools import (
     create_create_event_tool,
@@ -25,6 +23,101 @@ def mock_db():
 def user_email():
     """Test user email."""
     return "test@example.com"
+
+
+class FakeUpdateResult:
+    def __init__(self, *, modified_count: int = 0) -> None:
+        self.modified_count = modified_count
+
+
+class FakeDeleteResult:
+    def __init__(self, *, deleted_count: int = 0) -> None:
+        self.deleted_count = deleted_count
+
+
+class FakeInsertResult:
+    def __init__(self, inserted_id: ObjectId) -> None:
+        self.inserted_id = inserted_id
+
+
+class FakeCursor:
+    def __init__(self, docs: list[dict]) -> None:
+        self._docs = docs
+
+    def sort(self, field: str, direction: int):
+        reverse = direction < 0
+        self._docs.sort(
+            key=lambda doc: (
+                doc.get(field) is not None,
+                doc.get(field) if doc.get(field) is not None else "",
+            ),
+            reverse=reverse,
+        )
+        return self
+
+    def __iter__(self):
+        return iter([deepcopy(doc) for doc in self._docs])
+
+
+class FakeCollection:
+    def __init__(self) -> None:
+        self.docs: list[dict] = []
+
+    def create_index(self, *_args, **_kwargs) -> None:
+        return None
+
+    def _matches(self, doc: dict, query: dict) -> bool:
+        for key, value in query.items():
+            if key == "$or":
+                return any(self._matches(doc, branch) for branch in value)
+            current = doc.get(key)
+            if isinstance(value, dict):
+                if "$gte" in value and current < value["$gte"]:
+                    return False
+                continue
+            if key == "_id":
+                if str(current) != str(value):
+                    return False
+                continue
+            if current != value:
+                return False
+        return True
+
+    def insert_one(self, data: dict) -> FakeInsertResult:
+        inserted_id = ObjectId()
+        self.docs.append({"_id": inserted_id, **deepcopy(data)})
+        return FakeInsertResult(inserted_id)
+
+    def find(self, query: dict) -> FakeCursor:
+        return FakeCursor(
+            [deepcopy(doc) for doc in self.docs if self._matches(doc, query)]
+        )
+
+    def update_one(self, query: dict, update: dict) -> FakeUpdateResult:
+        for doc in self.docs:
+            if self._matches(doc, query):
+                original = deepcopy(doc)
+                for key, value in update.get("$set", {}).items():
+                    doc[key] = deepcopy(value)
+                return FakeUpdateResult(modified_count=0 if doc == original else 1)
+        return FakeUpdateResult(modified_count=0)
+
+    def delete_one(self, query: dict) -> FakeDeleteResult:
+        for index, doc in enumerate(self.docs):
+            if self._matches(doc, query):
+                del self.docs[index]
+                return FakeDeleteResult(deleted_count=1)
+        return FakeDeleteResult(deleted_count=0)
+
+
+class FakeDatabase:
+    def __init__(self) -> None:
+        self._collections: dict[str, FakeCollection] = {}
+
+    def __getitem__(self, name: str) -> FakeCollection:
+        if name not in self._collections:
+            self._collections[name] = FakeCollection()
+        return self._collections[name]
 
 
 class TestCreateEventTool:
@@ -241,3 +334,82 @@ class TestUpdateEventTool:
 
         assert "date" in update_data
         assert update_data["date"] is None
+
+
+def test_event_tools_stateful_roundtrip_create_list_update_clear_date_and_delete():
+    database = FakeDatabase()
+    owner_tool_create = create_create_event_tool(database, "owner@example.com")
+    owner_tool_list = create_list_events_tool(database, "owner@example.com")
+    owner_tool_update = create_update_event_tool(database, "owner@example.com")
+    owner_tool_delete = create_delete_event_tool(database, "owner@example.com")
+    other_user_delete = create_delete_event_tool(database, "other@example.com")
+
+    with patch("src.services.event_tools.datetime") as mock_datetime:
+        mock_datetime.now.return_value.isoformat.return_value = "2026-07-01T10:00:00"
+
+        create_result = owner_tool_create.invoke(
+            {
+                "title": "Check-in de peso",
+                "description": "Revisar progresso semanal",
+                "date": "2099-07-10",
+                "recurrence": "weekly",
+            }
+        )
+
+    assert "✅" in create_result
+    assert "Check-in de peso" in create_result
+    created_event_id = create_result.split("ID: ")[-1].strip()
+
+    no_deadline_result = owner_tool_create.invoke(
+        {
+            "title": "Lembrar da água",
+            "description": "Meta aberta",
+            "recurrence": "monthly",
+        }
+    )
+    assert "✅" in no_deadline_result
+    second_event_id = no_deadline_result.split("ID: ")[-1].strip()
+
+    list_before_update = owner_tool_list.invoke({})
+    assert "Check-in de peso" in list_before_update
+    assert "Lembrar da água" in list_before_update
+    assert "2099-07-10" in list_before_update
+    assert second_event_id in list_before_update
+
+    update_result = owner_tool_update.invoke(
+        {
+            "event_id": created_event_id,
+            "title": "Check-in quinzenal",
+            "description": "Revisar peso, medidas e sono",
+            "date": "NONE",
+            "recurrence": "monthly",
+        }
+    )
+    assert "✅" in update_result
+
+    list_after_update = owner_tool_list.invoke({})
+    assert "Check-in quinzenal" in list_after_update
+    assert "Revisar peso, medidas e sono" in list_after_update
+    assert "🔄 monthly" in list_after_update
+    assert "📅 Sem prazo" in list_after_update
+    assert "2099-07-10" not in list_after_update
+
+    invalid_update = owner_tool_update.invoke(
+        {"event_id": created_event_id, "date": "10/07/2099"}
+    )
+    assert "❌" in invalid_update
+
+    unauthorized_delete = other_user_delete.invoke({"event_id": created_event_id})
+    assert "❌" in unauthorized_delete
+
+    delete_result = owner_tool_delete.invoke({"event_id": created_event_id})
+    assert "✅" in delete_result
+
+    final_list = owner_tool_list.invoke({})
+    assert "Check-in quinzenal" not in final_list
+    assert "Lembrar da água" in final_list
+
+    delete_second = owner_tool_delete.invoke({"event_id": second_event_id})
+    assert "✅" in delete_second
+    empty_list = owner_tool_list.invoke({})
+    assert "não tem eventos" in empty_list.lower() or "nenhum" in empty_list.lower()

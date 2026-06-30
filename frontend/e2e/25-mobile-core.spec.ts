@@ -13,19 +13,18 @@ test.describe('Mobile core navigation', () => {
     await expect(authenticatedPage.getByTestId('mobile-nav')).toBeVisible();
 
     await ui.navigateTo('body');
-    await expect(authenticatedPage.getByTestId('body-tab-weight')).toBeVisible({ timeout: 15000 });
-
-    await authenticatedPage.getByTestId('body-tab-nutrition').click();
-    await expect(authenticatedPage.getByRole('button', { name: /Registrar Refeição|Register Meal|Registrar Comida/i })).toBeVisible({ timeout: 15000 });
-
-    await ui.navigateTo('body');
-    await authenticatedPage.getByTestId('body-tab-weight').click();
+    await expect(authenticatedPage.getByTestId('body-insight-screen')).toBeVisible({ timeout: 15000 });
     await authenticatedPage.getByRole('button', { name: /Registrar Peso|Register Weight|Registrar Peso/i }).click();
     await expect(authenticatedPage.getByRole('heading', { name: /Registrar Peso|Register Weight/i })).toBeVisible({
       timeout: 15000,
     });
     await expect(authenticatedPage.getByTestId('weight-kg')).toBeVisible();
     await ui.closeDrawer();
+
+    await authenticatedPage.goto('/dashboard/nutrition', { waitUntil: 'networkidle' });
+    await expect(authenticatedPage.getByRole('button', { name: /Registrar Refeição|Register Meal|Registrar Comida/i })).toBeVisible({
+      timeout: 15000,
+    });
 
     await ui.navigateTo('chat');
     await expect(authenticatedPage.getByTestId('chat-form')).toBeVisible({ timeout: 15000 });

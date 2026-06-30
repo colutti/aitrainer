@@ -209,7 +209,8 @@ def merge_plan_section(plan: UserPlan, payload: PlanSectionUpdateInput) -> UserP
 
     plan_dict["updated_at"] = _utc_now()
     plan_dict["last_material_change_at"] = _utc_now()
-    plan_dict["review_reason"] = payload.review_reason
+    if payload.review_reason is not None:
+        plan_dict["review_reason"] = payload.review_reason
     updated_plan = UserPlan(**plan_dict)
     consistency_issues = validate_plan_semantic_consistency(updated_plan)
     if consistency_issues:

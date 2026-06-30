@@ -33,4 +33,6 @@ export interface TrainerCard {
 
 export interface TrainerProfile {
   trainer_type: string;
+  preferred_language?: string | null;
+  personality_level?: string | null;
 }

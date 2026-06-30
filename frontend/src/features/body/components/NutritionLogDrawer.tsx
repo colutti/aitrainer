@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Flame, Beef, Wheat, Droplets, Pencil, Save, History, Calendar } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
@@ -12,6 +12,19 @@ import { PremiumDrawer } from '../../../shared/components/ui/premium/PremiumDraw
 import { type NutritionLog, type NutritionFormData } from '../../../shared/types/nutrition';
 import { formatDate } from '../../../shared/utils/format-date';
 
+function coerceOptionalNumber(value: unknown) {
+  if (value === '' || value == null) {
+    return null;
+  }
+
+  const parsedValue = Number(value);
+  return Number.isNaN(parsedValue) ? value : parsedValue;
+}
+
+function formatOptionalMetric(value: number | null | undefined, suffix: string): string {
+  return value == null ? '-' : `${String(value)}${suffix}`;
+}
+
 const nutritionSchema = z.object({
   date: z.string().min(1, 'Data é obrigatória'),
   source: z.string().min(1),
@@ -19,8 +32,14 @@ const nutritionSchema = z.object({
   protein_grams: z.coerce.number().min(0).max(1000).optional().nullable(),
   carbs_grams: z.coerce.number().min(0).max(2000).optional().nullable(),
   fat_grams: z.coerce.number().min(0).max(500).optional().nullable(),
-  fiber_grams: z.coerce.number().min(0).max(200).optional().nullable(),
-  sodium_mg: z.coerce.number().min(0).max(20000).optional().nullable(),
+  fiber_grams: z.preprocess(
+    coerceOptionalNumber,
+    z.number().min(0).max(200).optional().nullable()
+  ),
+  sodium_mg: z.preprocess(
+    coerceOptionalNumber,
+    z.number().min(0).max(20000).optional().nullable()
+  ),
 });
 
 interface NutritionLogDrawerProps {
@@ -42,6 +61,7 @@ export function NutritionLogDrawer({
 }: NutritionLogDrawerProps) {
   const { t } = useTranslation();
   const isEditMode = mode === 'edit' && !isReadOnly;
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<NutritionFormData>({
     resolver: zodResolver(nutritionSchema),
@@ -52,8 +72,8 @@ export function NutritionLogDrawer({
       protein_grams: 0,
       carbs_grams: 0,
       fat_grams: 0,
-      fiber_grams: 0,
-      sodium_mg: 0,
+      fiber_grams: null,
+      sodium_mg: null,
     },
   });
 
@@ -66,8 +86,8 @@ export function NutritionLogDrawer({
         protein_grams: log.protein_grams,
         carbs_grams: log.carbs_grams,
         fat_grams: log.fat_grams,
-        fiber_grams: log.fiber_grams,
-        sodium_mg: log.sodium_mg,
+        fiber_grams: log.fiber_grams ?? null,
+        sodium_mg: log.sodium_mg ?? null,
       });
     } else {
       reset({
@@ -77,15 +97,38 @@ export function NutritionLogDrawer({
         protein_grams: 0,
         carbs_grams: 0,
         fat_grams: 0,
-        fiber_grams: 0,
-        sodium_mg: 0,
+        fiber_grams: null,
+        sodium_mg: null,
       });
     }
   }, [log, reset, isOpen]);
 
   const handleFormSubmit = async (data: NutritionFormData) => {
     if (isReadOnly) return;
-    await onSubmit(data);
+
+    const formData = formRef.current ? new FormData(formRef.current) : null;
+    const submittedDateValue = formData?.get('date');
+    const submittedFiberValue = formData?.get('fiber_grams');
+    const submittedSodiumValue = formData?.get('sodium_mg');
+    let submittedDate = data.date;
+    if (typeof submittedDateValue === 'string' && submittedDateValue.trim() !== '') {
+      submittedDate = submittedDateValue;
+    }
+
+    const normalizedData: NutritionFormData = {
+      ...data,
+      date: submittedDate,
+      fiber_grams:
+        typeof submittedFiberValue === 'string' && submittedFiberValue.trim() !== ''
+          ? Number(submittedFiberValue)
+          : null,
+      sodium_mg:
+        typeof submittedSodiumValue === 'string' && submittedSodiumValue.trim() !== ''
+          ? Number(submittedSodiumValue)
+          : null,
+    };
+
+    await onSubmit(normalizedData);
   };
 
   if (!log && !isEditMode) return null;
@@ -107,7 +150,7 @@ export function NutritionLogDrawer({
       )}
 
       {isEditMode ? (
-        <form onSubmit={(e) => { void handleSubmit(handleFormSubmit)(e); }} className="space-y-8">
+        <form ref={formRef} onSubmit={(e) => { void handleSubmit(handleFormSubmit)(e); }} className="space-y-8">
           <FormField label={t('body.nutrition.date')} id="nutrition-date" error={errors.date?.message}>
             <Input
               id="nutrition-date"
@@ -152,10 +195,28 @@ export function NutritionLogDrawer({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField label={t('body.nutrition.fiber')} id="fiber_grams" error={errors.fiber_grams?.message}>
-                <Input id="fiber_grams" type="number" step="any" disabled={isReadOnly} {...register('fiber_grams')} className="h-14 rounded-2xl font-bold" />
+                <Input
+                  key={`fiber-${log?.id ?? 'new'}-${isOpen ? 'open' : 'closed'}`}
+                  id="fiber_grams"
+                  name="fiber_grams"
+                  type="text"
+                  inputMode="decimal"
+                  defaultValue={log?.fiber_grams ?? ''}
+                  disabled={isReadOnly}
+                  className="h-14 rounded-2xl font-bold"
+                />
               </FormField>
               <FormField label={t('body.nutrition.sodium')} id="sodium_mg" error={errors.sodium_mg?.message}>
-                <Input id="sodium_mg" type="number" step="any" disabled={isReadOnly} {...register('sodium_mg')} className="h-14 rounded-2xl font-bold" />
+                <Input
+                  key={`sodium-${log?.id ?? 'new'}-${isOpen ? 'open' : 'closed'}`}
+                  id="sodium_mg"
+                  name="sodium_mg"
+                  type="text"
+                  inputMode="decimal"
+                  defaultValue={log?.sodium_mg ?? ''}
+                  disabled={isReadOnly}
+                  className="h-14 rounded-2xl font-bold"
+                />
               </FormField>
             </div>
           </div>
@@ -219,14 +280,14 @@ export function NutritionLogDrawer({
                 <div className="flex items-center gap-2 text-violet-400">
                   <span className="text-[10px] font-semibold uppercase tracking-wider">{t('body.nutrition.fiber')}</span>
                 </div>
-                <p className="text-xl font-semibold text-text-primary">{log.fiber_grams}g</p>
+                <p className="text-xl font-semibold text-text-primary">{formatOptionalMetric(log.fiber_grams, 'g')}</p>
               </div>
 
               <div className="bg-[color:var(--color-surface-container)] p-4 rounded-2xl border border-[color:var(--color-outline-variant)] space-y-2">
                 <div className="flex items-center gap-2 text-cyan-400">
                   <span className="text-[10px] font-semibold uppercase tracking-wider">{t('body.nutrition.sodium')}</span>
                 </div>
-                <p className="text-xl font-semibold text-text-primary">{log.sodium_mg}mg</p>
+                <p className="text-xl font-semibold text-text-primary">{formatOptionalMetric(log.sodium_mg, 'mg')}</p>
               </div>
             </div>
           </div>

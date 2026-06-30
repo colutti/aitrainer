@@ -55,6 +55,13 @@ export const workoutsApi = {
     }) as Promise<WorkoutLog>;
   },
 
+  updateWorkout: async (id: string, data: CreateWorkoutRequest): Promise<WorkoutLog> => {
+    return httpClient<WorkoutLog>(`/workout/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }) as Promise<WorkoutLog>;
+  },
+
   getWorkoutTypes: async (): Promise<string[]> => {
     return (await httpClient<string[]>('/workout/types')) ?? [];
   },

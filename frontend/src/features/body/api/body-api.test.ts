@@ -66,6 +66,14 @@ describe('bodyApi', () => {
       });
     });
 
+    it('should update weight by id', async () => {
+      await bodyApi.updateWeight('weight-123', 76.2, { date: '2024-01-03', notes: 'updated' });
+      expect(httpClient).toHaveBeenCalledWith('/weight/weight-123', {
+        method: 'PUT',
+        body: JSON.stringify({ weight_kg: 76.2, date: '2024-01-03', notes: 'updated' }),
+      });
+    });
+
     it('should delete weight', async () => {
       await bodyApi.deleteWeight('2024-01-01');
       expect(httpClient).toHaveBeenCalledWith('/weight/2024-01-01', { method: 'DELETE' });
@@ -140,6 +148,15 @@ describe('bodyApi', () => {
       await bodyApi.logNutrition(logData);
       expect(httpClient).toHaveBeenCalledWith('/nutrition/log', {
         method: 'POST',
+        body: JSON.stringify(logData),
+      });
+    });
+
+    it('should update nutrition log by id', async () => {
+      const logData = { calories: 2200, protein_grams: 170, notes: 'updated meal' };
+      await bodyApi.updateNutritionLog('log-123', logData);
+      expect(httpClient).toHaveBeenCalledWith('/nutrition/log/log-123', {
+        method: 'PUT',
         body: JSON.stringify(logData),
       });
     });

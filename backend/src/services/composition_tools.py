@@ -118,15 +118,15 @@ def create_save_composition_tool(database, user_email: str):
 def _format_metrics(log) -> str:
     """Helper to format basic metrics for a composition log."""
     metrics = [f"Peso: {log.weight_kg}kg"]
-    if log.body_fat_pct:
+    if log.body_fat_pct is not None:
         metrics.append(f"Gordura: {log.body_fat_pct}%")
-    if log.muscle_mass_kg:
+    if log.muscle_mass_kg is not None:
         metrics.append(f"Músculo: {log.muscle_mass_kg}kg")
-    elif log.muscle_mass_pct:
+    elif log.muscle_mass_pct is not None:
         metrics.append(f"Músculo: {log.muscle_mass_pct}%")
-    if log.visceral_fat:
+    if log.visceral_fat is not None:
         metrics.append(f"Gord. Visceral: {log.visceral_fat}")
-    if log.bmr:
+    if log.bmr is not None:
         metrics.append(f"BMR: {log.bmr} kcal")
     return ", ".join(metrics)
 
@@ -134,31 +134,31 @@ def _format_metrics(log) -> str:
 def _format_measurements(log) -> list[str]:
     """Helper to format body measurements for a composition log."""
     measurements = []
-    if log.neck_cm:
+    if log.neck_cm is not None:
         measurements.append(f"Pescoço: {log.neck_cm}cm")
-    if log.chest_cm:
+    if log.chest_cm is not None:
         measurements.append(f"Peito: {log.chest_cm}cm")
-    if log.waist_cm:
+    if log.waist_cm is not None:
         measurements.append(f"Cintura: {log.waist_cm}cm")
-    if log.hips_cm:
+    if log.hips_cm is not None:
         measurements.append(f"Quadril: {log.hips_cm}cm")
-    if log.bicep_r_cm or log.bicep_l_cm:
+    if log.bicep_r_cm is not None or log.bicep_l_cm is not None:
         measurements.append(
             f"Bíceps: D={log.bicep_r_cm}cm E={log.bicep_l_cm}cm"
-            if log.bicep_r_cm and log.bicep_l_cm
-            else f"Bíceps: {log.bicep_r_cm or log.bicep_l_cm}cm"
+            if log.bicep_r_cm is not None and log.bicep_l_cm is not None
+            else f"Bíceps: {log.bicep_r_cm if log.bicep_r_cm is not None else log.bicep_l_cm}cm"
         )
-    if log.thigh_r_cm or log.thigh_l_cm:
+    if log.thigh_r_cm is not None or log.thigh_l_cm is not None:
         measurements.append(
             f"Coxa: D={log.thigh_r_cm}cm E={log.thigh_l_cm}cm"
-            if log.thigh_r_cm and log.thigh_l_cm
-            else f"Coxa: {log.thigh_r_cm or log.thigh_l_cm}cm"
+            if log.thigh_r_cm is not None and log.thigh_l_cm is not None
+            else f"Coxa: {log.thigh_r_cm if log.thigh_r_cm is not None else log.thigh_l_cm}cm"
         )
-    if log.calf_r_cm or log.calf_l_cm:
+    if log.calf_r_cm is not None or log.calf_l_cm is not None:
         measurements.append(
             f"Panturrilha: D={log.calf_r_cm}cm E={log.calf_l_cm}cm"
-            if log.calf_r_cm and log.calf_l_cm
-            else f"Panturrilha: {log.calf_r_cm or log.calf_l_cm}cm"
+            if log.calf_r_cm is not None and log.calf_l_cm is not None
+            else f"Panturrilha: {log.calf_r_cm if log.calf_r_cm is not None else log.calf_l_cm}cm"
         )
     return measurements
 
@@ -219,7 +219,9 @@ def create_get_composition_tool(database, user_email: str):
                         f"({len(current_week)} logs)\n"
                     )
                     bf_vals = [
-                        log.body_fat_pct for log in current_week if log.body_fat_pct
+                        log.body_fat_pct
+                        for log in current_week
+                        if log.body_fat_pct is not None
                     ]
                     if bf_vals:
                         result += (
@@ -235,7 +237,7 @@ def create_get_composition_tool(database, user_email: str):
                         diff = avg_current - avg_prev
                         result += f"Variação média semanal: {diff:+.2f} kg\n"
 
-                if logs[0].trend_weight:
+                if logs[0].trend_weight is not None:
                     result += (
                         f"\nPeso de tendência (EMA): {logs[0].trend_weight:.2f} kg\n"
                     )

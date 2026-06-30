@@ -21,6 +21,7 @@ vi.mock('../api/body-api', () => ({
     getNutritionLogs: vi.fn(),
     getNutritionStats: vi.fn(),
     logNutrition: vi.fn(),
+    updateNutritionLog: vi.fn(),
     deleteNutritionLog: vi.fn(),
   },
 }));
@@ -153,8 +154,20 @@ describe('useNutritionTab', () => {
 
     act(() => {
       result.current.nextPage();
+    });
+    await waitFor(() => expect(result.current.currentPage).toBe(2));
+
+    act(() => {
       result.current.prevPage();
+    });
+    await waitFor(() => expect(result.current.currentPage).toBe(1));
+
+    act(() => {
       result.current.changePage(3);
+    });
+    await waitFor(() => expect(result.current.currentPage).toBe(3));
+
+    act(() => {
       result.current.cancelEdit();
     });
 
@@ -162,5 +175,65 @@ describe('useNutritionTab', () => {
     expect(bodyApi.getNutritionLogs).toHaveBeenCalledWith(1, 10, undefined);
     expect(bodyApi.getNutritionLogs).toHaveBeenCalledWith(3, 10, undefined);
     expect(result.current.isEditing).toBe(false);
+  });
+
+  it('updates the existing nutrition log when submitting in edit mode', async () => {
+    vi.mocked(bodyApi.updateNutritionLog).mockResolvedValue({ id: 'log-1' } as never);
+    const { result } = renderHook(() => useNutritionTab());
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    act(() => {
+      result.current.editEntry({
+        id: 'log-1',
+        user_email: 'user@example.com',
+        date: '2026-03-21T10:00:00Z',
+        source: 'Manual',
+        calories: 2100,
+        protein_grams: 170,
+        carbs_grams: 200,
+        fat_grams: 60,
+        fiber_grams: 25,
+        sugar_grams: 18,
+        sodium_mg: 1500,
+        cholesterol_mg: 250,
+        notes: 'before update',
+      } as never);
+    });
+
+    await act(async () => {
+      await result.current.onSubmit({
+        date: '2026-03-21',
+        source: 'Manual',
+        calories: 2300,
+        protein_grams: 180,
+        carbs_grams: 220,
+        fat_grams: 70,
+        fiber_grams: 30,
+        sugar_grams: 20,
+        sodium_mg: 1700,
+        cholesterol_mg: 280,
+        notes: 'after update',
+        partial_logged: true,
+      } as never);
+    });
+
+    expect(bodyApi.updateNutritionLog).toHaveBeenCalledWith('log-1', {
+      date: '2026-03-21',
+      source: 'Manual',
+      calories: 2300,
+      protein_grams: 180,
+      carbs_grams: 220,
+      fat_grams: 70,
+      fiber_grams: 30,
+      sugar_grams: 20,
+      sodium_mg: 1700,
+      cholesterol_mg: 280,
+      notes: 'after update',
+      partial_logged: true,
+    });
+    expect(bodyApi.logNutrition).not.toHaveBeenCalled();
+    expect(result.current.isEditing).toBe(false);
+    expect(result.current.editingId).toBeNull();
   });
 });

@@ -187,6 +187,74 @@ describe('useNutritionStore', () => {
     });
   });
 
+  describe('updateLog', () => {
+    it('should update log successfully and refresh list and stats', async () => {
+      vi.mocked(httpClient).mockResolvedValueOnce({ id: '1' });
+      vi.mocked(httpClient).mockResolvedValueOnce({
+        logs: [{ ...mockLogs[0]!, calories: 2250, fiber_grams: 32, sodium_mg: 1800 }],
+        total: 1,
+        page: 1,
+        page_size: 20,
+        total_pages: 1,
+      });
+      vi.mocked(httpClient).mockResolvedValueOnce({
+        ...mockStats,
+        today: { ...mockLogs[0]!, calories: 2250, fiber_grams: 32, sodium_mg: 1800 },
+      });
+
+      await useNutritionStore.getState().updateLog('1', {
+        date: '2024-01-01',
+        source: 'Manual',
+        calories: 2250,
+        protein_grams: 160,
+        carbs_grams: 210,
+        fat_grams: 65,
+        fiber_grams: 32,
+        sodium_mg: 1800,
+      });
+
+      expect(httpClient).toHaveBeenNthCalledWith(1, '/nutrition/log/1', {
+        method: 'PUT',
+        body: JSON.stringify({
+          date: '2024-01-01',
+          source: 'Manual',
+          calories: 2250,
+          protein_grams: 160,
+          carbs_grams: 210,
+          fat_grams: 65,
+          fiber_grams: 32,
+          sodium_mg: 1800,
+        }),
+      });
+      expect(httpClient).toHaveBeenNthCalledWith(2, '/nutrition/list?page=1&page_size=20');
+      expect(httpClient).toHaveBeenNthCalledWith(3, '/nutrition/stats');
+      expect(useNutritionStore.getState().logs[0]).toMatchObject({
+        calories: 2250,
+        fiber_grams: 32,
+        sodium_mg: 1800,
+      });
+    });
+
+    it('should handle update log error', async () => {
+      vi.mocked(httpClient).mockRejectedValue(new Error('update failed'));
+
+      await expect(
+        useNutritionStore.getState().updateLog('1', {
+          date: '2024-01-01',
+          source: 'Manual',
+          calories: 2000,
+          protein_grams: 100,
+          carbs_grams: 200,
+          fat_grams: 50,
+        })
+      ).rejects.toThrow('update failed');
+
+      const state = useNutritionStore.getState();
+      expect(state.error).toBe('update failed');
+      expect(state.isLoading).toBe(false);
+    });
+  });
+
   describe('deleteLog', () => {
     it('should delete log and refresh stats', async () => {
       useNutritionStore.setState({ logs: mockLogs, total: 2 });
