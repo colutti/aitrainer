@@ -60,8 +60,9 @@ make build
 make build-prod
 make restart
 make debug-rebuild
-make debug-rebuild-admin
 ```
+
+`make up` only starts the main app stack (`backend`, `frontend`, `mongo`, `mongo-express`, `qdrant`). Admin services must be started separately.
 
 ### Main backend
 
@@ -219,7 +220,7 @@ cd backend && .venv/bin/pytest tests/conversation/test_01_verao_espanha.py -v  #
 make test-conversation  # shortcut
 ```
 
-Prerequisites: backend running (`make dev`), user `rafacolucci@gmail.com` exists.
+Prerequisites: backend running (for example `cd backend && .venv/bin/python src/api/main.py`), user `rafacolucci@gmail.com` exists.
 
 ### User reset script
 
@@ -303,6 +304,8 @@ Project-specific workflows live in [`.agent/workflows`](/home/colutti/projects/p
 - `cleancode.md`
 
 These files are guidance, not executable commands. If they drift from the repository, fix the workflow doc first or follow the codebase as source of truth.
+
+Historical specs and implementation plans are not source of truth. If a Markdown file under `docs/` or `backend/docs/` conflicts with the live repository, prefer the live code and the active operational docs.
 
 Project-specific design skill:
 - [`.agent/skills/ui-ux-pro-max/SKILL.md`](/home/colutti/projects/personal/.agent/skills/ui-ux-pro-max/SKILL.md)

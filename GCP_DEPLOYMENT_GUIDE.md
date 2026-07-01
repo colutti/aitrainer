@@ -1,90 +1,98 @@
-# 🚀 AI Trainer - Guia de Infraestrutura e Deployment (GCP)
+# GCP Deployment Guide
 
-Este documento descreve a arquitetura atualizada, os serviços utilizados e como manter a aplicação no Google Cloud Platform (GCP).
+Este documento descreve apenas o fluxo de deploy atualmente suportado pelo repositório.
 
-## 🌍 URLs de Produção
+## Produção atual
 
-| Serviço                | URL                                                                                                                                                | Status                       |
-| :--------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------- |
-| **Frontend Principal** | [https://fityq.com](https://fityq.com)                                                                                                             | Ativo (via Firebase Hosting) |
-| **Backend API**        | [https://aitrainer-backend-ufyggn7wzq-no.a.run.app](https://aitrainer-backend-ufyggn7wzq-no.a.run.app)                                             | Ativo (Cloud Run)            |
-| **Admin Frontend**     | [https://aitrainer-frontend-admin-359890746855.europe-southwest1.run.app](https://aitrainer-frontend-admin-359890746855.europe-southwest1.run.app) | Ativo (Cloud Run)            |
-| **Admin Backend**      | [https://aitrainer-backend-admin-359890746855.europe-southwest1.run.app](https://aitrainer-backend-admin-359890746855.europe-southwest1.run.app)   | Ativo (Cloud Run)            |
+- Domínio principal: `https://fityq.com`
+- Deploy compute: Google Cloud Run
+- Região padrão: `europe-southwest1`
+- Registry padrão: `europe-southwest1-docker.pkg.dev/fityq-488619/aitrainer`
 
-> [!NOTE]
-> O bot do Telegram utiliza webhooks. Após o deploy do backend, o webhook deve ser atualizado para a URL do Cloud Run (terminada em `/telegram/webhook`).
+Serviços Cloud Run padrão:
 
+- `aitrainer-backend`
+- `aitrainer-frontend`
 
----
+Serviços admin existem, mas o deploy deles é opt-in via `ENABLE_ADMIN_DEPLOY=true`.
 
-## 🏗️ Arquitetura no GCP
+## Fluxo oficial
 
-A aplicação foi migrada do Render para o Google Cloud para maior controle, performance (Madrid) e redução de custos.
+O fluxo oficial de deploy é:
 
-1.  **Google Cloud Run (Compute):**
-    *   Hospeda os containers de Backend, Admin Backend e Admin Frontend.
-    *   Região: `europe-southwest1` (Madrid).
-    *   Configurado com auto-scaling (paga apenas pelo que usa).
-2.  **Firebase Hosting (Custom Domain Proxy):**
-    *   Utilizado para mapear o domínio `fityq.com` para o Cloud Run de Madrid.
-    *   Provê SSL (HTTPS) gratuito e CDN global.
-3.  **Artifact Registry:**
-    *   Repositório: `europe-southwest1-docker.pkg.dev/fityq-488619/aitrainer/`
-    *   Armazena as imagens de container compiladas.
-
----
-
-## 🚀 Como Realizar um Novo Deployment
-
-O fluxo oficial de produção agora é **one-shot** e orientado a cache remoto para reduzir tempo de build/deploy.
-
-### Comandos oficiais
-
-| Comando             | Descrição |
-| :------------------ | :-------- |
-| `make deploy-prod`  | Fluxo completo: preflight + build com cache + deploy + smoke |
-| `make deploy-prod-fast` | Fluxo incremental: só build/deploy de serviços alterados |
-| `make deploy-build` | Build-only via Cloud Build/Kaniko com cache remoto |
-| `make deploy-smoke` | Smoke-only após deploy |
-| `make deploy-prod-env` | Sincroniza env vars de produção a partir de arquivos `*.env.prod` |
-
-**Exemplo de uso (recomendado):**
 ```bash
 make deploy-prod
 ```
 
-### Garantia contra perda de env vars
+Esse fluxo encadeia:
 
-- O deploy principal usa `gcloud run services update --image`, que atualiza somente a imagem e preserva variáveis existentes.
-- O preflight valida chaves críticas para social auth e backend antes do deploy.
-- O smoke valida `/health`, proxy frontend `/api/health` e `runtime-config.js` com chaves Firebase não vazias.
+1. `make deploy-preflight`
+2. `make deploy-build`
+3. `scripts/deploy/deploy_prod.sh`
+4. `make deploy-smoke`
 
-> [!IMPORTANT]
-> Não colocar segredos diretamente no `Makefile`. Quando necessário, atualizar `backend/.env.prod` e executar `make deploy-prod-env`.
-
----
-
-## ⚙️ Variáveis de Ambiente e IA
-
-Os modelos de IA configurados e testados são:
-*   **AI_PROVIDER:** `gemini`
-*   **GEMINI_LLM_MODEL:** `gemini-3-flash-preview`
-*   **GEMINI_EMBEDDER_MODEL:** `gemini-embedding-001`
-*   **OPENAI_LLM_MODEL:** `gpt-5-mini`
-*   **OPENAI_EMBEDDER_MODEL:** `text-embedding-3-small`
-
-As variáveis são geridas pelos scripts em `scripts/deploy/`. Para atualização explícita a partir de arquivo, use `make deploy-prod-env`.
-
----
-
-## 💻 Desenvolvimento Local (Podman/Docker)
-
-As mudanças para o GCP **não impactaram** o ambiente local. Você ainda pode rodar tudo via:
+Comandos auxiliares:
 
 ```bash
-podman-compose up --build
+make deploy-prod-fast
+make deploy-build
+make deploy-smoke
+make deploy-prod-env
 ```
 
-*   **Frontend Local:** [http://localhost:3000](http://localhost:3000)
-*   **Backend Local:** [http://localhost:8000](http://localhost:8000)
-*   **Banco de Dados:** MongoDB e Qdrant rodam em containers locais.
+## Garantias do fluxo
+
+- O deploy principal usa `gcloud run services update --image`, preservando env vars já existentes no serviço.
+- O preflight valida dependências locais, existência dos serviços Cloud Run e env vars críticas.
+- O smoke testa:
+  - `${BACKEND_URL}/health`
+  - `${FRONTEND_URL}/api/health`
+  - `${FRONTEND_URL}/runtime-config.js`
+
+## Variáveis relevantes
+
+Os scripts de deploy usam estes defaults:
+
+- `GCP_PROJECT_ID=fityq-488619`
+- `GCP_REGION=europe-southwest1`
+- `AR_REPOSITORY=aitrainer`
+- `ENABLE_ADMIN_DEPLOY=false`
+- `DRY_RUN=false`
+
+Variáveis opcionais de controle:
+
+- `DEPLOY_TAG`
+- `AUTO_DETECT_CHANGED=true`
+- `BASE_REF=<git-ref>`
+
+## Atualização de env vars
+
+Para sincronizar env vars de produção a partir dos arquivos locais `*.env.prod`:
+
+```bash
+make deploy-prod-env
+```
+
+Arquivos lidos:
+
+- `backend/.env.prod`
+- `frontend/.env.prod`
+- `backend-admin/.env.prod` quando `ENABLE_ADMIN_DEPLOY=true`
+- `frontend/admin/.env.prod` quando `ENABLE_ADMIN_DEPLOY=true`
+
+## Descoberta de URLs atuais
+
+Evite documentar URLs temporárias de Cloud Run manualmente. Consulte o estado atual com:
+
+```bash
+gcloud run services describe aitrainer-backend --region europe-southwest1 --format='value(status.url)'
+gcloud run services describe aitrainer-frontend --region europe-southwest1 --format='value(status.url)'
+```
+
+## Telegram webhook
+
+O bot do Telegram usa webhook. Após um deploy de backend que altere a URL efetiva do serviço, confirme que o webhook aponta para:
+
+```text
+<backend-url>/telegram/webhook
+```

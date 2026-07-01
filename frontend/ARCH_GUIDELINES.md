@@ -1,47 +1,54 @@
-# Diretrizes Arquiteturais: Deep Space Premium
+# Frontend Architecture Guidelines
 
-Este documento define os padrões técnicos e visuais estabelecidos durante a refatoração do frontend. Siga estas regras para garantir que a aplicação continue fácil de manter e testar.
+Este documento descreve apenas padrões ainda visíveis no frontend atual.
 
-## 1. Padrão Container / Presenter
+## Estrutura de features
 
-Todas as novas funcionalidades devem ser divididas em dois arquivos:
+O frontend principal continua organizado por feature em `frontend/src/features`.
 
-### Container (`FeaturePage.tsx`)
-- **Responsabilidade**: Gerenciamento de estado, chamadas de API (serviços/hooks), lógica de negócio.
-- **Pura Lógica**: Não deve conter estilos complexos ou layouts detalhados.
-- **Exemplo**: `DashboardPage.tsx` coordena o fetch de dados e passa as props para a `View`.
+Padrão preferencial:
 
-### Presenter (`FeatureView.tsx`)
-- **Responsabilidade**: Renderização visual, animações, feedback de UI.
-- **Componente Puro**: Deve receber tudo via `props`. Não deve disparar `fetch` diretamente.
-- **Testabilidade**: 100% dos testes unitários de UI devem focar no Presenter usando mocks de props.
+- `*Page.tsx`: coordena estado, hooks, navegação e integração com APIs
+- `components/*View.tsx`: recebe props e concentra a renderização
 
-## 2. Design System Premium
+Nem toda feature precisa seguir uma separação rígida, mas novas mudanças devem preservar responsabilidade clara entre orquestração e apresentação.
 
-Utilize as variantes centralizadas em `src/shared/styles/ui-variants.ts` para garantir consistência.
+## Design system compartilhado
 
-- **Bento Grid**: Use o padrão de cards de tamanhos variados para organizar informações.
-- **Glassmorphism**: Utilize o componente `<PremiumCard />` para qualquer container de informação.
-- **Animações**: Use o `framer-motion` para entradas suaves (`initial={{ opacity: 0 }}`).
-- **Tipografia**: Use as classes `PREMIUM_UI.text.heading` e `PREMIUM_UI.text.label`.
+Os contratos visuais reutilizáveis vivem em:
 
-## 3. Estratégia de Testes
+- `frontend/src/shared/styles/ui-variants.ts`
+- `frontend/src/shared/components/ui/premium/`
 
-### Unitários (Vitest + MSW)
-- Localizados na mesma pasta do componente.
-- Devem atingir ~100% de cobertura nos Presenters.
-- Use `screen.getByTestId` como seletor prioritário.
+Peças centrais ainda em uso:
 
-### E2E Reais (Playwright)
-- Localizados em `e2e/real/`.
-- Validam o **Backend Real**.
-- Utilize o helper `ui.navigateTo` e `ui.waitForToast` para resiliência.
-- O cleanup é automático via `afterEach` integrado nas fixtures.
+- `PREMIUM_UI`
+- `PremiumCard`
+- `ViewHeader`
+- `FormField`
 
-## 4. Zero Tolerância
-- **Lint**: Proibido commitar com `warnings` ou `errors`.
-- **Types**: Use interfaces estritas. Evite `any`.
-- **Zod**: Todos os inputs de formulário devem ser validados via Schema.
+Ao expandir a UI:
 
----
-*Assinado: Arquitetura Gemini CLI - Março 2026*
+- reutilize tokens e variantes existentes antes de criar estilos soltos
+- mantenha consistência com as cores e superfícies já definidas
+- use animações de forma contida e sem prejudicar legibilidade
+
+## Testes
+
+Unitários:
+
+- ficam próximos da feature/componente
+- usam Vitest e Testing Library
+- devem validar comportamento observável, não implementação interna
+
+E2E:
+
+- vivem em `frontend/e2e/`
+- usam fixtures e helpers de `frontend/e2e/helpers` e `frontend/e2e/fixtures`
+- a validação oficial roda pelo fluxo containerizado do repositório
+
+## Regras de manutenção
+
+- `npm run lint` e `npm run typecheck` devem passar após qualquer edição em `frontend/`
+- evite `any` quando um tipo local resolve o contrato
+- mantenha textos sincronizados em `pt-BR`, `en-US` e `es-ES`

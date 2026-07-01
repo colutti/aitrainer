@@ -1,10 +1,10 @@
 ---
-description: Executa a suíte completa de testes e verificação de qualidade do projeto (Backend, Frontend & E2E)
+description: Executa a suíte suportada de testes e verificação de qualidade do projeto
 ---
 
 # Workflow: Execução de Testes e Qualidade
 
-Este guia define os comandos e padrões para garantir que o projeto mantenha **Zero Erros** e **Zero Warnings** em todas as camadas.
+Este guia define os comandos atuais de validação do repositório.
 
 ## Caminho oficial
 
@@ -14,104 +14,68 @@ Para a suíte completa com ambiente consistente, use:
 make test-once
 ```
 
-Esse comando sobe MongoDB, Qdrant, backend real, frontend real e Playwright em containers na mesma rede.
+Esse é o caminho suportado para validação completa do sistema.
 
-## 0. Caminhos e Ferramentas (Referência Rápida)
+## 1. Backend principal
 
-Sempre utilize os executáveis dos ambientes virtuais locais para garantir paridade:
+Qualidade:
 
-- **Backend**: `backend/.venv/bin/` (pytest, ruff, pyright, pylint)
-- **Frontend**: `frontend/` (npm, npx playwright)
-- **Frontend Admin**: `frontend/admin/` (npm)
-
----
-
-## 1. Backend: Qualidade e Testes
-
-### Verificação de Qualidade (Lint & Types)
 ```bash
 cd backend
-.venv/bin/ruff check src                    # Lint rápido
-.venv/bin/pylint src                        # Lint profundo (Meta: 10/10)
-.venv/bin/pyright src                       # Verificação de Tipos estrita
+.venv/bin/ruff check src tests
+.venv/bin/pylint src
 ```
 
-### Suíte de Testes (TDD)
+Testes:
+
 ```bash
 cd backend
-.venv/bin/pytest                            # Todos os testes
-.venv/bin/pytest tests/integration/ -v      # Apenas integração (novos testes)
-.venv/bin/pytest --cov=src                  # Relatório de cobertura
+.venv/bin/pytest
+.venv/bin/pytest tests/conversation/ -v
+.venv/bin/pytest --cov=src
 ```
 
----
-
-## 2. Backend Admin: Qualidade
+## 2. Backend admin
 
 ```bash
 cd backend-admin
-.venv/bin/python -m pytest || true          # Opcional: atualmente o foco principal é lint/typecheck
-.venv/bin/pylint src                        # Meta: 10/10
+.venv/bin/pylint src
 .venv/bin/pyright src
 ```
 
----
+## 3. Frontend principal
 
-## 3. Frontend: Qualidade e Testes (Main & Admin)
-
-### Frontend Principal (App)
 ```bash
 cd frontend
-npm run check                               # Atalho: lint + typecheck + testes
-npm run lint                                # ESLint (Strict)
-npm run typecheck                           # TypeScript (noEmit)
-npm test                                    # Unitários (Vitest)
-npm run test:coverage -- src/features/onboarding  # Cobertura por feature
+npm run lint
+npm run typecheck
+npm test
 ```
 
-### Frontend Admin
+## 4. Frontend admin
+
 ```bash
 cd frontend/admin
-npm run check
+npm run lint
+npm run typecheck
+npm test
 ```
 
----
+## 5. E2E
 
-## 4. Testes End-to-End (E2E) Automáticos
-
-Os testes E2E rodam em modo **Headless** contra um **Build de Produção** local para garantir estabilidade máxima e evitar erros de servidor de desenvolvimento.
+O caminho suportado para E2E é containerizado:
 
 ```bash
-cd frontend
-# Execução automática padrão
-npx playwright test --project=chromium --reporter=list
+make e2e
+make verify-all
+make test-once
 ```
 
----
+Não trate `npx playwright test` local como validação oficial do projeto.
 
-## 5. Segurança (SAST + SCA)
+## 6. Regras de fechamento
 
-```bash
-make security-check                         # Semgrep + Trivy + Secret Scanning
-```
-
----
-
-## 6. Limpeza e Relatório Final
-
-Sempre limpe artefatos antes de considerar a tarefa concluída:
-
-1. **Limpeza**: remova apenas artefatos gerados localmente, conforme `.agent/workflows/cleancode.md`
-2. **Relatório**: O Agente deve reportar:
-   - Status do Lint (Zero Erros).
-   - Status dos Tipos (Zero Erros).
-   - Total de testes passados.
-   - Cobertura aproximada das áreas afetadas.
-
----
-
-## Regras de Ouro
-- **Bug = Teste Primeiro**: Crie um teste que falhe para reproduzir o bug antes da correção.
-- **Headless por Padrão**: Nunca inicie processos interativos ou watchers no ambiente de automação.
-- **Zero Warnings**: Trate warnings como erros. Não os silencie com `# noqa` ou `ignore`, corrija a raiz.
-- **Ambiente Isolado**: Prefira os binários do `.venv` aos globais do sistema.
+- Trate warnings como falhas.
+- Use os executáveis do `.venv` quando existir ambiente virtual local.
+- Se a tarefa tocar múltiplas superfícies, rode a validação de cada uma delas.
+- Se a limpeza fizer parte do fechamento, siga `.agent/workflows/cleancode.md`.

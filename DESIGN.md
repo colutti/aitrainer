@@ -1,6 +1,6 @@
 ---
-name: Developer Performance Interface
-description: Dark-mode-only design system for developer-centric, high-comprehension product workflows.
+name: FityQ Performance Coaching Interface
+description: Dark-first design system for a high-clarity fitness coaching product.
 colors:
   surface: '#131313'
   surface-dim: '#131313'
@@ -34,18 +34,6 @@ colors:
   on-error: '#690005'
   error-container: '#93000a'
   on-error-container: '#ffdad6'
-  primary-fixed: '#d8e2ff'
-  primary-fixed-dim: '#adc6ff'
-  on-primary-fixed: '#001a42'
-  on-primary-fixed-variant: '#004395'
-  secondary-fixed: '#6ffbbe'
-  secondary-fixed-dim: '#4edea3'
-  on-secondary-fixed: '#002113'
-  on-secondary-fixed-variant: '#005236'
-  tertiary-fixed: '#ffdcc6'
-  tertiary-fixed-dim: '#ffb786'
-  on-tertiary-fixed: '#311400'
-  on-tertiary-fixed-variant: '#723600'
   background: '#131313'
   on-background: '#e2e2e2'
   surface-variant: '#353535'
@@ -95,96 +83,68 @@ spacing:
   card-padding: 24px
 ---
 
-# Design System: Developer Performance Interface
+# Design System: FityQ Performance Coaching Interface
 
-## 1. Brand & Style
+## 1. Intent
 
-The design system is engineered for high-performance technical environments, prioritizing speed of comprehension and functional clarity. It targets a developer-centric audience that values efficiency over decorative flair.
+FityQ is a coaching product, not a developer tool. The interface should feel focused, confident, and operational: users come to understand what to do next, not to admire decoration. The current visual system is dark-first, dense enough for dashboards and plans, and restrained enough to keep the AI experience trustworthy.
 
-The aesthetic is rooted in Minimalism and Modern Corporate styles, utilizing a dark-mode-only philosophy. By stripping away non-functional elements like glows, heavy gradients, and drop shadows, the system emphasizes data and connectivity. The emotional response is reliability, precision, and under-the-hood power. Visual hierarchy is achieved through high-contrast typography and razor-thin structural lines rather than depth or color washes.
+## 2. Visual language
 
-## 2. Colors
+- Dark surfaces with clear tonal steps separate content without relying on heavy shadow.
+- Blue is the primary action color.
+- Green and orange communicate positive/supporting states and warnings.
+- High-contrast typography carries hierarchy more than illustration or ornament.
 
-The palette is strictly functional. The foundation is a true black-family background language to minimize eye strain and maximize the contrast of text and interactive elements.
+The design should feel precise and modern, but still human. It supports training, nutrition, body metrics, and coaching conversations rather than generic “AI” spectacle.
 
-- Primary Accent: Vibrant indigo-blue for primary calls to action and critical path interactions.
-- Neutrals: Deep gray scale for structure and separation.
-- Typography: High-contrast light text for headings and medium-gray for secondary information.
+## 3. Tokens
 
-### Named Rules
+The canonical frontend tokens live in `frontend/src/index.css` and the semantic variants live in `frontend/src/shared/styles/ui-variants.ts`.
 
-The primary accent is reserved for explicit actions and selected critical state only, never decorative fills.
+Core traits:
 
-## 3. Typography
+- Base background: `#131313`
+- Main card surface: `surface-container`
+- Main border: `outline-variant`
+- Primary action: `primary`
+- Success/accent: `secondary`
+- Warning/accent: `tertiary`
 
-This design system uses Inter across the full type scale for legibility and technical clarity.
+## 4. Typography
 
-- Headlines use tighter spacing and heavier weights.
-- Body copy keeps generous line-height for readable technical documentation and detail-heavy views.
-- Numerical and code accents should prefer monospace where practical to reinforce developer context.
+Inter is used across the system.
 
-## 4. Layout & Spacing
+- Large headings establish page-level orientation.
+- Label text is compact, uppercase, and slightly tracked.
+- Body text stays readable for longer coaching explanations, logs, and tables.
+- Numeric summaries should read as strong signals, not decorative counters.
 
-The system follows a fixed-grid desktop model with centered content up to 1280px and a base-8 spacing rhythm.
+## 5. Layout and components
 
-- Grid model: 12 columns for high-level page architecture.
-- Card layouts: Symmetrical 3-column or 4-column structures for feature and insight blocks.
-- Rhythm: 24px spacing standard for module separation and card internals.
+Current reusable primitives:
 
-## 5. Elevation & Depth
+- `PremiumCard`
+- `ViewHeader`
+- `FormField`
+- `PREMIUM_UI` button, text, badge, grid, and card variants
 
-Depth is communicated by low-contrast outlines instead of shadows.
+Layout rules:
 
-- Background baseline: `#131313`.
-- Raised containers: `#0e0e0e` to `#1f1f1f` tiers with `1px` borders at `#424754`.
-- Flatness rule: no drop shadows or ambient occlusion in standard UI surfaces.
+- Preserve a centered content width around `1280px`.
+- Favor stacked sections with clear spacing over overloaded mega-panels.
+- Use bento-style stat layouts where they improve scanability, not by default everywhere.
 
-## 6. Shapes
+## 6. Interaction rules
 
-Shape language is disciplined and professional, using soft rounding with technical precision.
+- Motion should be subtle and brief.
+- Hover states should clarify affordance, not restyle the whole page.
+- Focus states must stay obvious against dark surfaces.
+- User-facing status, errors, and progress should never rely on color alone.
 
-- Cards and buttons: 6px to 8px typical radius.
-- Inputs: match button radius for visual cohesion.
-- Pills/circles: avoid except compact status chips and indicators.
+## 7. Avoid
 
-## 7. Components
-
-### Buttons
-
-- Primary: solid indigo-blue (`#adc6ff`) with dark text (`#002e6a`), no gradients.
-- Secondary/Ghost: subtle outlined treatment (`#424754`) with high-contrast text.
-- Hit area: comfortable interaction targets with 14px to 16px content scale.
-
-### Cards
-
-- Border: `1px solid #424754`.
-- Fill: dark surface tier from token scale (`surface-container` family).
-- Content hierarchy: title in `on-surface`; description in `on-surface-variant`.
-
-### Inputs & Search
-
-- Fill: dark surface tier.
-- Border: `1px` outline-variant default.
-- Focus: primary blue border and ring.
-- Placeholder: `on-surface-variant`.
-
-### Chips/Tags
-
-- Low-profile badges with subtle border and `label-sm` typography.
-- Use for API status, model tags, categories, and lightweight metadata.
-
-## 8. Do and Don't
-
-### Do
-
-- Keep interface flat, crisp, and structured.
-- Prioritize hierarchy through typography and spacing.
-- Reuse centralized tokens and shared primitives.
-- Keep equivalent screens on the same layout grammar.
-
-### Don't
-
-- Don't add decorative glow, heavy gradients, or glassmorphism.
-- Don't introduce shadow-based depth as default hierarchy.
-- Don't diverge flow-specific forms/lists into different visual patterns.
-- Don't use accent color as decoration outside action/state semantics.
+- Developer-tool framing in copy or visual rationale.
+- Decorative glow, glass excess, or gratuitous gradients.
+- Mixing unrelated layout grammars between equivalent screens.
+- Introducing one-off tokens instead of extending the shared token system.

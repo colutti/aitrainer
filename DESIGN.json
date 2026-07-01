@@ -1,8 +1,8 @@
 {
   "schemaVersion": 3,
   "generatedAt": "2026-04-28T00:00:00+02:00",
-  "title": "Design System: Developer Performance Interface",
-  "description": "Dark-mode-only design system for developer-centric, high-comprehension product workflows.",
+  "title": "Design System: FityQ Performance Coaching Interface",
+  "description": "Dark-first design system for a high-clarity fitness coaching product.",
   "tokens": {
     "colors": {
       "surface": "#131313",
@@ -108,23 +108,23 @@
   },
   "principles": {
     "brandStyle": [
-      "High-performance technical environment aesthetic.",
-      "Minimalism and modern corporate visual language.",
-      "Dark-mode-only and function-first visual hierarchy."
+      "High-clarity coaching product aesthetic.",
+      "Restrained, modern, and operational visual language.",
+      "Dark-first and function-first visual hierarchy."
     ],
     "colorRules": [
-      "Primary indigo-blue reserved for critical action paths.",
-      "Neutrals define structure with low-contrast borders.",
-      "Typography prioritizes contrast between headline and secondary copy."
+      "Primary blue is reserved for core action paths.",
+      "Neutrals define structure through tonal separation and thin borders.",
+      "Typography carries hierarchy more than decoration."
     ],
     "layoutRules": [
-      "Fixed 1280px desktop container with 12-column architecture.",
+      "Centered content width around 1280px.",
       "8px base spacing system with 24px module rhythm.",
-      "Equivalent flows should reuse the same structural templates."
+      "Equivalent coaching flows should reuse the same structural templates."
     ],
     "elevationRules": [
       "Use outlines and tonal tiers, not drop shadows, to indicate depth.",
-      "Default interface should feel flat and precise."
+      "Default interface should feel precise and calm."
     ],
     "shapeRules": [
       "Use 0.25rem to 0.5rem standard rounding for most controls.",

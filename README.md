@@ -1,273 +1,152 @@
-# AI Personal Trainer (FityQ)
+# FityQ
 
-**AI Personal Trainer** is a comprehensive fitness coaching platform powered by Artificial Intelligence. It adapts to your style by offering multiple trainer personalities—from analytical and surgical to motivational sergeants, holistic guides, and gym partners who celebrate every achievement.
+FityQ is an AI personal trainer platform with a main web app, a separate admin app, and a FastAPI backend that runs chat, plans, body metrics, nutrition, workouts, billing, and integrations.
 
----
+## Current stack
 
-## 🚀 Key Features
+- `backend/`: FastAPI, Python 3.12, MongoDB, Qdrant, Pydantic AI, OpenRouter
+- `frontend/`: React 19, TypeScript 5.9, Vite 7, TailwindCSS v4, Zustand, React Router 7, Vitest, Playwright
+- `backend-admin/`: separate FastAPI admin service
+- `frontend/admin/`: separate React admin app
 
-- **Master Plan Engine**: Each user has one AI-managed master plan combining a clear goal, timeline, nutrition targets, weekly training program, and checkpoint-based revisions.
-- **Real Long-Term Memory**: The AI remembers your history, injuries, preferences, and goals through a 3-layer memory system (short, medium, and long-term with semantic search).
-- **Adaptive TDEE**: Calculates your actual metabolism from weight and nutrition data using linear regression with outlier filtering, not just static formulas.
-- **Deep Integrations**:
-  - **Hevy**: Sync your workout history and create routines directly in Hevy.
-  - **MyFitnessPal**: Sync nutrition data.
-  - **Zepp Life/Xiaomi**: Import body composition from smart scales.
-- **Multi-Platform**: Chat via the web app or directly through **Telegram** with automatic workout analysis.
-- **15+ Body Metrics**: Track limb measurements, visceral fat, muscle mass, and weight trends with EMA smoothing.
-- **Operational AI Runtime**: Chat runs through Pydantic AI with OpenRouter, typed tools, fail-closed success validation, and redacted operational logs.
+The current AI chat runtime is documented in [backend/docs/architecture/ai-chat-runtime.md](backend/docs/architecture/ai-chat-runtime.md). It uses one application-level Pydantic AI run per user turn with typed domain tools and fail-closed validation.
 
----
-
-## 🛠️ Tech Stack
-
-### Frontend
-- **Framework**: React 19 + Vite 7.2.4 + TypeScript 5.9.3
-- **Styling**: TailwindCSS v4
-- **State**: Zustand 5 + React Hook Form 7
-- **Charts**: Recharts 2.15+
-- **Routing**: React Router 7.6
-- **i18n**: i18next 25.8 + react-i18next 16.5
-- **Testing**: Vitest 3.0.5 + Testing Library + Playwright 1.50.2
-
-### Backend
-- **Framework**: FastAPI (Python 3.12+)
-- **Database**: MongoDB (NoSQL) + Qdrant (Vector Database for Memory)
-- **AI/LLM**: Pydantic AI + OpenRouter
-- **Task Queue**: BackgroundTasks (FastAPI internal)
-- **Automation**: Telegram Bot API
-
-The chat backend uses one Pydantic AI agent call per user turn. Tools are typed,
-audited, and validated with fail-closed success rules before any response is
-persisted. See `backend/docs/architecture/ai-chat-runtime.md`.
-
----
-
-## 📦 Project Structure
+## Repository layout
 
 ```text
 .
-├── backend/            # FastAPI Backend
-│   ├── src/            # Application source code
-│   │   ├── api/        # Endpoints and models
-│   │   ├── core/       # Config, dependencies, security
-│   │   ├── services/   # Business logic (AI Brain, Tools)
-│   │   └── repositories/ # Data access layer
-│   └── tests/          # Pytest suite
-├── frontend/           # React Frontend
-│   ├── src/
-│   │   ├── features/   # Modulized features (Auth, Chat, Workouts, etc.)
-│   │   ├── shared/     # Common hooks, components, API clients
-│   │   └── test/       # Global test setup
-│   └── e2e/            # Playwright E2E tests
-├── scripts/            # Infrastructure and utility scripts
-├── docker-compose.yml  # Local development stack
-└── Makefile            # Common development commands
+├── backend/
+├── backend-admin/
+├── frontend/
+├── scripts/
+│   └── deploy/
+├── docs/
+├── .agent/
+└── Makefile
 ```
 
----
+## Local development
 
-## 🚀 Getting Started (Local Development)
+### Main app stack
 
-### 1. Prerequisites
-- Docker or Podman with a Compose-compatible CLI
-- Node.js 22+ and Python 3.12+ only if you want to run app services outside containers
-
-### 2. Setup
 ```bash
-# Clone the repository
-git clone <repo-url>
-cd personal
-
-# Setup environment variables
-cp backend/.env.example backend/.env
-# (Edit .env with your LLM keys and credentials)
-
-# Start the full stack with Podman Compose
 make up
-
-# Alternatively, run with rebuild
+make down
+make build
 make debug-rebuild
 ```
 
-### 3. Access
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000/docs
-- **Mongo Express**: http://localhost:8081
+`make up` starts the supported local compose stack for the main app: backend, frontend, MongoDB, Mongo Express, and Qdrant.
 
----
+Local URLs:
 
-## 🚢 Production Deploy (One-Shot)
+- Main app: `http://localhost:3000`
+- Main backend: `http://localhost:8000`
+- FastAPI docs: `http://localhost:8000/docs`
+- Mongo Express: `http://localhost:8081`
+- Qdrant: `http://localhost:6333`
 
-Use o fluxo oficial abaixo para publicar em produção com cache de imagens e smoke tests:
+### Admin services
+
+The admin services are not part of `make up`.
+
+Run them separately when needed:
+
+```bash
+cd backend-admin && .venv/bin/python src/main.py
+cd frontend/admin && npm run dev
+```
+
+Default local ports:
+
+- Admin frontend: `http://localhost:3001`
+- Admin backend: `http://localhost:8001`
+
+## Quality and tests
+
+Supported verification commands:
+
+```bash
+make verify
+make verify-all
+make test-once
+make e2e
+make test-backend-cov
+make test-conversation
+```
+
+Rules:
+
+- `make verify` is the fast verification gate.
+- `make verify-all` adds Playwright and security checks.
+- `make test-once` is the official full-suite containerized path.
+- Playwright validation must run through `make e2e`, `make verify-all`, or `make test-once`.
+
+Surface-specific validation:
+
+```bash
+cd backend && .venv/bin/ruff check src tests && .venv/bin/pylint src
+cd backend-admin && .venv/bin/pylint src && .venv/bin/pyright src
+cd frontend && npm run lint && npm run typecheck
+cd frontend/admin && npm run lint && npm run typecheck
+```
+
+## Production deploy
+
+The supported production path is Cloud Run via the deploy scripts in `scripts/deploy/`.
 
 ```bash
 make deploy-prod
 ```
 
-Esse comando executa preflight, build com cache remoto no Artifact Registry, deploy no Cloud Run sem limpar variáveis existentes e validações finais de saúde/runtime config.
-
-Comandos auxiliares:
+Useful deploy commands:
 
 ```bash
-make deploy-prod-fast  # deploy incremental por serviços alterados
-make deploy-preflight   # valida serviços e variáveis críticas
-make deploy-build       # build-only (Cloud Build + Kaniko cache)
-make deploy-smoke       # smoke-only após deploy
-make deploy-prod-env    # sincroniza env vars a partir de *.env.prod
+make deploy-preflight
+make deploy-build
+make deploy-prod
+make deploy-prod-fast
+make deploy-smoke
+make deploy-prod-env
 ```
 
-Documentação detalhada: `scripts/deploy/README.md` e `GCP_DEPLOYMENT_GUIDE.md`.
+Reference docs:
 
----
+- [scripts/deploy/README.md](scripts/deploy/README.md)
+- [GCP_DEPLOYMENT_GUIDE.md](GCP_DEPLOYMENT_GUIDE.md)
+- [ADMIN_DEPLOYMENT.md](ADMIN_DEPLOYMENT.md)
 
-## 🧪 Testing & Quality
+## Chat API contract
 
-We maintain high quality standards with **TDD (Test Driven Development)** and strict linting. The supported local workflow is containerized for system validation and script-backed for verification.
+`POST /message` supports structured SSE when the client sends header `X-Chat-Stream-Format: sse-v1`.
 
-### Official Full-Suite Path
+Current SSE event types:
 
-Run the complete containerized system suite with:
+- `status`
+- `delta`
+- `done`
+- `error`
 
-```bash
-make test-once
-```
+Current `status.stage` values:
 
-This runs:
-- `quick.sh`: backend, backend-admin, frontend, admin-frontend verification
-- `e2e.sh`: Playwright E2E against real backend and frontend services
+- `preparing_context`
+- `using_tools`
+- `writing_reply`
+- `saving`
 
-For complete verification including security checks:
+`GET /message/history` remains the persisted conversation source of truth.
 
-```bash
-make verify-all
-```
+## Active documentation
 
-This runs:
-- `quick.sh`: all service verification
-- `e2e.sh`: Playwright E2E tests
-- `security.sh`: security verification
+Start with these files when orienting in the repo:
 
-The container stack also starts MongoDB, Qdrant, and `stripe-mock` as internal dependencies.
+- [AGENTS.md](AGENTS.md)
+- [docs/README.md](docs/README.md)
+- [backend/docs/architecture/ai-chat-runtime.md](backend/docs/architecture/ai-chat-runtime.md)
+- [frontend/ARCH_GUIDELINES.md](frontend/ARCH_GUIDELINES.md)
 
-### Verification vs Coverage
+Historical planning/spec documents that no longer describe the live system have been removed from the repository.
 
-Fast verification without per-suite coverage:
+## License
 
-```bash
-make verify
-```
-
-Full verification including Playwright:
-
-```bash
-make verify-all
-make test-once
-```
-
-Per-suite backend coverage:
-
-```bash
-make test-backend-cov
-```
-
-Per-suite frontend coverage from containers:
-
-```bash
-./scripts/compose.sh -f docker-compose.test.yml run --rm frontend-tests sh -lc "npm ci && npm test -- --coverage"
-./scripts/compose.sh -f docker-compose.test.yml run --rm admin-tests sh -lc "npm ci && npm test -- --coverage"
-```
-
-Playwright E2E only:
-
-```bash
-make e2e
-```
-
-Important: Playwright E2E must run through the repository's containerized verification flow. Do not use host-local `npx playwright test` as the official path for validation.
-
-### Coverage Thresholds
-
-Main frontend Vitest thresholds:
-- branches: `58%`
-- functions: `65%`
-- lines: `68%`
-- statements: `67%`
-
-Admin frontend Vitest thresholds:
-- branches: `35%`
-- functions: `45%`
-- lines: `45%`
-- statements: `43%`
-
-Current Playwright runs are execution-only. The repository does not currently emit instrumented E2E code coverage.
-
-### Reports
-
-When coverage or E2E runs complete, the generated reports are written to:
-- `backend/htmlcov/index.html`
-- `frontend/coverage/index.html`
-- `frontend/admin/coverage/index.html`
-- `frontend/playwright-report/index.html`
-
----
-
-## 📐 Architecture Principles
-
-1. **Feature Isolation**: Features in `frontend/src/features` are independent.
-2. **Standardized CRUD**: Shared repositories and components for consistent data handling.
-3. **Mock First**: Frontend tests always mock the backend for speed and isolation.
-4. **Zero Tolerance**: 0 warnings or hints allowed in container logs, frontend, or backend.
-
----
-
-## 💰 OpenRouter Cost Tracking by User
-
-The backend sends each authenticated user's email in OpenRouter requests using the `user` field.
-
-How to monitor directly in OpenRouter (without local persistence):
-
-1. Open OpenRouter dashboard `Activity`.
-2. Filter by `user` (email).
-3. Export activity for a period and aggregate costs by `user`.
-
-Notes:
-- Tracking is **forward-only**: only requests made after this integration/deploy include the user identifier.
-- Cost attribution includes chat requests and embedding requests triggered in the user flow.
-
----
-
-## 💬 Chat Streaming Contract
-
-`POST /message` streams structured SSE events with `Content-Type: text/event-stream`.
-
-Current event types:
-- `status`: progress stage for the current turn. Current stages are `preparing_context`, `using_tools`, `writing_reply`, and `saving`.
-- `delta`: partial user-visible text chunks for the final reply.
-- `done`: final persisted payload with the full assistant text.
-- `error`: terminal user-visible error payload.
-
-Notes:
-- The operational tool round can run before visible text starts streaming.
-- The final user-visible reply is generated in a tools-disabled round on the same OpenRouter model.
-- `/message/history` remains the source of truth for persisted conversation recovery.
-
----
-
-## 🤖 Agent Workflows
-
-Project-specific workflows live in [`.agent/workflows`](/.agent/workflows):
-- `brainstorming.md`
-- `writing-plans.md`
-- `executing-plans.md`
-- `report-bug.md`
-- `run-all-tests.md`
-- `cleancode.md`
-
-Project-specific design skill:
-- [`.agent/skills/ui-ux-pro-max/SKILL.md`](/.agent/skills/ui-ux-pro-max/SKILL.md)
-
----
-
-## 📄 License & Credits
-Proprietary - All Rights Reserved. Created by **Rafael Colutti**.
+Proprietary. All rights reserved.
